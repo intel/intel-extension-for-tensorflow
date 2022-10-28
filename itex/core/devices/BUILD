@@ -2,12 +2,11 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "xpu_device_util",
-    srcs = ["xpu_device_util.cc"],
     hdrs = ["xpu_device_util.h"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core:protos_all_cc",
+        ":device_backend_util_hdr",
         "//itex/core/utils:env_var",
         "//itex/core/utils:logging",
     ],
@@ -20,7 +19,7 @@ cc_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        ":xpu_device_util",
+        ":device_backend_util_hdr",
         "@local_config_tf//:tf_header_lib",
     ] + select({
         "@local_config_dpcpp//dpcpp:using_dpcpp": ["//itex/core/devices/gpu:gpu_device_impl"],
@@ -30,10 +29,25 @@ cc_library(
 )
 
 cc_library(
-    name = "xpu_device_util_hdr",
-    hdrs = ["xpu_device_util.h"],
+    name = "device_backend_util",
+    srcs = ["device_backend_util.cc"],
+    hdrs = ["device_backend_util.h"],
+    linkstatic = 1,
     visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core:protos_all_cc",
+        "//itex/core/utils:logging",
+    ],
     alwayslink = True,
+)
+
+cc_library(
+    name = "device_backend_util_hdr",
+    hdrs = ["device_backend_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core:protos_all_cc",
+    ],
 )
 
 cc_library(

@@ -603,6 +603,8 @@ itex_xpu_library(
     name = "fused_batch_norm_op",
     srcs = ["fused_batch_norm_op.cc"],
     hdrs = [
+        "custom_fused_batch_norm_functor.h",
+        "custom_fused_batch_norm_op.h",
         "//itex/core/kernels/common:fused_batch_norm_hdrs",
     ],
     copts = tf_copts(),

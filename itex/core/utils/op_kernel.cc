@@ -20,7 +20,7 @@ limitations under the License.
 #include <iostream>
 #include <string>
 
-#include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/devices/device_backend_util.h"
 #include "itex/core/utils/kernel_def_util.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/padding.h"

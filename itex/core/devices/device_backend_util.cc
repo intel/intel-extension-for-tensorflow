@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/devices/device_backend_util.h"
 
 #include <cstring>
 

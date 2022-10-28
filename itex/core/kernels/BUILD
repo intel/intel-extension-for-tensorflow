@@ -7,7 +7,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         ":libitex_common",
-        "//itex/core/devices:xpu_device_util",
+        "//itex/core/devices:device_backend_util_hdr",
         "//itex/core/kernels/common:no_ops",
         "@local_config_tf//:tf_header_lib",
     ] + select({
@@ -40,6 +40,7 @@ cc_binary(
     linkshared = True,
     visibility = ["//visibility:public"],
     deps = [
+        "//itex/core/devices:device_backend_util",
         "//itex/core/ops:op_impl",
     ],
 )

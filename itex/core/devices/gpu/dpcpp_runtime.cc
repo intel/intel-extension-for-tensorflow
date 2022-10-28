@@ -69,6 +69,11 @@ class DevicePool {
  public:
   DevicePool() : current_ordinal_(0) {}
 
+  static sycl::context& getDeviceContext() {
+    static sycl::context context(DevicePool::GetDevicesPool());
+    return context;
+  }
+
   static dpcppError_t getDeviceCount(int* count) {
     *count = DevicePool::GetDevicesPool().size();
     return DPCPP_SUCCESS;
@@ -282,7 +287,8 @@ class StreamPool {
     if (iter != stream_pool_map.end()) return iter->second;
     sycl::property_list propList{sycl::property::queue::in_order()};
     std::vector<std::shared_ptr<DPCPPStream>> stream_pool = {
-        std::make_shared<DPCPPStream>(*device_handle, dpcppAsyncHandler,
+        std::make_shared<DPCPPStream>(DevicePool::getDeviceContext(),
+                                      *device_handle, dpcppAsyncHandler,
                                       propList)};
     stream_pool_map.insert(std::make_pair(device_handle, stream_pool));
     return stream_pool_map[device_handle];

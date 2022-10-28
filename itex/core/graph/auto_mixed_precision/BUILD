@@ -7,7 +7,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core/devices:xpu_device_util",
         "//itex/core/graph:optimizer_config",
         "//itex/core/graph/graph_view:mutable_graph_view",
         "//itex/core/graph/utils:function",

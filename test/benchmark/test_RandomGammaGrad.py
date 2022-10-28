@@ -13,16 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-
 import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import constant_op
-from tensorflow.python.ops import gradients_impl
-from tensorflow.python.ops import random_ops
-from utils import multi_run, add_profiling, flush_cache
+from tensorflow.python.ops import gen_random_ops
+from utils import multi_run, add_profiling, flush_cache, tailed_no_tailed_size
 
 try:
-    from intel_extension_for_tensorflow.python.test_func import test, test_util
+    from intel_extension_for_tensorflow.python.test_func import test
     FLOAT_COMPUTE_TYPE = [dtypes.float32]
 except ImportError:
     from tensorflow.python.platform import test
@@ -30,27 +28,20 @@ except ImportError:
 
 ITERATION = 5
 class RandomGammaGradTest(test.TestCase):
-    def _test_impl(self, x_size, y_size, dtype):
-        shape = []
-        alpha = np.random.normal(size=x_size)
-        alpha = constant_op.constant(alpha, dtype=dtype)
-        beta = np.random.normal(size=y_size)
-        beta = constant_op.constant(beta, dtype=dtype)
+    def _test_impl(self, size, dtype):
+        x = np.random.normal(size=[size])
+        x = constant_op.constant(x, dtype=dtype)
+        y = np.random.normal(size=[size])
+        y = constant_op.constant(y, dtype=dtype)
         flush_cache()
-        sample = random_ops.random_gamma(shape, alpha, beta, seed=12345)
-        grads_alpha, grads_beta = gradients_impl.gradients(sample, [alpha, beta])
-        self.evaluate(grads_alpha)
-        self.evaluate(grads_beta)
+        out_gpu = gen_random_ops.random_gamma_grad(x, y)
 
     @add_profiling
     @multi_run(ITERATION)
-    @test_util.run_deprecated_v1
     def testRandomGammaGrad(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            for in_size in [[2,2], [3,3], [254,254], [255,255], [1024,1024], [1025,1025]]:
-                self._test_impl(in_size, in_size, dtype)
-            for in_size in [[2,2,2,2], [3,3,3,3], [88,88,88,88], [89,89,89,89]]:
-                self._test_impl(in_size, in_size, dtype)
+            for in_size in tailed_no_tailed_size:
+                self._test_impl(in_size, dtype)
 
 if __name__ == '__main__':
     test.main()

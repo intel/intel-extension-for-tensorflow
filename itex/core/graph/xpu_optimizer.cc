@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "itex/core/graph/xpu_optimizer.h"
 
-#include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/graph/auto_mixed_precision/auto_mixed_precision.h"
 #include "itex/core/graph/memory_opt_pass/memory_opt_pass.h"
 #include "itex/core/graph/native_layout/native_layout.h"
@@ -25,6 +24,7 @@ limitations under the License.
 #include "itex/core/graph/remapper/remapper.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/errors.h"
+#include "itex/core/utils/op_kernel.h"
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
 namespace itex {
@@ -57,6 +57,12 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
                         TF_Buffer* optimized_graph_buf, TF_Status* tf_status) {
   Status status;
   const char* device_name = (static_cast<Optimizer*>(optimizer))->device_name;
+
+  // Used for calculating time consumption of ITEX graph optimization.
+  std::chrono::steady_clock::time_point start, end;
+  if (IsVerboseEnabled()) {
+    start = std::chrono::steady_clock::now();
+  }
 
   // Get GrapplerItem.
   GrapplerItem item(tf_item);
@@ -126,6 +132,13 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
   optimized_graph_def.Swap(&graph_def);
   SET_STATUS_IF_ERROR(tf_status, RunMemoryOptPass(device_name, item, graph_def,
                                                   &optimized_graph_def));
+
+  if (IsVerboseEnabled()) {
+    end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    ITEX_VLOG(0) << "Time for graph optimize costs " << duration.count()
+                 << " sec\n";
+  }
 
   if (ITEX_VLOG_IS_ON(4)) {
     DumpGraphDefToFile("itex_optimizer", optimized_graph_def, "./");

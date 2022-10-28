@@ -4,18 +4,12 @@ pybind_extension(
     name = "_pywrap_itex",
     srcs = [
         "itex_wrapper.cc",
-    ] + select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": [
-            "//itex:libitex_gpu.so",
-        ],
-        "//conditions:default": [
-            "//itex:libitex_cpu.so",
-        ],
-    }),
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core:protos_all_cc",
-        "//itex/core/devices:xpu_device_util_hdr",
+        "//itex/core/devices:device_backend_util_hdr",
+        "//itex/core/kernels:libitex_common",
         "//itex/core/utils:env_var",
         "@com_google_absl//absl/strings",
         "@local_config_python//:python_headers",

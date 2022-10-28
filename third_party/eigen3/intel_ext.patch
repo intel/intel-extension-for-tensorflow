@@ -1747,10 +1747,10 @@ index 000000000..135b1b9c8
 +#endif // EIGEN_HALF_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/InteropHeaders.h b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
 new file mode 100644
-index 000000000..bd44c2c10
+index 000000000..580225796
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
-@@ -0,0 +1,506 @@
+@@ -0,0 +1,508 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -1804,7 +1804,7 @@ index 000000000..bd44c2c10
 +    HasAbsDiff   = 0,
 +    HasMin       = 1,
 +    HasMax       = 1,
-+    HasConj      = 0,
++    HasConj      = 1,
 +    HasBlend     = is_vectorized,
 +    // This flag is used to indicate whether packet comparison is supported.
 +    // pcmp_eq, pcmp_lt and pcmp_le should be defined for it to be true.
@@ -2152,6 +2152,7 @@ index 000000000..bd44c2c10
 +  }
 +};
 +
++#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +template <>
 +struct PacketWrapper<Packet4h2, 8> {
 +  typedef typename ::Eigen::internal::unpacket_traits<Packet4h2>::type
@@ -2251,7 +2252,8 @@ index 000000000..bd44c2c10
 +  }
 +};
 +
-+#endif
++#endif // EIGEN_DONT_VECTORIZE_SYCL
++#endif // DPCPP_DEVICE_ONLY
 +
 +}  // end namespace internal
 +}  // end namespace Eigen
@@ -2259,7 +2261,7 @@ index 000000000..bd44c2c10
 +#endif  // EIGEN_INTEROP_HEADERS_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/MathFunctions.h b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
 new file mode 100644
-index 000000000..0b1552da3
+index 000000000..cf21bdd6b
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
 @@ -0,0 +1,610 @@
@@ -2303,7 +2305,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plog<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::log(a);                                           \
++    return sycl::log(a);                                               \
 +  }
 +
 +SYCL_PLOG(sycl::cl_float4)
@@ -2314,7 +2316,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plog1p<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::log1p(a);                                           \
++    return sycl::log1p(a);                                               \
 +  }
 +
 +SYCL_PLOG1P(sycl::cl_float4)
@@ -2325,7 +2327,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plog10<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::log10(a);                                           \
++    return sycl::log10(a);                                               \
 +  }
 +
 +SYCL_PLOG10(sycl::cl_float4)
@@ -2336,7 +2338,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pexp<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::exp(a);                                           \
++    return sycl::exp(a);                                               \
 +  }
 +
 +SYCL_PEXP(sycl::cl_float4)
@@ -2347,7 +2349,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pexpm1<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::expm1(a);                                           \
++    return sycl::expm1(a);                                               \
 +  }
 +
 +SYCL_PEXPM1(sycl::cl_float4)
@@ -2358,7 +2360,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type psqrt<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::sqrt(a);                                           \
++    return sycl::sqrt(a);                                               \
 +  }
 +
 +SYCL_PSQRT(sycl::cl_float4)
@@ -2369,7 +2371,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type prsqrt<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::rsqrt(a);                                           \
++    return sycl::rsqrt(a);                                               \
 +  }
 +
 +SYCL_PRSQRT(sycl::cl_float4)
@@ -2381,7 +2383,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type psin<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::sin(a);                                           \
++    return sycl::sin(a);                                               \
 +  }
 +
 +SYCL_PSIN(sycl::cl_float4)
@@ -2393,7 +2395,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pcos<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::cos(a);                                           \
++    return sycl::cos(a);                                               \
 +  }
 +
 +SYCL_PCOS(sycl::cl_float4)
@@ -2405,7 +2407,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type ptan<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::tan(a);                                           \
++    return sycl::tan(a);                                               \
 +  }
 +
 +SYCL_PTAN(sycl::cl_float4)
@@ -2417,7 +2419,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pasin<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::asin(a);                                           \
++    return sycl::asin(a);                                               \
 +  }
 +
 +SYCL_PASIN(sycl::cl_float4)
@@ -2429,7 +2431,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pacos<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::acos(a);                                           \
++    return sycl::acos(a);                                               \
 +  }
 +
 +SYCL_PACOS(sycl::cl_float4)
@@ -2441,7 +2443,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type patan<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::atan(a);                                           \
++    return sycl::atan(a);                                               \
 +  }
 +
 +SYCL_PATAN(sycl::cl_float4)
@@ -2453,7 +2455,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type psinh<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::sinh(a);                                           \
++    return sycl::sinh(a);                                               \
 +  }
 +
 +SYCL_PSINH(sycl::cl_float4)
@@ -2465,7 +2467,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pcosh<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::cosh(a);                                           \
++    return sycl::cosh(a);                                               \
 +  }
 +
 +SYCL_PCOSH(sycl::cl_float4)
@@ -2477,7 +2479,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type ptanh<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::tanh(a);                                           \
++    return sycl::tanh(a);                                               \
 +  }
 +
 +SYCL_PTANH(sycl::cl_float4)
@@ -2488,7 +2490,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pceil<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::ceil(a);                                           \
++    return sycl::ceil(a);                                               \
 +  }
 +
 +SYCL_PCEIL(sycl::cl_float4)
@@ -2499,7 +2501,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pround<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::round(a);                                           \
++    return sycl::round(a);                                               \
 +  }
 +
 +SYCL_PROUND(sycl::cl_float4)
@@ -2510,7 +2512,7 @@ index 000000000..0b1552da3
 +  template<>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type print<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::rint(a);                                           \
++    return sycl::rint(a);                                               \
 +  }
 +
 +SYCL_PRINT(sycl::cl_float4)
@@ -2521,7 +2523,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pfloor<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::floor(a);                                           \
++    return sycl::floor(a);                                               \
 +  }
 +
 +SYCL_FLOOR(sycl::cl_float4)
@@ -2532,7 +2534,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type perf<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::erf(a);                                           \
++    return sycl::erf(a);                                               \
 +  }
 +
 +SYCL_ERF(sycl::cl_float4)
@@ -2543,7 +2545,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type perfc<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::erfc(a);                                           \
++    return sycl::erfc(a);                                               \
 +  }
 +
 +SYCL_ERFC(sycl::cl_float4)
@@ -2554,7 +2556,7 @@ index 000000000..0b1552da3
 +  template <>                                                             \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plgamma<packet_type>( \
 +      const packet_type& a) {                                             \
-+    return sycl::lgamma(a);                                           \
++    return sycl::lgamma(a);                                               \
 +  }
 +
 +SYCL_LGAMMA(sycl::cl_float4)
@@ -2758,13 +2760,13 @@ index 000000000..0b1552da3
 +#define SYCL_PISNAN(INTYPE)                                      \
 +  template<>                                                     \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>               \
-+  pisnan<sycl::vec<bool, packet_traits<INTYPE>::size>,       \
++  sycl::vec<bool, packet_traits<INTYPE>::size>                   \
++  pisnan<sycl::vec<bool, packet_traits<INTYPE>::size>,           \
 +         typename packet_traits<INTYPE>::type>(                  \
 +         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
++    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;     \
 +    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isnan(a[i]);                     \
++      packet_res[i] = sycl::isnan(a[i]);                         \
 +    return packet_res;                                           \
 +  }
 +
@@ -2789,13 +2791,13 @@ index 000000000..0b1552da3
 +#define SYCL_PISFINITE(INTYPE)                                   \
 +  template<>                                                     \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>               \
-+  pisfinite<sycl::vec<bool, packet_traits<INTYPE>::size>,    \
++  sycl::vec<bool, packet_traits<INTYPE>::size>                   \
++  pisfinite<sycl::vec<bool, packet_traits<INTYPE>::size>,        \
 +         typename packet_traits<INTYPE>::type>(                  \
 +         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
++    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;     \
 +    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isfinite(a[i]);                  \
++      packet_res[i] = sycl::isfinite(a[i]);                      \
 +    return packet_res;                                           \
 +  }
 +
@@ -2820,13 +2822,13 @@ index 000000000..0b1552da3
 +#define SYCL_PISINF(INTYPE)                                      \
 +  template<>                                                     \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>               \
-+  pisinf<sycl::vec<bool, packet_traits<INTYPE>::size>,       \
++  sycl::vec<bool, packet_traits<INTYPE>::size>                   \
++  pisinf<sycl::vec<bool, packet_traits<INTYPE>::size>,           \
 +         typename packet_traits<INTYPE>::type>(                  \
 +         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
++    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;     \
 +    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isinf(a[i]);                     \
++      packet_res[i] = sycl::isinf(a[i]);                         \
 +    return packet_res;                                           \
 +  }
 +
@@ -6565,7 +6567,7 @@ index 72f072cf2..a15214e20 100644
      m_rightImpl.bind(cgh);
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h b/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h
-index fc75c8d9a..26731804f 100644
+index fc75c8d9a..387a8d6ee 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h
 @@ -60,6 +60,12 @@ struct is_input_scalar<Sizes<Indices...> > {
@@ -6613,7 +6615,18 @@ index fc75c8d9a..26731804f 100644
        }
      }
  
-@@ -254,7 +264,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -211,6 +221,10 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+ 
+   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions& dimensions() const { return m_dimensions; }
+ 
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const InputDimensions& inputDimensions() const { return m_impl.dimensions(); }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const bool isCopyOrNot() const { return isCopy; }
++
+   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(EvaluatorPointerType) {
+     m_impl.evalSubExprsIfNeeded(NULL);
+     return true;
+@@ -254,7 +268,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
      Index inputIndex = 0;
      EIGEN_UNROLL_LOOP
      for (int i = NumDims - 1; i > 0; --i) {
@@ -6622,25 +6635,37 @@ index fc75c8d9a..26731804f 100644
        if (internal::index_statically_eq<Broadcast>(i, 1)) {
          eigen_assert(idx < m_impl.dimensions()[i]);
          inputIndex += idx * m_inputStrides[i];
-@@ -262,7 +272,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -262,7 +276,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
          if (internal::index_statically_eq<InputDimensions>(i, 1)) {
            eigen_assert(idx % m_impl.dimensions()[i] == 0);
          } else {
 -          inputIndex += (idx % m_impl.dimensions()[i]) * m_inputStrides[i];
-+        inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i];
++          if (m_impl.dimensions()[i] != 1) {
++            if (m_impl.dimensions()[i] == m_dimensions[i]) {
++              inputIndex += idx * m_inputStrides[i];
++            } else {
++              inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i]; 
++            }
++          }
          }
        }
        index -= idx * m_outputStrides[i];
-@@ -274,7 +284,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -274,7 +294,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
        if (internal::index_statically_eq<InputDimensions>(0, 1)) {
          eigen_assert(index % m_impl.dimensions()[0] == 0);
        } else {
 -        inputIndex += (index % m_impl.dimensions()[0]);
-+      inputIndex += (index - (index / m_fastInputDims[0]) * m_impl.dimensions()[0]);
++        if (m_impl.dimensions()[0] != 1) {
++          if (m_impl.dimensions()[0] == m_dimensions[0]) {
++            inputIndex += index * m_inputStrides[0];
++          } else {
++            inputIndex += (index- (index / m_fastInputDims[0]) * m_impl.dimensions()[0]); 
++          }
++        }
        }
      }
      return inputIndex;
-@@ -289,7 +299,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -289,7 +315,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
      Index inputIndex = 0;
      EIGEN_UNROLL_LOOP
      for (int i = 0; i < NumDims - 1; ++i) {
@@ -6649,25 +6674,74 @@ index fc75c8d9a..26731804f 100644
        if (internal::index_statically_eq<Broadcast>(i, 1)) {
          eigen_assert(idx < m_impl.dimensions()[i]);
          inputIndex += idx * m_inputStrides[i];
-@@ -297,7 +307,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -297,7 +323,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
          if (internal::index_statically_eq<InputDimensions>(i, 1)) {
            eigen_assert(idx % m_impl.dimensions()[i] == 0);
          } else {
 -          inputIndex += (idx % m_impl.dimensions()[i]) * m_inputStrides[i];
-+        inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i];
++          if (m_impl.dimensions()[i] != 1) {
++            if (m_impl.dimensions()[i] == m_dimensions[i]) {
++              inputIndex += idx * m_inputStrides[i];
++            } else {
++              inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i]; 
++            }
++          }
          }
        }
        index -= idx * m_outputStrides[i];
-@@ -309,7 +319,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -309,7 +341,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
        if (internal::index_statically_eq<InputDimensions>(NumDims - 1, 1)) {
          eigen_assert(index % m_impl.dimensions()[NumDims - 1] == 0);
        } else {
 -        inputIndex += (index % m_impl.dimensions()[NumDims - 1]);
-+      inputIndex += (index - (index / m_fastInputDims[NumDims - 1]) * m_impl.dimensions()[NumDims - 1]);
++        if (m_impl.dimensions()[NumDims - 1] != 1) {
++          if (m_impl.dimensions()[NumDims - 1] == m_dimensions[NumDims - 1]) {
++            inputIndex += index;
++          } else {
++            inputIndex += (index - (index / m_fastInputDims[NumDims - 1]) * m_impl.dimensions()[NumDims - 1]); 
++          }
++        }
        }
      }
      return inputIndex;
-@@ -697,7 +707,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -320,6 +358,36 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+     return m_impl.coeff(indexRowMajor(index));
+   }
+ 
++  // only use when not scalar or just copy.
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getInputIndex(Index index) const {
++    if (static_cast<int>(Layout) == static_cast<int>(ColMajor)) {
++      return indexColMajor(index);
++    }
++    else {
++      return indexRowMajor(index);
++    }
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeffInputIndex(Index index) const
++  {
++    return m_impl.coeff(index);
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getInputStride(Index index) const
++  {
++    return m_inputStrides[index];
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getOutputStride(Index index) const
++  {
++    return m_outputStrides[index];
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getBroadcast(Index index) const
++  {
++    return m_broadcast[index];
++  }
++
+   template<int LoadMode>
+   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketReturnType packet(Index index) const
+   {
+@@ -697,7 +765,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
  #ifdef EIGEN_USE_SYCL
    // binding placeholder accessors to a command group handler for SYCL
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(
@@ -6676,7 +6750,7 @@ index fc75c8d9a..26731804f 100644
      m_impl.bind(cgh);
    }
  #endif
-@@ -1085,6 +1095,8 @@ protected:
+@@ -1085,6 +1153,8 @@ protected:
    Dimensions m_dimensions;
    array<Index, NumDims> m_outputStrides;
    array<Index, NumDims> m_inputStrides;
@@ -9891,7 +9965,7 @@ index 4689b0230..5cf29ddc3 100644
      m_buffer.bind(cgh);
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h b/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h
-index d4532b72c..b81b06b0c 100644
+index d4532b72c..653abd7e6 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h
 @@ -24,6 +24,7 @@ namespace Eigen {
@@ -10052,7 +10126,178 @@ index d4532b72c..b81b06b0c 100644
      m_arg1Impl.bind(cgh);
      m_arg2Impl.bind(cgh);
      m_arg3Impl.bind(cgh);
-@@ -926,7 +927,6 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+@@ -803,6 +804,72 @@ struct TensorEvaluator<const TensorCwiseTernaryOp<TernaryOp, Arg1Type, Arg2Type,
+   TensorEvaluator<Arg3Type, Device> m_arg3Impl;
+ };
+ 
++namespace {
++
++template <typename Expression, typename Device>
++typename std::enable_if<!internal::IsTensorBroadcastingOp<Expression>::value, bool>::type
++isScalarOrNot(const TensorEvaluator<Expression, Device>& expr) {
++  return false;
++}
++
++// When meet BroadcastingOp, get the only dimension which size is 1. If not, return -1.
++template <typename Expression, typename Device>
++typename std::enable_if<!internal::IsTensorBroadcastingOp<Expression>::value, int>::type
++getUniqueBroadcastDimensionSizeIsOne(const TensorEvaluator<Expression, Device>& expr) {
++  return -1;
++}
++
++template <typename Expression, typename Index, typename Device>
++typename std::enable_if<!internal::IsTensorBroadcastingOp<Expression>::value, Index>::type
++getInputStride(const TensorEvaluator<Expression, Device>& expr, int position) {
++  return 0;
++}
++
++template <typename Expression, typename Device>
++typename std::enable_if<internal::IsTensorBroadcastingOp<Expression>::value, bool>::type
++isScalarOrNot(const TensorEvaluator<Expression, Device>& expr) {
++  auto& input_dims = expr.inputDimensions();
++  bool is_scalar = true;
++  EIGEN_UNROLL_LOOP
++  for(int i = 0; i < TensorEvaluator<Expression, Device>::NumDims; ++i) {
++    if (input_dims[i] != 1) {
++      is_scalar = false;
++    }
++  }
++  return is_scalar;
++}
++
++// When meet BroadcastingOp, get the only broadcast dimension which size is 1. If not, return -1.
++template <typename Expression, typename Device>
++typename std::enable_if<internal::IsTensorBroadcastingOp<Expression>::value, int>::type
++getUniqueBroadcastDimensionSizeIsOne(const TensorEvaluator<Expression, Device>& expr) {
++  auto& input_dims = expr.inputDimensions();
++  int position = -1;
++  static const int NumDims = TensorEvaluator<Expression, Device>::NumDims;
++  EIGEN_UNROLL_LOOP
++  for(int i = 0; i < NumDims; ++i) {
++    if (input_dims[i] == 1 && expr.getBroadcast(i) != 1) {
++      if (position == -1) {
++        position = i;
++      } else {
++        return -1;
++      }
++    }
++  }
++  return position;
++}
++
++template <typename Expression, typename Index, typename Device>
++typename std::enable_if<internal::IsTensorBroadcastingOp<Expression>::value, Index>::type
++getInputStride(const TensorEvaluator<Expression, Device>& expr, int position) {
++  if (position == -1) {
++    return 0;
++  }
++  return expr.getInputStride(position);
++}
++
++}; // namespace
++
+ 
+ // -------------------- SelectOp --------------------
+ 
+@@ -838,6 +905,14 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+     EIGEN_STATIC_ASSERT((static_cast<int>(TensorEvaluator<IfArgType, Device>::Layout) == static_cast<int>(TensorEvaluator<ElseArgType, Device>::Layout)), YOU_MADE_A_PROGRAMMING_MISTAKE);
+     eigen_assert(dimensions_match(m_condImpl.dimensions(), m_thenImpl.dimensions()));
+     eigen_assert(dimensions_match(m_thenImpl.dimensions(), m_elseImpl.dimensions()));
++    isScalar = isScalarOrNot<IfArgType, Device>(m_condImpl);
++    // When meet BroadcastingOp, get the only broadcast dimension which size is 1. If not, return -1.
++    position = getUniqueBroadcastDimensionSizeIsOne<IfArgType, Device>(m_condImpl);
++
++    Index inputStride = getInputStride<IfArgType, Index, Device>(m_condImpl, position);
++    if (inputStride != 0) {
++      inputDivisor = internal::TensorIntDivisor<Index>(inputStride);
++    }
+   }
+ 
+   typedef typename XprType::Index Index;
+@@ -915,18 +990,84 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+   {
+     return m_condImpl.coeff(index) ? m_thenImpl.coeff(index) : m_elseImpl.coeff(index);
+   }
++
++  template <typename Expression = IfArgType>
++  EIGEN_DEVICE_FUNC typename std::enable_if<internal::IsTensorBroadcastingOp<Expression>::value,
++                                            internal::Selector<PacketSize>>::type
++  getSelector(Index index) const
++  {
++    internal::Selector<PacketSize> select;
++    if (isScalar) {
++      select.select[0] = m_condImpl.coeffInputIndex(0);
++      EIGEN_UNROLL_LOOP
++      for (Index i = 1; i < PacketSize; ++i) {
++        select.select[i] = select.select[0];
++      }
++    } else if (m_condImpl.isCopyOrNot() || position == -1) {
++      EIGEN_UNROLL_LOOP
++      for (Index i = 0; i < PacketSize; ++i) {
++        select.select[i] = m_condImpl.coeff(index+i);
++      }
++    } else {
++      Index inputIndex = m_condImpl.getInputIndex(index);
++      Index inputStride = m_condImpl.getInputStride(position);
++      Index broadcast = m_condImpl.getBroadcast(position);
++      Index batchIndex = inputIndex / inputDivisor;
++      Index inputOffset = batchIndex * inputStride;
++      Index sliceIndex = inputIndex - inputOffset;
++      Index scale, pre_position;
++      static const int Layout = static_cast<int>(TensorEvaluator<IfArgType, Device>::Layout);
++      static const int NumDims = static_cast<int>(TensorEvaluator<IfArgType, Device>::NumDims);
++      if (Layout == static_cast<int>(ColMajor)) {
++        pre_position = (position == NumDims - 1 ? NumDims - 1 : position + 1);
++      } else {
++        pre_position = (position == 0 ? 0 : position - 1);
++      }
++      Index outputStride = m_condImpl.getOutputStride(pre_position);
++      scale = (index - batchIndex * outputStride) / inputDivisor;
++      EIGEN_UNROLL_LOOP
++      for (Index i = 0; i < PacketSize-1; ++i) {
++        select.select[i] = m_condImpl.coeffInputIndex(inputIndex);
++        if (sliceIndex + 1 < inputStride) {
++          ++inputIndex;
++          ++sliceIndex;
++        } else {
++          sliceIndex = 0;
++          if (scale + 1 < broadcast) {
++            inputIndex = inputOffset;
++            ++scale;
++          } else {
++            ++inputIndex;
++            inputOffset += inputStride;
++            scale = 0;
++          }
++        }
++      }
++      select.select[PacketSize-1] = m_condImpl.coeffInputIndex(inputIndex);
++    }
++    return select;
++  }
++
++  template <typename Expression = IfArgType>
++  EIGEN_DEVICE_FUNC typename std::enable_if<!internal::IsTensorBroadcastingOp<Expression>::value,
++                                            internal::Selector<PacketSize>>::type
++  getSelector(Index index) const {
++    internal::Selector<PacketSize> select;
++    EIGEN_UNROLL_LOOP
++    for (Index i = 0; i < PacketSize; ++i) {
++      select.select[i] = m_condImpl.coeff(index+i);
++    }
++    return select;
++  }
++
+   template<int LoadMode>
+   EIGEN_DEVICE_FUNC PacketReturnType packet(Index index) const
+   {
+-     internal::Selector<PacketSize> select;
+-     EIGEN_UNROLL_LOOP
+-     for (Index i = 0; i < PacketSize; ++i) {
+-       select.select[i] = m_condImpl.coeff(index+i);
+-     }
++     internal::Selector<PacketSize> select = getSelector(index);
++
       return internal::pblend(select,
                               m_thenImpl.template packet<LoadMode>(index),
                               m_elseImpl.template packet<LoadMode>(index));
@@ -10060,7 +10305,7 @@ index d4532b72c..b81b06b0c 100644
    }
  
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
-@@ -966,7 +966,7 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+@@ -966,13 +1107,21 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
  
  #ifdef EIGEN_USE_SYCL
   // binding placeholder accessors to a command group handler for SYCL
@@ -10069,8 +10314,22 @@ index d4532b72c..b81b06b0c 100644
      m_condImpl.bind(cgh);
      m_thenImpl.bind(cgh);
      m_elseImpl.bind(cgh);
+   }
+ #endif
+  private:
++  // When m_condImpl is BroadcastingOp, represent whether the tensor of m_condImpl is scalar.
++  bool isScalar;
++  // When m_condImpl is BroadcastingOp, represent the only broadcast dimension which size is 1.
++  // If not, position is -1.
++  int position;
++  // When position is not -1, represent fast divisor for input strides
++  // corresponding to position.
++  internal::TensorIntDivisor<Index> inputDivisor;
+   TensorEvaluator<IfArgType, Device> m_condImpl;
+   TensorEvaluator<ThenArgType, Device> m_thenImpl;
+   TensorEvaluator<ElseArgType, Device> m_elseImpl;
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
-index c52fb77dc..3905ffde4 100644
+index c52fb77dc..585afda7d 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 @@ -76,8 +76,13 @@ struct ExpressionHasTensorBroadcastingOp<
@@ -10129,7 +10388,7 @@ index c52fb77dc..3905ffde4 100644
  
    typedef TensorEvaluator<Expression, ThreadPoolDevice> Evaluator;
    typedef TensorBlockMapper<NumDims, Evaluator::Layout, IndexType> BlockMapper;
-@@ -615,6 +623,84 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
+@@ -615,6 +623,86 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
  }
  
  #endif  // EIGEN_GPUCC
@@ -10142,7 +10401,11 @@ index c52fb77dc..3905ffde4 100644
 +  typedef typename Evaluator::Scalar Scalar;
 +  Evaluator evaluator;
 +  const Index range;
++#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +  static const bool vectorized = Eigen::PacketType<Scalar, GpuDevice>::vectorized;
++#else
++  static const bool vectorized = false;
++#endif
 +  template <typename Scratch>
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ExecExprFunctorKernel(
 +      const Scratch, Evaluator evaluator_, const Index range_)
@@ -10191,9 +10454,7 @@ index c52fb77dc..3905ffde4 100644
 +    Index range, GRange, tileSize;
 +    Index total_size = ::Eigen::internal::array_prod(evaluator.dimensions());
 +    total_size = (total_size == 0) ? 1 : total_size;
-+    const int PacketSize =
-+        Eigen::PacketType<typename Evaluator::CoeffReturnType,
-+                          GpuDevice>::size;
++    const int PacketSize = evaluator.PacketSize;
 +    Index vectorizable_threads = static_cast<Index>(total_size / PacketSize);
 +    dev.parallel_for_setup(vectorizable_threads, tileSize, range, GRange);
 +    range = total_size;
@@ -10214,7 +10475,7 @@ index c52fb77dc..3905ffde4 100644
  #endif  // EIGEN_USE_GPU
  
  // SYCL Executor policy
-@@ -624,19 +710,19 @@ template <typename Evaluator>
+@@ -624,19 +712,19 @@ template <typename Evaluator>
  struct ExecExprFunctorKernel {
    typedef typename Evaluator::Index Index;
    Evaluator evaluator;
@@ -10238,7 +10499,7 @@ index c52fb77dc..3905ffde4 100644
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
      Index total_threads = itemID.get_global_range(0);
  
-@@ -646,7 +732,7 @@ struct ExecExprFunctorKernel {
+@@ -646,7 +734,7 @@ struct ExecExprFunctorKernel {
    }
    template <bool is_vec = Evaluator::PacketAccess>
    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<is_vec>::type
@@ -10247,7 +10508,7 @@ index c52fb77dc..3905ffde4 100644
      const Index vectorizedRange =
          (range / Evaluator::PacketSize) * Evaluator::PacketSize;
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
-@@ -686,8 +772,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
+@@ -686,8 +774,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
            typename Evaluator::CoeffReturnType,
            ExecExprFunctorKernel<Evaluator> >(
            evaluator,
@@ -10285,7 +10546,7 @@ index 14020aa68..558869176 100644
      m_impl.bind(cgh);
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h b/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h
-index 246ebe44e..78c43c442 100644
+index 246ebe44e..36f2bab2c 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h
 @@ -107,12 +107,12 @@ struct SyclDevice;
@@ -10317,10 +10578,20 @@ index 246ebe44e..78c43c442 100644
  
  enum FFTResultType {
    RealPart = 0,
-@@ -154,6 +160,20 @@ struct IsVectorizable<GpuDevice, Expression> {
+@@ -154,6 +160,30 @@ struct IsVectorizable<GpuDevice, Expression> {
                              TensorEvaluator<Expression, GpuDevice>::IsAligned;
  };
  
++template <typename Expression>
++struct IsTensorBroadcastingOp {
++  static const bool value = false;
++};
++
++template <typename Broadcast, typename XprType>
++struct IsTensorBroadcastingOp<const TensorBroadcastingOp<Broadcast, XprType> > {
++  static const bool value = true;
++};
++
 +template <typename Expression>
 +struct IsOperator {
 +  static const bool value = true;

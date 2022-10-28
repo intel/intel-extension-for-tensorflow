@@ -15,6 +15,7 @@ limitations under the License.
 
 #include <string>
 
+#include "itex/core/devices/device_backend_util.h"
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/kernels/common.h"
 #include "tensorflow/c/kernels.h"

@@ -17,6 +17,7 @@ limitations under the License.
 #define ITEX_CORE_KERNELS_COMMON_CONV_OPS_H_
 
 #include <limits>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -712,6 +713,14 @@ class ConvOpBase : public OpKernel {
       bias_mem_.set_data_handle(bias_data);
     }
 
+    // Reallocate scratchpad memory.
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
+
     Tensor dst_tensor_opt;
     AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_, dst_tensor_shape_,
                          &dst_tensor_, &dst_tensor_opt);
@@ -729,14 +738,19 @@ class ConvOpBase : public OpKernel {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (is_filter_zero_ || is_input_zero_) return;
+    if (is_filter_zero_ || is_input_zero_) {
+      scratchpad_tensor_.reset();
+      return;
+    }
 
     if (!is_format_reordered_) {
       fwd_primitive_.execute(onednn_stream_, fwd_primitives_args_);
     }
+    scratchpad_tensor_.reset();
   }
 
   void Init(OpKernelContext* context) {
@@ -895,15 +909,14 @@ class ConvOpBase : public OpKernel {
 
       AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_,
                            dst_tensor_shape_, &dst_tensor_, &dst_tensor_opt);
-      int64 scratchpad_size =
-          fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<Tinput>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
-                       GetTensorBuffer<Tinput>(&scratchpad_tensor_));
+                       GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
 
       fwd_primitive_ = convolution_forward(fwd_pd_);
 
@@ -1066,7 +1079,8 @@ class ConvOpBase : public OpKernel {
   Tensor* dst_tensor_ = nullptr;
   // This one for dnnl primitive weight when weight need reorder.
   Tensor tmp_weight_;
-  Tensor scratchpad_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
 
   bool enable_cache_ = false;
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;

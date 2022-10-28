@@ -17,6 +17,7 @@ limitations under the License.
 #define ITEX_CORE_KERNELS_ONEDNN_BLOCK_CONV_OPS_IMPL_H_
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -145,8 +146,14 @@ class OneDnnConvOp : public OpKernel {
     }
 
     if (is_src_reordered_) {
+      int64 src_out_size = fwd_pd_.src_desc().get_size() / sizeof(Tinput);
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                            TensorShape({src_out_size}),
+                                            this->src_data_output_.get()));
       src_mem_input_.set_data_handle(context->tensor_data(kSrcIndex_));
-      src_mem_.set_data_handle(GetTensorBuffer<Tinput>(&src_data_output_));
+      src_mem_.set_data_handle(
+          GetTensorBuffer<Tinput>(this->src_data_output_.get()));
       src_reorder_.execute(onednn_stream_, src_reorder_args_);
     } else {
       src_mem_.set_data_handle(context->tensor_data(kSrcIndex_));
@@ -167,6 +174,14 @@ class OneDnnConvOp : public OpKernel {
       Tbias* bias_data = this->GetBiasHandle(context, bias_tensor);
       bias_mem_.set_data_handle(bias_data);
     }
+
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
+
     AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_, data_fmt_onednn_,
                          &dst_onednn_shape_, dst_shape_, &dst_tensor_);
     dst_mem_.set_data_handle(
@@ -180,12 +195,20 @@ class OneDnnConvOp : public OpKernel {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    src_data_output_ = std::make_shared<Tensor>();
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (is_input_zero_) return;
+    if (is_input_zero_) {
+      src_data_output_.reset();
+      scratchpad_tensor_.reset();
+      return;
+    }
 
     fwd_primitive_.execute(onednn_stream_, fwd_primitives_args_);
+    src_data_output_.reset();
+    scratchpad_tensor_.reset();
   }
 
   void Init(OpKernelContext* context) {
@@ -364,9 +387,10 @@ class OneDnnConvOp : public OpKernel {
         OP_REQUIRES_OK(context,
                        context->allocate_temp(DataTypeToEnum<Tinput>::v(),
                                               TensorShape({src_out_size}),
-                                              &src_data_output_));
-        src_mem_ = CreateDnnlMemory(fwd_pd_.src_desc(), onednn_engine_,
-                                    GetTensorBuffer<Tinput>(&src_data_output_));
+                                              src_data_output_.get()));
+        src_mem_ =
+            CreateDnnlMemory(fwd_pd_.src_desc(), onednn_engine_,
+                             GetTensorBuffer<Tinput>(src_data_output_.get()));
         src_reorder_args_.clear();
         src_reorder_args_.insert({DNNL_ARG_SRC, src_mem_input_});
         src_reorder_args_.insert({DNNL_ARG_DST, src_mem_});
@@ -420,15 +444,14 @@ class OneDnnConvOp : public OpKernel {
           fwd_pd_.dst_desc(), onednn_engine_,
           reinterpret_cast<Tsummand*>(GetTensorBuffer<Toutput>(dst_tensor_)));
 
-      int64 scratchpad_size =
-          fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<Tinput>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
-                       GetTensorBuffer<Tinput>(&scratchpad_tensor_));
+                       GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
 
       // Execute convolution
       fwd_primitives_args_.insert({DNNL_ARG_SRC, src_mem_});
@@ -493,12 +516,12 @@ class OneDnnConvOp : public OpKernel {
   std::vector<int64> input_dims_, filter_dims_;
   OneDnnShape src_onednn_shape_, filter_onednn_shape_;
 
+  std::shared_ptr<Tensor> src_data_output_;
   Tensor* dst_tensor_ = nullptr;
-  // This one for dnnl primitive input when input need reorder.
-  Tensor src_data_output_;
   // This one for dnnl primitive weight when weight need reorder.
   Tensor tmp_weight_;
-  Tensor scratchpad_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
 
   bool enable_cache_ = false;
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
@@ -1200,10 +1223,15 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
     }
 
     if (this->is_src_reordered_) {
+      int64 src_out_size = this->fwd_pd_.src_desc().get_size() / sizeof(qint8);
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<qint8>::v(),
+                                            TensorShape({src_out_size}),
+                                            this->src_data_output_.get()));
       this->src_mem_input_.set_data_handle(
           context->tensor_data(this->kSrcIndex_));
       this->src_mem_.set_data_handle(
-          GetTensorBuffer<qint8>(&this->src_data_output_));
+          GetTensorBuffer<qint8>(this->src_data_output_.get()));
       this->src_reorder_.execute(this->onednn_stream_, this->src_reorder_args_);
     } else {
       this->src_mem_.set_data_handle(context->tensor_data(this->kSrcIndex_));
@@ -1228,6 +1256,14 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
       Tbias* bias_data = this->GetBiasHandle(context, bias_tensor);
       this->bias_mem_.set_data_handle(bias_data);
     }
+
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                          TensorShape({this->scratchpad_size_}),
+                                          this->scratchpad_tensor_.get()));
+    this->scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<Tinput>(this->scratchpad_tensor_.get()));
+
     AllocateOutputTensor(context, this->fwd_pd_, this->dst_dims_onednn_,
                          this->data_fmt_onednn_, &this->dst_onednn_shape_,
                          this->dst_shape_, &this->dst_tensor_);
@@ -1464,10 +1500,10 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
         OP_REQUIRES_OK(context,
                        context->allocate_temp(DataTypeToEnum<qint8>::v(),
                                               TensorShape({src_out_size}),
-                                              &this->src_data_output_));
-        this->src_mem_ =
-            CreateDnnlMemory(this->fwd_pd_.src_desc(), this->onednn_engine_,
-                             GetTensorBuffer<qint8>(&this->src_data_output_));
+                                              this->src_data_output_.get()));
+        this->src_mem_ = CreateDnnlMemory(
+            this->fwd_pd_.src_desc(), this->onednn_engine_,
+            GetTensorBuffer<qint8>(this->src_data_output_.get()));
         this->src_reorder_args_.clear();
         this->src_reorder_args_.insert({DNNL_ARG_SRC, this->src_mem_input_});
         this->src_reorder_args_.insert({DNNL_ARG_DST, this->src_mem_});
@@ -1533,15 +1569,15 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
                            reinterpret_cast<Tsummand*>(
                                GetTensorBuffer<Toutput>(this->dst_tensor_)));
 
-      int64 scratchpad_size =
+      this->scratchpad_size_ =
           this->fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
-      OP_REQUIRES_OK(context,
-                     context->allocate_temp(DataTypeToEnum<Tinput>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &this->scratchpad_tensor_));
+      OP_REQUIRES_OK(
+          context, context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                          TensorShape({this->scratchpad_size_}),
+                                          this->scratchpad_tensor_.get()));
       this->scratchpad_mem_ =
           dnnl::memory(this->fwd_pd_.scratchpad_desc(), this->onednn_engine_,
-                       GetTensorBuffer<Tinput>(&this->scratchpad_tensor_));
+                       GetTensorBuffer<Tinput>(this->scratchpad_tensor_.get()));
 
       // Execute convolution
       this->fwd_primitives_args_.insert({DNNL_ARG_SRC, this->src_mem_});
@@ -1567,15 +1603,20 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     this->onednn_stream_ = CreateDnnlStream(*context, this->onednn_engine_);
-
+    this->src_data_output_ = std::make_shared<Tensor>();
+    this->scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (this->is_input_zero_) return;
-
+    if (this->is_input_zero_) {
+      this->src_data_output_.reset();
+      this->scratchpad_tensor_.reset();
+      return;
+    }
     this->fwd_primitive_.execute(this->onednn_stream_,
                                  this->fwd_primitives_args_);
 
+    this->scratchpad_tensor_.reset();
     float min_input = min_range[0];
     float max_input = max_range[0];
 
@@ -1584,6 +1625,7 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
         this->kFilterMaxRangeIndex, this->kMinFreezedIndex,
         this->kMaxFreezedIndex, this->kDstMinRangeIndex,
         this->kDstMaxRangeIndex);
+    this->src_data_output_.reset();
   }
 
  protected:

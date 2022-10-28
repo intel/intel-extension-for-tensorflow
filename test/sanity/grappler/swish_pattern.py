@@ -186,5 +186,30 @@ class SwishAlphaTest(test_lib.TestCase):
 
     self.assertTrue(exsiting_swish)
 
+  @test_util.run_deprecated_v1
+  @test_util.disable_xla('This test does not pass with XLA')
+  def testNNImplSwishApi(self):
+
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    input1 = variables.Variable(random_ops.truncated_normal((6, 1), seed=0))
+    input1 = input1 * input1
+    swish1 = nn_impl.swish(input1)
+    swish1 = array_ops.identity(swish1)
+
+    with self.session() as sess:
+      sess.run(variables.global_variables_initializer())
+      output_val = sess.run(swish1, options=run_options, run_metadata=metadata)
+      graph = metadata.partition_graphs[0]
+
+    exsiting_swish = False
+    for node in graph.node:
+        if 'Swish' in node.op:
+          exsiting_swish = True
+          break
+
+    self.assertTrue(exsiting_swish)
+
 if __name__ == "__main__":
   test_lib.main()

@@ -34,7 +34,7 @@ cc_library(
     hdrs = ["optimizer_config.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core/devices:xpu_device_util",
+        "//itex/core/devices:device_backend_util_hdr",
         "//itex/core/utils:common_utils",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",

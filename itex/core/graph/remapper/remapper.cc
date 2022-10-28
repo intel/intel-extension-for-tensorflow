@@ -159,7 +159,6 @@ struct RandomWithComparisonAndCast {
 struct MulWithMaximum {
   MulWithMaximum() = default;
 
-  int constant = kMissingIndex;
   int input = kMissingIndex;
   int mul = kMissingIndex;
   int maximum = kMissingIndex;
@@ -1940,8 +1939,7 @@ bool FindMulWithMaximum(const RemapperContext& ctx, int node_index,
     auto* const_view =
         mul_view->GetRegularFanin(attempt_scalar_fanin).node_view();
     auto* const_node = const_view->node();
-    if (!IsAnyConst(*const_node) || const_view->NumRegularFanouts() != 1 ||
-        HasControlFaninOrFanout(*const_view))
+    if (!IsAnyConst(*const_node) || HasControlFaninOrFanout(*const_view))
       continue;
 
     // Check float datatype and value < 1
@@ -1973,7 +1971,6 @@ bool FindMulWithMaximum(const RemapperContext& ctx, int node_index,
 
     matched->maximum = node_index;
     matched->mul = mul_view->node_index();
-    matched->constant = const_view->node_index();
     matched->input =
         maximum_view->GetRegularFanin(1 - attempt_mul_fanin).node_index();
     matched->alpha = alpha_value;
@@ -3541,7 +3538,6 @@ Status AddMulWithMaximumNode(RemapperContext* ctx,
                              std::vector<bool>* invalidated_nodes,
                              std::vector<bool>* nodes_to_delete) {
   const GraphDef* graph = ctx->graph_view.graph();
-  const NodeDef& constant = graph->node(matched.constant);
   const NodeDef& mul = graph->node(matched.mul);
   const NodeDef& maximum = graph->node(matched.maximum);
   const NodeDef& input = graph->node(matched.input);
@@ -3552,7 +3548,7 @@ Status AddMulWithMaximumNode(RemapperContext* ctx,
   NodeDef leakyrelu_op;
   leakyrelu_op.set_op(kLeakyRelu);
   leakyrelu_op.set_name(maximum.name());
-  leakyrelu_op.set_device(constant.device());
+  leakyrelu_op.set_device(maximum.device());
   leakyrelu_op.add_input(input.name());
 
   auto* attr = leakyrelu_op.mutable_attr();
@@ -3565,7 +3561,6 @@ Status AddMulWithMaximumNode(RemapperContext* ctx,
   TF_RETURN_IF_ERROR(status);
   TF_RETURN_IF_ERROR(mutation->Apply());
 
-  (*nodes_to_delete)[matched.constant] = true;
   (*nodes_to_delete)[matched.mul] = true;
   (*invalidated_nodes)[matched.maximum] = true;
   return Status::OK();

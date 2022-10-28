@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -62,7 +63,9 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
+
     if (is_input_zero_) {
       functor::SetZeroFunctor<Device, Toutput> f;
       OP_REQUIRES_OK(context, context->allocate_output(
@@ -72,10 +75,13 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
           context, kSrcMinRangeIndex, kSrcMaxRangeIndex, kFilterMinRangeIndex,
           kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
           kDstMinRangeIndex, kDstMaxRangeIndex);
+
+      scratchpad_tensor_.reset();
       return;
     }
 
     fwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
 
     AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
         context, kSrcMinRangeIndex, kSrcMaxRangeIndex, kFilterMinRangeIndex,
@@ -122,6 +128,13 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
         bias_mem_.set_data_handle(bias_data);
       }
+
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_.set_data_handle(
+          GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
 
       AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_, dst_shape_,
                            &dst_tensor_);
@@ -259,15 +272,14 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
       dst_mem_ = CreateDnnlMemory(fwd_pd_.dst_desc(), onednn_engine_,
                                   static_cast<void*>(dst_data));
 
-      int64 scratchpad_size =
-          fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<Tinput>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
-                       GetTensorBuffer<Tinput>(&scratchpad_tensor_));
+                       GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
 
       // Execute MatMul INT8
       fwd_primitive_args_ = {{DNNL_ARG_SRC, src_mem_},
@@ -658,7 +670,8 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
   Tensor* dst_tensor_ = nullptr;
   Tensor tmp_weight_;
-  Tensor scratchpad_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
 
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;

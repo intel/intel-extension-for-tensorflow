@@ -660,7 +660,7 @@ def prompt_loop_or_load_from_env(environ_cp,
       break
     if not suppress_default_error:
       print(error_msg)
-    environ_cp[var_name] = ''
+    environ_cp[var_name] = None
   else:
     raise UserInputError('Invalid %s setting was provided %d times in a row. '
                          'Assuming to be a scripting mistake.' %
@@ -877,7 +877,7 @@ def main():
   # environment variables.
   environ_cp = dict(os.environ)
 
-  current_bazel_version = check_bazel_version('3.1.0', '5.0.0')
+  current_bazel_version = check_bazel_version('3.1.0', '5.1.1')
   _ITEX_CURRENT_BAZEL_VERSION = convert_version_to_int(current_bazel_version)
 
   reset_configure_bazelrc()

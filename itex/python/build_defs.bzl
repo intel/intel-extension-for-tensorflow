@@ -43,10 +43,7 @@ def pybind_extension(
         name = name + ".so",
         copts = copts + PYBIND_COPTS + ["-fvisibility=hidden"],
         features = features + PYBIND_FEATURES,
-        linkopts = ["-Wl,-Bsymbolic"] + linkopts + select({
-            "@local_config_dpcpp//dpcpp:using_dpcpp": _rpath_linkopts("//itex:libitex_gpu.so"),
-            "//conditions:default": _rpath_linkopts("//itex:libitex_cpu.so"),
-        }),
+        linkopts = ["-Wl,-Bsymbolic"] + linkopts + ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
         linkshared = 1,
         tags = tags + ["local"],
         deps = deps + PYBIND_DEPS,

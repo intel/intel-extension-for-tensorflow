@@ -198,10 +198,24 @@ template <typename T>
 struct div_no_nan_op : public no_nan_op<T, scalar_quotient_op<T>> {
   EIGEN_EMPTY_STRUCT_CTOR(div_no_nan_op)
 };
+template <typename T>
+struct functor_traits<div_no_nan_op<T>> {
+  enum {
+    Cost = functor_traits<scalar_quotient_op<T>>::Cost + NumTraits<T>::AddCost,
+    PacketAccess = true,
+  };
+};
 
 template <typename T>
 struct mul_no_nan_op : public no_nan_op<T, scalar_product_op<T>> {
   EIGEN_EMPTY_STRUCT_CTOR(mul_no_nan_op)
+};
+template <typename T>
+struct functor_traits<mul_no_nan_op<T>> {
+  enum {
+    Cost = functor_traits<scalar_product_op<T>>::Cost + NumTraits<T>::AddCost,
+    PacketAccess = true,
+  };
 };
 
 // similar to std::equal_to, but with the DEVICE_FUNC qualifier
@@ -399,6 +413,16 @@ struct google_floor_div_real {
                                                         const Packet& y) const {
     return pfloor(pdiv(x, y));
   }
+};
+template <typename Scalar>
+struct functor_traits<google_floor_div_real<Scalar>> {
+  enum {
+    Cost = 2 * Eigen::internal::scalar_div_cost<
+                   Scalar, packet_traits<Scalar>::HasDiv>::value +
+           2 * NumTraits<Scalar>::AddCost,
+    PacketAccess =
+        packet_traits<Scalar>::HasDiv && packet_traits<Scalar>::HasFloor
+  };
 };
 
 // similar to std::greater, but with the DEVICE_FUNC qualifier

@@ -21,7 +21,7 @@ import unittest
 
 from absl.testing import parameterized
 import numpy as np
-
+import tensorflow as tf
 from tensorflow.python.client import session
 from tensorflow.python.eager import backprop
 from tensorflow.python.eager import context
@@ -1782,6 +1782,55 @@ class QuantizeAndDequantizeTest(test_util.TensorFlowTestCase):
               max_range=input_max,
               axis=2**31 - 1))
 
+
+  def testQuantizeandDequantizeV3(self):
+      shape = np.array([2, 3, 4, 5])
+      values = np.array([-1, -0.5, 0, 0.3, 0.8, 0.555, 0.5], dtype=np.float32)
+      quant_values = np.array(
+          [-1, -0.5, 0, 38.0 / 128, 102.0 / 128, 71.0 / 128, 0.5],
+          dtype=np.float32)
+      for axis in [None, 0, 1, 2, 3]:
+        with self.subTest(axis=axis):
+          inputs = constant_op.constant(
+              self._scale_per_slice(shape, axis, values))
+          expected = self._scale_per_slice(shape, axis, quant_values)
+          unused_minmax_value = 0 if axis is None else [0] * shape[axis]
+          fake_quantized = self.evaluate(
+           tf.raw_ops.QuantizeAndDequantizeV3(
+            input=inputs,
+            input_min=unused_minmax_value,
+            input_max=unused_minmax_value,
+            num_bits=8,
+            signed_input=True,
+            range_given=False,
+            narrow_range=False,
+            axis=axis))
+          self.assertAllEqual(fake_quantized, expected)
+
+
+  def testQuantizeandDequantizeV2(self):
+      shape = np.array([2, 3, 4, 5])
+      values = np.array([-1, -0.5, 0, 0.3, 0.8, 0.555, 0.5], dtype=np.float32)
+      quant_values = np.array(
+          [-1, -0.5, 0, 38.0 / 128, 102.0 / 128, 71.0 / 128, 0.5],
+          dtype=np.float32)
+      for axis in [None, 0, 1, 2, 3]:
+        with self.subTest(axis=axis):
+          inputs = constant_op.constant(
+              self._scale_per_slice(shape, axis, values))
+          expected = self._scale_per_slice(shape, axis, quant_values)
+          unused_minmax_value = 0 if axis is None else [0] * shape[axis]
+          fake_quantized = self.evaluate(
+           tf.raw_ops.QuantizeAndDequantizeV2(
+            input=inputs,
+            input_min=unused_minmax_value,
+            input_max=unused_minmax_value,
+            range_given=False,
+            round_mode="HALF_UP",
+            axis=axis))
+          self.assertAllEqual(fake_quantized, expected)
+
+  
 
 @test_util.run_all_in_graph_and_eager_modes
 class SortedSearchTest(test_util.TensorFlowTestCase):

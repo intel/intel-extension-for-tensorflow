@@ -19,7 +19,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test_util, test
 
 import itertools
 
@@ -99,7 +99,8 @@ class TrainingOpsTest(TensorFlowTestCase):
                         use_gpu=None,
                         l1=0.0,
                         l2=0.0,
-                        lr_power=-0.5):
+                        lr_power=-0.5,
+                        version=1):
     self.setUp()
     with self.session(use_gpu=use_gpu):
       var = variables.VariableV1(x)
@@ -108,8 +109,12 @@ class TrainingOpsTest(TensorFlowTestCase):
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
-      apply_ftrl = training_ops.apply_ftrl(var, accum, linear, grad, lr, l1, l2,
-                                           lr_power)
+      if version == 1:
+        apply_ftrl = training_ops.apply_ftrl(var, accum, linear, grad, lr, l1, l2,
+                                            lr_power)
+      elif version == 2:
+        apply_ftrl = training_ops.apply_ftrl_v2(var, accum, linear, grad, lr, l1, l2,
+                                              lr_power=lr_power, l2_shrinkage=0)
       out = self.evaluate(apply_ftrl)
       self.assertShapeEqual(out, apply_ftrl)
       accum_update = y + grad * grad
@@ -212,7 +217,12 @@ class TrainingOpsTest(TensorFlowTestCase):
       l1 = np.array(3.0).astype(dtype)
       l2 = np.array(4.0).astype(dtype)
       grad = np.arange(100).astype(dtype)
-      self._testTypesForFtrl(x, y, z, lr, grad, use_gpu=False, l1=l1, l2=l2)
+      if test.is_gpu_available():
+        use_gpu = True
+      else:
+        use_gpu = False
+      for version in (1, 2):
+        self._testTypesForFtrl(x, y, z, lr, grad, use_gpu=use_gpu, l1=l1, l2=l2, version=version)
 
   @test_util.run_v1_only("ApplyFtrlMultiplyLinearByLr op returns a ref, so it "
                          "is not supported in eager mode.")

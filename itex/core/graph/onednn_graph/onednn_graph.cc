@@ -1827,11 +1827,33 @@ Status FuseFwPartitionWithLLGA(
     AdditionalArgs* additional_args) {
   auto* mutation = ctx->graph_view.GetMutationBuilder();
 
+  bool onednn_graph_all_type_flag;
+  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("ITEX_ONEDNN_GRAPH_ALL_TYPE", false,
+                                         &onednn_graph_all_type_flag));
+
   ITEX_VLOG(2) << "IN REWRITE ";
   absl::flat_hash_set<int> f_nodes;
   size_t nodes_no = p.get_ops_num();
 
   ITEX_VLOG(2) << "rewrite partition id: " << p.get_id();
+
+  bool find_quantize_dequantize = false;
+  for (size_t l_index = 0; l_index < nodes_no; l_index++) {
+    auto node_index = p.get_ops()[l_index];
+    const auto* f_node_view = ctx->graph_view.GetNode(node_index);
+    const auto* f_node_def = f_node_view->node();
+
+    if (f_node_def->op() == "QuantizeV2" || f_node_def->op() == "Dequantize") {
+      find_quantize_dequantize = true;
+      break;
+    }
+  }
+
+  if (!onednn_graph_all_type_flag & !find_quantize_dequantize) {
+    ITEX_VLOG(2) << "oneDNN Graph partition doesn't contain INT8 op, won't "
+                    "rewrite this partition to ";
+    return Status::OK();
+  }
 
   if (nodes_no == 0) return Status::OK();
   ITEX_VLOG(2) << "NUMBER OF OPS IN PARTITION " << p.get_ops_num();

@@ -26,10 +26,103 @@ import numpy as np
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import tensor_util
+from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops as stateless
+from tensorflow.python.ops import gen_stateless_random_ops
 
+def stateless_random_normal(shape,
+                            seed,
+                            mean=0.0,
+                            stddev=1.0,
+                            dtype=dtypes.float32,
+                            name=None):
+  """
+  stateless_random_ops now only call v2 version.
+  Here is a py implementation calling v1 version for testing.
+  """
+  shape = tensor_util.shape_tensor(shape)
+  mean = ops.convert_to_tensor(mean, dtype=dtype, name="mean")
+  stddev = ops.convert_to_tensor(stddev, dtype=dtype, name="stddev")
+  rnd = gen_stateless_random_ops.stateless_random_normal(
+      shape, seed, dtype=dtype)
+  result = math_ops.add(rnd * stddev, mean, name=name)
+  tensor_util.maybe_set_static_shape(result, shape)
+  return result
+
+def stateless_truncated_normal(shape,
+                               seed,
+                               mean=0.0,
+                               stddev=1.0,
+                               dtype=dtypes.float32,
+                               name=None):
+  """
+  stateless_random_ops now only call v2 version.
+  Here is a py implementation calling v1 version for testing.
+  """
+  shape = tensor_util.shape_tensor(shape)
+  mean = ops.convert_to_tensor(mean, dtype=dtype, name="mean")
+  stddev = ops.convert_to_tensor(stddev, dtype=dtype, name="stddev")
+  rnd = gen_stateless_random_ops.stateless_truncated_normal(
+      shape, seed, dtype=dtype)
+  result = math_ops.add(rnd * stddev, mean, name=name)
+  tensor_util.maybe_set_static_shape(result, shape)
+  return result
+
+def stateless_random_uniform(shape,
+                             seed,
+                             minval=0,
+                             maxval=None,
+                             dtype=dtypes.float32,
+                             name=None):
+  """
+  stateless_random_ops now only call v2 version.
+  Here is a py implementation calling v1 version for testing.
+  """
+  dtype = dtypes.as_dtype(dtype)
+  accepted_dtypes = (dtypes.float16, dtypes.bfloat16, dtypes.float32,
+                     dtypes.float64, dtypes.int32, dtypes.int64, dtypes.uint32,
+                     dtypes.uint64)
+  if dtype not in accepted_dtypes:
+    raise ValueError(
+        f"Argument `dtype` got invalid value {dtype}. Accepted dtypes are "
+        f"{accepted_dtypes}.")
+  if dtype.is_integer:
+    if (minval is None) != (maxval is None):
+      raise ValueError(
+          f"For integer `dtype` argument {dtype}, argument `minval` and "
+          f"`maxval` must be both None or not None. Got `minval`={minval} and "
+          f"`maxval`={maxval}.")
+    if minval is not None and dtype in (dtypes.uint32, dtypes.uint64):
+      raise ValueError(
+          f"Argument `dtype` got invalid value {dtype} when argument `minval` "
+          f"is not None. Please don't use unsigned integers in this case.")
+  elif maxval is None:
+    maxval = 1
+  shape = tensor_util.shape_tensor(shape)
+  if dtype.is_integer and minval is None:
+    result = (
+        gen_stateless_random_ops.stateless_random_uniform_full_int(
+            shape, seed, dtype=dtype, name=name))
+  else:
+    minval = ops.convert_to_tensor(minval, dtype=dtype, name="min")
+    maxval = ops.convert_to_tensor(maxval, dtype=dtype, name="max")
+    if dtype.is_integer:
+      result = gen_stateless_random_ops.stateless_random_uniform_int(
+          shape,
+          seed,
+          minval=minval,
+          maxval=maxval,
+          name=name)
+    else:
+      rnd = gen_stateless_random_ops.stateless_random_uniform(
+          shape, seed, dtype=dtype)
+      result = math_ops.add(rnd * (maxval - minval), minval, name=name)
+  tensor_util.maybe_set_static_shape(result, shape)
+  return result
 
 def invert_philox(key, value):
   """Invert the Philox bijection."""
@@ -84,14 +177,26 @@ class StatelessOpsTest(test.TestCase):
   def _float_cases(self, shape_dtypes=(None,)):
     float_cases = (
         # Uniform distribution, with and without range
+        (stateless_random_uniform, random_ops.random_uniform, {}),
+        (stateless_random_uniform, random_ops.random_uniform,
+         dict(minval=2.2, maxval=7.1)),
+        # Normal distribution, with and without mean+stddev
+        (stateless_random_normal, random_ops.random_normal, {}),
+        (stateless_random_normal, random_ops.random_normal,
+         dict(mean=2, stddev=3)),
+        # Truncated normal distribution, with and without mean+stddev
+        (stateless_truncated_normal, random_ops.truncated_normal, {}),
+        (stateless_truncated_normal, random_ops.truncated_normal,
+         dict(mean=3, stddev=4)),
+        # run Uniform distribution v2 implictly, with and without range
         (stateless.stateless_random_uniform, random_ops.random_uniform, {}),
         (stateless.stateless_random_uniform, random_ops.random_uniform,
          dict(minval=2.2, maxval=7.1)),
-        # Normal distribution, with and without mean+stddev
+        # run Normal distribution v2 implictly, with and without mean+stddev
         (stateless.stateless_random_normal, random_ops.random_normal, {}),
         (stateless.stateless_random_normal, random_ops.random_normal,
          dict(mean=2, stddev=3)),
-        # Truncated normal distribution, with and without mean+stddev
+        # run Truncated normal distribution v2 implictly, with and without mean+stddev
         (stateless.stateless_truncated_normal, random_ops.truncated_normal, {}),
         (stateless.stateless_truncated_normal, random_ops.truncated_normal,
          dict(mean=3, stddev=4)),

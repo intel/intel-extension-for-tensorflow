@@ -138,7 +138,7 @@ class BatchNormalizationTest(test.TestCase):
     # the denominator in the formula to calculate variance, while
     # tf.compat.v1.nn.fused_batch_norm has Bessel's correction built in.
     sample_size = math_ops.cast(
-        array_ops.size(x) / array_ops.size(scale), scale.dtype)
+        float(array_ops.size(x)) / float(array_ops.size(scale)), scale.dtype)
     batch_var_corrected = batch_var * sample_size / (
         math_ops.maximum(sample_size - 1.0, 1.0))
 
@@ -697,66 +697,80 @@ class BatchNormalizationTest(test.TestCase):
     x_shape = [1, 2, 6, 1, 3]
     self._runtests(x_shape, False)
 
+  # test BN + relu 
   @test_util.run_deprecated_v1
-  def testFusedBatchNormExShape1(self):
+  def testFusedBatchNormExFuseNormReluShape1(self):
     np.random.seed(1)
 
-    x_shape = [1, 1, 6, 1]
-    scale_shape = x_shape[-1:]
-    input_p = tf.compat.v1.placeholder(dtype=tf.float32, shape=x_shape)
+    x_shapes = [[1, 1, 6, 1]]
+    input_type = [np.float32, np.float16, tf.dtypes.bfloat16.as_numpy_dtype]
+    for x_shape in x_shapes:
+      for dtype in input_type:
+        scale_shape = x_shape[-1:]
 
-    x_np = np.random.random_sample(x_shape).astype(np.float32)
-    scale_np = np.random.random_sample(scale_shape).astype(np.float32)
-    offset_np = np.random.random_sample(scale_shape).astype(np.float32)
-    x_tf = tf.constant(x_np, tf.float32)
-    scale_tf = tf.constant(scale_np, tf.float32)
-    offset_tf = tf.constant(offset_np, tf.float32)
+        x_np = np.random.random_sample(x_shape).astype(dtype)
+        scale_np = np.random.random_sample(scale_shape).astype(np.float32)
+        offset_np = np.random.random_sample(scale_shape).astype(np.float32)
+        
+        if dtype == tf.dtypes.bfloat16.as_numpy_dtype:
+          input_p = tf.compat.v1.placeholder(dtype=tf.bfloat16, shape=x_shape)
+        elif dtype == np.float32:
+          input_p = tf.compat.v1.placeholder(dtype=tf.float32, shape=x_shape)          
+        elif dtype == np.float16:
+          input_p = tf.compat.v1.placeholder(dtype=tf.float16, shape=x_shape)          
+                  
+        scale_tf = tf.constant(scale_np, tf.float32)
+        offset_tf = tf.constant(offset_np, tf.float32)
 
-    with self.cached_session(use_gpu=False) as sess:
-      my_fbn, _, _ = nn_impl.fused_batch_norm(input_p, scale_tf, offset_tf)
-      relu = tf.nn.relu(my_fbn)
-      cpu_result = sess.run(relu, feed_dict={input_p: x_np})
+        with self.cached_session(use_gpu=False) as sess:
+          my_fbn, _, _ = nn_impl.fused_batch_norm(input_p, scale_tf, offset_tf)
+          relu = tf.nn.relu(my_fbn)
+          cpu_result = sess.run(relu, feed_dict={input_p: x_np})
 
-    with self.cached_session(use_gpu=True) as sess:
-      my_fbn, _, _ = nn_impl.fused_batch_norm(input_p, scale_tf, offset_tf)
-      relu = array_ops.identity(tf.nn.relu(my_fbn))
-      gpu_result = sess.run(relu, feed_dict={input_p: x_np})
+        with self.cached_session(use_gpu=True) as sess:
+          my_fbn, _, _ = nn_impl.fused_batch_norm(input_p, scale_tf, offset_tf)
+          relu = array_ops.identity(tf.nn.relu(my_fbn))
+          gpu_result = sess.run(relu, feed_dict={input_p: x_np})
 
-    self.assertAllClose(cpu_result, gpu_result)
+        self.assertAllClose(cpu_result, gpu_result)
 
+  # test BN + add + relu 
   @test_util.run_deprecated_v1
-  def testFusedBatchNormGradExShape1(self):
-    if test.is_gpu_available(cuda_only=True):
-      use_gpu = True
-    else:
-      use_gpu = False
+  def testFusedBatchNormExFuseNormAddReluShape1(self):
+    np.random.seed(1)
 
-    with self.cached_session(use_gpu=use_gpu):
-      x_shape = [0, 7, 11, 4]
-      x_dtype = np.float32
-      scale_shape = x_shape[-1:]
-      scale_dtype = np.float32
+    x_shapes = [[1, 1, 6, 4]]
+    input_type = [np.float32, np.float16, tf.dtypes.bfloat16.as_numpy_dtype]
+    for x_shape in x_shapes:
+      for dtype in input_type:
+        scale_shape = x_shape[-1:]
 
-      x = tf.random.normal(x_shape, seed=0, dtype=x_dtype)
-      scale = tf.random.normal(scale_shape, seed=0, dtype=scale_dtype)
-      offset = tf.random.normal(scale_shape, seed=0, dtype=scale_dtype)
-      pop_mean = None
-      pop_var = None
+        x_np = np.random.random_sample(x_shape).astype(dtype)
+        side_input_np = np.random.random_sample(x_shape).astype(dtype)
+        scale_np = np.random.random_sample(scale_shape).astype(np.float32)
+        offset_np = np.random.random_sample(scale_shape).astype(np.float32)
+        
+        if dtype == tf.dtypes.bfloat16.as_numpy_dtype:
+          input_p = tf.compat.v1.placeholder(dtype=tf.bfloat16, shape=x_shape)
+        elif dtype == np.float32:
+          input_p = tf.compat.v1.placeholder(dtype=tf.float32, shape=x_shape)          
+        elif dtype == np.float16:
+          input_p = tf.compat.v1.placeholder(dtype=tf.float16, shape=x_shape)          
+                  
+        scale_tf = tf.constant(scale_np, tf.float32)
+        offset_tf = tf.constant(offset_np, tf.float32)
 
-      y = nn_ops.relu(x)
-      y, _, _ = nn_impl.fused_batch_norm(
-          y,
-          scale,
-          offset,
-          mean=pop_mean,
-          variance=pop_var,
-          exponential_avg_factor=1.0,
-          data_format='NHWC',
-          is_training=True)
-      y = array_ops.identity(nn_ops.relu(y))
-      err_x = gradient_checker.compute_gradient_error(x, x_shape, y, x_shape)
+        with self.cached_session(use_gpu=False) as sess:
+          my_fbn, _, _ = nn_impl.fused_batch_norm(input_p, scale_tf, offset_tf)
+          relu = tf.nn.relu(my_fbn + side_input_np)
+          cpu_result = sess.run(relu, feed_dict={input_p: x_np})
 
-    self.assertLess(err_x, 1e-3)
+        with self.cached_session(use_gpu=True) as sess:
+          my_fbn, _, _ = nn_impl.fused_batch_norm(input_p, scale_tf, offset_tf)
+          relu = array_ops.identity(tf.nn.relu(my_fbn + side_input_np))
+          gpu_result = sess.run(relu, feed_dict={input_p: x_np})
+
+        self.assertAllClose(cpu_result, gpu_result)
 
   def testTrainingShape1(self):
     x_shape = [1, 1, 6, 1]
@@ -835,36 +849,37 @@ class BatchNormalizationTest(test.TestCase):
   #   self.assertAllClose(cpu_grad, gpu_grad)
   #   self.assertAllClose(cpu_grad_training, gpu_grad_training)
 
+  # Note: commented all gradient testing with isTraining=False for GPU, as not supported
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape1(self):
-    x_shape = [1, 1, 6, 1]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
-    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True)
+    x_shape = [1, 1, 6, 1]    
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape2(self):
     x_shape = [1, 1, 6, 2]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
-    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape3(self):
     x_shape = [1, 2, 1, 6]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
-    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape4(self):
     x_shape = [5, 7, 11, 4]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
-    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test never passed for XLA')
   def testBatchNormGradInferenceShape5(self):
     x_shape = [0, 7, 11, 4]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
-    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape6(self):
@@ -878,7 +893,7 @@ class BatchNormalizationTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape7(self):
     x_shape = [1, 2, 6, 1, 3]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradTrainingShape1(self):
@@ -895,7 +910,7 @@ class BatchNormalizationTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testBatchNormGradTrainingShape3(self):
     x_shape = [1, 2, 1, 6]
-    self._runtests(x_shape, is_training=True, gradient_test=True)
+    self._runtests(x_shape, is_training=True, gradient_test=True, cpu_only=True)
     self._run_raw_ops_fusedbatchnorm_tests(x_shape, is_training=True, gradient_test=True)
 
   @test_util.run_deprecated_v1
@@ -934,7 +949,7 @@ class BatchNormalizationTest(test.TestCase):
     else:
       data_format_nhwc, features_nhwc = 'NDHWC', shape[4]
       data_format_nchw, features_nchw = 'NCDHW', shape[1]
-    for is_training in [True, False]:
+    for is_training in [True]:
       if test.is_gpu_available(cuda_only=True):
         self._test_grad_grad(
             shape,

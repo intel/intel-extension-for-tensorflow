@@ -241,6 +241,7 @@ class AdamOptimizerTest(test.TestCase):
             self.assertEqual("var0_%d/Adam:0" % (i,),
                              opt.get_slot(var=var0, name="m").name)
 
+  @test_util.deprecated_graph_mode_only
   def testBasic(self):
     with self.cached_session():
       self.doTestBasic(use_resource=False)

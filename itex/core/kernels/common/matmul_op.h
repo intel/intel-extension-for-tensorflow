@@ -281,6 +281,13 @@ class MatMulOp : public OpKernel {
       add_tensor_ = &context->input(kAddIndex_);
     }
 
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<T>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<T>(scratchpad_tensor_.get()));
+
     if (post_op_util_.HasAdd()) {
       int is_forward_success = kUnsuccess_;
       // Try to do in-place.
@@ -424,16 +431,11 @@ class MatMulOp : public OpKernel {
           memory::desc(params->a_dims, OneDnnType<T>(), params->a_strides);
       auto weights_md =
           memory::desc(params->b_dims, OneDnnType<T>(), params->b_strides);
-      // Let oneDNN choose weight format if:
-      //   1. Weight is const and can be cached
-      //   2. Kernel is on CPU and weight is not tranposed
-      bool is_any =
-          is_filter_const_ ||
-          (Eigen::internal::is_same<Device, CPUDevice>::value && !adj_y_);
+      // Let oneDNN choose weight format if Weight is const and can be cached
       auto weights_md_prefer =
-          is_any ? memory::desc(params->b_dims, OneDnnType<T>(),
-                                memory::format_tag::any)
-                 : weights_md;
+          is_filter_const_ ? memory::desc(params->b_dims, OneDnnType<T>(),
+                                          memory::format_tag::any)
+                           : weights_md;
       auto dst_md =
           memory::desc(params->c_dims, OneDnnType<Tout>(), params->c_strides);
 
@@ -586,15 +588,14 @@ class MatMulOp : public OpKernel {
       } else {
         weights_mem_ = weights_mem_input_;
       }
-      int64 scratchpad_size =
-          matmul_pd_->scratchpad_desc().get_size() / sizeof(T);
+      scratchpad_size_ = matmul_pd_->scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(matmul_pd_->scratchpad_desc(), dnnl_engine_,
-                       GetTensorBuffer<T>(&scratchpad_tensor_));
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
       matmul_primitive_ = dnnl::matmul(*matmul_pd_);
       src_mem_ = CreateDnnlMemory(src_md, dnnl_engine_,
@@ -627,12 +628,17 @@ class MatMulOp : public OpKernel {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     dnnl_stream_ = CreateDnnlStream(*context, dnnl_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (is_input_zero_) return;
+    if (is_input_zero_) {
+      scratchpad_tensor_.reset();
+      return;
+    }
 
     matmul_primitive_.execute(dnnl_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
   }
 
   // TODO(itex): Wrap all cache related code to a module, reuse this module
@@ -709,7 +715,9 @@ class MatMulOp : public OpKernel {
   dnnl::matmul matmul_primitive_;
   Tensor* dst_tensor_;
   const Tensor* add_tensor_;
-  Tensor tmp_weight_, scratchpad_tensor_;
+  Tensor tmp_weight_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
   std::vector<int64> input_dims_, weights_dims_;
   TensorShape dst_shape_;
   PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
@@ -766,6 +774,12 @@ class FusedMatMulGradOp : public OpKernel {
                                                        &diff_bias_tensor_));
       diff_weight_mem_.set_data_handle(GetTensorBuffer<T>(diff_weight_tensor_));
       diff_bias_mem_.set_data_handle(GetTensorBuffer<Tgrad>(diff_bias_tensor_));
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<T>::v(),
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_.set_data_handle(
+          GetTensorBuffer<T>(scratchpad_tensor_.get()));
     } else {
       Init(context);
     }
@@ -857,15 +871,14 @@ class FusedMatMulGradOp : public OpKernel {
       diff_weight_mem_ =
           CreateDnnlMemory(matmul_bwd_pd.diff_weights_desc(), onednn_engine_,
                            GetTensorBuffer<T>(diff_weight_tensor_));
-      int64 scratchpad_size =
-          matmul_bwd_pd.scratchpad_desc().get_size() / sizeof(T);
+      scratchpad_size_ = matmul_bwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(matmul_bwd_pd.scratchpad_desc(), onednn_engine_,
-                       GetTensorBuffer<T>(&scratchpad_tensor_));
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
       // Execute.
       fwd_primitive_args_ = {{DNNL_ARG_SRC, src_mem_},
                              {DNNL_ARG_DIFF_DST, diff_dst_mem_},
@@ -887,8 +900,10 @@ class FusedMatMulGradOp : public OpKernel {
     mutex_lock lock(&mu_compute_);
     onednn_engine_ = CreateDnnlEngine<Device>(*context);
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
     matmul_bwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
   }
 
  protected:
@@ -905,7 +920,8 @@ class FusedMatMulGradOp : public OpKernel {
   dnnl::inner_product_backward_weights matmul_bwd_primitive_;
   dnnl::memory src_mem_, diff_dst_mem_, diff_bias_mem_, diff_weight_mem_,
       scratchpad_mem_;
-  Tensor scratchpad_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64 scratchpad_size_ = 0;
   Tensor* diff_weight_tensor_ = nullptr;
   Tensor* diff_bias_tensor_ = nullptr;
   TensorShape diff_weight_tf_shape_, diff_bias_tf_shape_;

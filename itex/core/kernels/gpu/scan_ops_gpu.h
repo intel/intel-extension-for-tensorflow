@@ -148,7 +148,7 @@ void launchGroupScan(OpKernelContext* ctx, InputT* in, OutputT* out,
   sycl::nd_range<1> thread_range(GroupSize, GroupSize);
   int scratch_size = GroupSize * ElemsPerWorkItem;
   auto& stream = (ctx->eigen_gpu_device()).stream();
-  sycl::event evt = stream->submit([&](sycl::handler& cgh) {
+  stream->submit([&](sycl::handler& cgh) {
     LocalAcc<InitValueT> scratch(scratch_size, cgh);
     GroupScan<InputT, OutputT, InitValueT, BinaryOp, LocalAcc<InitValueT>,
               GroupSize, ElemsPerWorkItem, IsExclusive, IsReverse, InputFunctor,

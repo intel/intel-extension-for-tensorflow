@@ -106,8 +106,8 @@ class RMSPropOptimizerTest(test.TestCase):
           var0 = resource_variable_ops.ResourceVariable(var0_np)
           var1 = resource_variable_ops.ResourceVariable(var1_np)
         else:
-          var0 = variables.Variable(var0_np)
-          var1 = variables.Variable(var1_np)
+          var0 = variables.RefVariable(var0_np)
+          var1 = variables.RefVariable(var1_np)
         grads0 = constant_op.constant(grads0_np)
         grads1 = constant_op.constant(grads1_np)
         opt = rmsprop.RMSPropOptimizer(

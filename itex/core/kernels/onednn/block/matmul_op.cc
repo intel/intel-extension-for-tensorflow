@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "itex/core/kernels/onednn/block/matmul_op.h"
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -111,6 +112,13 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       // No reorder needed
       weight_mem_.set_data_handle(context->tensor_data(kWeightIndex_));
     }
+
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<T>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
     // Allocate output data tensor, whether the output layout is blocked or
     // not relies on the result of IsBlockedMd
@@ -237,13 +245,13 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       memory::dims dst_dims = {src_dims[0], weight_dims[1]};
 
       // Use any format if:
-      // 1. Input tensor is not oneDNN tensor, then it can be reordered to
-      //    blocked format anyway
-      // 2. Input tensor is oneDNN tensor, and it's not transposed
+      // 1. Input tensor is oneDNN tensor and it's not transposed
+      // 2. Input tensor is not oneDNN tensor and Weight is const
       bool is_src_any =
-          !(src_onednn_shape_.IsOneDnnTensor() && this->transpose_a_);
-      bool is_wei_any =
-          !(weight_onednn_shape_.IsOneDnnTensor() && this->transpose_b_);
+          src_onednn_shape_.IsOneDnnTensor() && !this->transpose_a_;
+      bool is_wei_any = weight_onednn_shape_.IsOneDnnTensor()
+                            ? !this->transpose_b_
+                            : this->is_filter_const_;
 
       auto src_exec_md =
           is_src_any
@@ -394,13 +402,14 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       dst_mem_ = CreateDnnlMemory(fwd_pd_.dst_desc(), onednn_engine_,
                                   static_cast<void*>(dst_data));
 
-      int64 scratchpad_size = fwd_pd_.scratchpad_desc().get_size() / sizeof(T);
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
-      scratchpad_mem_ = dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
-                                     GetTensorBuffer<T>(&scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_ =
+          dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
       // Execute MatMul
       onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
@@ -437,12 +446,18 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (is_input_zero_) return;
+    if (is_input_zero_) {
+      scratchpad_tensor_.reset();
+      return;
+    }
 
     fwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
   }
 
  private:
@@ -462,7 +477,9 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
   matmul fwd_primitive_;
   std::unordered_map<int, memory> fwd_primitive_args_;
   Tensor* dst_tensor_;
-  Tensor src_reorder_tensor_, weight_reorder_tensor_, scratchpad_tensor_;
+  Tensor src_reorder_tensor_, weight_reorder_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
   const Tensor* add_tensor_;
   bool is_input_zero_ = false;
   bool is_init_ = false;

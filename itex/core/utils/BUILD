@@ -54,7 +54,7 @@ cc_library(
     deps = [
         "//itex/core/utils/gtl:gtl_libs",
         "//third_party/eigen3",
-        "//itex/core/devices:xpu_device_util",
+        "//itex/core/devices:device_backend_util_hdr",
         "@double_conversion//:double-conversion",
         "@local_config_tf//:protos_all",
         "@local_config_tf//:tf_header_lib",

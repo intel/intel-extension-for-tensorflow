@@ -36,6 +36,13 @@ struct scalar_tanh_gradient_op {
                 psub(pset1<Packet>(T(1)), pmul(output, output)));
   }
 };
+template <typename T>
+struct functor_traits<scalar_tanh_gradient_op<T>> {
+  enum {
+    Cost = NumTraits<T>::AddCost + 2 * NumTraits<T>::MulCost,
+    PacketAccess = packet_traits<T>::HasSub && packet_traits<T>::HasMul,
+  };
+};
 
 // Gradient for the sqrt function
 template <typename T>
@@ -59,16 +66,11 @@ struct scalar_sqrt_gradient_op {
                                        output_gradient);
   }
 };
-
 template <typename T>
 struct functor_traits<scalar_sqrt_gradient_op<T>> {
   enum {
-    Cost = functor_traits<scalar_conjugate_op<T>>::Cost +
-           functor_traits<scalar_product_op<T>>::Cost +
-           functor_traits<scalar_quotient_op<T>>::Cost,
-    PacketAccess = functor_traits<scalar_conjugate_op<T>>::PacketAccess &&
-                   functor_traits<scalar_product_op<T>>::PacketAccess &&
-                   functor_traits<scalar_quotient_op<T>>::PacketAccess
+    PacketAccess = packet_traits<T>::HasMul & packet_traits<T>::HasDiv,
+    Cost = NumTraits<T>::MulCost + scalar_div_cost<T, PacketAccess>::value,
   };
 };
 
@@ -98,6 +100,13 @@ struct scalar_rsqrt_gradient_op {
                      safe_pmul(out_conj, output_gradient));
   }
 };
+template <typename T>
+struct functor_traits<scalar_rsqrt_gradient_op<T>> {
+  enum {
+    Cost = 4 * NumTraits<T>::MulCost,
+    PacketAccess = packet_traits<T>::HasMul,
+  };
+};
 
 // Gradient for the sigmoid function
 template <typename T>
@@ -113,6 +122,13 @@ struct scalar_sigmoid_gradient_op {
     return pmul(output_gradient,
                 pmul(output, psub(pset1<Packet>(T(1)), output)));
   }
+};
+template <typename T>
+struct functor_traits<scalar_sigmoid_gradient_op<T>> {
+  enum {
+    Cost = NumTraits<T>::AddCost + 2 * NumTraits<T>::MulCost,
+    PacketAccess = packet_traits<T>::HasSub && packet_traits<T>::HasMul,
+  };
 };
 
 // Gradient for the inverse function

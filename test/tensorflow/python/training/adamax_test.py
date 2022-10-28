@@ -83,7 +83,8 @@ class AdaMaxTest(test.TestCase):
         self.evaluate(op_out)
         var_np, m_np, v_np = adamx_update_numpy(var_np, grads_np, t, m_np, v_np, lr, beta1, beta2, epsilon)
         self.assertAllCloseAccordingToType(var_np, self.evaluate(var))
-
+  
+  @test_util.deprecated_graph_mode_only
   def testBasic(self):
     with self.cached_session():
       self.doTestBasic(use_resource=False)
