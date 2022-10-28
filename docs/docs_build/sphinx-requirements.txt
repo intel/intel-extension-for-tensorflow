@@ -1,0 +1,8 @@
+sphinx==3.5.4
+sphinx-autobuild==2021.3.14
+sphinx-rtd-theme
+recommonmark
+sphinx-markdown-tables==0.0.15
+sphinx-md
+
+sphinxemoji

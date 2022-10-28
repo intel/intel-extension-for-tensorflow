@@ -1,0 +1,90 @@
+/* Copyright (c) 2021-2022 Intel Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto3";
+
+package itex;
+
+enum Toggle {
+  DEFAULT = 0;
+  ON = 1;
+  OFF = 2;
+}
+
+enum ITEXDataType {
+  DEFAULT_DATA_TYPE = 0;
+  FLOAT16 = 1;
+  BFLOAT16 = 2;
+}
+
+message GPUOptions {
+
+}
+
+message GraphOptions {
+  // (default is OFF).
+  Toggle onednn_graph = 1;
+  // Optimize onednn layouts (default is ON).
+  // A graph pass that rewrites graph for propagating oneDNN layout as a tensor.
+  Toggle layout_opt = 2;
+  // Remapping (default is ON)
+  // Remap subgraphs onto more efficient implementations.
+  Toggle remapper = 3;
+  // Optimize data types for ITEX (default is OFF).
+  // This will try to use bfloat16 on CPUs and use Bfloat16/Float16 on GPUs,
+  // which is faster. Note that this can change the numerical stability of the
+  // graph.
+  Toggle auto_mixed_precision = 4;
+  AutoMixedPrecisionOptions auto_mixed_precision_options = 5;
+  // Optimize data format use plain format rather than block format.
+  // if run with native format mode. we don't need to have an OneDnn metadata
+  // tensor for the workspace.
+  Toggle native_format = 6;
+}
+
+message ConfigProto {
+ GPUOptions gpu_options = 1;
+ GraphOptions graph_options = 2;
+ DebugOptions debug_options = 3;
+}
+
+message AutoMixedPrecisionOptions {
+  // AutoMixedPrecisionOptions. For AutoMixedPrecision, we has four lists:
+  // allowlist, denylist, inferlist and clearlist, add_* add ops corresponding list.
+  // but you must remove these ops from original list.
+  // for example. AvgPool in InferList. if you add AvgPool to AllowList,
+  // you should add_allowlist = "AvgPool" and remove_inferlist = "AvgPool".
+  string allowlist_add = 1;
+  string inferlist_add = 2;
+  string clearlist_add = 3;
+  string denylist_add= 4;
+  string allowlist_remove = 5;
+  string inferlist_remove = 6;
+  string clearlist_remove = 7;
+  string denylist_remove = 8;
+
+  // convert all float32 ops to float16/bfloat16. now, only support float16 data type.
+  bool unsafe_force_all = 9;
+  // Set data type for AutoMixedPrecision.
+  ITEXDataType data_type = 10;
+}
+
+message DebugOptions {
+  // Save auto mixed precision "pre-optimization" and "post-optimization" graph
+  // to log path.
+  string auto_mixed_precision_log_path = 1;
+  // Run the graph with sync mode (default is OFF).
+  Toggle xpu_force_sync = 2;
+}

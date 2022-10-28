@@ -1,0 +1,43 @@
+# This config option is used for CPU backend.
+build:cpu --define=build_with_onednn=true
+build:cpu --define=build_with_graph_compiler=true
+build:cpu --copt=-DINTEL_CPU_ONLY
+build:cpu --copt=-march=native
+build:cpu --cxxopt=-std=c++14
+build:cpu --host_cxxopt=-std=c++14
+build:cpu -c opt
+# TODO(itex): Enable TBB by default once it's ready.
+# build:cpu --define=build_with_tbb=true
+
+# This config option is used for GPU backend.
+build:gpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
+build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true
+
+# This config option is used for LLGA (OneDnnGraph) debugging
+build:llga-debug --define=build_with_llga_debug=true
+
+# This config option is used for LLGA (OneDnnGraph) graph compiler backend
+build:graph-compiler --define=build_with_graph_compiler=true
+
+build --define=use_fast_cpp_protos=true
+build --define=allow_oversize_protos=true
+
+build --spawn_strategy=standalone
+build --strategy=Genrule=standalone
+build -c opt
+
+# Default paths for TF_SYSTEM_LIBS
+build --define=PREFIX=/usr
+build --define=LIBDIR=$(PREFIX)/lib
+build --define=INCLUDEDIR=$(PREFIX)/include
+
+# host build is useless
+build --distinct_host_configuration=false
+
+# Default options should come above this line
+
+# Options from ./configure
+try-import %workspace%/.itex_configure.bazelrc
+
+# Put user-specific options in .bazelrc.user
+try-import %workspace%/.bazelrc.user
