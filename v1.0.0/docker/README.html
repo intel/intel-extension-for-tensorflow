@@ -120,10 +120,11 @@
 </div>
 <div class="section" id="iii-running-container">
 <h3>III. Running container<a class="headerlink" href="#iii-running-container" title="Permalink to this headline">¶</a></h3>
-<p>Run following commands to start docker container. You can use <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into container.</p>
+<p>Run following commands to start docker container. You can use <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using <code class="docutils literal notranslate"><span class="pre">--device /dev/dri</span></code> option and run the container:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:gpu
 docker run -v &lt;your-local-dir&gt;:/workspace \
            --privileged \
+           --device /dev/dri \
            -e http_proxy=$http_proxy \
            -e https_proxy=$https_proxy \
            -e no_proxy=$no_proxy \

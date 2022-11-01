@@ -45,11 +45,12 @@ To build the docker container, enter into [docker](./) folder and run below comm
 ```
 ### III. Running container
 
-Run following commands to start docker container. You can use `-v` option to mount your local directory into container.
+Run following commands to start docker container. You can use `-v` option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using `--device /dev/dri` option and run the container:
 
 ```
 IMAGE_NAME=intel-extension-for-tensorflow:gpu
 docker run -v <your-local-dir>:/workspace \
+           --device /dev/dri \
            --privileged \
            -e http_proxy=$http_proxy \
            -e https_proxy=$https_proxy \
