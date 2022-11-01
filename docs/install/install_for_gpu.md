@@ -37,7 +37,7 @@ Please run the following command to pull the GPU Docker container image to your 
 
 ```
 $ docker pull intel/intel-extension-for-tensorflow:gpu
-$ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:gpu
+$ docker run -it -p 8888:8888 --device /dev/dri intel/intel-extension-for-tensorflow:gpu
 ```
 Then go to your browser on http://localhost:8888/
 
