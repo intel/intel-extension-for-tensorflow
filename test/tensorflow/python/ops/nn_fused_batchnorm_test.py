@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
+from tensorflow.python.ops import gen_nn_ops
 
 import tensorflow as tf
 import numpy as np
@@ -138,7 +139,8 @@ class BatchNormalizationTest(test.TestCase):
     # the denominator in the formula to calculate variance, while
     # tf.compat.v1.nn.fused_batch_norm has Bessel's correction built in.
     sample_size = math_ops.cast(
-        float(array_ops.size(x)) / float(array_ops.size(scale)), scale.dtype)
+        math_ops.cast(array_ops.size(x), dtypes.float32) / 
+        math_ops.cast(array_ops.size(scale), dtypes.float32), scale.dtype)
     batch_var_corrected = batch_var * sample_size / (
         math_ops.maximum(sample_size - 1.0, 1.0))
 
@@ -732,7 +734,7 @@ class BatchNormalizationTest(test.TestCase):
           relu = array_ops.identity(tf.nn.relu(my_fbn))
           gpu_result = sess.run(relu, feed_dict={input_p: x_np})
 
-        self.assertAllClose(cpu_result, gpu_result)
+        self.assertAllCloseAccordingToType(cpu_result, gpu_result)
 
   # test BN + add + relu 
   @test_util.run_deprecated_v1
@@ -770,7 +772,7 @@ class BatchNormalizationTest(test.TestCase):
           relu = array_ops.identity(tf.nn.relu(my_fbn + side_input_np))
           gpu_result = sess.run(relu, feed_dict={input_p: x_np})
 
-        self.assertAllClose(cpu_result, gpu_result)
+        self.assertAllCloseAccordingToType(cpu_result, gpu_result)
 
   def testTrainingShape1(self):
     x_shape = [1, 1, 6, 1]

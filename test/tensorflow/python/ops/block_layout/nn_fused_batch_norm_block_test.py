@@ -566,28 +566,28 @@ class BatchNormalizationTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape1(self):
     x_shape = [1, 1, 6, 1]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape2(self):
     x_shape = [1, 1, 6, 2]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape3(self):
     x_shape = [1, 2, 1, 6]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape4(self):
     x_shape = [5, 7, 11, 4]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test never passed for XLA')
   def testBatchNormGradInferenceShape5(self):
     x_shape = [0, 7, 11, 4]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape6(self):
@@ -599,12 +599,12 @@ class BatchNormalizationTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape7(self):
     x_shape = [1, 2, 6, 1, 3]
-    self._runtests(x_shape, is_training=False, gradient_test=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
   
   @test_util.run_deprecated_v1
   def testBatchNormGradTrainingShape1(self):
     x_shape = [1, 1, 6, 1]
-    self._runtests(x_shape, is_training=True, gradient_test=True)
+    self._runtests(x_shape, is_training=True, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradTrainingShape2(self):
@@ -649,7 +649,7 @@ class BatchNormalizationTest(test.TestCase):
     else:
       data_format_nhwc, features_nhwc = 'NDHWC', shape[4]
       data_format_nchw, features_nchw = 'NCDHW', shape[1]
-    for is_training in [True, False]:
+    for is_training in [True,]:
       if test.is_gpu_available(cuda_only=True):
         self._test_grad_grad(
             shape,

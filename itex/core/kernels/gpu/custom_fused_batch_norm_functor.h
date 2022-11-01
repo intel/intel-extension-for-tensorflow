@@ -5,6 +5,7 @@
 
 #include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_kernel.h"
+
 namespace itex {
 namespace functor {
 
@@ -14,66 +15,55 @@ enum {
   MaxSubGroup = MaxGroupSize / SubGroupSize,
   ElemsPerItem = 16,
   VecSize = 4,
-  MaxWorkItemOnZ = 8
+  MaxLocalItemOnZ = 8
 };
 
-template <int VecSize>
 inline void PacketStore(float* ptr, int offset,
                         const sycl::vec<float, VecSize>& array) {
-  typedef sycl::vec<float, VecSize> vecT;
-  *(reinterpret_cast<vecT*>(ptr + offset)) = array;
+  *(reinterpret_cast<sycl::vec<float, VecSize>*>(ptr + offset)) = array;
 }
 
-template <int VecSize>
 inline void PacketStore(Eigen::half* ptr, int offset,
                         const sycl::vec<float, VecSize>& array) {
-  typedef sycl::vec<sycl::half, VecSize> vecT;
-  vecT tmp;
+  sycl::vec<sycl::half, VecSize> tmp;
 #pragma unroll
   for (int i = 0; i < VecSize; ++i) tmp[i] = static_cast<sycl::half>(array[i]);
-  *(reinterpret_cast<vecT*>(ptr + offset)) = tmp;
+  *(reinterpret_cast<sycl::vec<sycl::half, VecSize>*>(ptr + offset)) = tmp;
 }
 
-template <int VecSize>
 inline void PacketStore(Eigen::bfloat16* ptr, int offset,
                         const sycl::vec<float, VecSize>& array) {
-  typedef sycl::vec<uint16_t, VecSize> vecT;
-  vecT tmp;
+  sycl::vec<uint16_t, VecSize> tmp;
 #pragma unroll
   for (int i = 0; i < VecSize; ++i)
     tmp[i] = Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(array[i]).value;
-  *(reinterpret_cast<vecT*>(ptr + offset)) = tmp;
+  *(reinterpret_cast<sycl::vec<uint16_t, VecSize>*>(ptr + offset)) = tmp;
 }
 
-template <int VecSize>
 inline void PacketLoad(const float* ptr, int offset,
                        sycl::vec<float, VecSize>* array) {
-  typedef sycl::vec<float, VecSize> vecT;
-  *array = *(reinterpret_cast<const vecT*>(ptr + offset));
+  *array = *(reinterpret_cast<const sycl::vec<float, VecSize>*>(ptr + offset));
 }
 
-template <int VecSize>
 inline void PacketLoad(const Eigen::half* ptr, int offset,
                        sycl::vec<float, VecSize>* array) {
-  typedef sycl::vec<sycl::half, VecSize> vecT;
-  vecT tmp;
-  tmp = *(reinterpret_cast<const vecT*>(ptr + offset));
-
-#pragma unroll
-  for (int i = 0; i < VecSize; ++i) array[i] = static_cast<float>(tmp[i]);
-}
-
-template <int VecSize>
-inline void PacketLoad(const Eigen::bfloat16* ptr, int offset,
-                       sycl::vec<float, VecSize>* array) {
-  typedef sycl::vec<uint16_t, VecSize> vecT;
-  vecT tmp;
-  tmp = *(reinterpret_cast<const vecT*>(ptr + offset));
+  sycl::vec<sycl::half, VecSize> in_array =
+      *(reinterpret_cast<const sycl::vec<sycl::half, VecSize>*>(ptr + offset));
 
 #pragma unroll
   for (int i = 0; i < VecSize; ++i)
-    array[i] = Eigen::bfloat16_impl::bfloat16_to_float(
-        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(tmp[i]));
+    (*array)[i] = static_cast<float>(in_array[i]);
+}
+
+inline void PacketLoad(const Eigen::bfloat16* ptr, int offset,
+                       sycl::vec<float, VecSize>* array) {
+  sycl::vec<uint16_t, VecSize> in_array =
+      *(reinterpret_cast<const sycl::vec<uint16_t, VecSize>*>(ptr + offset));
+
+#pragma unroll
+  for (int i = 0; i < VecSize; ++i)
+    (*array)[i] = Eigen::bfloat16_impl::bfloat16_to_float(
+        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(in_array[i]));
 }
 
 template <typename T, typename LocalAccessor>
@@ -83,7 +73,8 @@ struct VecSecondStepKernel {
                       LocalAccessor scratch2_, const int extend_x_,
                       const int extend_y_, const int extend_z_,
                       const int elems_per_item_, const int num_sub_group_,
-                      const int num_segments_y_)
+                      const int num_segments_y_, const int k_,
+                      const int local_item_on_z_)
       : inter_array1(inter_array1_),
         inter_array2(inter_array2_),
         array1(array1_),
@@ -95,19 +86,12 @@ struct VecSecondStepKernel {
         extend_z(extend_z_),
         elems_per_item(elems_per_item_),
         num_sub_group(num_sub_group_),
-        num_segments_y(num_segments_y_) {}
+        num_segments_y(num_segments_y_),
+        k(k_),
+        local_item_on_z(local_item_on_z_) {}
   [[intel::reqd_sub_group_size(SubGroupSize)]] void operator()(
       sycl::nd_item<3> item) const {
     using vecT = sycl::vec<float, VecSize>;
-
-    int work_item_on_z = extend_z / VecSize;
-    int k;
-    if (work_item_on_z > SubGroupSize) {
-      work_item_on_z = MaxWorkItemOnZ;
-      k = SubGroupSize / MaxWorkItemOnZ;
-    } else {
-      k = SubGroupSize / work_item_on_z;
-    }
 
     // get start index
     int x_group_id = item.get_group(0);
@@ -116,9 +100,9 @@ struct VecSecondStepKernel {
 
     auto sg = item.get_sub_group();
     int subgroup_id = sg.get_group_linear_id();
-    int lane_id = sg.get_local_id();
-    int group_z_id = lane_id % work_item_on_z;
-    int group_k_id = lane_id / work_item_on_z;
+    int lane_id = sg.get_local_linear_id();
+    int group_z_id = lane_id % local_item_on_z;
+    int group_k_id = lane_id / local_item_on_z;
 
     int x_offset = x_group_id * extend_y * extend_z;
 
@@ -127,7 +111,8 @@ struct VecSecondStepKernel {
     vecT aggregate1(0);
     vecT aggregate2(0);
 
-    int z_offset = z_group_id * MaxWorkItemOnZ * VecSize + group_z_id * VecSize;
+    int z_offset =
+        z_group_id * local_item_on_z * VecSize + group_z_id * VecSize;
 
     for (int i = 0; i < elems_per_item; ++i) {
       int y_idx = y_group_id * num_sub_group * elems_per_item * k +
@@ -149,7 +134,7 @@ struct VecSecondStepKernel {
 
     // ------------------------------------------------------------------
     // -------------slm reduce-------------------
-    // slm: (SubGroupSize * k) * work_item_on_z
+    // slm: (SubGroupSize * k) * local_item_on_z
     // ------------------------------------------------------------------
     int slm_z_id = subgroup_id / k;
     int slm_k_id = subgroup_id % k;
@@ -163,9 +148,8 @@ struct VecSecondStepKernel {
       value1[i] = sycl::reduce_over_group(sg, value1[i], sycl::plus<T>());
       value2[i] = sycl::reduce_over_group(sg, value2[i], sycl::plus<T>());
     }
-    // subgroup_reduce(sg, value[i], sycl::plus<T>());
 
-    // lane0 write result of each subgrop
+    // lane0 write result of each subgroup
     if (lane_id == 0) {
       scratch1[slm_z_id * num_sub_group * k + slm_k_id * SubGroupSize] = value1;
       scratch2[slm_z_id * num_sub_group * k + slm_k_id * SubGroupSize] = value2;
@@ -183,10 +167,10 @@ struct VecSecondStepKernel {
 
       int offset = x_group_id * extend_z * num_segments_y +
                    y_group_id * extend_z +
-                   z_group_id * MaxWorkItemOnZ * VecSize + slm_z_id * VecSize;
+                   z_group_id * local_item_on_z * VecSize + slm_z_id * VecSize;
 
-      PacketStore<VecSize>(array1, offset, tmp1);
-      PacketStore<VecSize>(array2, offset, tmp2);
+      PacketStore(array1, offset, tmp1);
+      PacketStore(array2, offset, tmp2);
     }
   }
   const float* inter_array1;
@@ -201,6 +185,8 @@ struct VecSecondStepKernel {
   const int elems_per_item;
   const int num_sub_group;
   const int num_segments_y;
+  const int k;
+  const int local_item_on_z;
 };
 
 template <typename T, typename LocalAccessor>
@@ -232,7 +218,7 @@ struct SecondStepKernel {
 
     auto sg = item.get_sub_group();
     int subgroup_id = sg.get_group_linear_id();
-    int lane_id = sg.get_local_id();
+    int lane_id = sg.get_local_linear_id();
 
     int x_offset = x_group_id * extend_y * extend_z;
 
@@ -264,7 +250,7 @@ struct SecondStepKernel {
         sycl::reduce_over_group(sg, value2, sycl::plus<float>());
 
     z_offset = z_group_id * SubGroupSize + subgroup_id;
-    if (z_offset < extend_z) {
+    if (z_offset < extend_z && lane_id == 0) {
       int offset = x_group_id * extend_z * num_segments_y +
                    y_group_id * extend_z + z_group_id * SubGroupSize +
                    subgroup_id;
@@ -376,7 +362,7 @@ struct MeanVarFirstStepKernel {
 
     auto sg = item.get_sub_group();
     int subgroup_id = sg.get_group_linear_id();
-    int lane_id = sg.get_local_id();
+    int lane_id = sg.get_local_linear_id();
 
     int x_offset = x_group_id * extend_y * extend_z;
 
@@ -408,7 +394,7 @@ struct MeanVarFirstStepKernel {
         sycl::reduce_over_group(sg, sum_of_square, sycl::plus<float>());
 
     z_offset = z_group_id * SubGroupSize + subgroup_id;
-    if (z_offset < extend_z) {
+    if (z_offset < extend_z && lane_id == 0) {
       int offset = x_group_id * extend_z * num_segments_y +
                    y_group_id * extend_z + z_group_id * SubGroupSize +
                    subgroup_id;
@@ -443,7 +429,7 @@ void SGMeanVarReduction(OpKernelContext* ctx, const InT* in_data,
       elems_per_item >>= 1;
     }
   }
-  assert(num_sub_group % SubGroupSize == 0);
+
   int num_segments_y = DivUp(extend_y, num_sub_group * elems_per_item);
   int num_segments_z = DivUp(extend_z, static_cast<int>(SubGroupSize));
 
@@ -510,7 +496,8 @@ struct FwdVecFirstStepKernel {
                         LocalAccessor scratch1_, LocalAccessor scratch2_,
                         const int extend_x_, const int extend_y_,
                         const int extend_z_, const int elems_per_item_,
-                        const int num_sub_group_, const int num_segments_y_)
+                        const int num_sub_group_, const int num_segments_y_,
+                        const int k_, const int local_item_on_z_)
       : in_data(in_data_),
         out1(out1_),
         out2(out2_),
@@ -521,20 +508,12 @@ struct FwdVecFirstStepKernel {
         extend_z(extend_z_),
         elems_per_item(elems_per_item_),
         num_sub_group(num_sub_group_),
-        num_segments_y(num_segments_y_) {}
+        num_segments_y(num_segments_y_),
+        k(k_),
+        local_item_on_z(local_item_on_z_) {}
   [[intel::reqd_sub_group_size(SubGroupSize)]] void operator()(
       sycl::nd_item<3> item) const {
-    using vecInT = sycl::vec<InT, VecSize>;
-    using vecT = sycl::vec<float, VecSize>;
-
-    int work_item_on_z = extend_z / VecSize;
-    int k;
-    if (work_item_on_z > SubGroupSize) {
-      work_item_on_z = MaxWorkItemOnZ;
-      k = SubGroupSize / MaxWorkItemOnZ;
-    } else {
-      k = SubGroupSize / work_item_on_z;
-    }
+    typedef sycl::vec<float, VecSize> vecT;
 
     // get start index
     int x_group_id = item.get_group(0);
@@ -543,9 +522,9 @@ struct FwdVecFirstStepKernel {
 
     auto sg = item.get_sub_group();
     int subgroup_id = sg.get_group_linear_id();
-    int lane_id = sg.get_local_id();
-    int group_z_id = lane_id % work_item_on_z;
-    int group_k_id = lane_id / work_item_on_z;
+    int lane_id = sg.get_local_linear_id();
+    int group_z_id = lane_id % local_item_on_z;
+    int group_k_id = lane_id / local_item_on_z;
 
     int x_offset = x_group_id * extend_y * extend_z;
 
@@ -553,7 +532,8 @@ struct FwdVecFirstStepKernel {
     vecT aggregate1(0.0f);
     vecT aggregate2(0.0f);
 
-    int z_offset = z_group_id * MaxWorkItemOnZ * VecSize + group_z_id * VecSize;
+    int z_offset =
+        z_group_id * local_item_on_z * VecSize + group_z_id * VecSize;
 
     for (int i = 0; i < elems_per_item; ++i) {
       int y_idx = y_group_id * num_sub_group * elems_per_item * k +
@@ -562,7 +542,7 @@ struct FwdVecFirstStepKernel {
       int offset = x_offset + y_idx * extend_z + z_offset;
 
       vecT tmp;
-      PacketLoad<VecSize>(in_data, offset, &tmp);
+      PacketLoad(in_data, offset, &tmp);
 
       for (int j = 0; j < VecSize; ++j) {
         aggregate1[j] += tmp[j];
@@ -578,7 +558,7 @@ struct FwdVecFirstStepKernel {
 
     // ------------------------------------------------------------------
     // -------------slm reduce-------------------
-    // slm: (SubGroupSize * k) * work_item_on_z
+    // slm: (SubGroupSize * k) * local_item_on_z
     // ------------------------------------------------------------------
     int slm_z_id = subgroup_id / k;
     int slm_k_id = subgroup_id % k;
@@ -610,10 +590,10 @@ struct FwdVecFirstStepKernel {
       }
       int offset = x_group_id * extend_z * num_segments_y +
                    y_group_id * extend_z +
-                   z_group_id * MaxWorkItemOnZ * VecSize + slm_z_id * VecSize;
+                   z_group_id * local_item_on_z * VecSize + slm_z_id * VecSize;
 
-      PacketStore<VecSize>(out1, offset, tmp1);
-      PacketStore<VecSize>(out2, offset, tmp2);
+      PacketStore(out1, offset, tmp1);
+      PacketStore(out2, offset, tmp2);
     }
   }
   const InT* in_data;
@@ -628,6 +608,8 @@ struct FwdVecFirstStepKernel {
   const int elems_per_item;
   const int num_sub_group;
   const int num_segments_y;
+  const int k;
+  const int local_item_on_z;
 };
 
 template <typename InT, typename OutT>
@@ -635,20 +617,13 @@ void SGFwdVecColReduction(OpKernelContext* context, const InT* in_data,
                           OutT* mean_data, OutT* var_data, const int extend_x,
                           const int extend_y, const int extend_z) {
   using vecT = sycl::vec<float, VecSize>;
-  if (extend_z % VecSize != 0 || (SubGroupSize % (extend_z / VecSize) != 0 &&
-                                  (extend_z / VecSize) % MaxWorkItemOnZ != 0)) {
-    printf("not supported\n");
-    exit(-1);
-  }
 
   int elems_per_item = ElemsPerItem;
   int num_sub_group = MaxSubGroup;
   int work_item_on_z = extend_z / VecSize;
-  int k;
-  if (work_item_on_z < SubGroupSize)
-    k = SubGroupSize / work_item_on_z;
-  else
-    k = SubGroupSize / MaxWorkItemOnZ;
+  int local_item_on_z =
+      work_item_on_z <= MaxLocalItemOnZ ? work_item_on_z : MaxLocalItemOnZ;
+  int k = SubGroupSize / local_item_on_z;
 
   if (extend_y * 2 <= num_sub_group * elems_per_item * k) {
     while (num_sub_group * elems_per_item * k >= extend_y * 2 &&
@@ -658,11 +633,7 @@ void SGFwdVecColReduction(OpKernelContext* context, const InT* in_data,
   }
 
   int num_segments_y = DivUp(extend_y, num_sub_group * elems_per_item * k);
-  int num_segments_z = 1;
-  if (work_item_on_z > SubGroupSize) {
-    num_segments_z = work_item_on_z / MaxWorkItemOnZ;
-    work_item_on_z = MaxWorkItemOnZ;
-  }
+  int num_segments_z = work_item_on_z / local_item_on_z;
 
   auto* stream = context->GetDeviceStream();
 
@@ -672,7 +643,7 @@ void SGFwdVecColReduction(OpKernelContext* context, const InT* in_data,
       num_segments_y = DivUp(extend_y, num_sub_group * elems_per_item * k);
     }
 
-    sycl::range<3> local(1, num_sub_group * k, work_item_on_z);
+    sycl::range<3> local(1, num_sub_group * k, local_item_on_z);
     sycl::range<3> global(extend_x, num_segments_y * local[1],
                           num_segments_z * local[2]);
 
@@ -691,7 +662,8 @@ void SGFwdVecColReduction(OpKernelContext* context, const InT* in_data,
       LocalAcc<vecT> scratch2(num_sub_group * SubGroupSize, cgh);
       FwdVecFirstStepKernel<InT, float, LocalAcc<vecT>> task(
           in_data, inter_sum, inter_sum_of_square, scratch1, scratch2, extend_x,
-          extend_y, extend_z, elems_per_item, num_sub_group, num_segments_y);
+          extend_y, extend_z, elems_per_item, num_sub_group, num_segments_y, k,
+          local_item_on_z);
       cgh.parallel_for<FwdVecFirstStepKernel<InT, float, LocalAcc<vecT>>>(
           sycl::nd_range<3>(global, local), task);
     });
@@ -704,20 +676,20 @@ void SGFwdVecColReduction(OpKernelContext* context, const InT* in_data,
       VecSecondStepKernel<float, LocalAcc<vecT>> task(
           inter_sum, inter_sum_of_square, mean_data, var_data, scratch1,
           scratch2, extend_x, num_segments_y, extend_z, ElemsPerItem,
-          num_sub_group, 1);
+          num_sub_group, 1, k, local_item_on_z);
       cgh.parallel_for<VecSecondStepKernel<float, LocalAcc<vecT>>>(
           sycl::nd_range<3>(global, local), task);
     });
 
   } else {
-    sycl::range<3> local(1, num_sub_group * k, work_item_on_z);
+    sycl::range<3> local(1, num_sub_group * k, local_item_on_z);
     sycl::range<3> global(extend_x, local[1], num_segments_z * local[2]);
     stream->submit([&](sycl::handler& cgh) {
       LocalAcc<vecT> scratch1(num_sub_group * SubGroupSize, cgh);
       LocalAcc<vecT> scratch2(num_sub_group * SubGroupSize, cgh);
       FwdVecFirstStepKernel<InT, OutT, LocalAcc<vecT>> task(
           in_data, mean_data, var_data, scratch1, scratch2, extend_x, extend_y,
-          extend_z, elems_per_item, num_sub_group, 1);
+          extend_z, elems_per_item, num_sub_group, 1, k, local_item_on_z);
       cgh.parallel_for<FwdVecFirstStepKernel<InT, OutT, LocalAcc<vecT>>>(
           sycl::nd_range<3>(global, local), task);
     });
@@ -731,10 +703,10 @@ void MeanVarReduction(OpKernelContext* context, const InT* in_data,
                       OutT* mean_data, OutT* var_data, const int extend_x,
                       const int extend_y, const int extend_z) {
   int elems_per_item = extend_y / (extend_x * extend_z);
-  bool use_vectorization_pass =
-      (extend_z % VecSize == 0 && (SubGroupSize % (extend_z / VecSize) == 0 ||
-                                   (extend_z / VecSize) % MaxWorkItemOnZ == 0));
-  if (elems_per_item < 4)
+  bool use_vectorization_pass = (extend_z % VecSize == 0 &&
+                                 (SubGroupSize % (extend_z / VecSize) == 0 ||
+                                  (extend_z / VecSize) % MaxLocalItemOnZ == 0));
+  if (extend_y < 32 && elems_per_item < 4)
     SimpleMeanVarReduction(context, in_data, mean_data, var_data, extend_x,
                            extend_y, extend_z);
   else if (use_vectorization_pass)
@@ -827,11 +799,11 @@ struct BnForwardOptimizedKernel {
                 inv +
             offset[ic_idx[j]]);
         if (FuseNormRelu) {
-          temp = temp >= 0 ? temp : InT(0);
+          temp = temp > 0 ? temp : InT(0);
         }
         if (FuseNormAddRelu) {
           temp += side_input_values[i * VecSizeIc + j];
-          temp = temp >= 0 ? temp : InT(0);
+          temp = temp > 0 ? temp : InT(0);
         }
         out_values[i * VecSizeIc + j] = temp;
       }
@@ -932,6 +904,7 @@ struct BnForwardOptimizedKernel<Eigen::half, ScaleT, VecSizeSp, VecSizeIc,
     if (base_offset >= nelems) return;
     T values[VecSizeSp * VecSizeIc], out_values[VecSizeSp * VecSizeIc];
     T side_input_values[VecSizeSp * VecSizeIc];
+
     using VecT = sycl::vec<T, VecSizeIc>;
     VecT* vec_values = reinterpret_cast<VecT*>(values);
     VecT* vec_out_values = reinterpret_cast<VecT*>(out_values);
@@ -971,11 +944,11 @@ struct BnForwardOptimizedKernel<Eigen::half, ScaleT, VecSizeSp, VecSizeIc,
                 inv +
             offset[ic_idx[j]]);
         if (FuseNormRelu) {
-          temp = temp >= T(0) ? temp : T(0);
+          temp = temp > T(0) ? temp : T(0);
         }
         if (FuseNormAddRelu) {
           temp += side_input_values[i * VecSizeIc + j];
-          temp = temp >= T(0) ? temp : T(0);
+          temp = temp > T(0) ? temp : T(0);
         }
         out_values[i * VecSizeIc + j] = temp;
       }
@@ -1119,13 +1092,13 @@ struct BnForwardOptimizedKernel<Eigen::bfloat16, ScaleT, VecSizeSp, VecSizeIc,
                           inv +
                       offset[ic_idx[j]];
         if (FuseNormRelu) {
-          temp = temp >= ScaleT(0) ? temp : ScaleT(0);
+          temp = temp > ScaleT(0) ? temp : ScaleT(0);
         }
         if (FuseNormAddRelu) {
           temp += Eigen::bfloat16_impl::bfloat16_to_float(
               Eigen::bfloat16_impl::raw_uint16_to_bfloat16(
                   side_input_values[i * VecSizeIc + j]));
-          temp = temp >= ScaleT(0) ? temp : ScaleT(0);
+          temp = temp > ScaleT(0) ? temp : ScaleT(0);
         }
         out_values[i * VecSizeIc + j] =
             Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(temp).value;
@@ -1195,11 +1168,7 @@ void BNForwardOptimizedEltwise(
           .get_device()
           .get_info<sycl::info::device::max_work_group_size>();
   int group_size = std::min(512, max_wg_size);
-
-  int num_wg =
-      ((nelems + (VecSizeIc * VecSizeSp) - 1) / (VecSizeIc * VecSizeSp) +
-       group_size - 1) /
-      group_size;
+  int num_wg = DivUp(nelems / (VecSizeIc * VecSizeSp), group_size);
   sycl::nd_range<1> range(num_wg * group_size, group_size);
 
   stream->submit([&](sycl::handler& cgh) {
@@ -1214,7 +1183,7 @@ void BNForwardOptimizedEltwise(
   });
 }
 
-template <typename InT, typename ScaleT, int VecSize, bool IsTrain,
+template <typename InT, typename ScaleT, int VecSizeSp, bool IsTrain,
           bool FuseNormRelu, bool FuseNormAddRelu>
 struct BnForwardKernel {
   BnForwardKernel(const InT* in_, const ScaleT* mean_, const ScaleT* var_,
@@ -1246,29 +1215,29 @@ struct BnForwardKernel {
     const int nelems = sp * ic;
     int sp_idx = id / ic;
     int ic_idx = id - sp_idx * ic;
-    int base_offset = sp_idx * VecSize * ic + ic_idx;
+    int base_offset = sp_idx * VecSizeSp * ic + ic_idx;
     float correct_factor =
         static_cast<float>(sp) / sycl::max(static_cast<float>(sp - 1), 1.0f);
 
     if (base_offset >= nelems) return;
-    InT values[VecSize], out_values[VecSize];
-    InT side_input_values[VecSize];
+    InT values[VecSizeSp], out_values[VecSizeSp];
+    InT side_input_values[VecSizeSp];
 
 #pragma unroll
-    for (int i = 0; i < VecSize; ++i) {
+    for (int i = 0; i < VecSizeSp; ++i) {
       int offset = base_offset + i * ic;
       if (offset < nelems)
-        values[i] = in[base_offset + i * ic];
+        values[i] = in[offset];
       else
         values[i] = InT(0);
     }
 
     if (FuseNormAddRelu) {
 #pragma unroll
-      for (int i = 0; i < VecSize; ++i) {
+      for (int i = 0; i < VecSizeSp; ++i) {
         int offset = base_offset + i * ic;
         if (offset < nelems)
-          side_input_values[i] = side_input[base_offset + i * ic];
+          side_input_values[i] = side_input[offset];
         else
           side_input_values[i] = InT(0);
       }
@@ -1286,20 +1255,20 @@ struct BnForwardKernel {
     ScaleT inv = sycl::rsqrt(var_value + epsilon) * scale[ic_idx];
 
 #pragma unroll
-    for (int i = 0; i < VecSize; ++i) {
+    for (int i = 0; i < VecSizeSp; ++i) {
       out_values[i] = static_cast<InT>(
           (static_cast<ScaleT>(values[i]) - mean_value) * inv + offset[ic_idx]);
       if (FuseNormRelu) {
-        out_values[i] = out_values[i] >= InT(0) ? out_values[i] : InT(0);
+        out_values[i] = out_values[i] > InT(0) ? out_values[i] : InT(0);
       }
       if (FuseNormAddRelu) {
         out_values[i] += side_input_values[i];
-        out_values[i] = out_values[i] >= InT(0) ? out_values[i] : InT(0);
+        out_values[i] = out_values[i] > InT(0) ? out_values[i] : InT(0);
       }
     }
 
 #pragma unroll
-    for (int i = 0; i < VecSize; ++i) {
+    for (int i = 0; i < VecSizeSp; ++i) {
       int offset = base_offset + i * ic;
       if (offset < nelems) out[offset] = out_values[i];
     }
@@ -1342,7 +1311,7 @@ struct BnForwardKernel {
   const float exponential_avg_factor;
 };
 
-template <typename InT, typename ScaleT, int VecSize, bool IsTrain,
+template <typename InT, typename ScaleT, int VecSizeSp, bool IsTrain,
           bool FuseNormRelu, bool FuseNormAddRelu>
 void BNForwardEltwise(DPCPPStream* stream, const InT* in, const ScaleT* mean,
                       const ScaleT* var, const ScaleT* scale,
@@ -1357,16 +1326,17 @@ void BNForwardEltwise(DPCPPStream* stream, const InT* in, const ScaleT* mean,
           .get_device()
           .get_info<sycl::info::device::max_work_group_size>();
   int group_size = std::min(512, max_wg_size);
-  int num_wg = ((nelems + VecSize - 1) / VecSize + group_size - 1) / group_size;
+  int num_wg =
+      ((nelems + VecSizeSp - 1) / VecSizeSp + group_size - 1) / group_size;
   sycl::nd_range<1> range(num_wg * group_size, group_size);
 
   stream->submit([&](sycl::handler& cgh) {
-    BnForwardKernel<InT, ScaleT, VecSize, IsTrain, FuseNormRelu,
+    BnForwardKernel<InT, ScaleT, VecSizeSp, IsTrain, FuseNormRelu,
                     FuseNormAddRelu>
         task(in, mean, var, scale, offset, side_input, out, old_mean, old_var,
              new_mean, new_var, saved_mean, saved_var, sp, ic, epsilon,
              exponential_avg_factor);
-    cgh.parallel_for<BnForwardKernel<InT, ScaleT, VecSize, IsTrain,
+    cgh.parallel_for<BnForwardKernel<InT, ScaleT, VecSizeSp, IsTrain,
                                      FuseNormRelu, FuseNormAddRelu>>(range,
                                                                      task);
   });
@@ -1435,7 +1405,7 @@ struct SimpleBwkReductionKernel {
             static_cast<OutT>(grad_data[in_offset + i * extend_z]);
         if (FuseNormRelu || FuseNormAddRelu) {
           grad_value *=
-              (y_data[in_offset + i * extend_z] >= InT(0) ? OutT(1) : OutT(0));
+              (y_data[in_offset + i * extend_z] > InT(0) ? OutT(1) : OutT(0));
         }
         OutT x_value = static_cast<OutT>(in_data[in_offset + i * extend_z]);
         sum1 += grad_value;
@@ -1515,7 +1485,7 @@ struct BWKFirstStepKernel {
 
     auto sg = item.get_sub_group();
     int subgroup_id = sg.get_group_linear_id();
-    int lane_id = sg.get_local_id();
+    int lane_id = sg.get_local_linear_id();
 
     int x_offset = x_group_id * extend_y * extend_z;
 
@@ -1531,7 +1501,7 @@ struct BWKFirstStepKernel {
         int offset = x_offset + y_idx * extend_z + z_offset;
         float tmp1 = static_cast<float>(grad_data[offset]);
         if (FuseNormRelu || FuseNormAddRelu) {
-          tmp1 *= (y_data[offset] >= InT(0) ? 1.0f : 0.0f);
+          tmp1 *= (y_data[offset] > InT(0) ? 1.0f : 0.0f);
         }
         float tmp2 = static_cast<float>(in_data[offset]);
         sum1 += tmp1;
@@ -1591,7 +1561,7 @@ void BwdSGColReduction(OpKernelContext* context, const InT* in_data,
       elems_per_item >>= 1;
     }
   }
-  assert(num_sub_group % SubGroupSize == 0);
+
   int num_segments_y = DivUp(extend_y, num_sub_group * elems_per_item);
   int num_segments_z = DivUp(extend_z, static_cast<int>(SubGroupSize));
 
@@ -1665,7 +1635,8 @@ struct BWKVecFirstStepKernel {
                         LocalAccessor scratch2_, const int extend_x_,
                         const int extend_y_, const int extend_z_,
                         const int elems_per_item_, const int num_sub_group_,
-                        const int num_segments_y_)
+                        const int num_segments_y_, const int k_,
+                        const int local_item_on_z_)
       : in_data(in_data_),
         grad_data(grad_data_),
         mean_data(mean_data_),
@@ -1679,20 +1650,12 @@ struct BWKVecFirstStepKernel {
         extend_z(extend_z_),
         elems_per_item(elems_per_item_),
         num_sub_group(num_sub_group_),
-        num_segments_y(num_segments_y_) {}
+        num_segments_y(num_segments_y_),
+        k(k_),
+        local_item_on_z(local_item_on_z_) {}
   [[intel::reqd_sub_group_size(SubGroupSize)]] void operator()(
       sycl::nd_item<3> item) const {
-    using vecInT = sycl::vec<InT, VecSize>;
     using vecT = sycl::vec<float, VecSize>;
-
-    int work_item_on_z = extend_z / VecSize;
-    int k;
-    if (work_item_on_z > SubGroupSize) {
-      work_item_on_z = MaxWorkItemOnZ;
-      k = SubGroupSize / MaxWorkItemOnZ;
-    } else {
-      k = SubGroupSize / work_item_on_z;
-    }
 
     // get start index
     int x_group_id = item.get_group(0);
@@ -1701,9 +1664,9 @@ struct BWKVecFirstStepKernel {
 
     auto sg = item.get_sub_group();
     int subgroup_id = sg.get_group_linear_id();
-    int lane_id = sg.get_local_id();
-    int group_z_id = lane_id % work_item_on_z;
-    int group_k_id = lane_id / work_item_on_z;
+    int lane_id = sg.get_local_linear_id();
+    int group_z_id = lane_id % local_item_on_z;
+    int group_k_id = lane_id / local_item_on_z;
 
     int x_offset = x_group_id * extend_y * extend_z;
 
@@ -1711,7 +1674,8 @@ struct BWKVecFirstStepKernel {
     vecT aggregate1(0.0f);
     vecT aggregate2(0.0f);
 
-    int z_offset = z_group_id * MaxWorkItemOnZ * VecSize + group_z_id * VecSize;
+    int z_offset =
+        z_group_id * local_item_on_z * VecSize + group_z_id * VecSize;
 
     vecT mean_value = *(reinterpret_cast<const vecT*>(mean_data + z_offset));
     for (int i = 0; i < elems_per_item; ++i) {
@@ -1727,7 +1691,7 @@ struct BWKVecFirstStepKernel {
       if (FuseNormRelu || FuseNormAddRelu) {
         PacketLoad(y_data, offset, &tmp3);
         for (int j = 0; j < VecSize; ++j) {
-          tmp1[j] *= (tmp3[j] >= 0.0f ? 1.0f : 0.0f);
+          tmp1[j] *= (tmp3[j] > 0.0f ? 1.0f : 0.0f);
         }
       }
 
@@ -1745,7 +1709,7 @@ struct BWKVecFirstStepKernel {
 
     // ------------------------------------------------------------------
     // -------------slm reduce-------------------
-    // slm: (SubGroupSize * k) * work_item_on_z
+    // slm: (SubGroupSize * k) * local_item_on_z
     // ------------------------------------------------------------------
     int slm_z_id = subgroup_id / k;
     int slm_k_id = subgroup_id % k;
@@ -1777,7 +1741,7 @@ struct BWKVecFirstStepKernel {
       }
       int offset = x_group_id * extend_z * num_segments_y +
                    y_group_id * extend_z +
-                   z_group_id * MaxWorkItemOnZ * VecSize + slm_z_id * VecSize;
+                   z_group_id * local_item_on_z * VecSize + slm_z_id * VecSize;
 
       PacketStore(out1, offset, tmp1);
       PacketStore(out2, offset, tmp2);
@@ -1797,6 +1761,8 @@ struct BWKVecFirstStepKernel {
   const int elems_per_item;
   const int num_sub_group;
   const int num_segments_y;
+  const int k;
+  const int local_item_on_z;
 };
 
 template <typename InT, typename OutT, bool FuseNormRelu, bool FuseNormAddRelu>
@@ -1809,11 +1775,9 @@ void BwdSGVecColReduction(OpKernelContext* context, const InT* in_data,
   int elems_per_item = ElemsPerItem;
   int num_sub_group = MaxSubGroup;
   int work_item_on_z = extend_z / VecSize;
-  int k;
-  if (work_item_on_z < SubGroupSize)
-    k = SubGroupSize / work_item_on_z;
-  else
-    k = SubGroupSize / MaxWorkItemOnZ;
+  int local_item_on_z =
+      work_item_on_z <= MaxLocalItemOnZ ? work_item_on_z : MaxLocalItemOnZ;
+  int k = SubGroupSize / local_item_on_z;
 
   if (extend_y * 2 <= num_sub_group * elems_per_item * k) {
     while (num_sub_group * elems_per_item * k >= extend_y * 2 &&
@@ -1823,11 +1787,8 @@ void BwdSGVecColReduction(OpKernelContext* context, const InT* in_data,
   }
 
   int num_segments_y = DivUp(extend_y, num_sub_group * elems_per_item * k);
-  int num_segments_z = 1;
-  if (work_item_on_z > SubGroupSize) {
-    num_segments_z = work_item_on_z / MaxWorkItemOnZ;
-    work_item_on_z = MaxWorkItemOnZ;
-  }
+  int num_segments_z = work_item_on_z / local_item_on_z;
+
   auto* stream = context->GetDeviceStream();
 
   if (num_segments_y > 1) {
@@ -1836,7 +1797,7 @@ void BwdSGVecColReduction(OpKernelContext* context, const InT* in_data,
       num_segments_y = DivUp(extend_y, num_sub_group * elems_per_item * k);
     }
 
-    sycl::range<3> local(1, num_sub_group * k, work_item_on_z);
+    sycl::range<3> local(1, num_sub_group * k, local_item_on_z);
     sycl::range<3> global(extend_x, num_segments_y * local[1],
                           num_segments_z * local[2]);
 
@@ -1856,7 +1817,7 @@ void BwdSGVecColReduction(OpKernelContext* context, const InT* in_data,
                             FuseNormAddRelu>
           task(in_data, grad_data, mean_data, y_data, inter_out1, inter_out2,
                scratch1, scratch2, extend_x, extend_y, extend_z, elems_per_item,
-               num_sub_group, num_segments_y);
+               num_sub_group, num_segments_y, k, local_item_on_z);
       cgh.parallel_for<BWKVecFirstStepKernel<InT, float, LocalAcc<vecT>,
                                              FuseNormRelu, FuseNormAddRelu>>(
           sycl::nd_range<3>(global, local), task);
@@ -1869,12 +1830,13 @@ void BwdSGVecColReduction(OpKernelContext* context, const InT* in_data,
       LocalAcc<vecT> scratch2(num_sub_group * SubGroupSize, cgh);
       VecSecondStepKernel<float, LocalAcc<vecT>> task(
           inter_out1, inter_out2, out1_data, out2_data, scratch1, scratch2,
-          extend_x, num_segments_y, extend_z, ElemsPerItem, num_sub_group, 1);
+          extend_x, num_segments_y, extend_z, ElemsPerItem, num_sub_group, 1, k,
+          local_item_on_z);
       cgh.parallel_for<VecSecondStepKernel<float, LocalAcc<vecT>>>(
           sycl::nd_range<3>(global, local), task);
     });
   } else {
-    sycl::range<3> local(1, num_sub_group * k, work_item_on_z);
+    sycl::range<3> local(1, num_sub_group * k, local_item_on_z);
     sycl::range<3> global(extend_x, local[1], num_segments_z * local[2]);
     stream->submit([&](sycl::handler& cgh) {
       LocalAcc<vecT> scratch1(num_sub_group * SubGroupSize, cgh);
@@ -1883,7 +1845,7 @@ void BwdSGVecColReduction(OpKernelContext* context, const InT* in_data,
                             FuseNormAddRelu>
           task(in_data, grad_data, mean_data, y_data, out1_data, out2_data,
                scratch1, scratch2, extend_x, extend_y, extend_z, elems_per_item,
-               num_sub_group, 1);
+               num_sub_group, 1, k, local_item_on_z);
       cgh.parallel_for<BWKVecFirstStepKernel<InT, OutT, LocalAcc<vecT>,
                                              FuseNormRelu, FuseNormAddRelu>>(
           sycl::nd_range<3>(global, local), task);
@@ -1897,10 +1859,10 @@ void BnormBwkReduction(OpKernelContext* context, const InT* in_data,
                        const InT* y_data, OutT* out1_data, OutT* out2_data,
                        int extend_x, int extend_y, int extend_z) {
   int elems_per_item = extend_y / (extend_x * extend_z);
-  bool use_vectorization_pass =
-      (extend_z % VecSize == 0 && (SubGroupSize % (extend_z / VecSize) == 0 ||
-                                   (extend_z / VecSize) % MaxWorkItemOnZ == 0));
-  if (elems_per_item < 4)
+  bool use_vectorization_pass = (extend_z % VecSize == 0 &&
+                                 (SubGroupSize % (extend_z / VecSize) == 0 ||
+                                  (extend_z / VecSize) % MaxLocalItemOnZ == 0));
+  if (extend_y < 32 && elems_per_item < 4)
     SimpleBwdReduction<InT, OutT, FuseNormRelu, FuseNormAddRelu>(
         context, in_data, grad_data, mean_data, y_data, out1_data, out2_data,
         extend_x, extend_y, extend_z);
@@ -1966,7 +1928,7 @@ struct BnBackwardOptimizedKernel {
       if (FuseNormRelu || FuseNormAddRelu) {
         VecT tmp = *(reinterpret_cast<const VecT*>(y + offset));
         for (int j = 0; j < VecSizeIc; ++j) {
-          vec_dy_values[i][j] *= (tmp[j] >= 0 ? 1 : 0);
+          vec_dy_values[i][j] *= (tmp[j] > 0 ? 1 : 0);
         }
       }
     }
@@ -2084,7 +2046,7 @@ struct BnBackwardOptimizedKernel<Eigen::bfloat16, ScaleT, VecSizeSp, VecSizeIc,
         VecT tmp = *(reinterpret_cast<const VecT*>(y + offset));
         for (int j = 0; j < VecSizeIc; ++j) {
           vec_dy_values[i][j] *= (Eigen::bfloat16_impl::raw_uint16_to_bfloat16(
-                                      tmp[j]) >= Eigen::bfloat16(0)
+                                      tmp[j]) > Eigen::bfloat16(0)
                                       ? T(1)
                                       : T(0));
         }
@@ -2169,7 +2131,7 @@ void bn_backward_optimized_kernel(
           .get_device()
           .get_info<sycl::info::device::max_work_group_size>();
   int group_size = std::min(512, max_wg_size);
-  int num_wg = (nelems_vec + group_size - 1) / group_size;
+  int num_wg = DivUp(nelems_vec, group_size);
   sycl::nd_range<1> range(num_wg * group_size, group_size);
 
   stream->submit([&](sycl::handler& cgh) {
@@ -2183,7 +2145,7 @@ void bn_backward_optimized_kernel(
   });
 }
 
-template <typename InT, typename ScaleT, int VecSize, bool FuseNormRelu,
+template <typename InT, typename ScaleT, int VecSizeSp, bool FuseNormRelu,
           bool FuseNormAddRelu>
 struct BnBackwardKernel {
   BnBackwardKernel(const InT* x_, const InT* dy_, const ScaleT* mean_,
@@ -2212,20 +2174,20 @@ struct BnBackwardKernel {
 
     int sp_idx = id / ic;
     int ic_idx = id - sp_idx * ic;
-    const int base_offset = sp_idx * VecSize * ic + ic_idx;
+    const int base_offset = sp_idx * VecSizeSp * ic + ic_idx;
 
     if (base_offset >= nelems) return;
-    InT x_values[VecSize], dy_values[VecSize], dx_values[VecSize];
+    InT x_values[VecSizeSp], dy_values[VecSizeSp], dx_values[VecSizeSp];
 
 #pragma unroll
-    for (int i = 0; i < VecSize; ++i) {
+    for (int i = 0; i < VecSizeSp; ++i) {
       int offset = base_offset + i * ic;
       if (offset < nelems) {
         x_values[i] = x[base_offset + i * ic];
         dy_values[i] = dy[base_offset + i * ic];
         if (FuseNormRelu || FuseNormAddRelu) {
           InT temp_y = y[base_offset + i * ic];
-          dy_values[i] *= (temp_y >= InT(0) ? InT(1) : InT(0));
+          dy_values[i] *= (temp_y > InT(0) ? InT(1) : InT(0));
         }
       } else {
         x_values[i] = InT(0);
@@ -2240,7 +2202,7 @@ struct BnBackwardKernel {
     float coef = sum_dy_x_center_value / (sp * (var_value + epsilon));
 
 #pragma unroll
-    for (int i = 0; i < VecSize; ++i) {
+    for (int i = 0; i < VecSizeSp; ++i) {
       float mean_dy = sum_dy_value / sp;
       dx_values[i] = static_cast<InT>(
           scale[ic_idx] * inv *
@@ -2252,7 +2214,7 @@ struct BnBackwardKernel {
     }
 
 #pragma unroll
-    for (int i = 0; i < VecSize; ++i) {
+    for (int i = 0; i < VecSizeSp; ++i) {
       int offset = base_offset + i * ic;
       if (offset < nelems) {
         dx[offset] = dx_values[i];
@@ -2277,7 +2239,7 @@ struct BnBackwardKernel {
   const float epsilon;
 };
 
-template <typename InT, typename ScaleT, int VecSize, bool FuseNormRelu,
+template <typename InT, typename ScaleT, int VecSizeSp, bool FuseNormRelu,
           bool FuseNormAddRelu>
 void bn_backward_kernel(DPCPPStream* stream, const InT* x, const InT* dy,
                         const ScaleT* mean, const ScaleT* var, const InT* y,
@@ -2291,16 +2253,16 @@ void bn_backward_kernel(DPCPPStream* stream, const InT* x, const InT* dy,
           .get_device()
           .get_info<sycl::info::device::max_work_group_size>();
   int group_size = std::min(512, max_wg_size);
-  int num_wg = ((nelems + VecSize - 1) / VecSize + group_size - 1) / group_size;
+  int num_wg =
+      ((nelems + VecSizeSp - 1) / VecSizeSp + group_size - 1) / group_size;
   sycl::nd_range<1> range(num_wg * group_size, group_size);
 
   stream->submit([&](sycl::handler& cgh) {
-    BnBackwardKernel<InT, ScaleT, VecSize, FuseNormRelu, FuseNormAddRelu> task(
-        x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx, dscale,
-        doffset, dside_x, sp, ic, epsilon);
-    cgh.parallel_for<
-        BnBackwardKernel<InT, ScaleT, VecSize, FuseNormRelu, FuseNormAddRelu>>(
-        range, task);
+    BnBackwardKernel<InT, ScaleT, VecSizeSp, FuseNormRelu, FuseNormAddRelu>
+        task(x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx, dscale,
+             doffset, dside_x, sp, ic, epsilon);
+    cgh.parallel_for<BnBackwardKernel<InT, ScaleT, VecSizeSp, FuseNormRelu,
+                                      FuseNormAddRelu>>(range, task);
   });
 }
 

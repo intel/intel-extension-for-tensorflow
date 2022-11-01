@@ -7,6 +7,7 @@
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/kernels/common/fused_batch_norm_functor.h"
+#include "itex/core/kernels/common/fused_batch_norm_op.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
@@ -94,6 +95,7 @@ struct DPCPPFusedBatchNorm {
       U* temp_mean = temp_tensor.flat<U>().data();
       U* temp_var = temp_mean + ic;
       MeanVarReduction(context, x, temp_mean, temp_var, 1, sp, ic);
+
       if (fuse_norm_relu)
         BNForward<T, U, true, true, false>(
             context, x, temp_mean, temp_var, scale, offset, side_input, y,
@@ -299,12 +301,14 @@ struct DPCPPFusedBatchNormGrad {
 
 template <typename Device, typename T, typename U, bool UseReservedSpace,
           bool IsBatchNormEx>
-class CustomFusedBatchNormOp : public OpKernel {
+class CustomFusedBatchNormOp
+    : public FusedBatchNormOp<Device, T, U, UseReservedSpace, IsBatchNormEx> {
   static constexpr bool use_reserved_space = UseReservedSpace;
 
  public:
   explicit CustomFusedBatchNormOp(OpKernelConstruction* context)
-      : OpKernel(context) {
+      : FusedBatchNormOp<Device, T, U, UseReservedSpace, IsBatchNormEx>(
+            context) {
     OP_REQUIRES_OK(context, context->GetAttr("epsilon", &epsilon_));
     float exponential_avg_factor;
     OP_REQUIRES_OK(context, context->GetAttr("exponential_avg_factor",
@@ -339,6 +343,13 @@ class CustomFusedBatchNormOp : public OpKernel {
   // BN + add + relu, the other input of add work as side input, no workspace
   // need
   void Compute(OpKernelContext* context) override {
+    // fall back to onednn impl if format=NCHW
+    if (tensor_format_ == FORMAT_NCHW) {
+      FusedBatchNormOp<Device, T, U, UseReservedSpace, IsBatchNormEx>::Compute(
+          context);
+      return;
+    }
+
     Tensor x = context->input(0);
     const Tensor& scale = context->input(1);
     const Tensor& offset = context->input(2);
@@ -474,10 +485,12 @@ class CustomFusedBatchNormOp : public OpKernel {
 
 template <typename Device, typename T, typename U, bool ReservedSpace,
           bool IsBatchNormEx = false>
-class CustomFusedBatchNormGradOp : public OpKernel {
+class CustomFusedBatchNormGradOp
+    : public FusedBatchNormGradOp<Device, T, U, ReservedSpace, IsBatchNormEx> {
  public:
   explicit CustomFusedBatchNormGradOp(OpKernelConstruction* context)
-      : OpKernel(context) {
+      : FusedBatchNormGradOp<Device, T, U, ReservedSpace, IsBatchNormEx>(
+            context) {
     OP_REQUIRES_OK(context, context->GetAttr("epsilon", &epsilon_));
     string tensor_format;
     OP_REQUIRES_OK(context, context->GetAttr("data_format", &tensor_format));
@@ -499,19 +512,18 @@ class CustomFusedBatchNormGradOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* context) override {
+    // fall back to onednn impl if format=NCHW
+    if (tensor_format_ == FORMAT_NCHW) {
+      FusedBatchNormGradOp<Device, T, U, ReservedSpace, IsBatchNormEx>::Compute(
+          context);
+      return;
+    }
     const Tensor& diff_dst_tensor = context->input(0);
     const Tensor& src_tensor = context->input(1);
     const Tensor& scale_tensor = context->input(2);
     const Tensor& saved_mean = context->input(3);
     const Tensor& saved_var = context->input(4);
     const Tensor* y_tensor = IsBatchNormEx ? &context->input(7) : nullptr;
-
-    // not used currently
-    // const Tensor* reserved_space;
-    // if (reserved_space)
-    // reserved_space = &context->input(5);
-    // else
-    // reserved_space = nullptr;
 
     TensorShape tf_shape_src = src_tensor.shape();
     TensorShape tf_shape_diff_dst = diff_dst_tensor.shape();
