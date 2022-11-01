@@ -950,6 +950,8 @@ Status RunOneDnnLayout(const char* device_name, const GrapplerItem& item,
     // Check if node can run on current optimizer device.
     if (!NodeIsOnDevice(device_name, node_def)) continue;
 
+    // Don't rewrite fetch node because layout will insert `OneDnnToTf` op
+    // behind it and break the fetch node dependency.
     // TODO(itex): Rewrite fetch nodes if meeting performance regression.
     if (ctx.nodes_to_preserve.count(node_def->name()) > 0) continue;
 

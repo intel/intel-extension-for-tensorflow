@@ -3720,9 +3720,9 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       continue;
     }
 
-    // Don't fuse fetch node because layout won't rewrite it.
-    // TODO(itex): Fuse fetch node if meet performance issue in fufure.
-    if (IsInPreserveSet(ctx, (ctx.graph_view.GetNode(i))->node())) {
+    // Don't fuse fetch node when layout is ON because layout won't rewrite it.
+    if (IsInPreserveSet(ctx, (ctx.graph_view.GetNode(i))->node()) &&
+        is_layout_opt) {
       NodeDef* node_def = (ctx.graph_view.GetNode(i))->node();
       ITEX_VLOG(3) << "The node is in preserve set " << node_def->op() << ":"
                    << node_def->name();

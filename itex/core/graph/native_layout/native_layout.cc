@@ -351,10 +351,6 @@ Status RunNativeLayout(const char* device_name, const GrapplerItem& item,
     // Check if node can run on current optimizer device.
     if (!NodeIsOnDevice(device_name, node_def)) continue;
 
-    // Don't rewrite fetch node because must keep its name unchanged.
-    // TODO(itex): Rewrite fetch nodes if meeting performance regression.
-    if (ctx.nodes_to_preserve.count(node_def->name()) > 0) continue;
-
     const NativeFormatInfo* ri = nullptr;
     // We will first search if node is to be rewritten.
     if ((ri = CheckForNodeNativeFormat(*node_view)) != nullptr) {
