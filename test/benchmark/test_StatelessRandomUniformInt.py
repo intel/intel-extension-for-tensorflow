@@ -34,7 +34,7 @@ ITERATION = 5
 
 class StatelessRandomUniformIntTest(test.TestCase):
     def _test_impl(self, size, dtype):
-        seed1 = 79, 25
+        seed1 = 79
         minval2 = constant_op.constant(1, dtype=dtype)
         maxval2 = constant_op.constant(50, dtype=dtype)
         flush_cache()
