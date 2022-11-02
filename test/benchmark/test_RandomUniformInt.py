@@ -1,3 +1,18 @@
+# Copyright (c) 2022 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the License);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an AS IS BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
@@ -8,21 +23,20 @@ from utils import tailed_no_tailed_size
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    INT_COMPUTE_TYPE = [dtypes.int32, dtypes.int64]
+    INT_COMPUTE_TYPE = [dtypes.int32]
 except ImportError:
     from tensorflow.python.platform import test
-    INT_COMPUTE_TYPE = [dtypes.int32, dtypes.int64]  # BF16 is not supported by CUDA
+    INT_COMPUTE_TYPE = [dtypes.int32]
 
 ITERATION = 5
 
 class RandomUniformIntTest(test.TestCase):
     def _test_impl(self, size, dtype):
-        shape = constant_op.constant([4, 7])
         seed1, seed2 = 79, 25
         minval2 = constant_op.constant(1, dtype=dtype)
         maxval2 = constant_op.constant(50, dtype=dtype)
         flush_cache()
-        out_gpu = gen_random_ops.RandomUniformInt(shape=shape, minval=minval2, maxval=maxval2, seed=seed1, seed2=seed2)
+        out_gpu = gen_random_ops.random_uniform_int(shape=size, minval=minval2, maxval=maxval2, seed=seed1, seed2=seed2)
 
     @add_profiling
     @multi_run(ITERATION)
@@ -31,7 +45,6 @@ class RandomUniformIntTest(test.TestCase):
             # test tailed_no_tailed_size
             for in_size in tailed_no_tailed_size:
                 self._test_impl([in_size], dtype)
-print('xuerui\n')
 
 if __name__ == '__main__':
     test.main()  
