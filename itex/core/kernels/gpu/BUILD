@@ -1230,7 +1230,11 @@ itex_xpu_library(
 
 itex_xpu_library(
     name = "scan_ops",
-    srcs = ["scan_ops.cc"],
+    srcs = [
+        "scan_ops_1.cc",
+        "scan_ops_2.cc",
+        "scan_ops_3.cc",
+    ],
     hdrs = [
         "scan_ops.h",
         "scan_ops_gpu.h",

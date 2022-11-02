@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_KERNELS_GPU_SCAN_OPS_H_
 
 #include "itex/core/kernels/gpu/scan_ops_gpu.h"
+#include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/tensor_types.h"
@@ -293,6 +294,61 @@ struct LogSumExpReducer {
 };
 
 }  // namespace functor
+
+template <typename Device, class T, typename Reducer, typename Tidx>
+class ScanOp : public OpKernel {
+ public:
+  explicit ScanOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("reverse", &reverse_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("exclusive", &exclusive_));
+  }
+
+  void Compute(OpKernelContext* ctx) override {
+    const Tensor& input = ctx->input(0);
+    const Tensor& tensor_axis = ctx->input(1);
+
+    OP_REQUIRES(ctx, TensorShapeUtils::IsScalar(tensor_axis.shape()),
+                errors::InvalidArgument("ScanOp: axis must be a scalar, not ",
+                                        tensor_axis.shape().DebugString()));
+
+    const Tidx axis_arg =
+        internal::SubtleMustCopy(tensor_axis.scalar<Tidx>()());
+    const Tidx axis = (axis_arg < 0) ? input.dims() + axis_arg : axis_arg;
+    OP_REQUIRES(ctx, FastBoundsCheck(axis, input.dims()),
+                errors::InvalidArgument(
+                    "ScanOp: Expected scan axis in the range [", -input.dims(),
+                    ", ", input.dims(), "), but got ", axis));
+
+    const TensorShape& output_shape = input.shape();
+    Tensor* output = nullptr;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, output_shape, &output));
+
+    // Exit early if there's nothing to compute
+    if (output_shape.num_elements() == 0) return;
+
+    Reducer reducer;
+
+    // Dim reduction.
+    int64 reduced_shape[3] = {1, 1, 1};
+    for (Tidx i = 0; i < axis; ++i) {
+      reduced_shape[0] *= input.dim_size(i);
+    }
+    reduced_shape[1] = input.dim_size(axis);
+    for (Tidx i = axis + 1; i < input.dims(); ++i) {
+      reduced_shape[2] *= input.dim_size(i);
+    }
+
+    functor::Scan<Reducer, T>()(ctx, input.shaped<T, 3>(reduced_shape),
+                                output->shaped<T, 3>(reduced_shape), reducer,
+                                reverse_, exclusive_, reduced_shape[0],
+                                reduced_shape[1], reduced_shape[2]);
+  }
+
+ private:
+  bool reverse_;
+  bool exclusive_;
+};
+
 }  // namespace itex
 
 #endif  // ITEX_CORE_KERNELS_GPU_SCAN_OPS_H_
