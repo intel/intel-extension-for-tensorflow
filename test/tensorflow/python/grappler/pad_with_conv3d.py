@@ -31,13 +31,13 @@ from tensorflow.core.protobuf import config_pb2
 import tensorflow.python.ops.nn_grad  # pylint: disable=unused-import
 
 @test_util.run_all_in_native_and_block_format
-class ConvBackpropFilterTest(test.TestCase):
+class PadWithConv3DTest(test.TestCase):
 
   def _model(self, fusedConv):
-    input_sizes = [4, 5, 5, 3]
-    kernel_sizes = [3, 3, 3, 8]
-    stride_sizes = [1, 2, 2, 1]
-    paddings = constant_op.constant([[0, 0], [1, 1], [1, 1], [0, 0]])
+    input_sizes = [4, 5, 5, 3, 3]
+    kernel_sizes = [3, 3, 3, 3, 3]
+    stride_sizes = [1, 2, 2, 1, 1]
+    paddings = constant_op.constant([[0, 0], [1, 1], [1, 1], [0, 0], [0, 0]])
 
     np.random.seed(1)
     val = np.random.random_sample(input_sizes)
@@ -47,13 +47,13 @@ class ConvBackpropFilterTest(test.TestCase):
     weight_val = np.random.random_sample(kernel_sizes)
     weight = constant_op.constant(weight_val, dtype=dtypes.float32)
     pad = array_ops.pad(pow, paddings)
-    conv = nn_ops.conv2d(pad, weight, stride_sizes, "VALID")
+    conv = nn_ops.conv3d(pad, weight, stride_sizes, "VALID")
     if fusedConv == True:
-      conv = nn_ops.bias_add(conv, [1,2,3,4,5,6,7,8])
+      conv = nn_ops.bias_add(conv, [1,2,3])
     output_sizes = conv.get_shape().as_list()
     gradient_output_val = np.random.random_sample(output_sizes)
     gradient_output = constant_op.constant(gradient_output_val, dtype=dtypes.float32)
-    gradient_input = nn_ops.conv2d_backprop_filter(pad, kernel_sizes, gradient_output, stride_sizes, "VALID")
+    gradient_input = nn_ops.conv3d_backprop_filter_v2(pad, kernel_sizes, gradient_output, stride_sizes, "VALID")
 
     return conv, gradient_input
 
@@ -95,31 +95,31 @@ class ConvBackpropFilterTest(test.TestCase):
     exist_pad_conv = False
     exist_pad_conv_backprop_filter = False
     for node in graph.node:
-      if 'PadWithConv2DBackpropFilter' in node.op:
+      if 'PadWithConv3DBackpropFilter' in node.op:
         exist_pad_conv_backprop_filter = True
 
-      if 'PadWithConv2D' in node.op and fusedConv == False:
+      if 'PadWithConv3D' in node.op and fusedConv == False:
         exist_pad_conv = True
 
-      if 'PadWithFusedConv2D' in node.op and fusedConv == True:
+      if 'PadWithFusedConv3D' in node.op and fusedConv == True:
         exist_pad_conv = True
 
     self.assertTrue(exist_pad_conv)
     self.assertTrue(exist_pad_conv_backprop_filter)
 
   @test_util.run_deprecated_v1
-  def testPadWithConv2DAccuracy(self):
+  def testPadWithConv3DAccuracy(self):
     self._testAccuracy(fusedConv = False)
 
-  def testPadWithFusedConv2DAccuracy(self):
+  def testPadWithFusedConv3DAccuracy(self):
     self._testAccuracy(fusedConv = True)
 
   @test_util.run_deprecated_v1
-  def testPadWithConv2DGraphStructure(self):
+  def testPadWithConv3DGraphStructure(self):
     self._testGraphStructure(fusedConv = False)
 
   @test_util.run_deprecated_v1
-  def testPadWithFusedConv2DGraphStructure(self):
+  def testPadWithFusedConv3DGraphStructure(self):
     self._testGraphStructure(fusedConv = True)
 
 if __name__ == "__main__":
