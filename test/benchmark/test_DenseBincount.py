@@ -21,33 +21,35 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import math_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
-from utils import reduction_size, tailed_no_tailed_size
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.int32] 
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.int32]  # BF16 is not supported by CUDA
 
-ITERATION = 1
+ITERATION = 5
 
-class DenseBincountTest(test.TestCase):
+class BincountTest(test.TestCase):
     def _test_impl(self, m, n, dtype):
         np.random.seed(0)
-        x = np.random.choice(m, n, replace=False)
-        y = np.random.choice(m, n, replace=False)
+        x = np.random.choice(m, n, replace=True)
+        y = np.random.choice(m, n, replace=True)
         values = constant_op.constant(x, dtype=tf.int32)
-        weights = tf.constant(y, dtype=tf.int32)
+        weights = tf.constant(y, dtype=dtype)
         flush_cache()
-        out_gpu = tf.math.bincount(values,weights=weights)
+        out_gpu = math_ops.dense_bincount(values, size=n, weights=weights, binary_output=False)
 
     @add_profiling
     @multi_run(ITERATION)
-    def testDenseBincount(self):
+    def testBincount(self):
+        # argument dtype of dense_bincount
+        # weight: int32, float32
         for dtype in FLOAT_COMPUTE_TYPE:
-            self._test_impl(1024, 256, dtype)
-            self._test_impl(8192, 4095, dtype)
+            for size in [8192, 8193, 16384, 16385]:
+                self._test_impl(size, size, dtype)
+
 
 
 if __name__ == '__main__':
