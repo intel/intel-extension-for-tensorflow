@@ -113,7 +113,8 @@ class StatefulScatterNdTest(test.TestCase):
                         tf_scatter,
                         vtype,
                         itype,
-                        repeat_indices=False):
+                        repeat_indices=False,
+                        is_ref=False):
     np.random.seed(8)
     ref_shapes = [(3, 6), (3, 6), (3, 6, 9), (3, 6, 9), (3, 6, 9), (3, 6, 9)]
     indices_shapes = [(2,), (2, 2), (2,), (2, 2), (2, 3), (2, 3, 3)]
@@ -151,18 +152,26 @@ class StatefulScatterNdTest(test.TestCase):
         new = ref.copy()
         np_scatter(new, indices, updates)
         # Scatter via tensorflow
-        ref_var = variables.VariableV1(ref)
+        if is_ref:
+          ref_var = variables.RefVariable(ref)
+        else:
+          ref_var = variables.Variable(ref)
         self.evaluate(ref_var.initializer)
-        self.evaluate(tf_scatter(ref_var, indices, updates))
-
+        if tf_scatter == state_ops.resource_scatter_nd_max or tf_scatter == state_ops.resource_scatter_nd_min:
+          self.evaluate(tf_scatter(ref=ref_var.handle, indices=indices, updates=updates))
+        else:
+          self.evaluate(tf_scatter(ref=ref_var, indices=indices, updates=updates))
         # Compare
         self.assertAllClose(new, self.evaluate(ref_var))
 
-  def _VariableRankTests(self, np_scatter, tf_scatter):
+  def _VariableRankTests(self, np_scatter, tf_scatter, is_ref=False):
     # Maozhou: atomic_ref does NOT support half/bf16 type
-    for vtype in (np.int32, np.float32, np.float64, np.complex64, np.complex128):
+    vtypes = [np.int32, np.int64, np.float32, np.float64]
+    if tf_scatter not in [state_ops.resource_scatter_nd_max, state_ops.resource_scatter_nd_min, state_ops.scatter_nd_max, state_ops.scatter_nd_min]:
+      vtypes = vtypes + [np.complex64, np.complex128]
+    for vtype in vtypes:
       for itype in (np.int32, np.int64):
-        self._VariableRankTest(np_scatter, tf_scatter, vtype, itype)
+        self._VariableRankTest(np_scatter, tf_scatter, vtype, itype, is_ref=is_ref)
 
   def testSimple(self):
     indices = constant_op.constant([[4], [3], [1], [7]], dtype=dtypes.int32)
@@ -232,14 +241,40 @@ class StatefulScatterNdTest(test.TestCase):
       result = self.evaluate(scatter)
       self.assertAllClose(result, expected)
 
-  def testVariableRankUpdate(self):
+  def testResourceVariableRankUpdate(self):
     self._VariableRankTests(_NumpyUpdate, state_ops.scatter_nd_update)
 
-  def testVariableRankAdd(self):
+  def testResourceVariableRankAdd(self):
     self._VariableRankTests(_NumpyAdd, state_ops.scatter_nd_add)
 
-  def testVariableRankSub(self):
+  def testResourceVariableRankSub(self):
     self._VariableRankTests(_NumpySub, state_ops.scatter_nd_sub)
+
+  def testResourceVariableRankMax(self):
+    self._VariableRankTests(_NumpyMax, state_ops.resource_scatter_nd_max)
+
+  def testResourceVariableRankMin(self):
+    self._VariableRankTests(_NumpyMin, state_ops.resource_scatter_nd_min)
+
+  @test_util.deprecated_graph_mode_only
+  def testVariableRankUpdate(self):
+    self._VariableRankTests(_NumpyUpdate, state_ops.scatter_nd_update, True)
+
+  @test_util.deprecated_graph_mode_only
+  def testVariableRankAdd(self):
+    self._VariableRankTests(_NumpyAdd, state_ops.scatter_nd_add, True)
+
+  @test_util.deprecated_graph_mode_only
+  def testVariableRankSub(self):
+    self._VariableRankTests(_NumpySub, state_ops.scatter_nd_sub, True)
+
+  @test_util.deprecated_graph_mode_only
+  def testVariableRankMax(self):
+    self._VariableRankTests(_NumpyMax, state_ops.scatter_nd_max, True)
+
+  @test_util.deprecated_graph_mode_only
+  def testVariableRankMin(self):
+    self._VariableRankTests(_NumpyMin, state_ops.scatter_nd_min, True)
 
   # TODO(ebrevdo): Re-enable when we need ScatterNdMul.
   # def testVariableRankMul(self):
@@ -249,14 +284,14 @@ class StatefulScatterNdTest(test.TestCase):
   # def testVariableRankDiv(self):
   #   self._VariableRankTests(_NumpyDiv, state_ops.scatter_nd_div)
 
-  def _ScatterRepeatIndicesTest(self, np_scatter, tf_scatter):
+  def _ScatterRepeatIndicesTest(self, np_scatter, tf_scatter, is_ref=False):
     # Maozhou: atomic_ref does NOT support half/bf16 type
     for vtype in (np.int32, np.float32, np.float64):
       for itype in (np.int32, np.int64):
         self._VariableRankTest(
-          np_scatter, tf_scatter, vtype, itype, repeat_indices=True)
+          np_scatter, tf_scatter, vtype, itype, repeat_indices=True, is_ref=is_ref)
 
-  def testScatterRepeatIndices(self):
+  def testScatterRepeatIndicesAddSub(self):
     """This tests scatter_add using indices that repeat."""
     self._ScatterRepeatIndicesTest(_NumpyAdd, state_ops.scatter_nd_add)
     self._ScatterRepeatIndicesTest(_NumpySub, state_ops.scatter_nd_sub)
@@ -264,18 +299,25 @@ class StatefulScatterNdTest(test.TestCase):
     # self._ScatterRepeatIndicesTest(_NumpyMul, state_ops.scatter_nd_mul)
     # self._ScatterRepeatIndicesTest(_NumpyDiv, state_ops.scatter_nd_div)
 
+  @test_util.deprecated_graph_mode_only
+  def testScatterRepeatIndicesMaxMin(self):
+    self._ScatterRepeatIndicesTest(_NumpyMax, state_ops.scatter_nd_max, True)
+    self._ScatterRepeatIndicesTest(_NumpyMin, state_ops.scatter_nd_min, True)
+
   # TODO(simister): Re-enable once binary size increase due to
   # extra templating is back under control and this op is re-enabled
-  # def testBooleanScatterUpdate(self):
-  #   with self.session(use_gpu=False) as session:
-  #     var = tf.Variable([True, False])
-  #     update0 = tf.compat.v1.scatter_nd_update(var, [[1]], [True])
-  #     update1 = tf.compat.v1.scatter_nd_update(
-  #         var, tf.constant(
-  #             [[0]], dtype=tf.int64), [False])
-  #     self.evaluate(var.initializer)
-  #     session.run([update0, update1])
-  #     self.assertAllEqual([False, True], self.evaluate(var))
+  @test_util.deprecated_graph_mode_only
+  def testBooleanScatterUpdate(self):
+    if not test.is_gpu_available():
+      with self.session(use_gpu=False) as session:
+        var = variables.Variable([True, False])
+        update0 = state_ops.scatter_nd_update(var, [[1]], [True])
+        update1 = state_ops.scatter_nd_update(
+            var, constant_op.constant(
+                [[0]], dtype=dtypes.int64), [False])
+        self.evaluate(var.initializer)
+        session.run([update0, update1])
+        self.assertAllEqual([False, True], self.evaluate(var))
 
   def testScatterOutOfRangeCpu(self):
     # TODO(simister): Re-enable once binary size increase due to
@@ -438,12 +480,15 @@ class StatefulScatterNdTest(test.TestCase):
       self.assertAllEqual(self.evaluate(ref), expected_result)
 
   # TODO(fpmc): Re-enable this test when gpu_pip test actually runs on a GPU.
-  def _disabledTestScatterOutOfRangeGpu(self):
-    if not test.IsBuiltWithCuda():
-      return
+  @test_util.deprecated_graph_mode_only
+  def testScatterOutOfRangeGpu(self):
+    #if not test.IsBuiltWithCuda():
+    #  return
     # TODO(simister): Re-enable once binary size increase due to
     # scatter_nd ops is under control.
     # tf.scatter_nd_mul, tf.scatter_nd_div,
+    if not test.is_gpu_available():
+      self.skipTest("Skip on CPU")
     for op in (state_ops.scatter_nd_add, state_ops.scatter_nd_sub,
                state_ops.scatter_nd_update):
       params = np.array([1, 2, 3, 4, 5, 6]).astype(np.float32)
@@ -455,13 +500,13 @@ class StatefulScatterNdTest(test.TestCase):
         self.evaluate(ref.initializer)
 
         # Indices all in range, no problem.
-        indices = np.array([2, 0, 5])
+        indices = np.array([[2], [0], [5]])
         op(ref, indices, updates).eval()
 
         # Indices out of range should not fail.
-        indices = np.array([-1, 0, 5])
+        indices = np.array([[-1], [0], [5]])
         op(ref, indices, updates).eval()
-        indices = np.array([2, 0, 6])
+        indices = np.array([[2], [0], [6]])
         op(ref, indices, updates).eval()
 
 
