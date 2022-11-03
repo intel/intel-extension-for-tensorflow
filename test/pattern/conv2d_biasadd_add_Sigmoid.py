@@ -53,7 +53,7 @@ class FusedConv2DTest(test_util.TensorFlowTestCase):
             graph = metadata.partition_graphs[0]
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_OneDnnFusedConv2D'):
+                if "FusedConv2D" in node.op:
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 3 and fused_ops[0] == b'BiasAdd' and fused_ops[1] == b'Add' and fused_ops[2] == b'Sigmoid'
                     break
