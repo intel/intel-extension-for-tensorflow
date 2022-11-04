@@ -25,6 +25,7 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
@@ -32,6 +33,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.ops import gradient_checker
+from tensorflow.python.ops import variables
 
 
 class PythonOpImpl(object):
@@ -46,7 +48,6 @@ class CppOpImpl(object):
   @staticmethod
   def batch_to_space(*args, **kwargs):
     return gen_array_ops.batch_to_space(*args, **kwargs)
-
 
 class BatchToSpaceDepthToSpace(test.TestCase, PythonOpImpl):
 
@@ -358,6 +359,24 @@ class BatchToSpaceNDGradientTest(test.TestCase):
     for dtype in [dtypes.int64, dtypes.int32]:
       self._compare([1, 2, 3, 5], [2, 2], [[1, 1], [1, 1]], dtype)
 
+class RawOpBatchToSpace(test.TestCase):
+  @test_util.run_deprecated_v1
+  def testRawOpBatchToSpace(self):
+    for data_type in [np.float32, np.float64]:
+      x = [[[[1.], [3.]], [[9.], [11.]]],
+        [[[2.], [4.]], [[10.], [12.]]],
+        [[[5.], [7.]], [[13.], [15.]]],
+        [[[6.], [8.]], [[14.], [16.]]]]
+      x = variables.Variable(x, dtype = data_type)
+      y1 = tf.raw_ops.BatchToSpace(input = x, block_size = 2, crops = [[0, 0], [0, 0]])
+      y2 = [[[[1.],   [2.],  [3.],  [4.]],
+          [[5.],   [6.],  [7.],  [8.]],
+          [[9.],  [10.], [11.],  [12.]],
+          [[13.], [14.], [15.],  [16.]]]]
+      with self.session() as sess:
+        sess.run(variables.global_variables_initializer())
+        output_val = sess.run(y1)
+        self.assertAllEqual(output_val, y2)
 
 if __name__ == "__main__":
   test.main()
