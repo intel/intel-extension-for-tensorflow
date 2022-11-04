@@ -419,10 +419,10 @@ class LegacyQuantizedConvOpBase
         // the scaling factor of 255.0f cancels each other and thus is avoided.
         // If it is not then  it is DT_INT8 and is scaled appropriately.
 
-        if (summand_type == DT_QUINT8) {
-          sum_post_op_scale = scale_summand / scale_output;
-        } else {
+        if (std::is_same<Toutput, quint8>::value && summand_type == DT_QINT8) {
           sum_post_op_scale = 255.0f * scale_summand / (scale_output * 127.0f);
+        } else {
+          sum_post_op_scale = scale_summand / scale_output;
         }
       } else {
         sum_post_op_scale = 1.0;
@@ -512,7 +512,7 @@ class LegacyQuantizedConvOpBase
       return;
     }
 
-    if (std::is_same<Toutput, quint8>::value) {
+    if (!std::is_same<Toutput, qint32>::value) {
       Tensor& summand = const_cast<Tensor&>(context->input(kSummandDataIndex));
 
       // TODO(itex): We could try to use Tsummand here
@@ -520,7 +520,7 @@ class LegacyQuantizedConvOpBase
       ITEX_CHECK((summand_type == DT_QINT8) || (summand_type == DT_QUINT8));
 
       // TODO(itex): Handle both block and plain layout tensors
-      if (summand_type == DT_QINT8) {
+      if (std::is_same<Toutput, quint8>::value && summand_type == DT_QINT8) {
         // TODO(itex): TF proper uses bitcastfrom, check whether there is
         // problem here.
         OP_REQUIRES_OK(
@@ -533,7 +533,22 @@ class LegacyQuantizedConvOpBase
       // LPOT about new design.
       // JIRA: https://jira.devtools.intel.com/browse/TFDO-5059
 
-      context->set_output(this->kDstIndex_, context->input(kSummandDataIndex));
+      if (std::is_same<Toutput, qint8>::value &&
+          std::is_same<Tsummand, qint8>::value &&
+          context->input(kSummandDataIndex).dtype() == DT_QUINT8) {
+        // To bypass the INC pb generation bug. INC may wrongly set Tsummand
+        // attr qint8 when the actual input is quint8. Intel-TF can avoid the
+        // issue by internal type check in forward_input_to_output_with_shape.
+        // Since ITEX have to use set_output here, it will always inplace, and
+        // cause crash.
+
+        context->allocate_output(this->kDstIndex_, dst_tensor_shape,
+                                 dst_tensor);
+      } else {
+        context->set_output(this->kDstIndex_,
+                            context->input(kSummandDataIndex));
+      }
+
       *dst_tensor = context->mutable_output(this->kDstIndex_);
       return;
     }

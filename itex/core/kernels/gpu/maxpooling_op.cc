@@ -606,4 +606,19 @@ TF_CALL_qint8(REGISTER_KERNEL);
 TF_CALL_quint8(REGISTER_KERNEL);
 #undef REGISTER_KERNEL
 
+#define REGISTER_KERNEL(TYPE)         \
+  REGISTER_KERNEL_BUILDER(            \
+      Name("_QuantizedMaxPool3D")     \
+          .Device(DEVICE_GPU)         \
+          .HostMemory("min_input")    \
+          .HostMemory("max_input")    \
+          .HostMemory("min_output")   \
+          .HostMemory("max_output")   \
+          .TypeConstraint<TYPE>("T"), \
+      PoolingOp<GPUDevice, TYPE, dnnl::algorithm::pooling_max>)
+
+TF_CALL_qint8(REGISTER_KERNEL);
+TF_CALL_quint8(REGISTER_KERNEL);
+#undef REGISTER_KERNEL
+
 }  // namespace itex

@@ -172,6 +172,10 @@ const std::vector<NativeFormatInfo>* GetNativeFormatInfo() {
       // INT8 op
       {"Dequantize", "_ITEXDequantize", CopyAttrsAll, RewriteQuantize},
       {"QuantizedAvgPool", "ITEXQuantizedAvgPool", CopyAttrsAll, AlwaysRewrite},
+      // Disable concat rewrite, since we don't support concat int8 with
+      // different scales
+      // {"QuantizedConcatV2", "_ITEXQuantizedConcatV2", CopyAttrsAll,
+      //  AlwaysRewrite},
       {"QuantizedConv2D", "_ITEXQuantizedConv2D", CopyAttrsQuantizedConv2D,
        AlwaysRewrite},
       {"QuantizedConv2DAndRequantize", "_ITEXQuantizedConv2DAndRequantize",
@@ -222,6 +226,8 @@ const std::vector<NativeFormatInfo>* GetNativeFormatInfo() {
        "_ITEXQuantizedMatMulWithBiasAndRequantize", CopyAttrsQuantizedMatMul,
        AlwaysRewrite},
       {"QuantizedMaxPool", "_ITEXQuantizedMaxPool", CopyAttrsAll,
+       AlwaysRewrite},
+      {"QuantizedMaxPool3D", "_ITEXQuantizedMaxPool3D", CopyAttrsAll,
        AlwaysRewrite},
       {"QuantizedReshape", "_ITEXQuantizedReshape", CopyAttrsAll,
        RewriteQuantizeReshape},

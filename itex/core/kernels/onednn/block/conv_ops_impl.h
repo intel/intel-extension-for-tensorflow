@@ -618,9 +618,9 @@ class OneDnnConvOp : public OpKernel {
       OP_REQUIRES(
           context,
           (!post_op_util_.HasAdd() ||
-           (post_op_util_.HasAdd() && (std::is_same<Toutput, int8>::value ||
-                                       std::is_same<Toutput, uint8>::value ||
-                                       std::is_same<Toutput, int>::value))),
+           (post_op_util_.HasAdd() && (std::is_same<Toutput, qint8>::value ||
+                                       std::is_same<Toutput, quint8>::value ||
+                                       std::is_same<Toutput, qint32>::value))),
           errors::InvalidArgument(
               "OneDnnConvOp: Invalid data type in AddN fusion."));
       AllocateOutputSetOneDnnShape(context, kDstIndex_, dst_tensor,
@@ -916,7 +916,7 @@ class OneDnnQuantizedConvSumReluOp
                           is_depthwise>::ExtendInt8PostOps(context);
     // Calculate the scale (beta in OneDnn api term) for sum
     float sum_post_op_scale;
-    if (std::is_same<Toutput, quint8>::value) {
+    if (!std::is_same<Toutput, qint32>::value) {
       const Tensor& summand = context->input(kSummandDataIndex);
       // TODO(itex): investigate OpKernel::input_type
       DataType summand_type = summand.dtype();
@@ -939,10 +939,10 @@ class OneDnnQuantizedConvSumReluOp
       // the scaling factor of 255.0f cancels each other and thus is avoided.
       // If it is not then  it is DT_INT8 and is scaled appropriately.
 
-      if (summand_type == DT_QUINT8) {
-        sum_post_op_scale = scale_summand / scale_output;
-      } else {
+      if (std::is_same<Toutput, quint8>::value && summand_type == DT_QINT8) {
         sum_post_op_scale = 255.0f * scale_summand / (scale_output * 127.0f);
+      } else {
+        sum_post_op_scale = scale_summand / scale_output;
       }
     } else {
       sum_post_op_scale = 1.0;
@@ -959,7 +959,7 @@ class OneDnnQuantizedConvSumReluOp
                             OneDnnShape* output_onednn_shape,
                             TensorShape tensor_shape,
                             Tensor** dst_tensor) override {
-    if (std::is_same<Toutput, quint8>::value) {
+    if (!std::is_same<Toutput, qint32>::value) {
       Tensor& summand = const_cast<Tensor&>(context->input(kSummandDataIndex));
 
       // TODO(itex): We could try to use Tsummand here
@@ -971,7 +971,7 @@ class OneDnnQuantizedConvSumReluOp
       auto dst_md = summand_onednn_shape.GetOneDnnLayout();
 
       // TODO(itex): Handle both block and plain layout tensors
-      if (summand_type == DT_QINT8) {
+      if (std::is_same<Toutput, quint8>::value && summand_type == DT_QINT8) {
         // TODO(itex): TF proper uses bitcastfrom, check whether there is
         // problem here.
         OP_REQUIRES_OK(
@@ -986,7 +986,20 @@ class OneDnnQuantizedConvSumReluOp
       // LPOT about new design.
       // JIRA: https://jira.devtools.intel.com/browse/TFDO-5059
 
-      context->set_output(this->kDstIndex_, context->input(kSummandDataIndex));
+      if (std::is_same<Toutput, qint8>::value &&
+          std::is_same<Tsummand, qint8>::value &&
+          context->input(kSummandDataIndex).dtype() == DT_QUINT8) {
+        // To bypass the INC pb generation bug. INC may wrongly set Tsummand
+        // attr qint8 when the actual input is quint8. Intel-TF can avoid the
+        // issue by internal type check in forward_input_to_output_with_shape.
+        // Since ITEX have to use set_output here, it will always inplace, and
+        // cause crash.
+        context->allocate_output(this->kDstIndex_, tensor_shape, dst_tensor);
+      } else {
+        context->set_output(this->kDstIndex_,
+                            context->input(kSummandDataIndex));
+      }
+
       AllocateMetaData(context, this->kDstIndex_, summand_onednn_shape);
       *dst_tensor = context->mutable_output(this->kDstIndex_);
       return;
@@ -1682,9 +1695,9 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
       OP_REQUIRES(context,
                   (!this->post_op_util_.HasAdd() ||
                    (this->post_op_util_.HasAdd() &&
-                    (std::is_same<Toutput, int8>::value ||
-                     std::is_same<Toutput, uint8>::value ||
-                     std::is_same<Toutput, int>::value))),
+                    (std::is_same<Toutput, qint8>::value ||
+                     std::is_same<Toutput, quint8>::value ||
+                     std::is_same<Toutput, qint32>::value))),
                   errors::InvalidArgument(
                       "OneDnnConvOp: Invalid data type in AddN fusion."));
       AllocateOutputSetOneDnnShape(context, this->kDstIndex_, dst_tensor,

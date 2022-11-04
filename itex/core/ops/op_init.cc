@@ -44,6 +44,7 @@ void Register_TFLegacyOp() {
       {"_QuantizedFusedMatMulAndDequantize",
        Register_QuantizedFusedMatMulAndDequantizeOp},
       {"_QuantizedMatMul", Register_QuantizedMatMulOp},
+      {"_QuantizedMaxPool3D", Register_QuantizedMaxPool3DOp},
       {"_QuantizedTranspose", Register_QuantizedTransposeOp}};
 
   for (auto register_pair : op_register_map) {
@@ -195,6 +196,7 @@ void RegisterOps() {
   Register_ITEXQuantizedMatMulWithBiasAndReluAndRequantizeOp();
   Register_ITEXQuantizedMatMulWithBiasAndRequantizeOp();
   Register_ITEXQuantizedMaxPoolOp();
+  Register_ITEXQuantizedMaxPool3DOp();
   Register_ITEXQuantizedReshapeOp();
   Register_ITEXQuantizedTransposeOp();
   Register_ITEXQuantizedConv2DOp();

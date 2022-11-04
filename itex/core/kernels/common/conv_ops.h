@@ -1151,9 +1151,9 @@ class ConvOpBase : public OpKernel {
       OP_REQUIRES(
           context,
           (!post_op_util_.HasAdd() ||
-           (post_op_util_.HasAdd() && (std::is_same<Toutput, int8>::value ||
-                                       std::is_same<Toutput, uint8>::value ||
-                                       std::is_same<Toutput, int>::value))),
+           (post_op_util_.HasAdd() && (std::is_same<Toutput, qint8>::value ||
+                                       std::is_same<Toutput, quint8>::value ||
+                                       std::is_same<Toutput, qint32>::value))),
           errors::InvalidArgument("ConvOp: Invalid data type in AddN fusion."));
 
       OP_REQUIRES_OK(

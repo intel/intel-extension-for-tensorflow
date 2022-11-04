@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/maxpooling_op.h"
+
 #include "itex/core/utils/register_types.h"
 
 namespace itex {
@@ -43,6 +44,28 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_CPU_POOL_GRAD_KERNELS);
 #define REGISTER_KERNEL(TYPE)         \
   REGISTER_KERNEL_BUILDER(            \
       Name("_ITEXQuantizedMaxPool")   \
+          .Device(DEVICE_CPU)         \
+          .TypeConstraint<TYPE>("T"), \
+      PoolingOp<CPUDevice, TYPE, dnnl::algorithm::pooling_max>)
+
+TF_CALL_qint8(REGISTER_KERNEL);
+TF_CALL_quint8(REGISTER_KERNEL);
+#undef REGISTER_KERNEL
+
+#define REGISTER_KERNEL(TYPE)         \
+  REGISTER_KERNEL_BUILDER(            \
+      Name("_ITEXQuantizedMaxPool3D") \
+          .Device(DEVICE_CPU)         \
+          .TypeConstraint<TYPE>("T"), \
+      PoolingOp<CPUDevice, TYPE, dnnl::algorithm::pooling_max>)
+
+TF_CALL_qint8(REGISTER_KERNEL);
+TF_CALL_quint8(REGISTER_KERNEL);
+#undef REGISTER_KERNEL
+
+#define REGISTER_KERNEL(TYPE)         \
+  REGISTER_KERNEL_BUILDER(            \
+      Name("_QuantizedMaxPool3D")     \
           .Device(DEVICE_CPU)         \
           .TypeConstraint<TYPE>("T"), \
       PoolingOp<CPUDevice, TYPE, dnnl::algorithm::pooling_max>)

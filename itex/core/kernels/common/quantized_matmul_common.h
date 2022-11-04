@@ -1044,6 +1044,13 @@ class QuantizedFusedMatMulV2Op
       this->kFilterMaxRangeIndex += 1;
     }
 
+    // Currently, these index are hardcoded, due to the fusion currently
+    // supported
+    this->kMinFreezedIndex = 7;
+    this->kMaxFreezedIndex = 8;
+    this->kDstMinRangeIndex = 1;
+    this->kDstMaxRangeIndex = 2;
+
     // Set alpha if get `LeakyRelu` after adding ops.
     if (this->post_op_util_.HasLeakyRelu()) {
       float alpha;
@@ -1133,7 +1140,10 @@ class QuantizedFusedMatMulV2Op
           const float max_int8_output =
               (std::is_same<Toutput, quint8>::value) ? 255.0f : 127.0f;
           float scale = max_int8_output / range_output;
-          this->post_op_util_.SetPostOpScale(activation_type_, scale);
+
+          // Current supported fusion, activation is always 2nd post op
+          string activation_type = fused_ops_[1];
+          this->post_op_util_.SetPostOpScale(activation_type, scale);
         }
       }
 

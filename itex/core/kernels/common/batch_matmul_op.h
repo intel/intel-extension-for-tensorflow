@@ -392,8 +392,10 @@ class QuantizedBatchMatMulV2Op
         string op = fused_ops[i];
         if (op == "Dequantize") {
           continue;
-        } else if (op == "Mul" || op == "Add") {
+        } else if (op == "Mul") {
           this->fused_ops_.push_back(op);
+        } else if (op == "Add") {
+          this->fused_ops_.push_back("BinaryAdd");
         } else {
           OP_REQUIRES(context, false,
                       errors::Unimplemented(
@@ -414,6 +416,9 @@ class QuantizedBatchMatMulV2Op
         OP_REQUIRES_OK(context,
                        context->GetAttr("fused_ops", &this->fused_ops_));
       }
+      for (int i = 0; i < this->fused_ops_.size(); ++i) {
+        if (this->fused_ops_[i] == "Add") this->fused_ops_[i] = "BinaryAdd";
+      }
       if (context->HasAttr("num_args")) {
         OP_REQUIRES_OK(context, context->GetAttr("num_args", &this->num_args_));
       } else {
@@ -422,7 +427,7 @@ class QuantizedBatchMatMulV2Op
 
       if (context->HasAttr("fused_ops") && context->HasAttr("num_args")) {
         if (this->fused_ops_ == std::vector<string>{"Mul"} ||
-            this->fused_ops_ == std::vector<string>{"Mul", "Add"}) {
+            this->fused_ops_ == std::vector<string>{"Mul", "BinaryAdd"}) {
           OP_REQUIRES(context, this->num_args_ == this->fused_ops_.size(),
                       errors::InvalidArgument(
                           "_QuantizedFusedBatchMatMulV2AndDequantize should "

@@ -245,12 +245,20 @@ Status NodeTypeAttrMap::AddNode(const NodeDef& node) {
       // TODO(itex): remove this workaround, once stock-tf supports "dtype"
       // attribute for "QuantizeV2" op
       if (node.op() == "QuantizeV2" && attr_name == "dtype") {
+        ITEX_LOG(WARNING) << node.op() << " " << node.name()
+                          << " has dtype attr. dtype is meaningless in stock "
+                             "TF and ITEX. It only works with Intel TF.";
         continue;
       }
 
-      // TODO(itex): remove this workaround, once stock-tf supports "epsilon"
-      // attribute for "_MklFusedBatchMatMulV2" op
-      if (node.op() == "_MklFusedBatchMatMulV2" && attr_name == "epsilon") {
+      // TODO(itex): remove this workaround. These attributes are misadded by
+      // INC
+      if ((node.op() == "_MklFusedBatchMatMulV2" && attr_name == "epsilon") ||
+          ((node.op() == "QuantizedMaxPool" ||
+            node.op() == "QuantizedConcatV2") &&
+           attr_name == "out_type")) {
+        ITEX_LOG(ERROR) << "Find unexpected attr " << attr_name << " in op "
+                        << node.op();
         continue;
       }
 

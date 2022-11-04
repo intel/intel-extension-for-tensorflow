@@ -38,6 +38,7 @@ void Register_QuantizedFusedBatchMatMulV2AndDequantizeOp();
 void Register_QuantizedFusedMatMulOp();
 void Register_QuantizedFusedMatMulAndRequantizeOp();
 void Register_QuantizedFusedMatMulAndDequantizeOp();
+void Register_QuantizedMaxPool3DOp();
 void Register_QuantizedTransposeOp();
 
 // TODO(itex): remove this op definition, once this op is upstreamed from
@@ -163,6 +164,7 @@ void Register_ITEXQuantizedMatMulWithBiasAndReluOp();
 void Register_ITEXQuantizedMatMulWithBiasAndReluAndRequantizeOp();
 void Register_ITEXQuantizedMatMulWithBiasAndRequantizeOp();
 void Register_ITEXQuantizedMaxPoolOp();
+void Register_ITEXQuantizedMaxPool3DOp();
 void Register_ITEXQuantizedReshapeOp();
 void Register_ITEXQuantizedTransposeOp();
 void Register_ITEXQuantizedConv2DOp();
