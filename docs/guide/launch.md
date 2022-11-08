@@ -124,8 +124,8 @@ Users can change them by the following knobs.
 
 | Knob | Type | Default Value | Description |
 | :-- | :--: | :--: | :-- |
-| *```--tf_num_intraop_threads```* | INTEGER | None | Set environment variable *`TF_NUM_INTRAOP_THREADS`*. |
-| *```--tf_num_interop_threads```* | INTEGER | None | Set environment variable *`TF_NUM_INTEROP_THREADS`*. |
+| *```--tf_num_intraop_threads```* | STRING | None | By Default, this argument is None, and set environment variable *`TF_NUM_INTRAOP_THREADS`* as the number of cores per instance. |
+| *```--tf_num_interop_threads```* | STRING | None | By Default, this argument is None, and set environment variable *`TF_NUM_INTEROP_THREADS`*=1. |
 | *```--enable_itex_amp```* | BOOLEAN | False | Set environment variable *`ITEX_AUTO_MIXED_PRECISION=1`*. |
 | *```--enable_itex_layout_opt```* | BOOLEAN | False | Set environment variable *`ITEX_LAYOUT_OPT=0`* or *`1`*. |
 
