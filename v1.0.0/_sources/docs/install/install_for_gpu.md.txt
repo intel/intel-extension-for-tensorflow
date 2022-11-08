@@ -4,6 +4,9 @@
 
 Verified Hardware Platforms:
  - Intel® Data Center GPU Flex Series 170
+ - *Experimental:* Intel® Arc™ A-Series
+
+For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [Intel® Arc™ A-Series GPU Software Installation](experimental/install_for_arc_gpu.md) for details.
 
 ## Software Requirements
 
