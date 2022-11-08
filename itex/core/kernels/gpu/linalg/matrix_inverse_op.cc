@@ -16,13 +16,12 @@ limitations under the License.
 ==============================================================================*/
 
 #if ITEX_USE_MKL
-#include "mkl.h"  // NOLINT(build/include_subdir)
-#include "oneapi/mkl/lapack.hpp"
-
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/kernels/common/transpose_functor.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
+#include "mkl.h"  // NOLINT(build/include_subdir)
+#include "oneapi/mkl/lapack.hpp"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {

@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_ABI_H_
 
 #include <string>
+
 #include "itex/core/utils/platform_types.h"
 
 namespace itex {

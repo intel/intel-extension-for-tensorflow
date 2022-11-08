@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/softmax_op.h"
+
 #include "itex/core/devices/gpu/eigen_stream_device.h"
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
 #include "itex/core/kernels/gpu/softmax_op_functor.h"

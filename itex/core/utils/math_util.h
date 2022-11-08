@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_MATH_UTIL_H_
 
 #include <type_traits>
+
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/types.h"
 

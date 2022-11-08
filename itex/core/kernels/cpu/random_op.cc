@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/random_op.h"
+
 #include "itex/core/kernels/cpu/random_op_cpu.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/register_types.h"

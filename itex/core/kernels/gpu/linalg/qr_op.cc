@@ -15,7 +15,6 @@ limitations under the License.
 
 #if ITEX_USE_MKL
 #include "itex/core/kernels/gpu/linalg/qr_op_impl.h"
-
 #include "itex/core/utils/types.h"
 
 namespace itex {

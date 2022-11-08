@@ -17,7 +17,6 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/fused_random_op_gpu.h"
 #include "itex/core/kernels/gpu/random_op_gpu.h"
-
 #include "itex/core/utils/lib/random/guarded_philox_random.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"

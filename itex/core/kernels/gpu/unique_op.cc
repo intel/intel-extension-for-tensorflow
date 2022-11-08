@@ -21,7 +21,6 @@ limitations under the License.
 
 #include "itex/core/devices/gpu/eigen_stream_device.h"
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
-
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/plugin_tensor.h"
@@ -29,7 +28,6 @@ limitations under the License.
 #include "itex/core/utils/str_util.h"
 #include "itex/core/utils/tensor_types.h"
 #include "itex/core/utils/types.h"
-
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {

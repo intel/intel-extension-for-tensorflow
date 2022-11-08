@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_UTIL_H_
 
 #include <string>
+
 #include "itex/core/utils/tensor_shape.h"
 
 namespace itex {

@@ -20,12 +20,11 @@ limitations under the License.
 #include <algorithm>
 #include <string>
 
-#include "tensorflow/c/c_api_experimental.h"
-
 #include "itex/core/utils/gtl/flatset.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/str_util.h"
 #include "protos/attr_value.pb.h"
+#include "tensorflow/c/c_api_experimental.h"
 
 namespace itex {
 namespace graph {

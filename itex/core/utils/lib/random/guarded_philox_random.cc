@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/utils/lib/random/guarded_philox_random.h"
+
 #include "itex/core/utils/random.h"
 
 namespace itex {

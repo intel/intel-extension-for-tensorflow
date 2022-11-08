@@ -22,8 +22,8 @@ limitations under the License.
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "absl/container/flat_hash_set.h"
 
+#include "absl/container/flat_hash_set.h"
 #include "itex/core/devices/allocator.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/hw_info.h"

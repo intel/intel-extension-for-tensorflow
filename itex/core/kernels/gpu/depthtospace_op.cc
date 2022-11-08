@@ -15,11 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/kernels/gpu/depthtospace_op.h"
+
 #include <memory>
 #include <string>
 #include <utility>
-
-#include "itex/core/kernels/gpu/depthtospace_op.h"
 
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/op_kernel.h"

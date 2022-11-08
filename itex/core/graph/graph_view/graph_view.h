@@ -27,14 +27,12 @@ limitations under the License.
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
 #include "absl/strings/string_view.h"
-
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gtl/map_util.h"
 #include "itex/core/utils/node_def_util.h"
 #include "itex/core/utils/tensor_id.h"
-
 #include "protos/attr_value.pb.h"
 #include "protos/graph.pb.h"
 #include "protos/node_def.pb.h"

@@ -15,9 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include <ctime>
-
 #include "itex/core/ops/utils/env_time.h"
+
+#include <ctime>
 
 namespace itex {
 

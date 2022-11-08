@@ -18,9 +18,8 @@ limitations under the License.
 
 #include <map>
 
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
-
 #include "itex/core/devices/bfc_allocator.h"
+#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
 
 namespace itex {
 

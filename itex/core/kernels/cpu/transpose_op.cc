@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/transpose_op.h"
+
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/register_types_traits.h"
 

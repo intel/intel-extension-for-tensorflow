@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/utils/lib/random/simple_philox.h"
+
 #include "itex/core/utils/lib/random/exact_uniform_int.h"
 #include "itex/core/utils/logging.h"
 

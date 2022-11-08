@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/aggregate_ops.h"
+
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
 #include "itex/core/utils/onednn/onednn_util.h"

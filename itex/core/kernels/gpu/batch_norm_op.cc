@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/batch_norm_op.h"
+
 #include "itex/core/utils/numeric_op.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/plugin_tensor.h"

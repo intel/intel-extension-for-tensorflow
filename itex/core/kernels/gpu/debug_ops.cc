@@ -15,11 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
-
 #include "itex/core/kernels/gpu/debug_ops.h"
+
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/register_types.h"
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
 

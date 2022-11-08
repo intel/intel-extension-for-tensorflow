@@ -26,7 +26,6 @@ limitations under the License.
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "itex/core/graph/graph_view/graph_view.h"
-
 #include "itex/core/utils/node_def_util.h"
 #include "itex/core/utils/status.h"
 #include "itex/core/utils/tensor_id.h"

@@ -281,9 +281,9 @@ Status ValidateStridedSliceOp(
         return stride_i > 0 ? valid_range[c] : valid_range[(c + 1) & 1];
       } else {
         int64 x_fwd = x < 0 ? dim_i + x : x;  // make negative indices positive
-        return x_fwd < valid_range[0]
-                   ? valid_range[0]
-                   : x_fwd > valid_range[1] ? valid_range[1] : x_fwd;
+        return x_fwd < valid_range[0]   ? valid_range[0]
+               : x_fwd > valid_range[1] ? valid_range[1]
+                                        : x_fwd;
       }
     };
     if (shrink_i && stride_i <= 0) {

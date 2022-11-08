@@ -16,6 +16,7 @@ limitations under the License.
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
 
 #include <string>
+
 #include "itex/core/devices/gpu/gpu_pool_allocator.h"
 #include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
 

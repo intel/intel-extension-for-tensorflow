@@ -65,8 +65,8 @@ struct FillKernelTask {
 
     functor::FillPhiloxRandomKernel<Distribution,
                                     Distribution::kVariableSamplesPerOutput>
-    f(output_data, output_size, *philox, const_cast<Distribution&>(dist),
-      nullptr, nullptr);
+        f(output_data, output_size, *philox, const_cast<Distribution&>(dist),
+          nullptr, nullptr);
     f(myItem);
     // The last item updates the state.
     auto total_item_count = myItem.get_global_range()[0];

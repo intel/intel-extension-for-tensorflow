@@ -19,7 +19,6 @@ limitations under the License.
 #define ITEX_CORE_UTILS_GTL_MAP_UTIL_H_
 
 #include <cstddef>
-
 #include <iterator>
 #include <memory>
 #include <string>

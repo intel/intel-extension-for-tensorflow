@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/split_lib.h"
+
 #include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"

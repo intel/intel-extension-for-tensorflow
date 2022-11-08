@@ -85,10 +85,10 @@ The C++ code should conform to the [Google C++ Style Guide](https://google.githu
 To install `clang-format` and check a file with `clang-format` against custom style definition from the Intel® Extension for TensorFlow* source code root directory:
 
 ```bash
-apt-get install clang-format-8
+apt-get install clang-format-12
 
 # The -i option makes it inplace, by default formatted output is written to stdout
-clang-format-8 -i -style=file <file>
+clang-format-12 -i -style=file <file>
 ```
 
 To install `cpplint` and check a file with `cpplint` from the Intel® Extension for TensorFlow* source code root directory:

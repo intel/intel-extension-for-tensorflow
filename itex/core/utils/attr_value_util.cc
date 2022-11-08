@@ -28,7 +28,6 @@ limitations under the License.
 #include "itex/core/utils/str_util.h"
 #include "itex/core/utils/stringpiece.h"
 #include "itex/core/utils/types.h"
-
 #include "protos/attr_value.pb.h"
 #include "protos/tensor.pb.h"
 #include "protos/tensor_shape.pb.h"

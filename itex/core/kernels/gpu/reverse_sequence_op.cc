@@ -19,6 +19,7 @@ limitations under the License.
 
 #include <memory>
 #include <vector>
+
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/macros.h"
 #include "itex/core/utils/op_kernel.h"

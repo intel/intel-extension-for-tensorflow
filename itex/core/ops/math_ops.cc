@@ -15,12 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/c/ops.h"
-#include "tensorflow/c/tf_status.h"
-
 #include "itex/core/ops/shape_inference_fns.h"
 #include "itex/core/ops/utils/logging.h"
 #include "itex/core/ops/utils/status.h"
+#include "tensorflow/c/ops.h"
+#include "tensorflow/c/tf_status.h"
 
 void register_equality_comparison_with_cast(
     TF_OpDefinitionBuilder* op_builder) {

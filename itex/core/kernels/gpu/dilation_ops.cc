@@ -15,10 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/kernels/gpu/dilation_ops.h"
+
 #include <cfloat>
 #include <vector>
-
-#include "itex/core/kernels/gpu/dilation_ops.h"
 
 #include "itex/core/kernels/gpu/cast_op.h"
 #include "itex/core/utils/common_shape_fns.h"

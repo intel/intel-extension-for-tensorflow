@@ -28,7 +28,6 @@ limitations under the License.
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"
-
 #include "mkl.h"  // NOLINT(build/include_subdir)
 #include "oneapi/mkl/lapack.hpp"
 

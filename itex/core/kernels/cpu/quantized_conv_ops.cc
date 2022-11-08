@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/quantized_conv_ops.h"
+
 #include "itex/core/kernels/common/no_ops.h"
 
 namespace itex {

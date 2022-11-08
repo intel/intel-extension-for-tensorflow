@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/fused_batch_norm_functor.h"
+
 #include "itex/core/utils/op_requires.h"
 
 namespace itex {

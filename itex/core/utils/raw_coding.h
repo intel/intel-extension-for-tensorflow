@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <algorithm>
 #include <cstring>
+
 #include "itex/core/utils/byte_order.h"
 #include "itex/core/utils/types.h"
 

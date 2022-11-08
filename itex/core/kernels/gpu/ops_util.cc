@@ -13,10 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/kernels/gpu/ops_util.h"
+
 #include <algorithm>
 #include <cmath>
 
-#include "itex/core/kernels/gpu/ops_util.h"
 #include "itex/core/utils/attr_value_util.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/padding.h"

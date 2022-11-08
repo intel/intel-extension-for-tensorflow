@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_SCOPED_ANNOTATION_H_
 
 #include <stddef.h>
+
 #include <atomic>
 #include <string>
 #include <utility>

@@ -722,9 +722,9 @@ NodeDef AutoMixedPrecisionImpl::BuildCastNode(
     const string& device) const {
   DataType src_type = to_f16 ? DT_FLOAT : target_dtype_;
   DataType dst_type = to_f16 ? target_dtype_ : DT_FLOAT;
-  const char* cast_string =
-      !to_f16 ? kCastToFp32
-              : target_dtype_ == DT_HALF ? kCastToFp16 : kCastToBf16;
+  const char* cast_string = !to_f16                    ? kCastToFp32
+                            : target_dtype_ == DT_HALF ? kCastToFp16
+                                                       : kCastToBf16;
   string name = strings::StrCat(src.node->name(), "-", src.port_id, "-",
                                 cast_string, "-", kSuffix);
   NodeDef node;

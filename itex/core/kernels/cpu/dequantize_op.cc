@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/dequantize_op.h"
+
 #include "itex/core/utils/register_types.h"
 
 namespace itex {
