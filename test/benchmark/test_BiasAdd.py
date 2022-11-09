@@ -25,7 +25,7 @@ from utils import broadcast_binary_size_x
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
 except ImportError:
     from tensorflow.python.platform import test
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA

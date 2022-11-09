@@ -21,13 +21,14 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import math_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
+from utils import tailed_no_tailed_size, broadcast_binary_size_x, broadcast_binary_size_y
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
 except ImportError:
     from tensorflow.python.platform import test
 
-FLOAT_COMPUTE_TYPE = [dtypes.float32] # Bucketize op does not support bf16  
+FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.int32] # Bucketize op does not support bf16  
 ITERATION = 5
 
 class BucketizeTest(test.TestCase):
@@ -43,8 +44,12 @@ class BucketizeTest(test.TestCase):
     @multi_run(ITERATION)
     def testBucketize(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            # test bucketize_ops
-            self._test_impl(30523, 1024, dtype)
+            # test tailed_no_tailed_size
+            for in_size in tailed_no_tailed_size:
+                self._test_impl([in_size], 1024, dtype)
+            # test broadcast_binary_size
+            for in_size in broadcast_binary_size_x:
+                self._test_impl(in_size, 1024, dtype)
 
 if __name__ == '__main__':
     test.main()
