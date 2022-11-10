@@ -268,6 +268,26 @@ struct ContractionWithBiasAndAddActivation {
   int bias_port = kMissingIndex;
 };
 
+struct ContractionWithBiasAndActivationAdd {
+  ContractionWithBiasAndActivationAdd() = default;
+  ContractionWithBiasAndActivationAdd(int contraction, int bias_add,
+                                      int activation, int add, int port_id,
+                                      int bias_port)
+      : contraction(contraction),
+        bias_add(bias_add),
+        activation(activation),
+        add(add),
+        port_id(port_id),
+        bias_port(bias_port) {}
+
+  int contraction = kMissingIndex;
+  int bias_add = kMissingIndex;
+  int activation = kMissingIndex;
+  int add = kMissingIndex;
+  int port_id = 0;
+  int bias_port = kMissingIndex;
+};
+
 // BatchMatMul + Mul fusion
 struct ContractionWithMul {
   ContractionWithMul() = default;
@@ -1104,6 +1124,72 @@ bool FindContractionWithBiasAndAddActivation(
   const ContractionWithBiasAndAddActivation pattern{
       base.contraction, base.bias_add, base.add,
       base.port_id,     node_index,    base.bias_port};
+  *matched = pattern;
+
+  return true;
+}
+
+bool FindContractionWithBiasAndActivationInPort(
+    const RemapperContext& ctx, const utils::MutableNodeView& add_node_view,
+    const NodeDef& add_node_def, int port_id) {
+  if (add_node_view.NumRegularFanins() < port_id + 1) return false;
+
+  const auto& act_node_view =
+      add_node_view.GetRegularFanin(port_id).node_view();
+  if (act_node_view == nullptr) return false;
+  const auto* act_node_def = act_node_view->node();
+
+  if (!IsSupportedActivation(*act_node_def)) {
+    return false;
+  }
+  if (!HasAtMostOneFanoutAtPort0(*act_node_view)) {
+    return false;
+  }
+  return true;
+}
+
+bool FindContractionWithBiasAndActivationAdd(
+    const RemapperContext& ctx, int node_index,
+    ContractionWithBiasAndActivationAdd* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+
+  if (HasControlFaninOrFanout(*node_view)) return false;
+
+  // Root of the pattern must be an activation node.
+  const auto* node_def = node_view->node();
+  if (!IsAdd(*node_def)) return false;
+  // OneDnn activation op only supports float, float16 and bfloat16 data types
+  // on GPU.
+  if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
+      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+    return false;
+
+  ContractionWithBiasAddAndActivation base;
+  if (!FindContractionWithBiasAndActivationInPort(ctx, *node_view, *node_def,
+                                                  matched->port_id)) {
+    matched->port_id = 1;
+    if (!FindContractionWithBiasAndActivationInPort(ctx, *node_view, *node_def,
+                                                    matched->port_id)) {
+      return false;
+    }
+  }
+  const auto& act_node_view =
+      node_view->GetRegularFanin(matched->port_id).node_view();
+  if (!FindContractionWithBiasAndActivation(ctx, act_node_view->node_index(),
+                                            &base)) {
+    return false;
+  }
+
+  const auto* contraction_def =
+      ctx.graph_view.GetNode(base.contraction)->node();
+  if (IsLeakyRelu(*node_def) &&
+      (IsMatMul(*contraction_def) || IsAccMatMul(*contraction_def)))
+    return false;
+
+  // We successfully found a Conv2D+BiasAdd+AddN+activation pattern.
+  const ContractionWithBiasAndActivationAdd pattern{
+      base.contraction, base.bias_add,    base.activation,
+      node_index,       matched->port_id, base.bias_port};
   *matched = pattern;
 
   return true;
@@ -2532,6 +2618,64 @@ Status AddFusedContractionNode(
   return Status::OK();
 }
 
+// Contraction + BiasAdd + Activation + Add.
+Status AddFusedContractionNode(
+    RemapperContext* ctx, const ContractionWithBiasAndActivationAdd& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& contraction = graph->node(matched.contraction);
+  ITEX_DCHECK(IsConvOrMatMul(contraction) || IsAccMatMul(contraction));
+  const NodeDef& activation = graph->node(matched.activation);
+  const NodeDef& bias_add = graph->node(matched.bias_add);
+  const NodeDef& add = graph->node(matched.add);
+
+  NodeDef fused_node;
+  fused_node.set_name(add.name());
+  if (IsConv2D(contraction))
+    fused_node.set_op(kFusedConv2DWithSum);
+  else if (IsDepthwiseConv2dNative(contraction))
+    fused_node.set_op(kFusedDepthwiseConv2dNative);
+  else if (IsConv3D(contraction))
+    fused_node.set_op(kFusedConv3D);
+  else if (IsMatMul(contraction))
+    fused_node.set_op(kFusedMatMulWithSum);
+  else if (IsAccMatMul(contraction))
+    fused_node.set_op(kFusedAccMatMulWithSum);
+  else
+    ITEX_CHECK(false);
+
+  fused_node.set_device(add.device());
+  fused_node.add_input(contraction.input(0));  // 0: input
+  fused_node.add_input(contraction.input(1));  // 1: filter
+  fused_node.add_input(bias_add.input(1));     // 2: bias
+
+  // Add OP has two inputs, one is conv+bias pattern matched previously,
+  // the other input to add is fused here.
+  fused_node.add_input(add.input(1 - matched.port_id));
+
+  CopyAllAttrs(contraction, &fused_node);
+  SetFusedOpAttributesWithActivation(&fused_node, &activation,
+                                     {"BiasAdd", "Add"}, 2);
+
+  // TODO(itex): Support in-place optimization for Conv3D.
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(fused_node), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.add] = true;
+  (*nodes_to_delete)[matched.activation] = true;
+  (*nodes_to_delete)[matched.bias_add] = true;
+  (*nodes_to_delete)[matched.contraction] = true;
+  ITEX_VLOG(2) << "Fuse " << contraction.op() << " with BiasAdd and Add and "
+               << activation.op() << ":"
+               << " activation=" << activation.name()
+               << " bias_add=" << bias_add.name() << " add=" << add.name()
+               << " contraction=" << contraction.name();
+  return Status::OK();
+}
+
 // Contraction + Mul(scale).
 // TODO(itex): Try to combine this function with Conv + BiasAdd
 Status AddFusedContractionNode(RemapperContext* ctx,
@@ -3756,6 +3900,16 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
     }
 
     if (is_full) {
+      // Remap Conv2D+BiasAdd+Activation+Add into the _ITEXFusedConv2D.
+      ContractionWithBiasAndActivationAdd contract_with_bias_and_activation_add;
+      if (FindContractionWithBiasAndActivationAdd(
+              ctx, i, &contract_with_bias_and_activation_add)) {
+        TF_ABORT_IF_ERROR(
+            AddFusedContractionNode(&ctx, contract_with_bias_and_activation_add,
+                                    &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
       // Remap Conv2D+BiasAdd+Add+Activation into the _ITEXFusedConv2D.
       ContractionWithBiasAndAddActivation contract_with_bias_and_add_activation;
       if (FindContractionWithBiasAndAddActivation(
