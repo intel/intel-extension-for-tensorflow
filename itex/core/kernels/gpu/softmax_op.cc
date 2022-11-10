@@ -77,23 +77,24 @@ class AddV2WithSoftmaxOp : public OpKernel {
     Tensor* softmax_out = nullptr;
     OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
                                 {0}, 0, output_shape, &softmax_out));
+    OP_REQUIRES(
+        context,
+        logits_in_tensor.NumElements() > 0 &&
+            logits_in_tensor.NumElements() < std::numeric_limits<int32>::max(),
+        errors::InvalidArgument(
+            "invalid number elements of logits, expect N>0 && "
+            "N<int32 maximum, but got",
+            logits_in_tensor.NumElements()));
 
-    if (logits_in_tensor.NumElements() > 0 &&
-        logits_in_tensor.NumElements() < std::numeric_limits<int32>::max()) {
-      AddV2WithSoftmaxFunctor<Device, T> functor;
-      // For AddV2 node in TF graph, a pass will change the order of a, b
-      // so we need to verify which one is truely att_mask
-      if (logits_in_tensor.NumElements() > adder_tensor.NumElements()) {
-        functor(context->eigen_gpu_device(), logits_in_tensor, adder_tensor,
-                softmax_out, false);
-      } else {
-        functor(context->eigen_gpu_device(), adder_tensor, logits_in_tensor,
-                softmax_out, false);
-      }
+    AddV2WithSoftmaxFunctor<Device, T> functor;
+    // For AddV2 node in TF graph, a pass will change the order of a, b
+    // so we need to verify which one is truely att_mask
+    if (logits_in_tensor.NumElements() > adder_tensor.NumElements()) {
+      functor(context->eigen_gpu_device(), logits_in_tensor, adder_tensor,
+              softmax_out, false);
     } else {
-      ITEX_LOG(ERROR)
-          << "Num of Elements exceeds the max value of int32, please use int64";
-      return;
+      functor(context->eigen_gpu_device(), adder_tensor, logits_in_tensor,
+              softmax_out, false);
     }
   }
 };

@@ -62,26 +62,41 @@ class AddWithSoftmaxTest(test_lib.TestCase):
       self.skipTest("Skip on CPU due to the pattern not supported")
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
+    
+    left_shape_lst = [[2, 1, 4, 2], [2, 2, 4, 2], [2, 2, 1, 4, 2], [2, 2, 2, 4, 2]]
+    right_shape_lst = [[2, 1, 4, 2], [2, 1, 4, 2], [2, 2, 2, 4, 2], [2, 2, 1, 1, 2]]
+    dtypes_lst = [np.float32, np.float16]
+    for left_shape in left_shape_lst:
+      for right_shape in right_shape_lst:
+        for dtype in dtypes_lst:
+          np_features = np.random.uniform(low=1.0, high=1.0, size=left_shape).astype(dtype)
+          adder_features = np.random.uniform(low=0.0, high=1.0, size=right_shape).astype(dtype)
 
-    np_features = np.array(np.random.uniform(low=1.0, high=1.0, size=(2, 4, 2, 2)), dtype='f').reshape(2, 4, 2, 2)
-    adder_features = np.array(np.random.uniform(low=0.0, high=1.0, size=(2, 1, 2, 2)), dtype='f').reshape(2, 1, 2, 2)
-
-    x_tensor = tf.constant(np_features)
-    adder_tensor = tf.constant(adder_features)
-    new_adder = math_ops.add_v2(x_tensor, adder_tensor)
-    out = nn_ops.softmax(new_adder, axis = 3)
-    final_out = array_ops.identity(out)
-    np_softmax = self._npSoftmax(np.array(np_features+adder_features), dim=3, log=False)
-    with self.session(use_gpu=True) as sess:
-        output_val = sess.run(final_out, options=run_options, run_metadata=metadata)
-        graph = metadata.partition_graphs[0]
-    self.assertAllClose(np_softmax, output_val)
-    existing_pattern = False
-    for node in graph.node:
-        if '_ITEXFusedAddV2WithSoftmax' in node.op:
-            existing_pattern = True
-            break
-    self.assertTrue(existing_pattern)    
+          x_tensor = tf.constant(np_features)
+          adder_tensor = tf.constant(adder_features)
+          new_adder = math_ops.add_v2(x_tensor, adder_tensor)
+          out = nn_ops.softmax(new_adder, axis = -1)
+          final_out = array_ops.identity(out)
+          np_softmax = self._npSoftmax(np.array(np_features+adder_features), dim=-1, log=False)
+          with self.session(use_gpu=True) as sess:
+              output_val = sess.run(final_out, options=run_options, run_metadata=metadata)
+              graph = metadata.partition_graphs[0]
+          
+          can_fuse = (len(left_shape) == len(right_shape) 
+                      and len(right_shape) == 4 
+                      and left_shape[0] == right_shape[0] 
+                      and left_shape[2] == right_shape[2]
+                      and left_shape[3] == right_shape[3]
+                      and right_shape[1] == 0)
+                      
+          existing_pattern = False
+          for node in graph.node:
+              if '_ITEXFusedAddV2WithSoftmax' in node.op:
+                  existing_pattern = True
+                  break
+          if can_fuse:
+            self.assertTrue(existing_pattern)
+          self.assertAllClose(np_softmax, output_val)
     
 if __name__ == "__main__":
   test_lib.main()

@@ -1287,7 +1287,7 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
                           AddV2WithSoftmax* matched) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   const auto* node_def = node_view->node();
-
+  if (HasControlFaninOrFanout(*node_view)) return false;
   if (!NodeIsOnGpu(node_def)) return false;
 
   if (!IsSoftmax(*node_def)) return false;
@@ -1295,6 +1295,24 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
   auto* addv2_node_def = addv2_node_view->node();
 
   if (!IsAdd(*addv2_node_def)) return false;
+
+  // check the shape of input nodes of AddV2
+  std::vector<OpInfo_TensorProperties> props;
+  TF_ABORT_IF_ERROR(
+      ctx.graph_properties.GetInputProperties(addv2_node_def->name(), &props));
+
+  const TensorShapeProto& left_shape = props[0].shape();
+  const TensorShapeProto& right_shape = props[1].shape();
+
+  bool is_non_supported_shape =
+      (left_shape.dim_size() != 4) ||
+      left_shape.dim_size() != right_shape.dim_size() ||
+      (left_shape.dim(0).size() != right_shape.dim(0).size()) ||
+      (left_shape.dim(2).size() != right_shape.dim(2).size()) ||
+      (left_shape.dim(3).size() != right_shape.dim(3).size());
+  if (is_non_supported_shape) {
+    return false;
+  }
 
   if (HasControlFaninOrFanout(*addv2_node_view) ||
       !HasAtMostOneFanoutAtPort0(*addv2_node_view) ||
