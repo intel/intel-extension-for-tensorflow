@@ -108,7 +108,8 @@ struct SoftmaxSubGroupImplKernel {
         device_store(device_store),
         rows(rows),
         cols(cols) {}
-  void operator()(sycl::nd_item<2> id) const {
+  [[intel::reqd_sub_group_size(kSubGroupSize)]] void operator()(
+      sycl::nd_item<2> id) const {
     const int workgroup_idx = id.get_group(1);
     const int localrange_y = id.get_local_range(0);
     const int workitem_y = id.get_local_id(0);
@@ -164,6 +165,7 @@ struct SoftmaxSubGroupImplKernel {
         ComputeType* row_buf = buf[row_id];
 #pragma unroll
         for (int i = 0; i < cols_per_workitem; ++i) {
+          if (row_buf[i] == -Inf<ComputeType>()) break;
           if (algorithm == Algorithm::kSoftmax) {
             row_buf[i] = Exp(row_buf[i] - warp_max[row_id]);
             workitem_sum[row_id] += row_buf[i];
@@ -185,6 +187,7 @@ struct SoftmaxSubGroupImplKernel {
         ComputeType* row_buf = buf[row_id];
 #pragma unroll
         for (int i = 0; i < cols_per_workitem; ++i) {
+          if (row_buf[i] == -Inf<ComputeType>()) break;
           if (algorithm == Algorithm::kSoftmax) {
             row_buf[i] = Div(row_buf[i], warp_sum[row_id]);
           } else if (algorithm == Algorithm::kLogSoftmax) {
