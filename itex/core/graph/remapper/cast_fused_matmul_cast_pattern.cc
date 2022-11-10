@@ -29,7 +29,7 @@ class CastBf16FusedMatMulCast32 : public Fusion {
   CastBf16FusedMatMulCast32() : Fusion() {
     using utils::NodeStatus;
     using utils::OpTypePattern;
-    OpTypePattern matmul = {kITEXFusedMatMul, "matmul", NodeStatus::kRemove};
+    OpTypePattern matmul = {kFusedMatMul, "matmul", NodeStatus::kRemove};
     OpTypePattern output = {kCast, "output", NodeStatus::kReplace};
     OpTypePattern cast1 = {kCast, "bf16scr1", NodeStatus::kRemove};
     OpTypePattern cast2 = {kCast, "bf16scr2", NodeStatus::kRemove};
@@ -119,8 +119,7 @@ class CastBf16FusedMatMulWithSumCast32 : public Fusion {
   CastBf16FusedMatMulWithSumCast32() : Fusion() {
     using utils::NodeStatus;
     using utils::OpTypePattern;
-    OpTypePattern matmul = {kITEXFusedMatMulWithSum, "matmul",
-                            NodeStatus::kRemove};
+    OpTypePattern matmul = {kFusedMatMulWithSum, "matmul", NodeStatus::kRemove};
     OpTypePattern output = {kCast, "output", NodeStatus::kReplace};
     OpTypePattern cast1 = {kCast, "bf16scr1", NodeStatus::kRemove};
     OpTypePattern cast2 = {kCast, "bf16scr2", NodeStatus::kRemove};
@@ -150,7 +149,6 @@ class CastBf16FusedMatMulWithSumCast32 : public Fusion {
     DataType src_dtype = GetDataTypeFromAttr(*cast_node_def, "SrcT");
     if ((dst_dtype != DT_FLOAT) || (src_dtype != DT_BFLOAT16)) return ret;
     ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
-    auto* cast_node_view = graph_view.GetNode(node_index);
     if (ret.Empty()) return ret;
 
     NodeDef* cast1_node_def =

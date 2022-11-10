@@ -23,8 +23,6 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
-constexpr char kIsTraining[] = "is_training";
-
 class LayerNormFusionBase : public Fusion {
  public:
   LayerNormFusionBase() : Fusion() { is_partial = true; }

@@ -331,8 +331,6 @@ class InstanceNormLeakyRelu : public InstanceNormFusion {
                 const MatchedProperties& properties) const override {
     NodeDef* output_node =
         ctx->graph_view.GetNode(properties.map.at("output"))->node();
-    NodeDef* add2_node =
-        ctx->graph_view.GetNode(properties.map.at("add2"))->node();
     NodeDef* input_node =
         ctx->graph_view.GetNode(properties.map.at("input"))->node();
     NodeDef* gamma_node =

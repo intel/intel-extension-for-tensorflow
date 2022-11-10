@@ -69,7 +69,7 @@ bool HasDataType(const NodeDef* node, const DataType& expected,
 
 Status RunRemapper(const char* device_name, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
-                   bool is_full = true);
+                   bool is_full = true, int level = 0);
 
 void SetFusedOpAttributes(NodeDef* fused,
                           const absl::Span<const absl::string_view> fused_ops,

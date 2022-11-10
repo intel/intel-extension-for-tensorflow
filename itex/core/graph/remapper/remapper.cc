@@ -26,6 +26,7 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/graph/optimizer_config.h"
+#include "itex/core/graph/remapper/constant_names.h"
 #include "itex/core/graph/remapper/fusion.h"
 #include "itex/core/graph/utils/graph_common_utils.h"
 #include "itex/core/graph/utils/graph_properties.h"
@@ -56,51 +57,6 @@ void SetFusedOpAttributes(NodeDef* fused,
 }
 
 namespace {
-
-constexpr char kAccMatMul[] = "_ITEXAccMatMul";
-constexpr char kConv2DBackpropFilterWithBias[] = "Conv2DBackpropFilterWithBias";
-constexpr char kConv3DBackpropFilterWithBias[] = "Conv3DBackpropFilterWithBias";
-constexpr char kConv2DBackpropInputWithSlice[] = "Conv2DBackpropInputWithSlice";
-constexpr char kConv3DBackpropInputWithSlice[] =
-    "Conv3DBackpropInputV2WithSlice";
-constexpr char kFusedAccMatMul[] = "_ITEXFusedAccMatMul";
-constexpr char kFusedAccMatMulGrad[] = "_ITEXFusedAccMatMulGrad";
-constexpr char kFusedAccMatMulWithSum[] = "_ITEXFusedAccMatMulWithSum";
-constexpr char kFusedConv2D[] = "_ITEXFusedConv2D";
-constexpr char kFusedConv2DWithSum[] = "_FusedConv2DWithSum";
-constexpr char kFusedConv3D[] = "_ITEXFusedConv3D";
-constexpr char kFusedMatMul[] = "_ITEXFusedMatMul";
-constexpr char kAddV2WithSoftmax[] = "_ITEXFusedAddV2WithSoftmax";
-constexpr char kFusedMatMulWithSum[] = "_FusedMatMulWithSum";
-constexpr char kFusedMatMulGrad[] = "_FusedMatMulGrad";
-constexpr char kFusedBatchMatMul[] = "_FusedBatchMatMulV2";
-constexpr char kFusedDepthwiseConv2dNative[] =
-    "_ITEXFusedDepthwiseConv2dNative";
-constexpr char kFusedBatchNormEx[] = "_FusedBatchNormEx";
-constexpr char kFusedBatchNormGradEx[] = "_FusedBatchNormExGrad";
-constexpr char kPadWithConv2D[] = "_PadWithConv2D";
-constexpr char kPadWithFusedConv2D[] = "_PadWithFusedConv2D";
-constexpr char kPadWithConv3D[] = "_PadWithConv3D";
-constexpr char kPadWithFusedConv3D[] = "_PadWithFusedConv3D";
-constexpr char kDequantizeReshape[] = "_FusedDequantizeWithReshape";
-constexpr char kQuantizeV2WithQuantizedConv2D[] =
-    "_ITEXQuantizeV2WithQuantizedConv2D";
-constexpr char kFusedApplyAdam[] = "_FusedApplyAdam";
-constexpr char kFusedResourceApplyAdam[] = "_FusedResourceApplyAdam";
-constexpr char kFusedApplyAdamWithWeightDecay[] =
-    "_FusedApplyAdamWithWeightDecay";
-constexpr char kFusedResourceApplyAdamWithWeightDecay[] =
-    "_FusedResourceApplyAdamWithWeightDecay";
-constexpr char kFusedApplyMomentum[] = "_FusedApplyMomentum";
-constexpr char kFusedResourceApplyMomentum[] = "_FusedResourceApplyMomentum";
-constexpr char kFusedAddN[] = "_FusedAddN";
-constexpr char kFusedBinary[] = "_ITEXFusedBinary";
-constexpr char kFusedRandom[] = "_ITEXFusedRandom";
-constexpr char kLeakyRelu[] = "LeakyRelu";
-
-constexpr int kMissingIndex = -1;
-constexpr char kDataFormat[] = "data_format";
-constexpr char kIsTraining[] = "is_training";
 
 // Fuse l2loss + addN
 struct FusedAddN {
@@ -2027,7 +1983,6 @@ bool FindMulWithMaximum(const RemapperContext& ctx, int node_index,
 
   // Check Mul node has a scalar const fanin and the same input fanin with
   // Maximum.
-  int mul_fanin = -1, scalar_fanin = -1;
   for (int attempt_mul_fanin = 0; attempt_mul_fanin <= 1; ++attempt_mul_fanin) {
     const auto* mul_view =
         maximum_view->GetRegularFanin(attempt_mul_fanin).node_view();
@@ -3700,7 +3655,6 @@ Status AddMulWithMaximumNode(RemapperContext* ctx,
                              std::vector<bool>* invalidated_nodes,
                              std::vector<bool>* nodes_to_delete) {
   const GraphDef* graph = ctx->graph_view.graph();
-  const NodeDef& mul = graph->node(matched.mul);
   const NodeDef& maximum = graph->node(matched.maximum);
   const NodeDef& input = graph->node(matched.input);
 
@@ -3836,12 +3790,15 @@ Status AddFusedBinaryNode(RemapperContext* ctx, const FusedBinary& matched,
 
 }  // namespace
 
-// is_full is true by default. When oneDNN Graph is enabled, we want to set it
+// `is_full` is true by default. When oneDNN Graph is enabled, we want to set it
 // as false. When is_full == false, we only fuse Const + Cast / instancenorm/
 // layernorm.
+// `level` means the order of current remapper pass. Simple fusions without any
+// variant  will be checked under level 0 only.
 Status RunRemapper(const char* device_name, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
-                   bool is_full) {
+                   bool is_full, int level) {
+  const int default_level = 0;
   Status status;
   GraphDef multable_graph_def = graph_def;
   RemapperContext ctx(item, &multable_graph_def, &status);
@@ -4021,7 +3978,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Mul + AddN + TrainingOp into the _FusedTrainingOp.
       FusedTrainingOp fused_training_op;
-      if (FindFusedTrainingOp(ctx, i, &fused_training_op)) {
+      if (level == default_level &&
+          FindFusedTrainingOp(ctx, i, &fused_training_op)) {
         TF_ABORT_IF_ERROR(AddFusedTrainingNode(
             &ctx, fused_training_op, &invalidated_nodes, &nodes_to_delete));
         continue;
@@ -4037,7 +3995,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // delete dequantize node if it finds dequantize_with_shape pattern
       DequantizeWithShape dequantize_with_shape;
-      if (FindDequantizeWithShape(ctx, i, &dequantize_with_shape)) {
+      if (level == default_level &&
+          FindDequantizeWithShape(ctx, i, &dequantize_with_shape)) {
         TF_ABORT_IF_ERROR(AddFusedDequantizeWithShape(
             &ctx, dequantize_with_shape, &invalidated_nodes, &nodes_to_delete));
         continue;
@@ -4045,7 +4004,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // delete dequantize node if it finds dequantize_with_reshape pattern
       DequantizeWithReshape dequantize_with_reshape;
-      if (is_layout_opt &&
+      if (is_layout_opt && level == default_level &&
           FindDequantizeWithReshape(ctx, i, &dequantize_with_reshape)) {
         TF_ABORT_IF_ERROR(AddFusedDequantizeWithReshape(
             &ctx, dequantize_with_reshape, &invalidated_nodes,
@@ -4066,14 +4025,15 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap L2loss+AddN into the _FusedAddN
       FusedAddN fused_addn;
-      if (FindFusedAddN(ctx, i, &fused_addn)) {
+      if (level == default_level && FindFusedAddN(ctx, i, &fused_addn)) {
         TF_ABORT_IF_ERROR(AddFusedAddN(&ctx, fused_addn, &invalidated_nodes,
                                        &nodes_to_delete));
         continue;
       }
 
       AddV2WithSoftmax fused_addv2_with_softmax;
-      if (FindAddV2WithSoftmax(ctx, i, &fused_addv2_with_softmax)) {
+      if (level == default_level &&
+          FindAddV2WithSoftmax(ctx, i, &fused_addv2_with_softmax)) {
         TF_ABORT_IF_ERROR(
             AddFusedAddV2WithSoftmaxNode(&ctx, fused_addv2_with_softmax,
                                          &invalidated_nodes, &nodes_to_delete));
@@ -4090,7 +4050,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Random Comparison+Cast into the RandomWithComparisonAndCast.
       RandomWithComparisonAndCast random_with_compare_and_cast;
-      if (FindRandomWithComparisonAndCast(ctx, i,
+      if (level == default_level &&
+          FindRandomWithComparisonAndCast(ctx, i,
                                           &random_with_compare_and_cast)) {
         TF_ABORT_IF_ERROR(AddRandomWithComparisonAndCastNode(
             &ctx, random_with_compare_and_cast, &invalidated_nodes,
@@ -4110,7 +4071,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Comparison+Cast into the ComparisonWithCast.
       ComparisonWithCast comparison_with_cast;
-      if (FindComparisonWithCast(ctx, i, &comparison_with_cast)) {
+      if (level == default_level &&
+          FindComparisonWithCast(ctx, i, &comparison_with_cast)) {
         TF_ABORT_IF_ERROR(AddComparisonWithCastNode(
             &ctx, comparison_with_cast, &invalidated_nodes, &nodes_to_delete));
         continue;
@@ -4118,7 +4080,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Mul+Max into the LeakyRelu.
       MulWithMaximum mul_with_maximum;
-      if (FindMulWithMaximum(ctx, i, &mul_with_maximum)) {
+      if (level == default_level &&
+          FindMulWithMaximum(ctx, i, &mul_with_maximum)) {
         TF_ABORT_IF_ERROR(AddMulWithMaximumNode(
             &ctx, mul_with_maximum, &invalidated_nodes, &nodes_to_delete));
         continue;

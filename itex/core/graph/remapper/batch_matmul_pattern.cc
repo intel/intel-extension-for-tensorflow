@@ -75,7 +75,7 @@ class BatchMatMulWithMulAndAddV2Fusion : public Fusion {
 
     NodeDef fused_node;
     fused_node.set_name(output_node->name());
-    fused_node.set_op(kFusedBatchMatMulV2);
+    fused_node.set_op(kFusedBatchMatMul);
     fused_node.set_device(batch_matmul_node->device());
     fused_node.add_input(batch_matmul_node->input(0));
     fused_node.add_input(batch_matmul_node->input(1));

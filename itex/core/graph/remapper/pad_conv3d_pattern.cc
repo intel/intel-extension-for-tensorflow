@@ -85,17 +85,9 @@ class PadConv3d : public Fusion {
                 const MatchedProperties& properties) const override {
     auto& graph_view = ctx->graph_view;
     // dtype nodedef
-    auto* input1_node =
-        ctx->graph_view.GetNode(properties.map.at("input1"))->node();
-    auto* input2_node =
-        ctx->graph_view.GetNode(properties.map.at("input2"))->node();
     auto* constv_node =
         ctx->graph_view.GetNode(properties.map.at("constv"))->node();
     auto* pad_node = ctx->graph_view.GetNode(properties.map.at("pad"))->node();
-    auto* quantize_node =
-        ctx->graph_view.GetNode(properties.map.at("quantize"))->node();
-    auto* dequantize_node =
-        ctx->graph_view.GetNode(properties.map.at("dequantize"))->node();
     auto* conv3d_node =
         ctx->graph_view.GetNode(properties.map.at("conv3d_output"))->node();
     NodeDef fused_node;

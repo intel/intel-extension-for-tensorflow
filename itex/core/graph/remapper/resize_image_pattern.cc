@@ -109,10 +109,6 @@ class ResizeNearestNeighborFusion : public Fusion {
                 const MatchedProperties& properties) const override {
     auto& graph_view = ctx->graph_view;
     const NodeDef* split1 = properties.GetNode(&graph_view, "split1");
-    const NodeDef* concat1 = properties.GetNode(&graph_view, "concat1");
-    const NodeDef* split2 = properties.GetNode(&graph_view, "split2");
-    const NodeDef* concat2 = properties.GetNode(&graph_view, "concat2");
-    const NodeDef* split3 = properties.GetNode(&graph_view, "split3");
     const NodeDef* concat3 = properties.GetNode(&graph_view, "concat3");
 
 #define GET_SIZE_FACTOR(name) \
@@ -442,7 +438,7 @@ class ResizeNearestNeighborGradFusionV2 : public Fusion {
     for (auto const& slice_index : slices) {
       ret.deleted.insert(slice_index);
     }
-    for (int i = 0; i < slice_dims.size(); i++) {
+    for (size_t i = 0; i < slice_dims.size(); i++) {
       std::string name = "slice" + std::to_string(i);
       ret.map.insert(std::pair<std::string, int>(name, slices[i]));
     }

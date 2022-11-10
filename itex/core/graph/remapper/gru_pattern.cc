@@ -164,7 +164,7 @@ class GruFusion : public Fusion {
       const std::vector<std::string>& attr_names) const {
     auto* attr = fused_op->mutable_attr();
     auto& src_attr = orig_node.attr();
-    for (int i = 0; i < attr_names.size(); ++i) {
+    for (size_t i = 0; i < attr_names.size(); ++i) {
       (*attr)[attr_names[i]] = src_attr.at(attr_names[i]);
     }
   }
@@ -184,7 +184,7 @@ class GruFusion : public Fusion {
 
     utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
     std::string out_name = output->node()->name();
-    for (int i = 0; i < fouts.size(); ++i) {
+    for (size_t i = 0; i < fouts.size(); ++i) {
       auto fnode = fouts[i].node_view();
       int m_indx = -1;
       for (int j = 0; j < fnode->NumRegularFanins(); ++j) {
@@ -209,9 +209,9 @@ class GruFusion : public Fusion {
   inline bool IsValidTypes(RemapperContext* ctx,
                            const MatchedProperties& properties,
                            std::vector<DataType> valid_types) const {
-    for (int i = 0; i < valid_types.size(); ++i) {
+    for (size_t i = 0; i < valid_types.size(); ++i) {
       bool valid = true;
-      for (int j = 0; j < NodesWithType.size(); ++j) {
+      for (size_t j = 0; j < NodesWithType.size(); ++j) {
         NodeDef* nd =
             ctx->graph_view.GetNode(properties.map.at(NodesWithType[j]))
                 ->node();

@@ -20,60 +20,107 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
+// Placeholder for pattern matcher.
 constexpr char kAny[] = "*";
 
-constexpr char kAddV2[] = "AddV2";
+//  Original TensorFlow op names.
 constexpr char kAddN[] = "AddN";
+constexpr char kAddV2[] = "AddV2";
 constexpr char kApplyRMSPropComputeRMS[] = "ApplyRMSPropComputeRMS";
 constexpr char kApplyRMSPropVarUpdate[] = "ApplyRMSPropVarUpdate";
 constexpr char kAssignVariableOp[] = "AssignVariableOp";
-constexpr char kBiasAdd[] = "BiasAdd";
 constexpr char kBatchMatMulV2[] = "BatchMatMulV2";
+constexpr char kBiasAdd[] = "BiasAdd";
 constexpr char kBinaryAdd[] = "BinaryAdd";
 constexpr char kCast[] = "Cast";
 constexpr char kConcatV2[] = "ConcatV2";
 constexpr char kConst[] = "Const";
 constexpr char kConv2DBackpropFilter[] = "Conv2DBackpropFilter";
-constexpr char kConv2DBackpropFilterWithBias[] = "Conv2DBackpropFilterWithBias";
+constexpr char kConv3D[] = "Conv3D";
 constexpr char kConv3DBackpropFilter[] = "Conv3DBackpropFilter";
 constexpr char kConv3DBackpropFilterV2[] = "Conv3DBackpropFilterV2";
-constexpr char kConv3DBackpropFilterWithBias[] = "Conv3DBackpropFilterWithBias";
-constexpr char kConv3D[] = "Conv3D";
 constexpr char kDequantize[] = "Dequantize";
+constexpr char kFill[] = "Fill";
 constexpr char kFusedBatchNormV3[] = "FusedBatchNormV3";
+constexpr char kGelu[] = "Gelu";
 constexpr char kLeakyRelu[] = "LeakyRelu";
 constexpr char kMatMul[] = "MatMul";
 constexpr char kMean[] = "Mean";
 constexpr char kMul[] = "Mul";
-constexpr char kFill[] = "Fill";
 constexpr char kPad[] = "Pad";
 constexpr char kQuantizeV2[] = "QuantizeV2";
 constexpr char kReadVariableOp[] = "ReadVariableOp";
 constexpr char kRelu[] = "Relu";
-constexpr char kReshape[] = "Reshape";
 constexpr char kRealDiv[] = "RealDiv";
+constexpr char kReshape[] = "Reshape";
 constexpr char kResizeNearestNeighbor[] = "ResizeNearestNeighbor";
 constexpr char kResizeNearestNeighborGrad[] = "ResizeNearestNeighborGrad";
 constexpr char kRsqrt[] = "Rsqrt";
-constexpr char kSlice[] = "Slice";
-constexpr char kSub[] = "Sub";
 constexpr char kSigmoid[] = "Sigmoid";
+constexpr char kSlice[] = "Slice";
 constexpr char kSplit[] = "Split";
 constexpr char kSplitV[] = "SplitV";
 constexpr char kSqrt[] = "Sqrt";
 constexpr char kSquare[] = "Square";
 constexpr char kSquaredDifference[] = "SquaredDifference";
+constexpr char kSub[] = "Sub";
 constexpr char kSwish[] = "Swish";
 constexpr char kTanh[] = "Tanh";
 
-constexpr char kFusedBatchMatMulV2[] = "_FusedBatchMatMulV2";
-constexpr char kInstanceNorm[] = "InstanceNorm";
+// ITEX specific fused op names.
+constexpr char kAccMatMul[] = "_ITEXAccMatMul";
+constexpr char kAddV2WithSoftmax[] = "_ITEXFusedAddV2WithSoftmax";
+constexpr char kConv2DBackpropFilterWithBias[] = "Conv2DBackpropFilterWithBias";
+constexpr char kConv2DBackpropInputWithSlice[] = "Conv2DBackpropInputWithSlice";
+constexpr char kConv3DBackpropFilterWithBias[] = "Conv3DBackpropFilterWithBias";
+constexpr char kConv3DBackpropInputWithSlice[] =
+    "Conv3DBackpropInputV2WithSlice";
+constexpr char kDequantizeReshape[] = "_FusedDequantizeWithReshape";
+constexpr char kFusedAccMatMul[] = "_ITEXFusedAccMatMul";
+constexpr char kFusedAccMatMulGrad[] = "_ITEXFusedAccMatMulGrad";
+constexpr char kFusedAccMatMulWithSum[] = "_ITEXFusedAccMatMulWithSum";
+constexpr char kFusedApplyAdam[] = "_FusedApplyAdam";
+constexpr char kFusedApplyAdamWithWeightDecay[] =
+    "_FusedApplyAdamWithWeightDecay";
+constexpr char kFusedAddN[] = "_FusedAddN";
+constexpr char kFusedApplyMomentum[] = "_FusedApplyMomentum";
+constexpr char kFusedBatchMatMul[] = "_FusedBatchMatMulV2";
+constexpr char kFusedBatchNormEx[] = "_FusedBatchNormEx";
+constexpr char kFusedBatchNormGradEx[] = "_FusedBatchNormExGrad";
+constexpr char kFusedBinary[] = "_ITEXFusedBinary";
+constexpr char kFusedConv2D[] = "_ITEXFusedConv2D";
+constexpr char kFusedConv2DWithSum[] = "_FusedConv2DWithSum";
+constexpr char kFusedConv3D[] = "_ITEXFusedConv3D";
+constexpr char kFusedDepthwiseConv2dNative[] =
+    "_ITEXFusedDepthwiseConv2dNative";
+constexpr char kFusedMatMul[] = "_ITEXFusedMatMul";
+constexpr char kFusedMatMulWithSum[] = "_FusedMatMulWithSum";
+constexpr char kFusedMatMulGrad[] = "_FusedMatMulGrad";
 constexpr char kFusedInstanceNorm[] = "FusedInstanceNorm";
-constexpr char kITEXFusedMatMulWithSum[] = "_FusedMatMulWithSum";
-constexpr char kITEXFusedMatMul[] = "_ITEXFusedMatMul";
+constexpr char kFusedRandom[] = "_ITEXFusedRandom";
+constexpr char kFusedResourceApplyAdam[] = "_FusedResourceApplyAdam";
+constexpr char kFusedResourceApplyAdamWithWeightDecay[] =
+    "_FusedResourceApplyAdamWithWeightDecay";
+constexpr char kFusedResourceApplyMomentum[] = "_FusedResourceApplyMomentum";
+constexpr char kInstanceNorm[] = "InstanceNorm";
 constexpr char kLayerNorm[] = "LayerNorm";
-constexpr char kMklLayerNorm[] = "_MklLayerNorm";
+constexpr char kPadWithConv2D[] = "_PadWithConv2D";
+constexpr char kPadWithConv3D[] = "_PadWithConv3D";
+constexpr char kPadWithFusedConv2D[] = "_PadWithFusedConv2D";
+constexpr char kPadWithFusedConv3D[] = "_PadWithFusedConv3D";
+constexpr char kQuantizeV2WithQuantizedConv2D[] =
+    "_ITEXQuantizeV2WithQuantizedConv2D";
+
+// TODO(itex): This op may be duplicated, remove it in future if possible.
 constexpr char kPadConv3d[] = "_ITEXConv3D";
+
+// Legacy op names from Intel TensorFlow.
+constexpr char kMklLayerNorm[] = "_MklLayerNorm";
+
+// Misc constant names.
+constexpr int kMissingIndex = -1;
+constexpr char kDataFormat[] = "data_format";
+constexpr char kIsTraining[] = "is_training";
 
 }  // namespace graph
 }  // namespace itex
