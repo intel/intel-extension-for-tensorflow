@@ -80,7 +80,7 @@ class Tensor {
  public:
   explicit Tensor(TF_Tensor* buf);
 
-  Tensor() : buf_(nullptr) {}
+  Tensor() : Tensor(DT_FLOAT) {}
 
   explicit Tensor(DataType type) : shape_(type), buf_(nullptr) {}
 

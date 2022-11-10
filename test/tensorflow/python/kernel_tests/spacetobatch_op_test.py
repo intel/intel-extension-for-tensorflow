@@ -186,12 +186,96 @@ class SpaceToBatchTest(test.TestCase, PythonOpImpl):
     self._testOne(x_np, block_size, x_out)
 
 
-class SpaceToBatchCppTest(SpaceToBatchTest, CppOpImpl):
+class SpaceToBatchCppTest(test.TestCase, CppOpImpl):
   """Tests input-output pairs for the SpaceToBatch and BatchToSpace ops.
 
   This uses the C++ ops.
   """
-  pass
+
+  def _testPad(self, inputs, paddings, block_size, outputs):
+    with self.cached_session(use_gpu=True):
+      # outputs = space_to_batch(inputs)
+      x_tf = self.space_to_batch(
+          math_ops.cast(inputs, dtypes.float32),
+          paddings,
+          block_size=block_size)
+      self.assertAllEqual(x_tf.eval(), outputs)
+      # inputs = batch_to_space(outputs)
+      x_tf = self.batch_to_space(
+          math_ops.cast(outputs, dtypes.float32),
+          paddings,
+          block_size=block_size)
+      self.assertAllEqual(x_tf.eval(), inputs)
+
+  def _testOne(self, inputs, block_size, outputs):
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    self._testPad(inputs, paddings, block_size, outputs)
+
+  # [1, 2, 2, 1] <-> [4, 1, 1, 1]
+  @test_util.run_deprecated_v1
+  def testSmallInput2x2(self):
+    x_np = [[[[1], [2]], [[3], [4]]]]
+    block_size = 2
+    x_out = [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
+    self._testOne(x_np, block_size, x_out)
+
+  # [1, 2, 2, 1] <-> [1, 3, 3, 1] (padding) <-> [9, 1, 1, 1]
+  @test_util.run_deprecated_v1
+  def testSmallInput2x2Pad1x0(self):
+    x_np = [[[[1], [2]], [[3], [4]]]]
+    paddings = np.array([[1, 0], [1, 0]], dtype=np.int32)
+    block_size = 3
+    x_out = [[[[0]]], [[[0]]], [[[0]]], [[[0]]], [[[1]]], [[[2]]], [[[0]]],
+             [[[3]]], [[[4]]]]
+    self._testPad(x_np, paddings, block_size, x_out)
+
+  # Test with depth larger than 1.
+  # [1, 2, 2, 3] <-> [4, 1, 1, 3]
+  @test_util.run_deprecated_v1
+  def testDepthInput2x2(self):
+    x_np = [[[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]]
+    block_size = 2
+    x_out = [[[[1, 2, 3]]], [[[4, 5, 6]]], [[[7, 8, 9]]], [[[10, 11, 12]]]]
+    self._testOne(x_np, block_size, x_out)
+
+  # Test for larger input dimensions.
+  # [1, 4, 4, 1] <-> [4, 2, 2, 1]
+  @test_util.run_deprecated_v1
+  def testLargerInput2x2(self):
+    x_np = [[[[1], [2], [3], [4]], [[5], [6], [7], [8]],
+             [[9], [10], [11], [12]], [[13], [14], [15], [16]]]]
+    block_size = 2
+    x_out = [[[[1], [3]], [[9], [11]]], [[[2], [4]], [[10], [12]]],
+             [[[5], [7]], [[13], [15]]], [[[6], [8]], [[14], [16]]]]
+    self._testOne(x_np, block_size, x_out)
+
+  # Test with batch larger than 1.
+  # [2, 2, 4, 1] <-> [8, 1, 2, 1]
+  @test_util.run_deprecated_v1
+  def testBatchInput2x2(self):
+    x_np = [[[[1], [2], [3], [4]], [[5], [6], [7], [8]]],
+            [[[9], [10], [11], [12]], [[13], [14], [15], [16]]]]
+    block_size = 2
+    x_out = [[[[1], [3]]], [[[9], [11]]], [[[2], [4]]], [[[10], [12]]],
+             [[[5], [7]]], [[[13], [15]]], [[[6], [8]]], [[[14], [16]]]]
+    self._testOne(x_np, block_size, x_out)
+
+  # Tests for larger input spatial dimensions AND batch larger than 1, to ensure
+  # that elements are correctly laid out spatially and properly interleaved
+  # along the batch dimension.
+  # [2, 4, 4, 1] <-> [8, 2, 2, 1]
+  @test_util.run_deprecated_v1
+  def testLargerInputBatch2x2(self):
+    x_np = [[[[1], [2], [3], [4]], [[5], [6], [7], [8]],
+             [[9], [10], [11], [12]], [[13], [14], [15], [16]]],
+            [[[17], [18], [19], [20]], [[21], [22], [23], [24]],
+             [[25], [26], [27], [28]], [[29], [30], [31], [32]]]]
+    x_out = [[[[1], [3]], [[9], [11]]], [[[17], [19]], [[25], [27]]],
+             [[[2], [4]], [[10], [12]]], [[[18], [20]], [[26], [28]]],
+             [[[5], [7]], [[13], [15]]], [[[21], [23]], [[29], [31]]],
+             [[[6], [8]], [[14], [16]]], [[[22], [24]], [[30], [32]]]]
+    block_size = 2
+    self._testOne(x_np, block_size, x_out)
 
 
 class SpaceToBatchNDTest(test.TestCase):
@@ -331,8 +415,20 @@ class SpaceToBatchSpaceToDepth(test.TestCase, PythonOpImpl):
       self.assertAllEqual(y1.eval(), y2.eval())
 
 
-class SpaceToBatchSpaceToDepthCpp(SpaceToBatchSpaceToDepth, CppOpImpl):
-  pass
+class SpaceToBatchSpaceToDepthCpp(test.TestCase, CppOpImpl):
+
+  @test_util.run_deprecated_v1
+  def testSpaceToDepthTranspose(self):
+    x = np.arange(5 * 10 * 16 * 7, dtype=np.float32).reshape([5, 10, 16, 7])
+    block_size = 2
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    y1 = self.space_to_batch(x, paddings, block_size=block_size)
+    y2 = array_ops.transpose(
+        array_ops.space_to_depth(
+            array_ops.transpose(x, [3, 1, 2, 0]), block_size=block_size),
+        [3, 1, 2, 0])
+    with self.session(use_gpu=True):
+      self.assertAllEqual(y1.eval(), y2.eval())
 
 
 class SpaceToBatchErrorHandlingTest(test.TestCase, PythonOpImpl):
@@ -412,9 +508,81 @@ class SpaceToBatchErrorHandlingTest(test.TestCase, PythonOpImpl):
     self.assertEqual(4, t.get_shape().ndims)
 
 
-class SpaceToBatchErrorHandlingCppTest(SpaceToBatchErrorHandlingTest,
-                                       CppOpImpl):
-  pass
+class SpaceToBatchErrorHandlingCppTest(test.TestCase, CppOpImpl):
+
+  @test_util.run_deprecated_v1
+  def testInputWrongDimMissingBatch(self):
+    # The input is missing the first dimension ("batch")
+    x_np = [[[1], [2]], [[3], [4]]]
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    block_size = 2
+    with self.assertRaises(ValueError):
+      _ = self.space_to_batch(x_np, paddings, block_size)
+
+  @test_util.run_deprecated_v1
+  def testBlockSize0(self):
+    # The block size is 0.
+    x_np = [[[[1], [2]], [[3], [4]]]]
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    block_size = 0
+    with self.assertRaises(ValueError):
+      out_tf = self.space_to_batch(x_np, paddings, block_size)
+      out_tf.eval()
+
+  @test_util.run_deprecated_v1
+  def testBlockSizeOne(self):
+    # The block size is 1. The block size needs to be > 1.
+    x_np = [[[[1], [2]], [[3], [4]]]]
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    block_size = 1
+    with self.assertRaises(ValueError):
+      out_tf = self.space_to_batch(x_np, paddings, block_size)
+      out_tf.eval()
+
+  @test_util.run_deprecated_v1
+  def testBlockSizeLarger(self):
+    # The block size is too large for this input.
+    x_np = [[[[1], [2]], [[3], [4]]]]
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    block_size = 10
+    with self.assertRaises(ValueError):
+      out_tf = self.space_to_batch(x_np, paddings, block_size)
+      out_tf.eval()
+
+  @test_util.run_deprecated_v1
+  def testBlockSizeNotDivisibleWidth(self):
+    # The block size divides width but not height.
+    x_np = [[[[1], [2], [3]], [[3], [4], [7]]]]
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    block_size = 3
+    with self.assertRaises(ValueError):
+      _ = self.space_to_batch(x_np, paddings, block_size)
+
+  @test_util.run_deprecated_v1
+  def testBlockSizeNotDivisibleHeight(self):
+    # The block size divides height but not width.
+    x_np = [[[[1], [2]], [[3], [4]], [[5], [6]]]]
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    block_size = 3
+    with self.assertRaises(ValueError):
+      _ = self.space_to_batch(x_np, paddings, block_size)
+
+  @test_util.run_deprecated_v1
+  def testBlockSizeNotDivisibleBoth(self):
+    # The block size does not divide neither width or height.
+    x_np = [[[[1], [2]], [[3], [4]]]]
+    paddings = np.zeros((2, 2), dtype=np.int32)
+    block_size = 3
+    with self.assertRaises(ValueError):
+      _ = self.space_to_batch(x_np, paddings, block_size)
+
+  @test_util.run_deprecated_v1
+  def testUnknownShape(self):
+    t = self.space_to_batch(
+        array_ops.placeholder(dtypes.float32),
+        array_ops.placeholder(dtypes.int32),
+        block_size=4)
+    self.assertEqual(4, t.get_shape().ndims)
 
 
 class SpaceToBatchNDErrorHandlingTest(test.TestCase):
@@ -576,8 +744,59 @@ class SpaceToBatchGradientTest(test.TestCase, PythonOpImpl):
     self._compare(1, 2, 3, 5, block_size, pad_beg, pad_end)
 
 
-class SpaceToBatchGradientCppTest(SpaceToBatchGradientTest, CppOpImpl):
-  pass
+class SpaceToBatchGradientCppTest(test.TestCase, CppOpImpl):
+
+  # Check the gradients.
+  def _checkGrad(self, x, paddings, block_size):
+    assert 4 == x.ndim
+    with self.cached_session(use_gpu=True):
+      tf_x = ops.convert_to_tensor(x)
+      tf_y = self.space_to_batch(tf_x, paddings, block_size)
+      epsilon = 1e-5
+      ((x_jacob_t, x_jacob_n)) = gradient_checker.compute_gradient(
+          tf_x,
+          x.shape,
+          tf_y,
+          tf_y.get_shape().as_list(),
+          x_init_value=x,
+          delta=epsilon)
+
+    self.assertAllClose(x_jacob_t, x_jacob_n, rtol=1e-2, atol=epsilon)
+
+  # Tests a gradient for space_to_batch of x which is a four dimensional
+  # tensor of shape [b, h * block_size, w * block_size, d].
+  def _compare(self, b, h, w, d, block_size, pad_beg, pad_end):
+    block_size_sq = block_size * block_size
+    x = np.random.normal(0, 1, b * h * w * d *
+                         block_size_sq).astype(np.float32).reshape(
+                             [b, h * block_size, w * block_size, d])
+    paddings = np.array(
+        [[pad_beg, pad_end], [pad_beg, pad_end]], dtype=np.int32)
+
+    self._checkGrad(x, paddings, block_size)
+
+  # Don't use very large numbers as dimensions here as the result is tensor
+  # with cartesian product of the dimensions.
+  @test_util.run_deprecated_v1
+  def testSmall(self):
+    block_size = 2
+    pad_beg = 0
+    pad_end = 0
+    self._compare(1, 2, 3, 5, block_size, pad_beg, pad_end)
+
+  @test_util.run_deprecated_v1
+  def testSmall2(self):
+    block_size = 2
+    pad_beg = 0
+    pad_end = 0
+    self._compare(2, 4, 3, 2, block_size, pad_beg, pad_end)
+
+  @test_util.run_deprecated_v1
+  def testSmallPad1x1(self):
+    block_size = 2
+    pad_beg = 1
+    pad_end = 1
+    self._compare(1, 2, 3, 5, block_size, pad_beg, pad_end)
 
 
 class SpaceToBatchNDGradientTest(test.TestCase):
