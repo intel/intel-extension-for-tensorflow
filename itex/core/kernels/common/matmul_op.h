@@ -60,7 +60,6 @@ class MatMulBCast {
     output_batch_size_ = output_shape_.num_elements();
     broadcasting_required_ =
         std::min(x_batch_size_, y_batch_size_) != output_batch_size_;
-
     if (broadcasting_required_) {
       ComputeBatchIndices(output_batch_size_, batch_bcast_->x_reshape(),
                           batch_bcast_->x_bcast(), &x_batch_indices_);
@@ -75,6 +74,8 @@ class MatMulBCast {
   const int64 output_batch_size() const { return output_batch_size_; }
   const int64 x_batch_size() const { return x_batch_size_; }
   const int64 y_batch_size() const { return y_batch_size_; }
+  const bool is_x_bcast() const { return x_batch_size_ != output_batch_size_; }
+  const bool is_y_bcast() const { return y_batch_size_ != output_batch_size_; }
   const TensorShape& output_batch_shape() const { return output_shape_; }
 
   // Returns the mapping from the flattened output batch indices to x's
