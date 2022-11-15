@@ -36,6 +36,9 @@ namespace itex {
       GeluOp<CPUDevice, type>);                                            \
   REGISTER_KERNEL_BUILDER(                                                 \
       Name("_ITEXSwish").Device(DEVICE_CPU).TypeConstraint<type>("T"),     \
+      SwishOp<CPUDevice, type>);                                           \
+  REGISTER_KERNEL_BUILDER(                                                 \
+      Name("_ITEXMish").Device(DEVICE_CPU).TypeConstraint<type>("T"),      \
       SwishOp<CPUDevice, type>);
 
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_CPU_KERNELS);
@@ -75,6 +78,9 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_GRAD_CPU_KERNELS);
       GeluGradOp<CPUDevice, type>);                                  \
   REGISTER_KERNEL_BUILDER(                                           \
       Name("Swish").Device(DEVICE_CPU).TypeConstraint<type>("T"),    \
+      SwishOp<CPUDevice, type>);                                     \
+  REGISTER_KERNEL_BUILDER(                                           \
+      Name("Mish").Device(DEVICE_CPU).TypeConstraint<type>("T"),     \
       SwishOp<CPUDevice, type>);
 
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_GELU_KERNELS);

@@ -220,6 +220,7 @@ class AutoMixedPrecisionLists {
       "Log1p",
       "LogSoftmax",
       "Mul",
+      "Mish",
       "Prod",
       "RealDiv",
       "Reciprocal",

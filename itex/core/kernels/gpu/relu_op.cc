@@ -37,6 +37,9 @@ namespace itex {
       Name("Gelu").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
       GeluOp<GPUDevice, type>);                                       \
   REGISTER_KERNEL_BUILDER(                                            \
+      Name("Mish").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
+      MishOp<GPUDevice, type>);                                       \
+  REGISTER_KERNEL_BUILDER(                                            \
       Name("Selu").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
       SeluOp<GPUDevice, type>);                                       \
   REGISTER_KERNEL_BUILDER(                                            \

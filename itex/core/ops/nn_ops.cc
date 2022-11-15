@@ -2999,6 +2999,22 @@ void Register_ITEXSoftmaxOp() {
   }
 }
 
+void Register_MishOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("Mish");
+    TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "T: {bfloat16, half, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "Mish op registration failed: ";
+  }
+}
+
 void Register_ITEXFusedAddV2WithSoftmaxOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

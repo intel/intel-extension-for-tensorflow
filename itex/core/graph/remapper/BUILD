@@ -1,9 +1,11 @@
 cc_library(
     name = "remapper",
     srcs = [
+        "activation_pattern.cc",
         "batch_matmul_pattern.cc",
         "cast_fused_matmul_cast_pattern.cc",
         "cast_matmul_cast_pattern.cc",
+        "contraction_mish_pattern.cc",
         "conv_backprop_input_pattern.cc",
         "fusion.cc",
         "gru_pattern.cc",
@@ -14,7 +16,6 @@ cc_library(
         "remapper.cc",
         "resize_image_pattern.cc",
         "rmsprop_pattern.cc",
-        "swish_pattern.cc",
     ],
     hdrs = [
         "constant_names.h",

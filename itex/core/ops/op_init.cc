@@ -109,6 +109,7 @@ void RegisterOps() {
   Register_ITEXRandomUniformOp();
   Register_LayerNormOp();
   Register_LayerNormGradOp();
+  Register_MishOp();
   Register_ITEXRnnOp();
   Register_ITEXRnnGradOp();
   Register_OneDnnGraphOp();
@@ -289,6 +290,7 @@ void RegisterOps() {
   Register_OneDnnMaxPoolGradOp();
   Register_OneDnnMaxPool3DOp();
   Register_OneDnnMaxPool3DGradOp();
+  Register_OneDnnMishOp();
   Register_OneDnnMklLayerNormOp();
   Register_OneDnnQuantizedBatchMatMulV2AndDequantizeOp();
   Register_OneDnnQuantizedConv2DOp();

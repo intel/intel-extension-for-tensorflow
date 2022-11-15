@@ -184,5 +184,83 @@ class SigmoidAlphaWithMulFusion : public Fusion {
   }
 };
 REGISTER_FUSION(SigmoidAlphaWithMulFusion)
+
+/*
+
+       Input
+       |   \
+      |   SoftPlus                Input
+     |      \                      |
+     \     Tanh        ===>      Mish
+      \     |                     |
+       \   |                    Output
+        Mul
+         \
+      Output
+
+*/
+class MishFusion : public Fusion {
+ public:
+  MishFusion() : Fusion() {
+    using utils::NodeStatus;
+    using utils::OpTypePattern;
+    OpTypePattern input = {kAny, "input", NodeStatus::kRemain};
+    OpTypePattern softplus = {kSoftplus, "softplus", NodeStatus::kRemove};
+    OpTypePattern tanh = {kTanh, "tanh", NodeStatus::kRemove};
+    OpTypePattern mul = {kMul, "mul", NodeStatus::kReplace};
+
+    softplus.AddInput(input);
+    tanh.AddInput(softplus);
+    mul.AddInput(tanh).AddInput(input);
+    pattern_ = InternalPattern(std::move(mul));
+  }
+
+  ~MishFusion() {}
+
+  std::string Name() override { return "Mish"; }
+
+  MatchedProperties Check(RemapperContext* ctx,
+                          const int node_index) const override {
+    MatchedProperties ret;
+    auto& graph_view = ctx->graph_view;
+    auto* mul_node_def = graph_view.GetNode(node_index)->node();
+    if (!HasDataType(mul_node_def, DT_FLOAT) &&
+        !HasDataType(mul_node_def, DT_BFLOAT16) &&
+        !(NodeIsOnGpu(mul_node_def) && HasDataType(mul_node_def, DT_HALF)))
+      return ret;
+
+    ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
+    return ret;
+  }
+
+  Status Update(RemapperContext* ctx,
+                const MatchedProperties& properties) const override {
+    auto& graph_view = ctx->graph_view;
+    const NodeDef* mul = graph_view.GetNode(properties.map.at("mul"))->node();
+    const NodeDef* softplus =
+        graph_view.GetNode(properties.map.at("softplus"))->node();
+    NodeDef fused_op;
+    fused_op.set_name(mul->name());
+    fused_op.set_op(kMish);
+    fused_op.set_device(mul->device());
+    fused_op.add_input(softplus->input(0));
+
+    auto* attr = fused_op.mutable_attr();
+    (*attr)["T"] = mul->attr().at("T");
+
+    Status status;
+    utils::Mutation* mutation = graph_view.GetMutationBuilder();
+    mutation->AddNode(std::move(fused_op), &status);
+    TF_RETURN_IF_ERROR(status);
+    TF_RETURN_IF_ERROR(mutation->Apply());
+
+    ITEX_VLOG(2) << "Fuse Mish Activation: "
+                 << " Softplus= " << softplus->name()
+                 << " Mul= " << mul->name();
+    return Status::OK();
+  }
+};
+REGISTER_FUSION(MishFusion)
+
 }  // namespace graph
 }  // namespace itex

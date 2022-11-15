@@ -35,8 +35,6 @@ limitations under the License.
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/pattern_utils.h"
 #include "itex/core/graph/utils/symbolic_shapes.h"
-#include "itex/core/graph/utils/utils.h"
-#include "itex/core/utils/onednn/onednn_post_op_util.h"
 #include "itex/core/utils/op_kernel.h"
 
 namespace itex {
@@ -333,44 +331,6 @@ struct AddV2WithSoftmax {
   int addv2Index_ = kMissingIndex;
   int softmaxIndex_ = kMissingIndex;
 };
-
-bool IsInPreserveSet(const RemapperContext& ctx, const NodeDef* node) {
-  return ctx.nodes_to_preserve.count(node->name()) > 0;
-}
-
-bool HaveSameDataType(const NodeDef* lhs, const NodeDef* rhs,
-                      const string& type_attr = "T") {
-  DataType lhs_attr = GetDataTypeFromAttr(*lhs, type_attr);
-  DataType rhs_attr = GetDataTypeFromAttr(*rhs, type_attr);
-
-  return lhs_attr != DT_INVALID && rhs_attr != DT_INVALID &&
-         lhs_attr == rhs_attr;
-}
-
-// Returns true if the given pattern is supported on the assigned device.
-// TODO(itex): Add device check for CPU/GPU/XPU
-template <typename Pattern>
-bool IsDeviceCompatible(const RemapperContext& ctx, const Pattern& matched) {
-  return true;
-}
-
-bool IsSupportedActivation(const NodeDef& node) {
-  return PostOpUtil::IsSupportedActivation(node.op());
-}
-
-inline bool HasControlFanin(const utils::MutableNodeView& node_view) {
-  return node_view.NumControllingFanins() > 0;
-}
-
-inline bool HasControlFaninOrFanout(const utils::MutableNodeView& node_view) {
-  return node_view.NumControllingFanins() > 0 ||
-         node_view.NumControlledFanouts() > 0;
-}
-
-// Returns true if at most one fanout reads output at port 0 (output used once).
-inline bool HasAtMostOneFanoutAtPort0(const utils::MutableNodeView& node_view) {
-  return node_view.GetRegularFanout(0).size() <= 1;
-}
 
 bool IsAddWithNoBroadcast(const RemapperContext& ctx, const NodeDef& node) {
   if (!IsAdd(node)) return false;
@@ -4098,8 +4058,10 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
     }
 
     // Remap sequatial Binary ops into the _ITEXFusedBinary op.
+    // Disable it in 1st remapper since it may break other high priority
+    // fusions.
     FusedBinary seq_binary;
-    if (FindFusedBinary(ctx, i, &seq_binary)) {
+    if (level != default_level && FindFusedBinary(ctx, i, &seq_binary)) {
       TF_ABORT_IF_ERROR(AddFusedBinaryNode(&ctx, seq_binary, &invalidated_nodes,
                                            &nodes_to_delete));
     }

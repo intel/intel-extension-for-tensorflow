@@ -121,6 +121,7 @@ const std::vector<NativeFormatInfo>* GetNativeFormatInfo() {
       {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool},
       {"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll, RewriteMaxPoolGrad},
+      {"Mish", "_ITEXMish", CopyAttrsAll, AlwaysRewrite},
       {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll, AlwaysRewrite},
       {"Relu", "_ITEXRelu", CopyAttrsAll, AlwaysRewrite},
       {"Relu6", "_ITEXRelu6", CopyAttrsAll, AlwaysRewrite},

@@ -3437,6 +3437,26 @@ void Register_OneDnnSwishOp() {
   }
 }
 
+void Register_OneDnnMishOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_OneDnnMish");
+    TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "features_meta: uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "activations_meta: uint8");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "T: {bfloat16, half, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unchanged_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_OneDnnMish op registration failed: ";
+  }
+}
+
 void Register_OneDnnResizeNearestNeighborOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

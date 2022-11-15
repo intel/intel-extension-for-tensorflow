@@ -244,6 +244,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
       {"MaxPoolGrad", "_OneDnnMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPool3DGrad", "_OneDnnMaxPool3DGrad", CopyAttrsAll,
        RewriteMaxPoolGrad},
+      {"Mish", "_OneDnnMish", CopyAttrsAll, AlwaysRewrite},
       {"OneDnnGraph", "_OneDnnGraph", CopyAttrsOneDnnGraph, AlwaysRewrite},
       {"QuantizedConcatV2", "_OneDnnQuantizedConcatV2", CopyAttrsAll,
        AlwaysRewrite},

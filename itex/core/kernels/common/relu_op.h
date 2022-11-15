@@ -109,6 +109,14 @@ class GeluOp : public ReluBaseOp<Device, T> {
 };
 
 template <typename Device, typename T>
+class MishOp : public ReluBaseOp<Device, T> {
+ public:
+  explicit MishOp(OpKernelConstruction* context)
+      : ReluBaseOp<Device, T>(context, dnnl::algorithm::eltwise_mish, 0.0f,
+                              0.0f) {}
+};
+
+template <typename Device, typename T>
 class SwishOp : public ReluBaseOp<Device, T> {
  public:
   explicit SwishOp(OpKernelConstruction* context)

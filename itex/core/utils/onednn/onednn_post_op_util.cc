@@ -51,6 +51,8 @@ const std::vector<PostOpInfo>& PostOpUtil::GetAllPostOpInfo() {
        kBetaZero, kScaleOne},
       {"LeakyRelu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero,
        kBetaZero, kScaleOne},
+      {"Mish", kind::eltwise, algorithm::eltwise_mish, kAlphaZero, kBetaZero,
+       kScaleOne},
       {"Relu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero, kBetaZero,
        kScaleOne},
       {"Relu6", kind::eltwise, algorithm::eltwise_clip_v2, kAlphaZero, kBetaSix,
