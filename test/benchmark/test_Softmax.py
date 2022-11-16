@@ -17,7 +17,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops import nn_ops
+from tensorflow.python.ops import gen_nn_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 from utils import tailed_no_tailed_size
@@ -30,25 +30,28 @@ except ImportError:
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
 
 ITERATION = 5
-FLOAT_LOGITS = [[1024, 1001], [1024, 1, 100], [1024, 99, 2], [32, 1001], [8, 1000, 91]]
-HALF_LOGITS = [[1024, 1001], [32, 1001]]
-BFLOAT16_LOGITS = [[1024, 1001]]
+
+# size used in models
+FLOAT_LOGITS_SIZE = [[1024, 1001], [1024, 1, 100], [1024, 99, 2], [32, 1001], [8, 1000, 91]]
+HALF_LOGITS_SIZE = [[1024, 1001], [32, 1001]]
+BFLOAT16_LOGITS_SIZE = [[1024, 1001]]
 
 class SoftmaxTest(test.TestCase):
     def _test_impl(self, logits, dtype):
         logits = constant_op.constant(logits, dtype=dtype)
         flush_cache()
-        nn_ops.softmax(logits)
+        gen_nn_ops.softmax(logits)
     
     @add_profiling
     @multi_run(ITERATION)
     def testSoftmax(self):
-        for logits in FLOAT_LOGITS:
-            self._test_impl(np.array(logits).astype(np.float32), dtypes.float32)
-        for logits in HALF_LOGITS:
-            self._test_impl(np.array(logits).astype(np.half), dtypes.half)
-        for logits in BFLOAT16_LOGITS:
-            self._test_impl(np.array(logits).astype(np.float32), dtypes.bfloat16)
+        for in_size in FLOAT_LOGITS_SIZE:
+            self._test_impl(np.random.normal(size=in_size), dtypes.float32)
+        for in_size in HALF_LOGITS_SIZE:
+            self._test_impl(np.random.normal(size=in_size), dtypes.half)
+        if dtypes.bfloat16 in FLOAT_COMPUTE_TYPE:
+            for in_size in BFLOAT16_LOGITS_SIZE:
+                self._test_impl(np.random.normal(size=in_size), dtypes.bfloat16)
 
 if __name__ == "__main__":
     test.main()

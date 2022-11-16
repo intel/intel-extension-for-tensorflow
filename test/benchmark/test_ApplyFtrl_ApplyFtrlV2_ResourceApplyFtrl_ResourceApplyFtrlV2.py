@@ -40,7 +40,30 @@ class ApplyFtrl_ApplyFtrlV2_ResourceApplyFtrl_ResourceApplyFtrlV2Test(test.TestC
         np.random.seed(12)
         grad = tf.Variable(np.random.normal(size=size), dtype=dtype) 
         flush_cache()
-        op_out=training_ops.resource_apply_ftrl(var=x.handle, accum=y.handle, linear=z.handle, grad=grad, lr=0.001, l1=0.1, l2=0.2, lr_power=0.00001)
+        op_out = training_ops.resource_apply_ftrl(var=x.handle, accum=y.handle, linear=z.handle, grad=grad, lr=0.001, l1=0.1, l2=0.2, lr_power=0.00001)
+
+    @add_profiling
+    @multi_run(ITERATION)
+    def testApplyFtrl_ApplyFtrlV2_ResourceApplyFtrl_ResourceApplyFtrlV2(self):
+        for dtype in FLOAT_COMPUTE_TYPE:
+            self._test_impl([1000,5,150], dtype)
+            self._test_impl([8192,4096], dtype)
+            # test tailed_no_tailed_size
+            for in_size in tailed_no_tailed_size:
+                self._test_impl([in_size], dtype)
+
+class ResourceApplyFtrlV2Test(test.TestCase): 
+    def _test_impl(self, size, dtype):
+        np.random.seed(0)
+        x = tf.Variable(np.random.normal(size=size), dtype=dtype) 
+        np.random.seed(4)
+        y = tf.Variable(np.random.normal(size=size), dtype=dtype)
+        np.random.seed(8)
+        z = tf.Variable(np.random.normal(size=size), dtype=dtype) 
+        np.random.seed(12)
+        grad = tf.Variable(np.random.normal(size=size), dtype=dtype) 
+        flush_cache()
+        op_out = training_ops.resource_apply_ftrl_v2(var=x.handle, accum=y.handle, linear=z.handle, grad=grad, lr=0.001, l1=0.1, l2=0.2, lr_power=0.00001, l2_shrinkage=0.01)
 
     @add_profiling
     @multi_run(ITERATION)
