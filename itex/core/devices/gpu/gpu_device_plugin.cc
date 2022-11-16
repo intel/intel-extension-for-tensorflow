@@ -56,7 +56,12 @@ void gpu_allocate(const SP_Device* device, uint64_t size, int64_t memory_space,
   DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
   mem->struct_size = SP_DEVICE_MEMORY_BASE_STRUCT_SIZE;
   BFCAllocator* alloc = nullptr;
-  dpcppGetAllocator(device_handle, &alloc);
+  dpcppError_t error = dpcppGetAllocator(device_handle, &alloc);
+  if (error != DPCPP_SUCCESS) {
+    ITEX_LOG(ERROR) << "Failed to allocate device buffer because "
+                    << dpcppGetErrorName(error);
+    return;
+  }
   mem->opaque = alloc->AllocateRaw(size);
   mem->size = size;
 }
@@ -64,7 +69,12 @@ void gpu_allocate(const SP_Device* device, uint64_t size, int64_t memory_space,
 void gpu_deallocate(const SP_Device* device, SP_DeviceMemoryBase* mem) {
   DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
   BFCAllocator* alloc = nullptr;
-  dpcppGetAllocator(device_handle, &alloc);
+  dpcppError_t error = dpcppGetAllocator(device_handle, &alloc);
+  if (error != DPCPP_SUCCESS) {
+    ITEX_VLOG(1) << "Failed to deallocate buffer by nullptr allocator because "
+                 << dpcppGetErrorName(error);
+    return;
+  }
   alloc->DeallocateRaw(mem->opaque);
   mem->opaque = nullptr;
   mem->size = 0;
