@@ -193,17 +193,22 @@ inline Tidx DivUp(Tidx a, Tidx b) {
 }
 
 constexpr auto GLOBAL_SPACE = sycl::access::address_space::global_space;
+// TODO(itex): ElemSize is sensitive to inputs, how to make performance more
+// stable?
+constexpr int ElemSize = 4;
 
 template <typename T, typename Tindices, bool ADJ_A, bool ADJ_B>
 struct SparseTensorDenseMatmulKernel {
   SparseTensorDenseMatmulKernel(int num_work_items, int out_cols, int out_rows,
-                                int b_cols, int n, Tindices* a_idx_ptr,
-                                const T* b_ptr, T* a_val_ptr, T* out_ptr)
+                                int b_cols, int n, int total_size,
+                                Tindices* a_idx_ptr, const T* b_ptr,
+                                T* a_val_ptr, T* out_ptr)
       : num_work_items(num_work_items),
         out_cols(out_cols),
         out_rows(out_rows),
         b_cols(b_cols),
         n(n),
+        total_size(total_size),
         a_idx_ptr(a_idx_ptr),
         b_ptr(b_ptr),
         a_val_ptr(a_val_ptr),
@@ -211,33 +216,49 @@ struct SparseTensorDenseMatmulKernel {
   void operator()(sycl::nd_item<1> item) const {
     auto id = item.get_global_linear_id();
     if (id >= num_work_items) return;
+    id = ElemSize * id;
 
     // out_{i,j} = \sum{a_{i,k} * b_{k,j}}
-    const int a_ix = id / out_cols;
-    const int j = id % out_cols;
-    sycl::vec<Tindices, 2> tmp;
-    tmp.load(a_ix, sycl::multi_ptr<Tindices, GLOBAL_SPACE>(a_idx_ptr));
-    int i = tmp.x();
-    int k = tmp.y();
-    if (ADJ_A) std::swap(i, k);
-    // if a_row is out of range, skip
-    if (!FastBoundsCheck(i, out_rows)) {
-      return;
+    int i, k;
+    bool load_a = true;
+    int a_ix = id / out_cols;
+    int j = id % out_cols;
+#pragma unroll
+    for (int elem = 0; elem < ElemSize; ++elem) {
+      if (load_a) {
+        sycl::vec<Tindices, 2> tmp;
+        tmp.load(a_ix, sycl::multi_ptr<Tindices, GLOBAL_SPACE>(a_idx_ptr));
+        i = tmp.x();
+        k = tmp.y();
+        if (ADJ_A) std::swap(i, k);
+        load_a = false;
+      }
+      // if a_row is out of range, skip
+      if (FastBoundsCheck(i, out_rows)) {
+        int out_idx = i * out_cols + j;
+        auto atm = sycl::atomic_ref<T, sycl::memory_order::relaxed,
+                                    sycl::memory_scope::device, GLOBAL_SPACE>(
+            out_ptr[out_idx]);
+        // if a_row is in range, but a_col is out of range, set output
+        // as NaN
+        if (!FastBoundsCheck(k, n)) {
+          atm.fetch_add(std::numeric_limits<T>::quiet_NaN());
+        } else {
+          const T a_val = a_val_ptr[a_ix];
+          const int b_idx = ADJ_B ? (j * b_cols + k) : (k * b_cols + j);
+          const T b_val = b_ptr[b_idx];
+          atm.fetch_add(a_val * b_val);
+        }
+      }
+      if ((++id) >= total_size) {
+        return;
+      }
+      if ((++j) >= out_cols) {
+        j = 0;
+        load_a = true;
+        a_ix = a_ix + 1;
+      }
     }
-    int out_idx = i * out_cols + j;
-    auto atm = sycl::atomic_ref<T, sycl::memory_order::relaxed,
-                                sycl::memory_scope::device, GLOBAL_SPACE>(
-        out_ptr[out_idx]);
-    // if a_row is in range, but a_col is out of range, set output
-    // as NaN
-    if (!FastBoundsCheck(k, n)) {
-      atm.fetch_add(std::numeric_limits<T>::quiet_NaN());
-      return;
-    }
-    const T a_val = a_val_ptr[a_ix];
-    const int b_idx = ADJ_B ? (j * b_cols + k) : (k * b_cols + j);
-    const T b_val = b_ptr[b_idx];
-    atm.fetch_add(a_val * b_val);
   }
 
  private:
@@ -246,6 +267,7 @@ struct SparseTensorDenseMatmulKernel {
   int out_rows;
   int b_cols;
   int n;
+  int total_size;
   Tindices* a_idx_ptr;
   const T* b_ptr;
   T* a_val_ptr;
@@ -268,17 +290,20 @@ Status SparseTensorDenseMatMulFunctor<T, Tindices, ADJ_A, ADJ_B>::Compute(
   auto* stream = d.stream();
   // TODO(itex): why small work-group size is better?
   const int wg_size = 256;
-  const int num_work_items = out_cols * nnz;
+  const int total_size = out_cols * nnz;
+  const int num_work_items = DivUp(total_size, ElemSize);
   stream->submit([&](sycl::handler& cgh) {
     auto a_idx_ptr = const_cast<Tindices*>(a_indices.data());
     auto a_val_ptr = const_cast<T*>(a_values.data());
     const T* b_ptr = b.data();
     T* out_ptr = out.data();
     SparseTensorDenseMatmulKernel<T, Tindices, ADJ_A, ADJ_B> task(
-        num_work_items, out_cols, out_rows, b_cols, n, a_idx_ptr, b_ptr,
-        a_val_ptr, out_ptr);
+        num_work_items, out_cols, out_rows, b_cols, n, total_size, a_idx_ptr,
+        b_ptr, a_val_ptr, out_ptr);
     cgh.parallel_for<SparseTensorDenseMatmulKernel<T, Tindices, ADJ_A, ADJ_B>>(
-        sycl::nd_range<1>(DivUp(num_work_items, wg_size) * wg_size, wg_size),
+        sycl::nd_range<1>(
+            sycl::range<1>(DivUp(num_work_items, wg_size) * wg_size),
+            sycl::range<1>(wg_size)),
         task);
   });
 
