@@ -17,7 +17,7 @@
 import numpy as np
 from tensorflow.python.framework import constant_op
 from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import inplace_ops
+from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import nn_ops
 from utils import multi_run, add_profiling, flush_cache
@@ -35,7 +35,7 @@ V_SHAPES = [[1, 100], [1, 32], [1, 256, 256]]
 class InpalceUpdateTest(test.TestCase):
     def _test_impl(self, x, i, v):
         flush_cache()
-        inplace_ops.inplace_update(x, i, v)
+        gen_array_ops.inplace_update(x, i, v)
 
     def _test_float32(self):
         for dtype in FLOAT_COMPUTE_TYPE:
