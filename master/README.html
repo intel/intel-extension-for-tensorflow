@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intel® Extension for TensorFlow* &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                v1.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Intel® Extension for TensorFlow*</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="intel-extension-for-tensorflow">
+<h1>Intel® Extension for TensorFlow*<a class="headerlink" href="#intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="https://pypi.org/project/intel-extension-for-tensorflow"><img alt="Python" src="https://img.shields.io/pypi/pyversions/tensorflow.svg?style=plastic" /></a>
+<a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/releases"><img alt="version" src="https://img.shields.io/badge/release-1.0.0-green" /></a>
+<a class="reference external" href="LICENSE.txt"><img alt="license" src="https://img.shields.io/badge/license-Apache%202-blue" /></a></p>
+<p>Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow <a class="reference external" href="https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md">PluggableDevice</a> interface to bring Intel XPU(GPU, CPU, etc) devices into <a class="reference external" href="https://github.com/tensorflow/tensorflow">TensorFlow</a> open source community for AI workload acceleration. It allows flexibly plugging an XPU into TensorFlow on-demand, and exposing computing power inside Intel’s hardware.</p>
+<p>This diagram provides a summary of the TensorFlow* PyPI package ecosystem.</p>
+<div align=center>
+<img src="docs/guide/images/pip_pkg_deps.png">
+</div><ul>
+<li><p>TensorFlow PyPI packages:
+<a class="reference external" href="https://www.tensorflow.org/guide/estimator">estimator</a>, <a class="reference external" href="https://keras.io">keras</a>, <a class="reference external" href="https://www.tensorflow.org/tensorboard">tensorboard</a>, <a class="reference external" href="https://www.tensorflow.org/guide">tensorflow-base</a></p></li>
+<li><p>Intel® Extension for TensorFlow* package:</p>
+<p><code class="docutils literal notranslate"><span class="pre">intel_extension_for_tensorflow</span></code> contains:</p>
+<ul class="simple">
+<li><p>XPU specific implementation</p>
+<ul>
+<li><p>kernels &amp; operators</p></li>
+<li><p>graph optimizer</p></li>
+<li><p>device runtime</p></li>
+</ul>
+</li>
+<li><p>XPU configuration management</p>
+<ul>
+<li><p>XPU backend selection</p></li>
+<li><p>Options turning on/off advanced features</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="hardware-requirement">
+<h3>Hardware Requirement<a class="headerlink" href="#hardware-requirement" title="Permalink to this headline">¶</a></h3>
+<p>Intel® Extension for TensorFlow* provides <a class="reference external" href="docs/install/install_for_gpu.html#hardware-requirements">Intel GPU</a> support and experimental <a class="reference external" href="docs/install/experimental/install_for_cpu.html#hardware-requirements">Intel CPU</a> support.</p>
+</div>
+<div class="section" id="software-requirement">
+<h3>Software Requirement<a class="headerlink" href="#software-requirement" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Package</th>
+<th>CPU</th>
+<th>GPU</th>
+<th>Installation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Intel GPU driver</td>
+<td></td>
+<td>Y</td>
+<td><a href="docs/install/install_for_gpu.md#install-gpu-drivers">Install Intel GPU driver</a></td>
+</tr>
+<tr>
+<td>Intel® oneAPI Base Toolkit</td>
+<td></td>
+<td>Y</td>
+<td><a href="docs/install/install_for_gpu.md#install-oneapi-base-toolkit-packages">Install Intel® oneAPI Base Toolkit</a></td>
+</tr>
+<tr>
+<td>TensorFlow</td>
+<td>Y</td>
+<td>Y</td>
+<td><a href="https://www.tensorflow.org/install">Install TensorFlow 2.10.0</a></td>
+</tr>
+</tbody>
+</table></div>
+<div class="section" id="installation-channel">
+<h3>Installation Channel:<a class="headerlink" href="#installation-channel" title="Permalink to this headline">¶</a></h3>
+<p>Intel® Extension for TensorFlow* can be installed from the following channels:</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>PyPI</th>
+<th>DockerHub</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="docs/install/install_for_gpu.md#install-via-pypi-wheel-in-bare-metal">GPU</a> \ <a href="docs/install/experimental/install_for_cpu.md#install-via-pypi-wheel-in-bare-metal">CPU</a></td>
+<td><a href="docs/install/install_for_gpu.md#install-via-docker-container"> GPU Container </a> \ <a href="docs/install/experimental/install_for_cpu.md#install-via-docker-container"> CPU Container</a></td>
+<td><a href="docs/install/how_to_build.md">Build from source</a></td>
+</tr>
+</tbody>
+</table></div>
+<div class="section" id="install-for-gpu">
+<h3>Install for GPU<a class="headerlink" href="#install-for-gpu" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.10.0</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference internal" href="docs/install/install_for_gpu.html"><span class="doc">GPU installation</span></a> for details.</p>
+</div>
+<div class="section" id="install-for-cpu-experimental">
+<h3>Install for CPU [Experimental]<a class="headerlink" href="#install-for-cpu-experimental" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.10.0</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Sanity check by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Visit the <a class="reference external" href="https://intel.github.io/intel-extension-for-tensorflow/latest/">online document website</a>, and then get started the tour from Intel® Extension for TensorFlow* <a class="reference internal" href="examples/README.html"><span class="doc">examples</span></a>.</p>
+</div>
+<div class="section" id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<p>We welcome community contributions to Intel® Extension for TensorFlow*.</p>
+<p>This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the <a class="reference internal" href="CODE_OF_CONDUCT.html"><span class="doc">Contributor Covenant</span></a>. Please see <a class="reference internal" href="docs/community/contributing.html"><span class="doc">contribution guidelines</span></a> for additional details.</p>
+</div>
+<div class="section" id="resources">
+<h2>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.tensorflow.org/">TensorFlow</a></p></li>
+</ul>
+</div>
+<div class="section" id="support">
+<h2>Support<a class="headerlink" href="#support" title="Permalink to this headline">¶</a></h2>
+<p>Please submit your questions, feature requests, and bug reports on the <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">GitHub issues</a> page.</p>
+</div>
+<div class="section" id="security">
+<h2>Security<a class="headerlink" href="#security" title="Permalink to this headline">¶</a></h2>
+<p>See Intel’s <a class="reference external" href="https://www.intel.com/content/www/us/en/security-center/default.html">Security Center</a> for information on how to report a potential security issue or vulnerability.</p>
+<p>See also: <a class="reference internal" href="SECURITY.html"><span class="doc">Security Policy</span></a></p>
+</div>
+<div class="section" id="licence">
+<h2>Licence<a class="headerlink" href="#licence" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="LICENSE.txt">Apache License 2.0</a></p>
+<p>This distribution includes third party software governed by separate license terms. This third party software, even if included with the distribution of the Intel software, may be governed by separate license terms, including without limitation, third party license terms, other Intel software license terms, and open source software license terms. These separate license terms govern your use of the third party programs as set forth in the <a class="reference external" href="third-party-programs/THIRD-PARTY-PROGRAMS">“THIRD-PARTY-PROGRAMS”</a> file.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

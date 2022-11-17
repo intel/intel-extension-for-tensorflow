@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BERT Training for Classifying Text on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                v1.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>BERT Training for Classifying Text on Intel CPU and GPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/train_bert/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="bert-training-for-classifying-text-on-intel-cpu-and-gpu">
+<h1>BERT Training for Classifying Text on Intel CPU and GPU<a class="headerlink" href="#bert-training-for-classifying-text-on-intel-cpu-and-gpu" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Intel® Extension for TensorFlow* is compatable with stock Tensorflow*.
+This example uses the tutorial from tensorflow.org <a class="reference external" href="https://www.tensorflow.org/text/tutorials/classify_text_with_bert">Classify text with BERT</a> to show training on BERT model without change original code.</p>
+<p>Install the Intel® Extension for TensorFlow* in legacy running envrionment, Tensorflow will execute the training on Intel CPU and GPU.</p>
+<p><strong>No need any code change</strong></p>
+</div>
+<div class="section" id="hardware-requirements">
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this headline">¶</a></h2>
+<p>Verified Hardware Platforms:</p>
+<ul class="simple">
+<li><p>Intel® Ponte Vecchio</p></li>
+<li><p>Intel CPU</p></li>
+</ul>
+</div>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="prepare-for-gpu-skip-this-step-for-cpu">
+<h3>Prepare for GPU (Skip this step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this headline">¶</a></h3>
+<p>Refer to <a class="reference external" href="../common_guide_running.html##Prepare">Prepare</a></p>
+</div>
+<div class="section" id="setup-running-environment">
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Setup for GPU</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./set_env_gpu.sh
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Setup for CPU</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./set_env_cpu.sh
+</pre></div>
+</div>
+</div>
+<div class="section" id="enable-running-environment">
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this headline">¶</a></h3>
+<ol class="simple">
+<li><p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
+<ul class="simple">
+<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html##Running">Running</a></p></li>
+<li><p>For CPU,</p></li>
+</ul>
+</li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> env_itex_cpu/bin/activate
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>Install the python packages used in <a class="reference external" href="https://www.tensorflow.org/text/tutorials/classify_text_with_bert">Classify text with BERT</a>.</p></li>
+</ol>
+<p>The jupyter nodebook script will install other depended pacakge during running.
+No need pre-install them.</p>
+</div>
+<div class="section" id="download-jupyter-code">
+<h3>Download Jupyter Code:<a class="headerlink" href="#download-jupyter-code" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">storage</span><span class="o">.</span><span class="n">googleapis</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">tensorflow_docs</span><span class="o">/</span><span class="n">text</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">tutorials</span><span class="o">/</span><span class="n">classify_text_with_bert</span><span class="o">.</span><span class="n">ipynb</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="startup-jupyter-notebook">
+<h2>Startup Jupyter Notebook<a class="headerlink" href="#startup-jupyter-notebook" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>jupyter notebook --notebook-dir=./ --ip=0.0.0.0 --no-browser  --allow-root &amp;
+...
+
+http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333
+</pre></div>
+</div>
+<p>Open the url:http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333 above by web browser.</p>
+</div>
+<div class="section" id="execute">
+<h2>Execute<a class="headerlink" href="#execute" title="Permalink to this headline">¶</a></h2>
+<ol class="simple">
+<li><p>Open classify_text_with_bert.ipynb by jupyter notebook.</p></li>
+<li><p>Run the tutorial according to the descrition in the Jupyter notebook.</p></li>
+<li><p>The TensorFlow will train and infer the BERT model on Intel CPU or GPU.</p></li>
+</ol>
+</div>
+<div class="section" id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+<ol class="simple">
+<li><p>The following error log is a known issue and it is not caused by Intel® Extension for TensorFlow*. This crash happens when the code is finished and try to release resource and  doesn’t impact the result of the Bert training and inference/test.</p></li>
+</ol>
+<div class="highlight-Exception ignored in: &lt;function _CheckpointRestoreCoordinatorDeleter.__del__ at 0x7fa167430d30&gt; notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
+  File &quot;/home/xxx/xxx/env_itex/lib/python3.9/site-packages/tensorflow/python/training/tracking/util.py&quot;, line 174, in __del__
+TypeError: &#39;NoneType&#39; object is not callable
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
