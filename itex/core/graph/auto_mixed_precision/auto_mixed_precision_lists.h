@@ -171,6 +171,7 @@ class AutoMixedPrecisionLists {
       "_FusedBatchMatMulV2",
       "_ITEXForwardGRU",
       "_ITEXForwardAUGRU",
+      "_ITEXFusedBinary",
       "_ITEXFusedConv2D",
       "_ITEXFusedConv3D",
       "_ITEXFusedDepthwiseConv2dNative",
