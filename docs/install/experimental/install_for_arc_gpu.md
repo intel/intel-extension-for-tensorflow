@@ -46,23 +46,23 @@ Hardware Platforms with Experimental Only Support:
 
 * #### Windows Subsystem for Linux 2 (WSL2)
 
-    When using WSL2, the GPU drivers are installed in the Windows OS and runtime components such as [Level-Zero](https://github.com/oneapi-src/level-zero) are installed within Linux (in WSL2).
+When using WSL2, the GPU drivers are installed in the Windows OS and runtime components such as [Level-Zero](https://github.com/oneapi-src/level-zero) are installed within Linux (in WSL2).
 
 
-    ##### Windows GPU Drivers
+##### Windows GPU Drivers
 
-    |Release|OS|Intel GPU|Install Intel GPU Driver|
-    |-|-|-|-|
-    |v1.0.0|Windows 10, Windows 11|Intel® Arc™ A-Series GPUs|[Intel® Arc™ Graphics Windows DCH Driver](https://www.intel.com/content/www/us/en/download/726609/intel-arc-graphics-windows-dch-driver.html)|
+|Release|OS|Intel GPU|Install Intel GPU Driver|
+|-|-|-|-|
+|v1.0.0|Windows 10, Windows 11|Intel® Arc™ A-Series GPUs|[Intel® Arc™ Graphics Windows DCH Driver](https://www.intel.com/content/www/us/en/download/726609/intel-arc-graphics-windows-dch-driver.html)|
 
-    Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.
+Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.
 
 
-    ##### Ubuntu Linux Installed in WSL2
+##### Ubuntu Linux Installed in WSL2
 
-    |Release|OS|Intel GPU|Install Intel Compute Runtime Components|
-    |-|-|-|-|
-    |v1.0.0|Ubuntu 20.04 installed in WSL2|Intel® Arc™ A-Series GPUs|Refer to the instructions below for package installation in Ubuntu 20.04. When installing the Intel® Arc™ A-Series GPU Drivers [419.40](https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html), please be sure to append the specific version after components, as is done below.|
+|Release|OS|Intel GPU|Install Intel Compute Runtime Components|
+|-|-|-|-|
+|v1.0.0|Ubuntu 20.04 installed in WSL2|Intel® Arc™ A-Series GPUs|Refer to the instructions below for package installation in Ubuntu 20.04. When installing the Intel® Arc™ A-Series GPU Drivers [419.40](https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html), please be sure to append the specific version after components, as is done below.|
 
     The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
 
@@ -109,9 +109,9 @@ Hardware Platforms with Experimental Only Support:
 
 * #### Native Linux Running Directly on Hardware
 
-    |Release|OS|Intel GPU|Install Intel GPU Driver|
-    |-|-|-|-|
-    |v1.0.0|Ubuntu 20.04|Intel® Arc™ A-Series GPUs| Refer to the instructions below for package installation in Ubuntu 20.04. When installing the Intel® Arc™ A-Series GPU Drivers [419.40](https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd=22.28.23726.1+i419~u20.04`|
+|Release|OS|Intel GPU|Install Intel GPU Driver|
+|-|-|-|-|
+|v1.0.0|Ubuntu 20.04|Intel® Arc™ A-Series GPUs| Refer to the instructions below for package installation in Ubuntu 20.04. When installing the Intel® Arc™ A-Series GPU Drivers [419.40](https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd=22.28.23726.1+i419~u20.04`|
 
     The steps to install the runtime components in Ubuntu Linux are:
 
