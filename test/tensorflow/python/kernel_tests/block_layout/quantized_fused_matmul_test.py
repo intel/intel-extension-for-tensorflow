@@ -36,10 +36,7 @@ from tensorflow.python.ops import nn_ops
 
 import tensorflow as tf
 
-os.environ["ITEX_ENABLE_ONEDNN_LAYOUT_OPT"] = "1"
-
-# TODO(itex): Turn on this UT, once onednn fix gpu accuracy issue
-
+@test_util.run_all_in_native_and_block_format
 class QuantizedFusedMatMul(test.TestCase):
 
   def __init__(self, method_name="runTest"):
