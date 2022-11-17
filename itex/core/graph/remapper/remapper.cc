@@ -761,9 +761,9 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
   if (!(HasDataType(node_def, DT_FLOAT) || HasDataType(node_def, DT_BFLOAT16)))
     return false;
 
-  // Don't do FP32 fusion on CPU since it has lower perf.
+  // Don't do FP32/BF16 fusion on CPU since it has lower perf.
   // TODO(itex): Remove this limitation once oneDNN fixes it.
-  if (HasDataType(node_def, DT_FLOAT) && NodeIsOnCpu(node_def)) return false;
+  if (NodeIsOnCpu(node_def)) return false;
 
   // BiasAddGrad, MatMulGradFilter and MatMulGradInput use the same input.
   //
