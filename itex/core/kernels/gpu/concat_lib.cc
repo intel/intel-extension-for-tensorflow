@@ -27,24 +27,6 @@ limitations under the License.
 
 namespace itex {
 
-namespace {
-template <typename T, int vec_size>
-struct BaseTypeVectorize {
-  typedef AlignedVector<T, vec_size> type;
-  typedef T Scalar;
-};
-
-template <int vec_size>
-struct BaseTypeVectorize<Eigen::half, vec_size> {
-  typedef typename Eigen::internal::conditional<
-      (vec_size >= 4), sycl::vec<sycl::half, vec_size>,
-      AlignedVector<Eigen::half, vec_size>>::type type;
-  typedef typename Eigen::internal::conditional<(vec_size >= 4), sycl::half,
-                                                Eigen::half>::type Scalar;
-};
-
-};  // namespace
-
 template <typename T, typename IntType>
 struct ConcatFixedKernel {
   ConcatFixedKernel(size_t num_work_items, size_t total_cols, IntType col_size,

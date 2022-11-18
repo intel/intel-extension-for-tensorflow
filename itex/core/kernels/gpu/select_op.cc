@@ -18,6 +18,7 @@ limitations under the License.
 #include "itex/core/kernels/common/cwise_ops_common.h"
 #include "itex/core/kernels/gpu/cwise_op.h"
 #include "itex/core/utils/bounds_check.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"
@@ -27,6 +28,50 @@ limitations under the License.
 namespace itex {
 
 typedef Eigen::GpuDevice GPUDevice;
+
+// if cond is scalar, don't need to load then_flat and else_flat at the same
+// time.
+template <typename T, int vec_size>
+struct SelectScalarGpuKernel {
+  using Tvec = typename BaseTypeVectorize<T, vec_size>::type;
+  SelectScalarGpuKernel(const bool* cond, const T* then_flat,
+                        const T* else_flat, T* out, int num_work_items,
+                        int vectorized_items, int vectorized_range)
+      : cond_(cond),
+        then_flat_(then_flat),
+        else_flat_(else_flat),
+        out_(out),
+        num_work_items_(num_work_items),
+        vectorized_items_(vectorized_items),
+        vectorized_range_(vectorized_range) {}
+
+  void operator()(sycl::nd_item<1> item) const {
+    auto id = item.get_global_linear_id();
+    if (id >= num_work_items_) {
+      return;
+    }
+
+    bool selector = cond_[0];
+    if (id < vectorized_items_) {
+      auto out_id = id * vec_size;
+      *(reinterpret_cast<Tvec*>(out_ + out_id)) =
+          selector ? *(reinterpret_cast<const Tvec*>(then_flat_ + out_id))
+                   : *(reinterpret_cast<const Tvec*>(else_flat_ + out_id));
+    } else {
+      auto out_id = vectorized_range_ + (id - vectorized_items_);
+      out_[out_id] = selector ? then_flat_[out_id] : else_flat_[out_id];
+    }
+  }
+
+ private:
+  const bool* cond_;
+  const T* then_flat_;
+  const T* else_flat_;
+  T* out_;
+  int num_work_items_;
+  int vectorized_items_;
+  int vectorized_range_;
+};
 
 namespace functor {
 
@@ -42,22 +87,36 @@ struct BCastSelectFunctor<GPUDevice, T, NDIMS> {
                   typename Eigen::array<Eigen::DenseIndex, NDIMS> else_bcast) {
     const bool then_bcast_all_one = AllOne<NDIMS>(then_bcast);
     const bool else_bcast_all_one = AllOne<NDIMS>(else_bcast);
-    if (then_bcast_all_one && else_bcast_all_one) {
-      output_tensor.device(d) =
-          cond_tensor.broadcast(cond_bcast).select(then_tensor, else_tensor);
-    } else if (then_bcast_all_one) {
-      output_tensor.device(d) =
-          cond_tensor.broadcast(cond_bcast)
-              .select(then_tensor, else_tensor.broadcast(else_bcast));
-    } else if (else_bcast_all_one) {
-      output_tensor.device(d) =
-          cond_tensor.broadcast(cond_bcast)
-              .select(then_tensor.broadcast(then_bcast), else_tensor);
-    } else {
-      output_tensor.device(d) = cond_tensor.broadcast(cond_bcast)
-                                    .select(then_tensor.broadcast(then_bcast),
-                                            else_tensor.broadcast(else_bcast));
-    }
+
+#define KERNEL_INT_TYPE(IntTypePattern)                                        \
+  if (then_bcast_all_one && else_bcast_all_one) {                              \
+    IntTypePattern(output_tensor).device(d) =                                  \
+        IntTypePattern(cond_tensor)                                            \
+            .broadcast(cond_bcast)                                             \
+            .select(IntTypePattern(then_tensor), IntTypePattern(else_tensor)); \
+  } else if (then_bcast_all_one) {                                             \
+    IntTypePattern(output_tensor).device(d) =                                  \
+        IntTypePattern(cond_tensor)                                            \
+            .broadcast(cond_bcast)                                             \
+            .select(IntTypePattern(then_tensor),                               \
+                    IntTypePattern(else_tensor).broadcast(else_bcast));        \
+  } else if (else_bcast_all_one) {                                             \
+    IntTypePattern(output_tensor).device(d) =                                  \
+        IntTypePattern(cond_tensor)                                            \
+            .broadcast(cond_bcast)                                             \
+            .select(IntTypePattern(then_tensor).broadcast(then_bcast),         \
+                    IntTypePattern(else_tensor));                              \
+  } else {                                                                     \
+    IntTypePattern(output_tensor).device(d) =                                  \
+        IntTypePattern(cond_tensor)                                            \
+            .broadcast(cond_bcast)                                             \
+            .select(IntTypePattern(then_tensor).broadcast(then_bcast),         \
+                    IntTypePattern(else_tensor).broadcast(else_bcast));        \
+  }
+
+    KERNEL_INT_TYPE(To32Bit);
+
+#undef KERNEL_INT_TYPE
   }
 };
 
@@ -78,17 +137,30 @@ struct SelectScalarFunctor<GPUDevice, T> {
                   typename TTypes<bool>::ConstScalar cond,
                   typename TTypes<T>::ConstFlat then_flat,
                   typename TTypes<T>::ConstFlat else_flat) {
-#if !defined(EIGEN_HAS_INDEX_LIST)
-    Eigen::array<int, 1> rank1{1};
-#else
-    Eigen::IndexList<Eigen::type2index<1> > rank1;
-#endif
-    const int size = then_flat.dimension(0);
-    Eigen::array<int, 1> broadcast_dims{size};
+    constexpr int bytes_num = 16;
+    constexpr int vec_size = bytes_num / sizeof(T);
+    int out_elements = out.size();
+    int vectorized_items = out_elements / vec_size;
+    int vectorized_range = vectorized_items * vec_size;
+    int num_work_items = vectorized_items + (out_elements - vectorized_range);
 
-    To32Bit(out).device(d) = cond.reshape(rank1)
-                                 .broadcast(broadcast_dims)
-                                 .select(then_flat, else_flat);
+    auto& stream = d.stream();
+    auto workgroup_size =
+        (*stream)
+            .get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    auto num_workgroups =
+        (num_work_items + workgroup_size - 1) / workgroup_size;
+
+    stream->submit([&](sycl::handler& cgh) {
+      SelectScalarGpuKernel<T, vec_size> task(
+          cond.data(), then_flat.data(), else_flat.data(), out.data(),
+          num_work_items, vectorized_items, vectorized_range);
+      cgh.parallel_for<SelectScalarGpuKernel<T, vec_size>>(
+          sycl::nd_range<1>(sycl::range<1>(num_workgroups * workgroup_size),
+                            sycl::range<1>(workgroup_size)),
+          task);
+    });
   }
 };
 
@@ -108,7 +180,7 @@ struct BatchSelectFunctor<GPUDevice, T> {
 #else
     Eigen::IndexList<Eigen::type2index<1>, int> broadcast_dims;
     broadcast_dims.set(1, all_but_batch);
-    Eigen::IndexList<int, Eigen::type2index<1> > reshape_dims;
+    Eigen::IndexList<int, Eigen::type2index<1>> reshape_dims;
     reshape_dims.set(0, batch);
 #endif
 
@@ -266,6 +338,13 @@ class SelectV2Op : public OpKernel {
     const Tensor* cond = &ctx->input(0);
     const Tensor* then = &ctx->input(1);
     const Tensor* else_ = &ctx->input(2);
+
+    // TODO(itex): support more select pattern in itex
+    if (cond->NumElements() == 1 && then->shape().IsSameSize(else_->shape())) {
+      functor::SelectScalarHandler<T> handler;
+      handler(ctx, cond, then, else_);
+      return;
+    }
 
     // The `cond`, `then`, and `else` are broadcastable (bcast.IsValid()),
     // This matches the behavior of numpy.

@@ -244,6 +244,21 @@ class alignas(alignof(T) * N) AlignedVector {
 
 #undef UNROLL_ON_DEVICE
 
+template <typename T, int vec_size>
+struct BaseTypeVectorize {
+  typedef AlignedVector<T, vec_size> type;
+  typedef T Scalar;
+};
+
+template <int vec_size>
+struct BaseTypeVectorize<Eigen::half, vec_size> {
+  typedef typename Eigen::internal::conditional<
+      (vec_size >= 4), sycl::vec<sycl::half, vec_size>,
+      AlignedVector<Eigen::half, vec_size>>::type type;
+  typedef typename Eigen::internal::conditional<(vec_size >= 4), sycl::half,
+                                                Eigen::half>::type Scalar;
+};
+
 // Returns the maximum power-of-two alignment (in units of elements, not bytes)
 // of a stride or pointer value.
 inline int64_t alignment_of(int64_t element_stride) {
