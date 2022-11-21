@@ -344,11 +344,11 @@ def _sycl_autoconf_imp(repository_ctx):
         if repository_ctx.os.environ.get("CPATH") != None:
             for p in repository_ctx.os.environ["CPATH"].strip().split(":"):
                 if p != "":
-                    additional_inc += ["\'" + p + "\'"]
+                    additional_inc += [_normalize_include_path(repository_ctx, p)]
         if len(additional_inc) > 0:
             additional_inc = ",".join(additional_inc)
         else:
-            additional_inc = ""
+            additional_inc = "\"\""
 
         if _enable_mkl(repository_ctx) and repository_ctx.os.environ.get("ONEAPI_MKL_PATH") != None:
             dpcpp_defines["%{ONEAPI_MKL_PATH}"] = str(find_mkl_path(repository_ctx))

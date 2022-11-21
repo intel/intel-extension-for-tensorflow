@@ -685,7 +685,7 @@ def _impl(ctx):
         "/usr/lib64",
         "/usr/local/include",
         "/usr/include",
-        "%{additional_include_directories}",
+        %{additional_include_directories},
         "%{DPCPP_ROOT_DIR}/lib/clang/13.0.0/include",
         "%{DPCPP_ROOT_DIR}/lib/clang/14.0.0/include",
         "%{DPCPP_ROOT_DIR}/lib/clang/15.0.0/include",
