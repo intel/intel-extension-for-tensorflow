@@ -23,11 +23,10 @@ from utils import tailed_no_tailed_size
 
 try:
   from intel_extension_for_tensorflow.python.test_func import test
-  COMPUTE_TYPE = [dtypes.float32]
 except ImportError:
   from tensorflow.python.platform import test
-  COMPUTE_TYPE = [dtypes.float32]
 
+COMPUTE_TYPE = [dtypes.complex64]
 ITERATION = 5
 
 class ConjTest(test.TestCase):
@@ -41,7 +40,7 @@ class ConjTest(test.TestCase):
 
   @add_profiling
   @multi_run(ITERATION)
-  def testBitwiseXor(self):
+  def testConj(self):
     for dtype in COMPUTE_TYPE:
       # test tailed_no_tailed_size
       for in_size in tailed_no_tailed_size:
