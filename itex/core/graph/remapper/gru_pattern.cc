@@ -107,6 +107,13 @@ class GruFusion : public Fusion {
                           const int node_index) const override {
     MatchedProperties ret;
     auto& graph_view = ctx->graph_view;
+    const auto* node_view = graph_view.GetNode(node_index);
+    const auto* node_def = node_view->node();
+
+    // TODO(itex): Enable GPU fusion after fixing perf issue.
+    if (NodeIsOnGpu(node_def)) {
+      return ret.ToEmpty();
+    }
 
     ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
     if (!ret.Empty()) {
