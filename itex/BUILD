@@ -20,6 +20,25 @@ itex_xpu_binary(
     ],
 )
 
+itex_xpu_binary(
+    name = "itex_gpu_cc",
+    linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@local_config_dpcpp//dpcpp:using_dpcpp": [
+            "//itex/core/devices:xpu_device",
+            "//itex/core/graph:xpu_graph",
+            "//itex/core/kernels:xpu_kernel_cc",
+            "//itex/core/profiler:gpu_profiler",
+        ],
+        "//conditions:default": [],
+    }) + [
+        "//itex/core:protos_all_cc",
+        "//itex/core/kernels:itex_common_cc",
+    ],
+)
+
 cc_binary(
     name = "libitex_cpu.so",
     copts = [
@@ -37,6 +56,25 @@ cc_binary(
     }) + [
         "@local_config_tf//:_pywrap_tensorflow_internal",
         "//itex/core/kernels:libitex_common",
+    ],
+)
+
+cc_binary(
+    name = "itex_cpu_cc",
+    copts = [
+        "-DINTEL_CPU_ONLY",
+    ],
+    linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@local_config_dpcpp//dpcpp:using_dpcpp": [],
+        "//conditions:default": [
+            "//itex/core/graph:xpu_graph",
+            "//itex/core/kernels:xpu_kernel_cc",
+        ],
+    }) + [
+        "//itex/core/kernels:itex_common_cc",
     ],
 )
 

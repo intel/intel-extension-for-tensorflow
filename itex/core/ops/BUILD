@@ -111,7 +111,6 @@ cc_library(
         "shape_inference_fns.h",
     ],
     copts = tf_copts(),
-    defines = ["INTEL_COMMON"],
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/ops/utils:logging",

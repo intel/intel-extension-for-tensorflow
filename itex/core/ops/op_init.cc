@@ -15,12 +15,13 @@ limitations under the License.
 
 #include "itex/core/ops/op_init.h"
 
+#include <functional>
 #include <map>
 #include <string>
 
 #include "itex/core/ops/utils/logging.h"
-#include "itex/core/utils/tf_version.h"
 #include "protos/op_def.pb.h"
+#include "tensorflow/c/c_api.h"
 
 // Some ops currently are available only in spr-base branch, not in TF master
 // branch. We will register those ops in ITEX, before they are upstreamed to TF
