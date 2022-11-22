@@ -96,6 +96,10 @@ bool HasControlFanin(const utils::MutableNodeView& node_view) {
   return node_view.NumControllingFanins() > 0;
 }
 
+bool HasControlFanout(const utils::MutableNodeView& node_view) {
+  return node_view.NumControlledFanouts() > 0;
+}
+
 bool HasControlFaninOrFanout(const utils::MutableNodeView& node_view) {
   return node_view.NumControllingFanins() > 0 ||
          node_view.NumControlledFanouts() > 0;

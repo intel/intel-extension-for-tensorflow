@@ -693,9 +693,9 @@ bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
                              ContractionWithBiasAdd* matched,
                              bool check_device_compatible = true) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
-  // Root of the pattern must be a BiasAdd.
-  // TODO(lyandy): Forward controls for patterns with control dependencies.
-  if (HasControlFaninOrFanout(*node_view)) return false;
+
+  // verify the output node has control fanin edge or not.
+  if (HasControlFanin(*node_view)) return false;
 
   const auto* node_def = node_view->node();
   int bias_port = 1;
@@ -708,9 +708,11 @@ bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
   const auto* contraction_node_view = regular_fanin_0.node_view();
   const auto* contraction_node_def = contraction_node_view->node();
 
+  // verify the input node has a control fanout edge or not.
+  if (HasControlFanout(*contraction_node_view)) return false;
+
   if (IsAccMatMul(*contraction_node_def) &&
       GetDataTypeFromAttr(*node_def, "T") == DT_FLOAT &&
-      !HasControlFaninOrFanout(*contraction_node_view) &&
       HasAtMostOneFanoutAtPort0(*contraction_node_view) &&
       !IsInPreserveSet(ctx, contraction_node_def)) {
     const ContractionWithBiasAdd pattern{contraction_node_view->node_index(),
@@ -723,7 +725,6 @@ bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
 
     return true;
   }
-
   // Conv, MatMul or DepthwiseConv2D.
   bool is_contraction = IsConvOrMatMul(*contraction_node_def);
   // TODO(itex): oneDNN does not support double dtype currently
@@ -731,7 +732,6 @@ bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
     return false;
 
   if (!is_contraction || !HaveSameDataType(node_def, contraction_node_def) ||
-      HasControlFaninOrFanout(*contraction_node_view) ||
       !HasAtMostOneFanoutAtPort0(*contraction_node_view) ||
       IsInPreserveSet(ctx, contraction_node_def))
     return false;
@@ -953,10 +953,11 @@ bool FindContractionWithBiasAndActivation(
     ContractionWithBiasAddAndActivation* matched) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   // Root of the pattern must be an activation node.
-  if (HasControlFaninOrFanout(*node_view)) return false;
-
   const auto* node_def = node_view->node();
   if (!IsSupportedActivation(*node_def)) return false;
+
+  // verify the output node has control fanin edge or not.
+  if (HasControlFanin(*node_view)) return false;
 
   // And input to the activation node must match ContractionWithBiasAdd pattern.
   if (node_view->NumRegularFanins() < 1) return false;
@@ -976,8 +977,14 @@ bool FindContractionWithBiasAndActivation(
 
   // TODO(itex): Public TF doesn't have MatMul + LeakyRelu fusion, remove this
   //       limitation once it's supported.
-  const auto* contraction_def =
-      ctx.graph_view.GetNode(base.contraction)->node();
+  const auto* contraction_node_view = ctx.graph_view.GetNode(base.contraction);
+  const auto* contraction_def = contraction_node_view->node();
+
+  // verify the inter node has control fanin&fanout or not.
+  if (HasControlFaninOrFanout(*bias_add_node_view)) {
+    return false;
+  }
+
   // TODO(itex): oneDNN does not support double dtype currently
   if (HasDataType(contraction_def, DT_DOUBLE)) return false;
   if (IsLeakyRelu(*node_def) &&
@@ -988,6 +995,9 @@ bool FindContractionWithBiasAndActivation(
   const ContractionWithBiasAddAndActivation pattern{
       base.contraction, base.bias_add, node_index, base.bias_port};
   if (!IsDeviceCompatible(ctx, pattern)) return false;
+
+  // verify the input node has a control fanout edge or not.
+  if (HasControlFanout(*contraction_node_view)) return false;
 
   // We successfully found a {Conv2D, MatMul}+BiasAdd+Activation pattern.
   *matched = pattern;
