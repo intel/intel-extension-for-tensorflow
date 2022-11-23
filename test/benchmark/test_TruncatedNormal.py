@@ -45,7 +45,7 @@ class TruncatedNormalTest(test.TestCase):
         for dtype in INT_COMPUTE_TYPE:
             # test tailed_no_tailed_size
             for in_size in broadcast_binary_size_x:
-                self._test_impl([in_size], dtype)
+                self._test_impl(in_size, dtype)
 
 if __name__ == '__main__':
     test.main()  
