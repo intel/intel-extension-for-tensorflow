@@ -3771,7 +3771,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
   const int default_level = 0;
   Status status;
   GraphDef multable_graph_def = graph_def;
-  RemapperContext ctx(item, &multable_graph_def, &status);
+  RemapperContext ctx(item, &multable_graph_def, &status, level);
   // TODO(itex): Currently some fusions will be disabled when LayoutOPT is off,
   //       remove this dependency once all plain fusions are supported.
   bool is_layout_opt = GetOptimizerConfigFlags().enable_layout_opt;

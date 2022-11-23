@@ -37,16 +37,18 @@ namespace graph {
 
 struct RemapperContext {
   explicit RemapperContext(const GrapplerItem& item, GraphDef* g_def,
-                           Status* status)
+                           Status* status, int level)
       : nodes_to_preserve(item.NodesToPreserve()),
         graph_view(g_def, status),
         graph_properties(item),
-        inferred_graph_properties(false) {}
+        inferred_graph_properties(false),
+        remap_level(level) {}
 
   std::unordered_set<string> nodes_to_preserve;
   utils::MutableGraphView graph_view;
   GraphProperties graph_properties;
   bool inferred_graph_properties;
+  int remap_level = 0;
 
   GraphProperties& GetGraphProperties() {
     if (!inferred_graph_properties) {

@@ -20,6 +20,7 @@ from __future__ import print_function
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
+import os
 import numpy as np
 
 from tensorflow.python.framework import constant_op
@@ -121,6 +122,75 @@ class PadWithConv3DTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testPadWithFusedConv3DGraphStructure(self):
     self._testGraphStructure(fusedConv = True)
+
+@test_util.run_all_in_native_and_block_format
+class PadWithConv3DBackpropFilterWithBiasTest(test.TestCase):
+
+  def _model(self):
+    input_sizes = [4, 5, 5, 3, 3]
+    kernel_sizes = [3, 3, 3, 3, 3]
+    stride_sizes = [1, 2, 2, 1, 1]
+    paddings = constant_op.constant([[0, 0], [1, 1], [1, 1], [0, 0], [0, 0]])
+
+    np.random.seed(1)
+    val = np.random.random_sample(input_sizes)
+    input = constant_op.constant(val, dtype=dtypes.float32)
+    weight_val = np.random.random_sample(kernel_sizes)
+    weight = constant_op.constant(weight_val, dtype=dtypes.float32)
+    pad = array_ops.pad(input, paddings)
+    conv = nn_ops.conv3d(pad, weight, stride_sizes, "VALID")
+    output_sizes = conv.get_shape().as_list()
+    gradient_output_val = np.random.random_sample(output_sizes)
+
+    pad1 = array_ops.pad(input, paddings)
+    gradient_output = constant_op.constant(gradient_output_val, dtype=dtypes.float32)
+    biasadd_grad = nn_ops.bias_add_grad(gradient_output)
+    biasadd_grad = math_ops.pow(biasadd_grad, 2)
+    gradient_input_explicit_pad = nn_ops.conv3d_backprop_filter_v2(pad1, kernel_sizes, gradient_output, stride_sizes, "VALID")
+    gradient_input_explicit_pad = array_ops.identity(gradient_input_explicit_pad)
+
+    return biasadd_grad, gradient_input_explicit_pad
+
+  @test_util.run_deprecated_v1
+  def _testAccuracy(self):
+    biasadd_grad, gradient_input_explicit_pad = self._model()
+
+    os.environ['ITEX_REMAPPER'] = '0'
+    with self.session() as sess:
+      output1 = sess.run([biasadd_grad, gradient_input_explicit_pad])
+
+    os.environ['ITEX_REMAPPER'] = '1'
+    with self.session() as sess:
+      output2 = sess.run([biasadd_grad, gradient_input_explicit_pad])
+    self.assertAllClose(output1, output2)
+
+
+  @test_util.run_deprecated_v1
+  def _testGraphStructure(self):
+    biasadd_grad, gradient_input_explicit_pad = self._model()
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    with self.session() as sess:
+      sess.run(variables.global_variables_initializer())
+      output_val = sess.run([biasadd_grad, gradient_input_explicit_pad], options=run_options, run_metadata=metadata)
+      graph = metadata.partition_graphs[0]
+
+
+    exist_pad_conv_backprop_filter_bias = False
+    for node in graph.node:
+      if 'PadWithConv3DBackpropFilterWithBias' in node.op:
+        exist_pad_conv_backprop_filter_bias = True
+
+    self.assertTrue(exist_pad_conv_backprop_filter_bias)
+
+  @test_util.run_deprecated_v1
+  def testPadWithConv3DBackpropFilterWithBiasAccuracy(self):
+    self._testAccuracy()
+
+  @test_util.run_deprecated_v1
+  def testPadWithConv3DBackpropFilterWithBiasGraphStructure(self):
+    self._testGraphStructure()
 
 if __name__ == "__main__":
   test.main()

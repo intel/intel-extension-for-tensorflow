@@ -55,6 +55,10 @@ class PadWithConvBackpropFilterFusion : public Fusion {
   MatchedProperties Check(RemapperContext* ctx,
                           const int node_index) const override {
     MatchedProperties ret;
+    if (ctx->remap_level == 0) {
+      // Only work in second remapper iteration.
+      return ret;
+    }
     auto& graph_view = ctx->graph_view;
 
     ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
