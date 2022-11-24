@@ -76,6 +76,7 @@ static const std::unordered_map<std::string, std::vector<int>>
         {"Min", {0}},
         {"Max", {0}},
         {"Mean", {0}},
+        {"ResizeBilinear", {0}},
         {"Sum", {0}},
         {"Transpose", {0}},
         {"Dequantize", {0}}};
@@ -133,6 +134,8 @@ string GetOpInLLGAStyle(const utils::MutableNodeView* node_view) {
     } else {
       op = "LayerNormInference";
     }
+  } else if (op == "ConcatV2") {
+    op = "Concat";
   }
 
   ITEX_VLOG(2) << "TF op: " << node_def->op()
@@ -338,11 +341,33 @@ Status SetAttr(const utils::MutableNodeView* node_view,
       auto* weight_node_view = node_view->GetRegularFanin(1).node_view();
 
       if (weight_node_view->node()->op() == "Dequantize") {
-        // INT8 case
+        // INT8 case with multiplier = 1
         weight_node_view = weight_node_view->GetRegularFanin(0)
                                .node_view()
                                ->GetRegularFanin(0)
                                .node_view();
+        weight_node = weight_node_view->node();
+      } else if (weight_node_view->node()->op() == "Reshape") {
+        // INT8 case with multiplier != 1
+        auto* dq_node_view = weight_node_view->GetRegularFanin(0).node_view();
+        if (dq_node_view->node()->op() != "Dequantize") {
+          delete *onednn_graph_node;
+          *onednn_graph_node = nullptr;
+          return Status::OK();
+        }
+        auto* q_node_view = dq_node_view->GetRegularFanin(0).node_view();
+        if (q_node_view->node()->op() != "QuantizeV2") {
+          delete *onednn_graph_node;
+          *onednn_graph_node = nullptr;
+          return Status::OK();
+        }
+        auto* reshape_node_view = q_node_view->GetRegularFanin(0).node_view();
+        if (reshape_node_view->node()->op() != "Reshape") {
+          delete *onednn_graph_node;
+          *onednn_graph_node = nullptr;
+          return Status::OK();
+        }
+        weight_node_view = reshape_node_view->GetRegularFanin(0).node_view();
         weight_node = weight_node_view->node();
       } else {
         // non INT8 case
@@ -375,7 +400,12 @@ Status SetAttr(const utils::MutableNodeView* node_view,
   } else {
     if (params.is_maxpool) {
       // No dilation attr for tf pool op, so use default val here.
-      (*onednn_graph_node)->set_attr("dilations", std::vector<int64_t>{1, 1});
+      if (is_3d) {
+        (*onednn_graph_node)
+            ->set_attr("dilations", std::vector<int64_t>{1, 1, 1});
+      } else {
+        (*onednn_graph_node)->set_attr("dilations", std::vector<int64_t>{1, 1});
+      }
     }
     (*onednn_graph_node)->set_attr("kernel", ksize);
   }
@@ -429,8 +459,12 @@ void SetStaticShapeAttr(const utils::MutableNodeView* node_view,
   } else if (node_def->op() == "Conv2DBackpropFilter" ||
              node_def->op() == "Sum" || node_def->op() == "Mean" ||
              node_def->op() == "Min" || node_def->op() == "Max" ||
-             node_def->op() == "Reshape" || node_def->op() == "Transpose") {
+             node_def->op() == "Reshape" ||
+             node_def->op() == "ResizeBilinear" ||
+             node_def->op() == "Transpose") {
     size_input_index = 1;
+  } else if (node_def->op() == "ConcatV2") {
+    size_input_index = node_view->NumRegularFanins() - 1;
   } else {
     delete *onednn_graph_node;
     *onednn_graph_node = nullptr;
@@ -457,6 +491,32 @@ void SetStaticShapeAttr(const utils::MutableNodeView* node_view,
       return;
     }
 
+    // Special case for Depthwise weight. We need to change the value of
+    // second Reshape from (KH, KW, IC, K) to (KH, KW, 1, K*IC).
+    if (node_def->op() == "Reshape") {
+      bool is_input_dequantize = false;
+      bool is_output_depthwise = false;
+
+      auto* fanin_view = node_view->GetRegularFanin(0).node_view();
+      if (fanin_view->node()->op() == "Dequantize") {
+        is_input_dequantize = true;
+      }
+
+      if (node_view->NumRegularFanouts() == 1) {
+        auto* fanout_view = node_view->GetRegularFanout(0)[0].node_view();
+        if (fanout_view->node()->op() == "DepthwiseConv2dNative") {
+          is_output_depthwise = true;
+        }
+      }
+
+      if (is_input_dequantize && is_output_depthwise &&
+          size_value.size() == 4) {
+        int output_channel = size_value[2] * size_value[3];
+        size_value[2] = 1;
+        size_value[3] = output_channel;
+      }
+    }
+
     // TODO(itex): check whether other llga op allow -1 as shape info.
     if (node_def->op() == "Reshape" &&
         std::count(size_value.begin(), size_value.end(), -1) > 1) {
@@ -476,6 +536,10 @@ void SetStaticShapeAttr(const utils::MutableNodeView* node_view,
       (*onednn_graph_node)->set_attr("shape", size_value);
     } else if (node_def->op() == "Transpose") {
       (*onednn_graph_node)->set_attr("order", size_value);
+    } else if (node_def->op() == "ResizeBilinear") {
+      (*onednn_graph_node)->set_attr("sizes", size_value);
+    } else if (node_def->op() == "ConcatV2") {
+      (*onednn_graph_node)->set_attr("axis", size_value[0]);
     }
   } else {
     if (node_def->op() == "Reshape") {
@@ -818,6 +882,56 @@ Status TranslateTranspose(const OneDnnGraphContext* ctx, const int node_index,
   return Status::OK();
 }
 
+Status TranslateResize(const OneDnnGraphContext* ctx, const int node_index,
+                       const utils::MutableNodeView* node_view,
+                       dnnl::graph::op** onednn_graph_node) {
+  if (IsOpOutputFolded(ctx, node_view)) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  auto* node_def = node_view->node();
+
+  bool align_corners;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "align_corners", &align_corners));
+  bool half_pixel_centers;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*node_def, "half_pixel_centers", &half_pixel_centers));
+
+  if ((align_corners && half_pixel_centers) ||
+      (!align_corners && !half_pixel_centers)) {
+    // oneDNN Graph's interpolate attr align_cornes and half_pixel_centers are
+    // mutually exclusive.
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  *onednn_graph_node = new dnnl::graph::op(
+      node_index, dnnl::graph::op::kind::Interpolate, node_def->name());
+
+  SetStaticShapeAttr(node_view, onednn_graph_node);
+
+  if (*onednn_graph_node == nullptr) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  SetStaticShapeAttr(node_view, onednn_graph_node);
+
+  (*onednn_graph_node)->set_attr("mode", std::string("bilinear"));
+
+  if (half_pixel_centers) {
+    (*onednn_graph_node)
+        ->set_attr("coordinate_transformation_mode", std::string("half_pixel"));
+  } else {
+    (*onednn_graph_node)
+        ->set_attr("coordinate_transformation_mode",
+                   std::string("align_corners"));
+  }
+
+  return Status::OK();
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Pooling
 //////////////////////////////////////////////////////////////////////////
@@ -930,6 +1044,8 @@ Status TranslateEltwise(const OneDnnGraphContext* ctx, const int node_index,
     } else if (node_def->op() == "Relu6") {
       (*onednn_graph_node)->set_attr("min", 0.0f);
       (*onednn_graph_node)->set_attr("max", 6.0f);
+    } else if (node_def->op() == "Elu") {
+      (*onednn_graph_node)->set_attr("alpha", 1.0f);
     }
     return Status::OK();
   } else {
@@ -1097,42 +1213,34 @@ Status GetQuantizeMinMaxValue(const utils::MutableNodeView* node_view,
   return Status::OK();
 }
 
-// TODO(itex): merge quantize/requantize to a single function
-Status TranslateQuantizeV2(const OneDnnGraphContext* ctx, const int node_index,
-                           const utils::MutableNodeView* node_view,
-                           dnnl::graph::op** onednn_graph_node) {
-  if (IsOpOutputFolded(ctx, node_view)) {
-    onednn_graph_node = nullptr;
-    return Status::OK();
-  }
-
+Status SetScaleAndZp(const OneDnnGraphContext* ctx,
+                     const utils::MutableNodeView* node_view,
+                     dnnl::graph::op** onednn_graph_node, const DataType& T,
+                     const std::string& mode, int axis,
+                     QuantizeMode quan_mode) {
   auto* node_def = node_view->node();
 
-  DataType T;
-  std::string mode;
-  std::string round_mode;
-  float ensure_minimum_range;
-  int axis;
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "T", &T));
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "mode", &mode));
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "round_mode", &round_mode));
-  TF_ABORT_IF_ERROR(
-      GetNodeAttr(*node_def, "ensure_minimum_range", &ensure_minimum_range));
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "axis", &axis));
+  auto* input_node_view = node_view->GetRegularFanin(0).node_view();
 
-  QuantizeMode quan_mode;
-  if (mode == "SCALED") {
-    quan_mode = QuantizeMode::SCALED;
-  } else if (mode == "MIN_FIRST") {
-    quan_mode = QuantizeMode::MIN_FIRST;
-  } else {
-    // Unsupported quantized mode
-    onednn_graph_node = nullptr;
+  if (IsAnyMaxPool(*(input_node_view->node()))) {
+    // Maxpool cases, to ensure input/output scale are the same
+    auto* dq_node_view = input_node_view->GetRegularFanin(0).node_view();
+    if (dq_node_view->node()->op() != "Dequantize") {
+      delete *onednn_graph_node;
+      *onednn_graph_node = nullptr;
+      return Status::OK();
+    }
+    auto* q_node_view = dq_node_view->GetRegularFanin(0).node_view();
+    if (q_node_view->node()->op() != "QuantizeV2") {
+      delete *onednn_graph_node;
+      *onednn_graph_node = nullptr;
+      return Status::OK();
+    }
+
+    TF_ABORT_IF_ERROR(SetScaleAndZp(ctx, q_node_view, onednn_graph_node, T,
+                                    mode, axis, quan_mode));
     return Status::OK();
   }
-
-  *onednn_graph_node = new dnnl::graph::op(
-      node_index, dnnl::graph::op::kind::Quantize, node_def->name());
 
   (*onednn_graph_node)->set_attr<int64_t>("axis", static_cast<int64_t>(axis));
 
@@ -1151,117 +1259,10 @@ Status TranslateQuantizeV2(const OneDnnGraphContext* ctx, const int node_index,
   std::vector<float> min_range(num_slices);
   std::vector<float> max_range(num_slices);
 
-  if (num_slices == 1) {
-    const float min_range_before_adjust =
-        input_min_range.template flat<float>()(0);
-    const float max_range_before_adjust =
-        input_max_range.template flat<float>()(0);
-    AdjustInputMinMaxRange(min_range_before_adjust, max_range_before_adjust,
-                           &min_range[0], &max_range[0]);
-  } else {
-    auto min_ranges_before_adjust = input_min_range.template flat<float>();
-    auto max_ranges_before_adjust = input_max_range.template flat<float>();
-    for (int i = 0; i < num_slices; ++i) {
-      AdjustInputMinMaxRange(min_ranges_before_adjust(i),
-                             max_ranges_before_adjust(i), &min_range[i],
-                             &max_range[i]);
-    }
-  }
-
-  // Calculating scales and zeropoints for quantization.
-  std::vector<float> scale_factor(num_slices, 0);
-  std::vector<int32> zero_points(num_slices, 0);
-
-  switch (T) {
-    case DT_QINT8:
-      GetScaleAndZeropointAndAlignMinMax<qint8>(
-          min_range.data(), max_range.data(), quan_mode,
-          QuantDequantFlag::Dequantize, num_slices, scale_factor.data(),
-          zero_points.data());
-      break;
-    case DT_QUINT8:
-      GetScaleAndZeropointAndAlignMinMax<quint8>(
-          min_range.data(), max_range.data(), quan_mode,
-          QuantDequantFlag::Dequantize, num_slices, scale_factor.data(),
-          zero_points.data());
-      break;
-
-    default:
-      ITEX_LOG(FATAL) << "unsupported int8 datatype " << T << " of node "
-                      << node_def->op() << " " << node_def->name();
-      break;
-  }
-
-  (*onednn_graph_node)->set_attr<std::vector<float>>("scales", scale_factor);
-
-  std::vector<int64_t> zero_points_int64(num_slices, 0);
-  std::transform(zero_points.begin(), zero_points.end(),
-                 zero_points_int64.begin(),
-                 [](int32 v) -> int64_t { return static_cast<int64_t>(v); });
-
-  (*onednn_graph_node)
-      ->set_attr<std::vector<int64_t>>("zps", zero_points_int64);
-  return Status::OK();
-}
-
-Status TranslateDequantize(const OneDnnGraphContext* ctx, const int node_index,
-                           const utils::MutableNodeView* node_view,
-                           dnnl::graph::op** onednn_graph_node) {
-  if (IsOpOutputFolded(ctx, node_view)) {
-    onednn_graph_node = nullptr;
-    return Status::OK();
-  }
-
-  auto* node_def = node_view->node();
-  *onednn_graph_node = new dnnl::graph::op(
-      node_index, dnnl::graph::op::kind::Dequantize, node_def->name());
-
-  DataType T;
-  std::string mode;
-  int64_t axis;
-  DataType dtype;
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "T", &T));
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "mode", &mode));
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "axis", &axis));
-  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "dtype", &dtype));
-
-  (*onednn_graph_node)->set_attr<int64_t>("axis", static_cast<int64_t>(axis));
-
-  QuantizeMode quan_mode;
-  if (mode == "SCALED") {
-    quan_mode = QuantizeMode::SCALED;
-  } else if (mode == "MIN_FIRST") {
-    quan_mode = QuantizeMode::MIN_FIRST;
-  } else {
-    ITEX_LOG(FATAL) << "unsupported quantize mode: " << node_def->op() << " "
-                    << node_def->name();
-  }
-
-  auto* quantize_node_view = node_view->GetRegularFanin(0).node_view();
-  Tensor input_min_range, input_max_range;
-  if (quantize_node_view->node()->op() == "QuantizeV2") {
-    TF_ABORT_IF_ERROR(GetQuantizeMinMaxValue(
-        quantize_node_view, &input_min_range, &input_max_range));
-  } else {
-    TF_ABORT_IF_ERROR(
-        GetQuantizeMinMaxValue(node_view, &input_min_range, &input_max_range));
-  }
-
-  int num_slices = 1;
-  if (axis > -1) {
-    num_slices = input_min_range.NumElements();
-    (*onednn_graph_node)->set_attr<std::string>("qtype", "per_channel");
-  } else {
-    (*onednn_graph_node)->set_attr<std::string>("qtype", "per_tensor");
-  }
-
-  std::vector<float> min_range(num_slices);
-  std::vector<float> max_range(num_slices);
-
-  // We need to do input range adjust for both quantized and dequantize op when
-  // creating llga q/dq op. The reason why ITEX only requires Quantize does
-  // adjust is because the calculation happens in runtime execution. And it will
-  // pass the adjusted min/max to dequantize op, so dequantize doesn't
+  // We need to do input range adjust for both quantized and dequantize op
+  // when creating llga q/dq op. The reason why ITEX only requires Quantize
+  // does adjust is because the calculation happens in runtime execution. And
+  // it will pass the adjusted min/max to dequantize op, so dequantize doesn't
   // required to do so. But here we are in graph optimization stage, both
   // quantize and dequantize can see the unadjusted min/max input.
   if (num_slices == 1) {
@@ -1317,6 +1318,93 @@ Status TranslateDequantize(const OneDnnGraphContext* ctx, const int node_index,
   return Status::OK();
 }
 
+// TODO(itex): merge quantize/requantize to a single function
+Status TranslateQuantizeV2(const OneDnnGraphContext* ctx, const int node_index,
+                           const utils::MutableNodeView* node_view,
+                           dnnl::graph::op** onednn_graph_node) {
+  if (IsOpOutputFolded(ctx, node_view)) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  auto* node_def = node_view->node();
+
+  DataType T;
+  std::string mode;
+  std::string round_mode;
+  float ensure_minimum_range;
+  int axis;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "T", &T));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "mode", &mode));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "round_mode", &round_mode));
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*node_def, "ensure_minimum_range", &ensure_minimum_range));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "axis", &axis));
+
+  QuantizeMode quan_mode;
+  if (mode == "SCALED") {
+    quan_mode = QuantizeMode::SCALED;
+  } else if (mode == "MIN_FIRST") {
+    quan_mode = QuantizeMode::MIN_FIRST;
+  } else {
+    // Unsupported quantized mode
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  *onednn_graph_node = new dnnl::graph::op(
+      node_index, dnnl::graph::op::kind::Quantize, node_def->name());
+
+  TF_ABORT_IF_ERROR(SetScaleAndZp(ctx, node_view, onednn_graph_node, T, mode,
+                                  axis, quan_mode));
+
+  return Status::OK();
+}
+
+Status TranslateDequantize(const OneDnnGraphContext* ctx, const int node_index,
+                           const utils::MutableNodeView* node_view,
+                           dnnl::graph::op** onednn_graph_node) {
+  if (IsOpOutputFolded(ctx, node_view)) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  auto* node_def = node_view->node();
+  *onednn_graph_node = new dnnl::graph::op(
+      node_index, dnnl::graph::op::kind::Dequantize, node_def->name());
+
+  DataType T;
+  std::string mode;
+  int64_t axis;
+  DataType dtype;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "T", &T));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "mode", &mode));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "axis", &axis));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "dtype", &dtype));
+
+  QuantizeMode quan_mode;
+  if (mode == "SCALED") {
+    quan_mode = QuantizeMode::SCALED;
+  } else if (mode == "MIN_FIRST") {
+    quan_mode = QuantizeMode::MIN_FIRST;
+  } else {
+    ITEX_LOG(FATAL) << "unsupported quantize mode: " << node_def->op() << " "
+                    << node_def->name();
+  }
+
+  auto* quantize_node_view = node_view->GetRegularFanin(0).node_view();
+
+  if (quantize_node_view->node()->op() == "QuantizeV2") {
+    TF_ABORT_IF_ERROR(SetScaleAndZp(ctx, quantize_node_view, onednn_graph_node,
+                                    T, mode, axis, quan_mode));
+  } else {
+    TF_ABORT_IF_ERROR(SetScaleAndZp(ctx, node_view, onednn_graph_node, T, mode,
+                                    axis, quan_mode));
+  }
+
+  return Status::OK();
+}
+
 Status TranslateCast(const OneDnnGraphContext* ctx, const int node_index,
                      const utils::MutableNodeView* node_view,
                      dnnl::graph::op** onednn_graph_node) {
@@ -1326,16 +1414,6 @@ Status TranslateCast(const OneDnnGraphContext* ctx, const int node_index,
   }
 
   auto* node_def = node_view->node();
-
-  // TODO(itex): check why mapping Cast op will cause crash in RN50
-  if (node_def->name() ==
-          "bert/encoder/layer_23/attention/self/sub/"
-          "x-0-CastToBf16-AutoMixedPrecision" ||
-      (node_def->name().find("encoder") == std::string::npos &&
-       node_def->name().find("PartitionedCall") == std::string::npos)) {
-    onednn_graph_node = nullptr;
-    return Status::OK();
-  }
 
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::TypeCast, node_def->name());
@@ -1406,6 +1484,43 @@ Status TranslateReduce(const OneDnnGraphContext* ctx, const int node_index,
   return Status::OK();
 }
 
+Status TranslateConcat(const OneDnnGraphContext* ctx, const int node_index,
+                       const utils::MutableNodeView* node_view,
+                       dnnl::graph::op** onednn_graph_node) {
+  if (IsOpOutputFolded(ctx, node_view)) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  auto* node_def = node_view->node();
+  *onednn_graph_node = new dnnl::graph::op(
+      node_index, dnnl::graph::op::kind::Concat, node_def->name());
+
+  SetStaticShapeAttr(node_view, onednn_graph_node);
+
+  if (*onednn_graph_node == nullptr) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  return Status::OK();
+}
+
+Status TranslateSelect(const OneDnnGraphContext* ctx, const int node_index,
+                       const utils::MutableNodeView* node_view,
+                       dnnl::graph::op** onednn_graph_node) {
+  if (IsOpOutputFolded(ctx, node_view)) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  auto* node_def = node_view->node();
+  *onednn_graph_node = new dnnl::graph::op(
+      node_index, dnnl::graph::op::kind::Select, node_def->name());
+
+  return Status::OK();
+}
+
 Status TranslateWildcard(const OneDnnGraphContext* ctx, const int node_index,
                          const utils::MutableNodeView* node_view,
                          dnnl::graph::op** onednn_graph_node) {
@@ -1434,6 +1549,7 @@ const TranslationMap& getTranslationMap() {
       {"Conv2DBackpropInput", TranslateConv2DBackpropInput},
       {"Conv2DBackpropFilter", TranslateConv2DBackpropFilter},
       {"MatMul", TranslateMatMul},
+      {"BatchMatMul", TranslateBatchMatMulV2},
       {"BatchMatMulV2", TranslateBatchMatMulV2},
       ////// BN
       // Note: we only support V3 of FusedBatchNorm and FusedBatchNormGrad
@@ -1444,6 +1560,7 @@ const TranslationMap& getTranslationMap() {
       ////// pool
       {"AvgPool", TranslateAvgPool},
       {"MaxPool", TranslateMaxPool},
+      {"MaxPool3D", TranslateMaxPool},
       // TODO(itex): Enable Avgpoolgrad, once align with LLGA in op
       // definition.
       // {"AvgPoolGrad", TranslateAvgPoolGrad},
@@ -1471,6 +1588,8 @@ const TranslationMap& getTranslationMap() {
       {"Mul", TranslateBinary},
       {"SquaredDifference", TranslateBinary},
 
+      {"ResizeBilinear", TranslateResize},
+
       {"AddN", TranslateAddN},
       {"BiasAdd", TranslateBiasAdd},
       {"BiasAddGrad", TranslateBiasAddGrad},
@@ -1481,6 +1600,15 @@ const TranslationMap& getTranslationMap() {
       {"Max", TranslateReduce},
       {"Mean", TranslateReduce},
       {"Sum", TranslateReduce},
+
+      ////// variadic input op
+      // TODO(itex): Enable concat op, once root cause the crash with input num
+      // > 64 and hang issue in TLT.
+      // {"ConcatV2", TranslateConcat},
+
+      ////// conditional op
+      {"Select", TranslateSelect},
+
       {"Wildcard", TranslateWildcard},
       {"Unhandled", TranslateUnhandled}};
 
@@ -1492,6 +1620,9 @@ int GetLLGANumInput(const utils::MutableNodeView* node_view) {
 
   if (tf_llga_input_map.find(op) != tf_llga_input_map.end()) {
     return tf_llga_input_map.at(op).size();
+  } else if (op == "Concat") {
+    // TODO(itex): make another rule for variadic inputs op like Concat
+    return node_view->NumRegularFanins() - 1;
   } else {
     return node_view->NumRegularFanins();
   }
@@ -1814,6 +1945,7 @@ Status SelectNode(OneDnnGraphContext* ctx, int num_nodes,
           f_node_def->DebugString() + "\n" + "what(): " + e.what());
     }
     ITEX_VLOG(2) << "Node: " << f_node_def->name()
+                 << " op: " << f_node_def->op()
                  << " add to LLGA graph, is_wildcard: " << is_wildcard;
   }
   return Status::OK();
@@ -1867,6 +1999,12 @@ Status FuseFwPartitionWithLLGA(
       int index = iter->second;
       auto* weight_node_view = ctx->graph_view.GetNode(index);
       NodeDef* weight_node = weight_node_view->node();
+
+      if (!IsAnyConst(*weight_node)) {
+        // Condition when we change llga reshape value, instead of itex const
+        // value
+        continue;
+      }
 
       std::vector<int64_t> shape_value;
       Tensor data_tensor;
@@ -1947,6 +2085,7 @@ Status FuseFwPartitionWithLLGA(
       "DepthwiseConv2dNativeBackpropFilter",
       "DepthwiseConv2dNativeBackpropInput",
       "MatMul",
+      "BatchMatMul",
       "BatchMatMulV2"};
 
   // TODO(itex): relax the restrction here to allow non-contraction inplace
@@ -2264,6 +2403,67 @@ Status RemoveRetNode(OneDnnGraphContext* ctx) {
       mutation->RemoveNode(node_view);
   }
 
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
+}
+
+//         Const                       Const
+//           |                        /     \
+//           Q          =>           Q      Q
+//        /     \                    |      |
+//     DQ        DQ                  DQ     DQ
+Status DuplicateQuantize(OneDnnGraphContext* ctx) {
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Init(*ctx->graph_view.graph()));
+
+  auto* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  ITEX_VLOG(2) << "Duplicate Quantize when 1) input is const, 2) multiple "
+                  "dequantize outputs";
+  int num_nodes = ctx->graph_view.graph()->node_size();
+  for (int idx = 0; idx < num_nodes; idx++) {
+    auto* node_view = ctx->graph_view.GetNode(idx);
+    auto* node_def = node_view->node();
+
+    // TODO(itex): handle cast + quantize condition
+    if (node_def->op() == "QuantizeV2" &&
+        IsAnyConst(*(node_view->GetRegularFanin(0).node_view()->node()))) {
+      // Duplicate Quantize node to the number of output Dequantize
+      for (int i = 1; i < node_view->GetRegularFanout(0).size(); i++) {
+        NodeDef quant_node;
+        quant_node.set_op(node_def->op());
+        quant_node.set_name(node_def->name() + "_duplicate_" +
+                            std::to_string(i));
+        quant_node.set_device(node_def->device());
+        quant_node.add_input(node_def->input(0));
+        quant_node.add_input(node_def->input(1));
+        quant_node.add_input(node_def->input(2));
+        // Duplicate the attributes
+        auto* attr = quant_node.mutable_attr();
+        auto& src_attr = node_def->attr();
+        (*attr)["T"] = src_attr.at("T");
+        (*attr)["mode"] = src_attr.at("mode");
+        (*attr)["round_mode"] = src_attr.at("round_mode");
+        (*attr)["axis"] = src_attr.at("axis");
+        (*attr)["narrow_range"] = src_attr.at("narrow_range");
+        (*attr)["ensure_minimum_range"] = src_attr.at("ensure_minimum_range");
+
+        // Connect the output correctly
+        SafeTensorId unique_id(quant_node.name(), 0);
+
+        mutation->AddNode(std::move(quant_node), &status);
+        auto* output_node_view = node_view->GetRegularFanout(0)[i].node_view();
+
+        // TODO(itex): check whether this works
+        // int in_idx = fanout_node_view->GetRegularFanout(0)[i].index();
+        int in_idx = GetRegularFaninIndex(node_view, output_node_view, 0);
+        ITEX_VLOG(2) << output_node_view->node()->name() << " "
+                     << std::to_string(in_idx);
+        mutation->AddOrUpdateRegularFanin(output_node_view, in_idx, unique_id);
+        TF_ABORT_IF_ERROR(std::move(status));
+      }
+    }
+  }
   TF_ABORT_IF_ERROR(mutation->Apply());
   return Status::OK();
 }
@@ -2596,6 +2796,11 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
   // that the  onednngraph quantization patterns match.
   TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
   TF_ABORT_IF_ERROR(DuplicateDequantize(&ctx));
+
+  // Split Quantize node, if it has multiple dequantize node. This situation
+  // often happens when multiple conv/mm share the same weight.
+  TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
+  TF_ABORT_IF_ERROR(DuplicateQuantize(&ctx));
 
   TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
   TF_ABORT_IF_ERROR(RunRewritePass(&ctx));
