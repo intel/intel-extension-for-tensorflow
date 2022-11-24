@@ -569,7 +569,7 @@ bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def) {
   // TODO(itex): Use standard solution to unify all custom ops instead of
   // simple condition check.
   if (IsRandomUniform(node_def)) {
-    GetNodeAttr(attr_list, "dtype", &T);
+    ITEX_CHECK_OK(GetNodeAttr(attr_list, "dtype", &T));
   }
 
   return (T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||

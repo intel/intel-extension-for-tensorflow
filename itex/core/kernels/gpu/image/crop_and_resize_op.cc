@@ -273,7 +273,7 @@ class CropAndResizeGradImageOp : public OpKernel {
       const int image_width = internal::SubtleMustCopy(image_size_vec(2));
       const int depth = internal::SubtleMustCopy(image_size_vec(3));
 
-      bool status;
+      bool status = false;
 
       if (std::is_same<T, float>::value) {
         status = functor::CropAndResizeBackpropImage<Device, float>()(

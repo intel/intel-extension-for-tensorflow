@@ -124,12 +124,14 @@ def find_mkl_path(repository_ctx):
 def find_aot_config(repository_ctx):
     """Find AOT config."""
     aot_config = " -Xs \'-options -cl-poison-unsupported-fp64-kernels\'"
-    device_tmp = " -fsycl-targets=spir64_gen,spir64 -Xs \'-device {}\'"
+    device_tmp = " -Xs \'-device {}\'"
     if _AOT_CONFIG in repository_ctx.os.environ:
         devices = repository_ctx.os.environ[_AOT_CONFIG].strip()
         device_list = []
         if devices:
             device_list = devices.split(",")
+        else:
+            return ""
         if device_list:
             # check for security purpose only here
             for d in device_list:

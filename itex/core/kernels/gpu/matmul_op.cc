@@ -65,7 +65,7 @@ struct BatchMatMulCustomKernel {
     // Use register tile for better performance
     T a_reg[TILE_AB][c_M];
     T b_reg[TILE_AB][c_P];
-    T sum[c_M][c_P] = {T(0)};
+    T sum[c_M][c_P] = {{T(0)}};
 
     int block_i = item.get_group(1);    // block col
     int block_j = item.get_group(2);    // block row
@@ -209,7 +209,7 @@ struct BatchMatMulWithBcastKernel {
     // Use register tile for better performance
     T a_reg[TILE_AB][c_M];
     T b_reg[TILE_AB][c_P];
-    T sum[c_M][c_P] = {T(0)};
+    T sum[c_M][c_P] = {{T(0)}};
 
     int block_i = item.get_group(1);    // block col
     int block_j = item.get_group(2);    // block row
@@ -334,8 +334,6 @@ void LaunchBmmCustomKernel(OpKernelContext* ctx, const T* A, const T* B, T* C,
                            const bool adj_A, const bool adj_B,
                            const int src_dims, const MatMulBCast& bcast) {
   auto stream = ctx->eigen_gpu_device().stream();
-  int64_t* A_offset_ptr = nullptr;
-  int64_t* B_offset_ptr = nullptr;
 
   const int MN = DivUp(M, c_M);
   const int PN = DivUp(P, c_P);

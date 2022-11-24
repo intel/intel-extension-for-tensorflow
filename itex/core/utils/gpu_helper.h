@@ -83,7 +83,7 @@ template <typename SRC, typename DST>
 struct AddMaskLoad {
   AddMaskLoad(const SRC* src, const SRC* mask, SoftmaxInputShape input_dims,
               int32 row_size)
-      : src(src), mask(mask), input_dims(input_dims), row_size(row_size) {}
+      : src(src), mask(mask), row_size(row_size), input_dims(input_dims) {}
   template <int N>
   void Load(DST* dst, const int32& row, const int32& col) const {
     Pack<SRC, N> pack;

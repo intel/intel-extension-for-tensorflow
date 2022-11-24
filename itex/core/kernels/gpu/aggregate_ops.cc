@@ -148,6 +148,8 @@ class AddNOp<Device, Variant> : public OpKernel {
         a.flat<dtype>() + b.flat<dtype>();                 \
     break;
         TF_CALL_NUMBER_TYPES(DTYPE_CASE)
+        default:
+          break;
 #undef DTYPE_CASE
       }
     };

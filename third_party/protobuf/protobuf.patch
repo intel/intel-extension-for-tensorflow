@@ -28,10 +28,19 @@ index dbae719ff..87dc38470 100644
      deps = [":protobuf_lite"] + PROTOBUF_DEPS,
  )
 diff --git a/protobuf.bzl b/protobuf.bzl
-index e0653321f..253d9cbb5 100644
+index e0653321..f990d88f 100644
 --- a/protobuf.bzl
 +++ b/protobuf.bzl
-@@ -84,7 +84,9 @@ def _proto_gen_impl(ctx):
+@@ -78,13 +78,17 @@ def _proto_gen_impl(ctx):
+     source_dir = _SourceDir(ctx)
+     gen_dir = _GenDir(ctx).rstrip("/")
+     if source_dir:
+-        import_flags = ["-I" + source_dir, "-I" + gen_dir]
++        import_flags = ["-I" + source_dir]
++        if source_dir != "external/com_google_protobuf/src":
++           import_flags.append("-I" + gen_dir)
+     else:
+         import_flags = ["-I."]
 
      for dep in ctx.attr.deps:
          import_flags += dep.proto.import_flags

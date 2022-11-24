@@ -127,7 +127,7 @@ class GruFusion : public Fusion {
     auto& graph_view = ctx->graph_view;
     std::vector<string> attrs = {"T"};
 
-    ChangeFanoutPort(ctx, properties, "output", 3);
+    ITEX_CHECK_OK(ChangeFanoutPort(ctx, properties, "output", 3));
 
     const NodeDef* output =
         graph_view.GetNode(properties.map.at("output"))->node();

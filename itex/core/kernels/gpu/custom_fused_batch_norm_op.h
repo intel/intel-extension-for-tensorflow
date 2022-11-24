@@ -448,7 +448,7 @@ class CustomFusedBatchNormOp
                          TensorShape workspace_tf_shape, Tensor** running_mean,
                          Tensor** running_var, Tensor** saved_mean,
                          Tensor** saved_var, Tensor** reserved_space,
-                         bool init_val = false) {
+                         bool init_val = false) override {
     ITEX_DCHECK(running_mean);
     ITEX_DCHECK(running_var);
     ITEX_DCHECK(saved_mean);

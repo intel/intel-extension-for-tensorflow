@@ -350,7 +350,7 @@ struct RadixSortKernel {
         d_input_inds_ptr(d_input_inds_ptr),
         sorted_input_ptr(sorted_input_ptr),
         sorted_input_inds_ptr(sorted_input_inds_ptr) {}
-  [[cl::intel_reqd_sub_group_size(SUBGROUP_SIZE)]] void operator()(
+  [[intel::reqd_sub_group_size(SUBGROUP_SIZE)]] void operator()(
       sycl::nd_item<1> item) const {
     int local_id = item.get_local_id(0);
 
@@ -423,8 +423,8 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
         DataTypeToEnum<ValueT>::value, TensorShape({size}), &tmp_indices_in));
     ValueT* mutable_indices_in = tmp_indices_in.flat<ValueT>().data();
     indices_in = mutable_indices_in;
-    LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1), ValueT(size),
-                                  indices_in);
+    ITEX_CHECK_OK(LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1),
+                                                ValueT(size), indices_in));
   }
 
   using Rsortor = GroupRadixSortor<

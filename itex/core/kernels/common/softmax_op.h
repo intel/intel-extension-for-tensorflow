@@ -39,7 +39,7 @@ class SoftmaxOp : public OpKernel {
   explicit SoftmaxOp(OpKernelConstruction* context) : OpKernel(context) {
     is_inplace_ = false;
     if (context->HasAttr("is_inplace")) {
-      context->GetAttr("is_inplace", &is_inplace_);
+      OP_REQUIRES_OK(context, context->GetAttr("is_inplace", &is_inplace_));
     }
   }
 

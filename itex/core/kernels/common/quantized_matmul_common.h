@@ -438,8 +438,8 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
   bool IsCachedBiasValid(float current_min_input, float current_max_input) {
     if (this->is_bias_const_ && this->is_weight_const_ &&
-        std::abs(current_min_input - saved_min_input_) < 1e-5 &&
-        std::abs(current_max_input - saved_max_input_) < 1e-5)
+        std::abs(current_min_input - saved_min_input_) < 1e-5f &&
+        std::abs(current_max_input - saved_max_input_) < 1e-5f)
       return true;
     return false;
   }

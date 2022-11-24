@@ -994,7 +994,9 @@ class OneDnnQuantizedConvSumReluOp
         // issue by internal type check in forward_input_to_output_with_shape.
         // Since ITEX have to use set_output here, it will always inplace, and
         // cause crash.
-        context->allocate_output(this->kDstIndex_, tensor_shape, dst_tensor);
+        OP_REQUIRES_OK(context,
+                       context->allocate_output(this->kDstIndex_, tensor_shape,
+                                                dst_tensor));
       } else {
         context->set_output(this->kDstIndex_,
                             context->input(kSummandDataIndex));

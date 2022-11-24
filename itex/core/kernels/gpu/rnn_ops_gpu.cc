@@ -266,12 +266,6 @@ struct RnnFunctor<GPUDevice, T> {
       input_c_data = input_c->template flat<T>().data();
     }
 
-    // TODO(itex): support variable sequence in the future
-    const int32* seq_lengths_data = nullptr;
-    if (rmc.var_seq_length) {
-      seq_lengths_data = seq_lengths->template flat<int32>().data();
-    }
-
     const T* dp_mask_data = nullptr;
     if (rmc.HasDpMask()) {
       dp_mask_data = dp_mask->template flat<T>().data();
@@ -649,7 +643,6 @@ struct RnnGradFunctor<GPUDevice, T> {
     auto input_h_data = input_h->template flat<T>().data();
     auto params_data = params->template flat<T>().data();
     auto output_data = output->template flat<T>().data();
-    auto output_h_data = output_h->template flat<T>().data();
     auto workspace_data = workspace->template flat<T>().data();
     auto output_backprop_data = output_backprop->template flat<T>().data();
 
@@ -658,11 +651,6 @@ struct RnnGradFunctor<GPUDevice, T> {
     if (rmc.HasInputC()) {
       input_c_data = input_c->template flat<T>().data();
       output_c_data = output_c->template flat<T>().data();
-    }
-
-    const int32* seq_lengths_data = nullptr;
-    if (rmc.var_seq_length) {
-      seq_lengths_data = seq_lengths->template flat<int32>().data();
     }
 
     const T* dp_mask_data = nullptr;

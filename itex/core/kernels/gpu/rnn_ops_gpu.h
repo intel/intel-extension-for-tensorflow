@@ -229,7 +229,7 @@ struct InputGemmKernel {
     // register tile (A, B, C) for better performancee
     T a_reg[TAB][cM];
     T b_reg[TAB][cP];
-    T sum[cM][cP] = {T(0)};
+    T sum[cM][cP] = {{T(0)}};
 
     int stride_a;
     if (BcastA) {
@@ -420,7 +420,7 @@ struct GemmKernel {
 
     T a_reg[TAB][cM];
     T b_reg[TAB][cP];
-    T sum[cM][cP] = {T(0)};
+    T sum[cM][cP] = {{T(0)}};
 
     int stride_a = !BcastA * M * N;
     int stride_b = !BcastB * N * P;
@@ -606,7 +606,7 @@ struct ParamsGemmKernel {
 
     T a_reg[TAB][cM];
     T b_reg[TAB][cP];
-    T sum[cM][cP] = {T(0)};
+    T sum[cM][cP] = {{T(0)}};
 
     int stride_a = group_z_t * bs * M * N + group_z_b * M * N;
     int stride_b;
@@ -616,7 +616,6 @@ struct ParamsGemmKernel {
       stride_b = group_z_t * bs * N * P + group_z_b * N * P;
     }
 
-    int stride_c = group_z_t * bs * M * P + group_z_b * M * P;
     const T* A_per_batch = A + stride_a;
     const T* B_per_batch = B + stride_b;
     T* C_per_batch = C + group_z * M * P;

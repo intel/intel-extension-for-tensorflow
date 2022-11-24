@@ -6337,9 +6337,18 @@ index d0499a1c9..cb4ac5c80 100644
  #endif
  
 diff --git a/Eigen/src/Core/util/Memory.h b/Eigen/src/Core/util/Memory.h
-index 1b12544d2..ff217f091 100644
+index 1b12544d2..8857ad116 100644
 --- a/Eigen/src/Core/util/Memory.h
 +++ b/Eigen/src/Core/util/Memory.h
+@@ -82,7 +82,7 @@ inline void throw_std_bad_alloc()
+     //
+     new int[huge];
+     #else
+-    ::operator new(huge);
++    (void)::operator new(huge);
+     #endif
+   #endif
+ }
 @@ -522,14 +522,33 @@ template<typename T> struct smart_copy_helper<T,true> {
      IntPtr size = IntPtr(end)-IntPtr(start);
      if(size==0) return;
@@ -9959,6 +9968,19 @@ index df591c21d..b2090406e 100644
      return queue_stream()->get_latest_event();
    }
  
+diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h b/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h
+index 132458a20..f0f1e832a 100644
+--- a/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h
++++ b/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h
+@@ -466,7 +466,7 @@ struct sizes_match_below_dim {
+ template <typename Dims1, typename Dims2, ptrdiff_t n>
+ struct sizes_match_below_dim<Dims1, Dims2, n, n> {
+   static EIGEN_DEVICE_FUNC  EIGEN_STRONG_INLINE bool run(Dims1& dims1, Dims2& dims2) {
+-    return (array_get<n-1>(dims1) == array_get<n-1>(dims2)) &
++    return (array_get<n-1>(dims1) == array_get<n-1>(dims2)) &&
+         sizes_match_below_dim<Dims1, Dims2, n-1, n-1>::run(dims1, dims2);
+   }
+ };
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h b/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h
 index 4689b0230..5cf29ddc3 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h
@@ -10839,6 +10861,91 @@ index 49d1004f3..4a7ba3b83 100644
      m_impl.bind(cgh);
    }
  #endif
+diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h b/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h
+index 0e9133c49..d7667c6fb 100644
+--- a/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h
++++ b/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h
+@@ -468,7 +468,7 @@ struct index_statically_eq_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_eq_impl<IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) == value);
+   }
+ };
+@@ -476,7 +476,7 @@ struct index_statically_eq_impl<IndexList<FirstType, OtherTypes...> > {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_eq_impl<const IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) == value);
+   }
+ };
+@@ -492,7 +492,7 @@ struct index_statically_ne_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_ne_impl<IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) != value);
+   }
+ };
+@@ -541,7 +541,7 @@ struct index_statically_lt_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_lt_impl<IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) < value);
+   }
+ };
+@@ -549,7 +549,7 @@ struct index_statically_lt_impl<IndexList<FirstType, OtherTypes...> > {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_lt_impl<const IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) < value);
+   }
+ };
+@@ -566,7 +566,7 @@ struct index_pair_first_statically_eq_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_first_statically_eq_impl<IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).first == value);
+   }
+ };
+@@ -574,7 +574,7 @@ struct index_pair_first_statically_eq_impl<IndexPairList<FirstType, OtherTypes..
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_first_statically_eq_impl<const IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).first == value);
+   }
+ };
+@@ -591,7 +591,7 @@ struct index_pair_second_statically_eq_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_second_statically_eq_impl<IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).second == value);
+   }
+ };
+@@ -599,7 +599,7 @@ struct index_pair_second_statically_eq_impl<IndexPairList<FirstType, OtherTypes.
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_second_statically_eq_impl<const IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).second == value);
+   }
+ };
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h b/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h
 index 7dadec7fb..8c4cf4821 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h
@@ -13311,10 +13418,10 @@ index 597ca64cd..60ec3e5bb 100644
  #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h
 new file mode 100644
-index 000000000..53b1bc6a0
+index 000000000..48cadf103
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,252 @@
 +#if defined(EIGEN_USE_DPCPP) &&                                                  \
 +    !defined(UNSUPPORTED_EIGEN_CXX11_SRC_TENSOR_TENSOR_SHUFFLING_DPCPP_HPP)
 +#define UNSUPPORTED_EIGEN_CXX11_SRC_TENSOR_TENSOR_SHUFFLING_DPCPP_HPP
@@ -13347,8 +13454,10 @@ index 000000000..53b1bc6a0
 +        outer_dim_size(outer_dim_size_), inner_dim_size(inner_dim_size_),
 +        outer_sub_group(outer_sub_group_), inner_sub_group(inner_sub_group_) {}
 +
-+  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]] void
-+  operator()(sycl::nd_item<1> itemID) const {
++#if defined(DPCPP_DEVICE_ONLY)
++  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]]
++#endif
++  void operator()(sycl::nd_item<1> itemID) const {
 +    transpose_impl(itemID);
 +  }
 +
@@ -13460,8 +13569,10 @@ index 000000000..53b1bc6a0
 +        inner_dim_size(inner_dim_size_), outer_sub_group(outer_sub_group_),
 +        mid_sub_group(mid_sub_group_), inner_sub_group(inner_sub_group_) {}
 +
-+  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]] void
-+  operator()(sycl::nd_item<1> itemID) const {
++#if defined(DPCPP_DEVICE_ONLY)
++  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]]
++#endif
++  void operator()(sycl::nd_item<1> itemID) const {
 +    transpose_impl(itemID);
 +  }
 +
@@ -13577,9 +13688,18 @@ index d05f37532..15529de0c 100644
    }
  #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h b/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h
-index 24d22c189..3966e3868 100644
+index 24d22c189..887703123 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h
+@@ -133,7 +133,7 @@ struct TensorEvaluator<const TensorTraceOp<Dims, ArgType>, Device>
+         ++num_distinct_reduce_dims;
+       }
+     }
+-
++    (void) num_distinct_reduce_dims;
+     eigen_assert(num_distinct_reduce_dims == NumReducedDims);
+ 
+     // Compute the dimensions of the result.
 @@ -257,7 +257,7 @@ struct TensorEvaluator<const TensorTraceOp<Dims, ArgType>, Device>
  
  #ifdef EIGEN_USE_SYCL
@@ -13601,6 +13721,27 @@ index 4f7fd340e..1b139c938 100644
    typedef typename BaseTraits::Scalar Scalar;
    typedef typename BaseTraits::StorageKind StorageKind;
    typedef typename BaseTraits::Index Index;
+diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h b/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h
+index d23f2e4c8..afbcba4a2 100644
+--- a/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h
++++ b/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h
+@@ -78,14 +78,14 @@ template <typename HL, typename LL, typename HR, typename LR>
+ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+ bool operator == (const TensorUInt128<HL, LL>& lhs, const TensorUInt128<HR, LR>& rhs)
+ {
+-  return (lhs.high == rhs.high) & (lhs.low == rhs.low);
++  return (lhs.high == rhs.high) && (lhs.low == rhs.low);
+ }
+ 
+ template <typename HL, typename LL, typename HR, typename LR>
+ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+ bool operator != (const TensorUInt128<HL, LL>& lhs, const TensorUInt128<HR, LR>& rhs)
+ {
+-  return (lhs.high != rhs.high) | (lhs.low != rhs.low);
++  return (lhs.high != rhs.high) || (lhs.low != rhs.low);
+ }
+ 
+ template <typename HL, typename LL, typename HR, typename LR>
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h b/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h
 index 000ed5b41..d3a7d1231 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h

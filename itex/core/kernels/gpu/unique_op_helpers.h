@@ -59,9 +59,7 @@ struct GroupScan {
         N_(N){};
 
   void operator()(sycl::nd_item<1> item) const {
-    auto group_id = item.get_group_linear_id();
     auto group = item.get_group();
-    auto sg_group = item.get_sub_group();
     auto lid = item.get_local_linear_id();
     T* local_mem_ptr = local_mem_.get_pointer().get();
 
@@ -143,7 +141,6 @@ struct DeviceScanFirstStep {
   void operator()(sycl::nd_item<1> item) const {
     auto group_id = item.get_group_linear_id();
     auto group = item.get_group();
-    auto sg_group = item.get_sub_group();
     auto lid = item.get_local_linear_id();
     T* local_mem_ptr = local_mem_.get_pointer().get();
 
@@ -220,7 +217,6 @@ struct DeviceScanSecondStep {
       : in_data_(in_data), out_data_(out_data), binary_op_(binary_op), N_(N) {}
   void operator()(sycl::nd_item<1> item) const {
     auto group_id = item.get_group_linear_id();
-    auto num_work_group = item.get_group_range(0);
     auto lid = item.get_local_linear_id();
     auto start = group_id * GroupSize * ElemsPerWorkItem;
     auto end = (group_id + 1) * GroupSize * ElemsPerWorkItem;
@@ -238,8 +234,8 @@ struct DeviceScanSecondStep {
  private:
   InputIteratorT in_data_;
   OutputIteratorT out_data_;
-  size_t N_;
   BinaryOp binary_op_;
+  size_t N_;
 };
 
 template <typename InputIteratorT, typename OutputIteratorT, typename BinaryOp,

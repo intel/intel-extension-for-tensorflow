@@ -68,9 +68,9 @@ def call_compiler(argv, link = False, dpcpp = True):
 
 # common flags
   common_flags = ['-fPIC']
-
   sycl_device_only_flags = ['-fsycl']
-  sycl_device_only_flags.append(['-fno-sycl-unnamed-lambda'])
+  sycl_device_only_flags.append('-fno-sycl-unnamed-lambda')
+  sycl_device_only_flags.append('-fsycl-targets=spir64_gen,spir64')
   # TODO(itex): disable for SUSE regression
   #sycl_device_only_flags.append('-fsycl-host-compiler=' + HOST_COMPILER_PATH)
   sycl_device_only_flags.append('-sycl-std=2020')
@@ -78,9 +78,6 @@ def call_compiler(argv, link = False, dpcpp = True):
   sycl_device_only_flags.append('-fhonor-nans')
   AOT_DEVICE = ["%{AOT_DEVICES}"]
   AOT_DEVICE = AOT_DEVICE if AOT_DEVICE[0] != "" else []
-  if dpcpp or link:
-    sycl_device_only_flags.append('-fsycl')
-    sycl_device_only_flags.append(AOT_DEVICE)
 
   if has_fno_sycl_use_footer and dpcpp:
     sycl_device_only_flags.append('-fno-sycl-use-footer')
@@ -96,6 +93,7 @@ def call_compiler(argv, link = False, dpcpp = True):
 # link flags
   link_flags = ['-fPIC']
   link_flags.append('-lsycl')
+  link_flags.append("-fsycl")
   # TODO use bazel --jobs number here.
   link_flags.append('-fsycl-max-parallel-link-jobs=8')
   link_flags.append("-Wl,-no-as-needed")
@@ -108,7 +106,10 @@ def call_compiler(argv, link = False, dpcpp = True):
   # link standard libraries(such as libstdc++) from configured python enviroment
   std_lib_path = '%{PYTHON_LIB_PATH}' +  '{0[0]}..{0[1]}..{0[2]}'.format([os.path.sep] * 3)
   link_flags.append("-L" + std_lib_path)
- 
+  if link and len(AOT_DEVICE) > 0:
+    link_flags.append("-fsycl-targets=spir64_gen,spir64")
+    link_flags.append(AOT_DEVICE)
+
 # oneMKL config
   if '%{ONEAPI_MKL_PATH}':
     compile_flags.append('-DMKL_ILP64')
@@ -149,7 +150,7 @@ def call_compiler(argv, link = False, dpcpp = True):
   # TODO(itex): disable for SUSE regression
   #host_flags = '-fsycl-host-compiler-options=\"%s"' % (' '.join(sycl_host_compile_flags))
 
-  if dpcpp or link:
+  if dpcpp:
     flags += sycl_device_only_flags
   # TODO(itex): disable for SUSE regression
   #if dpcpp:

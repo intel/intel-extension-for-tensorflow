@@ -32,8 +32,6 @@ limitations under the License.
 #include "itex/core/utils/types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
-constexpr static auto global_space = sycl::access::address_space::global_space;
-
 namespace itex {
 
 template <typename Distribution>
@@ -70,9 +68,12 @@ struct FillKernelTask {
     f(myItem);
     // The last item updates the state.
     auto total_item_count = myItem.get_global_range()[0];
-    sycl::multi_ptr<int, global_space> ptr(item_count_ptr);
-    sycl::atomic<int> atomic_ptr(ptr);
-    auto old_counter_value = atomic_ptr.fetch_add(1);
+    auto atomic_val =
+        sycl::atomic_ref<int, sycl::memory_order::relaxed,
+                         sycl::memory_scope::device,
+                         sycl::access::address_space::global_space>(
+            *item_count_ptr);
+    auto old_counter_value = atomic_val.fetch_add(1);
     if (old_counter_value == total_item_count - 1) {
       UpdateMemWithPhiloxRandom(*philox, output_size, state_data);
     }

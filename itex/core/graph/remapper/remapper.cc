@@ -465,7 +465,8 @@ int FindFusedTrainingOpInPort(const utils::MutableNodeView& mul_node_view,
 //   (3) Conv2D -> Add or Conv2D -> BiasAdd -> Add.
 //   (4) BatchMatMul + Mul
 //   (5) Mul+ (AddN) + TrainingOp
-bool RequiresInferredShapes(const RemapperContext& ctx, int node_index) {
+[[maybe_unused]] bool RequiresInferredShapes(const RemapperContext& ctx,
+                                             int node_index) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   const auto* node_def = node_view->node();
 
@@ -3355,7 +3356,7 @@ inline bool VerifyConstants(RemapperContext* ctx,
                                ? const_tensor.flat<float>()(0)
                                : const_tensor.flat<Eigen::bfloat16>()(0);
         // To compare float.
-        if (std::abs(const_value - it->second) > 1e-2) return false;
+        if (std::abs(const_value - it->second) > 1e-2f) return false;
       } else {
         return false;
       }

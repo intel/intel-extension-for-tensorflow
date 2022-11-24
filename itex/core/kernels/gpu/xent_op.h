@@ -493,7 +493,8 @@ template <typename LOAD, typename LABEL_LOAD, typename STORE,
           typename ComputeType, int pack_size, int wg_array_size>
 struct XentWorkGroupKernel {
   XentWorkGroupKernel(LOAD device_load, LABEL_LOAD device_label_load,
-                      STORE device_store, const int32_t rows, const int32_t col)
+                      STORE device_store, const int32_t rows,
+                      const int32_t cols)
       : device_load(device_load),
         device_label_load(device_label_load),
         device_store(device_store),

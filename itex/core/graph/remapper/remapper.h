@@ -70,12 +70,13 @@ struct RemapperContext {
 
 namespace {  // NOLINT
 
-bool IsInPreserveSet(const RemapperContext& ctx, const NodeDef* node) {
+[[maybe_unused]] bool IsInPreserveSet(const RemapperContext& ctx,
+                                      const NodeDef* node) {
   return ctx.nodes_to_preserve.count(node->name()) > 0;
 }
 
-bool HaveSameDataType(const NodeDef* lhs, const NodeDef* rhs,
-                      const string& type_attr = "T") {
+[[maybe_unused]] bool HaveSameDataType(const NodeDef* lhs, const NodeDef* rhs,
+                                       const string& type_attr = "T") {
   DataType lhs_attr = GetDataTypeFromAttr(*lhs, type_attr);
   DataType rhs_attr = GetDataTypeFromAttr(*rhs, type_attr);
 
@@ -90,19 +91,21 @@ bool IsDeviceCompatible(const RemapperContext& ctx, const Pattern& matched) {
   return true;
 }
 
-bool IsSupportedActivation(const NodeDef& node) {
+[[maybe_unused]] bool IsSupportedActivation(const NodeDef& node) {
   return PostOpUtil::IsSupportedActivation(node.op());
 }
 
-bool HasControlFanin(const utils::MutableNodeView& node_view) {
+[[maybe_unused]] bool HasControlFanin(const utils::MutableNodeView& node_view) {
   return node_view.NumControllingFanins() > 0;
 }
 
-bool HasControlFanout(const utils::MutableNodeView& node_view) {
+[[maybe_unused]] bool HasControlFanout(
+    const utils::MutableNodeView& node_view) {
   return node_view.NumControlledFanouts() > 0;
 }
 
-bool HasControlFaninOrFanout(const utils::MutableNodeView& node_view) {
+[[maybe_unused]] bool HasControlFaninOrFanout(
+    const utils::MutableNodeView& node_view) {
   return node_view.NumControllingFanins() > 0 ||
          node_view.NumControlledFanouts() > 0;
 }

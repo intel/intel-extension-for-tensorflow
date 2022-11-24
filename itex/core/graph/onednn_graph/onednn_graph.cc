@@ -441,7 +441,7 @@ Status SetAttr(const utils::MutableNodeView* node_view,
   return Status::OK();
 }
 
-bool IsConv2DSizeTensor(const Tensor& shape_tensor) {
+[[maybe_unused]] bool IsConv2DSizeTensor(const Tensor& shape_tensor) {
   if (shape_tensor.dtype() != DT_INT32) return false;
   // Conv input and filter both have 4 dimensions, thus the shape tensor has 4
   // elements
@@ -1736,8 +1736,8 @@ bool IsOneDnnGraphSupportedDataType(const NodeDef& node_def) {
   return true;
 }
 
-bool IsConstantInput(const utils::MutableNodeView* node_view,
-                     const int input_index) {
+[[maybe_unused]] bool IsConstantInput(const utils::MutableNodeView* node_view,
+                                      const int input_index) {
   const NodeDef* input_node =
       node_view->GetRegularFanin(input_index).node_view()->node();
   return IsAnyConst(*input_node);
@@ -2018,8 +2018,8 @@ Status FuseFwPartitionWithLLGA(
       int dims = shape_value.size();
       std::swap(shape_value[dims - 2], shape_value[dims - 1]);
 
-      data_tensor.BitcastFrom(data_tensor, data_tensor.dtype(),
-                              TensorShape{shape_value});
+      ITEX_CHECK_OK(data_tensor.BitcastFrom(data_tensor, data_tensor.dtype(),
+                                            TensorShape{shape_value}));
 
       AttrValue value;
       TensorProto* value_proto = value.mutable_tensor();
@@ -2216,7 +2216,6 @@ Status FuseFwPartitionWithLLGA(
     string output_node_name = tid->node();
     int output_node_index = tid->index();
     auto* output_node_view = ctx->graph_view.GetNode(output_node_name);
-    auto* output_node_def = output_node_view->node();
 
     std::vector<std::pair<int, int>> out_nodes_port;
     for (auto fanout : output_node_view->GetRegularFanout(output_node_index)) {

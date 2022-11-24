@@ -94,7 +94,6 @@ bool IsAnySparseSegmentReduction(const NodeDef& node) {
 }
 
 bool IsAnyOneDnnGraph(const NodeDef& node) {
-  const auto& op = node.op();
   return IsBlockOneDnnGraph(node) || IsNativeOneDnnGraph(node);
 }
 
