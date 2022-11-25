@@ -20,17 +20,21 @@ from __future__ import print_function
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
+import os
 import math
 
 import numpy as np
-import os
+import tensorflow as tf
 
+from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import gradient_checker
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.ops import nn_ops
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import gradients
 import tensorflow.python.ops.nn_grad  # pylint: disable=unused-import
 from tensorflow.python.util.compat import collections_abc
 from tensorflow.python.eager import context
@@ -253,6 +257,81 @@ class Conv3DTest(test.TestCase):
     self.assertEqual(conv1.shape, tensor_in_sizes_batch)
     self.assertEqual(conv2.shape, tensor_in_sizes_expanded_batch)
     self.assertAllEqual(conv1, self.evaluate(conv2).reshape(conv1.shape))
+
+  # The actual implementation of this fusion is
+  # ConvBackward + Slice --> ConvBackward with padding attr.
+  # We consider this fusion has same mathematical meaning, 
+  # but they shows different result (> 1e-6) on CPU,
+  # so replace the assertAllEqual() with assertAllClose().
+  # TODO: When oneDNN fix this accuracy issue then change back.
+  @test_util.run_in_graph_and_eager_modes
+  def testFusedConv3DBackpropInputWithSlice(self):
+    input_sizes = [2, 5, 5, 5, 2]
+    out_gradient_sizes = [2, 7, 7, 7, 4]
+    filter_in_sizes = [3, 3, 3, 2, 4]
+    x1 = np.random.random(out_gradient_sizes).astype(np.float32)
+    x2 = np.random.random(filter_in_sizes).astype(np.float32)
+
+    conv_backprop_input1 = nn_ops.conv3d_backprop_input_v2([2, 9, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1, 1], padding='VALID')
+    conv_backprop_input1 = array_ops.slice(conv_backprop_input1, [0, 2, 2, 2, 0],
+            size=[2, 5, 5, 5, 2])
+    conv_backprop_input1 = array_ops.identity(conv_backprop_input1)
+
+    conv_backprop_input2 = nn_ops.conv3d_backprop_input_v2([2, 9, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1, 1], padding='VALID')
+    conv_backprop_input2 = array_ops.slice(conv_backprop_input2, [0, 2, 2, 2, 0],
+            size=[2, 5, 5, 5, 2])
+
+    self.assertEqual(conv_backprop_input1.shape, input_sizes)
+    self.assertEqual(conv_backprop_input2.shape, input_sizes)
+    self.assertAllClose(conv_backprop_input1, self.evaluate(conv_backprop_input2))
+
+  @test_util.run_deprecated_v1
+  def testConv3DBackpropFilterWithBias(self):
+    input_shape = [2, 4, 4, 4, 2]
+    filter_shape = [2, 2, 2, 2, 6]
+    output_shape = [2, 4, 4, 4, 6]
+    input_size = 1
+    filter_size = 1
+    for x in input_shape:
+      input_size *= x
+    for x in filter_shape:
+      filter_size *= x
+    input_data = np.array([x * 1.0 / input_size for x in range(0, input_size)])
+    filter_data = np.array([x * 1.0 / filter_size for x in range(0, filter_size)])
+    bias_data = np.array([0.13, 0.12, -0.1, 0.23, 0.19, 0.6])
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    test_types = [dtypes.float32, dtypes.bfloat16]
+    for dtype in test_types:
+      with self.cached_session() as sess:
+        input_tensor = constant_op.constant(input_data, shape=input_shape, dtype=dtype)
+        filter_tensor = constant_op.constant(filter_data, shape=filter_shape, dtype=dtype)
+        # use relu to prevent node from being in the list of preserved nodes
+        filter = nn_ops.relu(filter_tensor)
+        conv = nn_ops.conv3d(input_tensor, filter, strides=[1, 1, 1, 1, 1], padding="SAME")
+        bias_tensor = constant_op.constant(bias_data, dtype=dtype)
+        bias = nn_ops.relu(bias_tensor)
+        out = nn_ops.bias_add(conv, bias)
+        self.assertEqual(output_shape, out.get_shape())
+
+        grads = gradients.gradients(out, [filter_tensor, bias_tensor])
+        grads_out = sess.run(grads, options=run_options, run_metadata=metadata)
+        graph = metadata.partition_graphs[0]
+        exist_conv_backprop_filter_with_bias = False
+        for node in graph.node:
+          if 'Conv3DBackpropFilterWithBias' in node.op:
+            exist_conv_backprop_filter_with_bias = True
+        self.assertTrue(exist_conv_backprop_filter_with_bias)
+
+        fused_grad_filter = grads_out[0]
+        fused_grad_bias = grads_out[1]
+        grad_filter = sess.run(grads[0])
+        grad_bias = sess.run(grads[1])
+        self.assertAllClose(fused_grad_filter, grad_filter)
+        self.assertAllClose(fused_grad_bias, grad_bias)
 
   def testConv3D1x1x1Filter(self):
     expected_output = [

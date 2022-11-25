@@ -43,6 +43,7 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import gradient_checker
 from tensorflow.python.ops import gradients_impl
+from tensorflow.python.ops import gradients
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn_impl
 from tensorflow.python.ops import nn_ops
@@ -3408,78 +3409,123 @@ class FusedConv2DTest(test.TestCase):
 
   @test_util.run_in_graph_and_eager_modes
   def testFusedConv2DBackpropInputWithSlice(self):
-      input_sizes = [2, 5, 5, 2]
-      out_gradient_sizes = [2, 7, 7, 4]
-      filter_in_sizes = [3, 3, 2, 4]
-      x1 = self._CreateNumpyTensor(out_gradient_sizes)
-      x2 = self._CreateNumpyTensor(filter_in_sizes)
+    input_sizes = [2, 5, 5, 2]
+    out_gradient_sizes = [2, 7, 7, 4]
+    filter_in_sizes = [3, 3, 2, 4]
+    x1 = self._CreateNumpyTensor(out_gradient_sizes)
+    x2 = self._CreateNumpyTensor(filter_in_sizes)
 
-      conv_backprop_input1 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
-              strides=[1, 1, 1, 1], padding='VALID')
-      conv_backprop_input1 = array_ops.slice(conv_backprop_input1, [0, 2, 2, 0],
-              size=[2, 5, 5, 2])
-      conv_backprop_input1 = array_ops.identity(conv_backprop_input1)
+    conv_backprop_input1 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1], padding='VALID')
+    conv_backprop_input1 = array_ops.slice(conv_backprop_input1, [0, 2, 2, 0],
+            size=[2, 5, 5, 2])
+    conv_backprop_input1 = array_ops.identity(conv_backprop_input1)
 
-      conv_backprop_input2 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
-              strides=[1, 1, 1, 1], padding='VALID')
-      conv_backprop_input2 = array_ops.slice(conv_backprop_input2, [0, 2, 2, 0],
-              size=[2, 5, 5, 2])
+    conv_backprop_input2 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1], padding='VALID')
+    conv_backprop_input2 = array_ops.slice(conv_backprop_input2, [0, 2, 2, 0],
+            size=[2, 5, 5, 2])
 
-      self.assertEqual(conv_backprop_input1.shape, input_sizes)
-      self.assertEqual(conv_backprop_input2.shape, input_sizes)
-      self.assertAllEqual(conv_backprop_input1, self.evaluate(conv_backprop_input2))
+    self.assertEqual(conv_backprop_input1.shape, input_sizes)
+    self.assertEqual(conv_backprop_input2.shape, input_sizes)
+    self.assertAllEqual(conv_backprop_input1, self.evaluate(conv_backprop_input2))
 
   @test_util.run_in_graph_and_eager_modes
   def testFusedConv2DBackpropInputWithSliceMultipleOutput(self):
-      out_gradient_sizes = [2, 7, 7, 4]
-      filter_in_sizes = [3, 3, 2, 4]
-      x1 = self._CreateNumpyTensor(out_gradient_sizes)
-      x2 = self._CreateNumpyTensor(filter_in_sizes)
+    out_gradient_sizes = [2, 7, 7, 4]
+    filter_in_sizes = [3, 3, 2, 4]
+    x1 = self._CreateNumpyTensor(out_gradient_sizes)
+    x2 = self._CreateNumpyTensor(filter_in_sizes)
 
-      conv_backprop_input1 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
-              strides=[1, 1, 1, 1], padding='VALID')
-      relu1 = nn_ops.relu(conv_backprop_input1)
-      slice1 = array_ops.slice(relu1, [0, 2, 2, 0], size=[2, 5, 5, 2])
-      conv_backprop_input1 = array_ops.slice(conv_backprop_input1, [0, 2, 2, 0],
-              size=[2, 5, 5, 2])
-      concat1 = array_ops.concat([slice1, conv_backprop_input1], 0)
-      concat1 = array_ops.identity(concat1)
+    conv_backprop_input1 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1], padding='VALID')
+    relu1 = nn_ops.relu(conv_backprop_input1)
+    slice1 = array_ops.slice(relu1, [0, 2, 2, 0], size=[2, 5, 5, 2])
+    conv_backprop_input1 = array_ops.slice(conv_backprop_input1, [0, 2, 2, 0],
+            size=[2, 5, 5, 2])
+    concat1 = array_ops.concat([slice1, conv_backprop_input1], 0)
+    concat1 = array_ops.identity(concat1)
 
-      conv_backprop_input2 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
-              strides=[1, 1, 1, 1], padding='VALID')
-      relu2 = nn_ops.relu(conv_backprop_input2)
-      slice2 = array_ops.slice(relu2, [0, 2, 2, 0], size=[2, 5, 5, 2])
-      conv_backprop_input2 = array_ops.slice(conv_backprop_input2, [0, 2, 2, 0],
-              size=[2, 5, 5, 2])
-      concat2 = array_ops.concat([slice2, conv_backprop_input2], 0)
+    conv_backprop_input2 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1], padding='VALID')
+    relu2 = nn_ops.relu(conv_backprop_input2)
+    slice2 = array_ops.slice(relu2, [0, 2, 2, 0], size=[2, 5, 5, 2])
+    conv_backprop_input2 = array_ops.slice(conv_backprop_input2, [0, 2, 2, 0],
+            size=[2, 5, 5, 2])
+    concat2 = array_ops.concat([slice2, conv_backprop_input2], 0)
 
-      result_sizes = [4, 5, 5, 2]
-      self.assertEqual(concat1.shape, result_sizes)
-      self.assertEqual(concat2.shape, result_sizes)
-      self.assertAllEqual(concat1, self.evaluate(concat2))
+    result_sizes = [4, 5, 5, 2]
+    self.assertEqual(concat1.shape, result_sizes)
+    self.assertEqual(concat2.shape, result_sizes)
+    self.assertAllEqual(concat1, self.evaluate(concat2))
 
   @test_util.run_in_graph_and_eager_modes
   def testFusedConv2DBackpropInputWithSliceNotTheSamePad(self):
-      input_sizes = [2, 6, 6, 2]
-      out_gradient_sizes = [2, 7, 7, 4]
-      filter_in_sizes = [3, 3, 2, 4]
-      x1 = self._CreateNumpyTensor(out_gradient_sizes)
-      x2 = self._CreateNumpyTensor(filter_in_sizes)
+    input_sizes = [2, 6, 6, 2]
+    out_gradient_sizes = [2, 7, 7, 4]
+    filter_in_sizes = [3, 3, 2, 4]
+    x1 = self._CreateNumpyTensor(out_gradient_sizes)
+    x2 = self._CreateNumpyTensor(filter_in_sizes)
 
-      conv_backprop_input1 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
-              strides=[1, 1, 1, 1], padding='VALID')
-      conv_backprop_input1 = array_ops.slice(conv_backprop_input1, [0, 1, 0, 0],
-              size=[2, 6, 6, 2])
-      conv_backprop_input1 = array_ops.identity(conv_backprop_input1)
+    conv_backprop_input1 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1], padding='VALID')
+    conv_backprop_input1 = array_ops.slice(conv_backprop_input1, [0, 1, 0, 0],
+            size=[2, 6, 6, 2])
+    conv_backprop_input1 = array_ops.identity(conv_backprop_input1)
 
-      conv_backprop_input2 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
-              strides=[1, 1, 1, 1], padding='VALID')
-      conv_backprop_input2 = array_ops.slice(conv_backprop_input2, [0, 1, 0, 0],
-              size=[2, 6, 6, 2])
+    conv_backprop_input2 = nn_ops.conv2d_backprop_input([2, 9, 9, 2], x2, x1,
+            strides=[1, 1, 1, 1], padding='VALID')
+    conv_backprop_input2 = array_ops.slice(conv_backprop_input2, [0, 1, 0, 0],
+            size=[2, 6, 6, 2])
 
-      self.assertEqual(conv_backprop_input1.shape, input_sizes)
-      self.assertEqual(conv_backprop_input2.shape, input_sizes)
-      self.assertAllEqual(conv_backprop_input1, self.evaluate(conv_backprop_input2))
+    self.assertEqual(conv_backprop_input1.shape, input_sizes)
+    self.assertEqual(conv_backprop_input2.shape, input_sizes)
+    self.assertAllEqual(conv_backprop_input1, self.evaluate(conv_backprop_input2))
+
+  @test_util.run_deprecated_v1
+  def testConv2DBackpropFilterWithBias(self):
+    input_shape = [2, 6, 6, 2]
+    filter_shape = [3, 3, 2, 6]
+    output_shape = [2, 6, 6, 6]
+    input_size = 1
+    filter_size = 1
+    for x in input_shape:
+      input_size *= x
+    for x in filter_shape:
+      filter_size *= x
+    input_data = np.array([x * 1.0 / input_size for x in range(0, input_size)])
+    filter_data = np.array([x * 1.0 / filter_size for x in range(0, filter_size)])
+    bias_data = np.array([0.13, 0.12, -0.1, 0.23, 0.19, 0.6])
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    for dtype in (dtypes.float32, dtypes.bfloat16):
+      with self.cached_session() as sess:
+        input_tensor = constant_op.constant(input_data, shape=input_shape, dtype=dtype)
+        filter_tensor = constant_op.constant(filter_data, shape=filter_shape, dtype=dtype)
+        # use relu to prevent node from being in the list of preserved nodes
+        filter = nn_ops.relu(filter_tensor)
+        conv = self._CreateConv2D(input_tensor, filter)
+        bias_tensor = constant_op.constant(bias_data, dtype=dtype)
+        bias = nn_ops.relu(bias_tensor)
+        out = nn_ops.bias_add(conv, bias)
+        self.assertEqual(output_shape, out.get_shape())
+
+        grads = gradients.gradients(out, [filter_tensor, bias_tensor])
+        grads_out = sess.run(grads, options=run_options, run_metadata=metadata)
+        graph = metadata.partition_graphs[0]
+        exist_conv_backprop_filter_with_bias = False
+        for node in graph.node:
+          if 'Conv2DBackpropFilterWithBias' in node.op:
+            exist_conv_backprop_filter_with_bias = True
+        self.assertTrue(exist_conv_backprop_filter_with_bias)
+
+        fused_grad_filter = grads_out[0]
+        fused_grad_bias = grads_out[1]
+        grad_filter = sess.run(grads[0])
+        grad_bias = sess.run(grads[1])
+        self.assertAllClose(fused_grad_filter, grad_filter)
+        self.assertAllClose(fused_grad_bias, grad_bias)
 
   # Tests tensor forwarding of a fused Conv2D+BiasAdd+Add op when the input to
   # Add is the same as the input to the fused Conv2D op and needs a tensor
