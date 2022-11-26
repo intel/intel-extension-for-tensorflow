@@ -39,11 +39,11 @@ class BincountTest(test.TestCase):
         values = constant_op.constant(x, dtype=tf.int32)
         weights = tf.constant(y, dtype=dtype)
         flush_cache()
-        out_gpu = math_ops.dense_bincount(values, size=n, weights=weights, binary_output=False)
+        out_gpu = math_ops.dense_bincount(values, size=n, weights=[], binary_output=False)
 
     @add_profiling
     @multi_run(ITERATION)
-    def testBincount(self):
+    def testDenseBincount(self):
         # argument dtype of dense_bincount
         # weight: int32, float32
         for dtype in FLOAT_COMPUTE_TYPE:

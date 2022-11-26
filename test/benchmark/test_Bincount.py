@@ -38,7 +38,8 @@ class BincountTest(test.TestCase):
         values = constant_op.constant(x, dtype=tf.int32)
         weights = tf.constant(y, dtype=dtype)
         flush_cache()
-        out_gpu = math_ops.bincount(values, size=n, weights=weights)
+        out_gpu = math_ops.bincount(values, size=n, weights=[])
+
 
     @add_profiling
     @multi_run(ITERATION)
