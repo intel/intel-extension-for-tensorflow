@@ -59,8 +59,9 @@
   </thead>
   <tbody>
       <tr>
-          <td colspan="6" align="center"><a href="guide/practice_guide.md#cpu-practice-guide">CPU practice guide</a></td>
-		  <td colspan="6" align="center"><a href="guide/practice_guide.md#gpu-practice-guide">GPU practice guide</a></td>
+        <td colspan="4" align="center"><a href="guide/practice_guide.md#cpu-practice-guide">CPU practice guide</a></td>
+        <td colspan="4" align="center"><a href="guide/practice_guide.md#gpu-practice-guide">GPU practice guide</a></td>
+        <td colspan="4" align="center"><a href="install/experimental/install_for_cpp.md">C++ API support</a></td>
       </tr>
   </tbody>
     <thead>
