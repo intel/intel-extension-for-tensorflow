@@ -91,6 +91,8 @@ dnnl::graph::logical_tensor::data_type GetOneDnnGraphDataType(DataType dt) {
     case DT_UINT8:
     case DT_QUINT8:
       return dnnl::graph::logical_tensor::data_type::u8;
+    case DT_BOOL:
+      return dnnl::graph::logical_tensor::data_type::boolean;
     default:
       return dnnl::graph::logical_tensor::data_type::undef;
   }

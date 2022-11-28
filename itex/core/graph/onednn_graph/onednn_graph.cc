@@ -1724,14 +1724,20 @@ bool IsOneDnnGraphSupportedDataType(const NodeDef& node_def) {
   static std::unordered_set<DataType> int8_datatype = {DT_QINT8, DT_QUINT8};
   DataType T;
   AttrSlice attr_list(node_def);
-  if (TryGetNodeAttr(attr_list, "T", &T) ||
-      TryGetNodeAttr(attr_list, "SrcT", &T) ||
-      TryGetNodeAttr(attr_list, "DstT", &T)) {
+  if (TryGetNodeAttr(attr_list, "T", &T)) {
     if (node_def.op() == "QuantizeV2" || node_def.op() == "Dequantize") {
       if (int8_datatype.find(T) == int8_datatype.end()) return false;
     } else {
       if (float_datatype.find(T) == float_datatype.end()) return false;
     }
+  }
+
+  // Cast op
+  DataType SrcT, DstT;
+  if (TryGetNodeAttr(attr_list, "SrcT", &SrcT) &&
+      TryGetNodeAttr(attr_list, "DstT", &DstT)) {
+    if (float_datatype.find(SrcT) == float_datatype.end()) return false;
+    if (float_datatype.find(DstT) == float_datatype.end()) return false;
   }
   return true;
 }
