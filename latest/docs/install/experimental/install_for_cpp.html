@@ -196,12 +196,12 @@ To support Intel® Extension for TensorFlow* cc library, we need to modify the o
 </div>
 <p>The updated example with Intel® Extension for TensorFlow* enabled</p>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">// example.cc</span>
-<span class="w">#include &quot;tensorflow/cc/client/client_session.h&quot;</span>
-<span class="w">#include &quot;tensorflow/cc/ops/standard_ops.h&quot;</span>
-<span class="w">#include &quot;tensorflow/core/framework/tensor.h&quot;</span>
+<span class="w"> </span>#include &quot;tensorflow/cc/client/client_session.h&quot;<span class="w"></span>
+<span class="w"> </span>#include &quot;tensorflow/cc/ops/standard_ops.h&quot;<span class="w"></span>
+<span class="w"> </span>#include &quot;tensorflow/core/framework/tensor.h&quot;<span class="w"></span>
 <span class="gi">+ #include &quot;tensorflow/c/c_api_experimental.h&quot;</span><span class="w"></span>
 
-<span class="w">int main() {</span>
+<span class="w"> </span>int main() {<span class="w"></span>
 <span class="w"> </span> using namespace tensorflow;<span class="w"></span>
 <span class="w"> </span> using namespace tensorflow::ops;<span class="w"></span>
 
