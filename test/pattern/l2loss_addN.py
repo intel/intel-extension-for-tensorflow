@@ -31,6 +31,8 @@ tf.compat.v1.disable_eager_execution()
 class FusedAddNTest(test.TestCase):
     """test _FusedAddN"""
     def test_addn_l2loss(self):
+        if not test.is_gpu_available():
+            self.skipTest("No GPU available")
 
         x = np.array([1, 2, 3, 4], dtype=np.float32)
         y = np.array([2, 1, 5, 6], dtype=np.float32)
