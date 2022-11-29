@@ -114,6 +114,7 @@ void Register_ITEXDepthwiseConv2dNativeBackpropFilterOp();
 void Register_ITEXDepthwiseConv2dNativeBackpropInputOp();
 void Register_ITEXDepthwiseConv2dNativeOp();
 void Register_ITEXDequantizeOp();
+void Register_ITEXEinsum();
 void Register_ITEXEluGradOp();
 void Register_ITEXEluOp();
 void Register_ITEXForwardAUGRUOp();

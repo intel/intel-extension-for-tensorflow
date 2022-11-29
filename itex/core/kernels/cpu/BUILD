@@ -359,6 +359,21 @@ itex_xpu_library(
     alwayslink = True,
 )
 
+itex_xpu_library(
+    name = "einsum_op",
+    srcs = ["einsum_op.cc"],
+    hdrs = [
+        "//itex/core/kernels/common:einsum_hdrs",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
 CPU_KERNELS = [
     ":aggregate_ops",
     ":binary_op",
@@ -366,6 +381,7 @@ CPU_KERNELS = [
     ":cast_op",
     ":conv_ops",
     ":dequantize_op",
+    ":einsum_op",
     ":fused_batch_norm_op",
     ":gru_ops",
     ":instance_norm_ops",

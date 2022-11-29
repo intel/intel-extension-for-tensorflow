@@ -15,8 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef ITEX_CORE_KERNELS_GPU_LINALG_EINSUM_OP_IMPL_H_
-#define ITEX_CORE_KERNELS_GPU_LINALG_EINSUM_OP_IMPL_H_
+#ifndef ITEX_CORE_KERNELS_COMMON_LINALG_EINSUM_OP_IMPL_H_
+#define ITEX_CORE_KERNELS_COMMON_LINALG_EINSUM_OP_IMPL_H_
 
 #include <algorithm>
 #include <memory>
@@ -27,11 +27,10 @@ limitations under the License.
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_split.h"
+#include "itex/core/kernels/common/einsum_op.h"
 #include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/kernels/common/matmul_op.h"
 #include "itex/core/kernels/common/transpose_functor.h"
-#include "itex/core/kernels/gpu/linalg/einsum_op.h"
-#include "itex/core/kernels/gpu/reduction_ops_common.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/math_util.h"
@@ -43,9 +42,10 @@ limitations under the License.
 #include "itex/core/utils/types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
+#ifndef INTEL_CPU_ONLY
+#include "itex/core/kernels/gpu/reduction_ops_common.h"
+#endif
 namespace itex {
-
-using GPUDevice = Eigen::GpuDevice;
 
 using ShapeVec = gtl::InlinedVector<int64, 8>;
 using Labels = gtl::InlinedVector<int, 8>;
@@ -54,11 +54,59 @@ using LabelCounts = gtl::InlinedVector<int, 8>;
 using OperandLabelCounts = gtl::InlinedVector<LabelCounts, 2>;
 using LabelToDimSizes = gtl::InlinedVector<int64, 8>;
 
+#ifdef INTEL_CPU_ONLY  // from itex/core/kernels/gpu/reduction_ops_common.h
+namespace functor {
+
+template <typename Device, typename OUT_T, typename IN_T,
+          typename ReductionAxes, typename Reducer>
+struct ReduceEigenImpl {
+  void operator()(const Device& d, OUT_T out, IN_T in,
+                  const ReductionAxes& reduction_axes, const Reducer& reducer) {
+    out.device(d) = in.reduce(reduction_axes, reducer);
+  }
+};
+
+template <typename Device, typename Reducer>
+struct ReduceFunctorBase {
+  template <typename OUT_T, typename IN_T, typename ReductionAxes>
+  static void Reduce(OpKernelContext* ctx, OUT_T out, IN_T in,
+                     const ReductionAxes& reduction_axes,
+                     const Reducer& reducer) {
+    const Device& d = ctx->eigen_device<Device>();
+    ReduceEigenImpl<Device, OUT_T, IN_T, ReductionAxes, Reducer> reducer_impl;
+    reducer_impl(d, out, in, reduction_axes, reducer);
+  }
+
+  template <typename OUT_T>
+  static void FillIdentity(const Device& d, OUT_T out, const Reducer& reducer) {
+    FillIdentityEigenImpl(d, out, reducer);
+  }
+};
+
+}  // namespace functor
+#endif
+
 constexpr int kEllipsisLabel = -1;
 
 Status ParseEinsumEquation(const string& equation,
                            gtl::InlinedVector<string, 2>* input_subscripts,
-                           string* output_subscript);
+                           string* output_subscript) {
+  gtl::InlinedVector<string, 2> inputs_and_output_subscripts =
+      absl::StrSplit(equation, "->");
+  if (inputs_and_output_subscripts.size() != 2) {
+    return errors::InvalidArgument(
+        "Expecting exactly one '->' in einsum equation: ", equation);
+  }
+  *output_subscript = std::move(inputs_and_output_subscripts[1]);
+  *input_subscripts =
+      absl::StrSplit(std::move(inputs_and_output_subscripts[0]), ',');
+  if (input_subscripts->size() != 1 && input_subscripts->size() != 2) {
+    return errors::InvalidArgument(
+        "Expecting 1 or 2 input subscripts in equation '", equation,
+        "' but got: ", input_subscripts->size());
+  }
+  return Status::OK();
+}
 
 struct EinsumHelper {
   // Dummy axis label used to denote an ellipsis in an input or output
@@ -525,7 +573,11 @@ struct EinsumHelper {
     // Reduce along the last axis (i.e axis 1) of the rank-2 Tensor.
     const int64 output_size = reshape[kBroadcasting] * reshape[kBatch] *
                               reshape[kFree] * reshape[kContract];
+#ifdef INTEL_CPU_ONLY
+    functor::ReduceFunctorBase<Device, Reducer>::Reduce(
+#else
     functor::ReduceFunctor<Reducer>::Reduce(
+#endif
         ctx, output->shaped<T, 1>({output_size}),
         const_cast<const Tensor&>(input_deduped)
             .shaped<T, 2>({output_size, reshape[kReduce]}),
@@ -611,7 +663,7 @@ struct EinsumHelper {
       auto dst_md =
           memory::desc(params->c_dims, OneDnnType<T>(), params->c_strides);
 
-      auto dnnl_engine = CreateDnnlEngine<GPUDevice>(*ctx);
+      auto dnnl_engine = CreateDnnlEngine<Device>(*ctx);
       auto src_handler =
           static_cast<void*>(const_cast<T*>(in_x.flat<T>().data()));
       auto weights_handler =

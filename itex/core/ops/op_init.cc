@@ -147,6 +147,7 @@ void RegisterOps() {
   Register_ITEXDepthwiseConv2dNativeBackpropInputOp();
   Register_ITEXDepthwiseConv2dNativeOp();
   Register_ITEXDequantizeOp();
+  Register_ITEXEinsum();
   Register_ITEXEluGradOp();
   Register_ITEXEluOp();
   Register_ITEXForwardAUGRUOp();

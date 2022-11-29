@@ -90,6 +90,7 @@ const std::vector<NativeFormatInfo>* GetNativeFormatInfo() {
       {"DepthwiseConv2dNativeBackpropInput",
        "_ITEXDepthwiseConv2dNativeBackpropInput", CopyAttrsAll,
        RewriteBackwardDataType},
+      {"Einsum", "_ITEXEinsum", CopyAttrsAll, AlwaysRewrite},
       {"Elu", "_ITEXElu", CopyAttrsAll, AlwaysRewrite},
       {"EluGrad", "_ITEXEluGrad", CopyAttrsAll, RewriteBackwardDataType},
       {"FusedBatchNorm", "_ITEXFusedBatchNorm", CopyAttrsAll, AlwaysRewrite},

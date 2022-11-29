@@ -19,16 +19,15 @@ limitations under the License.
 
 namespace itex {
 
-#define REGISTER_EINSUM(D, TYPE)                                   \
-  REGISTER_KERNEL_BUILDER(                                         \
-      Name("Einsum").Device(DEVICE_##D).TypeConstraint<TYPE>("T"), \
+#define REGISTER_EINSUM(D, TYPE)                                        \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("_ITEXEinsum").Device(DEVICE_##D).TypeConstraint<TYPE>("T"), \
       EinsumOp<D##Device, TYPE>);
 
-#define REGISTER_GPU(TYPE) REGISTER_EINSUM(GPU, TYPE)
-TF_CALL_bfloat16(REGISTER_GPU);
-TF_CALL_float(REGISTER_GPU);
-TF_CALL_half(REGISTER_GPU);
-#undef REGISTER_GPU
+#define REGISTER_CPU(TYPE) REGISTER_EINSUM(CPU, TYPE)
+TF_CALL_bfloat16(REGISTER_CPU);
+TF_CALL_float(REGISTER_CPU);
+#undef REGISTER_CPU
 
 #undef REGISTER_EINSUM
 

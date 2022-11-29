@@ -159,6 +159,18 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "einsum_hdrs",
+    srcs = [
+        "einsum_op.h",
+        "einsum_op_impl.h",
+        "fill_functor.h",
+        "matmul_op.h",
+        "transpose_functor.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 itex_xpu_library(
     name = "cwise_ops_lib",
     srcs = ["cwise_ops_common.cc"],

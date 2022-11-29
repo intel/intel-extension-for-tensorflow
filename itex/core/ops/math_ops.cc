@@ -21,6 +21,25 @@ limitations under the License.
 #include "tensorflow/c/ops.h"
 #include "tensorflow/c/tf_status.h"
 
+void Register_ITEXEinsum() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXEinsum");
+    TF_OpDefinitionBuilderAddInput(op_builder, "inputs: N * T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "equation: string");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "N: int >= 1");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "T: {bfloat16, half, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXEinsum op registration failed: ";
+  }
+}
+
 void register_equality_comparison_with_cast(
     TF_OpDefinitionBuilder* op_builder) {
   TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
