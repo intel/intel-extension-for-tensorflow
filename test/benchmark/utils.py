@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-
+import os
 import numpy as np
 import tensorflow as tf
 
@@ -38,7 +38,9 @@ def add_profiling(func):
     options = tf.profiler.experimental.ProfilerOptions(host_tracer_level = 3,
                                          python_tracer_level = 1,
                                          device_tracer_level = 1)
-    tf.profiler.experimental.start('/tmp/profile_data', options = options)
+    if not os.path.exists("../../profile_data"):
+        os.mkdir("../../profile_data")
+    tf.profiler.experimental.start('../../profile_data', options = options)
     func(*args, **kwargs)
     tf.profiler.experimental.stop()
   return wrap_func
