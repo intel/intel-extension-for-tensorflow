@@ -71,8 +71,13 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
       OP_REQUIRES_OK(context, context->allocate_output(
                                   kOutputIndex_Dst, dst_shape_, &dst_tensor_));
       f(context->eigen_device<Device>(), dst_tensor_->flat<Toutput>());
+      const float min_input =
+          context->input(kSrcMinRangeIndex).flat<float>()(0);
+      const float max_input =
+          context->input(kSrcMaxRangeIndex).flat<float>()(0);
+
       AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
-          context, kSrcMinRangeIndex, kSrcMaxRangeIndex, kFilterMinRangeIndex,
+          context, min_input, max_input, kFilterMinRangeIndex,
           kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
           kDstMinRangeIndex, kDstMaxRangeIndex);
 
@@ -83,8 +88,11 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
     fwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
     scratchpad_tensor_.reset();
 
+    const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
+    const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
+
     AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
-        context, kSrcMinRangeIndex, kSrcMaxRangeIndex, kFilterMinRangeIndex,
+        context, min_input, max_input, kFilterMinRangeIndex,
         kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
         kDstMinRangeIndex, kDstMaxRangeIndex);
   }

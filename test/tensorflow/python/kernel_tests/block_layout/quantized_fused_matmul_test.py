@@ -182,7 +182,11 @@ class QuantizedFusedMatMul(test.TestCase):
 
       # int8 test tolerate larger difference
       self.assertAllClose(matmul_int8_res, matmul_f32_res, rtol=0.2, atol=0.2)
-
+  
+  # Currently, ITEX MatMul INT8 design is a bit complex. The input data is asymmetric, while the output data is symmetric.
+  # So the upstream Quantize is MIN_FIRST mode, while downstream Dequantize is SCALED mode. Also, we need to set the 
+  # requantize with symmetric range/
+  # This implementation follows intel-tf design
   @test_util.run_deprecated_v1
   def testQuantizedFusedMatMulAddPostop(self):
     with ops.name_scope("test"):
@@ -204,6 +208,7 @@ class QuantizedFusedMatMul(test.TestCase):
       matmul_f32 = tf.nn.bias_add(tf.linalg.matmul(x_f32, y_f32), bias_f32)
       matmul_f32_min = tf.math.reduce_min(matmul_f32)
       matmul_f32_max = tf.math.reduce_max(matmul_f32)
+      matmul_f32_abs = tf.math.maximum(tf.math.abs(matmul_f32_min), tf.math.abs(matmul_f32_max))
 
       matmul_int32, matmul_int32_min, matmul_int32_max = load_ops_library._QuantizedFusedMatMul(a=x_int8, b=y_int8, args=[bias_f32], min_a=x_min, max_a=x_max,
                                                                         min_b=y_min, max_b=y_max,
@@ -211,9 +216,9 @@ class QuantizedFusedMatMul(test.TestCase):
                                                                         input_quant_mode="MIN_FIRST")
 
       matmul_int8_req, matmul_int8_req_min, matmul_int8_req_max = tf.raw_ops.Requantize(input=matmul_int32, input_min=matmul_int32_min, input_max=matmul_int32_max,
-                                                                                        requested_output_min=matmul_f32_min, requested_output_max=matmul_f32_max,
+                                                                                        requested_output_min=-matmul_f32_abs, requested_output_max=matmul_f32_abs,
                                                                                         out_type=dtypes.qint8)
-      matmul_int8_deq = array_ops.dequantize(matmul_int8_req, matmul_int8_req_min, matmul_int8_req_max, mode="MIN_FIRST", narrow_range=False)
+      matmul_int8_deq = array_ops.dequantize(matmul_int8_req, matmul_int8_req_min, matmul_int8_req_max, mode="SCALED", narrow_range=True)
       matmul_int8_deq = array_ops.identity(matmul_int8_deq)
       matmul_f32 = array_ops.identity(matmul_f32)
 
