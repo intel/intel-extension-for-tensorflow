@@ -39,6 +39,7 @@ typedef Eigen::GpuDevice GPUDevice;
                           ReductionOp<GPUDevice, type, int64,               \
                                       Eigen::internal::ProdReducer<type>>);
 TF_CALL_int32(REGISTER_GPU_KERNELS_PROD);
+TF_CALL_int64(REGISTER_GPU_KERNELS_PROD);
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_KERNELS_PROD);
 
 // TODO(itex): register complex64 and complex128 if the registration is

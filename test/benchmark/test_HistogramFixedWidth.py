@@ -30,11 +30,10 @@ except ImportError:
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    # histogram_fixed_width support: DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE
-    FLOAT_COMPUTE_TYPE = [dtypes.float32]
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float64, dtypes.int32, dtypes.int64]
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32]  # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float64, dtypes.int32, dtypes.int64]
     
 ITERATION = 5
 
@@ -43,7 +42,7 @@ class HistogramFixedWidthTest(test.TestCase):
         np.random.seed(4)
         in_array = np.random.normal(size=size)
         in_array = constant_op.constant(in_array, dtype=dtype)
-        value_range = [0.0, 5.0]
+        value_range = [0, 5]
         value_range = constant_op.constant(value_range, dtype=dtype)
         flush_cache()
         out_gpu = histogram_ops.histogram_fixed_width(in_array, value_range, nbins=5)

@@ -33,7 +33,7 @@ try:
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.bfloat16]
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32,]  
     
 ITERATION = 5
 
