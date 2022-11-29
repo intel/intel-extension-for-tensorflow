@@ -1280,6 +1280,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
     ],
     alwayslink = True,
 )

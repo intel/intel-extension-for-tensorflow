@@ -18,6 +18,7 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_SCATTER_FUNCTOR_H_
 #define ITEX_CORE_KERNELS_GPU_SCATTER_FUNCTOR_H_
 
+#include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/gpu_device_functions.h"
 #include "itex/core/utils/op_kernel.h"
@@ -71,201 +72,37 @@ struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::MAX> {
   void operator()(T* dest, T src) const { DpcppAtomicMax(dest, src); }
 };
 
-template <scatter_op::UpdateOp Op>
-struct AssignDPCPP {};
-template <>
-struct AssignDPCPP<scatter_op::UpdateOp::ASSIGN> {
-  template <typename Device, typename Params, typename Update>
-  static void Run(Device d, Params p, Update u) {
-    p.device(d) = u;
-  }
-};
-
-template <>
-struct AssignDPCPP<scatter_op::UpdateOp::ADD> {
-  template <typename Device, typename Params, typename Update>
-  static void Run(Device d, Params p, Update u) {
-    p.device(d) = p + u;
-  }
-
-  template <typename Device, typename Params, typename Update>
-  static void RunScalar(Device d, Params p, Update u) {
-    p.device(d) = p + u;
-  }
-};
-
-template <>
-struct AssignDPCPP<scatter_op::UpdateOp::SUB> {
-  template <typename Device, typename Params, typename Update>
-  static void Run(Device d, Params p, Update u) {
-    p.device(d) = p - u;
-  }
-};
-
-template <>
-struct AssignDPCPP<scatter_op::UpdateOp::MUL> {
-  template <typename Device, typename Params, typename Update>
-  static void Run(Device d, Params p, Update u) {
-    p.device(d) = p * u;
-  }
-};
-
-template <>
-struct AssignDPCPP<scatter_op::UpdateOp::DIV> {
-  template <typename Device, typename Params, typename Update>
-  static void Run(Device d, Params p, Update u) {
-    p.device(d) = p / u;
-  }
-};
-
-template <>
-struct AssignDPCPP<scatter_op::UpdateOp::MIN> {
-  template <typename Device, typename Params, typename Update>
-  static void Run(Device d, Params p, Update u) {
-    p.device(d) = p.cwiseMin(u);
-  }
-};
-
-template <>
-struct AssignDPCPP<scatter_op::UpdateOp::MAX> {
-  template <typename Device, typename Params, typename Update>
-  static void Run(Device d, Params p, Update u) {
-    p.device(d) = p.cwiseMax(u);
-  }
-};
 }  // namespace internal
 }  // namespace scatter_op
 
 namespace functor {
-template <typename Device, typename T, typename Index, scatter_op::UpdateOp op>
+template <typename Device, typename T, typename Index, scatter_op::UpdateOp op,
+          typename Enable = void>
 struct ScatterFunctor {
   Index operator()(OpKernelContext* c, const Device& d,
                    typename TTypes<T>::Matrix params,
                    typename TTypes<T>::ConstMatrix updates,
-                   typename TTypes<Index>::ConstFlat indices);
+                   typename TTypes<Index>::ConstFlat indices,
+                   typename TTypes<float>::Matrix params_fp32);
 };
 
-template <typename Device, typename T, typename Index, scatter_op::UpdateOp op>
+template <typename Device, typename T, typename Index, scatter_op::UpdateOp op,
+          typename Enable = void>
 struct ScatterScalarFunctor {
   Index operator()(OpKernelContext* c, const Device& d,
                    typename TTypes<T>::Matrix params,
-                   const typename TTypes<T>::ConstScalar update,
-                   typename TTypes<Index>::ConstFlat indices);
-};
-
-// TODO(itex): Remove this specialization template when DPCPP atomic operators
-// support bf16 datatype.
-template <typename Index, scatter_op::UpdateOp op>
-struct ScatterFunctor<GPUDevice, Eigen::bfloat16, Index, op> {
-  Index operator()(OpKernelContext* c, const GPUDevice& d,
-                   typename TTypes<Eigen::bfloat16>::Matrix params,
-                   typename TTypes<Eigen::bfloat16>::ConstMatrix updates,
-                   typename TTypes<Index>::Flat indices) {
-    // indices and params sizes were validated in DoCompute().
-    const Index N = static_cast<Index>(indices.size());
-    const Index limit = static_cast<Index>(params.dimension(0));
-    for (Index i = 0; i < N; i++) {
-      const Index index = internal::SubtleMustCopy(indices(i));
-      if (!FastBoundsCheck(index, limit)) return i;
-      // Copy last Ndim-1 dimensions of updates[i] to params[index]
-      scatter_op::internal::AssignDPCPP<op>::Run(
-          d, params.template chip<0>(index), updates.template chip<0>(i));
-    }
-    return -1;
-  }
-};
-
-// TODO(itex): Remove this specialization template when DPCPP atomic operators
-// support bf16 datatype.
-template <typename Index, scatter_op::UpdateOp op>
-struct ScatterScalarFunctor<GPUDevice, Eigen::bfloat16, Index, op> {
-  Index operator()(OpKernelContext* c, const GPUDevice& d,
-                   typename TTypes<Eigen::bfloat16>::Matrix params,
-                   const typename TTypes<Eigen::bfloat16>::ConstScalar update,
-                   typename TTypes<Index>::Flat indices) {
-    // indices and params sizes were validated in DoCompute().
-    const Index N = static_cast<Index>(indices.size());
-    const Index limit = static_cast<Index>(params.dimension(0));
-    Eigen::Sizes<1> scalar_dim;
-    const int dims = params.NumDimensions - 1;
-    Eigen::array<int, dims> broadcast_dims;
-    for (Index j = 0; j < dims; j++) {
-      broadcast_dims[j] = params.dimension(j + 1);
-    }
-    // Broadcast update to broadcast_dims
-    auto u = update.reshape(scalar_dim).broadcast(broadcast_dims);
-
-    for (Index i = 0; i < N; i++) {
-      const Index index = internal::SubtleMustCopy(indices(i));
-      if (!FastBoundsCheck(index, limit)) return i;
-      // Broadcast update to params[index]
-      scatter_op::internal::AssignDPCPP<op>::Run(
-          d, params.template chip<0>(index), u);
-    }
-    return -1;
-  }
-};
-
-// TODO(itex): Remove this specialization template when DPCPP atomic operators
-// support fp16 datatype.
-template <typename Index, scatter_op::UpdateOp op>
-struct ScatterFunctor<GPUDevice, Eigen::half, Index, op> {
-  Index operator()(OpKernelContext* c, const GPUDevice& d,
-                   typename TTypes<Eigen::half>::Matrix params,
-                   typename TTypes<Eigen::half>::ConstMatrix updates,
-                   typename TTypes<Index>::Flat indices) {
-    // indices and params sizes were validated in DoCompute().
-    const Index N = static_cast<Index>(indices.size());
-    const Index limit = static_cast<Index>(params.dimension(0));
-    for (Index i = 0; i < N; i++) {
-      const Index index = internal::SubtleMustCopy(indices(i));
-      if (!FastBoundsCheck(index, limit)) return i;
-      // Copy last Ndim-1 dimensions of updates[i] to params[index]
-      scatter_op::internal::AssignDPCPP<op>::Run(
-          d, params.template chip<0>(index), updates.template chip<0>(i));
-    }
-    return -1;
-  }
-};
-
-// TODO(itex): Remove this specialization template when DPCPP atomic operators
-// support fp16 datatype.
-template <typename Index, scatter_op::UpdateOp op>
-struct ScatterScalarFunctor<GPUDevice, Eigen::half, Index, op> {
-  Index operator()(OpKernelContext* c, const GPUDevice& d,
-                   typename TTypes<Eigen::half>::Matrix params,
-                   const typename TTypes<Eigen::half>::ConstScalar update,
-                   typename TTypes<Index>::Flat indices) {
-    // indices and params sizes were validated in DoCompute().
-    const Index N = static_cast<Index>(indices.size());
-    const Index limit = static_cast<Index>(params.dimension(0));
-    Eigen::Sizes<1> scalar_dim;
-    const int dims = params.NumDimensions - 1;
-    Eigen::array<int, dims> broadcast_dims;
-    for (Index j = 0; j < dims; j++) {
-      broadcast_dims[j] = params.dimension(j + 1);
-    }
-    // Broadcast update to broadcast_dims
-    auto u = update.reshape(scalar_dim).broadcast(broadcast_dims);
-
-    for (Index i = 0; i < N; i++) {
-      const Index index = internal::SubtleMustCopy(indices(i));
-      if (!FastBoundsCheck(index, limit)) return i;
-      // Broadcast update to params[index]
-      scatter_op::internal::AssignDPCPP<op>::Run(
-          d, params.template chip<0>(index), u);
-    }
-    return -1;
-  }
+                   const typename TTypes<T>::ConstScalar updates,
+                   typename TTypes<Index>::ConstFlat indices,
+                   typename TTypes<float>::Matrix params_fp32);
 };
 
 template <typename T, typename Index, scatter_op::UpdateOp op>
 struct ScatterScalarOpDPCPPKernel {
-  ScatterScalarOpDPCPPKernel(T* params, const T* updates, const Index* indices,
-                             Index first_dim_size, Index indices_size,
-                             Index synthesized_updates_size)
+  ScatterScalarOpDPCPPKernel(T* params, const T update_val,
+                             const Index* indices, Index first_dim_size,
+                             Index indices_size, Index synthesized_updates_size)
       : params_(params),
-        updates_(updates),
+        updates_(update_val),
         indices_(indices),
         first_dim_size_(first_dim_size),
         indices_size_(indices_size),
@@ -276,7 +113,7 @@ struct ScatterScalarOpDPCPPKernel {
     Index update_block = synthesized_updates_size_ / indices_size_;
     if (i < synthesized_updates_size_) {
       int indices_i = i / update_block;
-      const T update_val = *updates_;
+      // const T update_val = *updates_;
       int param_first_index = indices_[indices_i];
       if (!(param_first_index >= 0 && param_first_index < first_dim_size_)) {
         // Ignore indices that are out of range.
@@ -284,19 +121,19 @@ struct ScatterScalarOpDPCPPKernel {
       }
       int params_i = param_first_index * update_block + (i % update_block);
       scatter_op::internal::ScatterOpKernelDPCPPFunc<T, op>()(
-          &params_[params_i], update_val);
+          &params_[params_i], updates_);
     }
   }
 
   T* params_;
-  const T* updates_;
+  const T updates_;
   const Index* indices_;
   Index first_dim_size_;
   Index indices_size_;
   Index synthesized_updates_size_;
 };
 
-template <typename T, typename Index, scatter_op::UpdateOp op>
+template <typename T, typename Index, scatter_op::UpdateOp op, typename = void>
 struct ScatterOpDPCPPKernel {
   ScatterOpDPCPPKernel(T* params, const T* updates, const Index* indices,
                        Index first_dim_size, Index updates_size,
@@ -334,11 +171,100 @@ struct ScatterOpDPCPPKernel {
 };
 
 template <typename T, typename Index, scatter_op::UpdateOp op>
-struct ScatterScalarFunctor<GPUDevice, T, Index, op> {
+struct ScatterOpDPCPPKernel<
+    T, Index, op,
+    typename std::enable_if_t<(std::is_same_v<T, Eigen::half> ||
+                               std::is_same_v<T, Eigen::bfloat16>),
+                              void>> {
+  ScatterOpDPCPPKernel(float* params_fp32, const T* updates,
+                       const Index* indices, Index first_dim_size,
+                       Index updates_size, Index indices_size)
+      : params_fp32(params_fp32),
+        updates_(updates),
+        indices_(indices),
+        first_dim_size_(first_dim_size),
+        updates_size_(updates_size),
+        indices_size_(indices_size) {}
+
+  void operator()(sycl::nd_item<1> item) const {
+    int64_t i = item.get_global_linear_id();
+    Index update_block = updates_size_ / indices_size_;
+    if (i < updates_size_) {
+      int indices_i = i / update_block;
+      int updates_i = i;
+      int param_first_index = indices_[indices_i];
+      if (!(param_first_index >= 0 && param_first_index < first_dim_size_)) {
+        // Ignore indices that are out of range.
+        return;
+      }
+      int params_i = param_first_index * update_block + (i % update_block);
+      scatter_op::internal::ScatterOpKernelDPCPPFunc<float, op>()(
+          &params_fp32[params_i], static_cast<float>(updates_[updates_i]));
+    }
+  }
+
+  float* params_fp32;
+  const T* updates_;
+  const Index* indices_;
+  Index first_dim_size_;
+  Index updates_size_;
+  Index indices_size_;
+};
+
+// TODO(itex): Remove this specialization template when DPCPP atomic operators
+// support bf16/half datatype.
+template <typename T, typename Index, scatter_op::UpdateOp op>
+struct ScatterScalarFunctor<
+    GPUDevice, T, Index, op,
+    typename std::enable_if<std::is_same<T, Eigen::bfloat16>::value ||
+                            std::is_same<T, Eigen::half>::value>::type> {
+  Index operator()(OpKernelContext* c, const GPUDevice& d,
+                   typename TTypes<T>::Matrix params,
+                   const typename TTypes<T>::ConstScalar updates,
+                   typename TTypes<Index>::ConstFlat indices,
+                   typename TTypes<float>::Matrix params_fp32) {
+    auto total_size = params.size();
+    ConvertToFp32<GPUDevice, T>(d, total_size, params.data(),
+                                params_fp32.data());
+
+    const Index first_dim_size = params_fp32.dimension(0);
+    const Index indices_size = indices.size();
+    const Index synthesized_updates_size = indices_size * params.dimension(1);
+
+    auto stream = d.stream();
+    auto group_size =
+        (*stream)
+            .get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    auto num_wg = (synthesized_updates_size + group_size - 1) / group_size;
+
+    const float update_val = static_cast<float>(*(updates.data()));
+
+    stream->submit([&](sycl::handler& cgh) {
+      ScatterScalarOpDPCPPKernel<float, Index, op> task(
+          params_fp32.data(), update_val, indices.data(), first_dim_size,
+          indices_size, synthesized_updates_size);
+      cgh.parallel_for<ScatterScalarOpDPCPPKernel<float, Index, op>>(
+          sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
+                            sycl::range<1>(group_size)),
+          task);
+    });
+    const Index sizes = params_fp32.size();
+    ConvertFromFp32<GPUDevice, T>(d, sizes, params_fp32.data(), params.data());
+    return -1;
+  }
+};
+
+template <typename T, typename Index, scatter_op::UpdateOp op>
+struct ScatterScalarFunctor<
+    GPUDevice, T, Index, op,
+    typename std::enable_if<!std::is_same<T, Eigen::bfloat16>::value &&
+                            !std::is_same<T, Eigen::half>::value>::type> {
   Index operator()(OpKernelContext* c, const GPUDevice& d,
                    typename TTypes<T>::Matrix params,
                    typename TTypes<T>::ConstScalar updates,
-                   typename TTypes<Index>::ConstFlat indices) {
+                   typename TTypes<Index>::ConstFlat indices,
+                   typename TTypes<float>::Matrix params_fp32) {
     const Index first_dim_size = params.dimension(0);
     const Index indices_size = indices.size();
     const Index synthesized_updates_size = indices_size * params.dimension(1);
@@ -350,9 +276,11 @@ struct ScatterScalarFunctor<GPUDevice, T, Index, op> {
             .template get_info<sycl::info::device::max_work_group_size>();
     auto num_wg = (synthesized_updates_size + group_size - 1) / group_size;
 
+    const T update_val = *(updates.data());
+
     stream->submit([&](sycl::handler& cgh) {
       ScatterScalarOpDPCPPKernel<T, Index, op> task(
-          params.data(), updates.data(), indices.data(), first_dim_size,
+          params.data(), update_val, indices.data(), first_dim_size,
           indices_size, synthesized_updates_size);
       cgh.parallel_for<ScatterScalarOpDPCPPKernel<T, Index, op>>(
           sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
@@ -365,11 +293,55 @@ struct ScatterScalarFunctor<GPUDevice, T, Index, op> {
 };
 
 template <typename T, typename Index, scatter_op::UpdateOp op>
-struct ScatterFunctor<GPUDevice, T, Index, op> {
+struct ScatterFunctor<
+    GPUDevice, T, Index, op,
+    typename std::enable_if<std::is_same<T, Eigen::bfloat16>::value ||
+                            std::is_same<T, Eigen::half>::value>::type> {
   Index operator()(OpKernelContext* c, const GPUDevice& d,
                    typename TTypes<T>::Matrix params,
                    typename TTypes<T>::ConstMatrix updates,
-                   typename TTypes<Index>::ConstFlat indices) {
+                   typename TTypes<Index>::ConstFlat indices,
+                   typename TTypes<float>::Matrix params_fp32) {
+    auto total_size = params.size();
+    ConvertToFp32<GPUDevice, T>(d, total_size, params.data(),
+                                params_fp32.data());
+
+    const Index first_dim_size = params_fp32.dimension(0);
+    const Index indices_size = indices.size();
+    const Index updates_size = updates.size();
+
+    auto stream = d.stream();
+    auto group_size =
+        (*stream)
+            .get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    auto num_wg = (updates_size + group_size - 1) / group_size;
+
+    stream->submit([&](sycl::handler& cgh) {
+      ScatterOpDPCPPKernel<T, Index, op> task(
+          params_fp32.data(), updates.data(), indices.data(), first_dim_size,
+          updates_size, indices_size);
+      cgh.parallel_for<ScatterOpDPCPPKernel<T, Index, op>>(
+          sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
+                            sycl::range<1>(group_size)),
+          task);
+    });
+    const Index sizes = params_fp32.size();
+    ConvertFromFp32<GPUDevice, T>(d, sizes, params_fp32.data(), params.data());
+    return -1;
+  }
+};
+
+template <typename T, typename Index, scatter_op::UpdateOp op>
+struct ScatterFunctor<
+    GPUDevice, T, Index, op,
+    typename std::enable_if<!std::is_same<T, Eigen::bfloat16>::value &&
+                            !std::is_same<T, Eigen::half>::value>::type> {
+  Index operator()(OpKernelContext* c, const GPUDevice& d,
+                   typename TTypes<T>::Matrix params,
+                   typename TTypes<T>::ConstMatrix updates,
+                   typename TTypes<Index>::ConstFlat indices,
+                   typename TTypes<float>::Matrix params_fp32) {
     const Index first_dim_size = params.dimension(0);
     const Index indices_size = indices.size();
     const Index updates_size = updates.size();

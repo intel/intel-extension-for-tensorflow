@@ -24,6 +24,7 @@ limitations under the License.
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"
+#include "itex/core/utils/types.h"
 #include "itex/core/utils/util.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
@@ -378,15 +379,21 @@ class ResourceScatterUpdateOp : public OpKernel {
                                 std::numeric_limits<Index>::max()));
 
     if (N > 0) {
+      auto index_size = indices.NumElements() * sizeof(Index);
       auto indices_flat = indices.flat<Index>();
       auto params_flat = params.flat_outer_dims<T>();
+
+      Tensor out_fp32;
+      OP_REQUIRES_OK(c, c->allocate_temp(DataTypeToEnum<float>::value,
+                                         params.shape(), &out_fp32));
+      auto out_fp32_flat = out_fp32.flat_outer_dims<float>();
 
       if (TensorShapeUtils::IsScalar(updates.shape())) {
         const auto update = updates.scalar<T>();
 
         functor::ScatterScalarFunctor<Device, T, Index, op> functor;
-        const Index bad_i = functor(c, c->template eigen_device<Device>(),
-                                    params_flat, update, indices_flat);
+        const Index bad_i = functor(c, c->eigen_device<Device>(), params_flat,
+                                    update, indices_flat, out_fp32_flat);
         OP_REQUIRES(c, bad_i < 0,
                     errors::InvalidArgument(
                         "indices", SliceDebugString(indices.shape(), bad_i),
@@ -400,179 +407,11 @@ class ResourceScatterUpdateOp : public OpKernel {
                         ") is not compatible with the shape of updates (",
                         updates.shape().DebugString(), ")"));
         auto updates_flat = updates.shaped<T, 2>({N, num_updates / N});
+
         functor::ScatterFunctor<Device, T, Index, op> functor;
-        const Index bad_i = functor(c, c->template eigen_device<Device>(),
-                                    params_flat, updates_flat, indices_flat);
-        OP_REQUIRES(c, bad_i < 0,
-                    errors::InvalidArgument(
-                        "indices", SliceDebugString(indices.shape(), bad_i),
-                        " = ", indices_flat(bad_i), " is not in [0, ",
-                        params.dim_size(0), ")"));
-      }
-    }
-  }
-};
-
-// TODO(itex): Remove this specialization template when DPCPP atomic operators
-// support bf16 datatype.
-template <typename Device, typename Index, scatter_op::UpdateOp op>
-class ResourceScatterUpdateOp<Device, typename Eigen::bfloat16, Index, op>
-    : public OpKernel {
- public:
-  explicit ResourceScatterUpdateOp(OpKernelConstruction* c) : OpKernel(c) {}
-
-  void Compute(OpKernelContext* c) override {
-    auto locks = MaybeLockVariableInputMutexesInOrder<Device, Eigen::bfloat16>(
-        c, /* do_lock */ true, /* sparse */ true, {0});
-
-    Tensor params;
-    OP_REQUIRES_OK(
-        c, GetInputTensorFromVariable<Device, Eigen::bfloat16>(
-               c, 0, /* lock_held unused */ true, /* sparse */ true, &params));
-
-    const Tensor& indices = c->input(1);
-    const Tensor& updates = c->input(2);
-
-    // Check that we have enough index space
-    const int64 N_big = indices.NumElements();
-    OP_REQUIRES(
-        c, N_big <= std::numeric_limits<Index>::max(),
-        errors::InvalidArgument("indices has too many elements for ",
-                                DataTypeString(DataTypeToEnum<Index>::v()),
-                                " indexing: ", N_big, " > ",
-                                std::numeric_limits<Index>::max()));
-    const Index N = static_cast<Index>(N_big);
-    OP_REQUIRES(
-        c, params.dim_size(0) <= std::numeric_limits<Index>::max(),
-        errors::InvalidArgument("params.shape[0] too large for ",
-                                DataTypeString(DataTypeToEnum<Index>::v()),
-                                " indexing: ", params.dim_size(0), " > ",
-                                std::numeric_limits<Index>::max()));
-
-    if (N > 0) {
-      auto index_size = indices.NumElements() * sizeof(Index);
-      Tensor indices_host;
-      AllocatorAttributes attr;
-      attr.set_on_host(true);
-      OP_REQUIRES_OK(c, c->allocate_temp(indices.dtype(), indices.shape(),
-                                         &indices_host, attr));
-      auto src_ptr = indices.data();
-      auto dst_ptr = indices_host.data();
-      c->eigen_device<Device>().memcpyHostToDevice(dst_ptr, src_ptr,
-                                                   index_size);
-
-      auto indices_flat = indices_host.flat<Index>();
-      auto params_flat = params.flat_outer_dims<Eigen::bfloat16>();
-
-      if (TensorShapeUtils::IsScalar(updates.shape())) {
-        const auto update = updates.scalar<Eigen::bfloat16>();
-
-        functor::ScatterScalarFunctor<Device, Eigen::bfloat16, Index, op>
-            functor;
-        const Index bad_i = functor(c, c->eigen_device<Device>(), params_flat,
-                                    update, indices_flat);
-        OP_REQUIRES(c, bad_i < 0,
-                    errors::InvalidArgument(
-                        "indices", SliceDebugString(indices.shape(), bad_i),
-                        " = ", indices_flat(bad_i), " is not in [0, ",
-                        params.dim_size(0), ")"));
-      } else {
-        int64 num_updates = updates.NumElements();
-        OP_REQUIRES(c, num_updates % N == 0,
-                    errors::InvalidArgument(
-                        "shape of indices (", indices.shape().DebugString(),
-                        ") is not compatible with the shape of updates (",
-                        updates.shape().DebugString(), ")"));
-        auto updates_flat =
-            updates.shaped<Eigen::bfloat16, 2>({N, num_updates / N});
-
-        functor::ScatterFunctor<Device, Eigen::bfloat16, Index, op> functor;
-        const Index bad_i = functor(c, c->template eigen_device<Device>(),
-                                    params_flat, updates_flat, indices_flat);
-        OP_REQUIRES(c, bad_i < 0,
-                    errors::InvalidArgument(
-                        "indices", SliceDebugString(indices.shape(), bad_i),
-                        " = ", indices_flat(bad_i), " is not in [0, ",
-                        params.dim_size(0), ")"));
-      }
-    }
-  }
-};
-
-// TODO(itex): Remove this specialization template when DPCPP atomic operators
-// support fp16 datatype.
-template <typename Device, typename Index, scatter_op::UpdateOp op>
-class ResourceScatterUpdateOp<Device, typename Eigen::half, Index, op>
-    : public OpKernel {
- public:
-  explicit ResourceScatterUpdateOp(OpKernelConstruction* c) : OpKernel(c) {}
-
-  void Compute(OpKernelContext* c) override {
-    auto locks = MaybeLockVariableInputMutexesInOrder<Device, Eigen::half>(
-        c, /* do_lock */ true, /* sparse */ true, {0});
-
-    Tensor params;
-    OP_REQUIRES_OK(
-        c, GetInputTensorFromVariable<Device, Eigen::half>(
-               c, 0, /* lock_held unused */ true, /* sparse */ true, &params));
-
-    const Tensor& indices = c->input(1);
-    const Tensor& updates = c->input(2);
-
-    // Check that we have enough index space
-    const int64 N_big = indices.NumElements();
-    OP_REQUIRES(
-        c, N_big <= std::numeric_limits<Index>::max(),
-        errors::InvalidArgument("indices has too many elements for ",
-                                DataTypeString(DataTypeToEnum<Index>::v()),
-                                " indexing: ", N_big, " > ",
-                                std::numeric_limits<Index>::max()));
-    const Index N = static_cast<Index>(N_big);
-    OP_REQUIRES(
-        c, params.dim_size(0) <= std::numeric_limits<Index>::max(),
-        errors::InvalidArgument("params.shape[0] too large for ",
-                                DataTypeString(DataTypeToEnum<Index>::v()),
-                                " indexing: ", params.dim_size(0), " > ",
-                                std::numeric_limits<Index>::max()));
-
-    if (N > 0) {
-      auto index_size = indices.NumElements() * sizeof(Index);
-      Tensor indices_host;
-      AllocatorAttributes attr;
-      attr.set_on_host(true);
-      OP_REQUIRES_OK(c, c->allocate_temp(indices.dtype(), indices.shape(),
-                                         &indices_host, attr));
-      auto src_ptr = indices.data();
-      auto dst_ptr = indices_host.data();
-      c->eigen_device<Device>().memcpyHostToDevice(dst_ptr, src_ptr,
-                                                   index_size);
-
-      auto indices_flat = indices_host.flat<Index>();
-      auto params_flat = params.flat_outer_dims<Eigen::half>();
-      if (TensorShapeUtils::IsScalar(updates.shape())) {
-        const auto update = updates.scalar<Eigen::half>();
-
-        functor::ScatterScalarFunctor<Device, Eigen::half, Index, op> functor;
-        const Index bad_i = functor(c, c->eigen_device<Device>(), params_flat,
-                                    update, indices_flat);
-        OP_REQUIRES(c, bad_i < 0,
-                    errors::InvalidArgument(
-                        "indices", SliceDebugString(indices.shape(), bad_i),
-                        " = ", indices_flat(bad_i), " is not in [0, ",
-                        params.dim_size(0), ")"));
-      } else {
-        int64 num_updates = updates.NumElements();
-        OP_REQUIRES(c, num_updates % N == 0,
-                    errors::InvalidArgument(
-                        "shape of indices (", indices.shape().DebugString(),
-                        ") is not compatible with the shape of updates (",
-                        updates.shape().DebugString(), ")"));
-        auto updates_flat =
-            updates.shaped<Eigen::half, 2>({N, num_updates / N});
-
-        functor::ScatterFunctor<Device, Eigen::half, Index, op> functor;
-        const Index bad_i = functor(c, c->template eigen_device<Device>(),
-                                    params_flat, updates_flat, indices_flat);
+        const Index bad_i =
+            functor(c, c->template eigen_device<Device>(), params_flat,
+                    updates_flat, indices_flat, out_fp32_flat);
         OP_REQUIRES(c, bad_i < 0,
                     errors::InvalidArgument(
                         "indices", SliceDebugString(indices.shape(), bad_i),
