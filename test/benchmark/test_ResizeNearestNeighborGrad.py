@@ -48,7 +48,7 @@ class ResizeNearestNeighborGradTest(test.TestCase):
     def testResizeNearestNeighborGrad(self):
         for dtype in FLOAT_COMPUTE_TYPE:
             # should not use too large size, otherwise it will fail to allocate memory
-            for in_size in zip([[1,4,6,1], [5,7,9,1]], [[1,2,3,1], [5,4,6,5]]):
+            for in_size in zip([[1,4,6,1], [5,7,9,1]], [[1,2,3,1], [5,4,6,1]]):
                 self._test_impl(in_size[0], in_size[1], dtype)
 
 if __name__ == '__main__':
