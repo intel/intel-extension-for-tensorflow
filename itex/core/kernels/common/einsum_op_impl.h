@@ -15,8 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef ITEX_CORE_KERNELS_COMMON_LINALG_EINSUM_OP_IMPL_H_
-#define ITEX_CORE_KERNELS_COMMON_LINALG_EINSUM_OP_IMPL_H_
+#ifndef ITEX_CORE_KERNELS_COMMON_EINSUM_OP_IMPL_H_
+#define ITEX_CORE_KERNELS_COMMON_EINSUM_OP_IMPL_H_
 
 #include <algorithm>
 #include <memory>
@@ -847,4 +847,4 @@ class EinsumOp : public OpKernel {
   bool output_has_ellipsis_ = false;
 };
 }  // namespace itex
-#endif  // ITEX_CORE_KERNELS_GPU_LINALG_EINSUM_OP_IMPL_H_
+#endif  // ITEX_CORE_KERNELS_COMMON_EINSUM_OP_IMPL_H_

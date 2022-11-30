@@ -1,5 +1,5 @@
-#ifndef ITEX_CORE_KERNELS_COMMON_LINALG_EINSUM_OP_H_
-#define ITEX_CORE_KERNELS_COMMON_LINALG_EINSUM_OP_H_
+#ifndef ITEX_CORE_KERNELS_COMMON_EINSUM_OP_H_
+#define ITEX_CORE_KERNELS_COMMON_EINSUM_OP_H_
 
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/tensor_types.h"
@@ -52,4 +52,4 @@ TF_CALL_GPU_NUMBER_TYPES(DECLARE_SPECS);
 
 }  // namespace functor
 }  // namespace itex
-#endif  // ITEX_CORE_KERNELS_COMMON_LINALG_EINSUM_OP_H_
+#endif  // ITEX_CORE_KERNELS_COMMON_EINSUM_OP_H_
