@@ -3467,7 +3467,7 @@ void Register_OneDnnResizeNearestNeighborOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "images_meta: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "size_meta: uint8");
 
-    TF_OpDefinitionBuilderAddOutput(op_builder, "resized_images: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "resized_images: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "resized_images_meta: uint8");
 
     TF_OpDefinitionBuilderAddAttr(op_builder,
