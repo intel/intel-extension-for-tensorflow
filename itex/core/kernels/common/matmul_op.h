@@ -732,15 +732,21 @@ class FusedMatMulGradOp : public OpKernel {
  public:
   explicit FusedMatMulGradOp(OpKernelConstruction* context)
       : OpKernel(context) {
-    OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops_));
-    OP_REQUIRES_OK(context, context->GetAttr("transpose_a", &transpose_a_));
-    OP_REQUIRES_OK(context, context->GetAttr("transpose_b", &transpose_b_));
+    bool transpose_b;
+    std::vector<string> fused_ops;
 
-    OP_REQUIRES(context, fused_ops_.size() == 1,
+    OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops));
+    OP_REQUIRES_OK(context, context->GetAttr("transpose_a", &transpose_a_));
+    OP_REQUIRES_OK(context, context->GetAttr("transpose_b", &transpose_b));
+    OP_REQUIRES(context, !transpose_b,
+                errors::InvalidArgument(
+                    "_FusedMatMulGrad only supports transpose_b = false."));
+
+    OP_REQUIRES(context, fused_ops.size() == 1,
                 errors::InvalidArgument(
                     "_FusedMatMulGrad must have 1 post-arguments at most."));
     OP_REQUIRES(
-        context, fused_ops_[0] == "BiasAddGrad",
+        context, fused_ops[0] == "BiasAddGrad",
         errors::InvalidArgument(
             "The 1st post-argument of _FusedMatMulGrad must be BiasAddGrad."));
     fp32_math_mode_ = GetFP32MathMode<Device>();
@@ -758,8 +764,8 @@ class FusedMatMulGradOp : public OpKernel {
   }
 
   void InitOrSetMemory(OpKernelContext* context) {
-    diff_weight_tensor_ = nullptr;
-    diff_bias_tensor_ = nullptr;
+    Tensor* diff_weight_tensor = nullptr;
+    Tensor* diff_bias_tensor = nullptr;
 
     if (enable_cache_ && is_init_ &&
         context->is_input_same(kSrcIndex_, input_dims_) &&
@@ -769,12 +775,21 @@ class FusedMatMulGradOp : public OpKernel {
 
       OP_REQUIRES_OK(context, context->allocate_output(kDiffWeightIndex_,
                                                        diff_weight_tf_shape_,
-                                                       &diff_weight_tensor_));
+                                                       &diff_weight_tensor));
       OP_REQUIRES_OK(context, context->allocate_output(kDiffBiasIndex_,
                                                        diff_bias_tf_shape_,
-                                                       &diff_bias_tensor_));
-      diff_weight_mem_.set_data_handle(GetTensorBuffer<T>(diff_weight_tensor_));
-      diff_bias_mem_.set_data_handle(GetTensorBuffer<Tgrad>(diff_bias_tensor_));
+                                                       &diff_bias_tensor));
+
+      diff_weight_mem_.set_data_handle(GetTensorBuffer<T>(diff_weight_tensor));
+      if (is_reorder_) {
+        diff_weight_mem_prefer_.set_data_handle(
+            GetTensorBuffer<T>(&tmp_reorder_));
+      } else {
+        diff_weight_mem_prefer_.set_data_handle(
+            GetTensorBuffer<T>(diff_weight_tensor));
+      }
+
+      diff_bias_mem_.set_data_handle(GetTensorBuffer<Tgrad>(diff_bias_tensor));
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
                                             TensorShape({scratchpad_size_}),
@@ -824,43 +839,52 @@ class FusedMatMulGradOp : public OpKernel {
                                                 ? dnnl::memory::format_tag::cn
                                                 : dnnl::memory::format_tag::nc;
       dnnl::memory::format_tag diff_weight_format =
-          transpose_b_ ? dnnl::memory::format_tag::oi
-                       : dnnl::memory::format_tag::io;
-      dnnl::memory::format_tag diff_dst_format = dnnl::memory::format_tag::nc;
+          dnnl::memory::format_tag::io;
+      // Don't use block format on GPU since it has tranpose load.
+      dnnl::memory::format_tag diff_weight_format_prefer =
+          std::is_same<Device, CPUDevice>::value ? dnnl::memory::format_tag::any
+                                                 : diff_weight_format;
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(fp32_math_mode_);
       }
+
       auto src_md = dnnl::memory::desc(src_dims, OneDnnType<T>(), src_format);
-      auto diff_dst_md =
-          dnnl::memory::desc(diff_dst_dims, OneDnnType<T>(), diff_dst_format);
+      auto diff_dst_md = dnnl::memory::desc(diff_dst_dims, OneDnnType<T>(),
+                                            dnnl::memory::format_tag::nc);
       auto diff_weight_md = dnnl::memory::desc(
           diff_weight_dims, OneDnnType<T>(), diff_weight_format);
+      auto diff_weight_md_prefer = dnnl::memory::desc(
+          diff_weight_dims, OneDnnType<T>(), diff_weight_format_prefer);
       auto diff_bias_md = dnnl::memory::desc(
-          {diff_bias_dims}, OneDnnType<Tgrad>(), dnnl::memory::format_tag::x);
+          diff_bias_dims, OneDnnType<Tgrad>(), dnnl::memory::format_tag::x);
+
       auto fwd_desc = dnnl::inner_product_forward::desc(
-          dnnl::prop_kind::forward, src_md, diff_weight_md, diff_bias_md,
+          dnnl::prop_kind::forward, src_md, diff_weight_md_prefer, diff_bias_md,
           diff_dst_md);
       auto fwd_pd = dnnl::inner_product_forward::primitive_desc(fwd_desc, attr,
                                                                 onednn_engine_);
       auto bwd_desc = dnnl::inner_product_backward_weights::desc(
-          src_md, diff_weight_md, diff_bias_md, diff_dst_md);
+          src_md, diff_weight_md_prefer, diff_bias_md, diff_dst_md);
       auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
           bwd_desc, attr, onednn_engine_, fwd_pd);
       matmul_bwd_primitive_ =
           dnnl::inner_product_backward_weights(matmul_bwd_pd);
+
       // Allocate output tensors.
-      diff_weight_tf_shape_ =
-          transpose_b_ ? TensorShape({channel, k}) : TensorShape({k, channel});
+      Tensor* diff_weight_tensor = nullptr;
+      Tensor* diff_bias_tensor = nullptr;
+      diff_weight_tf_shape_ = TensorShape({k, channel});
       OP_REQUIRES_OK(context, context->allocate_output(kDiffWeightIndex_,
                                                        diff_weight_tf_shape_,
-                                                       &diff_weight_tensor_));
+                                                       &diff_weight_tensor));
       diff_bias_tf_shape_ = TensorShape({channel});
       OP_REQUIRES_OK(context, context->allocate_output(kDiffBiasIndex_,
                                                        diff_bias_tf_shape_,
-                                                       &diff_bias_tensor_));
+                                                       &diff_bias_tensor));
+
       // Create memory primitive.
       src_mem_ = CreateDnnlMemory(src_md, onednn_engine_,
                                   GetTensorBuffer<T>(&src_tensor));
@@ -868,10 +892,10 @@ class FusedMatMulGradOp : public OpKernel {
                                        GetTensorBuffer<T>(&diff_dst_tensor));
       diff_bias_mem_ =
           CreateDnnlMemory(diff_bias_md, onednn_engine_,
-                           GetTensorBuffer<Tgrad>(diff_bias_tensor_));
+                           GetTensorBuffer<Tgrad>(diff_bias_tensor));
       diff_weight_mem_ =
-          CreateDnnlMemory(matmul_bwd_pd.diff_weights_desc(), onednn_engine_,
-                           GetTensorBuffer<T>(diff_weight_tensor_));
+          CreateDnnlMemory(diff_weight_md, onednn_engine_,
+                           GetTensorBuffer<T>(diff_weight_tensor));
       scratchpad_size_ = matmul_bwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
@@ -880,10 +904,27 @@ class FusedMatMulGradOp : public OpKernel {
       scratchpad_mem_ =
           dnnl::memory(matmul_bwd_pd.scratchpad_desc(), onednn_engine_,
                        GetTensorBuffer<T>(scratchpad_tensor_.get()));
+
+      // Reorder diff weight for better performance.
+      diff_weight_md_prefer = matmul_bwd_pd.diff_weights_desc();
+      is_reorder_ = (diff_weight_md != diff_weight_md_prefer);
+      if (is_reorder_) {
+        int64_t reorder_size = diff_weight_md_prefer.get_size() / sizeof(T);
+        OP_REQUIRES_OK(
+            context,
+            context->allocate_temp(DataTypeToEnum<T>::v(),
+                                   TensorShape({reorder_size}), &tmp_reorder_));
+        diff_weight_mem_prefer_ =
+            CreateDnnlMemory(diff_weight_md_prefer, onednn_engine_,
+                             GetTensorBuffer<T>(&tmp_reorder_));
+      } else {
+        diff_weight_mem_prefer_ = diff_weight_mem_;
+      }
+
       // Execute.
       fwd_primitive_args_ = {{DNNL_ARG_SRC, src_mem_},
                              {DNNL_ARG_DIFF_DST, diff_dst_mem_},
-                             {DNNL_ARG_DIFF_WEIGHTS, diff_weight_mem_},
+                             {DNNL_ARG_DIFF_WEIGHTS, diff_weight_mem_prefer_},
                              {DNNL_ARG_DIFF_BIAS, diff_bias_mem_},
                              {DNNL_ARG_SCRATCHPAD, scratchpad_mem_}};
       is_init_ = true;
@@ -904,7 +945,13 @@ class FusedMatMulGradOp : public OpKernel {
     scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
     matmul_bwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+
     scratchpad_tensor_.reset();
+    // Reorder diff weight to plain format if it's reordered.
+    if (is_reorder_) {
+      ReorderMemory(*context, &diff_weight_mem_prefer_, &diff_weight_mem_,
+                    onednn_engine_);
+    }
   }
 
  protected:
@@ -920,16 +967,14 @@ class FusedMatMulGradOp : public OpKernel {
   dnnl::engine onednn_engine_;
   dnnl::inner_product_backward_weights matmul_bwd_primitive_;
   dnnl::memory src_mem_, diff_dst_mem_, diff_bias_mem_, diff_weight_mem_,
-      scratchpad_mem_;
+      diff_weight_mem_prefer_, scratchpad_mem_;
+  Tensor tmp_reorder_;
   std::shared_ptr<Tensor> scratchpad_tensor_;
   int64 scratchpad_size_ = 0;
-  Tensor* diff_weight_tensor_ = nullptr;
-  Tensor* diff_bias_tensor_ = nullptr;
   TensorShape diff_weight_tf_shape_, diff_bias_tf_shape_;
   std::vector<int64> input_dims_, diff_dst_dims_;
+  bool is_reorder_;
   bool transpose_a_;
-  bool transpose_b_;
-  std::vector<string> fused_ops_;
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
 };
 
