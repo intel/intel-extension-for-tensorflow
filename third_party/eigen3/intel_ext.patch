@@ -1,5 +1,5 @@
 diff --git a/Eigen/Core b/Eigen/Core
-index f44b77831..2c20e5e19 100644
+index f44b77831..9721cc60d 100644
 --- a/Eigen/Core
 +++ b/Eigen/Core
 @@ -29,7 +29,6 @@
@@ -10,7 +10,7 @@ index f44b77831..2c20e5e19 100644
  #ifdef EIGEN_EXCEPTIONS
    #include <new>
  #endif
-@@ -106,13 +105,19 @@
+@@ -106,13 +105,21 @@
    #include <intrin.h>
  #endif
  
@@ -21,18 +21,19 @@ index f44b77831..2c20e5e19 100644
    #undef isnan
    #undef isinf
    #undef isfinite
--  #include <CL/sycl.hpp>
-+#if __has_include(<sycl/sycl.hpp>)
-+#include <sycl/sycl.hpp>
-+#elif __has_include(<CL/sycl.hpp>)
-+#include <CL/sycl.hpp>
-+#else
-+#error "Unsupported compiler"
-+#endif
++
++  #if __has_include(<sycl/sycl.hpp>)
++  #include <sycl/sycl.hpp>
++  #elif __has_include(<CL/sycl.hpp>)
+   #include <CL/sycl.hpp>
++  #else
++  #error "Unsupported compiler"
++  #endif
++  
    #include <map>
    #include <memory>
    #include <utility>
-@@ -166,8 +171,13 @@ using std::ptrdiff_t;
+@@ -166,8 +173,13 @@ using std::ptrdiff_t;
  #include "src/Core/MathFunctionsImpl.h"
  #include "src/Core/arch/Default/ConjHelper.h"
  // Generic half float support
@@ -46,7 +47,7 @@ index f44b77831..2c20e5e19 100644
  #include "src/Core/arch/Default/TypeCasting.h"
  #include "src/Core/arch/Default/GenericPacketMathFunctionsFwd.h"
  
-@@ -218,6 +228,19 @@ using std::ptrdiff_t;
+@@ -218,6 +230,19 @@ using std::ptrdiff_t;
    #include "src/Core/arch/MSA/Complex.h"
  #endif
  
@@ -66,7 +67,7 @@ index f44b77831..2c20e5e19 100644
  #if defined EIGEN_VECTORIZE_GPU
    #include "src/Core/arch/GPU/PacketMath.h"
    #include "src/Core/arch/GPU/MathFunctions.h"
-@@ -234,16 +257,15 @@ using std::ptrdiff_t;
+@@ -234,16 +259,15 @@ using std::ptrdiff_t;
  #endif
  #endif
  
@@ -352,10 +353,10 @@ index 76f3366d7..e4cbafc05 100644
    // output.value = static_cast<uint16_t>(input);
 diff --git a/Eigen/src/Core/arch/DPCPP/BFloat16.h b/Eigen/src/Core/arch/DPCPP/BFloat16.h
 new file mode 100644
-index 000000000..5666b9a0d
+index 000000000..f790d8ce6
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/BFloat16.h
-@@ -0,0 +1,674 @@
+@@ -0,0 +1,694 @@
 +/* Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 +
 +Licensed under the Apache License, Version 2.0 (the "License");
@@ -812,6 +813,26 @@ index 000000000..5666b9a0d
 +#endif
 +    return result;
 +}
++
++#ifndef EIGEN_DONT_VECTORIZE_SYCL
++
++template <int PACKET_SIZE>
++EIGEN_ALWAYS_INLINE EIGEN_DEVICE_FUNC sycl::vec<unsigned short, PACKET_SIZE> F32ToBf16(const sycl::vec<float, PACKET_SIZE>& a) {
++  sycl::vec<unsigned short, PACKET_SIZE> nan(0x7fc0); 
++  sycl::vec<short, PACKET_SIZE> isnan = sycl::isnan(a).template convert<short, sycl::rounding_mode::automatic>();
++  sycl::vec<unsigned int, PACKET_SIZE> input = *reinterpret_cast<const sycl::vec<unsigned int, PACKET_SIZE>*>(&a);
++  input = (input + ((input >> 16) & 1) + 0x7fff) >> 16;
++  return sycl::select(input.template convert<unsigned short, sycl::rounding_mode::automatic>(), nan, isnan);
++}
++
++template <int PACKET_SIZE>
++EIGEN_ALWAYS_INLINE EIGEN_DEVICE_FUNC sycl::vec<float, PACKET_SIZE> Bf16ToF32(const sycl::vec<unsigned short, PACKET_SIZE>& a) {
++  sycl::vec<unsigned int, PACKET_SIZE> r;
++  r = a.template convert<uint32_t, sycl::rounding_mode::automatic>() << 16;
++  return *reinterpret_cast<sycl::vec<float, PACKET_SIZE>*>(&r);
++}
++
++#endif // EIGEN_DONT_VECTORIZE_SYCL
 +// --- standard functions ---
 +
 +EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool (isinf)(const bfloat16& a) {
@@ -1747,10 +1768,10 @@ index 000000000..135b1b9c8
 +#endif // EIGEN_HALF_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/InteropHeaders.h b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
 new file mode 100644
-index 000000000..580225796
+index 000000000..0632da9e1
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
-@@ -0,0 +1,508 @@
+@@ -0,0 +1,518 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -1779,12 +1800,20 @@ index 000000000..580225796
 +#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +
 +namespace internal {
-+
-+typedef sycl::vec<bool,16> cl_bool16;
-+typedef sycl::vec<unsigned short, 8> Packet8bf16;
-+typedef sycl::vec<unsigned short, 4> Packet4bf16;
-+typedef sycl::vec<unsigned short, 2> Packet2bf16;
 +typedef sycl::ulonglong2 Packet4h2;
++typedef sycl::vec<bool,16> cl_bool16;
++
++#define PACKET_TYPE_ALIAS(length)                                 \
++  typedef sycl::vec<unsigned short, length> Packet##length##bf16; \
++  typedef sycl::vec<short , length> Packet##length##i16;          \
++  typedef sycl::vec<float, length> Packet##length##f32;           \
++  typedef sycl::vec<unsigned int, length> Packet##length##u32;    \
++  typedef sycl::vec<int, length> Packet##length##i32;
++
++PACKET_TYPE_ALIAS(2);
++PACKET_TYPE_ALIAS(4);
++PACKET_TYPE_ALIAS(8);
++#undef PACKET_TYPE_ALIAS
 +
 +template <bool is_vectorized, int lengths>
 +struct dpcpp_packet_traits : default_packet_traits {
@@ -1919,7 +1948,9 @@ index 000000000..580225796
 +    enum { size = lengths, vectorizable = true, alignment = Aligned16 }; \
 +    typedef packet_type half;                                            \
 +  };
++SYCL_UNPACKET_TRAITS(sycl::cl_float2, float, 2)
 +SYCL_UNPACKET_TRAITS(sycl::cl_float4, float, 4)
++SYCL_UNPACKET_TRAITS(sycl::cl_float8, float, 8)
 +SYCL_UNPACKET_TRAITS(cl_bool16, bool, 16)
 +
 +#undef SYCL_UNPACKET_TRAITS
@@ -2261,10 +2292,10 @@ index 000000000..580225796
 +#endif  // EIGEN_INTEROP_HEADERS_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/MathFunctions.h b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
 new file mode 100644
-index 000000000..cf21bdd6b
+index 000000000..b030b6ad3
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
-@@ -0,0 +1,610 @@
+@@ -0,0 +1,539 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -2296,10 +2327,6 @@ index 000000000..cf21bdd6b
 +// introduce conflicts between these packet_traits definitions and the ones
 +// we'll use on the host side (SSE, AVX, ...)
 +#ifdef DPCPP_DEVICE_ONLY
-+typedef sycl::ulonglong2 Packet4h2;
-+typedef sycl::vec<unsigned short, 2> Packet2bf16;
-+typedef sycl::vec<unsigned short, 4> Packet4bf16;
-+typedef sycl::vec<unsigned short, 8> Packet8bf16;
 +
 +#define SYCL_PLOG(packet_type)                                         \
 +  template <>                                                          \
@@ -2602,38 +2629,24 @@ index 000000000..cf21bdd6b
 +SYCL_PACKET_MATH_UNARY_HALF8(lgamma)
 +#undef SYCL_PACKET_MATH_UNARY_HALF8
 +
-+#define SYCL_PACKET_MATH_UNARY_BFLOAT16(expr)                              \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2bf16 p##expr<Packet2bf16>(  \
-+      const Packet2bf16& a) {                                              \
-+    Eigen::bfloat16 a_x = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())));    \
-+    Eigen::bfloat16 a_y = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())));    \
-+    return Packet2bf16(a_x.value, a_y.value);                              \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4bf16 p##expr<Packet4bf16>(  \
-+      const Packet4bf16& a) {                                              \
-+    Eigen::bfloat16 a_x = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())));    \
-+    Eigen::bfloat16 a_y = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())));    \
-+    Eigen::bfloat16 a_z = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())));    \
-+    Eigen::bfloat16 a_w = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())));    \
-+    return Packet4bf16(a_x.value, a_y.value, a_z.value, a_w.value);        \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf16 p##expr<Packet8bf16>(  \
-+      const Packet8bf16& a) {                                              \
-+    Packet8bf16 r;                                                         \
-+    Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);             \
-+    const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a); \
-+    r_alias[0] = p##expr<Packet4bf16>(a_alias[0]);                         \
-+    r_alias[1] = p##expr<Packet4bf16>(a_alias[1]);                         \
-+    return r;                                                              \
++#define SYCL_PACKET_MATH_UNARY_BFLOAT16(expr)                             \
++  template <>                                                             \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2bf16 p##expr<Packet2bf16>( \
++      const Packet2bf16& a) {                                             \
++    Packet2f32 r = sycl::expr(Eigen::bfloat16_impl::Bf16ToF32<2>(a));     \
++    return Eigen::bfloat16_impl::F32ToBf16<2>(r);                         \
++  }                                                                       \
++  template <>                                                             \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4bf16 p##expr<Packet4bf16>( \
++      const Packet4bf16& a) {                                             \
++    Packet4f32 r = sycl::expr(Eigen::bfloat16_impl::Bf16ToF32<4>(a));     \
++    return Eigen::bfloat16_impl::F32ToBf16<4>(r);                         \
++  }                                                                       \
++  template <>                                                             \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf16 p##expr<Packet8bf16>( \
++      const Packet8bf16& a) {                                             \
++    Packet8f32 r = sycl::expr(Eigen::bfloat16_impl::Bf16ToF32<8>(a));     \
++    return Eigen::bfloat16_impl::F32ToBf16<8>(r);                         \
 +  }
 +
 +SYCL_PACKET_MATH_UNARY_BFLOAT16(log)
@@ -2711,66 +2724,42 @@ index 000000000..cf21bdd6b
 +  return r;
 +}
 +
-+#define SYCL_PACKET_MATH_BINARY_BFLOAT16(expr)                             \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2bf16 p##expr<Packet2bf16>(  \
-+      const Packet2bf16& a, const Packet2bf16& b) {                        \
-+    Eigen::bfloat16 x##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x())));    \
-+    Eigen::bfloat16 y##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y())));    \
-+    return Packet2bf16(x##expr.value, y##expr.value);                      \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4bf16 p##expr<Packet4bf16>(  \
-+      const Packet4bf16& a, const Packet4bf16& b) {                        \
-+    Eigen::bfloat16 x##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x())));    \
-+    Eigen::bfloat16 y##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y())));    \
-+    Eigen::bfloat16 z##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z())));    \
-+    Eigen::bfloat16 w##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w())));    \
-+    return Packet4bf16(x##expr.value, y##expr.value,                       \
-+                       z##expr.value, w##expr.value);                      \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf16 p##expr<Packet8bf16>(  \
-+      const Packet8bf16& a, const Packet8bf16& b) {                        \
-+    Packet8bf16 r;                                                         \
-+    Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);             \
-+    const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a); \
-+    const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b); \
-+    r_alias[0] = p##expr<Packet4bf16>(a_alias[0], b_alias[0]);             \
-+    r_alias[1] = p##expr<Packet4bf16>(a_alias[1], b_alias[1]);             \
-+    return r;                                                              \
++#define SYCL_PACKET_MATH_BINARY_BFLOAT16(expr, in_type, out_type)               \
++  template <>                                                                   \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE in_type p##expr<in_type>(               \
++      const in_type& a, const in_type& b) {                                     \
++    out_type r = sycl::f##expr(                                                 \
++        Eigen::bfloat16_impl::Bf16ToF32<unpacket_traits<in_type>::size>(a),     \
++        Eigen::bfloat16_impl::Bf16ToF32<unpacket_traits<in_type>::size>(b));    \
++    return Eigen::bfloat16_impl::F32ToBf16<unpacket_traits<out_type>::size>(r); \
 +  }
 +
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(max);
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(min);
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, Packet8bf16, Packet8f32)
 +#undef SYCL_PACKET_MATH_BINARY_BFLOAT16
 +
-+#define SYCL_PISNAN(INTYPE)                                      \
-+  template<>                                                     \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>                   \
-+  pisnan<sycl::vec<bool, packet_traits<INTYPE>::size>,           \
-+         typename packet_traits<INTYPE>::type>(                  \
-+         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;     \
-+    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isnan(a[i]);                         \
-+    return packet_res;                                           \
++#define SYCL_PISNAN(INTYPE, EXPR)                            \
++  template<>                                                 \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                      \
++  sycl::vec<bool, packet_traits<INTYPE>::size>               \
++  p##EXPR<sycl::vec<bool, packet_traits<INTYPE>::size>,      \
++         typename packet_traits<INTYPE>::type>(              \
++         const typename packet_traits<INTYPE>::type& a) {    \
++    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
++    auto res = sycl::EXPR(a);                                \
++    __pragma(unroll)                                         \
++    for(int i = 0; i < packet_traits<INTYPE>::size; i++)     \
++      packet_res[i] = res[i] ? 1 : 0;                        \
++    return packet_res;                                       \
 +  }
 +
-+SYCL_PISNAN(float)
++SYCL_PISNAN(float, isnan)
++SYCL_PISNAN(float, isfinite)
++SYCL_PISNAN(float, isinf)
 +#undef SYCL_PISNAN
 +
 +template<>
@@ -2780,6 +2769,7 @@ index 000000000..cf21bdd6b
 +       typename packet_traits<Eigen::half>::type>(
 +       const typename packet_traits<Eigen::half>::type& a) {
 +  sycl::vec<bool, packet_traits<Eigen::half>::size> packet_res;
++#pragma unroll
 +  for(int i=0; i < packet_traits<Eigen::half>::size / 2; i++) {
 +    const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a);
 +    packet_res[2*i] = sycl::isnan(a_alias[i].x());
@@ -2787,22 +2777,6 @@ index 000000000..cf21bdd6b
 +  }
 +  return packet_res;
 +}
-+
-+#define SYCL_PISFINITE(INTYPE)                                   \
-+  template<>                                                     \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>                   \
-+  pisfinite<sycl::vec<bool, packet_traits<INTYPE>::size>,        \
-+         typename packet_traits<INTYPE>::type>(                  \
-+         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;     \
-+    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isfinite(a[i]);                      \
-+    return packet_res;                                           \
-+  }
-+
-+SYCL_PISFINITE(float)
-+#undef SYCL_PISFINITE
 +
 +template<>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
@@ -2819,22 +2793,6 @@ index 000000000..cf21bdd6b
 +  return packet_res;
 +}
 +
-+#define SYCL_PISINF(INTYPE)                                      \
-+  template<>                                                     \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>                   \
-+  pisinf<sycl::vec<bool, packet_traits<INTYPE>::size>,           \
-+         typename packet_traits<INTYPE>::type>(                  \
-+         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;     \
-+    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isinf(a[i]);                         \
-+    return packet_res;                                           \
-+  }
-+
-+SYCL_PISINF(float)
-+#undef SYCL_PISINF
-+
 +template<>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
 +sycl::vec<bool, packet_traits<Eigen::half>::size>
@@ -2850,22 +2808,24 @@ index 000000000..cf21bdd6b
 +  return packet_res;
 +}
 +
-+#define SYCL_PACKET_MATH_ANOMALY_BFLOAT16(expr)                          \
-+  template <>                                                            \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                                  \
-+  sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>                  \
-+  p##expr<sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>,         \
-+          typename packet_traits<Eigen::bfloat16>::type>(                \
-+              const typename packet_traits<Eigen::bfloat16>::type& a) {  \
-+    sycl::vec<bool, packet_traits<Eigen::bfloat16>::size> packet_res;    \
-+    for(int i = 0; i < packet_traits<Eigen::bfloat16>::size; ++i)        \
-+      packet_res[i] = Eigen::numext::expr(                               \
-+          Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a[i]))); \
-+    return packet_res;                                                   \
++#define SYCL_PACKET_MATH_ANOMALY_BFLOAT16(EXPR)                                    \
++  template <>                                                                      \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                                            \
++  sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>                            \
++  p##EXPR<sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>,                   \
++          typename packet_traits<Eigen::bfloat16>::type>(                          \
++              const typename packet_traits<Eigen::bfloat16>::type& a) {            \
++    sycl::vec<bool, packet_traits<Eigen::bfloat16>::size> packet_res;              \
++    auto res =  sycl::EXPR(                                                        \
++        Eigen::bfloat16_impl::Bf16ToF32<packet_traits<Eigen::bfloat16>::size>(a)); \
++    __pragma(unroll)                                                               \
++    for(int i = 0; i < packet_traits<Eigen::bfloat16>::size; ++i)                  \
++      packet_res[i] = res[i] ? 1 : 0;                                              \
++    return packet_res;                                                             \
 +  }
-+SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isnan);
-+SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isfinite);
-+SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isinf);
++SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isnan)
++SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isfinite)
++SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isinf)
 +#undef SYCL_PACKET_MATH_ANOMALY_BFLOAT16
 +
 +#endif  // DPCPP_DEVICE_ONLY
@@ -2877,10 +2837,10 @@ index 000000000..cf21bdd6b
 +#endif  // EIGEN_MATH_FUNCTIONS_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/PacketMath.h b/Eigen/src/Core/arch/DPCPP/PacketMath.h
 new file mode 100644
-index 000000000..840c84608
+index 000000000..f59a83d70
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/PacketMath.h
-@@ -0,0 +1,1628 @@
+@@ -0,0 +1,1499 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -2909,11 +2869,6 @@ index 000000000..840c84608
 +namespace internal {
 +
 +#if defined(DPCPP_DEVICE_ONLY)
-+typedef sycl::ulonglong2 Packet4h2;
-+typedef sycl::vec<unsigned short, 2> Packet2bf16;
-+typedef sycl::vec<unsigned short, 4> Packet4bf16;
-+typedef sycl::vec<unsigned short, 8> Packet8bf16;
-+
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float pfirst<sycl::cl_float4>(
 +    const sycl::cl_float4& a) {
@@ -2972,18 +2927,19 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_max<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return Eigen::bfloat16_impl::max(predux_max<Packet2bf16>(a_alias[0]), 
-+                                   predux_max<Packet2bf16>(a_alias[1]));
++  float r = predux_max(Eigen::bfloat16_impl::Bf16ToF32<4>(a));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_max<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  Eigen::bfloat16 candidate0 = predux_max(a_alias[0]);
-+  Eigen::bfloat16 candidate1 = predux_max(a_alias[1]);
-+  return Eigen::bfloat16_impl::max(candidate0, candidate1);
++  float candidate1, candidate2;
++  candidate1 = predux_max(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[0]));
++  candidate2 = predux_max(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[1]));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(
++      sycl::fmax(candidate1, candidate2));
 +}
 +
 +template <>
@@ -3020,17 +2976,19 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_min<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return Eigen::bfloat16_impl::min(predux_min(a_alias[0]), predux_min(a_alias[1]));
++  float r = predux_min(Eigen::bfloat16_impl::Bf16ToF32<4>(a));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_min<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  Eigen::bfloat16 candidate0 = predux_min(a_alias[0]);
-+  Eigen::bfloat16 candidate1 = predux_min(a_alias[1]);
-+  return Eigen::bfloat16_impl::min(candidate0, candidate1);
++  float candidate1, candidate2;
++  candidate1 = predux_min(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[0]));
++  candidate2 = predux_min(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[1]));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(
++      sycl::fmin(candidate1, candidate2));
 +}
 +
 +template <>
@@ -3103,10 +3061,10 @@ index 000000000..840c84608
 +                                sycl::rounding_mode::automatic>());
 +}
 +
-+#define SYCL_PACKET_COMPARE_HALF2(NAME, OP)                                 \
-+template <>                                                                 \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::cl_half2 sycl_pcmp_##NAME(      \
-+    const sycl::cl_half2 &a, const sycl::cl_half2 &b) {                     \
++#define SYCL_PACKET_COMPARE_HALF2(NAME, OP)                             \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::cl_half2 sycl_pcmp_##NAME(  \
++    const sycl::cl_half2 &a, const sycl::cl_half2 &b) {                 \
 +  return ((a OP b).template convert<sycl::half,                         \
 +                                    sycl::rounding_mode::automatic>()); \
 +}
@@ -3135,26 +3093,19 @@ index 000000000..840c84608
 +SYCL_PACKET_COMPARE_HALF8(eq);
 +#undef SYCL_PACKET_COMPARE_HALF8
 +
-+#define SYCL_PACKET_COMPARE_BFLOAT16(NAME, OP, PACKET_TYPE)                              \
-+template <>                                                                              \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PACKET_TYPE sycl_pcmp_##NAME(                      \
-+    const PACKET_TYPE &a, const PACKET_TYPE &b) {                                        \
-+  const int SIZE = unpacket_traits<PACKET_TYPE>::size;                                   \
-+  sycl::vec<float, SIZE> a2float, b2float, r_float;                                      \
-+  PACKET_TYPE r;                                                                         \
-+  for(int i = 0; i < SIZE; ++i) {                                                        \
-+    a2float[i] = Eigen::bfloat16_impl::bfloat16_to_float(                                \
-+        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(a[i]));                             \
-+    b2float[i] = Eigen::bfloat16_impl::bfloat16_to_float(                                \
-+        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(b[i]));                             \
-+  }                                                                                      \
-+  r_float = ((a OP b).template convert<float,                                            \
-+                                    sycl::rounding_mode::automatic>());              \
-+  for(int i = 0; i < SIZE; ++i) {                                                        \
-+    Eigen::bfloat16 tmp(Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(r_float[i])); \
-+    r[i] = tmp.value;                                                                    \
-+  }                                                                                      \
-+  return r;                                                                              \
++#define SYCL_PACKET_COMPARE_BFLOAT16(NAME, OP, PACKET_TYPE)             \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PACKET_TYPE sycl_pcmp_##NAME(     \
++    const PACKET_TYPE &a, const PACKET_TYPE &b) {                       \
++  const int SIZE = unpacket_traits<PACKET_TYPE>::size;                  \
++  sycl::vec<float, SIZE> a2float, b2float, r_float;                     \
++  PACKET_TYPE r;                                                        \
++  a2float = Eigen::bfloat16_impl::Bf16ToF32<SIZE>(a);                   \
++  b2float = Eigen::bfloat16_impl::Bf16ToF32<SIZE>(b);                   \
++  r_float = ((a OP b).template convert<float,                           \
++                                    sycl::rounding_mode::automatic>()); \
++  r = Eigen::bfloat16_impl::F32ToBf16<SIZE>(r_float);                   \
++  return r;                                                             \
 +}
 +
 +SYCL_PACKET_COMPARE_BFLOAT16(le, <=, Packet2bf16);
@@ -3197,11 +3148,11 @@ index 000000000..840c84608
 +
 +#define SYCL_PCMP_BOOL(OP, CMP, INTYPE)                                                    \
 +template <>                                                                                \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                   \
-+    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,     \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                       \
++    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,         \
 +    typename packet_traits<INTYPE>::type>(const typename packet_traits<INTYPE>::type &a,   \
 +                                          const typename packet_traits<INTYPE>::type &b) { \
-+  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                             \
++  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                                 \
 +  for(int i = 0; i < packet_traits<INTYPE>::size; i++)                                     \
 +    packet_res[i] = (a[i] CMP b[i]);                                                       \
 +  return packet_res;                                                                       \
@@ -3216,11 +3167,11 @@ index 000000000..840c84608
 +
 +#define SYCL_PCMP_BOOL_FOR_HALF8(OP, CMP, INTYPE)                                          \
 +template <>                                                                                \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                   \
-+    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,     \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                       \
++    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,         \
 +    typename packet_traits<INTYPE>::type>(const typename packet_traits<INTYPE>::type &a,   \
 +                                          const typename packet_traits<INTYPE>::type &b) { \
-+  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                             \
++  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                                 \
 +  typename packet_traits<INTYPE>::type cmp_res = sycl_pcmp_##OP(a, b);                     \
 +  const short* cmp_res_alias = reinterpret_cast<const short*>(&cmp_res);                   \
 +  for(int i = 0; i < packet_traits<INTYPE>::size; i++)                                     \
@@ -3234,11 +3185,11 @@ index 000000000..840c84608
 +
 +#define SYCL_PCMP_BOOL_FOR_BFLOAT16(OP, CMP, INTYPE)                                       \
 +template <>                                                                                \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                   \
-+    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,     \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                       \
++    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,         \
 +    typename packet_traits<INTYPE>::type>(const typename packet_traits<INTYPE>::type &a,   \
 +                                          const typename packet_traits<INTYPE>::type &b) { \
-+  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                             \
++  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                                 \
 +  for(int i = 0; i < packet_traits<INTYPE>::size; i++) {                                   \
 +    float a2float = Eigen::bfloat16_impl::bfloat16_to_float(                               \
 +        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(a[i]));                               \
@@ -3299,12 +3250,9 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16
 +convert_vector(const sycl::cl_int8& p) {
 +  Packet8bf16 r;
-+  p.template convert<sycl::cl_float, sycl::rounding_mode::automatic>();
-+#pragma unroll
-+  for(int i = 0; i < 8; ++i) {
-+    Eigen::bfloat16 tmp(Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(p[i]));
-+    r[i] = tmp.value;
-+  }
++  Packet8f32 p2float = p.template convert<sycl::cl_float, sycl::rounding_mode::automatic>();
++  r = Eigen::bfloat16_impl::F32ToBf16<8>(p2float); 
++  return r;
 +}
 +
 +#define SYCL_PAND(TYPE)                                                \
@@ -3318,15 +3266,15 @@ index 000000000..840c84608
 +SYCL_PAND(Packet8bf16)
 +#undef SYCL_PAND
 +
-+#define SYCL_PLOGICAL_NOT(SIZE)                                                   \
-+template <>                                                                       \
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE sycl::vec<bool, SIZE>                   \
++#define SYCL_PLOGICAL_NOT(SIZE)                                           \
++template <>                                                               \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE sycl::vec<bool, SIZE>               \
 +    plogical_not<sycl::vec<bool, SIZE>>(const sycl::vec<bool, SIZE>& a) { \
-+  sycl::vec<bool, SIZE> b;                                                    \
-+  for(int i = 0; i < SIZE; ++i) {                                                 \
-+    b[i] = (!a[i]);                                                               \
-+  }                                                                               \
-+  return b;                                                                       \
++  sycl::vec<bool, SIZE> b;                                                \
++  for(int i = 0; i < SIZE; ++i) {                                         \
++    b[i] = (!a[i]);                                                       \
++  }                                                                       \
++  return b;                                                               \
 +}
 +SYCL_PLOGICAL_NOT(16)
 +SYCL_PLOGICAL_NOT(8)
@@ -3611,15 +3559,10 @@ index 000000000..840c84608
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pstoreu<Eigen::bfloat16>(Eigen::bfloat16* to, const Packet8bf16& from) {
-+  to[0] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[0]));
-+  to[1] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[1]));
-+  to[2] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[2]));
-+  to[3] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[3]));
-+  to[4] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[4]));
-+  to[5] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[5]));
-+  to[6] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[6]));
-+  to[7] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[7]));
-+}
++  #pragma unroll
++  for(int i = 0; i < unpacket_traits<Packet8bf16>::size; ++i)
++    to[i] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[i]));
++ }
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pstore<bool,sycl::vec<bool,16>>(bool* to, const sycl::vec<bool,16>& from) {
@@ -3770,8 +3713,7 @@ index 000000000..840c84608
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pset1<Packet8bf16>(const Eigen::bfloat16& from) {
-+  return Packet8bf16(from.value, from.value, from.value, from.value,
-+                     from.value, from.value, from.value, from.value);
++  return Packet8bf16(from.value);
 +}
 +
 +/** \internal \returns a packet with constant coefficients \a a[0], e.g.: (a[0],a[0])) */
@@ -3850,24 +3792,6 @@ index 000000000..840c84608
 +}
 +
 +template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 pmul<Packet2bf16>(const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 res_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 res_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+
-+  return Packet2bf16(res_x.value, res_y.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 pmul<Packet4bf16>(const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 res_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 res_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 res_z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 res_w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(res_x.value, res_y.value, res_z.value, res_w.value);
-+}
-+
-+template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE sycl::cl_float4 pdiv<sycl::cl_float4>(const sycl::cl_float4& a, const sycl::cl_float4& b) {
 +  return sycl::cl_float4(a.x() / b.x(), a.y() / b.y(), a.z() / b.z(), a.w() / b.w());
 +}
@@ -3938,19 +3862,10 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 psign(const Packet8bf16& a) {
 +  const int SIZE = unpacket_traits<Packet8bf16>::size;
 +  sycl::vec<float, SIZE> a2float, r_float;
-+  Packet8bf16 r;
-+  for (int i = 0; i < SIZE; ++i) {
-+    a2float[i] = Eigen::bfloat16_impl::bfloat16_to_float(
-+        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(a[i]));
-+  }
++  a2float = Eigen::bfloat16_impl::Bf16ToF32<8>(a);
 +  r_float = sycl::sign(a2float); 
-+  for (int i = 0; i < SIZE; ++i) {
-+    Eigen::bfloat16 tmp(Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(r_float[i])); 
-+    r[i] = tmp.value; 
-+  }
-+  return r;
++  return Eigen::bfloat16_impl::F32ToBf16<8>(r_float);
 +}
-+
 +
 +template <>
 +EIGEN_DEVICE_FUNC inline sycl::cl_float4 psign(const sycl::cl_float4& a) {
@@ -4121,11 +4036,8 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pabs<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  r_alias[0] = pabs(a_alias[0]);
-+  r_alias[1] = pabs(a_alias[1]);
-+
++  Packet8f32 a2float = Eigen::bfloat16_impl::Bf16ToF32<8>(a);
++  r = Eigen::bfloat16_impl::F32ToBf16<8>(sycl::fabs(a2float));
 +  return r;
 +}
 +
@@ -4225,37 +4137,34 @@ index 000000000..840c84608
 +  return r;
 +}
 +
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 padd<Packet2bf16>(
-+    const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  return Packet2bf16(x.value, y.value);
++#define DPCPP_PACKET_BASIC_FUNC_BFLOAT16(NAME, OP)                      \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 p##NAME<Packet8bf16>( \
++    const Packet8bf16& a, const Packet8bf16& b) {                       \
++  Packet8f32 r = (Eigen::bfloat16_impl::Bf16ToF32<8>(a)) OP             \
++                 (Eigen::bfloat16_impl::Bf16ToF32<8>(b));               \
++  return Eigen::bfloat16_impl::F32ToBf16<8>(r);                         \
++}                                                                       \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 p##NAME<Packet4bf16>( \
++    const Packet4bf16& a, const Packet4bf16& b) {                       \
++  Packet4f32 r = Eigen::bfloat16_impl::Bf16ToF32<4>(a) OP               \
++                 Eigen::bfloat16_impl::Bf16ToF32<4>(b);                 \
++  return Eigen::bfloat16_impl::F32ToBf16<4>(r);                         \
++}                                                                       \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 p##NAME<Packet2bf16>( \
++    const Packet2bf16& a, const Packet2bf16& b) {                       \
++  Packet2f32 r = Eigen::bfloat16_impl::Bf16ToF32<2>(a) OP               \
++                 Eigen::bfloat16_impl::Bf16ToF32<2>(b);                 \
++  return Eigen::bfloat16_impl::F32ToBf16<2>(r);                         \
 +}
 +
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 padd<Packet4bf16>(
-+    const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(x.value, y.value, z.value, w.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 padd<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = padd<Packet4bf16>(a_alias[0], b_alias[0]);
-+  r_alias[1] = padd<Packet4bf16>(a_alias[1], b_alias[1]);
-+
-+  return r;
-+}
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(add, +);
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(sub, -);
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(mul, *);
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(div, /);
++#undef DPCPP_PACKET_BASIC_FUNC_BFLOAT16
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4h2 pmadd<Packet4h2>(
@@ -4287,38 +4196,6 @@ index 000000000..840c84608
 +}
 +
 +template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 psub<Packet2bf16>(
-+    const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  return Packet2bf16(x.value, y.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 psub<Packet4bf16>(
-+    const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(x.value, y.value, z.value, w.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 psub<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = psub<Packet4bf16>(a_alias[0], b_alias[0]);
-+  r_alias[1] = psub<Packet4bf16>(a_alias[1], b_alias[1]);
-+
-+  return r;
-+}
-+
-+template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4h2 pnegate<Packet4h2>(const Packet4h2& a) {
 +  Packet4h2 r;
 +  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);
@@ -4333,34 +4210,22 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 pnegate<Packet2bf16>(
 +    const Packet2bf16& a) {
-+  Eigen::bfloat16 negate_x = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x()));
-+  Eigen::bfloat16 negate_y = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y()));
-+
-+  return Packet2bf16(negate_x.value, negate_y.value);
++  Packet2f32 r = - Eigen::bfloat16_impl::Bf16ToF32<2>(a);
++  return Eigen::bfloat16_impl::F32ToBf16<2>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 pnegate<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  Eigen::bfloat16 negate_x = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x()));
-+  Eigen::bfloat16 negate_y = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y()));
-+  Eigen::bfloat16 negate_z = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z()));
-+  Eigen::bfloat16 negate_w = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w()));
-+
-+  return Packet4bf16(negate_x.value, negate_y.value,
-+                     negate_z.value, negate_w.value);
++  Packet4f32 r = - Eigen::bfloat16_impl::Bf16ToF32<4>(a);
++  return Eigen::bfloat16_impl::F32ToBf16<4>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pnegate<Packet8bf16>(
 +    const Packet8bf16& a) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  r_alias[0] = pnegate<Packet4bf16>(a_alias[0]);
-+  r_alias[1] = pnegate<Packet4bf16>(a_alias[1]);
-+
-+  return r;
++  Packet8f32 r = - Eigen::bfloat16_impl::Bf16ToF32<8>(a);
++  return Eigen::bfloat16_impl::F32ToBf16<8>(r);
 +}
 +
 +template <>
@@ -4388,18 +4253,6 @@ index 000000000..840c84608
 +}
 +
 +template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pmul<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = pmul(a_alias[0], b_alias[0]);
-+  r_alias[1] = pmul(a_alias[1], b_alias[1]);
-+  return r;
-+}
-+
-+template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4h2 pdiv<Packet4h2>(
 +    const Packet4h2& a, const Packet4h2& b) {
 +  Packet4h2 r;
@@ -4410,39 +4263,6 @@ index 000000000..840c84608
 +  r_alias[1] = pdiv(a_alias[1], b_alias[1]);
 +  r_alias[2] = pdiv(a_alias[2], b_alias[2]);
 +  r_alias[3] = pdiv(a_alias[3], b_alias[3]);
-+  return r;
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 pdiv<Packet2bf16>(
-+    const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 div_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 div_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+
-+  return Packet2bf16(div_x.value, div_y.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 pdiv<Packet4bf16>(
-+    const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 div_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 div_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 div_z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 div_w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(div_x.value, div_y.value, div_z.value, div_w.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pdiv<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = pdiv<Packet4bf16>(a_alias[0], b_alias[0]);
-+  r_alias[1] = pdiv<Packet4bf16>(a_alias[1], b_alias[1]);
-+
 +  return r;
 +}
 +
@@ -4463,15 +4283,20 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return predux(a_alias[0]) + predux(a_alias[1]);
++  float r = predux(Eigen::bfloat16_impl::Bf16ToF32<4>(a)); 
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  return predux(a_alias[0]) + predux(a_alias[1]);
++  float r = 0;
++#pragma unroll
++  for (int i = 0; i < 2; ++i) {
++    r += predux(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[i]));
++  }
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
@@ -4492,14 +4317,20 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux_mul<Packet4bf16>(
 +    const Packet4bf16& a) {
 +  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return predux_mul(a_alias[0]) * predux_mul(a_alias[1]);
++  float r = predux_mul(Eigen::bfloat16_impl::Bf16ToF32<4>(a));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux_mul<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  return predux_mul(a_alias[0]) * predux_mul(a_alias[1]);
++  float r = 0;
++#pragma unroll
++  for (int i = 0; i < 2; ++i) {
++    r += predux_mul(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[i]));
++  }
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +#endif  // DPCPP_DEVICE_ONLY
@@ -4511,10 +4342,10 @@ index 000000000..840c84608
 +#endif  // EIGEN_PACKET_MATH_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/TypeCasting.h b/Eigen/src/Core/arch/DPCPP/TypeCasting.h
 new file mode 100644
-index 000000000..ec39d497c
+index 000000000..aa16baa85
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/TypeCasting.h
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,79 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -4542,6 +4373,7 @@ index 000000000..ec39d497c
 +
 +namespace internal {
 +#if defined(DPCPP_DEVICE_ONLY)
++
 +template <>
 +struct type_casting_traits<float, int> {
 +  enum { VectorizedCast = 1, SrcCoeffRatio = 1, TgtCoeffRatio = 1 };
