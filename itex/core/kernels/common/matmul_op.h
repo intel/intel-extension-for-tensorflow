@@ -440,20 +440,18 @@ class MatMulOp : public OpKernel {
       auto dst_md =
           memory::desc(params->c_dims, OneDnnType<Tout>(), params->c_strides);
 
-      std::shared_ptr<dnnl::matmul::desc> matmul_desc_;
+      auto matmul_desc = dnnl::matmul::desc(src_md, weights_md_prefer, dst_md);
       if (post_op_util_.HasBias()) {
         // bias use same dims as dst
         auto bias_md = memory::desc(params->bias_dims, OneDnnType<Tpost>(),
                                     params->bias_strides);
-        matmul_desc_.reset(
-            new dnnl::matmul::desc(src_md, weights_md_prefer, bias_md, dst_md));
         // create bias memory
         const Tensor& bias_tensor = context->input(kBiasIndex_);
         bias_mem_ = CreateDnnlMemory(bias_md, dnnl_engine_,
                                      GetTensorBuffer<Tpost>(&bias_tensor));
-      } else {
-        matmul_desc_.reset(
-            new dnnl::matmul::desc(src_md, weights_md_prefer, dst_md));
+        // Reassigin desc if it has bias.
+        matmul_desc =
+            dnnl::matmul::desc(src_md, weights_md_prefer, bias_md, dst_md);
       }
 
       dnnl::primitive_attr post_ops_attr;
@@ -461,9 +459,7 @@ class MatMulOp : public OpKernel {
       if (std::is_same<T, float>::value) {
         post_ops_attr.set_fpmath_mode(fp32_math_mode_);
       }
-      std::shared_ptr<dnnl::matmul::primitive_desc> matmul_pd_ =
-          std::make_shared<dnnl::matmul::primitive_desc>(*matmul_desc_,
-                                                         dnnl_engine_);
+
       if (post_op_util_.HasAdd() || post_op_util_.HasBinary()) {
         add_tensor_ = &context->input(kAddIndex_);
       }
@@ -491,9 +487,8 @@ class MatMulOp : public OpKernel {
               memory::desc(params->c_dims, OneDnnType<Tpost>(),
                            params->c_strides),
               dnnl_engine_, GetTensorBuffer<Tpost>(add_tensor_));
-          fuse_add_dst_mem_ =
-              CreateDnnlMemory(matmul_pd_->dst_desc(), dnnl_engine_,
-                               GetTensorBuffer<Tout>(dst_tensor_));
+          fuse_add_dst_mem_ = CreateDnnlMemory(
+              dst_md, dnnl_engine_, GetTensorBuffer<Tout>(dst_tensor_));
           ReorderMemory(*context, &fuse_add_src_mem_, &fuse_add_dst_mem_,
                         dnnl_engine_);
         }
@@ -547,13 +542,13 @@ class MatMulOp : public OpKernel {
       }
       // Set post ops attr after handling all fusions.
       post_op_util_.SetPostOpAttr(&post_ops_attr);
-      matmul_pd_.reset(new dnnl::matmul::primitive_desc(
-          *matmul_desc_, post_ops_attr, dnnl_engine_));
+      auto matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
+                                                    dnnl_engine_);
 
       // Do weight cache only if Reorder is needed and weight is const.
       weights_mem_input_ = CreateDnnlMemory(
           weights_md, dnnl_engine_, GetTensorBuffer<T>(&weights_tensor));
-      weights_md_prefer = matmul_pd_->weights_desc();
+      weights_md_prefer = matmul_pd.weights_desc();
       is_weight_reorder_ = (weights_md != weights_md_prefer);
       if (is_weight_reorder_) {
         T* weight_cached_data = nullptr;
@@ -589,16 +584,16 @@ class MatMulOp : public OpKernel {
       } else {
         weights_mem_ = weights_mem_input_;
       }
-      scratchpad_size_ = matmul_pd_->scratchpad_desc().get_size() / sizeof(T);
+      scratchpad_size_ = matmul_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
                                             TensorShape({scratchpad_size_}),
                                             scratchpad_tensor_.get()));
       scratchpad_mem_ =
-          dnnl::memory(matmul_pd_->scratchpad_desc(), dnnl_engine_,
+          dnnl::memory(matmul_pd.scratchpad_desc(), dnnl_engine_,
                        GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
-      matmul_primitive_ = dnnl::matmul(*matmul_pd_);
+      matmul_primitive_ = dnnl::matmul(matmul_pd);
       src_mem_ = CreateDnnlMemory(src_md, dnnl_engine_,
                                   GetTensorBuffer<T>(&src_tensor));
       dst_mem_ = CreateDnnlMemory(dst_md, dnnl_engine_,
