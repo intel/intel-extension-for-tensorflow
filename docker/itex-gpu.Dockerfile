@@ -18,6 +18,9 @@ FROM ubuntu:${UBUNTU_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+HEALTHCHECK NONE
+RUN useradd -d /home/itex -m -s /bin/bash itex
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --fix-missing \
     apt-utils \
