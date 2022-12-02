@@ -56,63 +56,71 @@ class BatchMatMulOp : public OpKernel {
                   errors::InvalidArgument(
                       "Found unsupported fusion in Fused BatchMatMul."));
     }
+
+    ITEX_CHECK_OK(
+        ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false, &enable_cache_));
   }
 
-  void Compute(OpKernelContext* ctx) override {
+  void Init(OpKernelContext* ctx) {
+    const Tensor& src_tensor = ctx->input(kSrcIndex_);
+    const Tensor& wei_tensor = ctx->input(kWeightIndex_);
+
+    TensorShape src_shape = src_tensor.shape();
+    TensorShape wei_shape = wei_tensor.shape();
+
+    // Reset cached args.
+    fwd_primitive_args_.clear();
+    input_dims_.clear();
+    for (int i = 0; i < src_shape.dims(); ++i) {
+      input_dims_.push_back(src_shape.dim_size(i));
+    }
+    weights_dims_.clear();
+    for (int i = 0; i < wei_shape.dims(); ++i) {
+      weights_dims_.push_back(wei_shape.dim_size(i));
+    }
+
+    MatMulBCast bcast(src_shape.dim_sizes(), wei_shape.dim_sizes());
+    OP_REQUIRES(ctx, bcast.IsValid(),
+                errors::InvalidArgument(
+                    "Input tensors must have compatible batch dimensions: ",
+                    src_shape.DebugString(), " vs. ", wei_shape.DebugString()));
+
+    int64 d0 = src_shape.dim_size(src_shape.dims() - 2);
+    int64 d1 = src_shape.dim_size(src_shape.dims() - 1);
+
+    int64 d2 = wei_shape.dim_size(wei_shape.dims() - 2);
+    int64 d3 = wei_shape.dim_size(wei_shape.dims() - 1);
+
+    if (this->transpose_a_) std::swap(d0, d1);
+    if (this->transpose_b_) std::swap(d2, d3);
+
+    OP_REQUIRES(ctx, d1 == d2,
+                errors::InvalidArgument(
+                    "Input[0] mismatch Input[1] shape :", d1, " vs. ", d2, ": ",
+                    src_shape.DebugString(), " ", wei_shape.DebugString(), " ",
+                    this->transpose_a_, " ", this->transpose_b_));
+
+    // Follow below steps to construct valid oneDNN primitive params if
+    // broadcast is required:
+    //   1. Figure out the real output tf shape
+    //   2. Expand input tf shapes, and use them to prepare input md
+    dst_shape_ = bcast.output_batch_shape();
+    dst_shape_.AddDim(d0);
+    dst_shape_.AddDim(d3);
+
+    if (dst_shape_.num_elements() == 0) {
+      OP_REQUIRES_OK(
+          ctx, ctx->allocate_output(kDstIndex_, dst_shape_, &dst_tensor_));
+      is_init_ = true;
+      is_input_zero_ = true;
+      return;
+    }
+
     try {
-      const int src_index = 0;
-      const int wei_index = 1;
-      const int dst_index = 0;
-
-      const Tensor& src_tensor = ctx->input(src_index);
-      const Tensor& wei_tensor = ctx->input(wei_index);
-
-      TensorShape src_tf_shape = src_tensor.shape();
-      TensorShape wei_tf_shape = wei_tensor.shape();
-
-      MatMulBCast bcast(src_tf_shape.dim_sizes(), wei_tf_shape.dim_sizes());
-
-      OP_REQUIRES(
-          ctx, bcast.IsValid(),
-          errors::InvalidArgument(
-              "Input tensors must have compatible batch dimensions: ",
-              src_tf_shape.DebugString(), " vs. ", wei_tf_shape.DebugString()));
-
-      int64 d0 = src_tf_shape.dim_size(src_tf_shape.dims() - 2);
-      int64 d1 = src_tf_shape.dim_size(src_tf_shape.dims() - 1);
-
-      int64 d2 = wei_tf_shape.dim_size(wei_tf_shape.dims() - 2);
-      int64 d3 = wei_tf_shape.dim_size(wei_tf_shape.dims() - 1);
-
-      if (this->transpose_a_) std::swap(d0, d1);
-      if (this->transpose_b_) std::swap(d2, d3);
-
-      OP_REQUIRES(
-          ctx, d1 == d2,
-          errors::InvalidArgument("Input[0] mismatch Input[1] shape :", d1,
-                                  " vs. ", d2, ": ", src_tf_shape.DebugString(),
-                                  " ", wei_tf_shape.DebugString(), " ",
-                                  this->transpose_a_, " ", this->transpose_b_));
-
-      // Follow below steps to construct valid oneDNN primitive params if
-      // broadcast is required:
-      //   1. Figure out the real output tf shape
-      //   2. Expand input tf shapes, and use them to prepare input md
-      TensorShape dst_tf_shape = bcast.output_batch_shape();
-      dst_tf_shape.AddDim(d0);
-      dst_tf_shape.AddDim(d3);
-
-      if (dst_tf_shape.num_elements() == 0) {
-        Tensor* dst_tensor = nullptr;
-        OP_REQUIRES_OK(
-            ctx, ctx->allocate_output(dst_index, dst_tf_shape, &dst_tensor));
-        return;
-      }
-
       // src_md and wei_md: plain md for BatchMatMul primitive execution,
       // which are broadcasted and expressed by dims/strides
       auto params = MatMulBaseUtil::CreateMatMulParams(
-          src_tf_shape, wei_tf_shape, dst_tf_shape, this->transpose_a_,
+          src_shape, wei_shape, dst_shape_, this->transpose_a_,
           this->transpose_b_);
       auto src_md =
           memory::desc(params->a_dims, OneDnnType<Tlhs>(), params->a_strides);
@@ -127,31 +135,30 @@ class BatchMatMulOp : public OpKernel {
                                           memory::format_tag::any)
                            : wei_md;
 
-      auto onednn_engine = CreateDnnlEngine<Device>(*ctx);
-
       // Create matmul forward primitive
-      std::unordered_map<int, memory> fwd_primitive_args;
       auto fwd_desc = matmul::desc(src_md, wei_md_prefer, dst_md);
-      auto fwd_pd =
-          GetPrimitiveDesc(ctx, fwd_desc, &fwd_primitive_args, onednn_engine);
-      auto fwd_primitive = matmul(fwd_pd);
+      auto fwd_pd = GetPrimitiveDesc(ctx, fwd_desc);
+      matmul_primitive_ = matmul(fwd_pd);
 
       // Create src memory, check if src needs to be reordered
-      memory src_mem = CreateDnnlMemory(src_md, onednn_engine,
-                                        GetTensorBuffer<Tlhs>(&src_tensor));
+      src_mem_ = CreateDnnlMemory(src_md, onednn_engine_,
+                                  GetTensorBuffer<Tlhs>(&src_tensor));
 
-      memory wei_mem = CreateDnnlMemory(wei_md, onednn_engine,
-                                        GetTensorBuffer<Trhs>(&wei_tensor));
+      auto weights_mem_input = CreateDnnlMemory(
+          wei_md, onednn_engine_, GetTensorBuffer<Trhs>(&wei_tensor));
 
       Tensor tmp_weight;
       Trhs* wei_cached_data = nullptr;
       wei_md_prefer = fwd_pd.weights_desc();
-      if (wei_md_prefer != wei_md && this->is_filter_const_) {
+      // Reorder only happens once weight is Const, see the initializer of
+      // `wei_md_prefer` for more details.
+      is_weight_reorder_ = (wei_md_prefer != wei_md);
+      if (is_weight_reorder_) {
         if (this->weight_cache_manager_.IsEmpty()) {
           // Cache weight in first time executing this node
           this->weight_cache_manager_.SetCache(
               ctx, wei_md, wei_md_prefer, GetTensorBuffer<Trhs>(&wei_tensor),
-              onednn_engine);
+              onednn_engine_);
         }
 
         wei_cached_data =
@@ -159,47 +166,45 @@ class BatchMatMulOp : public OpKernel {
 
         // Weight cache may be failed, need to check it here.
         if (wei_cached_data != nullptr) {
-          wei_mem =
-              CreateDnnlMemory(wei_md_prefer, onednn_engine, wei_cached_data);
+          weights_mem_ =
+              CreateDnnlMemory(wei_md_prefer, onednn_engine_, wei_cached_data);
         } else {
           // During training, reorder weight in each iteration
           int64_t reorder_size = wei_md_prefer.get_size() / sizeof(Trhs);
           OP_REQUIRES_OK(
               ctx, ctx->allocate_temp(DataTypeToEnum<Trhs>::v(),
                                       TensorShape{reorder_size}, &tmp_weight));
-          void* data_handle = GetTensorBuffer<Trhs>(&tmp_weight);
-          auto mem_reordered =
-              CreateDnnlMemory(wei_md_prefer, onednn_engine, data_handle);
-          ReorderMemory(*ctx, &wei_mem, &mem_reordered, onednn_engine);
-          wei_mem = mem_reordered;
+          weights_mem_ = CreateDnnlMemory(wei_md_prefer, onednn_engine_,
+                                          GetTensorBuffer<Trhs>(&tmp_weight));
+          ReorderMemory(*ctx, &weights_mem_input, &weights_mem_,
+                        onednn_engine_);
         }
+      } else {
+        weights_mem_ = CreateDnnlMemory(wei_md, onednn_engine_,
+                                        GetTensorBuffer<Trhs>(&wei_tensor));
       }
 
-      Tensor* dst_tensor = nullptr;
       OP_REQUIRES_OK(
-          ctx, ctx->allocate_output(dst_index, dst_tf_shape, &dst_tensor));
+          ctx, ctx->allocate_output(kDstIndex_, dst_shape_, &dst_tensor_));
 
       // Create dst memory
-      auto dst_mem = CreateDnnlMemory(fwd_pd.dst_desc(), onednn_engine,
-                                      GetTensorBuffer<Toutput>(dst_tensor));
+      dst_mem_ = CreateDnnlMemory(fwd_pd.dst_desc(), onednn_engine_,
+                                  GetTensorBuffer<Toutput>(dst_tensor_));
 
-      Tensor scratchpad_tensor;
-      int64 scratchpad_size =
-          fwd_pd.scratchpad_desc().get_size() / sizeof(Tlhs);
+      scratchpad_size_ = fwd_pd.scratchpad_desc().get_size() / sizeof(Tlhs);
       OP_REQUIRES_OK(ctx, ctx->allocate_temp(DataTypeToEnum<Tlhs>::v(),
-                                             TensorShape({scratchpad_size}),
-                                             &scratchpad_tensor));
-      auto scratchpad_mem =
-          dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine,
-                       GetTensorBuffer<Tlhs>(&scratchpad_tensor));
+                                             TensorShape({scratchpad_size_}),
+                                             scratchpad_tensor_.get()));
+      scratchpad_mem_ =
+          dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine_,
+                       GetTensorBuffer<Tlhs>(scratchpad_tensor_.get()));
 
       // Execute BatchMatMul
-      auto onednn_stream = CreateDnnlStream(*ctx, onednn_engine);
-      fwd_primitive_args.emplace(DNNL_ARG_SRC, src_mem);
-      fwd_primitive_args.emplace(DNNL_ARG_WEIGHTS, wei_mem);
-      fwd_primitive_args.emplace(DNNL_ARG_DST, dst_mem);
-      fwd_primitive_args.emplace(DNNL_ARG_SCRATCHPAD, scratchpad_mem);
-      fwd_primitive.execute(onednn_stream, fwd_primitive_args);
+      fwd_primitive_args_.emplace(DNNL_ARG_SRC, src_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_WEIGHTS, weights_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_DST, dst_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_SCRATCHPAD, scratchpad_mem_);
+      is_init_ = true;
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
                          ", message: " + string(e.message) + ", in file " +
@@ -209,17 +214,68 @@ class BatchMatMulOp : public OpKernel {
     }
   }
 
+  void InitOrSetMemory(OpKernelContext* context) {
+    if (!(enable_cache_ && is_init_ &&
+          context->is_input_same(kSrcIndex_, input_dims_) &&
+          context->is_input_same(kWeightIndex_, weights_dims_))) {
+      Init(context);
+      return;
+    }
+
+    if (is_input_zero_) {
+      OP_REQUIRES_OK(context, context->allocate_output(kDstIndex_, dst_shape_,
+                                                       &dst_tensor_));
+      return;
+    }
+
+    src_mem_.set_data_handle(context->tensor_data(kSrcIndex_));
+
+    // Reorder only happens once weight is Const.
+    // No need to reassign Const handle since it's already cached.
+    if (!is_weight_reorder_) {
+      weights_mem_.set_data_handle(context->tensor_data(kWeightIndex_));
+    }
+
+    if (this->post_op_util_.HasBinary()) {
+      add_mem_.set_data_handle(context->tensor_data(add_index_));
+    }
+
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<Tlhs>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<Tlhs>(scratchpad_tensor_.get()));
+
+    OP_REQUIRES_OK(context, context->allocate_output(kDstIndex_, dst_shape_,
+                                                     &dst_tensor_));
+    dst_mem_.set_data_handle(GetTensorBuffer<Toutput>(dst_tensor_));
+  }
+
+  void Compute(OpKernelContext* context) override {
+    mutex_lock lock(&mu_compute_);
+    dst_tensor_ = nullptr;
+    onednn_engine_ = CreateDnnlEngine<Device>(*context);
+    onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
+    InitOrSetMemory(context);
+
+    // Skip primitive execution if the calculation is meaningless.
+    if (!is_input_zero_) {
+      matmul_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    }
+
+    scratchpad_tensor_.reset();
+  }
+
   virtual void AccumulateMulAndInt8Scale(OpKernelContext* ctx,
                                          float* mul_value) {
     return;
   }
 
-  matmul::primitive_desc GetPrimitiveDesc(
-      OpKernelContext* ctx, const matmul::desc& fwd_desc,
-      std::unordered_map<int, memory>* fwd_args,
-      const dnnl::engine& onednn_engine) {
-    const int kPostOpStartIdx = 2;
-    int post_op_input_index = kPostOpStartIdx;
+  matmul::primitive_desc GetPrimitiveDesc(OpKernelContext* ctx,
+                                          const matmul::desc& fwd_desc) {
+    int post_op_input_index = kWeightIndex_ + 1;
     dnnl::primitive_attr post_ops_attr;
     post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 
@@ -261,6 +317,7 @@ class BatchMatMulOp : public OpKernel {
     if (this->post_op_util_.HasBinary()) {
       // BatchMatMul + Add needs to set add input md in node execution.
       const Tensor& add_tensor = ctx->input(post_op_input_index);
+      add_index_ = post_op_input_index;
 
       // Same as input and weight of BatchMatMul, add tensor also needs to:
       //   1. Get original block/plain md
@@ -276,17 +333,16 @@ class BatchMatMulOp : public OpKernel {
       auto add_md = memory::desc(add_dims, OneDnnType<Toutput>(), add_strides);
 
       // FIXME(itex): Simply ingnore reorder this time, will fix it soon.
-
       this->post_op_util_.SetBinaryInput(add_md);
-      auto add_mem = CreateDnnlMemory(add_md, onednn_engine,
-                                      GetTensorBuffer<Toutput>(&add_tensor));
-      fwd_args->insert(
-          {DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem});
+      add_mem_ = CreateDnnlMemory(add_md, onednn_engine_,
+                                  GetTensorBuffer<Toutput>(&add_tensor));
+      fwd_primitive_args_.insert(
+          {DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem_});
       post_op_input_index++;
     }
 
     this->post_op_util_.SetPostOpAttr(&post_ops_attr);
-    return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
+    return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
   }
 
  private:
@@ -339,8 +395,6 @@ class BatchMatMulOp : public OpKernel {
         const_cast<Toutput*>(mul_cached_data.flat<Toutput>().data()));
   }
 
-  mutex mul_cache_mu_;
-  PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
 #endif  // INTEL_CPU_ONLY
 
   bool transpose_a_;
@@ -348,12 +402,33 @@ class BatchMatMulOp : public OpKernel {
   bool is_filter_const_ = false;
   bool inplace_sum_ = false;
 
-  // Weight cache manager
-  WeightCacheManager<Trhs> weight_cache_manager_;
-
  protected:
   // Fusion util.
   PostOpUtil post_op_util_;
+  // Weight cache manager
+  WeightCacheManager<Trhs> weight_cache_manager_;
+  bool enable_cache_ = false;
+  bool is_init_ = false;
+  bool is_input_zero_ = false;
+  bool is_weight_reorder_;
+  const int kSrcIndex_ = 0;
+  const int kWeightIndex_ = 1;
+  const int kDstIndex_ = 0;
+
+ private:
+  mutex mul_cache_mu_, mu_compute_;
+  PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
+
+  std::unordered_map<int, memory> fwd_primitive_args_;
+  memory src_mem_, weights_mem_, dst_mem_, add_mem_, scratchpad_mem_;
+  dnnl::matmul matmul_primitive_;
+  Tensor* dst_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_, add_index_;
+  std::vector<int64> input_dims_, weights_dims_;
+  TensorShape dst_shape_;
+  dnnl::stream onednn_stream_;
+  dnnl::engine onednn_engine_;
 };
 
 // V2 is for latest Intel TF BatchMatMul INT8 new API.
@@ -448,6 +523,9 @@ class QuantizedBatchMatMulV2Op
 
       this->post_op_util_.AddOps(this->fused_ops_);
     }
+
+    ITEX_CHECK_OK(ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false,
+                                     &this->enable_cache_));
   }
   void AccumulateMulAndInt8Scale(OpKernelContext* context,
                                  float* mul_value) override {
