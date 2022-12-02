@@ -71,6 +71,8 @@ class LogMessage : public std::basic_ostringstream<char> {
  protected:
   void GenerateLogMessage();
 
+  void IssueLink();
+
  private:
   const char* fname_;
   int line_;

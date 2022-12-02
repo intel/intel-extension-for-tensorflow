@@ -165,7 +165,15 @@ class DevicePool {
         // Only set root device as device list.
         devices = std::move(root_devices);
       }
-      assert((devices.size() > 0));
+
+      size_t num_device = devices.size();
+
+      if (num_device <= 0) {
+        ITEX_LOG(ERROR) << "Can not found any devices. "
+                        << "To check runtime environment on your host, "
+                        << "please run itex/itex/tools/env_check.sh.";
+      }
+      assert((num_device > 0));
     });
 
     return devices;

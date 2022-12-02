@@ -17,6 +17,7 @@ limitations under the License.
 
 #include "itex/core/ops/utils/logging.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -131,6 +132,10 @@ int64 MinLogLevelFromEnv() {
 #endif
 }
 
+int64 MinIssueLogLevel() {
+  return std::max(MinLogLevelFromEnv(), static_cast<int64>(itex::ERROR));
+}
+
 int64 MinVLogLevelFromEnv() {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
   return 0;
@@ -182,6 +187,17 @@ void LogMessage::GenerateLogMessage() {
   // TODO(jeff,sanjay): Replace this with something that logs through the env.
   fprintf(stderr, "%s.%06d: %c%s %s:%d] %s\n", time_buffer, micros_remainder,
           "IWEF"[severity_], tid_buffer, fname_, line_, str().c_str());
+  IssueLink();
+}
+
+void LogMessage::IssueLink() {
+  static int64 issue_log_level = MinIssueLogLevel();
+
+  if (severity_ >= issue_log_level) {
+    fprintf(stderr,
+            "If you need help, create an issue at "
+            "https://github.com/intel/intel-extension-for-tensorflow/issues\n");
+  }
 }
 
 int64 LogMessage::MinVLogLevel() {
