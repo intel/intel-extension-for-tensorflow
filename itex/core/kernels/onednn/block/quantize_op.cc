@@ -375,9 +375,17 @@ class OneDnnQuantizeV2Op : public OpKernel {
       fwd_primitive->execute(onednn_stream, fwd_primitive_args);
 
       // Set data for output_min and output_max tensor
-      for (int i = 0; i < num_slices; ++i) {
-        output_min_tensor->flat<float>()(i) = min_range[i];
-        output_max_tensor->flat<float>()(i) = max_range[i];
+      if (std::is_same<T, quint8>::value && mode_ == QuantizeMode::SCALED) {
+        // Align with Intel-TF implmentation
+        for (int i = 0; i < num_slices; ++i) {
+          output_min_tensor->flat<float>()(i) = 0;
+          output_max_tensor->flat<float>()(i) = max_range[i];
+        }
+      } else {
+        for (int i = 0; i < num_slices; ++i) {
+          output_min_tensor->flat<float>()(i) = min_range[i];
+          output_max_tensor->flat<float>()(i) = max_range[i];
+        }
       }
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
