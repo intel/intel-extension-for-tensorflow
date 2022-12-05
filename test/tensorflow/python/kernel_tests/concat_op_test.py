@@ -963,5 +963,68 @@ class RawConcatOpTest(test.TestCase):
     self.assertAllEqual(result[:2, :], p1)
     self.assertAllEqual(result[2:, :], p2)
 
+
+  @test_util.run_deprecated_v1
+  def testConcatWithAllBlockFormatInput(self):
+    """Test Concat with all block input format
+    """
+    a1 = np.random.rand(1, 5, 5, 3).astype("f")
+    a2 = np.random.rand(1, 5, 5, 3).astype("f")
+    a3 = np.random.rand(1, 5, 5, 3).astype("f")
+    with self.session(use_gpu=True):
+      x1 = constant_op.constant(a1, dtype=dtypes.float32)
+      x2 = constant_op.constant(a2, dtype=dtypes.float32)
+      x3 = constant_op.constant(a3, dtype=dtypes.float32)
+
+      # This kernel data ensures the input and output of conv are the same
+      conv_np = np.zeros(shape=(1, 1, 3, 3)).astype(np.float32)
+      conv_np[:,:] = np.eye(3).astype(np.float32)
+      conv_kernel = constant_op.constant(conv_np)
+      
+      conv1 = nn_ops.conv2d(x1, conv_kernel, strides=[1, 1, 1, 1], padding="SAME", data_format="NHWC")
+      conv2 = nn_ops.conv2d(x2, conv_kernel, strides=[1, 1, 1, 1], padding="SAME", data_format="NHWC")
+      conv3 = nn_ops.conv2d(x3, conv_kernel, strides=[1, 1, 1, 1], padding="SAME", data_format="NHWC")
+
+      c = gen_array_ops.concat(-1, [conv1, conv2, conv3])
+      c = array_ops.identity(c)
+
+      concat_res = self.evaluate(c)
+
+    self.assertAllEqual(a1, concat_res[:,:,:,:3])
+    self.assertAllEqual(a2, concat_res[:,:,:,3:6])
+    self.assertAllEqual(a3, concat_res[:,:,:,6:9])
+
+
+  @test_util.run_deprecated_v1
+  def testConcatWithBlockandPlainFormatInput(self):
+    """Test Concat with block and plain input format
+    """
+    a1 = np.random.rand(1, 5, 5, 3).astype("f")
+    a2 = np.random.rand(1, 5, 5, 3).astype("f")
+    a3 = np.random.rand(1, 5, 5, 3).astype("f")
+    with self.session(use_gpu=True):
+      x1 = constant_op.constant(a1, dtype=dtypes.float32)
+      x2 = constant_op.constant(a2, dtype=dtypes.float32)
+      x3 = constant_op.constant(a3, dtype=dtypes.float32)
+
+      # This kernel data ensures the input and output of conv are the same
+      conv_np = np.zeros(shape=(1, 1, 3, 3)).astype(np.float32)
+      conv_np[:,:] = np.eye(3).astype(np.float32)
+      conv_kernel = constant_op.constant(conv_np)
+      
+      conv1 = nn_ops.conv2d(x1, conv_kernel, strides=[1, 1, 1, 1], padding="SAME", data_format="NHWC")
+      conv2 = nn_ops.conv2d(x2, conv_kernel, strides=[1, 1, 1, 1], padding="SAME", data_format="NHWC")
+
+      c = gen_array_ops.concat(-1, [conv1, conv2, x3])
+      c = array_ops.identity(c)
+
+      concat_res = self.evaluate(c)
+
+    self.assertAllEqual(a1, concat_res[:,:,:,:3])
+    self.assertAllEqual(a2, concat_res[:,:,:,3:6])
+    self.assertAllEqual(a3, concat_res[:,:,:,6:9])
+
+
 if __name__ == "__main__":
   test.main()
+

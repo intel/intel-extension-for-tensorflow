@@ -18,7 +18,7 @@ from intel_extension_for_tensorflow.python.test_func import test
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import gen_stateless_random_ops
-
+import tensorflow as tf
 class StatelessRandomUniformIntTest(test_util.TensorFlowTestCase):
   """test StatelessRandomUniformInt op"""
 
@@ -31,6 +31,13 @@ class StatelessRandomUniformIntTest(test_util.TensorFlowTestCase):
       output = gen_stateless_random_ops.stateless_random_uniform_int(
         shape, seed, minval, maxval)
       self.assertEqual(output.dtype, dtype)
-    
+
+  def testStatelessRandomUniformFullInt(self):
+    for dtype in [dtypes.int32, dtypes.int64]:
+      shape = constant_op.constant((2, 5), dtype=dtype)
+      seed = constant_op.constant([1,2], dtype=dtype)
+      output = tf.raw_ops.StatelessRandomUniformFullInt(shape=shape, seed=seed)
+      self.assertEqual(output.dtype, dtypes.uint64)
+
 if __name__ == "__main__":
   test.main()
