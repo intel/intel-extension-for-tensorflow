@@ -17,6 +17,7 @@ limitations under the License.
 #define ITEX_CORE_KERNELS_COMMON_BATCH_MATMUL_OP_H_
 
 #include <algorithm>
+#include <memory>
 #include <set>
 #include <string>
 #include <unordered_map>
