@@ -67,19 +67,19 @@ limitations under the License.
   };
 
 #else
-#define CAST_FUNCTORS(devname)                                        \
-  SPECIALIZE_CAST(devname, Eigen::half, float)                        \
-  SPECIALIZE_CAST(devname, Eigen::half, std::complex<float>)          \
-  SPECIALIZE_CAST(devname, Eigen::bfloat16, float)                    \
-  SPECIALIZE_CAST(devname, Eigen::bfloat16, floatstd::complex<float>) \
-  template <typename OUT_TYPE, typename IN_OUT>                       \
-  struct CastFunctor<devname, OUT_TYPE, IN_OUT> {                     \
-    void operator()(const devname& d,                                 \
-                    typename TTypes<OUT_TYPE>::Flat out_tensor,       \
-                    typename TTypes<IN_OUT>::ConstFlat in_tensor,     \
-                    bool truncate = false) {                          \
-      out_tensor.device(d) = in_tensor.template cast<OUT_TYPE>();     \
-    }                                                                 \
+#define CAST_FUNCTORS(devname)                                    \
+  SPECIALIZE_CAST(devname, Eigen::half, float)                    \
+  SPECIALIZE_CAST(devname, Eigen::half, std::complex<float>)      \
+  SPECIALIZE_CAST(devname, Eigen::bfloat16, float)                \
+  SPECIALIZE_CAST(devname, Eigen::bfloat16, std::complex<float>)  \
+  template <typename OUT_TYPE, typename IN_OUT>                   \
+  struct CastFunctor<devname, OUT_TYPE, IN_OUT> {                 \
+    void operator()(const devname& d,                             \
+                    typename TTypes<OUT_TYPE>::Flat out_tensor,   \
+                    typename TTypes<IN_OUT>::ConstFlat in_tensor, \
+                    bool truncate = false) {                      \
+      out_tensor.device(d) = in_tensor.template cast<OUT_TYPE>(); \
+    }                                                             \
   };
 #endif  // ITEX_ENABLE_DOUBLE
 
