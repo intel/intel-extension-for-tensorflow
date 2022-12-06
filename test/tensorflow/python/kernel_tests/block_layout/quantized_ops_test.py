@@ -21,12 +21,14 @@ from __future__ import division
 from __future__ import print_function
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
+from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 
 import numpy as np
 import os
 
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn_ops
 
@@ -63,6 +65,29 @@ class QuantizedOpsTest(test.TestCase):
       identity_op = array_ops.identity(quantize_op[0])
       value = self.evaluate(identity_op)
       self.assertArrayNear(expected_output, value, 0.1)
+
+  @test_util.run_deprecated_v1
+  def test_ITEXQuantizeV2(self):
+    with ops.name_scope("test"):
+      expected_output = [1, 1, 2, 127, 255, 255]
+      for use_gpu in [False, True]:
+        with self.session(use_gpu=use_gpu) as sess:
+          for dtype in [dtypes.float32, dtypes.bfloat16]:
+            x = constant_op.constant(
+              [1.0, 1.25, 1.75, 127.0, 255.0, 500.0],
+              shape=[6],
+              dtype=dtype)
+            x_min = 0.0
+            x_max = 255.0
+            quantize_op = load_ops_library._ITEXQuantizeV2(input=x, min_range=x_min, max_range=x_max, T=dtypes.quint8, mode="MIN_FIRST")
+     
+            # Very special case. Since we don't rewrite the last node of the graph. We need to add a "Identity" node. 
+            # "Identity" op only accepts single type of all inputs. However, "QuantizeV2" output datatypes are different.
+            # (float,int8,int8)
+            # So we only take the first tensor as the input of identity op
+            identity_op = array_ops.identity(quantize_op[0])
+            value = self.evaluate(identity_op)
+            self.assertArrayNear(expected_output, value, 0.1)
 
   @test_util.run_deprecated_v1
   def testQuantizeAsymmetricOp(self):
