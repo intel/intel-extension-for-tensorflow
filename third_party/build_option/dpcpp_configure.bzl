@@ -123,7 +123,6 @@ def find_mkl_path(repository_ctx):
 
 def find_aot_config(repository_ctx):
     """Find AOT config."""
-    aot_config = " -Xs \'-options -cl-poison-unsupported-fp64-kernels\'"
     device_tmp = " -Xs \'-device {}\'"
     if _AOT_CONFIG in repository_ctx.os.environ:
         devices = repository_ctx.os.environ[_AOT_CONFIG].strip()
@@ -137,8 +136,8 @@ def find_aot_config(repository_ctx):
             for d in device_list:
                 if len(d) > 20:
                     fail("Invalid AOT target: {}".format(d))
-            aot_config += device_tmp.format(devices)
-    return aot_config
+            device_tmp = device_tmp.format(devices)
+    return device_tmp
 
 def find_python_lib(repository_ctx):
     """Returns python path."""

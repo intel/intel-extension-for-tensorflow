@@ -94,6 +94,7 @@ def call_compiler(argv, link = False, dpcpp = True):
   link_flags = ['-fPIC']
   link_flags.append('-lsycl')
   link_flags.append("-fsycl")
+  link_flags.append('-Xs \'-options -cl-poison-unsupported-fp64-kernels\'')
   # TODO use bazel --jobs number here.
   link_flags.append('-fsycl-max-parallel-link-jobs=8')
   link_flags.append("-Wl,-no-as-needed")
