@@ -243,8 +243,28 @@ class QuantizedConcatOp : public OpKernel {
   int axis_input_index_;
 };
 
-// TODO(itex): Bring QuantizedConcatV2 back for GPU with completed
-// implementation.
+// TODO(itex): Add completed implementation for GPU in the future
+#ifndef INTEL_CPU_ONLY
+REGISTER_KERNEL_BUILDER(Name("QuantizedConcatV2")
+                            .Device(DEVICE_GPU)
+                            .HostMemory("axis")
+                            .HostMemory("input_mins")
+                            .HostMemory("input_maxes")
+                            .HostMemory("output_min")
+                            .HostMemory("output_max")
+                            .TypeConstraint<quint8>("T"),
+                        QuantizedConcatOp<GPUDevice, quint8>);
+
+REGISTER_KERNEL_BUILDER(Name("QuantizedConcatV2")
+                            .Device(DEVICE_GPU)
+                            .HostMemory("axis")
+                            .HostMemory("input_mins")
+                            .HostMemory("input_maxes")
+                            .HostMemory("output_min")
+                            .HostMemory("output_max")
+                            .TypeConstraint<qint8>("T"),
+                        QuantizedConcatOp<GPUDevice, qint8>);
+#else
 REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConcatV2")
                             .Device(DEVICE_CPU)
                             .TypeConstraint<quint8>("T"),
@@ -254,4 +274,5 @@ REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConcatV2")
                             .Device(DEVICE_CPU)
                             .TypeConstraint<qint8>("T"),
                         QuantizedConcatOp<CPUDevice, qint8>);
+#endif
 }  // namespace itex
