@@ -1,6 +1,6 @@
 # Customized Operators
 
-Public API for extended XPU operators is provided by the `itex.ops` namespace. The extended API provides better performance than original public API.
+Public API for extended XPU operators is provided by the `itex.ops` namespace. The extended API provides better performance than the original public API.
 
 ## `itex.ops.AdamWithWeightDecayOptimizer`
 This optimizer implements the Adam algorithm with weight decay
@@ -37,7 +37,7 @@ itex.ops.LayerNormalization(
     gamma_constraint=None, **kwargs
 )
 ```
-Normalize the activations of the previous layer for each given example in a batch independently, rather than across a batch like Batch Normalization. This applies a transformation that maintains the mean activation within each example close to 0 and the activation standard deviation close to 1. This python API `itex.ops.LayerNormalization` replaces [tf.keras.layers.LayerNormalization](https://www.tensorflow.org/api_docs/python/tf/keras/layers/LayerNormalization).
+Normalize the activations of the previous layer for each given example in a batch independently, rather than across a batch like Batch Normalization. This applies a transformation that maintains the mean activation within each example close to 0, and the activation standard deviation close to 1. This python API `itex.ops.LayerNormalization` replaces [tf.keras.layers.LayerNormalization](https://www.tensorflow.org/api_docs/python/tf/keras/layers/LayerNormalization).
 
 For example:
 ```sh
@@ -61,7 +61,7 @@ itex.ops.gelu(
     features, approximate=False, name=None
 )
 ```
-Gaussian error linear unit (`GELU`) computes `x * P(X <= x)`, where `P(X) ~ N(0, 1)`. The (GELU) nonlinearity weights inputs by their value, rather than gates inputs by their sign as in `ReLU`. This python API `itex.ops.gelu` replaces [tf.nn.gelu](https://www.tensorflow.org/api_docs/python/tf/nn/gelu).
+Gaussian error linear unit (`GELU`) computes `x * P(X <= x)`, where `P(X) ~ N(0, 1)`. The (GELU) nonlinearity weights inputs by their value, rather than gating inputs by their sign as in `ReLU`. This python API `itex.ops.gelu` replaces [tf.nn.gelu](https://www.tensorflow.org/api_docs/python/tf/nn/gelu).
 
 For example:
 ```sh
@@ -78,7 +78,7 @@ array([-0.00363725, -0.158808  ,  0.        ,  0.841192  ,  2.9963627 ],
 ```
 
 ## `itex.ops.ItexLSTM`
-Long Short-Term Memory layer (first proposed in Hochreiter & Schmidhuber, 1997), this python api `itex.ops.ItexLSTM` has same semantic with [tf.keras.layers.LSTM](https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM).
+Long Short-Term Memory layer (first proposed in Hochreiter & Schmidhuber, 1997), this python api `itex.ops.ItexLSTM` is semantically the same as [tf.keras.layers.LSTM](https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM).
 ```python
 itex.ops.ItexLSTM(
     200, activation='tanh',
@@ -90,7 +90,7 @@ itex.ops.ItexLSTM(
 )
 ```
 Based on available runtime hardware and constraints, this layer will choose different implementations (ITEX-based or fallback-TensorFlow) to maximize the performance.  
-If a GPU is available and all the arguments to the layer meet the requirement of the ITEX kernel (see below for details), the layer will use a fast ITEX implementation.
+If a GPU is available and all the arguments to the layer meet the requirements of the ITEX kernel (see below for details), the layer will use a fast ITEX implementation.
 The requirements to use the ITEX implementation are:
   1. `activation` == `tanh`
   2. `recurrent_activation` == `sigmoid`
