@@ -4,7 +4,7 @@
 [![version](https://img.shields.io/badge/release-1.0.0-green)](https://github.com/intel/intel-extension-for-tensorflow/releases)
 [![license](https://img.shields.io/badge/license-Apache%202-blue)](LICENSE.txt)
 
-Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow [PluggableDevice](https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md) interface to bring Intel XPU(GPU, CPU, etc) devices into [TensorFlow](https://github.com/tensorflow/tensorflow) open source community for AI workload acceleration. It allows flexibly plugging an XPU into TensorFlow on-demand, and exposing computing power inside Intel's hardware.
+Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow [PluggableDevice](https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md) interface, aiming to bring Intel XPU (GPU, CPU, etc) devices into [TensorFlow](https://github.com/tensorflow/tensorflow) open source community for AI workload acceleration. It allows users to flexibly plug an XPU into TensorFlow on-demand, exposing the computing power inside Intel's hardware.
 
 This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
 
@@ -20,9 +20,9 @@ This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
   
    `intel_extension_for_tensorflow` contains:
    * XPU specific implementation
-     * kernels & operators
-     * graph optimizer
-     * device runtime 
+     * Kernels & operators
+     * Graph optimizer
+     * Device runtime 
    * XPU configuration management
      * XPU backend selection
      * Options turning on/off advanced features
@@ -42,7 +42,7 @@ Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_
 |TensorFlow|Y|Y|[Install TensorFlow 2.10.0](https://www.tensorflow.org/install)|
 
 ### Installation Channel:
-Intel® Extension for TensorFlow* can be installed from the following channels:
+Intel® Extension for TensorFlow* can be installed through the following channels:
 
 |PyPI|DockerHub|Source|
 |-|-|-|
@@ -61,7 +61,7 @@ pip install tensorflow==2.10.0
 pip install --upgrade intel-extension-for-tensorflow[cpu]
 ```
 
-Sanity check by:
+Sanity check instructions:
 ```
 python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
 ```
@@ -69,7 +69,7 @@ python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__
 
 ## Documentation 
 
-Visit the [online document website](https://intel.github.io/intel-extension-for-tensorflow/latest/), and then get started the tour from Intel® Extension for TensorFlow* [examples](examples/README.md).
+Visit the [online document website](https://intel.github.io/intel-extension-for-tensorflow/latest/), and then get started with a tour of Intel® Extension for TensorFlow* [examples](examples/README.md).
 
 ## Contributing
 
@@ -88,7 +88,7 @@ See Intel's [Security Center](https://www.intel.com/content/www/us/en/security-c
 
 See also: [Security Policy](SECURITY.md)
 
-## Licence
+## License
 [Apache License 2.0](LICENSE.txt)
 
 This distribution includes third party software governed by separate license terms. This third party software, even if included with the distribution of the Intel software, may be governed by separate license terms, including without limitation, third party license terms, other Intel software license terms, and open source software license terms. These separate license terms govern your use of the third party programs as set forth in the ["THIRD-PARTY-PROGRAMS"](third-party-programs/THIRD-PARTY-PROGRAMS) file.
