@@ -219,5 +219,52 @@ class QuantizedOpsTest(test.TestCase):
   def testAxisGPU(self):
     self._testAxis(use_gpu=True)
 
+class QuantizeClassicAlgorithmTest(test.TestCase):
+
+  def __init__(self, method_name="runTest"):
+    super(QuantizeClassicAlgorithmTest, self).__init__(method_name)
+
+  @test_util.run_deprecated_v1
+  def testNativeQuantizeAsymmetricClassicalAlgorithmOp(self):
+    os.environ['ITEX_LAYOUT_OPT'] = '0'
+
+    if test.is_gpu_available():
+      self.skipTest("This UT is for CPU kernel only")
+
+    # TODO(itex): Add UT for block layout QuantizeV2. Currently, we cannot enable block Quantize classic 
+    # asymmetric quantization, because the rewrite rule for attr "classic_asymmetric_algorithm" requires 
+    # the graph pattern.
+    with ops.name_scope("test"):
+      # This UT targets for classical algorithm, which is used in stock TF, oneDNN and oneDNN Graph. The ground truth is slightly different with intel-tf result.
+      public_tf_output = [0, 144, 176, 223, 239, 255]
+      intel_tf_output = [0, 143, 175, 223, 239, 255]
+      # We only test the condition use_gpu=True. If testing use_gpu=False, it will fall back to 
+      # the implementation stock TF Quantize, which has different result
+      for use_gpu in [True]:
+        with self.session(use_gpu=use_gpu) as sess:
+          x = constant_op.constant(
+              [-1.0, 1.25, 1.75, 2.5, 2.75, 3.0],
+              shape=[6],
+              dtype=dtypes.float32)
+
+          # For some reasons, intel-tf doesn't rewrite QuantizeV2 with input node is "Const" op. 
+          # ITEX actually doesn't have such restrictions. Anyway, for convenient debugging, 
+          # just add an Identity op here. Not sure why identity(x) not work, while identity([x]) works
+          # maybe investigate in the future 
+          x = array_ops.identity([x])
+
+          x_min = -1.0
+          x_max = 3.0
+          quantize_op = array_ops.quantize(x, x_min, x_max, dtypes.quint8, narrow_range=False, mode="MIN_FIRST")
+          quantize_op = load_ops_library._ITEXQuantizeV2(input=x, min_range=x_min, max_range=x_max, T=dtypes.quint8, narrow_range=False, mode="MIN_FIRST", classic_asymmetric_algorithm=True)
+      
+        # Very special case. Since we don't rewrite the last node of the graph. We need to add a "Identity" node. 
+        # "Identity" op only accepts single type of all inputs. However, "QuantizeV2" output datatypes are different.
+        # (float,int8,int8)
+        # So we only take the first tensor as the input of identity op
+        identity_op = array_ops.identity(quantize_op[0])
+        value = self.evaluate(identity_op)
+        self.assertArrayNear(public_tf_output, value[0], 0.1)
+
 if __name__ == "__main__":
   test.main()

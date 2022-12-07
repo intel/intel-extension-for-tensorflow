@@ -19,6 +19,7 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/onednn/onednn_post_op_util.h"
@@ -444,12 +445,25 @@ void CopyAttrsQuantize(const utils::MutableNodeView* orig_node_view,
   const NodeDef* orig_node_def = orig_node_view->node();
   // Add attributes to new node.
   auto* new_attr = new_node->mutable_attr();
+  auto& src_attr = orig_node_def->attr();
 
   DataType dtype = DataType::DT_FLOAT;
   if (!HasNodeAttr(*orig_node_def, "dtype")) {
     // QuantizeV2 condition
     SetAttrValue(dtype, &(*new_attr)["dtype"]);
   }
+
+  bool is_onednn_graph_int8_graph = true;
+  // For oneDNN Graph INT8 pb, QuantizeV2's outputs are always Dequantize
+  for (auto fanout : orig_node_view->GetRegularFanout(0)) {
+    auto* fanout_node_view = fanout.node_view();
+    if (fanout_node_view->node()->op() != "Dequantize") {
+      is_onednn_graph_int8_graph = false;
+    }
+  }
+
+  SetAttrValue(is_onednn_graph_int8_graph,
+               &(*new_attr)["classic_asymmetric_algorithm"]);
 }
 
 bool IsQuantizedOp(const string& op_name) {

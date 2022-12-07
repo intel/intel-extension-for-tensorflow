@@ -146,6 +146,7 @@ cc_library(
     hdrs = ["layout_utils.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//itex/core/graph:optimizer_config",
         "//itex/core/graph/utils:function",
         "//itex/core/graph/utils:graph_view",
         "//itex/core/utils/onednn:onednn_util",

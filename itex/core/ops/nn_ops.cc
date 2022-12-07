@@ -1456,6 +1456,8 @@ void Register_ITEXQuantizeV2Op() {
                                   "ensure_minimum_range: float = 0.01");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "dtype: {bfloat16, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "classic_asymmetric_algorithm: bool = false");
     // TODO(itex): Implement quantize_shape_fn in the future
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);

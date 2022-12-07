@@ -64,6 +64,13 @@ class OneDnnQuantizeV2Op : public OpKernel {
       : OpKernel(context) {
     string mode_string;
     OP_REQUIRES_OK(context, context->GetAttr("mode", &mode_string));
+    if (context->HasAttr("classic_asymmetric_algorithm")) {
+      OP_REQUIRES_OK(context,
+                     context->GetAttr("classic_asymmetric_algorithm",
+                                      &is_classic_asymmetric_algorithm_));
+    } else {
+      is_classic_asymmetric_algorithm_ = false;
+    }
     OP_REQUIRES(context,
                 (mode_string == "MIN_COMBINED" || mode_string == "MIN_FIRST" ||
                  mode_string == "SCALED"),
@@ -181,12 +188,14 @@ class OneDnnQuantizeV2Op : public OpKernel {
     // implemenation.
     std::vector<int32> zero_points(num_slices, 0);
 
-    if (mode_ == QuantizeMode::SCALED) {
+    if (mode_ == QuantizeMode::SCALED || (mode_ == QuantizeMode::MIN_FIRST &&
+                                          is_classic_asymmetric_algorithm_)) {
       GetScaleAndZeropointAndAlignMinMax<T>(
           min_range.data(), max_range.data(), mode_, QuantDequantFlag::Quantize,
           num_slices, scale_factor.data(), zero_points.data());
 
-    } else if (mode_ == QuantizeMode::MIN_FIRST) {
+    } else if (mode_ == QuantizeMode::MIN_FIRST &&
+               !is_classic_asymmetric_algorithm_) {
       // Estimate scale for qunatization
       const int number_of_bits = sizeof(T) * 8;
       const int64 number_of_steps = static_cast<int64>(1) << number_of_bits;
@@ -271,7 +280,24 @@ class OneDnnQuantizeV2Op : public OpKernel {
                 onednn_engine, src_md, onednn_engine, dst_md, post_ops_attr);
         fwd_primitive = std::make_unique<dnnl::reorder>(*reorder_pd);
         fwd_pd = std::move(reorder_pd);
-      } else if (mode_ == QuantizeMode::MIN_FIRST) {
+      } else if (mode_ == QuantizeMode::MIN_FIRST &&
+                 is_classic_asymmetric_algorithm_) {
+        if (num_slices == 1) {
+          post_ops_attr.set_output_scales(0, scale_factor);
+          post_ops_attr.set_zero_points(DNNL_ARG_DST, 0, zero_points);
+        } else {
+          int mask = static_cast<int>(std::pow(2, axis_));
+          post_ops_attr.set_output_scales(mask, scale_factor);
+          post_ops_attr.set_zero_points(DNNL_ARG_DST, mask, zero_points);
+        }
+        // Create Reorder primitive
+        std::unique_ptr<dnnl::reorder::primitive_desc> reorder_pd =
+            std::make_unique<dnnl::reorder::primitive_desc>(
+                onednn_engine, src_md, onednn_engine, dst_md, post_ops_attr);
+        fwd_primitive = std::make_unique<dnnl::reorder>(*reorder_pd);
+        fwd_pd = std::move(reorder_pd);
+      } else if (mode_ == QuantizeMode::MIN_FIRST &&
+                 !is_classic_asymmetric_algorithm_) {
         if (num_slices == 1) {
           post_ops_attr.set_scales(DNNL_ARG_SRC_0, 0, scale_factor);
           post_ops_attr.set_scales(DNNL_ARG_SRC_1, 0, scale_factor);
@@ -353,7 +379,8 @@ class OneDnnQuantizeV2Op : public OpKernel {
       auto src_mem = CreateDnnlMemory(fwd_pd->src_desc(), onednn_engine,
                                       GetTensorBuffer<S>(&src_tensor));
       dnnl::memory shift_mem;
-      if (mode_ == QuantizeMode::MIN_FIRST) {
+      if (mode_ == QuantizeMode::MIN_FIRST &&
+          !is_classic_asymmetric_algorithm_) {
         shift_mem =
             CreateDnnlMemory(fwd_pd->src_desc(1), onednn_engine, shift_data);
       }
@@ -363,10 +390,12 @@ class OneDnnQuantizeV2Op : public OpKernel {
       // Execute Reorder primitive
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
       std::unordered_map<int, memory> fwd_primitive_args;
-      if (mode_ == QuantizeMode::SCALED) {
+      if (mode_ == QuantizeMode::SCALED || (mode_ == QuantizeMode::MIN_FIRST &&
+                                            is_classic_asymmetric_algorithm_)) {
         fwd_primitive_args = {{DNNL_ARG_SRC, src_mem}, {DNNL_ARG_DST, dst_mem}};
 
-      } else if (mode_ == QuantizeMode::MIN_FIRST) {
+      } else if (mode_ == QuantizeMode::MIN_FIRST &&
+                 !is_classic_asymmetric_algorithm_) {
         fwd_primitive_args = {{DNNL_ARG_SRC_0, src_mem},
                               {DNNL_ARG_SRC_1, shift_mem},
                               {DNNL_ARG_DST, dst_mem}};
@@ -404,6 +433,7 @@ class OneDnnQuantizeV2Op : public OpKernel {
   int axis_;
   bool narrow_range_;
   DataType dtype_;
+  bool is_classic_asymmetric_algorithm_;
 };
 
 #ifndef INTEL_CPU_ONLY
