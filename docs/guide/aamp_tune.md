@@ -4,25 +4,25 @@
 
 ### Numeric Stability
 
-Use FP16 or BF16 will impact the model accuracy and lead to [Numeric Stability](https://www.tensorflow.org/guide/mixed_precision) issue.
+Using FP16 or BF16 will impact the model accuracy and lead to a [Numeric Stability](https://www.tensorflow.org/guide/mixed_precision) issue.
 
-Some operations are **numerically-safe** for Float16/BFloat16, that means the operation based on FP16/BF16 has no obviously accuracy loss compared to FP32;
+Some operations are **numerically-safe** for Float16/BFloat16. This means the operation based on FP16/BF16 has no obviously accuracy loss compared to FP32.
 
-Some operations are **numerically-dangerous** for FP16/BF16, that means the operation based on FP16/BF16 has obviously accuracy loss compared to FP32;
+Some operations are **numerically-dangerous** for FP16/BF16. This means the operation based on FP16/BF16 has obviously accuracy loss compared to FP32.
 
 ### Configuration List
 
-In order to achieve faster performance with good numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST to let users manually configure a balance in performance and accuracy with FP16/BF16 if the default configuration doesn't provide the expected performance.
+In order to achieve faster performance with strong numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST that let users manually configure a balance of performance and accuracy with FP16/BF16 if the default configuration doesn't provide the expected performance.
 
-Set the lists according to the operations' numerically-safe or numerically-dangerous property. The lists include the Operation Types of Tensorflow and supports fused Operations.
+Set the lists according to the numerically-safe or numerically-dangerous type of the operations. The lists include the Operation Types of Tensorflow, and support fused Operations.
 
 
 | List Name | Description                                                  |
 | --------- | ------------------------------------------------------------ |
 | ALLOWLIST | Include a set of operations that are always considered numerically-safe and performance-critical for FP16/BF16. The operations in ALLOWLIST are always converted to FP16/BF16. |
-| DENYLIST  | Include a set of operations that are considered numerically-dangerous for execution in Float16/BFloat16). Additionally they will effects the downstream nodes to make them be numerically-dangerous too.  For example, in graph: Exp -> Add, the Add is numerically-dangerous due to the Exp). |
-| INFERLIST | Include a set of operations that are considered numerically-safe for FP16/BF16, but they will be numerically-dangerous if impacted by an upstream node which is in DENYLIST. |
-| CLEARLIST | Include a set of operations that have no numerically-significant effects for FP16/BF16, and can run in FP16/BF16. According to downstream/upstream node numerically-safe property, they could be set to Float16/BFloat16 or not. They are used to reduce conversion between FP16/BF16 and FP32 in graph to improve the performance.|
+| DENYLIST  | Include a set of operations that are considered numerically-dangerous for execution in Float16/BFloat16). Additionally, they will affect the downstream nodes, making them numerically-dangerous too.  For example, in graph: Exp -> Add, the Add is numerically-dangerous due to the Exp). |
+| INFERLIST | Include a set of operations that are considered numerically-safe for FP16/BF16, but they will be numerically-dangerous if impacted by an upstream node that is in the DENYLIST. |
+| CLEARLIST | Include a set of operations that have no numerically-significant effects for FP16/BF16, and can run in FP16/BF16. According to the downstream/upstream nodes’ numerically-safe property, they could be set to Float16/BFloat16 if desired. They are used to reduce conversion between FP16/BF16 and FP32 in graph to improve performance.|
 
 ### Example of Mix Precision by List
 
@@ -39,7 +39,7 @@ Here is an example to explain the principle.
 
 Steps:
 
-I. Set every nodes property according to the configuration of list (including default and custom setting).
+I. Set every node’s property according to the configuration of list (including default and custom setting).
 
 II. Add nodes whose type is in ALLOWLIST to allow set.
 
@@ -61,13 +61,13 @@ V. Change nodes data type and insert Cast nodes.
 
 ### Rule to Improve Performance by the Configuration List
 
-- Set more nodes in allow set will increase the performance.
-- Reduce Cast nodes in different allow set will increase the performance.
+- Adding more nodes to Allow will increase the performance.
+- Reducing Cast nodes in a different allow set will increase the performance.
 
 ### Usage
 
-You can set these lists manually to tune Advance AMP by using the Python API or by setting environment variables to override the default settings. Values set using the Python API will override those set using environment variables.
-The priority: Python API > Environment Variable  > Default Setting.
+You can set these lists manually to tune Advance AMP by using the Python API, or by setting environment variables to override the default settings. Values set using the Python API will override those set using environment variables.
+Settings are prioritized in this order: Python API > Environment Variable > Default Setting.
 
 #### Python API
 
@@ -132,13 +132,13 @@ Steps:
 
 I. Install Intel® Extension for TensorFlow* in running environment.
 
-After Installing Intel® Extension for TensorFlow*, it will be activated automatically as a plugin of stock Tensorflow.
+After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock Tensorflow.
 
 Refer to [installation](/README.md#Install) instructions for more details.
 
 II. Enable Advanced AMP.
 
-With the default configuration, the Advanced AMP has a good balance between performance and accuracy in most cases.
+With the default configuration, in most cases the Advanced AMP will balance accuracy with performance.
 
 ||Python API|Environment Variable|
 |-|-|-|
@@ -155,13 +155,13 @@ III. Use the Python API or environment variables to manually tune Advanced AMP f
 
 ### End-to-end Example
 
-Train a CNN model by Advanced AMP on GPU, and show the performance improvement. It shows how to tune Advanced AMP manually. [Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU](./../../examples/infer_inception_v4_amp/README.md)
+Train a CNN model with Advanced AMP on GPU, and show the performance improvement. The following guide shows how to tune AMP manually. [Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU](./../../examples/infer_inception_v4_amp/README.md)
 
 The first epoch may be slower because TensorFlow optimizes the model during the first run. In subsequent epochs, the run time will stabilize.
 
 ### Tuning Performance Example on MobileNet
 
-Advanced AMP already provides more aggressive sub-graph fusion in more models. To gain better performce, you may manually tune the Advanced AMP configuration list. It allows more operations to be converted to lower precision. However, usually it cannot provide more fusion chances.
+Advanced AMP already provides more aggressive sub-graph fusion in more models. To achieve better performance, you may manually tune the Advanced AMP configuration list. It allows more operations to be converted to lower precision. However, usually it cannot provide more fusion chances.
 
 Here is an example using MobileNet to tune manually.
 
@@ -174,7 +174,7 @@ export ITEX_AUTO_MIXED_PRECISION=1
 export ITEX_AUTO_MIXED_PRECISION_LOG_PATH=/my/path/
 ```
 
-After run the model inference by Intel® Extension for TensorFlow*, there will be 5 files in the path:
+After running the model inference by Intel® Extension for TensorFlow*, there will be 5 files in the path:
     
 |   Log File    |   Explain |
 |-------------- | --------- |
@@ -212,10 +212,9 @@ auto_mixed_precision_options.inferlist_remove = "AvgPool3D,AvgPool"
 
 IV. Execute for Advanced AMP with updated configuration
 
-Run the model inference by Intel® Extension for TensorFlow* with above tuned configure list, the performance is increased a little without accuracy drop, because only 2 operations are converted to BF16, which occupy less rate in whole running time.
+Run the model inference by Intel® Extension for TensorFlow* with above configuration tuning list, the performance will increase a little without a drop in accuracy, because only 2 operations are converted to BF16, occupying a lower rate over the whole runtime.
 ![itex-amp-example2.png](images/itex-amp-example2.png)
 
-V. Continue tuning the Advanced AMP configure list
+V. Continue tuning the Advanced AMP configuration list
 
-Repeat the above steps to tune Advanced AMP, until you reach the peak performance with acceptable accuracy.
-
+Repeat the above steps to tune Advanced AMP, until you reach the peak performance with desired accuracy.
