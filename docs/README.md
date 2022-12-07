@@ -59,8 +59,9 @@
   </thead>
   <tbody>
       <tr>
-          <td colspan="6" align="center"><a href="guide/practice_guide.md#cpu-practice-guide">CPU practice guide</a></td>
-		  <td colspan="6" align="center"><a href="guide/practice_guide.md#gpu-practice-guide">GPU practice guide</a></td>
+        <td colspan="4" align="center"><a href="guide/practice_guide.md#cpu-practice-guide">CPU practice guide</a></td>
+        <td colspan="4" align="center"><a href="guide/practice_guide.md#gpu-practice-guide">GPU practice guide</a></td>
+        <td colspan="4" align="center"><a href="install/experimental/install_for_cpp.md">C++ API support</a></td>
       </tr>
   </tbody>
     <thead>
@@ -82,20 +83,20 @@
 
 * Environment variables & Python API
 
-  Generally, the default configuration of Intel® Extension for TensorFlow\* provides good performance without any code changes. 
-  Intel® Extension for TensorFlow\* also provides simple frontend Python APIs and utilities, for advanced users to get more performance optimizations with minor code changes for different kinds of application scenarios. Typically, only two or three clauses are required to be added to the original code.
+  Generally, the default configuration of Intel® Extension for TensorFlow\* will provide good performance without any code changes. 
+  Intel® Extension for TensorFlow\* also provides simple frontend Python APIs and utilities, for advanced users to get more optimized performance with only minor code changes, for different kinds of application scenarios. Typically, only two or three clauses are required to be added to the original code.
 
 * Advanced auto mixed precision (AMP)
 
-  Low precision data type `bfloat16` and` float16` are natively supported from the `3rd Generation Xeon® Scalable Processors` [Cooper Lake](https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html)  with `AVX512` instruction set and Intel® Data Center GPU with further boosted performance and with less memory consumption. The lower-precision data types support of Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.
+  Low precision data types `bfloat16` and` float16` are natively supported from the `3rd Generation Xeon® Scalable Processors` [Cooper Lake](https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html)  with `AVX512` instruction set and Intel® Data Center GPU with further boosts to performance and with less memory consumption. The lower-precision data types supported by Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.
 
 * Graph optimization
 
-  Intel® Extension for TensorFlow\* provides graph optimization to fuse specific operator patterns to a new single operator for better performance, such as `Conv2D+ReLU` or `Linear+ReLU`.  The benefit of the fusions are delivered to users in a transparent fashion.
+  Intel® Extension for TensorFlow\* provides graph optimization to fuse specific operator patterns to a new single operator for better performance, such as `Conv2D+ReLU` or `Linear+ReLU`.  The benefits of the fusions are delivered to users in a transparent fashion.
 
 * Operator optimization
 
-  Intel® Extension for TensorFlow\* also optimizes operators and implements several customized operators for performance boost. The `itex.ops` namespace is used to extended TensorFlow public APIs implementation for better performance.
+  Intel® Extension for TensorFlow\* also optimizes operators and implements several customized operators for performance boost. The `itex.ops` namespace is used to extend TensorFlow public APIs implementation for better performance.
 
 * GPU profiler
 
@@ -103,4 +104,4 @@
 
 * INT8 quantization
 
-  Intel® Extension for TensorFlow* co-works with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) to provide compatible TensorFlow INT8 quantization solution support with same uer experience.
+  Intel® Extension for TensorFlow* co-works with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) to provide compatible TensorFlow INT8 quantization solution support with equivalent user experience.
