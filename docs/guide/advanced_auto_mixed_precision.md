@@ -1,10 +1,10 @@
 # Advanced Auto Mixed Precision
 
-Mixed Precision uses lower-precision data types (such as FP16 or BF16) to make models run faster and with less memory consumption during training and inference.
+Mixed Precision uses lower-precision data types (such as FP16 or BF16) to make models run faster with less memory consumption during training and inference.
 
 Stock Tensorflow provides two ways to do this, Grappler Graph Optimization [Auto Mixed Precision](https://www.tensorflow.org/guide/graph_optimization)**(AMP)** and [Keras mixed precision API](https://www.tensorflow.org/guide/mixed_precision).
 
-Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API in Stock TensorFlow, and provodes an **Advanced Auto Mixed Precision** feature for better performance.
+Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API in Stock TensorFlow, and provides an **Advanced Auto Mixed Precision** feature for better performance.
 
 
 - [Overview](#overview)
@@ -26,11 +26,11 @@ Intel® Extension for TensorFlow* provides two ways to support mixed precision:
 
 I. Keras Mixed Precision
 
-Support same Keras mixed precision API of stock Tensorflow. To learn Keras mixed precision API in Intel® Extension for TensorFlow*, refer to [Keras Mixed Precision](/docs/guide/keras_mixed_precision.md).
+Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API available in Stock TensorFlow. To learn about Keras mixed precision, refer to [Keras Mixed Precision](/docs/guide/keras_mixed_precision.md).
 
 II. Advanced Auto Mixed Precision
 
-Advanced Auto Mixed Precision (Advanced AMP) is similar with stock Tensorflow Auto Mixed Precision, but it has better usage and performance on Intel CPU and GPU.
+Advanced Auto Mixed Precision (Advanced AMP) is similar to stock Tensorflow Auto Mixed Precision, but it offers better usage and performance on Intel CPU and GPU.
 
 |Feature|Keras Mixed Precision API|Advanced Auto Mixed Precision|
 |-|-|-|
@@ -62,11 +62,11 @@ Advanced Auto Mixed Precision supports data type depended on hardware:
 
 ### Graph Optimizer
 
-Intel® Extension for TensorFlow* graph optimizer provides more powerful optimization for mixed precision graph as a stock TensorFlow custom graph optimizer.
+Intel® Extension for TensorFlow* graph optimizer provides more powerful optimization for mixed precision graph versus a stock TensorFlow custom graph optimizer.
 
 I. After Advanced AMP of Intel® Extension for TensorFlow* is enabled, the stock Tensorflow AMP components: AMP and Remapper will be disabled automatically.
 
-II. Intel® Extension for TensorFlow* AMP and Remapper work for mixed precision. The order is changed to: Remapper, AMP, so that fusion operations could be mixed precision.
+II. Intel® Extension for TensorFlow* AMP and Remapper work for mixed precision. The order is changed to Remapper, then AMP, so that fusion operations can be mixed precision.
 
 III. Intel® Extension for TensorFlow* implements some existing operations to cover those in stock Tensorflow, for better performance in Intel hardware.
 
@@ -78,22 +78,22 @@ IV. Intel® Extension for TensorFlow* implements custom operations.
 
 Advanced AMP based on Intel® Extension for TensorFlow* has more features to improve performance than stock TensorFlow AMP:
 
-- Provide more aggressive sub-graph fusion, such as LayerNorm and InstanceNorm fusion.
-- Support mixed precision in fused Operations, which is not supported by stock TensorFlow.
+- Provides more aggressive sub-graph fusion, such as LayerNorm and InstanceNorm fusion.
+- Supports mixed precision in fused Operations, which are not supported by stock TensorFlow.
 
 ## Tune Advanced AMP Manually
 
 
-Generally, with default configuration, the Advanced AMP has good results balancing performance and accuracy in most cases. 
-For advanced users with more knowledge of model and TensorFlow, you can manually tune Advanced AMP for special cases or for custom operation.
+In most cases, with default configuration, Advanced AMP delivers good results with balanced performance and accuracy. 
+For advanced users with more knowledge of model and TensorFlow, it is possible to manually tune Advanced AMP for special cases or custom operations.
 
-Refer to [Tune Advanced Auto Mixed Precision](aamp_tune.md) for this advantage operations. 
+Refer to [Tune Advanced Auto Mixed Precision](aamp_tune.md) for advanced operations. 
 
 ## Usage
 
 I. Install Intel® Extension for TensorFlow* in running environment.
 
-After Installing Intel® Extension for TensorFlow*, it will be activated automatically as a plugin of stock TensorFlow.
+After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.
 
 Refer to [installation](/README.md#Install) instructions for more details.
 
@@ -103,7 +103,7 @@ With the default configuration, the Advanced AMP has a good balance between perf
 
 ||Python API|Environment Variable|
 |-|-|-|
-|Basic (Default configuration)|`import intel_extension_for_tensorflow as itex`<br><br>`auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()`<br>`auto_mixed_precision_options.data_type = itex.BFLOAT16 #itex.FLOAT16`<br><br>`graph_options = itex.GraphOptions()`<br>`graph_options.auto_mixed_precision_options=auto_mixed_precision_options`<br>`graph_options.auto_mixed_precision = itex.ON`<br><br>`config = itex.ConfigProto(graph_options=graph_options)`<br>`itex.set_backend("gpu", config)`|`export ITEX_AUTO_MIXED_PRECISION=1`<br>`export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16" #"FLOAT16"`<br>|
+|Basic (Default configuration)|`import intel_extension_for_tensorflow as itex`<br><br>`auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()`<br>`auto_mixed_precision_options.data_type = itex.BFLOAT16 #itex.FLOAT16`<br><br>`graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precision_options)`<br>`graph_options.auto_mixed_precision = itex.ON`<br><br>`config = itex.ConfigProto(graph_options=graph_options)`<br>`itex.set_backend("gpu", config)`|`export ITEX_AUTO_MIXED_PRECISION=1`<br>`export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16" #"FLOAT16"`<br>|
 
 
 III. Use the Python API or environment variables to manually tune Advanced AMP for better performance, accuracy, or both.
@@ -118,7 +118,7 @@ Refer to [Usage](aamp_tune.md#usage)
 
 ### Quick Training Example
 
-Train model for BF16 by Advanced AMP on GPU device.
+Train model for BF16 with Advanced AMP on GPU device.
 
 #### Setup
 
@@ -130,11 +130,11 @@ Use either the Python API or the environment variables to enable Advanced AMP.
 
 |Python API|Environment Variable|
 |-|-|
-|`import intel_extension_for_tensorflow as itex`<br><br>`auto_mixed_precision_options = itex.AutoMixedPrecosionOptions()`<br>`auto_mixed_precision_options.data_type = itex.BFLOAT16`<br><br>`graph_options = itex.GraphOptions()`<br>`graph_options.auto_mixed_precision_options=auto_mixed_precision_options`<br>`graph_options.auto_mixed_precision = itex.ON`<br><br>`config = itex.ConfigProto(graph_options=graph_options)`<br>`itex.set_backend("gpu", config)`|`export ITEX_AUTO_MIXED_PRECISION=1`<br>`export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16"`<br>|
+|`import intel_extension_for_tensorflow as itex`<br><br>`auto_mixed_precision_options = itex.AutoMixedPrecosionOptions()`<br>`auto_mixed_precision_options.data_type = itex.BFLOAT16`<br><br>`graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precision_options)`<br>`graph_options.auto_mixed_precision = itex.ON`<br><br>`config = itex.ConfigProto(graph_options=graph_options)`<br>`itex.set_backend("gpu", config)`|`export ITEX_AUTO_MIXED_PRECISION=1`<br>`export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16"`<br>|
 
 #### Original Code
 
-Insert the python API above in original code or set environment variables above before executing original code.
+Insert the python API above in the original code, or set environment variables above before executing the original code.
 
 ```python
 import tensorflow as tf
@@ -185,7 +185,7 @@ Advanced AMP supports outputting the log and optimized graph by setting environm
 
 `export ITEX_AUTO_MIXED_PRECISION_LOG_PATH="/my/path/"`
 
-It will trigger Intel® Extension for TensorFlow* to save the post optimized graph and detailed convert log to local folder.
+It will trigger Intel® Extension for TensorFlow* to save the post optimization graph and detailed conversion log to a local folder.
 
 Use this to check the structure of the final graph to learn the mixed precision status. It also helps to know the rules to convert operations from FP32 to BF16.
 
@@ -193,6 +193,6 @@ For detailed introduction, refer to [Tuning Performance Example by Advanced AMP 
 
 ### Custom Operation
 
-When writing a custom operation, add it to configuration list to enable Advanced AMP.
+When writing a custom operation, add it to the configuration list to enable Advanced AMP.
 
 Refer to [Tune Advanced Auto Mixed Precision](aamp_tune.md#tune-advanced-auto-mixed-precision) for more details.
