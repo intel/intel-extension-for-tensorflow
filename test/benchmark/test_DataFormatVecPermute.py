@@ -42,13 +42,13 @@ class DataFormatVecPermuteTest(test.TestCase):
         x = tf.constant(x, dtype=dtype)
         flush_cache()
         out_gpu = nn_ops.data_format_vec_permute(
-            x=x, src_format='NDHWC', dst_format='NCDHW')
+            x=x, src_format='NHWC', dst_format='NCHW')
 
     @add_profiling
     @multi_run(ITERATION)
     def testDataFormatVecPermute(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            self._test_2D(5,2, dtype)
+            self._test_2D(4,2, dtype)
             self._test_1D(4, dtype)
 
 if __name__ == '__main__':

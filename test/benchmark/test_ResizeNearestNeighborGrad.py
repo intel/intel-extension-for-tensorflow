@@ -17,12 +17,13 @@
 import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import constant_op
+from tensorflow.python.framework import test_util
 from tensorflow.python.ops import image_ops
 from tensorflow.python.ops import gradient_checker_v2
 from utils import multi_run, add_profiling, flush_cache
 
 try:
-    from intel_extension_for_tensorflow.python.test_func import test, test_util
+    from intel_extension_for_tensorflow.python.test_func import test
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
 except ImportError:
     from tensorflow.python.platform import test
