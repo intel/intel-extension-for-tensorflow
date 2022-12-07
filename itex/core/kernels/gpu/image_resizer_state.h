@@ -191,6 +191,9 @@ struct ImageResizerGradientState {
     original_height = original_image.dim_size(1);
     original_width = original_image.dim_size(2);
 
+    OP_REQUIRES(context, resized_height > 0 && resized_width > 0,
+                errors::InvalidArgument("resized dimensions must be positive"));
+
     OP_REQUIRES(
         context,
         FastBoundsCheck(original_height, std::numeric_limits<int32>::max()) &&
