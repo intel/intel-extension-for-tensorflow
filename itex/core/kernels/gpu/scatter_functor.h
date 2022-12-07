@@ -96,24 +96,25 @@ struct ScatterScalarFunctor {
                    typename TTypes<float>::Matrix params_fp32);
 };
 
-template <typename T, typename Index, scatter_op::UpdateOp op>
+template <typename T, typename Index, scatter_op::UpdateOp op, typename = void>
 struct ScatterScalarOpDPCPPKernel {
-  ScatterScalarOpDPCPPKernel(T* params, const T update_val,
-                             const Index* indices, Index first_dim_size,
-                             Index indices_size, Index synthesized_updates_size)
+  ScatterScalarOpDPCPPKernel(T* params, const T* updates, const Index* indices,
+                             Index first_dim_size, Index indices_size,
+                             Index synthesized_updates_size, float* params_fp32)
       : params_(params),
-        updates_(update_val),
+        updates_(updates),
         indices_(indices),
         first_dim_size_(first_dim_size),
         indices_size_(indices_size),
-        synthesized_updates_size_(synthesized_updates_size) {}
+        synthesized_updates_size_(synthesized_updates_size),
+        params_fp32_(params_fp32) {}
 
   void operator()(sycl::nd_item<1> item) const {
     int64_t i = item.get_global_linear_id();
     Index update_block = synthesized_updates_size_ / indices_size_;
     if (i < synthesized_updates_size_) {
       int indices_i = i / update_block;
-      // const T update_val = *updates_;
+      const T update_val = *updates_;
       int param_first_index = indices_[indices_i];
       if (!(param_first_index >= 0 && param_first_index < first_dim_size_)) {
         // Ignore indices that are out of range.
@@ -121,12 +122,56 @@ struct ScatterScalarOpDPCPPKernel {
       }
       int params_i = param_first_index * update_block + (i % update_block);
       scatter_op::internal::ScatterOpKernelDPCPPFunc<T, op>()(
-          &params_[params_i], updates_);
+          &params_[params_i], update_val);
     }
   }
 
   T* params_;
-  const T updates_;
+  float* params_fp32_;
+  const T* updates_;
+  const Index* indices_;
+  Index first_dim_size_;
+  Index indices_size_;
+  Index synthesized_updates_size_;
+};
+
+template <typename T, typename Index, scatter_op::UpdateOp op>
+struct ScatterScalarOpDPCPPKernel<
+    T, Index, op,
+    typename std::enable_if_t<(std::is_same_v<T, Eigen::half> ||
+                               std::is_same_v<T, Eigen::bfloat16>),
+                              void>> {
+  ScatterScalarOpDPCPPKernel(T* params, const T* updates, const Index* indices,
+                             Index first_dim_size, Index indices_size,
+                             Index synthesized_updates_size, float* params_fp32)
+      : params_(params),
+        updates_(updates),
+        indices_(indices),
+        first_dim_size_(first_dim_size),
+        indices_size_(indices_size),
+        synthesized_updates_size_(synthesized_updates_size),
+        params_fp32_(params_fp32) {}
+
+  void operator()(sycl::nd_item<1> item) const {
+    int64_t i = item.get_global_linear_id();
+    Index update_block = synthesized_updates_size_ / indices_size_;
+    if (i < synthesized_updates_size_) {
+      int indices_i = i / update_block;
+      const float update_val = static_cast<float>(*updates_);
+      int param_first_index = indices_[indices_i];
+      if (!(param_first_index >= 0 && param_first_index < first_dim_size_)) {
+        // Ignore indices that are out of range.
+        return;
+      }
+      int params_i = param_first_index * update_block + (i % update_block);
+      scatter_op::internal::ScatterOpKernelDPCPPFunc<float, op>()(
+          &params_fp32_[params_i], update_val);
+    }
+  }
+
+  T* params_;
+  float* params_fp32_;
+  const T* updates_;
   const Index* indices_;
   Index first_dim_size_;
   Index indices_size_;
@@ -238,13 +283,11 @@ struct ScatterScalarFunctor<
             .template get_info<sycl::info::device::max_work_group_size>();
     auto num_wg = (synthesized_updates_size + group_size - 1) / group_size;
 
-    const float update_val = static_cast<float>(*(updates.data()));
-
     stream->submit([&](sycl::handler& cgh) {
-      ScatterScalarOpDPCPPKernel<float, Index, op> task(
-          params_fp32.data(), update_val, indices.data(), first_dim_size,
-          indices_size, synthesized_updates_size);
-      cgh.parallel_for<ScatterScalarOpDPCPPKernel<float, Index, op>>(
+      ScatterScalarOpDPCPPKernel<T, Index, op> task(
+          params.data(), updates.data(), indices.data(), first_dim_size,
+          indices_size, synthesized_updates_size, params_fp32.data());
+      cgh.parallel_for<ScatterScalarOpDPCPPKernel<T, Index, op>>(
           sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
                             sycl::range<1>(group_size)),
           task);
@@ -262,7 +305,7 @@ struct ScatterScalarFunctor<
                             !std::is_same<T, Eigen::half>::value>::type> {
   Index operator()(OpKernelContext* c, const GPUDevice& d,
                    typename TTypes<T>::Matrix params,
-                   typename TTypes<T>::ConstScalar updates,
+                   const typename TTypes<T>::ConstScalar updates,
                    typename TTypes<Index>::ConstFlat indices,
                    typename TTypes<float>::Matrix params_fp32) {
     const Index first_dim_size = params.dimension(0);
@@ -276,12 +319,10 @@ struct ScatterScalarFunctor<
             .template get_info<sycl::info::device::max_work_group_size>();
     auto num_wg = (synthesized_updates_size + group_size - 1) / group_size;
 
-    const T update_val = *(updates.data());
-
     stream->submit([&](sycl::handler& cgh) {
       ScatterScalarOpDPCPPKernel<T, Index, op> task(
-          params.data(), update_val, indices.data(), first_dim_size,
-          indices_size, synthesized_updates_size);
+          params.data(), updates.data(), indices.data(), first_dim_size,
+          indices_size, synthesized_updates_size, params_fp32.data());
       cgh.parallel_for<ScatterScalarOpDPCPPKernel<T, Index, op>>(
           sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
                             sycl::range<1>(group_size)),
