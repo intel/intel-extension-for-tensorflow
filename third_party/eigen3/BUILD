@@ -36,7 +36,7 @@ cc_library(
     includes = [],  #+ if_mkl(["./mkl_include"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/build_option/dpcpp:eigen_dpcpp_header",
+        "//third_party/build_option/dpcpp:eigen_itex_gpu_header",
         "@eigen_archive//:eigen",
     ],
 )

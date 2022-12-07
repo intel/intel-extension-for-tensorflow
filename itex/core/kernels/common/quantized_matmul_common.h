@@ -531,11 +531,11 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
         void* input_weight_host_buf =
             GetTensorBuffer<Tweight>(&weight_host_tensor);
 
-        auto* dpcpp_stream = context->GetDeviceStream();
-        dpcpp_stream
+        auto* ITEX_GPU_stream = context->GetDeviceStream();
+        ITEX_GPU_stream
             ->memcpy(input_bias_host_buf, input_bias_buf, n * sizeof(Tbias))
             .wait();
-        dpcpp_stream
+        ITEX_GPU_stream
             ->memcpy(input_weight_host_buf, input_weight_buf,
                      k * n * sizeof(Tweight))
             .wait();
@@ -601,8 +601,8 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
         void* scaled_bias_device_buf =
             GetTensorBuffer<Tbias>(&scaled_bias_device_tensor);
 
-        auto* dpcpp_stream = context->GetDeviceStream();
-        dpcpp_stream
+        auto* ITEX_GPU_stream = context->GetDeviceStream();
+        ITEX_GPU_stream
             ->memcpy(scaled_bias_device_buf, scaled_bias_buf,
                      scaled_bias_md.get_size() * sizeof(Tbias))
             .wait();

@@ -326,12 +326,12 @@ class FusedBatchNormOp : public OpKernel {
       auto est_variance_data = est_variance_tensor.flat<U>().data();
 
 #ifndef INTEL_CPU_ONLY
-      auto* dpcpp_stream = context->GetDeviceStream();
+      auto* gpu_stream = context->GetDeviceStream();
       auto total_threads =
-          dpcpp_stream->get_device()
+          gpu_stream->get_device()
               .template get_info<sycl::info::device::max_work_group_size>();
       if (exponential_avg_factor_ == U(1.0)) {
-        dpcpp_stream->submit([&](sycl::handler& cgh) {
+        gpu_stream->submit([&](sycl::handler& cgh) {
           auto batch_mean_data_ptr = static_cast<U*>(batch_mean_data);
           auto mean_data_ptr = static_cast<U*>(mean_data);
           auto batch_variance_data_ptr = static_cast<U*>(batch_variance_data);
@@ -352,7 +352,7 @@ class FusedBatchNormOp : public OpKernel {
       } else {
         U one_minus_factor = U(1.0) - exponential_avg_factor_;
         U exponential_avg_factor = exponential_avg_factor_;
-        dpcpp_stream->submit([&](sycl::handler& cgh) {
+        gpu_stream->submit([&](sycl::handler& cgh) {
           auto batch_mean_data_ptr = batch_mean_data;
           auto est_mean_data_ptr = est_mean_data;
           auto mean_data_ptr = mean_data;
@@ -538,11 +538,11 @@ class QuantizedFusedBatchNormOp
     const void* min_device_data = context->input(5).data();
     const void* max_device_data = context->input(6).data();
 
-    auto* dpcpp_stream = context->GetDeviceStream();
+    auto* gpu_stream = context->GetDeviceStream();
     DeviceMemcpy<Device>(min_host_data, min_device_data, 1 * sizeof(float),
-                         dpcpp_stream);
+                         gpu_stream);
     DeviceMemcpy<Device>(max_host_data, max_device_data, 1 * sizeof(float),
-                         dpcpp_stream);
+                         gpu_stream);
 #endif  // INTEL_CPU_ONLY
 
     const float max_abs = std::max(std::abs(min), std::abs(max));

@@ -35,41 +35,41 @@ enum class UpdateOp { ASSIGN, ADD, SUB, MUL, DIV, MIN, MAX };
 namespace internal {
 
 template <typename T, scatter_op::UpdateOp op>
-struct ScatterOpKernelDPCPPFunc;
+struct ScatterOpKernelITEX_GPUFunc;
 
 template <typename T>
-struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::ASSIGN> {
+struct ScatterOpKernelITEX_GPUFunc<T, scatter_op::UpdateOp::ASSIGN> {
   void operator()(T* dest, T src) const { *dest = src; }
 };
 
 template <typename T>
-struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::ADD> {
-  void operator()(T* dest, T src) const { DpcppAtomicAdd(dest, src); }
+struct ScatterOpKernelITEX_GPUFunc<T, scatter_op::UpdateOp::ADD> {
+  void operator()(T* dest, T src) const { ItexAtomicAdd(dest, src); }
 };
 
 template <typename T>
-struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::SUB> {
-  void operator()(T* dest, T src) const { DpcppAtomicSub(dest, src); }
+struct ScatterOpKernelITEX_GPUFunc<T, scatter_op::UpdateOp::SUB> {
+  void operator()(T* dest, T src) const { ItexAtomicSub(dest, src); }
 };
 
 template <typename T>
-struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::MUL> {
-  void operator()(T* dest, T src) const { DpcppAtomicMul(dest, src); }
+struct ScatterOpKernelITEX_GPUFunc<T, scatter_op::UpdateOp::MUL> {
+  void operator()(T* dest, T src) const { ItexAtomicMul(dest, src); }
 };
 
 template <typename T>
-struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::DIV> {
-  void operator()(T* dest, T src) const { DpcppAtomicDiv(dest, src); }
+struct ScatterOpKernelITEX_GPUFunc<T, scatter_op::UpdateOp::DIV> {
+  void operator()(T* dest, T src) const { ItexAtomicDiv(dest, src); }
 };
 
 template <typename T>
-struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::MIN> {
-  void operator()(T* dest, T src) const { DpcppAtomicMin(dest, src); }
+struct ScatterOpKernelITEX_GPUFunc<T, scatter_op::UpdateOp::MIN> {
+  void operator()(T* dest, T src) const { ItexAtomicMin(dest, src); }
 };
 
 template <typename T>
-struct ScatterOpKernelDPCPPFunc<T, scatter_op::UpdateOp::MAX> {
-  void operator()(T* dest, T src) const { DpcppAtomicMax(dest, src); }
+struct ScatterOpKernelITEX_GPUFunc<T, scatter_op::UpdateOp::MAX> {
+  void operator()(T* dest, T src) const { ItexAtomicMax(dest, src); }
 };
 
 }  // namespace internal
@@ -97,10 +97,12 @@ struct ScatterScalarFunctor {
 };
 
 template <typename T, typename Index, scatter_op::UpdateOp op, typename = void>
-struct ScatterScalarOpDPCPPKernel {
-  ScatterScalarOpDPCPPKernel(T* params, const T* updates, const Index* indices,
-                             Index first_dim_size, Index indices_size,
-                             Index synthesized_updates_size, float* params_fp32)
+struct ScatterScalarOpITEX_GPUKernel {
+  ScatterScalarOpITEX_GPUKernel(T* params, const T* updates,
+                                const Index* indices, Index first_dim_size,
+                                Index indices_size,
+                                Index synthesized_updates_size,
+                                float* params_fp32)
       : params_(params),
         updates_(updates),
         indices_(indices),
@@ -121,7 +123,7 @@ struct ScatterScalarOpDPCPPKernel {
         return;
       }
       int params_i = param_first_index * update_block + (i % update_block);
-      scatter_op::internal::ScatterOpKernelDPCPPFunc<T, op>()(
+      scatter_op::internal::ScatterOpKernelITEX_GPUFunc<T, op>()(
           &params_[params_i], update_val);
     }
   }
@@ -136,14 +138,16 @@ struct ScatterScalarOpDPCPPKernel {
 };
 
 template <typename T, typename Index, scatter_op::UpdateOp op>
-struct ScatterScalarOpDPCPPKernel<
+struct ScatterScalarOpITEX_GPUKernel<
     T, Index, op,
     typename std::enable_if_t<(std::is_same_v<T, Eigen::half> ||
                                std::is_same_v<T, Eigen::bfloat16>),
                               void>> {
-  ScatterScalarOpDPCPPKernel(T* params, const T* updates, const Index* indices,
-                             Index first_dim_size, Index indices_size,
-                             Index synthesized_updates_size, float* params_fp32)
+  ScatterScalarOpITEX_GPUKernel(T* params, const T* updates,
+                                const Index* indices, Index first_dim_size,
+                                Index indices_size,
+                                Index synthesized_updates_size,
+                                float* params_fp32)
       : params_(params),
         updates_(updates),
         indices_(indices),
@@ -164,7 +168,7 @@ struct ScatterScalarOpDPCPPKernel<
         return;
       }
       int params_i = param_first_index * update_block + (i % update_block);
-      scatter_op::internal::ScatterOpKernelDPCPPFunc<float, op>()(
+      scatter_op::internal::ScatterOpKernelITEX_GPUFunc<float, op>()(
           &params_fp32_[params_i], update_val);
     }
   }
@@ -179,10 +183,10 @@ struct ScatterScalarOpDPCPPKernel<
 };
 
 template <typename T, typename Index, scatter_op::UpdateOp op, typename = void>
-struct ScatterOpDPCPPKernel {
-  ScatterOpDPCPPKernel(T* params, const T* updates, const Index* indices,
-                       Index first_dim_size, Index updates_size,
-                       Index indices_size)
+struct ScatterOpITEX_GPUKernel {
+  ScatterOpITEX_GPUKernel(T* params, const T* updates, const Index* indices,
+                          Index first_dim_size, Index updates_size,
+                          Index indices_size)
       : params_(params),
         updates_(updates),
         indices_(indices),
@@ -202,7 +206,7 @@ struct ScatterOpDPCPPKernel {
         return;
       }
       int params_i = param_first_index * update_block + (i % update_block);
-      scatter_op::internal::ScatterOpKernelDPCPPFunc<T, op>()(
+      scatter_op::internal::ScatterOpKernelITEX_GPUFunc<T, op>()(
           &params_[params_i], updates_[updates_i]);
     }
   }
@@ -216,14 +220,14 @@ struct ScatterOpDPCPPKernel {
 };
 
 template <typename T, typename Index, scatter_op::UpdateOp op>
-struct ScatterOpDPCPPKernel<
+struct ScatterOpITEX_GPUKernel<
     T, Index, op,
     typename std::enable_if_t<(std::is_same_v<T, Eigen::half> ||
                                std::is_same_v<T, Eigen::bfloat16>),
                               void>> {
-  ScatterOpDPCPPKernel(float* params_fp32, const T* updates,
-                       const Index* indices, Index first_dim_size,
-                       Index updates_size, Index indices_size)
+  ScatterOpITEX_GPUKernel(float* params_fp32, const T* updates,
+                          const Index* indices, Index first_dim_size,
+                          Index updates_size, Index indices_size)
       : params_fp32(params_fp32),
         updates_(updates),
         indices_(indices),
@@ -243,7 +247,7 @@ struct ScatterOpDPCPPKernel<
         return;
       }
       int params_i = param_first_index * update_block + (i % update_block);
-      scatter_op::internal::ScatterOpKernelDPCPPFunc<float, op>()(
+      scatter_op::internal::ScatterOpKernelITEX_GPUFunc<float, op>()(
           &params_fp32[params_i], static_cast<float>(updates_[updates_i]));
     }
   }
@@ -256,8 +260,8 @@ struct ScatterOpDPCPPKernel<
   Index indices_size_;
 };
 
-// TODO(itex): Remove this specialization template when DPCPP atomic operators
-// support bf16/half datatype.
+// TODO(itex): Remove this specialization template when ITEX_GPU atomic
+// operators support bf16/half datatype.
 template <typename T, typename Index, scatter_op::UpdateOp op>
 struct ScatterScalarFunctor<
     GPUDevice, T, Index, op,
@@ -284,10 +288,10 @@ struct ScatterScalarFunctor<
     auto num_wg = (synthesized_updates_size + group_size - 1) / group_size;
 
     stream->submit([&](sycl::handler& cgh) {
-      ScatterScalarOpDPCPPKernel<T, Index, op> task(
+      ScatterScalarOpITEX_GPUKernel<T, Index, op> task(
           params.data(), updates.data(), indices.data(), first_dim_size,
           indices_size, synthesized_updates_size, params_fp32.data());
-      cgh.parallel_for<ScatterScalarOpDPCPPKernel<T, Index, op>>(
+      cgh.parallel_for<ScatterScalarOpITEX_GPUKernel<T, Index, op>>(
           sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
                             sycl::range<1>(group_size)),
           task);
@@ -320,10 +324,10 @@ struct ScatterScalarFunctor<
     auto num_wg = (synthesized_updates_size + group_size - 1) / group_size;
 
     stream->submit([&](sycl::handler& cgh) {
-      ScatterScalarOpDPCPPKernel<T, Index, op> task(
+      ScatterScalarOpITEX_GPUKernel<T, Index, op> task(
           params.data(), updates.data(), indices.data(), first_dim_size,
           indices_size, synthesized_updates_size, params_fp32.data());
-      cgh.parallel_for<ScatterScalarOpDPCPPKernel<T, Index, op>>(
+      cgh.parallel_for<ScatterScalarOpITEX_GPUKernel<T, Index, op>>(
           sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
                             sycl::range<1>(group_size)),
           task);
@@ -359,10 +363,10 @@ struct ScatterFunctor<
     auto num_wg = (updates_size + group_size - 1) / group_size;
 
     stream->submit([&](sycl::handler& cgh) {
-      ScatterOpDPCPPKernel<T, Index, op> task(
+      ScatterOpITEX_GPUKernel<T, Index, op> task(
           params_fp32.data(), updates.data(), indices.data(), first_dim_size,
           updates_size, indices_size);
-      cgh.parallel_for<ScatterOpDPCPPKernel<T, Index, op>>(
+      cgh.parallel_for<ScatterOpITEX_GPUKernel<T, Index, op>>(
           sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
                             sycl::range<1>(group_size)),
           task);
@@ -395,10 +399,10 @@ struct ScatterFunctor<
     auto num_wg = (updates_size + group_size - 1) / group_size;
 
     stream->submit([&](sycl::handler& cgh) {
-      ScatterOpDPCPPKernel<T, Index, op> task(params.data(), updates.data(),
-                                              indices.data(), first_dim_size,
-                                              updates_size, indices_size);
-      cgh.parallel_for<ScatterOpDPCPPKernel<T, Index, op>>(
+      ScatterOpITEX_GPUKernel<T, Index, op> task(params.data(), updates.data(),
+                                                 indices.data(), first_dim_size,
+                                                 updates_size, indices_size);
+      cgh.parallel_for<ScatterOpITEX_GPUKernel<T, Index, op>>(
           sycl::nd_range<1>(sycl::range<1>(num_wg * group_size),
                             sycl::range<1>(group_size)),
           task);

@@ -63,7 +63,7 @@ cc_library(
         "//itex/core/utils:hw_info",
         "//itex/core/utils:logging",
         "//itex/core/utils:mutex",
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
     alwayslink = True,

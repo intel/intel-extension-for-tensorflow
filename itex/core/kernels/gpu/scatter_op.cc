@@ -60,7 +60,7 @@ static void DoValidationChecking(OpKernelContext* c, const Tensor& params,
                               ", params.shape ", params.shape().DebugString()));
 }
 
-// TODO(itex): Remove out_fp32 memcpy when DPCPP atomic operators
+// TODO(itex): Remove out_fp32 memcpy when Itex atomic operators
 // support bf16/fp16 datatype.
 template <typename Device, typename T, typename Index, scatter_op::UpdateOp op>
 class ScatterUpdateOp : public OpKernel {

@@ -142,5 +142,5 @@ cc_library(
     ],
     #nocopts = "-fno-exceptions",
     visibility = ["//visibility:public"],
-    deps = ["@local_config_dpcpp//dpcpp:dpcpp_headers"],
+    deps = ["@local_config_dpcpp//dpcpp:itex_gpu_headers"],
 )

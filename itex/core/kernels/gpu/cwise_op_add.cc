@@ -129,9 +129,9 @@ class DnnBinaryOp : public BinaryOp<Device, Functor> {
  private:
   inline bool UnsupportShape(const TensorShape& shape0,
                              const TensorShape& shape1) {
-    // Bi-bcast like 8x1 * 1x4 isn't supported in oneDNN. Compare output
-    // shape(8x4) with input shapes, and fall back to Eigen if output has more
-    // elements than all inputs.
+// Bi-bcast like 8x1 * 1x4 isn't supported in oneDNN. Compare output
+// shape(8x4) with input shapes, and fall back to Eigen if output has more
+// elements than all inputs.
 #define MAX_NDIMS 6
     if ((shape0.dims() > MAX_NDIMS) || (shape1.dims()) > MAX_NDIMS) return true;
 #undef MAX_NDIMS

@@ -28,9 +28,9 @@ template <typename Device, typename T>
 void DeviceFill(T* ptr, const T& pattern, size_t count, void* stream) {
 #ifndef INTEL_CPU_ONLY
   if (Eigen::internal::is_same<Device, Eigen::GpuDevice>::value) {
-    DPCPPStream* dpcpp_stream = static_cast<DPCPPStream*>(stream);
+    ITEX_GPUStream* ITEX_GPU_stream = static_cast<ITEX_GPUStream*>(stream);
     // pattern must be trivially copyable
-    dpcpp_stream->fill<T>(ptr, pattern, count);
+    ITEX_GPU_stream->fill<T>(ptr, pattern, count);
     return;
   }
 #else
@@ -47,8 +47,8 @@ template <typename Device>
 void DeviceMemset(void* dst, int value, size_t size, void* stream) {
 #ifndef INTEL_CPU_ONLY
   if (Eigen::internal::is_same<Device, Eigen::GpuDevice>::value) {
-    DPCPPStream* dpcpp_stream = static_cast<DPCPPStream*>(stream);
-    dpcpp_stream->memset(dst, value, size);
+    ITEX_GPUStream* ITEX_GPU_stream = static_cast<ITEX_GPUStream*>(stream);
+    ITEX_GPU_stream->memset(dst, value, size);
     return;
   }
 #else
@@ -65,8 +65,8 @@ template <typename Device>
 void DeviceMemcpy(void* dst, const void* src, size_t size, void* stream) {
 #ifndef INTEL_CPU_ONLY
   if (Eigen::internal::is_same<Device, Eigen::GpuDevice>::value) {
-    DPCPPStream* dpcpp_stream = static_cast<DPCPPStream*>(stream);
-    dpcpp_stream->memcpy(dst, src, size);
+    ITEX_GPUStream* ITEX_GPU_stream = static_cast<ITEX_GPUStream*>(stream);
+    ITEX_GPU_stream->memcpy(dst, src, size);
     return;
   }
 #else

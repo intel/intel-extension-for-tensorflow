@@ -296,8 +296,8 @@ class StridedSliceAssignOp : public OpKernel {
               ". Automatic broadcasting not ", "yet implemented."));
       const int processing_dims = processing_shape.dims();
 
-      // 0-dimensional case implies the left and right are exactly the same
-      // scalar shape
+// 0-dimensional case implies the left and right are exactly the same
+// scalar shape
 
 // Handle general dimensions
 #define HANDLE_DIM(NDIM)                                                       \

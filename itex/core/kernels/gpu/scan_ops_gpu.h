@@ -118,7 +118,7 @@ struct GroupScan {
 
     sycl::group_barrier(group);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; i < end; i += GroupSize) {
       if (i < N_)
@@ -227,7 +227,7 @@ struct DeviceScanFirstStep {
     }
     sycl::group_barrier(group);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; start + i < end; i += GroupSize) {
       if (start + i < N_)
@@ -548,7 +548,7 @@ struct VanillaPartialScan {
 
       carry = sycl::group_broadcast(group, updated_prefix, GroupSize - 1);
 
-      // write  output
+// write  output
 #pragma unroll
       for (int i = 0; i < ElemsPerWorkItem; ++i) {
         int start = loop * group_elems + lid * ElemsPerWorkItem + i;

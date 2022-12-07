@@ -295,6 +295,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
     ],
 )

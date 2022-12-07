@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef ITEX_CORE_KERNELS_GPU_REDUCTION_DPCPP_KERNELS_H_
-#define ITEX_CORE_KERNELS_GPU_REDUCTION_DPCPP_KERNELS_H_
+#ifndef ITEX_CORE_KERNELS_GPU_REDUCTION_ITEX_GPU_KERNELS_H_
+#define ITEX_CORE_KERNELS_GPU_REDUCTION_ITEX_GPU_KERNELS_H_
 
 #include <algorithm>
 
@@ -762,4 +762,4 @@ void LaunchColReduction(
 
 }  // namespace itex
 
-#endif  // ITEX_CORE_KERNELS_GPU_REDUCTION_DPCPP_KERNELS_H_
+#endif  // ITEX_CORE_KERNELS_GPU_REDUCTION_ITEX_GPU_KERNELS_H_

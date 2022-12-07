@@ -407,9 +407,9 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
         const_cast<Toutput*>(mul_tensor_ptr->flat<Toutput>().data());
 
     // TODO(itex): refactor the memcpy code
-    auto* dpcpp_stream = context->GetDeviceStream();
-    auto event = dpcpp_stream->memcpy(mul_host_data, mul_device_data,
-                                      1 * sizeof(Toutput));
+    auto* ITEX_GPU_stream = context->GetDeviceStream();
+    auto event = ITEX_GPU_stream->memcpy(mul_host_data, mul_device_data,
+                                         1 * sizeof(Toutput));
     event.wait();
   }
 

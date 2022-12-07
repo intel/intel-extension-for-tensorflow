@@ -17,7 +17,7 @@ limitations under the License.
 
 namespace itex {
 
-BFCAllocator::BFCAllocator(DPCPPDevice* device) : Allocator() {
+BFCAllocator::BFCAllocator(ITEX_GPUDevice* device) : Allocator() {
   device_ = device;
   memory_limit_ = device_->get_info<sycl::info::device::global_mem_size>();
   size_t _800mb = 800 * 1024 * 1024;
@@ -51,7 +51,7 @@ BFCAllocator::~BFCAllocator() {
                << region_manager_.regions().size();
   for (const auto& region : region_manager_.regions()) {
     if (region.ptr()) {
-      dpcppFree(device_, region.ptr());
+      ITEX_GPUFree(device_, region.ptr());
     }
   }
 
@@ -278,7 +278,7 @@ bool BFCAllocator::Extend(size_t rounded_bytes) {
   size_t bytes = std::min(curr_region_allocation_bytes_, available_bytes);
 
   bytes = std::min(bytes, LimitAlloc());
-  void* mem_addr = dpcppMalloc(device_, bytes);
+  void* mem_addr = ITEX_GPUMalloc(device_, bytes);
   if (mem_addr == nullptr) {
     static constexpr float kBackpedalFactor = 0.9;
 
@@ -286,7 +286,7 @@ bool BFCAllocator::Extend(size_t rounded_bytes) {
     while (mem_addr == nullptr) {
       bytes = RoundedBytes(bytes * kBackpedalFactor);
       if (bytes < rounded_bytes) break;
-      mem_addr = dpcppMalloc(device_, bytes);
+      mem_addr = ITEX_GPUMalloc(device_, bytes);
     }
   }
 

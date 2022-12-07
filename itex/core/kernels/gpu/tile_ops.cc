@@ -80,11 +80,11 @@ TF_CALL_complex128(DECLARE_TYPE);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef DECLARE_TYPE
 
-#define DECLARE_DPCPP_DIM(T, NDIM)                     \
+#define DECLARE_ITEX_GPU_DIM(T, NDIM)                  \
   extern template struct TileGrad<GPUDevice, T, NDIM>; \
   extern template struct ReduceAndReshape<GPUDevice, T, NDIM, 1>
 
-#define DECLARE_DIM(T, NDIM) DECLARE_DPCPP_DIM(T, NDIM);
+#define DECLARE_DIM(T, NDIM) DECLARE_ITEX_GPU_DIM(T, NDIM);
 
 #define DECLARE_TYPE(T) \
   DECLARE_DIM(T, 1)     \
@@ -109,7 +109,7 @@ TF_CALL_complex128(DECLARE_TYPE);
 #undef DECLARE_TYPE
 
 #undef DECLARE_DIM
-#undef DECLARE_DPCPP_DIM
+#undef DECLARE_ITEX_GPU_DIM
 }  // namespace functor
 
 template <typename Device, typename Tmultiples>

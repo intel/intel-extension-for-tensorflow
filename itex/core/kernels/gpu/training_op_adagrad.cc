@@ -193,8 +193,8 @@ struct SparseApplyAdagrad<GPUDevice, T, Tindex, has_epsilon> {
     const Tindex indices_size = indices.size();
     if (grad_size == 0) return;
 
-    auto* dpcpp_stream = d.stream();
-    dpcpp_stream->submit([&](sycl::handler& cgh) {
+    auto* ITEX_GPU_stream = d.stream();
+    ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
       SparseApplyAdagradKernel<T, Tindex, has_epsilon> task(
           var.data(), accum.data(), lr.data(), epsilon.data(), grad.data(),
           indices.data(), first_dim_size, grad_size, indices_size,

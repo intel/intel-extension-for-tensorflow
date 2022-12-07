@@ -48,7 +48,7 @@ struct HistogramKernel {
     int32 idx = static_cast<float>(input_[id] - start_) / step_;
     idx = static_cast<int32>(idx >= 0) * sycl::min(idx, nbins_ - 1);
     // TODO(itex): replace atomic operation with other algo in the future
-    DpcppAtomicAdd<Tout, int>(out_ + idx, 1);
+    ItexAtomicAdd<Tout, int>(out_ + idx, 1);
   }
 
  private:

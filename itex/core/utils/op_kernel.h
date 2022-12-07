@@ -347,7 +347,7 @@ class OpKernelContext {
   static constexpr int kNoReservation = -1;
 
 #ifndef INTEL_CPU_ONLY
-  DPCPPStream* GetDeviceStream() const {
+  ITEX_GPUStream* GetDeviceStream() const {
     return TF_GetStream(ctx_, status_)->stream_handle;
   }
 #else
@@ -681,11 +681,11 @@ class Registrar {
 };
 }  // namespace register_kernel
 
-// The synchronize method of dpcpp runtime will be called in this function.
+// The synchronize method of ITEX_GPU runtime will be called in this function.
 //
 // There are 3 methods to implement kernels, including
 //   1. Using Eigen APIs.
-//   2. Using dpcpp APIs.
+//   2. Using ITEX_GPU APIs.
 //   3. Using OneDNN APIs.
 // The triple implementation will use the same stream which is the
 // `sycl::queue`. So we can directly call the wait on the stream at the end of
@@ -701,12 +701,12 @@ inline void RunOrWaitUntilFinish(OpKernelContext* context, OpKernel* op) {
     auto start = std::chrono::steady_clock::now();
     op->Compute(context);
     auto stream = context->GetDeviceStream();
-    auto error = dpcppStreamSynchronize(stream);
-    if (error != DPCPP_SUCCESS) {
+    auto error = ITEX_GPUStreamSynchronize(stream);
+    if (error != ITEX_GPU_SUCCESS) {
       context->CtxFailure(
           __FILE__, __LINE__,
           errors::Internal("Error to call the stream's wait with error ",
-                           dpcppGetErrorName(error)));
+                           ITEX_GPUGetErrorName(error)));
     }
     auto end = std::chrono::steady_clock::now();
     auto elapsed =

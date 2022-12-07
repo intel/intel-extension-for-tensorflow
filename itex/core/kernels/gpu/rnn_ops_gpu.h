@@ -246,7 +246,7 @@ struct InputGemmKernel {
 
     // reduction in K direction
     for (int k = 0; k < N; k += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSY); k1++) {
 #pragma unroll
@@ -266,7 +266,7 @@ struct InputGemmKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSX); k1++) {
 #pragma unroll
@@ -291,7 +291,7 @@ struct InputGemmKernel {
 
       // Per thread consideration in core computation part
       for (int k1 = 0; k1 < TILE_K; k1 += TAB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -301,7 +301,7 @@ struct InputGemmKernel {
           }
         }
 
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -326,7 +326,7 @@ struct InputGemmKernel {
       block.barrier(sycl::access::fence_space::local_space);
     }
 
-    // write results back
+// write results back
 #pragma unroll
     for (int m = 0; m < cM; m++) {
 #pragma unroll
@@ -431,7 +431,7 @@ struct GemmKernel {
 
     // reduction in K direction
     for (int k = 0; k < N; k += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSY); k1++) {
 #pragma unroll
@@ -451,7 +451,7 @@ struct GemmKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSX); k1++) {
 #pragma unroll
@@ -476,7 +476,7 @@ struct GemmKernel {
 
       // Per thread consideration in core computation part
       for (int k1 = 0; k1 < TILE_K; k1 += TAB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -486,7 +486,7 @@ struct GemmKernel {
           }
         }
 
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -511,7 +511,7 @@ struct GemmKernel {
       item.barrier(sycl::access::fence_space::local_space);
     }
 
-    // write results back
+// write results back
 #pragma unroll
     for (int m = 0; m < cM; m++) {
 #pragma unroll
@@ -622,7 +622,7 @@ struct ParamsGemmKernel {
 
     // reduction in K direction
     for (int k = 0; k < N; k += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSY); k1++) {
 #pragma unroll
@@ -642,7 +642,7 @@ struct ParamsGemmKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSX); k1++) {
 #pragma unroll
@@ -667,7 +667,7 @@ struct ParamsGemmKernel {
 
       // Per thread consideration in core computation part
       for (int k1 = 0; k1 < TILE_K; k1 += TAB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -677,7 +677,7 @@ struct ParamsGemmKernel {
           }
         }
 
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -702,7 +702,7 @@ struct ParamsGemmKernel {
       block.barrier(sycl::access::fence_space::local_space);
     }
 
-    // write results back
+// write results back
 #pragma unroll
     for (int m = 0; m < cM; m++) {
 #pragma unroll

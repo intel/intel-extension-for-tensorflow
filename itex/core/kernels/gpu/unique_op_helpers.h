@@ -105,7 +105,7 @@ struct GroupScan {
 
     sycl::group_barrier(group);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; i < end; i += GroupSize) {
       if (i < N_)
@@ -186,7 +186,7 @@ struct DeviceScanFirstStep {
     }
     sycl::group_barrier(group);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; start + i < end; i += GroupSize) {
       if (start + i < N_)

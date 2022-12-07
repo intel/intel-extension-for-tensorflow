@@ -24,7 +24,7 @@ namespace itex {
 namespace functor {
 
 template <typename Device, typename T, typename U, bool IsTrain>
-struct DPCPPFusedBatchNorm {
+struct ITEX_GPUFusedBatchNorm {
   void operator()(OpKernelContext* context, const Tensor& x_input,
                   const Tensor& scale_input, const Tensor& offset_input,
                   const Tensor& estimated_mean_input,
@@ -145,7 +145,7 @@ struct DPCPPFusedBatchNorm {
 };
 
 template <typename Device, typename T, typename U>
-struct DPCPPFusedBatchNormGrad {
+struct ITEX_GPUFusedBatchNormGrad {
   void operator()(OpKernelContext* context, const Tensor& y_backprop_input,
                   const Tensor& x_input, const Tensor& scale_input,
                   const Tensor& mean_input, const Tensor& var_input,
@@ -422,13 +422,13 @@ class CustomFusedBatchNormOp
     bool fuse_norm_add_relu =
         (has_side_input_) && (activation_mode_ == FbnActivationMode::kRelu);
     if (is_training_) {
-      functor::DPCPPFusedBatchNorm<Device, T, U, 1>()(
+      functor::ITEX_GPUFusedBatchNorm<Device, T, U, 1>()(
           context, x, scale, offset, estimated_mean, estimated_var, side_input,
           epsilon_, exponential_avg_factor_, y, running_mean, running_var,
           saved_mean, saved_var, tensor_format_, use_reserved_space,
           fuse_norm_relu, fuse_norm_add_relu, sp, ic);
     } else {
-      functor::DPCPPFusedBatchNorm<Device, T, U, 0>()(
+      functor::ITEX_GPUFusedBatchNorm<Device, T, U, 0>()(
           context, x, scale, offset, estimated_mean, estimated_var, side_input,
           epsilon_, exponential_avg_factor_, y, running_mean, running_var,
           saved_mean, saved_var, tensor_format_, use_reserved_space,
@@ -587,7 +587,7 @@ class CustomFusedBatchNormGradOp
 
     bool fuse_norm_relu = IsBatchNormEx && !has_side_input_;
     bool fuse_norm_add_relu = IsBatchNormEx && has_side_input_;
-    functor::DPCPPFusedBatchNormGrad<Device, T, U>()(
+    functor::ITEX_GPUFusedBatchNormGrad<Device, T, U>()(
         context, diff_dst_tensor, src_tensor, scale_tensor, saved_mean,
         saved_var, y_tensor, epsilon_, diff_src_tensor, diff_scale_tensor,
         diff_offset_tensor, diff_side_input_tensor, tensor_format_,

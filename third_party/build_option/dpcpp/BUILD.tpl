@@ -11,9 +11,9 @@ config_setting(
 )
 
 cc_library(
-    name = "dpcpp_headers",
+    name = "itex_gpu_headers",
     hdrs = glob([
-        "runtime/dpcpp_runtime.h",
+        "runtime/itex_gpu_runtime.h",
     ]),
     includes = [
         ".",

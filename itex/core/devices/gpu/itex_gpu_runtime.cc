@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 #include <cassert>
 #include <iostream>
@@ -38,16 +38,16 @@ inline bool RunOnLevelZero() {
 
 bool hasDevice() {
   int count = 0;
-  dpcppError_t error = dpcppGetDeviceCount(&count);
-  if (error != DPCPP_SUCCESS) {
+  ITEX_GPUError_t error = ITEX_GPUGetDeviceCount(&count);
+  if (error != ITEX_GPU_SUCCESS) {
     ITEX_LOG(ERROR) << "Error to get the device count because "
-                    << dpcppGetErrorName(error);
+                    << ITEX_GPUGetErrorName(error);
     return false;
   }
 
   if (count == 0) {
     ITEX_LOG(ERROR) << "Error. The device count is 0, "
-                    << dpcppGetErrorName(DPCPP_ERROR_NO_DEVICE);
+                    << ITEX_GPUGetErrorName(ITEX_GPU_ERROR_NO_DEVICE);
     return false;
   }
 
@@ -56,7 +56,7 @@ bool hasDevice() {
 
 bool isValidDevice(DeviceOrdinal ordinal) {
   int count = 0;
-  dpcppGetDeviceCount(&count);
+  ITEX_GPUGetDeviceCount(&count);
 
   if (ordinal > count) {
     return false;
@@ -74,46 +74,47 @@ class DevicePool {
     return context;
   }
 
-  static dpcppError_t getDeviceCount(int* count) {
+  static ITEX_GPUError_t getDeviceCount(int* count) {
     *count = DevicePool::GetDevicesPool().size();
-    return DPCPP_SUCCESS;
+    return ITEX_GPU_SUCCESS;
   }
 
-  static dpcppError_t getDevice(DPCPPDevice** device, int device_ordinal) {
+  static ITEX_GPUError_t getDevice(ITEX_GPUDevice** device,
+                                   int device_ordinal) {
     // absl::ReaderMutexLock lock(&mu_);
     if (device_ordinal >= DevicePool::GetDevicesPool().size()) {
-      return DPCPP_ERROR_INVALID_DEVICE;
+      return ITEX_GPU_ERROR_INVALID_DEVICE;
     } else {
       *device = &DevicePool::GetDevicesPool()[device_ordinal];
-      return DPCPP_SUCCESS;
+      return ITEX_GPU_SUCCESS;
     }
   }
 
-  dpcppError_t getDeviceOrdinal(const DPCPPDevice& device,
-                                DeviceOrdinal* device_ordinal) {
+  ITEX_GPUError_t getDeviceOrdinal(const ITEX_GPUDevice& device,
+                                   DeviceOrdinal* device_ordinal) {
     const auto& devices = DevicePool::GetDevicesPool();
     auto it = std::find(devices.begin(), devices.end(), device);
     if (it != devices.end()) {
       *device_ordinal = it - devices.begin();
-      return DPCPP_SUCCESS;
+      return ITEX_GPU_SUCCESS;
     } else {
-      return DPCPP_ERROR_INVALID_DEVICE;
+      return ITEX_GPU_ERROR_INVALID_DEVICE;
     }
   }
 
-  dpcppError_t setCurrentDeviceOrdinal(DeviceOrdinal ordinal);
+  ITEX_GPUError_t setCurrentDeviceOrdinal(DeviceOrdinal ordinal);
 
-  dpcppError_t getCurrentDeviceOrdinal(DeviceOrdinal* ordinal);
+  ITEX_GPUError_t getCurrentDeviceOrdinal(DeviceOrdinal* ordinal);
 
   static DevicePool* GetInstance();
 
  private:
-  static std::vector<DPCPPDevice>& GetDevicesPool() {
+  static std::vector<ITEX_GPUDevice>& GetDevicesPool() {
     static std::once_flag init_device_flag;
-    static std::vector<DPCPPDevice> devices;
+    static std::vector<ITEX_GPUDevice> devices;
 
     std::call_once(init_device_flag, []() {
-      std::vector<DPCPPDevice> root_devices;
+      std::vector<ITEX_GPUDevice> root_devices;
       // Get root device list from platform list.
       auto platform_list = sycl::platform::get_platforms();
       for (const auto& platform : platform_list) {
@@ -145,7 +146,7 @@ class DevicePool {
         constexpr auto next_partitionable =
             sycl::info::partition_affinity_domain::next_partitionable;
         for (const auto& root_device : root_devices) {
-          std::vector<DPCPPDevice> sub_devices;
+          std::vector<ITEX_GPUDevice> sub_devices;
           auto max_sub_devices =
               root_device
                   .get_info<sycl::info::device::partition_max_sub_devices>();
@@ -196,36 +197,36 @@ DevicePool* DevicePool::GetInstance() {
   return instance_;
 }
 
-dpcppError_t DevicePool::setCurrentDeviceOrdinal(DeviceOrdinal ordinal) {
+ITEX_GPUError_t DevicePool::setCurrentDeviceOrdinal(DeviceOrdinal ordinal) {
   absl::MutexLock lock(&mu_);
 
   if (!hasDevice()) {
-    return DPCPP_ERROR_NO_DEVICE;
+    return ITEX_GPU_ERROR_NO_DEVICE;
   }
 
   if (!isValidDevice(ordinal)) {
-    return DPCPP_ERROR_INVALID_DEVICE;
+    return ITEX_GPU_ERROR_INVALID_DEVICE;
   }
 
   current_ordinal_ = ordinal;
 
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t DevicePool::getCurrentDeviceOrdinal(DeviceOrdinal* ordinal) {
+ITEX_GPUError_t DevicePool::getCurrentDeviceOrdinal(DeviceOrdinal* ordinal) {
   absl::MutexLock lock(&mu_);
 
   if (!hasDevice()) {
-    return DPCPP_ERROR_NO_DEVICE;
+    return ITEX_GPU_ERROR_NO_DEVICE;
   }
 
   *ordinal = current_ordinal_;
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 }  // namespace
 
-/******************* DPCPP context management**************************/
-static sycl::async_handler dpcppAsyncHandler = [](sycl::exception_list eL) {
+/******************* ITEX_GPU context management**************************/
+static sycl::async_handler ITEX_GPUAsyncHandler = [](sycl::exception_list eL) {
   for (auto& e : eL) {
     try {
       std::rethrow_exception(e);
@@ -239,151 +240,154 @@ static sycl::async_handler dpcppAsyncHandler = [](sycl::exception_list eL) {
 
 class StreamPool {
  public:
-  static dpcppError_t getDefaultStream(DPCPPDevice* device_handle,
-                                       DPCPPStream** stream_p) {
+  static ITEX_GPUError_t getDefaultStream(ITEX_GPUDevice* device_handle,
+                                          ITEX_GPUStream** stream_p) {
     *stream_p = StreamPool::GetStreamsPool(device_handle)[0].get();
-    return DPCPP_SUCCESS;
+    return ITEX_GPU_SUCCESS;
   }
 
-  static dpcppError_t createStream(DPCPPDevice* device_handle,
-                                   DPCPPStream** stream_p) {
+  static ITEX_GPUError_t createStream(ITEX_GPUDevice* device_handle,
+                                      ITEX_GPUStream** stream_p) {
     *stream_p = StreamPool::GetStreamsPool(device_handle).back().get();
-    return DPCPP_SUCCESS;
+    return ITEX_GPU_SUCCESS;
   }
 
-  static dpcppError_t syncStream(DPCPPStream* stream) {
+  static ITEX_GPUError_t syncStream(ITEX_GPUStream* stream) {
     stream->wait();
-    return DPCPP_SUCCESS;
+    return ITEX_GPU_SUCCESS;
   }
 
-  static dpcppError_t syncContext(DPCPPDevice* device_handle) {
+  static ITEX_GPUError_t syncContext(ITEX_GPUDevice* device_handle) {
     for (auto stream : StreamPool::GetStreamsPool(device_handle)) {
       stream->wait();
     }
-    return DPCPP_SUCCESS;
+    return ITEX_GPU_SUCCESS;
   }
 
-  static dpcppError_t destroyStream(DPCPPDevice* device_handle,
-                                    DPCPPStream* stream_handle) {
-    if (stream_handle == nullptr) return DPCPP_ERROR_INVALID_STREAM;
+  static ITEX_GPUError_t destroyStream(ITEX_GPUDevice* device_handle,
+                                       ITEX_GPUStream* stream_handle) {
+    if (stream_handle == nullptr) return ITEX_GPU_ERROR_INVALID_STREAM;
     auto stream_pool = StreamPool::GetStreamsPool(device_handle);
     for (int i = 0; i < stream_pool.size(); i++) {
       if (stream_pool[i].get() == stream_handle) {
         stream_pool.erase(stream_pool.begin() + i);
-        return DPCPP_SUCCESS;
+        return ITEX_GPU_SUCCESS;
       }
     }
-    return DPCPP_ERROR_INVALID_STREAM;
+    return ITEX_GPU_ERROR_INVALID_STREAM;
   }
 
-  static dpcppError_t getStreams(DPCPPDevice* device_handle,
-                                 std::vector<DPCPPStream*>* streams) {
+  static ITEX_GPUError_t getStreams(ITEX_GPUDevice* device_handle,
+                                    std::vector<ITEX_GPUStream*>* streams) {
     auto stream_pool = StreamPool::GetStreamsPool(device_handle);
     for (int i = 0; i < stream_pool.size(); i++) {
       streams->push_back(stream_pool[i].get());
     }
-    return DPCPP_SUCCESS;
+    return ITEX_GPU_SUCCESS;
   }
 
  private:
-  static std::vector<std::shared_ptr<DPCPPStream>>& GetStreamsPool(
-      DPCPPDevice* device_handle) {
-    static std::unordered_map<DPCPPDevice*,
-                              std::vector<std::shared_ptr<DPCPPStream>>>
+  static std::vector<std::shared_ptr<ITEX_GPUStream>>& GetStreamsPool(
+      ITEX_GPUDevice* device_handle) {
+    static std::unordered_map<ITEX_GPUDevice*,
+                              std::vector<std::shared_ptr<ITEX_GPUStream>>>
         stream_pool_map;
     auto iter = stream_pool_map.find(device_handle);
     if (iter != stream_pool_map.end()) return iter->second;
     sycl::property_list propList{sycl::property::queue::in_order()};
-    std::vector<std::shared_ptr<DPCPPStream>> stream_pool = {
-        std::make_shared<DPCPPStream>(DevicePool::getDeviceContext(),
-                                      *device_handle, dpcppAsyncHandler,
-                                      propList)};
+    std::vector<std::shared_ptr<ITEX_GPUStream>> stream_pool = {
+        std::make_shared<ITEX_GPUStream>(DevicePool::getDeviceContext(),
+                                         *device_handle, ITEX_GPUAsyncHandler,
+                                         propList)};
     stream_pool_map.insert(std::make_pair(device_handle, stream_pool));
     return stream_pool_map[device_handle];
   }
 };
 
-dpcppError_t dpcppGetDeviceCount(int* count) {
+ITEX_GPUError_t ITEX_GPUGetDeviceCount(int* count) {
   return DevicePool::getDeviceCount(count);
 }
 
-dpcppError_t dpcppGetDevice(DPCPPDevice** device, int device_ordinal) {
+ITEX_GPUError_t ITEX_GPUGetDevice(ITEX_GPUDevice** device, int device_ordinal) {
   return DevicePool::getDevice(device, device_ordinal);
 }
 
-dpcppError_t dpcppGetCurrentDeviceOrdinal(DeviceOrdinal* ordinal) {
+ITEX_GPUError_t ITEX_GPUGetCurrentDeviceOrdinal(DeviceOrdinal* ordinal) {
   return DevicePool::GetInstance()->getCurrentDeviceOrdinal(ordinal);
 }
 
-dpcppError_t dpcppGetDeviceOrdinal(const DPCPPDevice& device,
-                                   DeviceOrdinal* device_ordinal) {
+ITEX_GPUError_t ITEX_GPUGetDeviceOrdinal(const ITEX_GPUDevice& device,
+                                         DeviceOrdinal* device_ordinal) {
   return DevicePool::GetInstance()->getDeviceOrdinal(device, device_ordinal);
 }
 
-dpcppError_t dpcppSetCurrentDeviceOrdinal(DeviceOrdinal ordinal) {
+ITEX_GPUError_t ITEX_GPUSetCurrentDeviceOrdinal(DeviceOrdinal ordinal) {
   return DevicePool::GetInstance()->setCurrentDeviceOrdinal(ordinal);
 }
 
-dpcppError_t dpcppCreateStream(DPCPPDevice* device_handle,
-                               DPCPPStream** stream_p) {
+ITEX_GPUError_t ITEX_GPUCreateStream(ITEX_GPUDevice* device_handle,
+                                     ITEX_GPUStream** stream_p) {
   return StreamPool::createStream(device_handle, stream_p);
 }
 
-dpcppError_t dpcppGetDefaultStream(DPCPPDevice* device_handle,
-                                   DPCPPStream** stream) {
+ITEX_GPUError_t ITEX_GPUGetDefaultStream(ITEX_GPUDevice* device_handle,
+                                         ITEX_GPUStream** stream) {
   return StreamPool::getDefaultStream(device_handle, stream);
 }
 
-dpcppError_t dpcppDestroyStream(DPCPPDevice* device_handle,
-                                DPCPPStream* stream_handle) {
+ITEX_GPUError_t ITEX_GPUDestroyStream(ITEX_GPUDevice* device_handle,
+                                      ITEX_GPUStream* stream_handle) {
   return StreamPool::destroyStream(device_handle, stream_handle);
 }
 
-dpcppError_t dpcppGetStreamPool(DPCPPDevice* device_handle,
-                                std::vector<DPCPPStream*>* streams) {
+ITEX_GPUError_t ITEX_GPUGetStreamPool(ITEX_GPUDevice* device_handle,
+                                      std::vector<ITEX_GPUStream*>* streams) {
   return StreamPool::getStreams(device_handle, streams);
 }
 
-dpcppError_t dpcppCreateEvent(DPCPPDevice* device_handle,
-                              DPCPPEvent** event_handle) {
+ITEX_GPUError_t ITEX_GPUCreateEvent(ITEX_GPUDevice* device_handle,
+                                    ITEX_GPUEvent** event_handle) {
   *event_handle = new sycl::event();
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppDestroyEvent(DPCPPDevice* device_handle,
-                               DPCPPEvent* event_handle) {
+ITEX_GPUError_t ITEX_GPUDestroyEvent(ITEX_GPUDevice* device_handle,
+                                     ITEX_GPUEvent* event_handle) {
   delete event_handle;
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppStreamWaitEvent(DPCPPStream* stream, DPCPPEvent* event) {
+ITEX_GPUError_t ITEX_GPUStreamWaitEvent(ITEX_GPUStream* stream,
+                                        ITEX_GPUEvent* event) {
   // TODO(itex): queue.wait_for(event)?
   stream->wait();
   // event->wait();
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppStreamWaitStream(DPCPPStream* dependent, DPCPPStream* other) {
+ITEX_GPUError_t ITEX_GPUStreamWaitStream(ITEX_GPUStream* dependent,
+                                         ITEX_GPUStream* other) {
   // TODO(itex): queue.wait_for(event)?
   dependent->wait();
   other->wait();
   // event->wait();
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppCtxSynchronize(DPCPPDevice* device_handle) {
+ITEX_GPUError_t ITEX_GPUCtxSynchronize(ITEX_GPUDevice* device_handle) {
   return StreamPool::syncContext(device_handle);
 }
 
-dpcppError_t dpcppStreamSynchronize(DPCPPStream* stream_handle) {
+ITEX_GPUError_t ITEX_GPUStreamSynchronize(ITEX_GPUStream* stream_handle) {
   return StreamPool::syncStream(stream_handle);
 }
 
-/************************* DPCPP memory management ***************************/
+/************************* ITEX_GPU memory management
+ * ***************************/
 
 static void memcpyHostToDevice(void* dstDevice, const void* srcHost,
                                size_t ByteCount, bool async,
-                               DPCPPStream* stream) {
+                               ITEX_GPUStream* stream) {
   if (ByteCount == 0) return;
 
   auto event = stream->memcpy(dstDevice, srcHost, ByteCount);
@@ -394,7 +398,7 @@ static void memcpyHostToDevice(void* dstDevice, const void* srcHost,
 
 static void memcpyDeviceToHost(void* dstHost, const void* srcDevice,
                                size_t ByteCount, bool async,
-                               DPCPPStream* stream) {
+                               ITEX_GPUStream* stream) {
   if (ByteCount == 0) return;
 
   auto event = stream->memcpy(dstHost, srcDevice, ByteCount);
@@ -406,7 +410,7 @@ static void memcpyDeviceToHost(void* dstHost, const void* srcDevice,
 
 static void memcpyDeviceToDevice(void* dstDevice, const void* srcDevice,
                                  size_t ByteCount, bool async,
-                                 DPCPPStream* stream) {
+                                 ITEX_GPUStream* stream) {
   if (ByteCount == 0) return;
 
   auto event = stream->memcpy(dstDevice, srcDevice, ByteCount);
@@ -417,7 +421,7 @@ static void memcpyDeviceToDevice(void* dstDevice, const void* srcDevice,
 }
 
 static void memsetDeviceD8(void* dstDevice, unsigned char value, size_t n,
-                           bool async, DPCPPStream* stream) {
+                           bool async, ITEX_GPUStream* stream) {
   if (n == 0) return;
 
   auto event = stream->memset(dstDevice, value, n * sizeof(uint8_t));
@@ -427,7 +431,7 @@ static void memsetDeviceD8(void* dstDevice, unsigned char value, size_t n,
 }
 
 static void memsetDeviceD32(void* dstDevice, int value, size_t n, bool async,
-                            DPCPPStream* stream) {
+                            ITEX_GPUStream* stream) {
   if (n == 0) return;
 
   auto event = stream->memset(dstDevice, value, n * sizeof(uint32_t));
@@ -437,81 +441,84 @@ static void memsetDeviceD32(void* dstDevice, int value, size_t n, bool async,
   }
 }
 
-dpcppError_t dpcppMemcpyDtoH(void* dstHost, const void* srcDevice,
-                             size_t ByteCount, DPCPPDevice* device) {
-  DPCPPStream* stream;
+ITEX_GPUError_t ITEX_GPUMemcpyDtoH(void* dstHost, const void* srcDevice,
+                                   size_t ByteCount, ITEX_GPUDevice* device) {
+  ITEX_GPUStream* stream;
   auto res = StreamPool::getDefaultStream(device, &stream);
   memcpyDeviceToHost(dstHost, srcDevice, ByteCount, false, stream);
   return res;
 }
 
-dpcppError_t dpcppMemcpyHtoD(void* dstDevice, const void* srcHost,
-                             size_t ByteCount, DPCPPDevice* device) {
-  DPCPPStream* stream;
+ITEX_GPUError_t ITEX_GPUMemcpyHtoD(void* dstDevice, const void* srcHost,
+                                   size_t ByteCount, ITEX_GPUDevice* device) {
+  ITEX_GPUStream* stream;
   auto res = StreamPool::getDefaultStream(device, &stream);
   memcpyHostToDevice(dstDevice, srcHost, ByteCount, false, stream);
   return res;
 }
 
-dpcppError_t dpcppMemcpyDtoD(void* dstDevice, const void* srcDevice,
-                             size_t ByteCount, DPCPPDevice* device) {
-  DPCPPStream* stream;
+ITEX_GPUError_t ITEX_GPUMemcpyDtoD(void* dstDevice, const void* srcDevice,
+                                   size_t ByteCount, ITEX_GPUDevice* device) {
+  ITEX_GPUStream* stream;
   auto res = StreamPool::getDefaultStream(device, &stream);
   memcpyDeviceToDevice(dstDevice, srcDevice, ByteCount, false, stream);
   return res;
 }
 
-dpcppError_t dpcppMemcpyDtoHAsync(void* dstHost, const void* srcDevice,
-                                  size_t ByteCount, DPCPPStream* stream) {
+ITEX_GPUError_t ITEX_GPUMemcpyDtoHAsync(void* dstHost, const void* srcDevice,
+                                        size_t ByteCount,
+                                        ITEX_GPUStream* stream) {
   // TODO(itex): set async = True when we support
   memcpyDeviceToHost(dstHost, srcDevice, ByteCount, false, stream);
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppMemcpyHtoDAsync(void* dstDevice, const void* srcHost,
-                                  size_t ByteCount, DPCPPStream* stream) {
+ITEX_GPUError_t ITEX_GPUMemcpyHtoDAsync(void* dstDevice, const void* srcHost,
+                                        size_t ByteCount,
+                                        ITEX_GPUStream* stream) {
   // TODO(itex): set async = True when we support
   memcpyHostToDevice(dstDevice, srcHost, ByteCount, false, stream);
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppMemcpyDtoDAsync(void* dstDevice, const void* srcDevice,
-                                  size_t ByteCount, DPCPPStream* stream) {
+ITEX_GPUError_t ITEX_GPUMemcpyDtoDAsync(void* dstDevice, const void* srcDevice,
+                                        size_t ByteCount,
+                                        ITEX_GPUStream* stream) {
   // TODO(itex): set async = True when we support
   memcpyDeviceToDevice(dstDevice, srcDevice, ByteCount, true, stream);
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppMemsetD8(void* dstDevice, unsigned char uc, size_t N,
-                           DPCPPDevice* device) {
-  DPCPPStream* stream;
+ITEX_GPUError_t ITEX_GPUMemsetD8(void* dstDevice, unsigned char uc, size_t N,
+                                 ITEX_GPUDevice* device) {
+  ITEX_GPUStream* stream;
   auto res = StreamPool::getDefaultStream(device, &stream);
   memsetDeviceD8(dstDevice, uc, N, false, stream);
   return res;
 }
 
-dpcppError_t dpcppMemsetD8Async(void* dstDevice, unsigned char uc, size_t N,
-                                DPCPPStream* stream) {
+ITEX_GPUError_t ITEX_GPUMemsetD8Async(void* dstDevice, unsigned char uc,
+                                      size_t N, ITEX_GPUStream* stream) {
   memsetDeviceD8(dstDevice, uc, N, true, stream);
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-dpcppError_t dpcppMemsetD32(void* dstDevice, unsigned int ui, size_t N,
-                            DPCPPDevice* device) {
-  DPCPPStream* stream;
+ITEX_GPUError_t ITEX_GPUMemsetD32(void* dstDevice, unsigned int ui, size_t N,
+                                  ITEX_GPUDevice* device) {
+  ITEX_GPUStream* stream;
   auto res = StreamPool::getDefaultStream(device, &stream);
   memsetDeviceD32(dstDevice, ui, N, false, stream);
   return res;
 }
 
-dpcppError_t dpcppMemsetD32Async(void* dstDevice, unsigned int ui, size_t N,
-                                 DPCPPStream* stream) {
+ITEX_GPUError_t ITEX_GPUMemsetD32Async(void* dstDevice, unsigned int ui,
+                                       size_t N, ITEX_GPUStream* stream) {
   memsetDeviceD32(dstDevice, ui, N, true, stream);
-  return DPCPP_SUCCESS;
+  return ITEX_GPU_SUCCESS;
 }
 
-void* dpcppMalloc(DPCPPDevice* device, size_t ByteCount) {
-  DPCPPStream* stream;
+void* ITEX_GPUMalloc(ITEX_GPUDevice* device, size_t ByteCount) {
+  ITEX_GPUStream* stream;
   StreamPool::getDefaultStream(device, &stream);
 
   // Always use default 0 stream to allocate mem
@@ -519,12 +526,12 @@ void* dpcppMalloc(DPCPPDevice* device, size_t ByteCount) {
   return static_cast<void*>(ptr);
 }
 
-void* dpcppMallocHost(size_t ByteCount) {
-  DPCPPStream* stream;
-  DPCPPDevice* device;
+void* ITEX_GPUMallocHost(size_t ByteCount) {
+  ITEX_GPUStream* stream;
+  ITEX_GPUDevice* device;
   DeviceOrdinal device_ordinal;
-  dpcppGetCurrentDeviceOrdinal(&device_ordinal);
-  dpcppGetDevice(&device, device_ordinal);
+  ITEX_GPUGetCurrentDeviceOrdinal(&device_ordinal);
+  ITEX_GPUGetDevice(&device, device_ordinal);
   StreamPool::getDefaultStream(device, &stream);
 
   // Always use default 0 stream to allocate mem
@@ -532,27 +539,27 @@ void* dpcppMallocHost(size_t ByteCount) {
   return static_cast<void*>(ptr);
 }
 
-void dpcppFree(DPCPPDevice* device, void* ptr) {
-  DPCPPStream* stream;
+void ITEX_GPUFree(ITEX_GPUDevice* device, void* ptr) {
+  ITEX_GPUStream* stream;
   StreamPool::getDefaultStream(device, &stream);
 
   // Always use default 0 stream to free mem
   sycl::free(ptr, *stream);
 }
 
-const char* dpcppGetErrorName(dpcppError_t error) {
+const char* ITEX_GPUGetErrorName(ITEX_GPUError_t error) {
   switch (error) {
-    case DPCPP_SUCCESS:
+    case ITEX_GPU_SUCCESS:
       return "DPC++ succeed.";
-    case DPCPP_ERROR_NO_DEVICE:
+    case ITEX_GPU_ERROR_NO_DEVICE:
       return "DPC++ did not find the device.";
-    case DPCPP_ERROR_INVALID_DEVICE:
+    case ITEX_GPU_ERROR_INVALID_DEVICE:
       return "DPC++ got invalid device id.";
-    case DPCPP_ERROR_INVALID_POINTER:
+    case ITEX_GPU_ERROR_INVALID_POINTER:
       return "DPC++ got invalid pointer.";
-    case DPCPP_ERROR_INVALID_STREAM:
+    case ITEX_GPU_ERROR_INVALID_STREAM:
       return "DPC++ got invalid stream.";
-    case DPCPP_ERROR_DESTROY_DEFAULT_STREAM:
+    case ITEX_GPU_ERROR_DESTROY_DEFAULT_STREAM:
       return "DPC++ cannot destroy default stream.";
     default:
       return "DPC++ got invalid error code.";

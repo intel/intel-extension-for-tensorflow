@@ -169,7 +169,7 @@ struct DilationBackpropInputKernel {
         }
       }
     }
-    DpcppAtomicAdd(
+    ItexAtomicAdd(
         in_backprop_ptr_ + d +
             depth_ * (w_in_max + input_cols_ * (h_in_max + input_rows_ * b)),
         static_cast<OutT>(out_backprop_ptr_[out_idx]));
@@ -279,12 +279,12 @@ struct DilationBackpropFilterKernel {
       }
       item.barrier(sycl::access::fence_space::local_space);
       for (int i = local_id; i < mem_size_; i += item.get_local_range(0)) {
-        DpcppAtomicAdd<OutT>(filter_backprop_ptr_ + i, scratch_[i]);
+        ItexAtomicAdd<OutT>(filter_backprop_ptr_ + i, scratch_[i]);
       }
     } else {
       if (out_idx < total_count_) {
-        DpcppAtomicAdd<OutT>(filter_backprop_ptr_ + offset,
-                             static_cast<OutT>(out_backprop_ptr_[out_idx]));
+        ItexAtomicAdd<OutT>(filter_backprop_ptr_ + offset,
+                            static_cast<OutT>(out_backprop_ptr_[out_idx]));
       }
     }
   }

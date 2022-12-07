@@ -1,10 +1,10 @@
 #ifdef INTEL_COMMON
 #undef EIGEN_USE_GPU
-#undef EIGEN_USE_DPCPP
+#undef EIGEN_USE_ITEX_GPU
 #endif
 #ifndef INTEL_COMMON
 #ifndef INTEL_CPU_ONLY
-#include "third_party/build_option/dpcpp/runtime/eigen_dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/eigen_itex_gpu_runtime.h"
 #endif
 #endif
 

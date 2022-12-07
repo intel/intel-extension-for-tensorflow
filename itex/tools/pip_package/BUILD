@@ -38,7 +38,7 @@ transitive_hdrs(
     deps = [
         "//itex/core:protos_all_cc",
     ] + if_dpcpp([
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
     ]),
 )
 

@@ -19,34 +19,35 @@ limitations under the License.
 #include <map>
 
 #include "itex/core/devices/bfc_allocator.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 
 class AllocatorPool {
  public:
-  static dpcppError_t getAllocator(DPCPPDevice* device, BFCAllocator** alloc) {
+  static ITEX_GPUError_t getAllocator(ITEX_GPUDevice* device,
+                                      BFCAllocator** alloc) {
     auto allocs = AllocatorPool::GetAllocatorPool();
     for (auto& [key, value] : allocs) {
       if (key == device) {
         *alloc = value;
-        return DPCPP_SUCCESS;
+        return ITEX_GPU_SUCCESS;
       }
     }
-    return DPCPP_ERROR_INVALID_DEVICE;
+    return ITEX_GPU_ERROR_INVALID_DEVICE;
   }
 
  private:
-  static std::map<DPCPPDevice*, BFCAllocator*>& GetAllocatorPool() {
+  static std::map<ITEX_GPUDevice*, BFCAllocator*>& GetAllocatorPool() {
     static std::once_flag init_alloc_flag;
-    static std::map<DPCPPDevice*, BFCAllocator*> allocators;
+    static std::map<ITEX_GPUDevice*, BFCAllocator*> allocators;
 
     std::call_once(init_alloc_flag, []() {
       int device_count = 0;
-      dpcppGetDeviceCount(&device_count);
-      DPCPPDevice* device = nullptr;
+      ITEX_GPUGetDeviceCount(&device_count);
+      ITEX_GPUDevice* device = nullptr;
       for (int i = 0; i < device_count; ++i) {
-        dpcppGetDevice(&device, i);
+        ITEX_GPUGetDevice(&device, i);
         allocators.insert({device, new BFCAllocator(device)});
       }
     });
@@ -56,7 +57,7 @@ class AllocatorPool {
 };  // class AllocatorPool
 
 // clang-format off
-inline dpcppError_t dpcppGetAllocator(DPCPPDevice* device,
+inline ITEX_GPUError_t ITEX_GPUGetAllocator(ITEX_GPUDevice* device,
                                       BFCAllocator** alloc) {
   return AllocatorPool::getAllocator(device, alloc);
 }

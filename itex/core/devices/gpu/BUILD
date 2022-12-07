@@ -4,10 +4,10 @@ package(
 
 cc_library(
     name = "eigen_runtime_impl",
-    srcs = ["eigen_dpcpp_runtime.cc"],
+    srcs = ["eigen_itex_gpu_runtime.cc"],
     deps = [
         "//itex/core/utils:logging",
-        "//third_party/build_option/dpcpp:eigen_dpcpp_header",
+        "//third_party/build_option/dpcpp:eigen_itex_gpu_header",
         "@com_google_absl//absl/synchronization",
         "@eigen_archive//:eigen",
     ],
@@ -15,13 +15,13 @@ cc_library(
 )
 
 cc_library(
-    name = "dpcpp_runtime_imp",
-    srcs = ["dpcpp_runtime.cc"],
+    name = "itex_gpu_runtime_imp",
+    srcs = ["itex_gpu_runtime.cc"],
     deps = [
         ":eigen_runtime_impl",
         "//itex/core/devices:xpu_device_util",
         "//itex/core/utils:logging",
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
         "@com_google_absl//absl/synchronization",
         "@eigen_archive//:eigen",
     ],
@@ -38,10 +38,10 @@ cc_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        ":dpcpp_runtime_imp",
+        ":itex_gpu_runtime_imp",
         "//itex/core/devices:bfc_allocator",
         "//itex/core/utils:logging",
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
         "@local_config_tf//:tf_header_lib",
     ],
     alwayslink = True,
@@ -53,7 +53,7 @@ cc_library(
     hdrs = ["gpu_info.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
         "//third_party/eigen3",
         "@eigen_archive//:eigen",
         "@local_config_tf//:tf_header_lib",

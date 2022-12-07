@@ -306,7 +306,7 @@ struct FallBackKeyValueRadixSort {
     ValueT* group_value_dst = value_dst + group_offset;
 
     while (current_bit < end_bit) {
-      // reset counters[RADIX_STATUS][group_size]
+// reset counters[RADIX_STATUS][group_size]
 #pragma unroll
       for (int i = 0; i < RADIX_STATUS; ++i) {
         counters[i * group_size + id] = 0;

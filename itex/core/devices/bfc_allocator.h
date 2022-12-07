@@ -29,21 +29,21 @@ limitations under the License.
 #include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/mutex.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 
 // Currently, the default strategy of itex custom device allocator is BFC
 class BFCAllocator : public Allocator {
  public:
-  explicit BFCAllocator(DPCPPDevice* device);
+  explicit BFCAllocator(ITEX_GPUDevice* device);
   ~BFCAllocator() override;
   void* AllocateRaw(size_t num_bytes) override;
   void DeallocateRaw(void* ptr) override;
   string Name() override { return "itex_device_bfc"; }
 
  private:
-  DPCPPDevice* device_;
+  ITEX_GPUDevice* device_;
   size_t memory_limit_;
   static constexpr size_t kMinAllocationBits = 8;
   static constexpr size_t kMinAllocationSize = 1 << kMinAllocationBits;

@@ -29,7 +29,7 @@ namespace itex {
 namespace detail {
 // TODO(itex): add specializations for Eigen::half here
 template <typename T, typename F>
-void DpcppAtomicCasHelper(T* ptr, F accumulate) {
+void ItexAtomicCasHelper(T* ptr, F accumulate) {
   T assumed = *ptr;
   auto atm = sycl::atomic_ref<T, sycl::memory_order::relaxed,
                               sycl::memory_scope::device,
@@ -46,13 +46,13 @@ template <typename T, typename U,
           sycl::memory_scope DefaultScope = sycl::memory_scope::device,
           sycl::access::address_space AddressSpace =
               sycl::access::address_space::global_space>
-void DpcppAtomicAdd(T* ptr, U value) {
+void ItexAtomicAdd(T* ptr, U value) {
   sycl::atomic_ref<T, DefaultOrder, DefaultScope, AddressSpace> atm_dest(*ptr);
   atm_dest.fetch_add(value);
 }
 
 template <typename T, typename U>
-void DpcppAtomicSub(T* ptr, U value) {
+void ItexAtomicSub(T* ptr, U value) {
   sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,
                    sycl::access::address_space::global_space>
       atm_dest(*ptr);
@@ -60,7 +60,7 @@ void DpcppAtomicSub(T* ptr, U value) {
 }
 
 template <typename T, typename U>
-void DpcppAtomicMax(T* ptr, U value) {
+void ItexAtomicMax(T* ptr, U value) {
   sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,
                    sycl::access::address_space::global_space>
       atm_dest(*ptr);
@@ -68,7 +68,7 @@ void DpcppAtomicMax(T* ptr, U value) {
 }
 
 template <typename T, typename U>
-void DpcppAtomicMin(T* ptr, U value) {
+void ItexAtomicMin(T* ptr, U value) {
   sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,
                    sycl::access::address_space::global_space>
       atm_dest(*ptr);
@@ -76,13 +76,13 @@ void DpcppAtomicMin(T* ptr, U value) {
 }
 
 template <typename T, typename U>
-void DpcppAtomicMul(T* ptr, U value) {
-  detail::DpcppAtomicCasHelper(ptr, [value](T a) { return a * value; });
+void ItexAtomicMul(T* ptr, U value) {
+  detail::ItexAtomicCasHelper(ptr, [value](T a) { return a * value; });
 }
 
 template <typename T, typename U>
-void DpcppAtomicDiv(T* ptr, U value) {
-  detail::DpcppAtomicCasHelper(ptr, [value](T a) { return a / value; });
+void ItexAtomicDiv(T* ptr, U value) {
+  detail::ItexAtomicCasHelper(ptr, [value](T a) { return a / value; });
 }
 
 }  // namespace itex

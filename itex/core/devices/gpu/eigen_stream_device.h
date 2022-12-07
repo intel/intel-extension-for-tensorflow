@@ -22,7 +22,7 @@ limitations under the License.
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/logging.h"
 #include "tensorflow/c/kernels.h"
-#include "third_party/build_option/dpcpp/runtime/eigen_dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/eigen_itex_gpu_runtime.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 using itex::gtl::InlinedVector;

@@ -20,8 +20,8 @@ limitations under the License.
 namespace itex {
 
 #ifndef INTEL_CPU_ONLY
-DeviceInfo* GetDeviceInfo(DPCPPStream* stream) {
-  static thread_local std::map<DPCPPStream*, DeviceInfo*> stream_device_map;
+DeviceInfo* GetDeviceInfo(ITEX_GPUStream* stream) {
+  static thread_local std::map<ITEX_GPUStream*, DeviceInfo*> stream_device_map;
   auto iter = stream_device_map.find(stream);
   if (iter != stream_device_map.end()) return iter->second;
   auto device_ = stream->get_device();

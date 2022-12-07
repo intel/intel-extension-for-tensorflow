@@ -161,9 +161,9 @@ class GpuDeviceArrayOnHost {
     // Out-of-line - copy pointers to device.
     TF_RETURN_IF_ERROR(context_->allocate_temp(
         DT_INT8, TensorShape{total_bytes_}, &out_of_line_values_on_gpu_));
-    dpcppMemcpyHtoDAsync(out_of_line_values_on_gpu_.flat<int8>().data(),
-                         out_of_line_values_on_host_.flat<int8>().data(),
-                         total_bytes_, context_->GetDeviceStream());
+    ITEX_GPUMemcpyHtoDAsync(out_of_line_values_on_gpu_.flat<int8>().data(),
+                            out_of_line_values_on_host_.flat<int8>().data(),
+                            total_bytes_, context_->GetDeviceStream());
     data_.out_of_line_values = reinterpret_cast<ValueType*>(
         out_of_line_values_on_gpu_.flat<int8>().data());
     return Status::OK();

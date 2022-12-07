@@ -182,7 +182,7 @@ class WhereOp : public OpKernel {
                    context->allocate_output(
                        0, TensorShape({num_true_host, input_dims}), &output));
 
-    // Currently Where<GPUDevice>::Compute() does not compute found_true
+// Currently Where<GPUDevice>::Compute() does not compute found_true
 #define HANDLE_DIM(NDIM)                                            \
   case NDIM: {                                                      \
     Status s = functor::Where<GPUDevice, NDIM, T, Tindex>::Compute( \

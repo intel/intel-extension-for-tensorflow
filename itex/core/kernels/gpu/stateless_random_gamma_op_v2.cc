@@ -154,14 +154,14 @@ void FillKernel(OpKernelContext* ctx, const T* alpha_flat, int64 num_samples,
   using Eigen::numext::log1p;
   using Eigen::numext::pow;
 
-  auto* dpcpp_stream = ctx->GetDeviceStream();
-  OP_REQUIRES(ctx, dpcpp_stream != nullptr,
+  auto* ITEX_GPU_stream = ctx->GetDeviceStream();
+  OP_REQUIRES(ctx, ITEX_GPU_stream != nullptr,
               errors::Internal("No GPU stream available."));
   auto total_items =
-      dpcpp_stream->get_device()
+      ITEX_GPU_stream->get_device()
           .template get_info<sycl::info::device::max_work_group_size>();
   total_items = total_items > num_samples ? num_samples : total_items;
-  dpcpp_stream->submit([&](sycl::handler& cgh) {
+  ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
     StatelessRandomGammaKernel<T> task(alpha_flat, num_samples, num_alphas,
                                        samples_per_alpha, random, samples_flat);
     cgh.parallel_for<StatelessRandomGammaKernel<T>>(sycl::range<1>(total_items),
@@ -228,7 +228,7 @@ class StatelessRandomGammaOp : public OpKernel {
 };
 
 // Register GPU kernels for stateless gamma op.
-#define REGISTER_DPCPP(TYPE)                                  \
+#define REGISTER_ITEX_GPU(TYPE)                               \
   REGISTER_KERNEL_BUILDER(Name("StatelessRandomGammaV2")      \
                               .Device(DEVICE_GPU)             \
                               .HostMemory("shape")            \
@@ -236,11 +236,11 @@ class StatelessRandomGammaOp : public OpKernel {
                               .TypeConstraint<TYPE>("dtype"), \
                           StatelessRandomGammaOp<GPUDevice, TYPE>)
 
-TF_CALL_GPU_NUMBER_TYPES(REGISTER_DPCPP);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(REGISTER_DPCPP);
+TF_CALL_double(REGISTER_ITEX_GPU);
 #endif
 
-#undef REGISTER_DPCPP
+#undef REGISTER_ITEX_GPU
 
 }  // namespace itex

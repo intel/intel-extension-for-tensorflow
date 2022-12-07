@@ -16,7 +16,7 @@ limitations under the License.
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/devices/bfc_allocator.h"
 #include "itex/core/devices/gpu/gpu_pool_allocator.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 #endif  // INTEL_CPU_ONLY
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_graph_util.h"
@@ -53,25 +53,25 @@ void* sycl_malloc_wrapper(size_t n, size_t alignment, const void* device,
                           const void* ctx) {
   // TODO(itex): Currently, we ignore the alignment argument. The default
   // alignment in ITEX is 256.
-  auto& device_ptr = *static_cast<const DPCPPDevice*>(device);
-  DPCPPDevice* device_handle;
+  auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+  ITEX_GPUDevice* device_handle;
   DeviceOrdinal device_ordinal;
-  dpcppGetDeviceOrdinal(device_ptr, &device_ordinal);
-  dpcppGetDevice(&device_handle, device_ordinal);
+  ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal);
   BFCAllocator* alloc = nullptr;
-  dpcppGetAllocator(device_handle, &alloc);
+  ITEX_GPUGetAllocator(device_handle, &alloc);
   return alloc->AllocateRaw(n);
 }
 
 void sycl_free_wrapper(void* ptr, const void* device, const void* context,
                        void* e) {
-  auto& device_ptr = *static_cast<const DPCPPDevice*>(device);
-  DPCPPDevice* device_handle;
+  auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+  ITEX_GPUDevice* device_handle;
   DeviceOrdinal device_ordinal;
-  dpcppGetDeviceOrdinal(device_ptr, &device_ordinal);
-  dpcppGetDevice(&device_handle, device_ordinal);
+  ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal);
   BFCAllocator* alloc = nullptr;
-  dpcppGetAllocator(device_handle, &alloc);
+  ITEX_GPUGetAllocator(device_handle, &alloc);
   alloc->DeallocateRaw(ptr);
 }
 

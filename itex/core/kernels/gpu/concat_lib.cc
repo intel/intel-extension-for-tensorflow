@@ -496,21 +496,21 @@ void Concat(
   }
 }
 
-#define REGISTER_DPCPP(T)                                                     \
+#define REGISTER_ITEX_GPU(T)                                                  \
   template void Concat<T>(                                                    \
       OpKernelContext * ctx,                                                  \
       const std::vector<std::unique_ptr<typename TTypes<T, 2>::ConstMatrix>>& \
           inputs,                                                             \
       typename TTypes<T, 2>::Matrix* output, bool one_size_input);
 
-TF_CALL_GPU_NUMBER_TYPES(REGISTER_DPCPP);
-REGISTER_DPCPP(int32);
-REGISTER_DPCPP(int64);
-REGISTER_DPCPP(bool);
-REGISTER_DPCPP(complex64);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU);
+REGISTER_ITEX_GPU(int32);
+REGISTER_ITEX_GPU(int64);
+REGISTER_ITEX_GPU(bool);
+REGISTER_ITEX_GPU(complex64);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_DPCPP(double);
-REGISTER_DPCPP(complex128);
+REGISTER_ITEX_GPU(double);
+REGISTER_ITEX_GPU(complex128);
 #endif  // ITEX_ENABLE_DOUBLE
-#undef REGISTER_DPCPP
+#undef REGISTER_ITEX_GPU
 }  // namespace itex

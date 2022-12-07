@@ -60,7 +60,7 @@ template <typename T>
 class AdagradV2Kernel;
 
 template <typename T>
-struct ApplyAdagradV2DPCPP {
+struct ApplyAdagradV2ITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* accum, const T* lr,
                   const T* epsilon, const T* grad, OpKernelContext* ctx,
                   int elements, bool update_slots) {
@@ -130,7 +130,7 @@ class ApplyAdagradV2Op : public OpKernel {
                                 grad.shape().DebugString()));
 
     auto device = ctx->eigen_gpu_device();
-    functor::ApplyAdagradV2DPCPP<T>()(
+    functor::ApplyAdagradV2ITEX_GPU<T>()(
         device, var.flat<T>().data(), accum.flat<T>().data(),
         lr.flat<T>().data(), epsilon.flat<T>().data(), grad.flat<T>().data(),
         ctx, grad.NumElements(), update_slots_);
@@ -143,7 +143,7 @@ class ApplyAdagradV2Op : public OpKernel {
   bool update_slots_;
 };
 
-#define REGISTER_DPCPP_KERNELS(T)                                       \
+#define REGISTER_ITEX_GPU_KERNELS(T)                                    \
   REGISTER_KERNEL_BUILDER(                                              \
       Name("ApplyAdagradV2").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
       ApplyAdagradV2Op<T>);                                             \
@@ -154,14 +154,14 @@ class ApplyAdagradV2Op : public OpKernel {
                               .TypeConstraint<T>("T"),                  \
                           ApplyAdagradV2Op<T>);
 
-TF_CALL_half(REGISTER_DPCPP_KERNELS);
-TF_CALL_float(REGISTER_DPCPP_KERNELS);
-TF_CALL_bfloat16(REGISTER_DPCPP_KERNELS);
-TF_CALL_complex64(REGISTER_DPCPP_KERNELS);
+TF_CALL_half(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_float(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_bfloat16(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_complex64(REGISTER_ITEX_GPU_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_complex128(REGISTER_DPCPP_KERNELS);
-TF_CALL_double(REGISTER_DPCPP_KERNELS);
+TF_CALL_complex128(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_double(REGISTER_ITEX_GPU_KERNELS);
 #endif
-#undef REGISTER_DPCPP_KERNELS
+#undef REGISTER_ITEX_GPU_KERNELS
 
 }  // namespace itex

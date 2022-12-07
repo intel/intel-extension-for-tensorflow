@@ -382,9 +382,9 @@ class BatchMatMulOp : public OpKernel {
         const_cast<Toutput*>(mul_tensor_ptr->flat<Toutput>().data());
 
     // TODO(itex): refactor the memcpy code
-    auto* dpcpp_stream = ctx->GetDeviceStream();
-    auto event = dpcpp_stream->memcpy(mul_host_data, mul_device_data,
-                                      1 * sizeof(Toutput));
+    auto* ITEX_GPU_stream = ctx->GetDeviceStream();
+    auto event = ITEX_GPU_stream->memcpy(mul_host_data, mul_device_data,
+                                         1 * sizeof(Toutput));
     event.wait();
   }
 

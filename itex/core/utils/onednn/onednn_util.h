@@ -47,8 +47,8 @@ const int MAX_NDIMS = DNNL_MAX_NDIMS;
 #endif
 
 #ifndef INTEL_CPU_ONLY
-static dnnl::engine& FindOrCreateEngine(DPCPPStream* stream) {
-  static std::map<DPCPPStream*, dnnl::engine> stream_engine_map;
+static dnnl::engine& FindOrCreateEngine(ITEX_GPUStream* stream) {
+  static std::map<ITEX_GPUStream*, dnnl::engine> stream_engine_map;
   auto iter = stream_engine_map.find(stream);
   if (iter != stream_engine_map.end()) return iter->second;
 
@@ -56,7 +56,7 @@ static dnnl::engine& FindOrCreateEngine(DPCPPStream* stream) {
   engine = dnnl::sycl_interop::make_engine(stream->get_device(),
                                            stream->get_context());
   return stream_engine_map
-      .insert(std::pair<DPCPPStream*, dnnl::engine>(stream, engine))
+      .insert(std::pair<ITEX_GPUStream*, dnnl::engine>(stream, engine))
       .first->second;
 }
 #endif
@@ -196,8 +196,8 @@ inline dnnl::engine& CreateDnnlEngine(const OpKernelContext& ctx);
 #ifndef INTEL_CPU_ONLY
 template <>
 inline dnnl::engine& CreateDnnlEngine<GPUDevice>(const OpKernelContext& ctx) {
-  auto* dpcpp_stream = ctx.GetDeviceStream();
-  return FindOrCreateEngine(dpcpp_stream);
+  auto* ITEX_GPU_stream = ctx.GetDeviceStream();
+  return FindOrCreateEngine(ITEX_GPU_stream);
 }
 #endif  // INTEL_CPU_ONLY
 
@@ -216,8 +216,8 @@ inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
                                      const dnnl::engine& engine) {
 #ifndef INTEL_CPU_ONLY
   if (engine.get_kind() == dnnl::engine::kind::gpu) {
-    auto* dpcpp_stream = ctx.GetDeviceStream();
-    return dnnl::sycl_interop::make_stream(engine, *dpcpp_stream);
+    auto* ITEX_GPU_stream = ctx.GetDeviceStream();
+    return dnnl::sycl_interop::make_stream(engine, *ITEX_GPU_stream);
   }
 #endif  // INTEL_CPU_ONLY
 

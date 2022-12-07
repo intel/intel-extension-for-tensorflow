@@ -18,20 +18,20 @@ limitations under the License.
 #include <string>
 
 #include "itex/core/devices/gpu/gpu_pool_allocator.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 
 void gpu_device_count(const SP_Platform* platform, int* device_count,
                       TF_Status* status) {
-  dpcppGetDeviceCount(device_count);
+  ITEX_GPUGetDeviceCount(device_count);
 }
 
 void gpu_create_device(const SP_Platform* platform,
                        SE_CreateDeviceParams* params, TF_Status* const status) {
   params->device->struct_size = SP_DEVICE_STRUCT_SIZE;
-  DPCPPDevice* device_h;
-  dpcppGetDevice(&device_h, params->ordinal);
+  ITEX_GPUDevice* device_h;
+  ITEX_GPUGetDevice(&device_h, params->ordinal);
   params->device->device_handle = static_cast<void*>(device_h);
   params->device->ordinal = params->ordinal;
 }
@@ -53,13 +53,14 @@ void gpu_destroy_device_fns(const SP_Platform* platform,
 /*StreamExecutor Backend Impl*/
 void gpu_allocate(const SP_Device* device, uint64_t size, int64_t memory_space,
                   SP_DeviceMemoryBase* mem) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
   mem->struct_size = SP_DEVICE_MEMORY_BASE_STRUCT_SIZE;
   BFCAllocator* alloc = nullptr;
-  dpcppError_t error = dpcppGetAllocator(device_handle, &alloc);
-  if (error != DPCPP_SUCCESS) {
+  ITEX_GPUError_t error = ITEX_GPUGetAllocator(device_handle, &alloc);
+  if (error != ITEX_GPU_SUCCESS) {
     ITEX_LOG(ERROR) << "Failed to allocate device buffer because "
-                    << dpcppGetErrorName(error);
+                    << ITEX_GPUGetErrorName(error);
     return;
   }
   mem->opaque = alloc->AllocateRaw(size);
@@ -67,12 +68,13 @@ void gpu_allocate(const SP_Device* device, uint64_t size, int64_t memory_space,
 }
 
 void gpu_deallocate(const SP_Device* device, SP_DeviceMemoryBase* mem) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
   BFCAllocator* alloc = nullptr;
-  dpcppError_t error = dpcppGetAllocator(device_handle, &alloc);
-  if (error != DPCPP_SUCCESS) {
+  ITEX_GPUError_t error = ITEX_GPUGetAllocator(device_handle, &alloc);
+  if (error != ITEX_GPU_SUCCESS) {
     ITEX_VLOG(1) << "Failed to deallocate buffer by nullptr allocator because "
-                 << dpcppGetErrorName(error);
+                 << ITEX_GPUGetErrorName(error);
     return;
   }
   alloc->DeallocateRaw(mem->opaque);
@@ -82,15 +84,15 @@ void gpu_deallocate(const SP_Device* device, SP_DeviceMemoryBase* mem) {
 
 void* gpu_host_memory_allocate(const SP_Device* device, uint64_t size) {
   void* ptr = nullptr;
-  ptr = dpcppMallocHost(size);
+  ptr = ITEX_GPUMallocHost(size);
   return ptr;
 }
 
 void gpu_host_memory_deallocate(const SP_Device* device, void* mem) {
-  auto device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  DPCPPStream* stream;
+  auto device_handle = static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUStream* stream;
   // Always use default 0 stream to free mem
-  dpcppGetDefaultStream(device_handle, &stream);
+  ITEX_GPUGetDefaultStream(device_handle, &stream);
   sycl::free(mem, *stream);
 }
 
@@ -104,7 +106,8 @@ TF_Bool gpu_get_allocator_stats(const SP_Device* device,
 
 TF_Bool gpu_device_memory_usage(const SP_Device* device, int64_t* free,
                                 int64_t* total) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
   *free =
       device_handle->template get_info<sycl::info::device::global_mem_size>();
   *total =
@@ -114,28 +117,30 @@ TF_Bool gpu_device_memory_usage(const SP_Device* device, int64_t* free,
 
 void gpu_create_stream(const SP_Device* device, SP_Stream* stream,
                        TF_Status* status) {
-  DPCPPStream* stream_handle;
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppCreateStream(device_handle, &stream_handle);
+  ITEX_GPUStream* stream_handle;
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUCreateStream(device_handle, &stream_handle);
   *stream = new SP_Stream_st(stream_handle);
 }
 
 // Destroys SP_Stream and deallocates any underlying resources.
 void gpu_destroy_stream(const SP_Device* device, SP_Stream stream) {
-  DPCPPStream* stream_handle =
+  ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppDestroyStream(device_handle, stream_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUDestroyStream(device_handle, stream_handle);
   delete stream;
 }
 
 void gpu_create_stream_dependency(const SP_Device* device, SP_Stream dependent,
                                   SP_Stream other, TF_Status* status) {
-  DPCPPStream* stream_handle1 =
+  ITEX_GPUStream* stream_handle1 =
       static_cast<SP_Stream_st*>(dependent)->stream_handle;
-  DPCPPStream* stream_handle2 =
+  ITEX_GPUStream* stream_handle2 =
       static_cast<SP_Stream_st*>(other)->stream_handle;
-  dpcppStreamWaitStream(stream_handle1, stream_handle2);
+  ITEX_GPUStreamWaitStream(stream_handle1, stream_handle2);
 }
 
 // Without blocking the device, retrieve the current stream status.
@@ -146,18 +151,20 @@ void gpu_get_stream_status(const SP_Device* device, SP_Stream stream,
 
 void gpu_create_event(const SP_Device* device, SP_Event* event,
                       TF_Status* status) {
-  DPCPPEvent* event_handle;
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppCreateEvent(device_handle, &event_handle);
+  ITEX_GPUEvent* event_handle;
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUCreateEvent(device_handle, &event_handle);
   *event = new SP_Event_st(event_handle);
 }
 
 // Destroy SE_Event and perform any platform-specific deallocation and
 // cleanup of an event.
 void gpu_destroy_event(const SP_Device* device, SP_Event event) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  DPCPPEvent* event_handle = static_cast<SP_Event_st*>(event)->event_handle;
-  dpcppDestroyEvent(device_handle, event_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUEvent* event_handle = static_cast<SP_Event_st*>(event)->event_handle;
+  ITEX_GPUDestroyEvent(device_handle, event_handle);
   delete event;
 }
 
@@ -176,10 +183,10 @@ void gpu_record_event(const SP_Device* device, SP_Stream stream, SP_Event event,
 // Wait for the specified event at the end of the specified stream.
 void gpu_wait_for_event(const SP_Device* const device, SP_Stream stream,
                         SP_Event event, TF_Status* const status) {
-  DPCPPStream* stream_handle =
+  ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
-  DPCPPEvent* event_handle = static_cast<SP_Event_st*>(event)->event_handle;
-  dpcppStreamWaitEvent(stream_handle, event_handle);
+  ITEX_GPUEvent* event_handle = static_cast<SP_Event_st*>(event)->event_handle;
+  ITEX_GPUStreamWaitEvent(stream_handle, event_handle);
 }
 
 /*** TIMER CALLBACKS ***/
@@ -214,9 +221,9 @@ void gpu_stop_timer(const SP_Device* device, SP_Stream stream, SP_Timer timer,
 void gpu_memcpy_dtoh(const SP_Device* device, SP_Stream stream, void* host_dst,
                      const SP_DeviceMemoryBase* device_src, uint64_t size,
                      TF_Status* status) {
-  DPCPPStream* stream_handle =
+  ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
-  dpcppMemcpyDtoHAsync(host_dst, device_src->opaque, size, stream_handle);
+  ITEX_GPUMemcpyDtoHAsync(host_dst, device_src->opaque, size, stream_handle);
 }
 
 // Enqueues a memcpy operation onto stream, with a device destination
@@ -224,9 +231,9 @@ void gpu_memcpy_dtoh(const SP_Device* device, SP_Stream stream, void* host_dst,
 void gpu_memcpy_htod(const SP_Device* device, SP_Stream stream,
                      SP_DeviceMemoryBase* device_dst, const void* host_src,
                      uint64_t size, TF_Status* status) {
-  DPCPPStream* stream_handle =
+  ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
-  dpcppMemcpyHtoDAsync(device_dst->opaque, host_src, size, stream_handle);
+  ITEX_GPUMemcpyHtoDAsync(device_dst->opaque, host_src, size, stream_handle);
 }
 
 // Enqueues a memcpy operation onto stream, with a device destination
@@ -235,10 +242,10 @@ void gpu_memcpy_dtod(const SP_Device* device, SP_Stream stream,
                      SP_DeviceMemoryBase* device_dst,
                      const SP_DeviceMemoryBase* device_src, uint64_t size,
                      TF_Status* status) {
-  DPCPPStream* stream_handle =
+  ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
-  dpcppMemcpyDtoDAsync(device_dst->opaque, device_src->opaque, size,
-                       stream_handle);
+  ITEX_GPUMemcpyDtoDAsync(device_dst->opaque, device_src->opaque, size,
+                          stream_handle);
 }
 
 // Blocks the caller while a data segment of the given size is
@@ -246,8 +253,9 @@ void gpu_memcpy_dtod(const SP_Device* device, SP_Stream stream,
 void gpu_sync_memcpy_dtoh(const SP_Device* device, void* host_dst,
                           const SP_DeviceMemoryBase* device_src, uint64_t size,
                           TF_Status* status) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppMemcpyDtoH(host_dst, device_src->opaque, size, device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUMemcpyDtoH(host_dst, device_src->opaque, size, device_handle);
 }
 
 // Blocks the caller while a data segment of the given size is
@@ -255,8 +263,9 @@ void gpu_sync_memcpy_dtoh(const SP_Device* device, void* host_dst,
 void gpu_sync_memcpy_htod(const SP_Device* device,
                           SP_DeviceMemoryBase* device_dst, const void* host_src,
                           uint64_t size, TF_Status* status) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppMemcpyHtoD(device_dst->opaque, host_src, size, device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUMemcpyHtoD(device_dst->opaque, host_src, size, device_handle);
 }
 
 // Blocks the caller while a data segment of the given size is copied from the
@@ -265,8 +274,10 @@ void gpu_sync_memcpy_dtod(const SP_Device* device,
                           SP_DeviceMemoryBase* device_dst,
                           const SP_DeviceMemoryBase* device_src, uint64_t size,
                           TF_Status* status) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppMemcpyDtoD(device_dst->opaque, device_src->opaque, size, device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUMemcpyDtoD(device_dst->opaque, device_src->opaque, size,
+                     device_handle);
 }
 
 // Causes the host code to synchronously wait for the event to complete.
@@ -277,7 +288,7 @@ void gpu_block_host_for_event(const SP_Device* device, SP_Event event,
 
 void gpu_block_host_until_done(const SP_Device* device, SP_Stream stream,
                                TF_Status* status) {
-  DPCPPStream* stream_handle =
+  ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
   stream_handle->wait();
 }
@@ -285,36 +296,40 @@ void gpu_block_host_until_done(const SP_Device* device, SP_Stream stream,
 // Synchronizes all activity occurring in the StreamExecutor's context (most
 // likely a whole device).
 void gpu_synchronize_all_activity(const SP_Device* device, TF_Status* status) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppCtxSynchronize(device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUCtxSynchronize(device_handle);
 }
 
 void gpu_mem_zero(const SP_Device* device, SP_Stream stream,
                   SP_DeviceMemoryBase* location, uint64_t size,
                   TF_Status* status) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppMemsetD8(location->opaque, 0, size, device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUMemsetD8(location->opaque, 0, size, device_handle);
 }
 
 void gpu_memset(const SP_Device* device, SP_Stream stream,
                 SP_DeviceMemoryBase* location, uint8_t pattern, uint64_t size,
                 TF_Status* status) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppMemsetD8(location->opaque, pattern, size, device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUMemsetD8(location->opaque, pattern, size, device_handle);
 }
 
 void gpu_memset32(const SP_Device* device, SP_Stream stream,
                   SP_DeviceMemoryBase* location, uint32_t pattern,
                   uint64_t size, TF_Status* status) {
-  DPCPPDevice* device_handle = static_cast<DPCPPDevice*>(device->device_handle);
-  dpcppMemsetD32(location->opaque, pattern, size, device_handle);
+  ITEX_GPUDevice* device_handle =
+      static_cast<ITEX_GPUDevice*>(device->device_handle);
+  ITEX_GPUMemsetD32(location->opaque, pattern, size, device_handle);
 }
 
 // Enqueues on a stream a user-specified function to be run on the host.
 // `callback_arg` should be passed as the first argument to `callback_fn`.
 TF_Bool gpu_host_callback(const SP_Device* device, SP_Stream stream,
                           SE_StatusCallbackFn callback_fn, void* callback_arg) {
-  DPCPPStream* stream_handle =
+  ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
   stream_handle->submit([&](auto& cgh) {
     auto host_task = [&]() {

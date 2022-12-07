@@ -164,7 +164,7 @@ template <typename T>
 class FtrlV2Kernel;
 
 template <typename T>
-struct ApplyFtrlDPCPP {
+struct ApplyFtrlITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* accum, T* linear,
                   const T* grad, const T* lr, const T* l1, const T* l2,
                   const T* lr_power, OpKernelContext* ctx, int elements) {
@@ -188,7 +188,7 @@ struct ApplyFtrlDPCPP {
 };
 
 template <typename T>
-struct ApplyFtrlV2DPCPP {
+struct ApplyFtrlV2ITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* accum, T* linear,
                   const T* grad, const T* lr, const T* l1, const T* l2,
                   const T* l2_shrinkage, const T* lr_power,
@@ -327,8 +327,8 @@ struct SparseApplyFtrl<GPUDevice, T, Tindex, has_l2_shrinkage> {
     const Tindex grad_size = grad.size();
     const Tindex indices_size = indices.size();
 
-    auto* dpcpp_stream = d.stream();
-    dpcpp_stream->submit([&](sycl::handler& cgh) {
+    auto* ITEX_GPU_stream = d.stream();
+    ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
       SparseApplyFtrlKernel<T, Tindex, has_l2_shrinkage> task(
           var.data(), accum.data(), linear.data(), lr.data(), l1.data(),
           l2.data(), l2_shrinkage.data(), lr_power.data(), grad.data(),
@@ -434,14 +434,14 @@ class ApplyFtrlOp : public OpKernel {
           errors::InvalidArgument("l2 shrinkage regularization strength "
                                   "is not a non-negative scalar: ",
                                   l2_shrinkage.shape().DebugString()));
-      functor::ApplyFtrlV2DPCPP<T>()(
+      functor::ApplyFtrlV2ITEX_GPU<T>()(
           device, var.flat<T>().data(), accum.flat<T>().data(),
           linear.flat<T>().data(), grad.flat<T>().data(), lr.scalar<T>().data(),
           l1.scalar<T>().data(), l2.scalar<T>().data(),
           l2_shrinkage.scalar<T>().data(), lr_power.scalar<T>().data(), ctx,
           grad.NumElements());
     } else {
-      functor::ApplyFtrlDPCPP<T>()(
+      functor::ApplyFtrlITEX_GPU<T>()(
           device, var.flat<T>().data(), accum.flat<T>().data(),
           linear.flat<T>().data(), grad.flat<T>().data(), lr.scalar<T>().data(),
           l1.scalar<T>().data(), l2.scalar<T>().data(),
@@ -594,7 +594,7 @@ class SparseApplyFtrlOp : public OpKernel {
   bool multiply_linear_by_lr_;
 };
 
-#define REGISTER_DPCPP_KERNELS(T)                                      \
+#define REGISTER_ITEX_GPU_KERNELS(T)                                   \
   REGISTER_KERNEL_BUILDER(                                             \
       Name("ApplyFtrl").Device(DEVICE_GPU).TypeConstraint<T>("T"),     \
       ApplyFtrlOp<T, /*has_l2_shrinkage=*/false>);                     \
@@ -616,15 +616,15 @@ class SparseApplyFtrlOp : public OpKernel {
                               .TypeConstraint<T>("T"),                 \
                           ApplyFtrlOp<T, /*has_l2_shrinkage=*/true>);
 
-TF_CALL_half(REGISTER_DPCPP_KERNELS);
-TF_CALL_float(REGISTER_DPCPP_KERNELS);
-TF_CALL_bfloat16(REGISTER_DPCPP_KERNELS);
+TF_CALL_half(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_float(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_bfloat16(REGISTER_ITEX_GPU_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(REGISTER_DPCPP_KERNELS);
+TF_CALL_double(REGISTER_ITEX_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
-#undef REGISTER_DPCPP_KERNELS
+#undef REGISTER_ITEX_GPU_KERNELS
 
-#define REGISTER_DPCPP_KERNELS(D, T, Tindices)                                \
+#define REGISTER_ITEX_GPU_KERNELS(D, T, Tindices)                             \
   REGISTER_KERNEL_BUILDER(                                                    \
       Name("SparseApplyFtrl")                                                 \
           .Device(DEVICE_##D)                                                 \
@@ -650,17 +650,17 @@ TF_CALL_double(REGISTER_DPCPP_KERNELS);
           .TypeConstraint<Tindices>("Tindices"),                              \
       SparseApplyFtrlOp<D##Device, T, Tindices, /*has_l2_shrinkage=*/true>);
 
-REGISTER_DPCPP_KERNELS(GPU, Eigen::half, int32);
-REGISTER_DPCPP_KERNELS(GPU, Eigen::half, int64);
-REGISTER_DPCPP_KERNELS(GPU, Eigen::bfloat16, int32);
-REGISTER_DPCPP_KERNELS(GPU, Eigen::bfloat16, int64);
-REGISTER_DPCPP_KERNELS(GPU, float, int32);
-REGISTER_DPCPP_KERNELS(GPU, float, int64);
+REGISTER_ITEX_GPU_KERNELS(GPU, Eigen::half, int32);
+REGISTER_ITEX_GPU_KERNELS(GPU, Eigen::half, int64);
+REGISTER_ITEX_GPU_KERNELS(GPU, Eigen::bfloat16, int32);
+REGISTER_ITEX_GPU_KERNELS(GPU, Eigen::bfloat16, int64);
+REGISTER_ITEX_GPU_KERNELS(GPU, float, int32);
+REGISTER_ITEX_GPU_KERNELS(GPU, float, int64);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_DPCPP_KERNELS(GPU, double, int32);
-REGISTER_DPCPP_KERNELS(GPU, double, int64);
+REGISTER_ITEX_GPU_KERNELS(GPU, double, int32);
+REGISTER_ITEX_GPU_KERNELS(GPU, double, int64);
 #endif  // ITEX_ENABLE_DOUBLE
 
-#undef REGISTER_DPCPP_KERNELS
+#undef REGISTER_ITEX_GPU_KERNELS
 
 }  // namespace itex

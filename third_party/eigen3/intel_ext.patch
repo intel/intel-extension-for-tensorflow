@@ -84,7 +84,7 @@ index f44b77831..9721cc60d 100644
 +#if defined(EIGEN_USE_DPCPP)
 +  #include "src/Core/arch/DPCPP/InteropHeaders.h"
 +  #include "src/Core/arch/DPCPP/TypeCasting.h"
-+  #include "dpcpp_runtime.h"
++  #include "itex_gpu_runtime.h"
 +#if !defined(EIGEN_DONT_VECTORIZE_SYCL)
 +  #include "src/Core/arch/DPCPP/MathFunctions.h"
 +  #include "src/Core/arch/DPCPP/PacketMath.h"
@@ -10594,8 +10594,8 @@ index f32ce27e9..fb704cdf4 100644
 +#define cudaStreamDefault  DefaultQueue::getInstance()
 +
 +using  gpuStream_t    =  dpruntimeStream_t;
-+#define gpuError_t       dpcppError_t
-+#define gpuSuccess       DPCPP_SUCCESS
++#define gpuError_t       ITEX_GPUError_t
++#define gpuSuccess       ITEX_GPU_SUCCESS
 +#define gpuErrorNotReady cudaErrorNotReady
 +#define gpuGetDeviceCount dpruntimeGetDeviceCount
 +#define gpuGetErrorString cudaGetErrorString
@@ -10614,8 +10614,8 @@ index f32ce27e9..fb704cdf4 100644
 +#define gpuDeviceSynchronize cudaDeviceSynchronize
 +#define gpuMemcpy dpruntimeMemcpy
 +
-+inline dpcppError_t gpuGetDeviceProperties(gpuDeviceProp_t * devProp, int device){
-+  DPCPPdevice_st dpcppDevice;
++inline ITEX_GPUError_t gpuGetDeviceProperties(gpuDeviceProp_t * devProp, int device){
++  ITEX_GPUdevice_st dpcppDevice;
 +  dpruntimeGetRealDPCPPDevice(&dpcppDevice, device);
 +  devProp->multiProcessorCount = dpcppDevice.template get_info<sycl::info::device::max_compute_units>();
 +  devProp->maxThreadsPerBlock = dpcppDevice.template get_info<sycl::info::device::max_work_group_size>();
@@ -10624,27 +10624,27 @@ index f32ce27e9..fb704cdf4 100644
 +  devProp->major = 0;
 +  devProp->minor = 0;
 +  devProp->local_mem_type = dpcppDevice.template get_info<sycl::info::device::local_mem_type>();
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
 +
-+inline dpcppError_t gpuMalloc(void** devPtr, size_t size) {
++inline ITEX_GPUError_t gpuMalloc(void** devPtr, size_t size) {
 +  *devPtr = dpruntimeMalloc(size);
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
-+inline dpcppError_t gpuFree(void* devPtr) {
++inline ITEX_GPUError_t gpuFree(void* devPtr) {
 +  dpruntimeFree(devPtr);
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
-+inline dpcppError_t dpruntimeMemsetAsync(void *devPtr, int value, size_t count,
++inline ITEX_GPUError_t dpruntimeMemsetAsync(void *devPtr, int value, size_t count,
 +                     const gpuStream_t stream)
 +{
 +  return dpruntimeMemsetD8Async(devPtr, value, count, stream);
 +}
 +
-+inline dpcppError_t dpruntimeMemcpyAsync(void *dst, const void *src, size_t count, int kind,
++inline ITEX_GPUError_t dpruntimeMemcpyAsync(void *dst, const void *src, size_t count, int kind,
 +                   const gpuStream_t stream)
 +{
 +  switch (kind) {
@@ -10657,11 +10657,11 @@ index f32ce27e9..fb704cdf4 100644
 +    default:
 +      eigen_assert(((kind == dpruntimeMemcpyDeviceToDevice) || (kind == dpruntimeMemcpyDeviceToHost) || (kind == dpruntimeMemcpyHostToDevice)));
 +  }
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
 +
-+inline dpcppError_t dpruntimeMemcpy(void *dst, const void *src, size_t count, int kind)
++inline ITEX_GPUError_t dpruntimeMemcpy(void *dst, const void *src, size_t count, int kind)
 +{
 +  switch (kind) {
 +    case dpruntimeMemcpyDeviceToDevice:
@@ -10673,7 +10673,7 @@ index f32ce27e9..fb704cdf4 100644
 +    default:
 +      eigen_assert(((kind == dpruntimeMemcpyDeviceToDevice) || (kind == dpruntimeMemcpyDeviceToHost) || (kind == dpruntimeMemcpyHostToDevice)));
 +  }
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
 +

@@ -76,7 +76,7 @@ template <typename T>
 struct SumOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicAdd(dest, *value);
+    ItexAtomicAdd(dest, *value);
   }
   static constexpr bool is_associative = std::is_integral<T>::value;
 };
@@ -86,8 +86,8 @@ struct SumOpGpu<std::complex<T>> {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(
       std::complex<T>* dest, const std::complex<T>* value) {
     T* ptr = reinterpret_cast<T*>(dest);
-    DpcppAtomicAdd(ptr, value->real());
-    DpcppAtomicAdd(ptr + 1, value->imag());
+    ItexAtomicAdd(ptr, value->real());
+    ItexAtomicAdd(ptr + 1, value->imag());
   }
   static constexpr bool is_associative = std::is_integral<T>::value;
 };
@@ -96,7 +96,7 @@ template <typename T>
 struct ProdOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicMul(dest, *value);
+    ItexAtomicMul(dest, *value);
   }
   static constexpr bool is_associative = std::is_integral<T>::value;
 };
@@ -105,7 +105,7 @@ template <typename T>
 struct MaxOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicMax(dest, *value);
+    ItexAtomicMax(dest, *value);
   }
   static constexpr bool is_associative = true;
 };
@@ -114,7 +114,7 @@ template <typename T>
 struct MinOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicMin(dest, *value);
+    ItexAtomicMin(dest, *value);
   }
   static constexpr bool is_associative = true;
 };

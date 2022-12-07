@@ -443,7 +443,7 @@ struct ResizeNearestNeighborGradKernelTask {
                   out_width - 1),
         0);
     const int idx = (out_y * out_width + out_x) * channels + c;
-    DpcppAtomicAdd(bottom_diff_n + idx, top_diff[id]);
+    ItexAtomicAdd(bottom_diff_n + idx, top_diff[id]);
   }
 
  private:
@@ -509,7 +509,7 @@ struct LegacyResizeNearestNeighborGradKernelTask {
                         : static_cast<int>(sycl::floor(in_x * width_scale)),
         out_width - 1);
     const int idx = (out_y * out_width + out_x) * channels + c;
-    DpcppAtomicAdd(bottom_diff_n + idx, top_diff[id]);
+    ItexAtomicAdd(bottom_diff_n + idx, top_diff[id]);
   }
 
  private:

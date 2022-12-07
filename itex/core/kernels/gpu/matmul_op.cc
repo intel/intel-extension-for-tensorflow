@@ -79,7 +79,7 @@ struct BatchMatMulCustomKernel {
 
     // reduction in N direction
     for (int n = 0; n < N_; n += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k = 0; k < DivUp(TILE_K, BS_Y); ++k) {
 #pragma unroll
@@ -99,7 +99,7 @@ struct BatchMatMulCustomKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k = 0; k < DivUp(TILE_K, BS_X); ++k) {
 #pragma unroll
@@ -122,7 +122,7 @@ struct BatchMatMulCustomKernel {
       item.barrier(sycl::access::fence_space::local_space);
 
       for (int k = 0; k < TILE_K; k += TILE_AB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int t_ab = 0; t_ab < TILE_AB; ++t_ab) {
 #pragma unroll
@@ -223,7 +223,7 @@ struct BatchMatMulWithBcastKernel {
 
     // reduction in N direction
     for (int n = 0; n < N_; n += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k = 0; k < DivUp(TILE_K, BS_Y); ++k) {
 #pragma unroll
@@ -243,7 +243,7 @@ struct BatchMatMulWithBcastKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k = 0; k < DivUp(TILE_K, BS_X); ++k) {
 #pragma unroll
@@ -266,7 +266,7 @@ struct BatchMatMulWithBcastKernel {
       item.barrier(sycl::access::fence_space::local_space);
 
       for (int k = 0; k < TILE_K; k += TILE_AB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int t_ab = 0; t_ab < TILE_AB; ++t_ab) {
 #pragma unroll

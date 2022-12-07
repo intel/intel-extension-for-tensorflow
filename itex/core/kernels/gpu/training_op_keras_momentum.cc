@@ -82,7 +82,7 @@ struct SparseApplyKerasMomentumKernel {
 };
 
 template <typename T, typename Tindex>
-struct SparseApplyKerasMomentumDPCPP {
+struct SparseApplyKerasMomentumITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* accum, const T* lr,
                   const T* grad, const Tindex* indices, const T* momentum,
                   OpKernelContext* ctx, bool use_nesterov,
@@ -168,7 +168,7 @@ class SparseApplyKerasMomentumOp : public OpKernel {
     const Tindex grad_size = grad.flat_outer_dims<T>().size();
     const Tindex indices_size = indices_flat.size();
 
-    functor::SparseApplyKerasMomentumDPCPP<T, Tindex>()(
+    functor::SparseApplyKerasMomentumITEX_GPU<T, Tindex>()(
         device, var.flat_outer_dims<T>().data(),
         accum.flat_outer_dims<T>().data(), lr.scalar<T>().data(),
         grad.flat_outer_dims<T>().data(), indices_flat.data(),
@@ -190,18 +190,18 @@ class SparseApplyKerasMomentumOp : public OpKernel {
                               .TypeConstraint<Tindices>("Tindices"), \
                           SparseApplyKerasMomentumOp<T, D##Device, Tindices>);
 
-#define REGISTER_DPCPP_KERNELS(T)  \
-  REGISTER_KERNELS(T, GPU, int32); \
+#define REGISTER_ITEX_GPU_KERNELS(T) \
+  REGISTER_KERNELS(T, GPU, int32);   \
   REGISTER_KERNELS(T, GPU, int64);
 
-TF_CALL_complex64(REGISTER_DPCPP_KERNELS);
+TF_CALL_complex64(REGISTER_ITEX_GPU_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_FLOAT_TYPES(REGISTER_DPCPP_KERNELS);
-TF_CALL_complex128(REGISTER_DPCPP_KERNELS);
+TF_CALL_FLOAT_TYPES(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_complex128(REGISTER_ITEX_GPU_KERNELS);
 #else
-TF_CALL_GPU_NUMBER_TYPES(REGISTER_DPCPP_KERNELS);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU_KERNELS);
 #endif
 
-#undef REGISTER_DPCPP_KERNELS
+#undef REGISTER_ITEX_GPU_KERNELS
 #undef REGISTER_KERNELS
 }  // namespace itex

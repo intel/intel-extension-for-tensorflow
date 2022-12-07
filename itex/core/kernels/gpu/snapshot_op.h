@@ -40,8 +40,8 @@ struct Snapshot<Eigen::GpuDevice, Scalar> {
                   typename TTypes<Scalar>::ConstTensor input,
                   typename TTypes<Scalar>::Tensor output) {
     // will support memcpy in eigen
-    dpcppMemcpyDtoDAsync(output.data(), input.data(),
-                         input.size() * sizeof(Scalar), device.stream());
+    ITEX_GPUMemcpyDtoDAsync(output.data(), input.data(),
+                            input.size() * sizeof(Scalar), device.stream());
   }
 };
 

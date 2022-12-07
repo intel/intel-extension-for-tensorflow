@@ -1156,12 +1156,15 @@ struct BnForwardOptimizedKernel<Eigen::bfloat16, ScaleT, VecSizeSp, VecSizeIc,
 
 template <typename InT, typename ScaleT, int VecSizeSp, int VecSizeIc,
           bool IsTrain, bool FuseNormRelu, bool FuseNormAddRelu>
-void BNForwardOptimizedEltwise(
-    DPCPPStream* stream, const InT* in, const ScaleT* mean, const ScaleT* var,
-    const ScaleT* scale, const ScaleT* offset, const InT* side_input, InT* out,
-    const ScaleT* old_mean, const ScaleT* old_var, ScaleT* new_mean,
-    ScaleT* new_var, ScaleT* saved_mean, ScaleT* saved_var, const int sp,
-    const int ic, const float epsilon, const float exponential_avg_factor) {
+void BNForwardOptimizedEltwise(ITEX_GPUStream* stream, const InT* in,
+                               const ScaleT* mean, const ScaleT* var,
+                               const ScaleT* scale, const ScaleT* offset,
+                               const InT* side_input, InT* out,
+                               const ScaleT* old_mean, const ScaleT* old_var,
+                               ScaleT* new_mean, ScaleT* new_var,
+                               ScaleT* saved_mean, ScaleT* saved_var,
+                               const int sp, const int ic, const float epsilon,
+                               const float exponential_avg_factor) {
   const int nelems = sp * ic;
   const int max_wg_size =
       (*stream)
@@ -1313,7 +1316,7 @@ struct BnForwardKernel {
 
 template <typename InT, typename ScaleT, int VecSizeSp, bool IsTrain,
           bool FuseNormRelu, bool FuseNormAddRelu>
-void BNForwardEltwise(DPCPPStream* stream, const InT* in, const ScaleT* mean,
+void BNForwardEltwise(ITEX_GPUStream* stream, const InT* in, const ScaleT* mean,
                       const ScaleT* var, const ScaleT* scale,
                       const ScaleT* offset, const InT* side_input, InT* out,
                       const ScaleT* old_mean, const ScaleT* old_var,
@@ -2121,7 +2124,7 @@ struct BnBackwardOptimizedKernel<Eigen::bfloat16, ScaleT, VecSizeSp, VecSizeIc,
 template <typename InT, typename ScaleT, int VecSizeSp, int VecSizeIc,
           bool FuseNormRelu, bool FuseNormAddRelu>
 void bn_backward_optimized_kernel(
-    DPCPPStream* stream, const InT* x, const InT* dy, const ScaleT* mean,
+    ITEX_GPUStream* stream, const InT* x, const InT* dy, const ScaleT* mean,
     const ScaleT* var, const InT* y, const ScaleT* scale, const ScaleT* sum_dy,
     const ScaleT* sum_dy_x_center, InT* dx, ScaleT* dscale, ScaleT* doffset,
     InT* dside_x, const int sp, const int ic, const float epsilon) {
@@ -2241,7 +2244,7 @@ struct BnBackwardKernel {
 
 template <typename InT, typename ScaleT, int VecSizeSp, bool FuseNormRelu,
           bool FuseNormAddRelu>
-void bn_backward_kernel(DPCPPStream* stream, const InT* x, const InT* dy,
+void bn_backward_kernel(ITEX_GPUStream* stream, const InT* x, const InT* dy,
                         const ScaleT* mean, const ScaleT* var, const InT* y,
                         const ScaleT* scale, const ScaleT* sum_dy,
                         const ScaleT* sum_dy_x_center, InT* dx, ScaleT* dscale,

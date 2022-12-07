@@ -256,7 +256,7 @@ struct BincountColReduceKernel<Tidx, T, binary_count, false> {
       if (binary_count) {
         out_ptr[offset] = T(1);
       } else {
-        DpcppAtomicAdd(out_ptr + offset, T(1));
+        ItexAtomicAdd(out_ptr + offset, T(1));
       }
     }
   }
@@ -292,7 +292,7 @@ struct BincountColReduceKernel<Tidx, T, binary_count, true> {
         out_ptr[offset] = T(1);
       } else {
         T value = weights_ptr[index];
-        DpcppAtomicAdd(out_ptr + offset, value);
+        ItexAtomicAdd(out_ptr + offset, value);
       }
     }
   }
@@ -342,9 +342,9 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
           shared_col_bins[offset] = T(1);
         } else {
           T value = weights_ptr[index];
-          DpcppAtomicAdd<T, T, sycl::memory_order::relaxed,
-                         sycl::memory_scope::work_group,
-                         sycl::access::address_space::local_space>(
+          ItexAtomicAdd<T, T, sycl::memory_order::relaxed,
+                        sycl::memory_scope::work_group,
+                        sycl::access::address_space::local_space>(
               shared_col_bins + offset, value);
         }
       }
@@ -358,7 +358,7 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
           out_ptr[binIdx] = shared_col_bins[binIdx];
         }
       } else {
-        DpcppAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
+        ItexAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
       }
     }
   }
@@ -403,9 +403,9 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
         if (binary_count) {
           shared_col_bins[offset] = T(1);
         } else {
-          DpcppAtomicAdd<T, T, sycl::memory_order::relaxed,
-                         sycl::memory_scope::work_group,
-                         sycl::access::address_space::local_space>(
+          ItexAtomicAdd<T, T, sycl::memory_order::relaxed,
+                        sycl::memory_scope::work_group,
+                        sycl::access::address_space::local_space>(
               shared_col_bins + offset, T(1));
         }
       }
@@ -419,7 +419,7 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
           out_ptr[binIdx] = shared_col_bins[binIdx];
         }
       } else {
-        DpcppAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
+        ItexAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
       }
     }
   }

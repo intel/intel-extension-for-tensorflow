@@ -52,7 +52,7 @@ template <typename T>
 class PopulationCountKernel;
 
 template <typename T>
-struct PopulationCountDPCPP {
+struct PopulationCountITEX_GPU {
   void operator()(const GPUDevice& d, const T* input, uint8* output,
                   OpKernelContext* ctx, int elements) {
     auto* stream = ctx->eigen_gpu_device().stream();
@@ -86,7 +86,7 @@ class PopulationCountOp : public OpKernel {
 
     const Device& device = ctx->template eigen_device<Device>();
 
-    functor::PopulationCountDPCPP<T> popcnt;
+    functor::PopulationCountITEX_GPU<T> popcnt;
     popcnt(device, input.flat<T>().data(), output->flat<uint8>().data(), ctx,
            input.NumElements());
   }

@@ -431,34 +431,32 @@ struct ResizeBilinearGradKernel {
     const float x_lerp = original_x - sycl::floor(original_x);
 
     const float dtop = (1 - y_lerp) * input_grad[in_idx];
-    DpcppAtomicAdd(output_grad +
-                       ((b * original_height + top_y_index) * original_width +
-                        left_x_index) *
-                           channels +
-                       c,
-                   static_cast<T>((1 - x_lerp) * dtop));
-    DpcppAtomicAdd(output_grad +
-                       ((b * original_height + top_y_index) * original_width +
-                        right_x_index) *
-                           channels +
-                       c,
-                   static_cast<T>(x_lerp * dtop));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + top_y_index) * original_width +
+                       left_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>((1 - x_lerp) * dtop));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + top_y_index) * original_width +
+                       right_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>(x_lerp * dtop));
 
     const float dbottom = y_lerp * input_grad[in_idx];
-    DpcppAtomicAdd(
-        output_grad +
-            ((b * original_height + bottom_y_index) * original_width +
-             left_x_index) *
-                channels +
-            c,
-        static_cast<T>((1 - x_lerp) * dbottom));
-    DpcppAtomicAdd(
-        output_grad +
-            ((b * original_height + bottom_y_index) * original_width +
-             right_x_index) *
-                channels +
-            c,
-        static_cast<T>(x_lerp * dbottom));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + bottom_y_index) * original_width +
+                       left_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>((1 - x_lerp) * dbottom));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + bottom_y_index) * original_width +
+                       right_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>(x_lerp * dbottom));
   }
 
  private:
@@ -523,34 +521,32 @@ struct LegacyResizeBilinearGradKernel {
     const float x_lerp = original_x - left_x_index;
 
     const float dtop = (1 - y_lerp) * input_grad[in_idx];
-    DpcppAtomicAdd(output_grad +
-                       ((b * original_height + top_y_index) * original_width +
-                        left_x_index) *
-                           channels +
-                       c,
-                   static_cast<T>((1 - x_lerp) * dtop));
-    DpcppAtomicAdd(output_grad +
-                       ((b * original_height + top_y_index) * original_width +
-                        right_x_index) *
-                           channels +
-                       c,
-                   static_cast<T>(x_lerp * dtop));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + top_y_index) * original_width +
+                       left_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>((1 - x_lerp) * dtop));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + top_y_index) * original_width +
+                       right_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>(x_lerp * dtop));
 
     const float dbottom = y_lerp * input_grad[in_idx];
-    DpcppAtomicAdd(
-        output_grad +
-            ((b * original_height + bottom_y_index) * original_width +
-             left_x_index) *
-                channels +
-            c,
-        static_cast<T>((1 - x_lerp) * dbottom));
-    DpcppAtomicAdd(
-        output_grad +
-            ((b * original_height + bottom_y_index) * original_width +
-             right_x_index) *
-                channels +
-            c,
-        static_cast<T>(x_lerp * dbottom));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + bottom_y_index) * original_width +
+                       left_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>((1 - x_lerp) * dbottom));
+    ItexAtomicAdd(output_grad +
+                      ((b * original_height + bottom_y_index) * original_width +
+                       right_x_index) *
+                          channels +
+                      c,
+                  static_cast<T>(x_lerp * dbottom));
   }
 
  private:

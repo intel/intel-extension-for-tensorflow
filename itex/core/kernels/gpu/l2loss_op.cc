@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "itex/core/kernels/gpu/reduction_dpcpp_kernels.h"
+#include "itex/core/kernels/gpu/reduction_itex_gpu_kernels.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"

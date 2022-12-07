@@ -671,9 +671,9 @@ class MatMulOp : public OpKernel {
     T* mul_host_data = const_cast<T*>(mul_tensor_ptr->flat<T>().data());
 
     // TODO(itex): refactor the memcpy code
-    auto* dpcpp_stream = context->GetDeviceStream();
+    auto* ITEX_GPU_stream = context->GetDeviceStream();
     auto event =
-        dpcpp_stream->memcpy(mul_host_data, mul_device_data, 1 * sizeof(T));
+        ITEX_GPU_stream->memcpy(mul_host_data, mul_device_data, 1 * sizeof(T));
     event.wait();
   }
 
