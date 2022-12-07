@@ -69,7 +69,8 @@ class ScalarTest(test.TestCase):
   def testConcat(self):
     for data in (2, [3], 7), ([2], 3, 7), ([2], [3], 7):
       self.check(array_ops.concat, (data, 0),
-                 r'Ranks of all input tensors should match', [2, 3, 7])
+                 r"Can't concatenate scalars \(use tf.stack instead\)",
+                 [2, 3, 7])
 
   def testFill(self):
     self.check(
