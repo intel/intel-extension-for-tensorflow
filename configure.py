@@ -877,7 +877,7 @@ def main():
   # environment variables.
   environ_cp = dict(os.environ)
 
-  current_bazel_version = check_bazel_version('3.3.0', '5.1.1')
+  current_bazel_version = check_bazel_version('3.3.0', '5.3.0')
   _ITEX_CURRENT_BAZEL_VERSION = convert_version_to_int(current_bazel_version)
 
   reset_configure_bazelrc()
