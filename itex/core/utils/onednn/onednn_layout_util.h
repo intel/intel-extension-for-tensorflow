@@ -111,6 +111,9 @@ class OneDnnShape {
   // Get memory desc for TF layout, only used in onednntotf op
   const dnnl::memory::desc GetTfLayout() const;
 
+  // get format tag
+  const dnnl::memory::format_tag GetFormatTag() const;
+
   // Set TfDataFormat and map_
   void SetTfDataFormat(OneDnnTensorFormat tf_data_format);
 

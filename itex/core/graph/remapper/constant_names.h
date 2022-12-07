@@ -112,6 +112,9 @@ constexpr char kPadWithFusedConv2D[] = "_PadWithFusedConv2D";
 constexpr char kPadWithFusedConv3D[] = "_PadWithFusedConv3D";
 constexpr char kQuantizeV2WithQuantizedConv2D[] =
     "_ITEXQuantizeV2WithQuantizedConv2D";
+constexpr char kFusedQuantizedConv2DWithDequantize[] =
+    "_ITEXQuantizedConv2DWithDequantize";
+constexpr char kFusedQuantizedConv2DWithCast[] = "_ITEXQuantizedConv2DWithCast";
 
 // TODO(itex): This op may be duplicated, remove it in future if possible.
 constexpr char kPadConv3d[] = "_ITEXConv3D";

@@ -138,6 +138,24 @@ struct ContractionWithBiasAdd {
   int bias_port = kMissingIndex;
 };
 
+struct QuantizedConv2DWithDequantize {
+  QuantizedConv2DWithDequantize() = default;
+  QuantizedConv2DWithDequantize(int conv2dIndex, int dequantizeIndex)
+      : conv2dIndex_(conv2dIndex), dequantizeIndex_(dequantizeIndex) {}
+
+  int conv2dIndex_ = kMissingIndex;
+  int dequantizeIndex_ = kMissingIndex;
+};
+
+struct QuantizedConv2DWithCast {
+  QuantizedConv2DWithCast() = default;
+  QuantizedConv2DWithCast(int conv2dIndex, int castIndex)
+      : conv2dIndex_(conv2dIndex), castIndex_(castIndex) {}
+
+  int conv2dIndex_ = kMissingIndex;
+  int castIndex_ = kMissingIndex;
+};
+
 struct DequantizeWithShape {
   DequantizeWithShape() = default;
   DequantizeWithShape(int dequantizeIndex, int shapeIndex)
@@ -1257,6 +1275,16 @@ bool FindDequantizeWithReshape(const RemapperContext& ctx, int node_index,
 
   if (!IsDequantize(*dequantize_node_def)) return false;
 
+  // diable this pattern when the father node of dequantize is quantizedConv2D
+  auto* conv2d_node_view = dequantize_node_view->GetRegularFanin(0).node_view();
+  auto* conv2d_node_def = conv2d_node_view->node();
+
+  if (IsQuantizedConv2DWithBiasAndRequantize(*conv2d_node_def)) {
+    ITEX_VLOG(2) << "Found QuantizedConv2D + Dequantize + Reshape pattern, but "
+                    "can't be fused now";
+    return false;
+  }
+
   if (HasControlFaninOrFanout(*dequantize_node_view) ||
       !HasAtMostOneFanoutAtPort0(*dequantize_node_view) ||
       IsInPreserveSet(ctx, dequantize_node_def)) {
@@ -1277,7 +1305,7 @@ bool FindQuantizeV2WithQuantizedConv2D(const RemapperContext& ctx,
   const auto* node_def = node_view->node();
 
   // TODO(itex): will support more QuantizedConv2D-based ops
-  if (!IsQuantizedConv2DWithPostOps(*node_def)) return false;
+  if (!IsQuantizedConv2DWithBiasAndReluAndRequantize(*node_def)) return false;
   auto* quantizev2_node_view = node_view->GetRegularFanin(0).node_view();
   auto* quantizev2_node_def = quantizev2_node_view->node();
 
@@ -1337,6 +1365,68 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
                                  node_view->node_index()};
   *matched = pattern;
 
+  return true;
+}
+
+bool FindQuantizedConv2DWithDequantize(const RemapperContext& ctx,
+                                       int node_index,
+                                       QuantizedConv2DWithDequantize* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  // TODO(itex): only support this fusion on GPU for now, will
+  // remove this limitation once supported
+  if (!NodeIsOnGpu(node_def)) return false;
+
+  if (!IsDequantize(*node_def)) {
+    return false;
+  }
+  auto* conv2d_node_view = node_view->GetRegularFanin(0).node_view();
+  auto* conv2d_node_def = conv2d_node_view->node();
+
+  if (!IsQuantizedConv2DWithBiasAndRequantize(*conv2d_node_def)) return false;
+
+  if (HasControlFaninOrFanout(*conv2d_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*conv2d_node_view) ||
+      IsInPreserveSet(ctx, conv2d_node_def)) {
+    return false;
+  }
+
+  const QuantizedConv2DWithDequantize pattern{conv2d_node_view->node_index(),
+                                              node_view->node_index()};
+  *matched = pattern;
+  return true;
+}
+
+bool FindQuantizedConv2DWithCast(const RemapperContext& ctx, int node_index,
+                                 QuantizedConv2DWithCast* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  // TODO(itex): only support this fusion on GPU for now, will
+  // remove this limitation once supported
+  if (!NodeIsOnGpu(node_def)) return false;
+
+  if (!IsCast(*node_def)) return false;
+  auto* conv2d_node_view = node_view->GetRegularFanin(0).node_view();
+  auto* conv2d_node_def = conv2d_node_view->node();
+  if (!IsQuantizedConv2DWithDequantize(*conv2d_node_def)) {
+    return false;
+  }
+
+  if (HasControlFaninOrFanout(*conv2d_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*conv2d_node_view) ||
+      IsInPreserveSet(ctx, conv2d_node_def)) {
+    return false;
+  }
+
+  const QuantizedConv2DWithCast pattern{conv2d_node_view->node_index(),
+                                        node_view->node_index()};
+  *matched = pattern;
+
+  ITEX_VLOG(2) << "Found QuantizedConv2DWithDequantize pattern: "
+               << " QuantizedConv2DWithDequantize=" << conv2d_node_def->name()
+               << " Cast=" << node_def->name();
   return true;
 }
 
@@ -2965,6 +3055,106 @@ Status AddQuantizeV2WithQuantizedConv2DNode(
   return Status::OK();
 }
 
+Status AddQuantizedConv2DWithDequantizeNode(
+    RemapperContext* ctx, const QuantizedConv2DWithDequantize& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+
+  const NodeDef& quantized_conv2d_node_def = graph->node(matched.conv2dIndex_);
+  const NodeDef& dequantize_node_def = graph->node(matched.dequantizeIndex_);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  // create a new node
+  NodeDef fused_op;
+  fused_op.set_name(dequantize_node_def.name());
+  fused_op.set_device(dequantize_node_def.device());
+  fused_op.add_input(quantized_conv2d_node_def.input(0));  // conv input
+  fused_op.add_input(quantized_conv2d_node_def.input(1));  // conv filter
+  fused_op.add_input(quantized_conv2d_node_def.input(2));  // conv bias
+  fused_op.add_input(quantized_conv2d_node_def.input(3));  // conv min input
+  fused_op.add_input(quantized_conv2d_node_def.input(4));  // conv max input
+  fused_op.add_input(quantized_conv2d_node_def.input(5));  // conv min filter
+  fused_op.add_input(quantized_conv2d_node_def.input(6));  // conv max filter
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(7));  // conv min freezed output
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(8));  // conv max freezed output
+  fused_op.set_op(kFusedQuantizedConv2DWithDequantize);
+
+  // Copy attr from original nodes to fused node
+  CopyAllAttrs(quantized_conv2d_node_def, &fused_op);
+  // change out_type from qint8 to float
+  auto* new_attr = fused_op.mutable_attr();
+  DataType OutType;
+  if (TryGetNodeAttr(fused_op, "out_type", &OutType)) {
+    SetAttrValue(DT_FLOAT, &(*new_attr)["out_type"]);
+  }
+
+  Status status;
+  mutation->AddNode(std::move(fused_op), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  ITEX_VLOG(2) << "Fuse QuantizedConv2D with Dequantize:"
+               << " QuantizedConv2D=" << quantized_conv2d_node_def.name()
+               << " Dequantize=" << dequantize_node_def.name();
+
+  (*invalidated_nodes)[matched.dequantizeIndex_] = true;
+  (*nodes_to_delete)[matched.conv2dIndex_] = true;
+  return Status::OK();
+}
+
+Status AddQuantizedConv2DWithCastNode(RemapperContext* ctx,
+                                      const QuantizedConv2DWithCast& matched,
+                                      std::vector<bool>* invalidated_nodes,
+                                      std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+
+  const NodeDef& quantized_conv2d_node_def = graph->node(matched.conv2dIndex_);
+  const NodeDef& cast_node_def = graph->node(matched.castIndex_);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  // create a new node
+  NodeDef fused_op;
+  fused_op.set_name(cast_node_def.name());
+  fused_op.set_device(cast_node_def.device());
+  fused_op.add_input(quantized_conv2d_node_def.input(0));  // conv input
+  fused_op.add_input(quantized_conv2d_node_def.input(1));  // conv filter
+  fused_op.add_input(quantized_conv2d_node_def.input(2));  // conv bias
+  fused_op.add_input(quantized_conv2d_node_def.input(3));  // conv min input
+  fused_op.add_input(quantized_conv2d_node_def.input(4));  // conv max input
+  fused_op.add_input(quantized_conv2d_node_def.input(5));  // conv min filter
+  fused_op.add_input(quantized_conv2d_node_def.input(6));  // conv max filter
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(7));  // conv min freezed output
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(8));  // conv max freezed output
+  fused_op.set_op(kFusedQuantizedConv2DWithCast);
+
+  // Copy attr from original nodes to fused node
+  CopyAllAttrs(quantized_conv2d_node_def, &fused_op);
+  // change out_type from qint8 to half
+  auto* new_attr = fused_op.mutable_attr();
+  DataType OutType;
+  if (TryGetNodeAttr(fused_op, "out_type", &OutType)) {
+    SetAttrValue(DT_HALF, &(*new_attr)["out_type"]);
+  }
+
+  Status status;
+  mutation->AddNode(std::move(fused_op), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  ITEX_VLOG(2) << "Fuse QuantizedConv2DWithDequantize With Cast:"
+               << " QuantizedConv2DWithDequantize="
+               << quantized_conv2d_node_def.name()
+               << " Cast=" << cast_node_def.name();
+
+  (*invalidated_nodes)[matched.castIndex_] = true;
+  (*nodes_to_delete)[matched.conv2dIndex_] = true;
+  return Status::OK();
+}
+
 Status AddFusedAddV2WithSoftmaxNode(RemapperContext* ctx,
                                     const AddV2WithSoftmax& matched,
                                     std::vector<bool>* invalidated_nodes,
@@ -3991,6 +4181,23 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
         TF_ABORT_IF_ERROR(AddQuantizeV2WithQuantizedConv2DNode(
             &ctx, quantizev2_with_quantizedconv, &invalidated_nodes,
             &nodes_to_delete));
+        continue;
+      }
+
+      QuantizedConv2DWithDequantize conv2d_with_dequantize;
+      if (is_layout_opt && (FindQuantizedConv2DWithDequantize(
+                               ctx, i, &conv2d_with_dequantize))) {
+        TF_ABORT_IF_ERROR(AddQuantizedConv2DWithDequantizeNode(
+            &ctx, conv2d_with_dequantize, &invalidated_nodes,
+            &nodes_to_delete));
+        continue;
+      }
+
+      QuantizedConv2DWithCast conv2d_with_cast;
+      if (is_layout_opt &&
+          (FindQuantizedConv2DWithCast(ctx, i, &conv2d_with_cast))) {
+        TF_ABORT_IF_ERROR(AddQuantizedConv2DWithCastNode(
+            &ctx, conv2d_with_cast, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
 

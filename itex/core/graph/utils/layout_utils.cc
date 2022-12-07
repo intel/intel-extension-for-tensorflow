@@ -507,6 +507,8 @@ bool IsDataTypeExemptOp(const string& op_name) {
       "_ITEXQuantizedConv2DWithBiasSignedSumAndReluAndRequantize",
       "_ITEXQuantizedConv2DWithBiasSumAndRelu",
       "_ITEXQuantizedConv2DWithBiasSumAndReluAndRequantize",
+      "_ITEXQuantizedConv2DWithDequantize",
+      "_ITEXQuantizedConv2DWithCast",
       "_ITEXQuantizeV2",
       "_ITEXQuantizeV2WithQuantizedConv2D",
       "_QuantizedBatchMatMul",

@@ -106,6 +106,8 @@ void RegisterOps() {
   Register_ITEXFusedDepthwiseConv2dNativeOp();
   Register_ITEXFusedMatMulOp();
   Register_ITEXFusedQuantizeV2WithQuantizedConv2DOp();
+  Register_ITEXFusedQuantizedConv2DWithDequantizeOp();
+  Register_ITEXFusedQuantizedConv2DWithCastOp();
   Register_ITEXFusedBinaryOp();
   Register_ITEXRandomUniformOp();
   Register_LayerNormOp();
@@ -323,6 +325,8 @@ void RegisterOps() {
   Register_OneDnnQuantizedTransposeOp();
   Register_OneDnnQuantizeV2Op();
   Register_OneDnnQuantizeV2WithQuantizedConv2DOp();
+  Register_OneDnnQuantizedConv2DWithDequantizeOp();
+  Register_OneDnnQuantizedConv2DWithCastOp();
   Register_OneDnnPadWithConv2DOp();
   Register_OneDnnPadWithConv3DOp();
   Register_OneDnnPadWithFusedConv2DOp();

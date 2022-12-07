@@ -321,11 +321,17 @@ class OneDnnConvOp : public OpKernel {
       if (std::is_same<Toutput, Tsummand>::value) {
         dst_md = memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(),
                               memory::format_tag::any);
+      } else if ((std::is_same<Toutput, float>::value ||
+                  std::is_same<Toutput, Eigen::half>::value) &&
+                 std::is_same<Tfilter, qint8>::value) {
+        auto dst_format_tag = src_onednn_shape_.GetFormatTag();
+        dst_md = memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(),
+                              dst_format_tag);
+        src_md_prefer = src_md;
       } else {
         dst_md = memory::desc({dst_dims_onednn_}, OneDnnType<Tsummand>(),
                               memory::format_tag::any);
       }
-
       // TODO(itex): Currently, we have 2 separate code in dealing with post
       // op.  Try to combine these two codes together
       // 1. For fp32 ops, to read information from "fused_ops" attr during op
@@ -1734,6 +1740,73 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
   QuantizeRoundMode round_mode_;
   int axis_;
   bool narrow_range_;
+};
+
+template <typename Device, typename Tinput, typename Tbias, typename Toutput,
+          typename Tsummand, bool quantized_bias_enabled, bool is_depthwise>
+class OneDnnQuantizedConv2DWithDequantizeOp
+    : public OneDnnQuantizedConvOp<Device, Tinput, Tbias, Toutput, Tsummand,
+                                   quantized_bias_enabled, is_depthwise> {
+ public:
+  explicit OneDnnQuantizedConv2DWithDequantizeOp(OpKernelConstruction* context)
+      : OneDnnQuantizedConvOp<Device, Tinput, Tbias, Toutput, Tsummand,
+                              quantized_bias_enabled, is_depthwise>(context) {}
+
+  void Compute(OpKernelContext* context) {
+    // Compute int32 output tensor
+    OneDnnConvOp<Device, Tinput, qint8, Tbias, Toutput, Tsummand, false,
+                 quantized_bias_enabled, is_depthwise>::Compute(context);
+  }
+
+ protected:
+  void ExtendInt8PostOps(OpKernelContext* context) override {
+    // When the output type is quint8, the output data is requantized
+    // into quint8. A post_op "output_scale" is added to do the conversion.
+    // Otherwise the output_scale will be 1.f
+    const Tensor& min_filter_vector =
+        context->input(this->kFilterMinRangeIndex);
+    const Tensor& max_filter_vector =
+        context->input(this->kFilterMaxRangeIndex);
+    size_t depth = min_filter_vector.NumElements();
+    std::vector<float> scales(depth, 1.f);
+
+    if (std::is_same<Toutput, float>::value ||
+        std::is_same<Toutput, Eigen::half>::value) {
+      const float min_input =
+          context->input(this->kSrcMinRangeIndex).template flat<float>()(0);
+      const float max_input =
+          context->input(this->kSrcMaxRangeIndex).template flat<float>()(0);
+
+      // min_freezed_output and max_freezed_output are the actual range
+      // for the output.
+      const float min_freezed_output =
+          context->input(this->kMinFreezedIndex).template flat<float>()(0);
+      const float max_freezed_output =
+          context->input(this->kMaxFreezedIndex).template flat<float>()(0);
+
+      float int_output_limit =
+          std::is_same<Toutput, quint8>::value ? 255.0f : 127.0f;
+
+      const float* min_filter = min_filter_vector.flat<float>().data();
+      const float* max_filter = max_filter_vector.flat<float>().data();
+
+      float float_input_range =
+          std::max(std::abs(min_input), std::abs(max_input));
+      float float_output_range =
+          std::max(std::abs(min_freezed_output), std::abs(max_freezed_output));
+      const float int_const_scale_limit =
+          (std::is_same<Tinput, quint8>::value) ? 255.0 * 127.0 : 127.0 * 127.0;
+      for (size_t i = 0; i < depth; ++i) {
+        // For simplicity and symmetry, we set filter range to be outer
+        // bounds of min_filter and max_filter.
+        float float_filter_range =
+            std::max(std::abs(min_filter[i]), std::abs(max_filter[i]));
+        scales[i] =
+            float_input_range * float_filter_range / (int_const_scale_limit);
+      }
+    }
+    this->post_op_util_.SetOutputScale(scales);
+  }
 };
 
 }  // namespace itex

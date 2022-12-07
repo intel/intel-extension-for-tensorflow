@@ -502,8 +502,16 @@ bool IsQuantizedMatMul(const NodeDef& node) {
 
 bool IsQuantizeV2(const NodeDef& node) { return node.op() == "QuantizeV2"; }
 
-bool IsQuantizedConv2DWithPostOps(const NodeDef& node) {
+bool IsQuantizedConv2DWithBiasAndReluAndRequantize(const NodeDef& node) {
   return node.op() == "QuantizedConv2DWithBiasAndReluAndRequantize";
+}
+
+bool IsQuantizedConv2DWithBiasAndRequantize(const NodeDef& node) {
+  return node.op() == "QuantizedConv2DWithBiasAndRequantize";
+}
+
+bool IsQuantizedConv2DWithDequantize(const NodeDef& node) {
+  return node.op() == "_ITEXQuantizedConv2DWithDequantize";
 }
 
 bool IsQueue(const NodeDef& node) {

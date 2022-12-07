@@ -75,6 +75,7 @@ bool IsOneDnnLayoutPartialDependentOp(const string& op_name) {
   // plain(Eigen) layout output only
   static const std::unordered_set<string> PartialDependentOp = {
       "_OneDnnFusedDequantizeWithReshape",
+      "_OneDnnQuantizedConv2DWithDequantize",
       "_OneDnnQuantizedReshape",
       "_OneDnnQuantizedTranspose",
       "_OneDnnReshape",
@@ -323,7 +324,10 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        "_OneDnnQuantizedFusedMatMulAndDequantize", CopyAttrsAll, AlwaysRewrite},
       {"_ITEXQuantizeV2WithQuantizedConv2D",
        "_OneDnnQuantizeV2WithQuantizedConv2D", CopyAttrsAll, AlwaysRewrite},
-
+      {"_ITEXQuantizedConv2DWithDequantize",
+       "_OneDnnQuantizedConv2DWithDequantize", CopyAttrsAll, AlwaysRewrite},
+      {"_ITEXQuantizedConv2DWithCast", "_OneDnnQuantizedConv2DWithCast",
+       CopyAttrsAll, AlwaysRewrite},
       // Other new INT8 op
       {"_QuantizedTranspose", "_OneDnnQuantizedTranspose", CopyAttrsAll,
        AlwaysRewrite},
