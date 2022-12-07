@@ -2,17 +2,17 @@
 
 ## Introduction
 
-The OneDNN object (primitve/primitive description/memory) creation overhead becomes noticable, especially in small model latency scenarios. 
+The OneDNN object (primitive/primitive description/memory) creation overhead becomes noticeable, especially in small model latency scenarios. 
 
-OneDNN object cache optimization is experimental feature for optimizing model latency by binding an oneDNN object to a TensorFlow graph node. You can enable this environment by setting the environment variable 'ITEX_CACHE_ONEDNN_OBJECT' to on. By default, it is off.
+OneDNN object cache optimization is an experimental feature for optimizing model latency by binding a oneDNN object to a TensorFlow graph node. You can enable this environment by setting the environment variable 'ITEX_CACHE_ONEDNN_OBJECT' to on. By default, it is set to off.
 
 TensorFlow supports optimizations to support different scenarios:
 
-- **Dynamic Shape** - TensorFlow supports dynamic shape, which means a node may get different shape input. This optimization will invalid the cache by checking the input dims/shape with the oneDNN meta input (used in layout propagation).
+- **Dynamic Shape** - TensorFlow supports dynamic shape, which means a node can get different shape input. This optimization will invalidate the cache by checking the input dims/shape with the oneDNN meta input (used in layout propagation).
 
 - **Operator Parallel Execution** - TensorFlow supports [operator parallel execution](https://www.tensorflow.org/api_docs/python/tf/config/threading), which means a node may execute in different schedule threads. The oneDNN requires thread safe in this scenario only: **user scratchpad** and **oneDNN stream creation on demand**. This optimization is aligning to satisfy a oneDNN requirement.
 
-- **Concurrently Execution** - Tensorflow supports [concurrently execution](https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session#as_default), which means a node may be executed in different thread concurrently. This optimization handles this case by adding a mutex lock.
+- **Concurrent Execution** - Tensorflow supports [concurrent execution](https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session#as_default), which means a node may be executed in different thread concurrently. The optimization handles this case by adding a mutex lock.
 
 ## Optimization in convolution
 
