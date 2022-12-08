@@ -762,7 +762,6 @@ itex_xpu_library(
     srcs = ["matmul_op.cc"],
     hdrs = [
         "//itex/core/kernels/common:batch_matmul_hdrs",
-        "//itex/core/kernels/common:matmul_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
