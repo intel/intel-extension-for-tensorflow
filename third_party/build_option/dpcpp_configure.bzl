@@ -83,6 +83,23 @@ def find_dpcpp_root(repository_ctx):
         return sycl_name
     fail("Cannot find DPC++ compiler, please correct your path")
 
+def find_dpcpp_include_path(repository_ctx):
+    """Find DPC++ compiler."""
+    base_path = find_dpcpp_root(repository_ctx)
+    bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "dpcpp")
+    if not bin_path.exists:
+        bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "clang")
+        if not bin_path.exists:
+            fail("Cannot find DPC++ compiler, please correct your path")
+    cmd_out = repository_ctx.execute([bin_path, "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null"])
+    outlist = cmd_out.stderr.split("\n")
+    real_base_path = str(repository_ctx.path(base_path).realpath).strip()
+    include_dirs = []
+    for l in outlist:
+        if l.startswith(" ") and l.strip().startswith("/"):
+            include_dirs.append(str(repository_ctx.path(l.strip()).realpath))
+    return include_dirs
+
 def get_dpcpp_version(repository_ctx):
     """Get DPC++ compiler version yyyymmdd"""
     default_version = "00000000"
@@ -380,6 +397,19 @@ def _sycl_autoconf_imp(repository_ctx):
         dpcpp_defines["%{TF_SHARED_LIBRARY_DIR}"] = repository_ctx.os.environ[_TF_SHARED_LIBRARY_DIR]
         dpcpp_defines["%{DPCPP_COMPILER_VERSION}"] = str(get_dpcpp_version(repository_ctx))
         dpcpp_defines["%{PYTHON_LIB_PATH}"] = repository_ctx.os.environ[_PYTHON_LIB_PATH]
+
+        dpcpp_internal_inc_dirs = find_dpcpp_include_path(repository_ctx)
+        dpcpp_internal_inc = "\", \"".join(dpcpp_internal_inc_dirs)
+        dpcpp_internal_isystem_inc = []
+        for d in dpcpp_internal_inc_dirs:
+            dpcpp_internal_isystem_inc.append("-isystem\", \"" + d)
+
+        if len(dpcpp_internal_inc_dirs) > 0:
+            dpcpp_defines["%{DPCPP_ISYSTEM_INC}"] = "\"]), \n\tflag_group(flags=[ \"".join(dpcpp_internal_isystem_inc)
+            dpcpp_defines["%{DPCPP_INTERNAL_INC}"] = dpcpp_internal_inc
+        else:
+            dpcpp_defines["%{DPCPP_ISYSTEM_INC}"] = ""
+            dpcpp_defines["%{DPCPP_INTERNAL_INC}"] = ""
 
         unfiltered_cxx_flags = "" if additional_cxxflags == [] else "unfiltered_cxx_flag: "
         unfiltered_cxx_flags += "\n  unfiltered_cxx_flag: ".join(additional_cxxflags)

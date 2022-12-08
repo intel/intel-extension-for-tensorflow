@@ -2324,7 +2324,7 @@ index 000000000..0632da9e1
 +#endif  // EIGEN_INTEROP_HEADERS_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/MathFunctions.h b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
 new file mode 100644
-index 000000000..b030b6ad3
+index 000000000..7835df4a0
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
 @@ -0,0 +1,539 @@
@@ -2783,7 +2783,7 @@ index 000000000..b030b6ad3
 +         const typename packet_traits<INTYPE>::type& a) {    \
 +    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
 +    auto res = sycl::EXPR(a);                                \
-+    __pragma(unroll)                                         \
++    EIGEN_UNROLL_LOOP                                        \
 +    for(int i = 0; i < packet_traits<INTYPE>::size; i++)     \
 +      packet_res[i] = res[i] ? 1 : 0;                        \
 +    return packet_res;                                       \
@@ -2850,7 +2850,7 @@ index 000000000..b030b6ad3
 +    sycl::vec<bool, packet_traits<Eigen::bfloat16>::size> packet_res;              \
 +    auto res =  sycl::EXPR(                                                        \
 +        Eigen::bfloat16_impl::Bf16ToF32<packet_traits<Eigen::bfloat16>::size>(a)); \
-+    __pragma(unroll)                                                               \
++    EIGEN_UNROLL_LOOP                                                              \
 +    for(int i = 0; i < packet_traits<Eigen::bfloat16>::size; ++i)                  \
 +      packet_res[i] = res[i] ? 1 : 0;                                              \
 +    return packet_res;                                                             \
