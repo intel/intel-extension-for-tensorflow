@@ -62,12 +62,15 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_DEPTHWISE_KERNEL);
 #undef REGISTER_DEPTHWISE_KERNEL
 
 // Register the intermediate kernel since graph won't be rewritten if nodes
-// number < 4.
-// TODO(itex): Remove these registry once proper TF has supported them.
-#define REGISTER_INTERMEDIATE_CPU_OP(T)                                        \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("Conv3DBackpropInputV2").Device(DEVICE_CPU).TypeConstraint<T>("T"), \
-      ConvBackpropInputOp<CPUDevice, T>);
+// number < 4 (TF2.10 and before).
+// Set priority to avoid duplicate registry error since TF2.11 already
+// registered it.
+#define REGISTER_INTERMEDIATE_CPU_OP(T)                 \
+  REGISTER_KERNEL_BUILDER(Name("Conv3DBackpropInputV2") \
+                              .Device(DEVICE_CPU)       \
+                              .TypeConstraint<T>("T")   \
+                              .Priority(CPU_PRIORITY),  \
+                          ConvBackpropInputOp<CPUDevice, T>);
 
 TF_CALL_bfloat16(REGISTER_INTERMEDIATE_CPU_OP);
 #undef REGISTER_INTERMEDIATE_CPU_OP

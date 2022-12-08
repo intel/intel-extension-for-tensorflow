@@ -773,6 +773,18 @@ bool IsSyncExecEnabled() {
 
 namespace {
 
+// Label defaults to empty if not found in NodeDef.
+const string& GetKernelLabelAttr(const AttrSlice& node_attrs) {
+  static const string& kKernelAttr = *new string("_kernel");
+  static const string& kEmptyString = *new string("");
+
+  const AttrValue* attr_value = node_attrs.FindByString(kKernelAttr);
+  if (attr_value == nullptr || attr_value->value_case() != AttrValue::kS)
+    return kEmptyString;
+  else
+    return attr_value->s();
+}
+
 // TODO(itex): Replace with const Node& version below.
 Status FindKernelRegistration(
     const DeviceType& device_type, StringPiece node_name,
@@ -804,6 +816,8 @@ Status FindKernelRegistration(
     bool match;
 
     if (kernel_def.device_type() != DeviceTypeString(device_type)) continue;
+    const string& label = GetKernelLabelAttr(node_attrs);
+    if (label != kernel_def.label()) continue;
 
     TF_RETURN_IF_ERROR(KernelAttrsMatch(kernel_def, node_attrs, &match));
     if (match) {

@@ -21,6 +21,11 @@ limitations under the License.
 #include "itex/core/utils/numeric_types.h"
 #include "itex/core/utils/types.h"
 
+// When registering a CPU kernel, it can be used to set the priority attribute
+// of the kernel. Priority allows to register duplicated kernel in same device,
+// and the high priority kernel will always be called.
+const int CPU_PRIORITY = 1;
+
 // Two sets of macros:
 // - TF_CALL_float, TF_CALL_half, etc. which call the given macro with
 //   the type name as the only parameter - except on platforms for which
