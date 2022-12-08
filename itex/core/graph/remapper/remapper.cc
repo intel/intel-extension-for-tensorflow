@@ -341,6 +341,16 @@ struct FusedBinary {
   int num_ = kMissingIndex;
 };
 
+struct Dropout {
+  Dropout() = default;
+
+  int select_0 = kMissingIndex;
+  int select_1 = kMissingIndex;
+  int greater_equal = kMissingIndex;
+  int const_node_0 = kMissingIndex;
+  int const_node_1 = kMissingIndex;
+};
+
 struct AddV2WithSoftmax {
   AddV2WithSoftmax() = default;
   AddV2WithSoftmax(int addv2Index, int softmaxIndex)
@@ -2065,7 +2075,7 @@ bool FindComparisonWithCast(const RemapperContext& ctx, int node_index,
   DataType dst_dtype = GetDataTypeFromAttr(*node_def, "DstT");
 
   if ((comparator_dtype != DT_FLOAT) && (comparator_dtype != DT_BFLOAT16) &&
-      (comparator_dtype != DT_HALF))
+      !(comparator_dtype == DT_HALF && NodeIsOnGpu(comparison_node_def)))
     return false;
   if ((comparator_dtype != dst_dtype) || (src_dtype != DT_BOOL)) return false;
 
@@ -2123,7 +2133,7 @@ bool FindRandomWithComparisonAndCast(const RemapperContext& ctx, int node_index,
   DataType random_dtype = GetDataTypeFromAttr(*random_node_def, "dtype");
 
   if ((random_dtype != DT_FLOAT) && (random_dtype != DT_BFLOAT16) &&
-      (random_dtype != DT_HALF))
+      !(random_dtype == DT_HALF && NodeIsOnGpu(random_node_def)))
     return false;
 
   // Check that only one node consumes the 0-th output of a random.
@@ -2418,6 +2428,112 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
 
   // Reture `true` if find more than 1 sequatial Bianry ops.
   return matched->num_ > 1;
+}
+
+// Find dropout pattern in TF2.11 and remaper to TF2.10 to reuse the optimzaiton
+// in TF2.10.
+bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  if (!IsSelect(*node_def) || HasControlFanin(*node_view)) return false;
+
+  if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
+      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+    return false;
+
+  // SelectOp has 3 input, condition, t and e
+  if (node_view->NumRegularFanins() != 3) return false;
+
+  // Returns true iff the select is meet dropout op shape.
+  const auto valid_shape = [&](const utils::MutableNodeView& select) -> bool {
+    const auto* select_ref = select.node();
+    std::vector<OpInfo_TensorProperties> props;
+    TF_ABORT_IF_ERROR(
+        ctx.graph_properties.GetInputProperties(select_ref->name(), &props));
+
+    // Make sure the condition and t has same shape.
+    bool same_input =
+        ShapesSymbolicallyEqual(props[0].shape(), props[1].shape());
+    // Make sure the e is a scalar.
+    bool has_scalar = Rank(props[2].shape()) == 0;
+    if (same_input && has_scalar) return true;
+    return false;
+  };
+
+  if (!valid_shape(*node_view)) return false;
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* greater_equal = regular_fanin_0.node_view();
+  const auto* greater_equal_node_def = greater_equal->node();
+  if (!IsGreaterEqual(*greater_equal_node_def) ||
+      HasControlFanout(*greater_equal))
+    return false;
+
+  const auto& regular_fanin_2 = node_view->GetRegularFanin(2);
+  const auto* constant = regular_fanin_2.node_view();
+  const auto* constant_node_def = constant->node();
+  if (!IsConstant(*constant_node_def) || HasControlFaninOrFanout(*constant))
+    return false;
+
+  // Returns true iff the const value is 0.
+  const auto valid_value = [&](const utils::MutableNodeView& constant) -> bool {
+    const auto* constant_ref = constant.node();
+
+    Tensor const_tensor;
+    if (!const_tensor.FromProto(constant_ref->attr().at("value").tensor()))
+      return false;
+
+    DataType const_dtype = GetDataTypeFromAttr(*constant_ref, "dtype");
+    float const_value = 1;
+
+    if (const_dtype == DT_BFLOAT16) {
+      const_value = static_cast<float>(const_tensor.flat<Eigen::bfloat16>()(0));
+    } else if (const_dtype == DT_HALF) {
+      const_value = static_cast<float>(const_tensor.flat<Eigen::half>()(0));
+    } else if (const_dtype == DT_FLOAT) {
+      const_value = const_tensor.flat<float>()(0);
+    } else {
+      return false;
+    }
+
+    if ((const_value - 1e-2) > 0) return false;
+    return true;
+  };
+
+  if (!valid_value(*constant)) return false;
+
+  // GreaterEqual has 2 output, fwd and bwd select
+  if (!(greater_equal->GetRegularFanout(0).size() == 2)) return false;
+
+  int select_1_index =
+      greater_equal->GetRegularFanout(0)[0].node_index() == node_index
+          ? greater_equal->GetRegularFanout(0)[1].node_index()
+          : greater_equal->GetRegularFanout(0)[0].node_index();
+
+  const auto* select_1_node_view = ctx.graph_view.GetNode(select_1_index);
+  const auto* select_1_node_def = select_1_node_view->node();
+  if (!IsSelect(*select_1_node_def) || HasControlFanin(*select_1_node_view))
+    return false;
+  if (!HasDataType(select_1_node_def, DT_FLOAT) &&
+      !HasDataType(select_1_node_def, DT_BFLOAT16) &&
+      !(HasDataType(select_1_node_def, DT_HALF) &&
+        NodeIsOnGpu(select_1_node_def)))
+    return false;
+
+  // SelectOp has 3 input, condition, t and e
+  if (select_1_node_view->NumRegularFanins() != 3) return false;
+  if (!valid_shape(*select_1_node_view)) return false;
+
+  if (!valid_value(*(select_1_node_view->GetRegularFanin(2).node_view())))
+    return false;
+
+  matched->select_0 = node_index;
+  matched->select_1 = select_1_index;
+  matched->greater_equal = regular_fanin_0.node_index();
+  matched->const_node_0 = regular_fanin_2.node_index();
+  matched->const_node_1 = select_1_node_view->GetRegularFanin(2).node_index();
+  return true;
 }
 
 void CopyFusedBatchNormAttributes(const NodeDef& fused_batch_norm,
@@ -4312,6 +4428,69 @@ Status AddFusedBinaryNode(RemapperContext* ctx, const FusedBinary& matched,
   return Status::OK();
 }
 
+// Remap TF2.11 dropout select to TF2.10 cast+mul.
+Status AddDropout(RemapperContext* ctx, const Dropout& matched,
+                  std::vector<bool>* invalidated_nodes,
+                  std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& select_0 = graph->node(matched.select_0);
+  const NodeDef& select_1 = graph->node(matched.select_1);
+  const NodeDef& greater_equal = graph->node(matched.greater_equal);
+
+  ITEX_VLOG(2) << "Remap " << select_0.op() << " to "
+               << " Cast and Mul.";
+
+  // Add cast op
+  NodeDef cast;
+  cast.set_op("Cast");
+  cast.set_name(greater_equal.name() + "_cast");
+  cast.set_device(greater_equal.device());
+  cast.add_input(greater_equal.name());
+
+  auto* attrs = cast.mutable_attr();
+
+  (*attrs)["SrcT"].set_type(DT_BOOL);
+  (*attrs)["DstT"] = greater_equal.attr().at("T");
+
+  // Replace mul op for select
+  NodeDef mul;
+  mul.set_op("Mul");
+  mul.set_name(select_0.name());
+  mul.set_device(select_0.device());
+  mul.add_input(select_0.input(1));
+  mul.add_input(cast.name());
+
+  auto* mul_attrs = mul.mutable_attr();
+
+  (*mul_attrs)["T"] = select_0.attr().at("T");
+
+  // Replace mul op for select_1
+  NodeDef mul_1;
+  mul_1.set_op("Mul");
+  mul_1.set_name(select_1.name());
+  mul_1.set_device(select_1.device());
+  mul_1.add_input(select_1.input(1));
+  mul_1.add_input(cast.name());
+
+  auto* mul_1_attrs = mul_1.mutable_attr();
+
+  (*mul_1_attrs)["T"] = select_1.attr().at("T");
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(cast), &status);
+  mutation->AddNode(std::move(mul), &status);
+  mutation->AddNode(std::move(mul_1), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*nodes_to_delete)[matched.const_node_0] = true;
+  (*nodes_to_delete)[matched.const_node_1] = true;
+  (*invalidated_nodes)[matched.select_0] = true;
+  (*invalidated_nodes)[matched.select_1] = true;
+  return Status::OK();
+}
+
 }  // namespace
 
 // `is_full` is true by default. When oneDNN Graph is enabled, we want to set it
@@ -4381,6 +4560,14 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
     }
 
     if (is_full) {
+      // Remap TF2.11 dropout select to TF2.10 cast+mul.
+      Dropout dropout;
+      if (FindDropout(ctx, i, &dropout)) {
+        TF_ABORT_IF_ERROR(
+            AddDropout(&ctx, dropout, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
       // Remap Conv2D+BiasAdd+Activation+Add into the _ITEXFusedConv2D.
       ContractionWithBiasAndActivationAdd contract_with_bias_and_activation_add;
       if (FindContractionWithBiasAndActivationAdd(
