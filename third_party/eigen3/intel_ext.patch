@@ -276,6 +276,38 @@ index 96cb24fcb..1aea7f4ff 100644
    }
  
  #define SYCL_SPECIALIZE_GEN2_BINARY_FUNC(NAME, FUNC, RET_TYPE, ARG_TYPE) \
+diff --git a/Eigen/src/Core/NumTraits.h b/Eigen/src/Core/NumTraits.h
+index 9ab55534f..89237db7c 100644
+--- a/Eigen/src/Core/NumTraits.h
++++ b/Eigen/src/Core/NumTraits.h
+@@ -77,6 +77,27 @@ struct default_digits_impl<T,false,true> // Integer
+ 
+ } // end namespace internal
+ 
++namespace numext {
++/** \internal bit-wise cast without changing the underlying bit representation. */
++
++// TODO: Replace by std::bit_cast (available in C++20)
++template <typename Tgt, typename Src>
++EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
++#if EIGEN_HAS_TYPE_TRAITS
++  // The behaviour of memcpy is not specified for non-trivially copyable types
++  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED);
++  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Tgt>::value && std::is_default_constructible<Tgt>::value,
++                      THIS_TYPE_IS_NOT_SUPPORTED);
++#endif
++
++  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED);
++  Tgt tgt;
++  EIGEN_USING_STD(memcpy)
++  memcpy(&tgt, &src, sizeof(Tgt));
++  return tgt;
++}
++}  // namespace numext
++
+ /** \class NumTraits
+   * \ingroup Core_Module
+   *
 diff --git a/Eigen/src/Core/arch/AVX/PacketMath.h b/Eigen/src/Core/arch/AVX/PacketMath.h
 index cf7146cbc..4dc4f6931 100644
 --- a/Eigen/src/Core/arch/AVX/PacketMath.h
@@ -4426,10 +4458,40 @@ index 000000000..aa16baa85
 +
 +#endif  // EIGEN_TYPE_CASTING_DPCPP_H
 diff --git a/Eigen/src/Core/arch/Default/BFloat16.h b/Eigen/src/Core/arch/Default/BFloat16.h
-index 30f3cd456..951c6ddd9 100644
+index 30f3cd456..e4d138869 100644
 --- a/Eigen/src/Core/arch/Default/BFloat16.h
 +++ b/Eigen/src/Core/arch/Default/BFloat16.h
-@@ -566,6 +566,9 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 floor(const bfloat16& a) {
+@@ -263,12 +263,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC __bfloat16_raw truncate_to_bfloat16(const
+     output.value = std::signbit(v) ? 0x8000 : 0;
+     return output;
+   }
+-  const uint16_t* p = reinterpret_cast<const uint16_t*>(&v);
+-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+-  output.value = p[0];
+-#else
+-  output.value = p[1];
+-#endif
++  output.value = static_cast<numext::uint16_t>(numext::bit_cast<numext::uint32_t>(v) >> 16);
+   return output;
+ }
+ 
+@@ -475,14 +470,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC __bfloat16_raw float_to_bfloat16_rtne<true
+ }
+ 
+ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC float bfloat16_to_float(__bfloat16_raw h) {
+-    float result = 0;
+-    unsigned short* q = reinterpret_cast<unsigned short*>(&result);
+-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+-    q[0] = h.value;
+-#else
+-    q[1] = h.value;
+-#endif
+-    return result;
++    return numext::bit_cast<float>(static_cast<numext::uint32_t>(h.value) << 16);
+ }
+ // --- standard functions ---
+ 
+@@ -566,6 +554,9 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 floor(const bfloat16& a) {
  EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 ceil(const bfloat16& a) {
    return bfloat16(::ceilf(float(a)));
  }
@@ -4439,7 +4501,7 @@ index 30f3cd456..951c6ddd9 100644
  EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 fmod(const bfloat16& a, const bfloat16& b) {
    return bfloat16(::fmodf(float(a), float(b)));
  }
-@@ -674,6 +677,12 @@ bool (isfinite)(const Eigen::bfloat16& h) {
+@@ -674,6 +665,12 @@ bool (isfinite)(const Eigen::bfloat16& h) {
    return (bfloat16_impl::isfinite)(h);
  }
  
@@ -10217,7 +10279,7 @@ index d4532b72c..0fe7fb2d2 100644
    TensorEvaluator<ThenArgType, Device> m_thenImpl;
    TensorEvaluator<ElseArgType, Device> m_elseImpl;
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
-index c52fb77dc..585afda7d 100644
+index c52fb77dc..18788d3fa 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 @@ -76,8 +76,13 @@ struct ExpressionHasTensorBroadcastingOp<
@@ -10234,13 +10296,17 @@ index c52fb77dc..585afda7d 100644
  class TensorExecutor {
   public:
    typedef typename Expression::Index StorageIndex;
-@@ -325,17 +330,18 @@ template <typename Expression, bool Vectorizable, TiledEvaluation Tiling>
+@@ -325,17 +330,22 @@ template <typename Expression, bool Vectorizable, TiledEvaluation Tiling>
  class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable, Tiling> {
   public:
    typedef typename Expression::Index StorageIndex;
 -
 +  // TODO(itex): Reopen ThreadPoolDevice dedicated vectorization path when it's ready.
++#ifdef EIGEN_USE_DPCPP
 +  static const bool vectorized = false;
++#else
++  static const bool vectorized = Vectorizable;
++#endif
    static EIGEN_STRONG_INLINE void run(const Expression& expr,
                           const ThreadPoolDevice& device) {
      typedef TensorEvaluator<Expression, ThreadPoolDevice> Evaluator;
@@ -10256,27 +10322,29 @@ index c52fb77dc..585afda7d 100644
                           EvalRange::alignBlockSize,
                           [&evaluator](StorageIndex firstIdx, StorageIndex lastIdx) {
                             EvalRange::run(&evaluator, firstIdx, lastIdx);
-@@ -345,8 +351,8 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable, Tiling> {
-   }
- };
- 
--template <typename Expression, bool Vectorizable>
--class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
-+template <typename Expression>
-+class TensorExecutor<Expression, ThreadPoolDevice, /*Vectorizable*/false,
-                      /*Tiling=*/TiledEvaluation::On> {
-  public:
-   typedef typename traits<Expression>::Index IndexType;
-@@ -354,6 +360,8 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
+@@ -354,6 +364,12 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
    typedef typename remove_const<Scalar>::type ScalarNoConst;
  
    static const int NumDims = traits<Expression>::NumDimensions;
 +  // TODO: Reopen ThreadPoolDevice dedicated vectorization path when it's ready.
-+  static const bool Vectorizable = false;
++#ifdef EIGEN_USE_DPCPP
++  static const bool vectorized = false;
++#else
++  static const bool vectorized = Vectorizable;
++#endif
  
    typedef TensorEvaluator<Expression, ThreadPoolDevice> Evaluator;
    typedef TensorBlockMapper<NumDims, Evaluator::Layout, IndexType> BlockMapper;
-@@ -615,6 +623,86 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
+@@ -372,7 +388,7 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
+     if (needs_assign) {
+       const TilingContext tiling =
+           internal::GetTensorExecutorTilingContext<Evaluator, BlockMapper,
+-                                                   Vectorizable>(evaluator);
++                                                   vectorized>(evaluator);
+ 
+       auto eval_block = [&device, &evaluator, &tiling](IndexType firstBlockIdx,
+                                                        IndexType lastBlockIdx) {
+@@ -615,6 +631,86 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
  }
  
  #endif  // EIGEN_GPUCC
@@ -10363,7 +10431,7 @@ index c52fb77dc..585afda7d 100644
  #endif  // EIGEN_USE_GPU
  
  // SYCL Executor policy
-@@ -624,19 +712,19 @@ template <typename Evaluator>
+@@ -624,19 +720,19 @@ template <typename Evaluator>
  struct ExecExprFunctorKernel {
    typedef typename Evaluator::Index Index;
    Evaluator evaluator;
@@ -10387,7 +10455,7 @@ index c52fb77dc..585afda7d 100644
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
      Index total_threads = itemID.get_global_range(0);
  
-@@ -646,7 +734,7 @@ struct ExecExprFunctorKernel {
+@@ -646,7 +742,7 @@ struct ExecExprFunctorKernel {
    }
    template <bool is_vec = Evaluator::PacketAccess>
    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<is_vec>::type
@@ -10396,7 +10464,7 @@ index c52fb77dc..585afda7d 100644
      const Index vectorizedRange =
          (range / Evaluator::PacketSize) * Evaluator::PacketSize;
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
-@@ -686,8 +774,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
+@@ -686,8 +782,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
            typename Evaluator::CoeffReturnType,
            ExecExprFunctorKernel<Evaluator> >(
            evaluator,
