@@ -695,11 +695,37 @@ class Registrar {
 // types of implementation.
 bool IsSyncExecEnabled();
 bool IsVerboseEnabled();
+
+#ifndef INTEL_CPU_ONLY
+const char* const USES_FP64_MATH = "uses-fp64-math";
+const char* const ASPECT_FP64_IS_NOT_SUPPORTED = "aspect fp64 is not supported";
+
+inline void RunWithSyncHandler(OpKernelContext* context, OpKernel* op) {
+  try {
+    op->Compute(context);
+  } catch (const sycl::exception& e) {
+    const string& err_msg = e.what();
+    if (err_msg.find(USES_FP64_MATH) != std::string::npos ||
+        err_msg.find(ASPECT_FP64_IS_NOT_SUPPORTED) != std::string::npos) {
+      context->CtxFailureWithWarning(itex::Status(
+          TF_Code::TF_ABORTED,
+          strings::StrCat(
+              op->type(),
+              " Op uses fp64 data type, while fp64 instructions are "
+              "not supported on the platform.")));
+    } else {
+      // catch other SYCL exceptions instead of throwing here?
+      std::rethrow_exception(std::current_exception());
+    }
+  }
+}
+#endif
+
 inline void RunOrWaitUntilFinish(OpKernelContext* context, OpKernel* op) {
 #ifndef INTEL_CPU_ONLY
   if (IsSyncExecEnabled()) {
     auto start = std::chrono::steady_clock::now();
-    op->Compute(context);
+    RunWithSyncHandler(context, op);
     auto stream = context->GetDeviceStream();
     auto error = ITEX_GPUStreamSynchronize(stream);
     if (error != ITEX_GPU_SUCCESS) {
@@ -718,14 +744,14 @@ inline void RunOrWaitUntilFinish(OpKernelContext* context, OpKernel* op) {
   } else {
     if (IsVerboseEnabled()) {
       auto start = std::chrono::steady_clock::now();
-      op->Compute(context);
+      RunWithSyncHandler(context, op);
       auto end = std::chrono::steady_clock::now();
       auto elapsed =
           std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
               .count();
       ITEX_VLOG(0) << op->type() << "," << op->name() << "," << elapsed;
     } else {
-      op->Compute(context);
+      RunWithSyncHandler(context, op);
     }
   }
 #else
