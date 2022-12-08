@@ -45,12 +45,10 @@ struct FillPhiloxRandom {
                   T* data, int64 size, Distribution dist,
                   const uint64* key = nullptr,
                   const uint64* counter = nullptr) {
-    OP_REQUIRES(
-        ctx, false,
-        errors::Internal(
-            "Default `FillPhiloxRandom` implementation should not be executed. "
-            "The cause of this error is probably that `FillPhiloxRandom` does "
-            "not support this device or random distribution yet."));
+    ITEX_CHECK(false)
+        << "Default `FillPhiloxRandom` implementation should not be executed. "
+        << "The cause of this error is probably that `FillPhiloxRandom` does "
+        << "not support this device or random distribution yet.";
   }
 };
 
@@ -63,72 +61,63 @@ class DistributionVec {
     return (*dist)(gen);
   }
 
-  void VecCopy(RealType* data, int64 length) {}
+  void VecPost(RealType* data, int64 length) {}
 
  private:
   Distribution* dist;
 };
 
-template <>
+template <typename RealType>
 class DistributionVec<
-    random::PhiloxRandom, Eigen::bfloat16,
-    random::UniformDistribution<random::PhiloxRandom, Eigen::bfloat16>> {
+    random::PhiloxRandom, RealType,
+    random::UniformDistribution<random::PhiloxRandom, RealType>> {
  public:
-  typedef random::UniformDistribution<random::PhiloxRandom, Eigen::bfloat16>
+  typedef random::UniformDistribution<random::PhiloxRandom, RealType>
       Distribution;
 
-  explicit DistributionVec(Distribution* dist) { this->dist = dist; }
+  explicit DistributionVec(Distribution* dist, const RealType* cmp_data) {
+    this->dist = dist;
+    if (cmp_data != nullptr) {
+      // The mantissa has an implicit leading 1, so the generator creates a
+      // value in [1, 2). The addition is to align the dropout rate.
+      real_thr = cmp_data[0] + RealType(1.0);
+      has_fused_cmp = true;
+    } else {
+      has_fused_cmp = false;
+    }
+  }
 
   typename Distribution::ResultType operator()(random::PhiloxRandom* gen) {
     typename random::PhiloxRandom::ResultType sample = (*gen)();
     typename Distribution::ResultType result;
 
     for (int i = 0; i < Distribution::kResultElementCount; ++i) {
-      result[i] = random::InternalUint16ToBfloat16(sample[i]);
+      result[i] = Distribution::Converter(sample[i]);
     }
 
     return result;
   }
 
-  void VecCopy(Eigen::bfloat16* data, int64 length) {
-    // The mantissa has an implicit leading 1, so the above code creates a value
-    // in [1, 2). The minus will not cause a rounding that makes the result 1.
-    // Instead it will just be close to 1.
-    auto result_t = typename TTypes<Eigen::bfloat16>::Tensor(data, length);
-    result_t = result_t - Eigen::bfloat16(1.0);
-  }
+  void VecPost(RealType* data, int64 length) {
+    auto result_t = typename TTypes<RealType>::Tensor(data, length);
 
- private:
-  Distribution* dist;
-};
-
-template <>
-class DistributionVec<
-    random::PhiloxRandom, float,
-    random::UniformDistribution<random::PhiloxRandom, float>> {
- public:
-  typedef random::UniformDistribution<random::PhiloxRandom, float> Distribution;
-
-  explicit DistributionVec(Distribution* dist) { this->dist = dist; }
-
-  typename Distribution::ResultType operator()(random::PhiloxRandom* gen) {
-    typename random::PhiloxRandom::ResultType sample = (*gen)();
-    typename Distribution::ResultType result;
-
-    for (int i = 0; i < Distribution::kResultElementCount; ++i) {
-      result[i] = random::InternalUint32ToFloat(sample[i]);
+    if (has_fused_cmp) {
+      // `result_t >= real_thr` is mathematically equivalent to
+      // `(result_t - 1.0) >= dropout_rate`, but the vectorized minus is
+      // replaced by a scalar addition.
+      result_t = (result_t >= real_thr).template cast<RealType>();
+    } else {
+      // Take away implicit leading 1 to get a value in [0, 1) for pure
+      // RandomUniform. The minus will not cause a rounding that makes the
+      // result 1. Instead it will just be close to 1.
+      result_t = result_t - RealType(1.0);
     }
-
-    return result;
-  }
-
-  void VecCopy(float* data, int64 length) {
-    auto result_t = typename TTypes<float>::Tensor(data, length);
-    result_t = result_t - 1.0f;
   }
 
  private:
   Distribution* dist;
+  bool has_fused_cmp;
+  RealType real_thr;
 };
 
 // A class to fill a specified range of random groups
@@ -141,7 +130,8 @@ template <class Distribution>
 struct FillPhiloxRandomTask<Distribution, false> {
   typedef typename Distribution::ResultElementType T;
   static void Run(random::PhiloxRandom gen, T* data, int64 size,
-                  int64 start_group, int64 limit_group, Distribution dist) {
+                  const T* cmp_data, int64 start_group, int64 limit_group,
+                  Distribution dist) {
     const int kGroupSize = Distribution::kResultElementCount;
 
     gen.Skip(start_group);
@@ -149,7 +139,8 @@ struct FillPhiloxRandomTask<Distribution, false> {
 
     // First fill all the full-size groups
     int64 limit_group_full = std::min(limit_group, size / kGroupSize);
-    DistributionVec<random::PhiloxRandom, T, Distribution> dist_vec(&dist);
+    DistributionVec<random::PhiloxRandom, T, Distribution> dist_vec(&dist,
+                                                                    cmp_data);
     for (int64 index = start_group; index < limit_group_full; ++index) {
       auto samples = dist_vec(&gen);
       std::copy(&samples[0], &samples[0] + kGroupSize, data + offset);
@@ -163,7 +154,7 @@ struct FillPhiloxRandomTask<Distribution, false> {
       auto samples = dist_vec(&gen);
       std::copy(&samples[0], &samples[0] + remaining_size, data + offset);
     }
-    dist_vec.VecCopy(
+    dist_vec.VecPost(
         data + start_group * kGroupSize,
         (limit_group_full - start_group) * kGroupSize + remaining_size);
   }
@@ -177,7 +168,8 @@ struct FillPhiloxRandomTask<Distribution, true> {
   static constexpr int64 kReservedSamplesPerOutput = 256;
 
   static void Run(random::PhiloxRandom base_gen, T* data, int64 size,
-                  int64 start_group, int64 limit_group, Distribution dist) {
+                  const T* cmp_data, int64 start_group, int64 limit_group,
+                  Distribution dist) {
     const int kGroupSize = Distribution::kResultElementCount;
 
     static const int kGeneratorSkipPerOutputGroup =
@@ -190,7 +182,7 @@ struct FillPhiloxRandomTask<Distribution, true> {
     int64 limit_group_full = std::min(limit_group, size / kGroupSize);
     int64 group_index;
     DistributionVec<SingleSampleAdapter<PhiloxRandom>, T, Distribution>
-        dist_vec(&dist);
+        dist_vec(&dist, cmp_data);
     for (group_index = start_group; group_index < limit_group_full;
          ++group_index) {
       // Reset the generator to the beginning of the output group region
@@ -216,7 +208,7 @@ struct FillPhiloxRandomTask<Distribution, true> {
       auto samples = dist_vec(&single_samples);
       std::copy(&samples[0], &samples[0] + remaining_size, data + offset);
     }
-    dist_vec.VecCopy(
+    dist_vec.VecPost(
         data + start_group * kGroupSize,
         (limit_group_full - start_group) * kGroupSize + remaining_size);
   }
@@ -235,11 +227,12 @@ template <class Distribution>
 struct FillPhiloxRandom<CPUDevice, Distribution> {
   // Partial specialization for CPU to fill the entire region with randoms
   // It splits the work into several tasks and run them in parallel
-  void operator()(OpKernelContext* ctx, const CPUDevice& d,
-                  random::PhiloxRandom gen,
-                  typename Distribution::ResultElementType* data, int64 size,
-                  Distribution dist, const uint64* key = nullptr,
-                  const uint64* counter = nullptr) {
+  void operator()(
+      OpKernelContext* ctx, const CPUDevice& d, random::PhiloxRandom gen,
+      typename Distribution::ResultElementType* data, int64 size,
+      Distribution dist, const uint64* key = nullptr,
+      const uint64* counter = nullptr,
+      const typename Distribution::ResultElementType* cmp_data = nullptr) {
     const int kGroupSize = Distribution::kResultElementCount;
 
     int64 total_group_count = (size + kGroupSize - 1) / kGroupSize;
@@ -253,14 +246,13 @@ struct FillPhiloxRandom<CPUDevice, Distribution> {
 
     d.parallelFor(
         total_group_count, Eigen::TensorOpCost(0, 0, kGroupCost),
-        [&gen, data, size, dist](Eigen::Index first, Eigen::Index last) {
+        [&gen, data, size, cmp_data, dist](Eigen::Index first,
+                                           Eigen::Index last) {
           FillPhiloxRandomTask<
-              Distribution, Distribution::kVariableSamplesPerOutput>::Run(gen,
-                                                                          data,
-                                                                          size,
-                                                                          first,
-                                                                          last,
-                                                                          dist);
+              Distribution,
+              Distribution::kVariableSamplesPerOutput>::Run(gen, data, size,
+                                                            cmp_data, first,
+                                                            last, dist);
         });
   }
 };

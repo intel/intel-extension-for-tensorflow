@@ -2001,9 +2001,6 @@ bool FindRandomWithComparisonAndCast(const RemapperContext& ctx, int node_index,
   const auto* random = regular_fanin.node_view();
   const auto* random_node_def = random->node();
 
-  // TODO(itex) Add CPU support
-  if (NodeIsOnCpu(random_node_def)) return false;
-
   if (HasControlFaninOrFanout(*random)) return false;
 
   DataType random_dtype = GetDataTypeFromAttr(*random_node_def, "dtype");

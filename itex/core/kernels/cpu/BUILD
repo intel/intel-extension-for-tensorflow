@@ -211,6 +211,23 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "fused_random_op",
+    srcs = ["fused_random_op.cc"],
+    hdrs = [
+        "random_op_cpu.h",
+        "//itex/core/kernels/common:random_hdrs",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/utils/lib/random:guarded_philox_random",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "resize_bilinear_op",
     srcs = ["resize_bilinear_op.cc"],
     copts = tf_copts(),
@@ -383,6 +400,7 @@ CPU_KERNELS = [
     ":dequantize_op",
     ":einsum_op",
     ":fused_batch_norm_op",
+    ":fused_random_op",
     ":gru_ops",
     ":instance_norm_ops",
     ":layer_norm_ops",

@@ -108,6 +108,8 @@ class UniformDistribution<Generator, Eigen::bfloat16> {
   static constexpr bool kVariableSamplesPerOutput = false;
   typedef Array<Eigen::bfloat16, kResultElementCount> ResultType;
   typedef Eigen::bfloat16 ResultElementType;
+  static constexpr Eigen::bfloat16 (*Converter)(uint16 x) =
+      InternalUint16ToBfloat16;
 
   PHILOX_DEVICE_INLINE
   ResultType operator()(const Generator* gen) const {
@@ -132,6 +134,7 @@ class UniformDistribution<Generator, float> {
   static constexpr bool kVariableSamplesPerOutput = false;
   typedef Array<float, kResultElementCount> ResultType;
   typedef float ResultElementType;
+  static constexpr float (*Converter)(uint32 x) = InternalUint32ToFloat;
 
   PHILOX_DEVICE_INLINE
   ResultType operator()(const Generator* gen) const {

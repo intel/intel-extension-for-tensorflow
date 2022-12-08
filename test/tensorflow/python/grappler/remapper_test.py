@@ -534,5 +534,48 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
           # Computed output value should be close to reference value.
           self.assertAllCloseAccordingToType(output_val_ref, output_val)
 
+  @test_util.run_deprecated_v1
+  @test_util.disable_xla('This test does not pass with XLA')
+  def test_randomuniform_greaterequalwithcast_fusion(self):
+    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    for precision in (dtypes.float32, dtypes.bfloat16, dtypes.float16):
+      if precision == dtypes.bfloat16:
+        if not is_bf16_supported:
+          self.skipTest('Device do not support bfloat16')
+
+      if precision == dtypes.float16:
+        if not tf.config.list_physical_devices("XPU"):
+          self.skipTest('CPU do not support float16')
+
+      randu = random_ops.random_uniform([5, 6], dtype=precision, seed=1)
+      cmp_thr = constant_op.constant(0.5, dtype=precision)
+      ge = math_ops.greater_equal(randu, cmp_thr)
+      out = array_ops.identity(math_ops.cast(ge, dtype=precision))
+
+      # Compute reference value.
+      config = _get_config(remapping_on=False)
+      with session.Session(config=config) as sess:
+        sess.run(variables.global_variables_initializer())
+        output_val_ref = sess.run(
+            out, options=run_options, run_metadata=metadata)
+
+      config = _get_config(remapping_on=True)
+      with session.Session(config=config) as sess:
+        sess.run(variables.global_variables_initializer())
+        output_val = sess.run(out, options=run_options, run_metadata=metadata)
+
+      graph = metadata.partition_graphs[0]
+      # Graph should contain fused op.
+      found_fused_op = False
+      for node in graph.node:
+        if '_ITEXFusedRandom' in node.op:
+          found_fused_op = 1
+      self.assertTrue(found_fused_op)
+      # Computed output value should be close to reference value.
+      self.assertAllCloseAccordingToType(output_val_ref, output_val)
+
 if __name__ == '__main__':
   test.main()
