@@ -23,6 +23,7 @@ limitations under the License.
 #include <unordered_set>
 #include <utility>
 
+#include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/utils/graph_common_utils.h"
 #include "itex/core/graph/utils/graph_properties.h"
 #include "itex/core/graph/utils/op_types.h"
@@ -520,6 +521,12 @@ void SetStaticShapeAttr(const utils::MutableNodeView* node_view,
     // TODO(itex): check whether other llga op allow -1 as shape info.
     if (node_def->op() == "Reshape" &&
         std::count(size_value.begin(), size_value.end(), -1) > 1) {
+      delete *onednn_graph_node;
+      *onednn_graph_node = nullptr;
+      return;
+    }
+
+    if (size_value.size() == 0) {
       delete *onednn_graph_node;
       *onednn_graph_node = nullptr;
       return;
@@ -1178,17 +1185,20 @@ Status TranslateBiasAddGrad(const OneDnnGraphContext* ctx, const int node_index,
 // Quantize/Dequantize
 //////////////////////////////////////////////////////////////////////////
 Status GetQuantizeMinMaxValue(const utils::MutableNodeView* node_view,
-                              Tensor* input_min_range,
-                              Tensor* input_max_range) {
+                              Tensor* input_min_range, Tensor* input_max_range,
+                              bool* find_const_min_max) {
   auto* min_fanin = node_view->GetRegularFanin(1).node_view()->node();
   if (!IsAnyConst(*min_fanin)) {
-    ITEX_CHECK(IsEnter(*min_fanin))
-        << "2nd input of Static Quantize should be AnyConst or Enter";
-    min_fanin = node_view->GetRegularFanin(1)
-                    .node_view()
-                    ->GetRegularFanin(0)
-                    .node_view()
-                    ->node();
+    if (IsEnter(*min_fanin)) {
+      min_fanin = node_view->GetRegularFanin(1)
+                      .node_view()
+                      ->GetRegularFanin(0)
+                      .node_view()
+                      ->node();
+    } else {
+      *find_const_min_max = false;
+      return Status::OK();
+    }
   }
   if (!input_min_range->FromProto(min_fanin->attr().at("value").tensor())) {
     return errors::InvalidArgument("Cannot parse constant value from ",
@@ -1197,19 +1207,23 @@ Status GetQuantizeMinMaxValue(const utils::MutableNodeView* node_view,
 
   auto* max_fanin = node_view->GetRegularFanin(2).node_view()->node();
   if (!IsAnyConst(*max_fanin)) {
-    ITEX_CHECK(IsEnter(*max_fanin))
-        << "3th input of Static Quantize should be AnyConst or Enter";
-    max_fanin = node_view->GetRegularFanin(2)
-                    .node_view()
-                    ->GetRegularFanin(0)
-                    .node_view()
-                    ->node();
+    if (IsEnter(*max_fanin)) {
+      max_fanin = node_view->GetRegularFanin(2)
+                      .node_view()
+                      ->GetRegularFanin(0)
+                      .node_view()
+                      ->node();
+    } else {
+      *find_const_min_max = false;
+      return Status::OK();
+    }
   }
   if (!input_max_range->FromProto(max_fanin->attr().at("value").tensor())) {
     return errors::InvalidArgument("Cannot parse constant value from ",
                                    max_fanin->name());
   }
 
+  *find_const_min_max = true;
   return Status::OK();
 }
 
@@ -1245,8 +1259,15 @@ Status SetScaleAndZp(const OneDnnGraphContext* ctx,
   (*onednn_graph_node)->set_attr<int64_t>("axis", static_cast<int64_t>(axis));
 
   Tensor input_min_range, input_max_range;
-  TF_ABORT_IF_ERROR(
-      GetQuantizeMinMaxValue(node_view, &input_min_range, &input_max_range));
+  bool find_const_min_max = false;
+  TF_ABORT_IF_ERROR(GetQuantizeMinMaxValue(
+      node_view, &input_min_range, &input_max_range, &find_const_min_max));
+
+  if (!find_const_min_max) {
+    delete *onednn_graph_node;
+    *onednn_graph_node = nullptr;
+    return Status::OK();
+  }
 
   int num_slices = 1;
   if (axis > -1) {
@@ -1329,6 +1350,15 @@ Status TranslateQuantizeV2(const OneDnnGraphContext* ctx, const int node_index,
 
   auto* node_def = node_view->node();
 
+  // For oneDNN Graph INT8 pb, QuantizeV2's outputs are always Dequantize
+  for (auto fanout : node_view->GetRegularFanout(0)) {
+    auto* fanout_node_view = fanout.node_view();
+    if (fanout_node_view->node()->op() != "Dequantize") {
+      onednn_graph_node = nullptr;
+      return Status::OK();
+    }
+  }
+
   DataType T;
   std::string mode;
   std::string round_mode;
@@ -1365,6 +1395,14 @@ Status TranslateDequantize(const OneDnnGraphContext* ctx, const int node_index,
                            const utils::MutableNodeView* node_view,
                            dnnl::graph::op** onednn_graph_node) {
   if (IsOpOutputFolded(ctx, node_view)) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  // For oneDNN Graph INT8 pb, Dequantize's input is always QuantizeV2
+  const NodeDef* input_node_node =
+      node_view->GetRegularFanin(0).node_view()->node();
+  if (input_node_node->op() != "QuantizeV2") {
     onednn_graph_node = nullptr;
     return Status::OK();
   }
@@ -1766,6 +1804,7 @@ Status SelectNode(OneDnnGraphContext* ctx, int num_nodes,
                   LLGAEdgeManager* edge_manager,
                   AdditionalArgs* additional_args) {
   ITEX_VLOG(2) << "====== Start selecting nodes, is_wildcard = " << is_wildcard;
+
   for (int f_node = 0; f_node < num_nodes; f_node++) {
     const auto* f_node_view = ctx->graph_view.GetNode(f_node);
     const auto* f_node_def = f_node_view->node();
@@ -1965,9 +2004,8 @@ Status FuseFwPartitionWithLLGA(
     AdditionalArgs* additional_args) {
   auto* mutation = ctx->graph_view.GetMutationBuilder();
 
-  bool onednn_graph_all_type_flag;
-  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("ITEX_ONEDNN_GRAPH_ALL_TYPE", false,
-                                         &onednn_graph_all_type_flag));
+  bool onednn_graph_all_type_flag =
+      GetOptimizerConfigFlags().enable_onednn_graph_all_type;
 
   ITEX_VLOG(2) << "IN REWRITE ";
   absl::flat_hash_set<int> f_nodes;
@@ -2766,6 +2804,20 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
   // TODO(itex): Remove the lock, when LLGA modify their all thread unsafe
   // data structure, such as "pass_manager". Seems LLGA already fix the error
   mutex_lock m(&mu);
+
+  // Enable oneDNN Graph compiler backend
+  bool onednn_graph_compiler_backend_flag =
+      GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
+  if (!onednn_graph_compiler_backend_flag) {
+    setenv("_DNNL_GRAPH_DISABLE_COMPILER_BACKEND", "1", 0);
+  }
+
+  // Enable oneDNN Graph dnnl backend
+  bool onednn_graph_dnnl_backend_flag =
+      GetOptimizerConfigFlags().enable_onednn_graph_dnnl_backend;
+  if (!onednn_graph_dnnl_backend_flag) {
+    setenv("_DNNL_GRAPH_DISABLE_DNNL_BACKEND", "1", 0);
+  }
 
   Status status;
   GraphDef multable_graph_def = graph_def;

@@ -4264,24 +4264,24 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
             &ctx, mul_with_maximum, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
-    }
 
-    // Remap Const+Cast into the Const. this fusion aims to reduce the number
-    // of Cast which were produced by auto mixed precision.
-    ConstWithCast const_with_cast;
-    if (FindConstWithCast(ctx, i, &const_with_cast)) {
-      TF_ABORT_IF_ERROR(AddConstWithCastNode(
-          &ctx, const_with_cast, &invalidated_nodes, &nodes_to_delete));
-      continue;
-    }
+      // Remap Const+Cast into the Const. this fusion aims to reduce the number
+      // of Cast which were produced by auto mixed precision.
+      ConstWithCast const_with_cast;
+      if (FindConstWithCast(ctx, i, &const_with_cast)) {
+        TF_ABORT_IF_ERROR(AddConstWithCastNode(
+            &ctx, const_with_cast, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
 
-    // Remap sequatial Binary ops into the _ITEXFusedBinary op.
-    // Disable it in 1st remapper since it may break other high priority
-    // fusions.
-    FusedBinary seq_binary;
-    if (level != default_level && FindFusedBinary(ctx, i, &seq_binary)) {
-      TF_ABORT_IF_ERROR(AddFusedBinaryNode(&ctx, seq_binary, &invalidated_nodes,
-                                           &nodes_to_delete));
+      // Remap sequatial Binary ops into the _ITEXFusedBinary op.
+      // Disable it in 1st remapper since it may break other high priority
+      // fusions.
+      FusedBinary seq_binary;
+      if (level != default_level && FindFusedBinary(ctx, i, &seq_binary)) {
+        TF_ABORT_IF_ERROR(AddFusedBinaryNode(
+            &ctx, seq_binary, &invalidated_nodes, &nodes_to_delete));
+      }
     }
   }
 

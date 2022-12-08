@@ -43,6 +43,9 @@ void HelperSetEnvOptimzerConfig(std::string new_name, std::string old_name,
 
 void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   bool onednn_graph_flag;
+  bool onednn_graph_all_type_flag;
+  bool onednn_graph_compiler_backend_flag;
+  bool onednn_graph_dnnl_backend_flag;
   bool remapper_flag;
   bool auto_mixed_precision_flag;
   bool native_format_flag;
@@ -62,6 +65,20 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
     HelperSetEnvOptimzerConfig("ITEX_ONEDNN_GRAPH", "ITEX_ENABLE_ONEDNN_GRAPH",
                                enable_itex_onednn_graph, &onednn_graph_flag);
   }
+
+  HelperSetEnvOptimzerConfig(
+      "_ITEX_ONEDNN_GRAPH_ALL_TYPE", "_ITEX_ENABLE_ONEDNN_GRAPH_ALL_TYPE",
+      enable_itex_onednn_graph_all_type, &onednn_graph_all_type_flag);
+
+  HelperSetEnvOptimzerConfig("_ITEX_ONEDNN_GRAPH_COMPILER_BACKEND",
+                             "_ITEX_ENABLE_ONEDNN_GRAPH_COMPILER_BACKEND",
+                             enable_itex_onednn_graph_compiler_backend,
+                             &onednn_graph_compiler_backend_flag);
+
+  HelperSetEnvOptimzerConfig("_ITEX_ONEDNN_GRAPH_DNNL_BACKEND",
+                             "_ITEX_ENABLE_ONEDNN_GRAPH_DNNL_BACKEND",
+                             enable_itex_onednn_graph_dnnl_backend,
+                             &onednn_graph_dnnl_backend_flag);
 
   if (USER_IS_SET(remapper)) {
     remapper_flag = true;
@@ -125,6 +142,11 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
 
   // Set OptimizerConfigFlags.
   opt_config_flags->enable_onednn_graph = onednn_graph_flag;
+  opt_config_flags->enable_onednn_graph_all_type = onednn_graph_all_type_flag;
+  opt_config_flags->enable_onednn_graph_compiler_backend =
+      onednn_graph_compiler_backend_flag;
+  opt_config_flags->enable_onednn_graph_dnnl_backend =
+      onednn_graph_dnnl_backend_flag;
   opt_config_flags->enable_remapper = remapper_flag;
   opt_config_flags->enable_auto_mixed_precision = auto_mixed_precision_flag;
   opt_config_flags->enable_native_format = native_format_flag;

@@ -39,6 +39,11 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
       {"ITEX_TILE_AS_DEVICE", TileAsDevice},
 #endif
       {"ITEX_CACHE_ONEDNN_OBJECT", false},
+      {"_ITEX_ONEDNN_GRAPH_ALL_TYPE", config.enable_onednn_graph_all_type},
+      {"_ITEX_ONEDNN_GRAPH_COMPILER_BACKEND",
+       config.enable_onednn_graph_compiler_backend},
+      {"_ITEX_ONEDNN_GRAPH_DNNL_BACKEND",
+       config.enable_onednn_graph_dnnl_backend},
   };
 
   // set ITEX_CACHE_ONEDNN_OBJECT to 1 if this env did not set.
@@ -118,6 +123,12 @@ void TF_InitGraph(TP_OptimizerRegistrationParams* params, TF_Status* status) {
   if (GetOptimizerConfigFlags().enable_auto_mixed_precision) {
     params->optimizer_configs->auto_mixed_precision = TF_TriState_Off;
     params->optimizer_configs->auto_mixed_precision_mkl = TF_TriState_Off;
+  }
+
+  // ITEX + oneDNN Graph INT8 pass doesn't support constant folding pass
+  if (GetOptimizerConfigFlags().enable_onednn_graph &&
+      !GetOptimizerConfigFlags().enable_onednn_graph_all_type) {
+    params->optimizer_configs->constant_folding = TF_TriState_Off;
   }
   // Set functions to create a new optimizer.
   params->optimizer->optimize_func = (itex::graph::Optimizer_Optimize);

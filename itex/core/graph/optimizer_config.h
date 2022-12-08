@@ -19,7 +19,14 @@ limitations under the License.
 
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
+#ifndef INTEL_CPU_ONLY
 constexpr static bool enable_itex_onednn_graph = false;
+#else
+constexpr static bool enable_itex_onednn_graph = true;
+#endif  // INTEL_CPU_ONLY
+constexpr static bool enable_itex_onednn_graph_all_type = false;
+constexpr static bool enable_itex_onednn_graph_compiler_backend = false;
+constexpr static bool enable_itex_onednn_graph_dnnl_backend = true;
 constexpr static bool enable_itex_remapper = true;
 constexpr static bool enable_itex_auto_mixed_precision = false;
 constexpr static bool enable_itex_native_format = false;
@@ -28,6 +35,9 @@ constexpr static int32_t remapper_run_pass = 2;
 
 typedef struct _OptimizerConfigFlags {
   bool enable_onednn_graph;
+  bool enable_onednn_graph_all_type;
+  bool enable_onednn_graph_compiler_backend;
+  bool enable_onednn_graph_dnnl_backend;
   bool enable_remapper;
   bool enable_auto_mixed_precision;
   // TODO(itex): To integrate DOC & GraphOptions
