@@ -24,6 +24,7 @@ namespace graph {
 constexpr char kAny[] = "*";
 
 //  Original TensorFlow op names.
+constexpr char kAdd[] = "Add";
 constexpr char kAddN[] = "AddN";
 constexpr char kAddV2[] = "AddV2";
 constexpr char kApplyRMSPropComputeRMS[] = "ApplyRMSPropComputeRMS";

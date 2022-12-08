@@ -19,6 +19,7 @@ limitations under the License.
 #include "itex/core/graph/utils/pattern_utils.h"
 #include "itex/core/graph/utils/symbolic_shapes.h"
 #include "itex/core/graph/utils/utils.h"
+#include "itex/core/utils/op_kernel.h"
 
 namespace itex {
 namespace graph {

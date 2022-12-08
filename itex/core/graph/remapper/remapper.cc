@@ -350,6 +350,16 @@ struct AddV2WithSoftmax {
   int softmaxIndex_ = kMissingIndex;
 };
 
+struct PadConvFwdBwd {
+  int input_bn = kMissingIndex;
+  int input_pad_val = kMissingIndex;
+  int pad = kMissingIndex;
+  int conv2d = kMissingIndex;
+  int conv2d_bwd_filter = kMissingIndex;
+  int const_shape_0 = kMissingIndex;
+  int const_shape_1 = kMissingIndex;
+};
+
 bool IsAddWithNoBroadcast(const RemapperContext& ctx, const NodeDef& node) {
   if (!IsAdd(node)) return false;
 
@@ -1639,6 +1649,113 @@ bool FindConvBackpropInputWithSlice(const RemapperContext& ctx, int node_index,
 
 // Optimize:
 /*
+    Conv2DBackpropInput (padding valid)  Const (0,1,1,0)  Const
+          \              |     /
+                       Slice         ------->   Conv2DBackpropInput
+*/
+
+bool FindConv2DBackpropInputWithSliceLLGA(const RemapperContext& ctx,
+                                          int node_index,
+                                          ConvBackpropInputWithSlice* matched,
+                                          bool check_device_compatible = true) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+
+  const auto* node_def = node_view->node();
+  if (!IsSlice(*node_def)) return false;
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* conv_node_view = regular_fanin_0.node_view();
+  const auto* conv_node_def = conv_node_view->node();
+  // TODO(itex): Add support for Conv3DBackpropInput
+  bool is_ok = IsConv2DBackpropInput(*conv_node_def);
+  is_ok = is_ok && conv_node_view->NumRegularFanouts() == 1;
+
+  if (!is_ok) {
+    return false;
+  }
+
+  const auto* slice_start_node_view = node_view->GetRegularFanin(1).node_view();
+  const auto* slice_start_node = slice_start_node_view->node();
+  if (!IsAnyConst(*slice_start_node)) return false;
+
+  Tensor slice_start_tensor;
+  std::vector<int> slice_start_value;
+  if (slice_start_node->op() == "Const" &&
+      slice_start_tensor.FromProto(
+          slice_start_node->attr().at("value").tensor())) {
+    int length = slice_start_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      slice_start_value.push_back(slice_start_tensor.flat<int32>()(i));
+    }
+  }
+
+  // Specialized version for RN50 training
+  // TODO(itex): Implement fusion with more relaxed shape checking
+  if (slice_start_value != std::vector<int>{0, 1, 1, 0}) {
+    return false;
+  }
+
+  const auto* slice_size_node_view = node_view->GetRegularFanin(2).node_view();
+  const auto* slice_size_node = slice_size_node_view->node();
+  if (!IsAnyConst(*slice_size_node)) return false;
+
+  Tensor slice_size_tensor;
+  std::vector<int> slice_size_value;
+  if (slice_size_node->op() == "Const" &&
+      slice_size_tensor.FromProto(
+          slice_size_node->attr().at("value").tensor())) {
+    int length = slice_size_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      slice_size_value.push_back(slice_size_tensor.flat<int32>()(i));
+    }
+  }
+
+  const auto* input_size_node_view =
+      conv_node_view->GetRegularFanin(0).node_view();
+  const auto* input_size_node = input_size_node_view->node();
+  if (!IsAnyConst(*input_size_node)) return false;
+
+  Tensor input_size_tensor;
+  std::vector<int> input_size_value;
+  if (input_size_node->op() == "Const" &&
+      input_size_tensor.FromProto(
+          input_size_node->attr().at("value").tensor())) {
+    int length = input_size_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      input_size_value.push_back(input_size_tensor.flat<int32>()(i));
+    }
+  }
+
+  int length = input_size_tensor.NumElements();
+  for (int i = 0; i < length; i++) {
+    if (slice_start_value[i] * 2 + slice_size_value[i] != input_size_value[i])
+      return false;
+  }
+
+  // Only fuse contraction with `VALID` padding.
+  // TODO(itex): Support more padding type in future.
+  string padding_str;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*conv_node_def, "padding", &padding_str));
+  if (padding_str != "VALID") return false;
+
+  if (!HaveSameDataType(node_def, conv_node_def) ||
+      !HasAtMostOneFanoutAtPort0(*conv_node_view) ||
+      IsInPreserveSet(ctx, conv_node_def))
+    return false;
+
+  // Check that data type and data format are supported on assigned device.
+  const ConvBackpropInputWithSlice pattern{node_index,
+                                           conv_node_view->node_index()};
+  if (check_device_compatible && !IsDeviceCompatible(ctx, pattern))
+    return false;
+
+  *matched = pattern;
+
+  return true;
+}
+
+// Optimize:
+/*
           TrainingOp
             /    \
          AddN*   others...  ----->  FusedTrainingOp
@@ -2138,6 +2255,79 @@ bool FindConstWithCast(const RemapperContext& ctx, int node_index,
 
   matched->cast = node_index;
   matched->constant = regular_fanin_0.node_index();
+  return true;
+}
+
+/*                         before fusion
+                  BN
+                  |
+                 Pad
+      /           |              \                       \
+  Conv       ConvBwdFilter    Const0 (control input)   Const1 (control input)
+
+                        after fusion
+                 BN
+      /           |              \                        \
+  Conv       ConvBwdFilter    Const0 (control input)   Const1 (control input)
+*/
+
+// Pad with Conv Fwd and Bwd Fusion
+bool FindPadConvFwdBwd(const RemapperContext& ctx, int node_index,
+                       PadConvFwdBwd* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+  if (!IsConv2DBackpropFilter(*node_def) || HasControlFanin(*node_view))
+    return false;
+
+  matched->conv2d_bwd_filter = node_view->node_index();
+
+  const auto& pad_node_view = node_view->GetRegularFanin(0).node_view();
+  const auto* pad_node_def = pad_node_view->node();
+  if (!IsPad(*pad_node_def) || HasControlFanin(*pad_node_view)) return false;
+
+  matched->pad = pad_node_view->node_index();
+
+  const auto& bn_node_view = pad_node_view->GetRegularFanin(0).node_view();
+  const auto* bn_node_def = bn_node_view->node();
+  if (HasControlFanout(*bn_node_view)) return false;
+
+  matched->input_bn = bn_node_view->node_index();
+
+  const auto& const_pad_val_node_view =
+      pad_node_view->GetRegularFanin(1).node_view();
+  const auto* const_pad_val_node_def = const_pad_val_node_view->node();
+  if (!IsAnyConst(*const_pad_val_node_def) ||
+      HasControlFaninOrFanout(*const_pad_val_node_view))
+    return false;
+
+  matched->input_pad_val = const_pad_val_node_view->node_index();
+
+  for (auto const& pad_out : pad_node_view->GetRegularFanout(0)) {
+    auto* pad_out_node_view = pad_out.node_view();
+    if (pad_out_node_view->node_index() == node_view->node_index()) {
+      continue;
+    } else if (IsConv2D(*(pad_out_node_view->node()))) {
+      if (HasControlFanin(*pad_out_node_view)) {
+        return false;
+      }
+      matched->conv2d = pad_out_node_view->node_index();
+    } else {
+      return false;
+    }
+  }
+
+  if (pad_node_view->GetControlledFanouts().size() != 2) return false;
+
+  auto* const_shape_0_node_view =
+      pad_node_view->GetControlledFanouts()[0].node_view();
+  if (!IsAnyConst(*const_shape_0_node_view->node())) return false;
+  matched->const_shape_0 = const_shape_0_node_view->node_index();
+
+  auto* const_shape_1_node_view =
+      pad_node_view->GetControlledFanouts()[1].node_view();
+  if (!IsAnyConst(*const_shape_1_node_view->node())) return false;
+  matched->const_shape_1 = const_shape_1_node_view->node_index();
+
   return true;
 }
 
@@ -3226,6 +3416,124 @@ Status AddConvBackpropInputWithSliceNode(
   return Status::OK();
 }
 
+Status AddConv2DBackpropInputWithSliceNodeLLGA(
+    RemapperContext* ctx, const ConvBackpropInputWithSlice& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  auto& graph_view = ctx->graph_view;
+
+  auto* conv_backpropinput_node_view =
+      ctx->graph_view.GetNode(matched.contraction);
+
+  std::vector<int> out_control_index;  // control out index of fused-node
+  // Prepare control output edges for fused node
+  for (const auto& out_control_view :
+       conv_backpropinput_node_view->GetControlledFanouts()) {
+    int out_control_node_index = out_control_view.node_index();
+    out_control_index.push_back(out_control_view.node_index());
+  }
+
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& slice = graph->node(matched.slice);
+  const NodeDef& contraction = graph->node(matched.contraction);
+
+  for (auto f_out_index : out_control_index) {
+    auto* out_node_view = ctx->graph_view.GetNode(f_out_index);
+    mutation->RemoveControllingFanin(
+        out_node_view, conv_backpropinput_node_view->node()->name());
+    mutation->AddControllingFanin(out_node_view, slice.name());
+  }
+
+  NodeDef conv_backprop_input_with_slice;
+  conv_backprop_input_with_slice.set_name(slice.name());
+  conv_backprop_input_with_slice.set_device(contraction.device());
+
+  if (IsConv2DBackpropInput(contraction)) {
+    conv_backprop_input_with_slice.set_op("Conv2DBackpropInput");
+  } else if (IsConv3DBackpropInputV2(contraction)) {
+    conv_backprop_input_with_slice.set_op("Conv3DBackpropInputV2");
+  } else {
+    ITEX_CHECK(false) << "Unsupported fusion";
+  }
+
+  CopyAllAttrs(contraction, &conv_backprop_input_with_slice);
+
+  auto const_slice_name = slice.input(1);
+  auto* const_slice_node_view = graph_view.GetNode(const_slice_name);
+  auto* const_slice_node = const_slice_node_view->node();
+
+  // set pad as a new attribute of conv3d
+  Tensor const_slice_tensor;
+  std::vector<int> pad_value;
+  if (const_slice_tensor.FromProto(
+          const_slice_node->attr().at("value").tensor())) {
+    int length = const_slice_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      pad_value.push_back(const_slice_tensor.flat<int32>()(i));
+      pad_value.push_back(const_slice_tensor.flat<int32>()(i));
+    }
+  }
+
+  // check name and attr
+  auto* new_attr = conv_backprop_input_with_slice.mutable_attr();
+  SetAttrValue("EXPLICIT", &(*new_attr)["padding"]);
+  SetAttrValue(pad_value, &(*new_attr)["explicit_paddings"]);
+
+  // Add new Const op.
+  auto input_size_name = contraction.input(0);
+  auto* input_size_node_view = graph_view.GetNode(input_size_name);
+  auto* input_size_node = input_size_node_view->node();
+  Tensor input_size_tensor;
+  std::vector<int> input_size_value;
+
+  if (input_size_tensor.FromProto(
+          input_size_node->attr().at("value").tensor())) {
+    int length = input_size_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      if (i == 0 || i == length - 1) {
+        input_size_value.push_back(input_size_tensor.flat<int32>()(i));
+      } else {
+        input_size_value.push_back(input_size_tensor.flat<int32>()(i) - 2);
+      }
+    }
+  }
+
+  Tensor input_size_subtract_slice_tensor =
+      Tensor(DT_INT32, input_size_tensor.shape());
+  int length = input_size_tensor.NumElements();
+  for (int i = 0; i < length; i++) {
+    input_size_subtract_slice_tensor.flat<int32>()(i) = input_size_value[i];
+  }
+
+  NodeDef new_const_op;
+  new_const_op.set_op("Const");
+  new_const_op.set_name(input_size_name + "subtract_slice");
+  new_const_op.set_device(contraction.device());
+
+  AttrValue attr_type;
+  attr_type.set_type(DT_INT32);
+  AttrValue attr_tensor;
+  TensorProto* t = attr_tensor.mutable_tensor();
+  input_size_subtract_slice_tensor.AsProtoTensorContent(t);
+  new_const_op.mutable_attr()->insert({"dtype", attr_type});
+  new_const_op.mutable_attr()->insert({"value", attr_tensor});
+
+  conv_backprop_input_with_slice.add_input(new_const_op.name());
+  conv_backprop_input_with_slice.add_input(contraction.input(1));
+  conv_backprop_input_with_slice.add_input(contraction.input(2));
+
+  Status status;
+  mutation->AddNode(std::move(conv_backprop_input_with_slice), &status);
+  mutation->AddNode(std::move(new_const_op), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.slice] = true;
+  (*nodes_to_delete)[matched.contraction] = true;
+
+  return Status::OK();
+}
+
 // Mul + AddN + TrainingOp.
 Status AddFusedTrainingNode(RemapperContext* ctx,
                             const FusedTrainingOp& matched,
@@ -3518,6 +3826,64 @@ Status AddRandomWithComparisonAndCastNode(
   (*nodes_to_delete)[matched.random] = true;
   (*nodes_to_delete)[matched.comparison] = true;
   (*invalidated_nodes)[matched.cast] = true;
+
+  return Status::OK();
+}
+
+Status AddPadConvFwdBwd(RemapperContext* ctx, const PadConvFwdBwd& matched,
+                        std::vector<bool>* invalidated_nodes,
+                        std::vector<bool>* nodes_to_delete) {
+  GraphDef* graph = ctx->graph_view.graph();
+
+  const NodeDef& input_pad_val_node = graph->node(matched.input_pad_val);
+
+  Tensor pad_value_tensor;
+  std::vector<int> pad_value;
+  if (pad_value_tensor.FromProto(
+          input_pad_val_node.attr().at("value").tensor())) {
+    int length = pad_value_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      pad_value.push_back(pad_value_tensor.flat<int32>()(i));
+    }
+  }
+
+  auto* conv2d_view = ctx->graph_view.GetNode(matched.conv2d);
+  auto* conv2d_bwd_filter_view =
+      ctx->graph_view.GetNode(matched.conv2d_bwd_filter);
+  auto* pad_view = ctx->graph_view.GetNode(matched.pad);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+
+  auto* conv2d_node_new_attr = conv2d_view->node()->mutable_attr();
+  SetAttrValue("EXPLICIT", &(*conv2d_node_new_attr)["padding"]);
+  SetAttrValue(pad_value, &(*conv2d_node_new_attr)["explicit_paddings"]);
+
+  auto* conv2d_bwd_filter_node_new_attr =
+      conv2d_bwd_filter_view->node()->mutable_attr();
+  SetAttrValue("EXPLICIT", &(*conv2d_bwd_filter_node_new_attr)["padding"]);
+  SetAttrValue(pad_value,
+               &(*conv2d_bwd_filter_node_new_attr)["explicit_paddings"]);
+
+  const NodeDef& pad_node = graph->node(matched.pad);
+  string pad_name = pad_node.name();
+  string bn_name = pad_node.input(0);
+  TensorId bn_id = ParseTensorName(bn_name);
+
+  mutation->AddOrUpdateRegularFanin(conv2d_view, 0, bn_id);
+  mutation->AddOrUpdateRegularFanin(conv2d_bwd_filter_view, 0, bn_id);
+
+  auto* const_shape_0_view = ctx->graph_view.GetNode(matched.const_shape_0);
+  mutation->AddControllingFanin(const_shape_0_view, bn_name);
+  mutation->RemoveControllingFanin(const_shape_0_view, pad_name);
+
+  auto* const_shape_1_view = ctx->graph_view.GetNode(matched.const_shape_1);
+  mutation->AddControllingFanin(const_shape_1_view, bn_name);
+  mutation->RemoveControllingFanin(const_shape_1_view, pad_name);
+
+  TF_RETURN_IF_ERROR(mutation->Apply());
+
+  (*nodes_to_delete)[matched.input_pad_val] = true;
+  (*nodes_to_delete)[matched.pad] = true;
 
   return Status::OK();
 }
@@ -4061,6 +4427,32 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
     // The entry of the fusion pass. It will iterate all fusion registered.
     TF_ABORT_IF_ERROR(LaunchPatternMatcher(&ctx, i, &invalidated_nodes,
                                            &nodes_to_delete, is_full));
+
+    if (!is_full) {
+      // Only run in llga mode
+      // TODO(itex): create other names for functions below
+      bool onednn_graph_all_type_flag =
+          GetOptimizerConfigFlags().enable_onednn_graph_all_type;
+      bool onednn_graph_compiler_backend_flag =
+          GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
+      if (!onednn_graph_all_type_flag || !onednn_graph_compiler_backend_flag) {
+        continue;
+      }
+
+      ConvBackpropInputWithSlice conv_with_slice;
+      if (FindConv2DBackpropInputWithSliceLLGA(ctx, i, &conv_with_slice)) {
+        TF_ABORT_IF_ERROR(AddConv2DBackpropInputWithSliceNodeLLGA(
+            &ctx, conv_with_slice, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      PadConvFwdBwd pad_conv_fwd_bwd;
+      if (FindPadConvFwdBwd(ctx, i, &pad_conv_fwd_bwd)) {
+        TF_ABORT_IF_ERROR(AddPadConvFwdBwd(
+            &ctx, pad_conv_fwd_bwd, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+    }
 
     if (is_full) {
       // Remap {Conv2D,DepthwiseConv2D,Conv3D,MatMul}+BiasAdd into the

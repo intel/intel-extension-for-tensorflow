@@ -454,7 +454,16 @@ class OneDnnGraphWithLayoutOp : public OpKernel {
                        mutable_input_tensor.shape()));
         }
 
-        ctx->set_output(index, ctx->input(input_index));
+        const Tensor& src_tensor = ctx->input(input_index);
+        TensorShape src_shape = src_tensor.shape();
+
+        if (tf_shape != src_shape) {
+          Tensor dst_tensor;
+          ITEX_CHECK(dst_tensor.CopyFrom(src_tensor, tf_shape));
+          ctx->set_output(index, dst_tensor);
+        } else {
+          ctx->set_output(index, src_tensor);
+        }
 
         AllocateMetaData(ctx, index, dnn_shape_dst);
         l_output_tensor.emplace_back(

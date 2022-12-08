@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/remapper/constant_names.h"
 #include "itex/core/graph/remapper/fusion.h"
 #include "itex/core/graph/remapper/remapper.h"
@@ -30,7 +31,16 @@ namespace graph {
 class InstanceNormFusion : public Fusion {
  public:
   InstanceNormFusion() : Fusion() {
-    is_partial = true;
+    // bring it back once we find gc instance norm has bad performance.
+    bool onednn_graph_all_type_flag =
+        GetOptimizerConfigFlags().enable_onednn_graph_all_type;
+    bool onednn_graph_compiler_backend_flag =
+        GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
+    if (onednn_graph_all_type_flag && onednn_graph_compiler_backend_flag) {
+      is_partial = false;
+    } else {
+      is_partial = true;
+    }
     using utils::NodeStatus;
     using utils::OpTypePattern;
     OpTypePattern input = {kAny, "input", NodeStatus::kRemain};
