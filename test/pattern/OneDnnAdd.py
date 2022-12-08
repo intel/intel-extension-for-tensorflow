@@ -46,6 +46,7 @@ class OneDnnAddTest(test_util.TensorFlowTestCase):
 
     with self.session(use_gpu=True) as sess:
       os.environ['ITEX_REMAPPER'] = '1'
+      os.environ['ITEX_LAYOUT_OPT'] = '1'
       start_time = time.time()
       ret_gpu = sess.run(fused, feed_dict={x: x_arr, y: y_arr, w: w_arr}, options=run_options, run_metadata=metadata)
       duration = time.time() - start_time

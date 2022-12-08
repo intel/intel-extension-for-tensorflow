@@ -40,6 +40,7 @@ class OneDnnLeakyReluTest(test_util.TensorFlowTestCase):
 
     with self.session(use_gpu=True) as sess:
       os.environ['ITEX_REMAPPER'] = '1'
+      os.environ['ITEX_LAYOUT_OPT'] = '1'
       start_time = time.time()
       ret_np = sess.run(mid, options=run_options, run_metadata=metadata)
       ret_gpu = sess.run(output, options=run_options, run_metadata=metadata)
