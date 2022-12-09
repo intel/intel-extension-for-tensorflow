@@ -17,6 +17,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test
 
 from tensorflow import test
 from intel_extension_for_tensorflow.python.version import __version__
@@ -45,7 +46,8 @@ class VersionTest(test_util.TensorFlowTestCase):
         # v1.1.1-abcd1234
         self.assertRegex(GIT_VERSION, r'v([0-9]+.){2}[0-9]+-[0-9a-z]{8}')
         # gcc-1.1.1, dpcpp-a.0.1
-        self.assertRegex(COMPILER_VERSION, r'gcc-([0-9]+.){2}[0-9]+, dpcpp-([0-9a-z].)+[0-9]+')
+        if test.is_gpu_available():
+            self.assertRegex(COMPILER_VERSION, r'gcc-([0-9]+.){2}[0-9]+, dpcpp-([0-9a-z].)+[0-9]+')
         # v1.1.1-abcd1234
         self.assertRegex(ONEDNN_GIT_VERSION, r'v([0-9]+.){2}[0-9]+-[0-9a-z]{8}')
         self.assertNotEmpty(TF_COMPATIBLE_VERSION)
