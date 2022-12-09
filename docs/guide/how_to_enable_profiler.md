@@ -3,7 +3,7 @@
 ## Usage
 Intel® Extension for TensorFlow* provides support for TensorFlow* [Profiler](https://www.tensorflow.org/guide/profiler), and is enabled by exposing three environment variables (`export ZE_ENABLE_TRACING_LAYER=1`, `export UseCyclesPerSecondTimer=1`, `export ENABLE_TF_PROFILER=1`).
 
-You use the profiler for tracking the performance of the TensorFlow* models running on the Intel GPU.
+You can use the profiler to track the performance of the TensorFlow* models running on the Intel GPU.
 
 The GPU profiler supports the following profiling items:
 * kernel_stats
@@ -52,7 +52,7 @@ The GPU profiler supports the following profiling items:
   ```
 
 * Run TensorBoard:  
-  After executing the above sample code, you will find the log files in ./data/logs/profiler_demo, run TensorBoard with following command:  
+  After executing the above sample code, you will find the log files in ./data/logs/profiler_demo. Then, run TensorBoard with following command:  
   ```
   tensorboard --logdir=./data/logs/profiler_demo --bind_all
   ```
@@ -70,6 +70,6 @@ The GPU profiler supports the following profiling items:
 
 
 ## FAQ
-  1.If you see "No dashboards are activate for the current data set." the first time you enter the Tensorboard in the browser.
+  1.If you see "No dashboards are activated for the current data set." the first time you enter the Tensorboard in the browser:
   
      Refresh the page, and the profile should be shown.

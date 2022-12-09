@@ -2,7 +2,7 @@
 
 ## Overview
 
-Intel® Extension for TensorFlow* provides environment varaibles for user to quickly adjust the configuration without any model code changes. Not all configuration options can be set by environment variable. For the rest, you'll need to use the Python APIs. The priority for option setting is  Python APIs > Environment Variables > Default value. 
+Intel® Extension for TensorFlow* provides environment variables for users to quickly adjust the configuration without any model code changes. Not all configuration options can be set via environment variable. For the rest, you'll need to use the Python APIs. The priority for setting values is Python APIs > Environment Variables > Default value. 
 
 ## Environment Variables only
 
@@ -14,10 +14,10 @@ Intel® Extension for TensorFlow* provides environment varaibles for user to qui
 | ITEX_VERBOSE                       | `1`                       | Same semantics as `TF_CPP_MAX_VLOG_LEVEL`, but only works with Intel® Extension for TensorFlow* |
 
 #### ITEX_VERBOSE level definition
-* Level 1 is basic verbose information including device, graph, kernel and other infrastructure initialization log, that is displayed only once.
-* Level 2 is help information including performance, functionality, debug and error log, that is displayed only once.
-* Level 3 is normal tips or kernel execution log. It is reported multiple times across different iterations. Note that Intel® Extension for TensorFlow* will generate large size log using this level.
-* Level 4 is for graph information. This level can dump node or whole graph information with large size. Example:
+* Level 1 is basic verbose information including device, graph, kernel and other infrastructure initialization logs, displayed only once.
+* Level 2 is help information including performance, functionality, debug and error logs, displayed only once.
+* Level 3 is normal tips or kernel execution logs. It is reported multiple times across different iterations. Note that Intel® Extension for TensorFlow* will generate large size logs using this level.
+* Level 4 is for graph information. This level can dump node or large-size whole graph information. Example:
 ```
 node {
   name: "bert/encoder/layer_0/attention/output/dense/BiasAdd"
@@ -39,7 +39,7 @@ node {
   }
 }
 ```
-* Level 5 or higher level are for the rest situations.
+* Levels 5 or higher are used for any remaining situations.
 
 
 ## Environment Variables with Python APIs
@@ -53,4 +53,3 @@ Refer to [Python APIs and preserved environment variable Names](python_api.md#py
 ### Auto Mixed Precision Options
 
 Refer to [Advanced Auto Mixed Precision](advanced_auto_mixed_precision.md).
-

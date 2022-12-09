@@ -1,10 +1,10 @@
 # Graph fusion
 
-Intel® Extension for TensorFlow\* provides graph optimization to fuse specified operator patterns into new single operator for better performance.
+Intel® Extension for TensorFlow\* provides graph optimization to fuse specified operator patterns into a new single operator for better performance.
 
 ## Basic fusion
 
-The basic list of supported fusions are shown below. These fusions requires  input and output the same data type.
+The basic list of supported fusions is shown below. These fusions require input and output of the same data type.
 
 | Pattern | Operator number |
 | -- | -- |
@@ -21,7 +21,7 @@ The basic list of supported fusions are shown below. These fusions requires  inp
 | `Conv+Bias+Add` | 3 |
 | `Conv`+`Bias`+`Add`+(`Relu`, `Relu6`, `Elu`, `LeakyRelu`, `Gelu_erf`, `Gelu_tanh`, `Tanh`, `Sigmoid`) | 4 |
 | `MatMul`+`Bias`+`Add` | 3 |
-| `MatMul`+`Bias`+`Add`+(`Relu`, `Relu6`, `Elu`,  `Gelu_erf`, `Gelu_tanh`, `Tanh`, `Sigmoid`) | 4 |
+| `MatMul`+`Bias`+`Add`+(`Relu`, `Relu6`, `Elu`,  `Gelu_erf`, `Gelu_tanh`, `Tanh`, `Sigmoid`) | 4 |
 | `MatMul+BiasAddGrad` | 2 |
 | `ConvGradFilter`+`BiasAddGrad` | 2 |
 | `Pad`+`Conv` | 2 |
@@ -31,7 +31,7 @@ The basic list of supported fusions are shown below. These fusions requires  inp
 
 ## Mixed data type fusion
 
-As stock TensorFlow only supports same input output data type, inserting a cast node during `BF16` inference and training may break the existing fusion pattern and impact performance.
+As stock TensorFlow only supports same-data-type input and output, inserting a cast node during `BF16` inference and training may break the existing fusion pattern and impact performance.
 
 Intel® Extension for TensorFlow\* provides mixed data type fusion, which removes the additional data type conversions on the graph level.
 

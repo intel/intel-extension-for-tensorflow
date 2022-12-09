@@ -2,7 +2,7 @@
 
 ## Overview
 
-Intel® Extension for TensorFlow* provides flexible Python APIs for configuring to different kinds of application scenarios.
+Intel® Extension for TensorFlow* provides flexible Python APIs to configure settings for different types of application scenarios.
 
 ##### Prerequisite: `import intel_extension_for_tensorflow as itex`
 
@@ -18,7 +18,7 @@ Intel® Extension for TensorFlow* provides flexible Python APIs for configuring 
 
 ## Python APIs and Environment Variable Names
 
-You can easily configure and tune Intel® Extension for TensorFlow* run models using Python APIs and environment variable. We recommend Python APIs.
+You can easily configure and tune Intel® Extension for TensorFlow* run models using Python APIs and environment variables. We recommend Python APIs.
 
 ##### Python APIs and preserved environment variable Names
 
@@ -29,13 +29,13 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 | `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION` | `0`<br>`1`*<br>`1`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Ponte Vecchio) and default `OFF` in Intel CPU by hardware attributes|
 
 **Notes:**
-1. The priority for above value setting is Python APIs > Environment Variables > Default value.
+1. The priority for setting values is as follows: Python APIs > Environment Variables > Default value.
 2. If GPU backend was installed by `pip install intel-extension-for-tensorflow[gpu]`, the default backend will be `GPU`. If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, the default backend is `CPU`.
 
 ## Set Intel® Extension for TensorFlow* Backend
 
 ### itex.set_backend
-Intel® Extension for TensorFlow* provides multiple types of backends with different optimization options to execute. Only one backend is allowed in whole process, and only can be configured once before XPU device initialization.
+Intel® Extension for TensorFlow* provides multiple types of backends with different optimization options to execute. Only one backend is allowed in the whole process, and this can only be configured once before XPU device initialization.
 
 Set `CPU`/`GPU` with `config` as specific XPU backend type for execution.
 
@@ -48,7 +48,7 @@ itex.set_backend (
 
 | Args                   |                                     Description                         |
 | -----------------------| ------------------------------------------------------------------------|
-| `backend`      | The backend type to set. The default value is `CPU`.<br>  <br> * If `GPU`, the XPU backend type is set as `GPU` and all ops will be executed on concrete GPU backend.<br> * If `CPU`, the XPU backend type is set as `CPU` and and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, it's invalid to set XPU backend type as `GPU`.|
+| `backend`      | The backend type to set. The default value is `CPU`.<br>  <br> * If `GPU`, the XPU backend type is set as `GPU` and all ops will be executed on concrete GPU backend.<br> * If `CPU`, the XPU backend type is set as `CPU` and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, it's invalid to set XPU backend type as `GPU`.|
 | `config`| The backend config to set. Refer to [itex.ConfigProto](#itex-config-protocol) for details.|
 
 | Raises                   |                                     Description                         |
@@ -68,7 +68,7 @@ import intel_extension_for_tensorflow as itex
 
 backend_cfg=itex.ConfigProto(gpu_options=itex.GPUOptions(onednn_graph=itex.ON))
 
-# Only allow setting once in backend device initialization
+# Only allow this setting once in backend device initialization
 # All operators will be executed in `GPU` backend with the option setting.
 itex.set_backend('GPU', backend_cfg)
 
@@ -79,7 +79,7 @@ with tf.device("/xpu:0"):
     print(add_func(1, 1))
 ```
 
-II. Set the specific XPU backend type and config for not explicitly specified device.
+II. Set the specific XPU backend type and config for a device not explicitly specified.
 
 ```python
 # TensorFlow graph mode or eager mode
@@ -111,21 +111,21 @@ itex.get_backend ()
 | -----------------------| ------------------------------------------------------------------------|
 | `Returns`      | Return the current XPU backend type string.|
 
-The following example demonstrates set the XPU backend type as `GPU` and check its value on the machine, while GPU backend is installed by `pip install intel-extension-for-tensorflow[gpu]`.
+The following example demonstrates setting the XPU backend type as `GPU` and checking its value on the machine, while GPU backend is installed by `pip install intel-extension-for-tensorflow[gpu]`.
 
 ```
 # TensorFlow and Intel® Extension for TensorFlow*
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
-# only allow setting once in backend device initialization
+# Only allow setting once in backend device initialization
 itex.set_backend('GPU')
 
 print(itex.get_backend())
 ```
 Then the log will output `GPU`.
 
-## itex Config Protocol
+## Itex Config Protocol
 **itex.ConfigProto: ProtocolMessage for XPU configuration under different types of backends and optimization options.**
 
 **enum class**
@@ -133,7 +133,7 @@ Then the log will output `GPU`.
 | enum class                                                   | Descriptions                                                 |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | enum ITEXDataType {<br/>  DEFAULT_DATA_TYPE = 0;<br/>  FLOAT16 = 1;<br/>  BFLOAT16 = 2;<br/>} | Datatype options of advanced auto mixed precision. You could set datatype for advanced auto mixed precision on CPUs or GPUs. |
-| enum Toggle {<br/>    DEFAULT = 0;<br/>    ON = 1;<br/>    OFF = 2;<br/>} | Configuration options for the graph optimizer. Unless otherwise noted, these  configuration options do not apply to explicitly triggered optimization passes in the optimizers field. |
+| enum Toggle {<br/>    DEFAULT = 0;<br/>    ON = 1;<br/>    OFF = 2;<br/>} | Configuration options for the graph optimizer. Unless otherwise noted, these configuration options do not apply to explicitly triggered optimization passes in the optimizers field. |
 
 **Functions**
 
@@ -156,10 +156,10 @@ Then the log will output `GPU`.
 
 | Attribute                   |                                     Description                         |
 | -----------------------| ------------------------------------------------------------------------|
-| `onednn_graph` |Toggle onednn_graph<br><br>Override the environment variable `ITEX_ONEDNN_GRAPH`. Set to enable or disable oneDNN graph(LLGA) optimization.The default value is `OFF`.<br>  <br> * If `ON`, will enable oneDNN graph in Intel® Extension for TensorFlow*.<br> * If `OFF`, will disable oneDNN graph in Intel® Extension for TensorFlow*.|
-| `layout_opt ` |Toggle layout_opt <br><br>Override the environment variable `ITEX_LAYOUT_OPT`. Set if oneDNN layout optimization is enabled to benefit from oneDNN block format.<br> Enable the oneDNN layout or not. The default value is `OFF`.<br>  <br> * If `ON`, will enable oneDNN layout optimization.<br> * If `OFF`, will disable oneDNN layout optimization.|
-| `remapper` |Toggle remapper <br/><br/>Override the environment variable `ITEX_REMAPPER`. Set if remapper optimization is enabled to benefit from sub-graph fusion.<br/> Enable the remapper or not. The default value is `ON`.<br/>  <br/> * If `ON`, will enable remapper optimization.<br/> * If `OFF`, will disable remapper optimization.|
-| `auto_mixed_precision` |Toggle auto_mixed_precision <br/><br/>Override the environment variable `ITEX_AUTO_MIXED_PRECISION`. Set if mixed precision is enabled to benefit from using both 16-bit and 32-bit floating-point types to accelerate modes.<br/>Enable the  auto mixed precision or not. The default value is `OFF`.<br/>  <br/> * If `ON`, will enable auto mixed precision optimization.<br/> * If `OFF`, will disable auto mixed precision optimization.|
+| `onednn_graph` |Toggle onednn_graph<br><br>Override the environment variable `ITEX_ONEDNN_GRAPH`. Set to enable or disable oneDNN graph(LLGA) optimization. The default value is `OFF`.<br>  <br> * If `ON`, will enable oneDNN graph in Intel® Extension for TensorFlow*.<br> * If `OFF`, will disable oneDNN graph in Intel® Extension for TensorFlow*.|
+| `layout_opt ` |Toggle layout_opt <br><br>Override the environment variable `ITEX_LAYOUT_OPT`. Set if oneDNN layout optimization is enabled to benefit from oneDNN block format.<br> Enable or disable the oneDNN layout. The default value is `OFF`.<br>  <br> * If `ON`, will enable oneDNN layout optimization.<br> * If `OFF`, will disable oneDNN layout optimization.|
+| `remapper` |Toggle remapper <br/><br/>Override the environment variable `ITEX_REMAPPER`. Set if remapper optimization is enabled to benefit from sub-graph fusion.<br/> Enable or disable the remapper. The default value is `ON`.<br/>  <br/> * If `ON`, will enable remapper optimization.<br/> * If `OFF`, will disable remapper optimization.|
+| `auto_mixed_precision` |Toggle auto_mixed_precision <br/><br/>Override the environment variable `ITEX_AUTO_MIXED_PRECISION`. Set if mixed precision is enabled to benefit from using both 16-bit and 32-bit floating-point types to accelerate modes.<br/>Enable or disable the  auto mixed precision. The default value is `OFF`.<br/>  <br/> * If `ON`, will enable auto mixed precision optimization.<br/> * If `OFF`, will disable auto mixed precision optimization.|
 
 Examples:
 
@@ -238,7 +238,7 @@ N/A
 | `VERSION`      | The release version. For example, `0.3.0`|
 | `GIT_VERSION`      | The git version. For example, `v0.3.0-7112d33`|
 | `ONEDNN_GIT_VERSION`      | The oneDNN git version. For example, `v2.5.2-a930253`|
-| `COMPILER_VERSION`      | The complier version. For example, `gcc-8.2.1 20180905, dpcpp-2022.1.0.122`|
+| `COMPILER_VERSION`      | The compiler version. For example, `gcc-8.2.1 20180905, dpcpp-2022.1.0.122`|
 | `TF_COMPATIBLE_VERSION`      | The compatible TensorFlow versions. For example, `tensorflow >= 2.5.0, < 2.7.0, !=2.5.3, ~=2.6`|
 
 Example:
