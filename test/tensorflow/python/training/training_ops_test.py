@@ -90,6 +90,21 @@ class TrainingOpsTest(TensorFlowTestCase):
                                          (-0.5), out)
       self.assertAllCloseAccordingToType(y + grad * grad, self.evaluate(accum))
 
+  def _testTypesForAdagradV2(self, x, y, lr, epsilon, grad, use_gpu=None):
+    self.setUp()
+    with self.session(use_gpu=use_gpu):
+      var = variables.VariableV1(x)
+      accum = variables.VariableV1(y)
+      self.evaluate(variables.global_variables_initializer())
+
+      self.assertAllCloseAccordingToType(x, self.evaluate(var))
+      apply_adagrad = training_ops.apply_adagrad_v2(var, accum, lr, epsilon, grad)
+      out = self.evaluate(apply_adagrad)
+      self.assertShapeEqual(out, apply_adagrad)
+      self.assertAllCloseAccordingToType(x - lr * grad * (((y + grad * grad)**
+                                        (0.5) + epsilon)**(-1)), out)
+      self.assertAllCloseAccordingToType(y + grad * grad, self.evaluate(accum))
+
   def _testTypesForFtrl(self,
                         x,
                         y,
@@ -205,6 +220,18 @@ class TrainingOpsTest(TensorFlowTestCase):
       lr = np.array(2.0).astype(dtype)
       grad = np.arange(100).astype(dtype)
       self._testTypesForAdagrad(x, y, lr, grad, use_gpu)
+
+  @test_util.run_v1_only("ApplyAdagradV2 op returns a ref, so it is not "
+                         "supported in eager mode.")
+  def testApplyAdagradV2(self):
+    for (dtype, use_gpu) in itertools.product(
+        [np.float16, np.float32, np.float64], [False, True]):
+      x = np.arange(100).astype(dtype)
+      y = np.arange(1, 101).astype(dtype)
+      lr = np.array(2.0).astype(dtype)
+      epsilon = np.array(1.0).astype(dtype)
+      grad = np.arange(100).astype(dtype)
+      self._testTypesForAdagradV2(x, y, lr, epsilon, grad, use_gpu)
 
   @test_util.run_v1_only("ApplyFtrl op returns a ref, so it is not "
                          "supported in eager mode.")
@@ -437,6 +464,102 @@ class TrainingOpsTest(TensorFlowTestCase):
       grad = np.array(grad_val).astype(dtype)
       indices = np.array([0, 2]).astype(index_type)
       self._testTypesForSparseFtrlMultiplyLinearByLr(x, y, z, lr, grad, indices)
+
+  def resource_sparse_apply_proximal_adagrad_np(self, var, accum,
+                                                lr, l1, l2, grad, i, index):
+    accum[index] += grad[i] * grad[i]
+    lr_update = lr * (accum[index])**(-0.5)
+    prox_v = var[index]
+    prox_v -= grad[i] * lr_update
+    var = np.sign(prox_v) * np.max(np.abs(prox_v) - lr_update * l1, 0) * (
+          (1 + lr_update * l2)**(-1))
+    return var
+
+  def _testTypesForResourceSparseApplyProximalAdagrad(self, dtype, index_type,
+                                                      var_np, accum_np, lr_np,
+                                                      l1_np, l2_np, grad_np,
+                                                      indices_np, use_gpu):
+    self.setUp()
+    with self.session(use_gpu=use_gpu):
+      var = resource_variable_ops.ResourceVariable(var_np)
+      accum = resource_variable_ops.ResourceVariable(accum_np)
+      lr = constant_op.constant(lr_np, dtype=dtype)
+      l1 = constant_op.constant(l1_np, lr.dtype)
+      l2 = constant_op.constant(l2_np, lr.dtype)
+      grad = constant_op.constant(grad_np, lr.dtype)
+      indices = constant_op.constant(indices_np, index_type)
+      self.evaluate(variables.global_variables_initializer())
+
+      op = training_ops.resource_sparse_apply_proximal_adagrad(
+        var.handle, accum.handle, lr, l1, l2, grad, indices)
+      out = self.evaluate(op)
+
+      for (i, index) in enumerate(indices_np):
+        new_var = self.resource_sparse_apply_proximal_adagrad_np(
+          var_np, accum_np, lr_np, l1_np, l2_np, grad_np, i, index)
+        self.assertAllCloseAccordingToType(new_var, self.evaluate(var)[index])
+
+  def testResourceSparseApplyProximalAdagrad(self):
+    for (dtype, index_type, use_gpu) in itertools.product(
+                                        [dtypes.float32, dtypes.float64],
+                                        [dtypes.int32], [False, True]):
+      var = np.array([2.0, 2.0], dtype=dtype.as_numpy_dtype)
+      accum = np.array([1.0, 1.0], dtype=dtype.as_numpy_dtype)
+      lr = np.array(3.0).astype(dtype.as_numpy_dtype)
+      l1 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      l2 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      grad = np.array([0.0, 0.0], dtype=dtype.as_numpy_dtype)
+      indices = np.array([0, 1]).astype(index_type.as_numpy_dtype)
+      self._testTypesForResourceSparseApplyProximalAdagrad(dtype, index_type,
+        var, accum, lr, l1, l2, grad, indices, use_gpu)
+
+  def sparse_apply_proximal_adagrad_np(self, var, accum, lr, l1,
+                                       l2, grad, i, index):
+    accum[index] += grad[i] * grad[i]
+    lr_update = lr * (accum[index])**(-0.5)
+    prox_v = var[index]
+    prox_v -= grad[i] * lr_update
+    var = np.sign(prox_v) * np.max(np.abs(prox_v) - lr_update * l1, 0) * (
+          (1 + lr_update * l2)**(-1))
+    return var
+
+  def _testTypesForSparseApplyProximalAdagrad(self, dtype, index_type,
+    var_np, accum_np, lr_np, l1_np, l2_np, grad_np, indices_np, use_gpu):
+    self.setUp()
+    with self.session(use_gpu=use_gpu):
+      var = variables.VariableV1(var_np)
+      accum = variables.VariableV1(accum_np)
+      lr = constant_op.constant(lr_np, dtype=dtype)
+      l1 = constant_op.constant(l1_np, lr.dtype)
+      l2 = constant_op.constant(l2_np, lr.dtype)
+      grad = constant_op.constant(grad_np, lr.dtype)
+      indices = constant_op.constant(indices_np, index_type)
+      self.evaluate(variables.global_variables_initializer())
+
+      op = training_ops.sparse_apply_proximal_adagrad(var, accum, lr, l1, l2,
+                                                      grad, indices)
+      out = self.evaluate(op)
+
+      for (i, index) in enumerate(indices_np):
+        new_var = self.sparse_apply_proximal_adagrad_np(var_np,
+        accum_np, lr_np, l1_np, l2_np, grad_np, i, index)
+        self.assertAllCloseAccordingToType(new_var, self.evaluate(var)[index])
+
+  @test_util.run_v1_only("SparseApplyProximalAdagrad op returns a ref, so it is not "
+                         "supported in eager mode.")
+  def testSparseApplyProximalAdagrad(self):
+    for (dtype, index_type, use_gpu) in itertools.product(
+         [dtypes.float32, dtypes.float64],
+         [dtypes.int32], [False, True]):
+      var = np.array([2.0, 2.0], dtype=dtype.as_numpy_dtype)
+      accum = np.array([1.0, 1.0], dtype=dtype.as_numpy_dtype)
+      lr = np.array(3.0).astype(dtype.as_numpy_dtype)
+      l1 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      l2 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      grad = np.array([0.0, 0.0], dtype=dtype.as_numpy_dtype)
+      indices = np.array([0, 1]).astype(index_type.as_numpy_dtype)
+      self._testTypesForSparseApplyProximalAdagrad(dtype, index_type,
+        var, accum, lr, l1, l2, grad, indices, use_gpu)
 
   @test_util.run_v1_only("ApplyAdam op returns a ref, so it is not "
                          "supported in eager mode.")
