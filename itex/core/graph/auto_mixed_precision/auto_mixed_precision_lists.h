@@ -267,7 +267,6 @@ class AutoMixedPrecisionLists {
       "CheckNumerics",
       "ClipByValue",
       "Concat",
-      "ConcatV2",
       "DepthToSpace",
       "DynamicPartition",
       "DynamicStitch",
@@ -311,7 +310,6 @@ class AutoMixedPrecisionLists {
       "NotEqual",
       "OneHot",
       "OnesLike",
-      "Pack",
       "Pad",
       "PadV2",
       "PreventGradient",
@@ -320,7 +318,6 @@ class AutoMixedPrecisionLists {
       "Relu6",
       "Relu6Grad",
       "ReluGrad",
-      "Reshape",
       "ResizeNearestNeighbor",
       "ResizeNearestNeighborGrad",
       "Reverse",
@@ -333,23 +330,18 @@ class AutoMixedPrecisionLists {
       "ShapeN",
       "Sign",
       "Size",
-      "Slice",
       "Snapshot",
       "SpaceToBatch",
       "SpaceToBatchND",
       "SpaceToDepth",
       "Split",
       "SplitV",
-      "Squeeze",
       "StopGradient",
       "StridedSlice",
       "StridedSliceGrad",
       "Switch",
-      "Tile",
       "TopK",
       "TopKV2",
-      "Transpose",
-      "Unpack",
       "Where",
       "ZerosLike",
   };
@@ -361,11 +353,13 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
 
   gtl::FlatSet<string> AllowList() override {
     // Add ops supported only by GPU devices.
-    auto add_list_ops = gtl::FlatSet<string>{
-        "Einsum",
-        "_ITEXFusedAddV2WithSoftmax",
-        "Mean",
-    };
+    auto add_list_ops =
+        gtl::FlatSet<string>{"Einsum",    "_ITEXFusedAddV2WithSoftmax",
+                             "Mean",      "Tile",
+                             "ConcatV2",  "Reshape",
+                             "Transpose", "Pack",
+                             "Unpack",    "Squeeze",
+                             "Slice"};
     for (auto op : add_list_ops) {
       allow_list_ops.insert(op);
     }
