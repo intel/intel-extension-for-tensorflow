@@ -126,8 +126,7 @@ void TF_InitGraph(TP_OptimizerRegistrationParams* params, TF_Status* status) {
   }
 
   // ITEX + oneDNN Graph INT8 pass doesn't support constant folding pass
-  if (GetOptimizerConfigFlags().enable_onednn_graph &&
-      !GetOptimizerConfigFlags().enable_onednn_graph_all_type) {
+  if (!GetOptimizerConfigFlags().enable_tf_constant_folding) {
     params->optimizer_configs->constant_folding = TF_TriState_Off;
   }
   // Set functions to create a new optimizer.

@@ -46,6 +46,7 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   bool onednn_graph_all_type_flag;
   bool onednn_graph_compiler_backend_flag;
   bool onednn_graph_dnnl_backend_flag;
+  bool tf_constant_folding_flag;
   bool remapper_flag;
   bool auto_mixed_precision_flag;
   bool native_format_flag;
@@ -114,6 +115,10 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
     }
   }
 
+  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("ITEX_TF_CONSTANT_FOLDING",
+                                         enable_itex_tf_constant_folding,
+                                         &tf_constant_folding_flag));
+
   if (USER_IS_SET(native_format)) {
     native_format_flag = false;
     if (USER_IS_ON(native_format)) {
@@ -147,6 +152,7 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
       onednn_graph_compiler_backend_flag;
   opt_config_flags->enable_onednn_graph_dnnl_backend =
       onednn_graph_dnnl_backend_flag;
+  opt_config_flags->enable_tf_constant_folding = tf_constant_folding_flag;
   opt_config_flags->enable_remapper = remapper_flag;
   opt_config_flags->enable_auto_mixed_precision = auto_mixed_precision_flag;
   opt_config_flags->enable_native_format = native_format_flag;

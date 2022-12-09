@@ -112,7 +112,7 @@ string GetOpInLLGAStyle(const utils::MutableNodeView* node_view) {
   } else if (op == "Conv2DBackpropInput") {
     const NodeDef* size_node =
         node_view->GetRegularFanin(0).node_view()->node();
-    bool is_input_sizes_constant = IsConstant(*size_node);
+    bool is_input_sizes_constant = IsAnyConst(*size_node);
     if (is_input_sizes_constant) {
       op = "Conv2DBackpropInputStatic";
     } else {
@@ -121,7 +121,7 @@ string GetOpInLLGAStyle(const utils::MutableNodeView* node_view) {
   } else if (op == "Conv2DBackpropFilter") {
     const NodeDef* size_node =
         node_view->GetRegularFanin(1).node_view()->node();
-    bool is_input_sizes_constant = IsConstant(*size_node);
+    bool is_input_sizes_constant = IsAnyConst(*size_node);
     if (is_input_sizes_constant) {
       op = "Conv2DBackpropFilterStatic";
     } else {
@@ -143,6 +143,67 @@ string GetOpInLLGAStyle(const utils::MutableNodeView* node_view) {
                << " has 1 corresponding LLGA op: " << op;
 
   return op;
+}
+
+bool CheckDepthwiseINT8Pattern(const OneDnnGraphContext* ctx,
+                               const utils::MutableNodeView* node_view) {
+  auto* reshape_node_down_view = node_view->GetRegularFanin(1).node_view();
+  if (reshape_node_down_view->node()->op() != "Reshape") {
+    return false;
+  }
+  auto* dq_node_view = reshape_node_down_view->GetRegularFanin(0).node_view();
+  if (dq_node_view->node()->op() != "Dequantize") {
+    return false;
+  }
+  auto* q_node_view = dq_node_view->GetRegularFanin(0).node_view();
+  if (q_node_view->node()->op() != "QuantizeV2") {
+    return false;
+  }
+  auto* reshape_node_up_view = q_node_view->GetRegularFanin(0).node_view();
+  if (reshape_node_up_view->node()->op() != "Reshape") {
+    return false;
+  }
+  return true;
+}
+
+// This function is to check whether INT8 graph meets the required pattern. If
+// not, emit warning message to disable constant folding
+void CheckINT8Pattern(const OneDnnGraphContext* ctx,
+                      const utils::MutableNodeView* node_view) {
+  auto* node = node_view->node();
+
+  auto* input_node_0_deq_view = node_view->GetRegularFanin(0).node_view();
+  auto* input_node_0_deq = input_node_0_deq_view->node();
+  if (input_node_0_deq->op() != "Dequantize") {
+    return;
+  }
+
+  auto* input_node_0_q_view =
+      input_node_0_deq_view->GetRegularFanin(0).node_view();
+  auto* input_node_0_q = input_node_0_q_view->node();
+  if (input_node_0_q->op() != "QuantizeV2") {
+    return;
+  }
+
+  auto* input_node_1_deq_view = node_view->GetRegularFanin(1).node_view();
+  auto* input_node_1_deq = input_node_1_deq_view->node();
+  if (input_node_1_deq->op() == "Dequantize") {
+    // Valid INT8 pattern for Conv/MatMul/BatchMatMul
+    return;
+  }
+
+  bool is_valid_depthwise_int8_pattern =
+      CheckDepthwiseINT8Pattern(ctx, node_view);
+
+  if (!is_valid_depthwise_int8_pattern) {
+    ITEX_LOG(ERROR)
+        << "Unsupported INT8 pattern detected! Model performance may be "
+           "damaged. Please disable constant folding pass to get best "
+           "performance. You can do it by \"export "
+           "ITEX_TF_CONSTANT_FOLDING=0\"";
+    ITEX_LOG(WARNING) << "Node: " << node->op() << " " << node->name()
+                      << " will not be converted into INT8 format";
+  }
 }
 
 struct LayerParams {
@@ -187,7 +248,7 @@ bool IsOpOutputFolded(const OneDnnGraphContext* ctx,
 void GetShapeFromConstShapeNode(const NodeDef* node,
                                 std::vector<int64_t>* shape_value,
                                 bool* is_success) {
-  if (!IsConstant(*node)) {
+  if (!IsAnyConst(*node)) {
     *is_success = false;
     return;
   }
@@ -210,7 +271,7 @@ void GetShapeFromConstShapeNode(const NodeDef* node,
 void GetShapeFromConstDataNode(const NodeDef* node,
                                std::vector<int64_t>* shape_value,
                                bool* is_success) {
-  if (!IsConstant(*node)) {
+  if (!IsAnyConst(*node)) {
     *is_success = false;
     return;
   }
@@ -239,7 +300,7 @@ std::vector<int64_t> GetReshapeTargetShape(
   for (int index = 0; index < node_view->NumRegularFanins(); ++index) {
     const NodeDef* size_node =
         node_view->GetRegularFanin(index).node_view()->node();
-    bool is_input_sizes_constant = IsConstant(*size_node);
+    bool is_input_sizes_constant = IsAnyConst(*size_node);
     if (is_input_sizes_constant) {
       Tensor input_shape_tensor;
       TensorProto tensor_proto = size_node->attr().at("value").tensor();
@@ -474,7 +535,7 @@ void SetStaticShapeAttr(const utils::MutableNodeView* node_view,
 
   const NodeDef* size_node =
       node_view->GetRegularFanin(size_input_index).node_view()->node();
-  bool is_input_sizes_constant = IsConstant(*size_node);
+  bool is_input_sizes_constant = IsAnyConst(*size_node);
 
   // Only with const size node, we set attribute for LLGA op, otherwise we
   // pass additional shape tensor in the runtime to inform LLGA op with shape
@@ -588,6 +649,9 @@ Status TranslateConv(const OneDnnGraphContext* ctx, const int node_index,
     onednn_graph_node = nullptr;
     return Status::OK();
   }
+
+  CheckINT8Pattern(ctx, node_view);
+
   return Status::OK();
 }
 
@@ -613,6 +677,8 @@ Status TranslateConv2DBackpropInput(const OneDnnGraphContext* ctx,
     onednn_graph_node = nullptr;
     return Status::OK();
   }
+
+  CheckINT8Pattern(ctx, node_view);
 
   return Status::OK();
 }
@@ -640,6 +706,8 @@ Status TranslateConv2DBackpropFilter(const OneDnnGraphContext* ctx,
     return Status::OK();
   }
 
+  CheckINT8Pattern(ctx, node_view);
+
   return Status::OK();
 }
 
@@ -663,6 +731,9 @@ Status TranslateMatMul(const OneDnnGraphContext* ctx, const int node_index,
       ->set_attr<bool>("transpose_a", static_cast<bool>(transpose_a));
   (*onednn_graph_node)
       ->set_attr<bool>("transpose_b", static_cast<bool>(transpose_b));
+
+  CheckINT8Pattern(ctx, node_view);
+
   return Status::OK();
 }
 
@@ -686,6 +757,9 @@ Status TranslateBatchMatMulV2(const OneDnnGraphContext* ctx,
       ->set_attr<bool>("transpose_a", static_cast<bool>(transpose_a));
   (*onednn_graph_node)
       ->set_attr<bool>("transpose_b", static_cast<bool>(transpose_b));
+
+  CheckINT8Pattern(ctx, node_view);
+
   return Status::OK();
 }
 //////////////////////////////////////////////////////////////////////////
@@ -2624,6 +2698,134 @@ Status DuplicateDequantize(OneDnnGraphContext* ctx) {
   return Status::OK();
 }
 
+Status InsertReshapeForDepthwise(OneDnnGraphContext* ctx) {
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Init(*ctx->graph_view.graph()));
+
+  auto* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  int num_nodes = ctx->graph_view.graph()->node_size();
+  for (int idx = 0; idx < num_nodes; idx++) {
+    auto* node_view = ctx->graph_view.GetNode(idx);
+    auto* node_def = node_view->node();
+
+    if (node_def->op() == "DepthwiseConv2dNative") {
+      NodeDef* weight_node;
+      auto* weight_node_view = node_view->GetRegularFanin(1).node_view();
+      if (weight_node_view->node()->op() == "Dequantize") {
+        // INT8 case with multiplier = 1
+        weight_node_view = weight_node_view->GetRegularFanin(0)
+                               .node_view()
+                               ->GetRegularFanin(0)
+                               .node_view();
+        weight_node = weight_node_view->node();
+        if (weight_node_view->NumRegularFanouts() != 1) {
+          continue;
+        }
+
+        bool is_success;
+        std::vector<int64_t> shape_value;
+        GetShapeFromConstDataNode(weight_node, &shape_value, &is_success);
+        if (!is_success) {
+          continue;
+        }
+
+        auto& src_attr = node_def->attr();
+
+        NodeDef const_up_node;
+        const_up_node.set_op("HostConst");
+        const_up_node.set_name(node_def->name() + "_up_const");
+        const_up_node.set_device(node_def->device());
+
+        AttrValue const_up_attr_type;
+        const_up_attr_type.set_type(DT_INT32);
+        AttrValue const_up_attr_value;
+        TensorProto* const_up_t = const_up_attr_value.mutable_tensor();
+
+        Tensor const_up_value_tensor = Tensor(DT_INT32, TensorShape({3}));
+        int32* const_up_value_tensor_ptr =
+            static_cast<int32*>(const_up_value_tensor.data());
+        const_up_value_tensor_ptr[0] = shape_value[0];
+        const_up_value_tensor_ptr[1] = shape_value[1];
+        const_up_value_tensor_ptr[2] = shape_value[2] * shape_value[3];
+
+        const_up_value_tensor.AsProtoTensorContent(const_up_t);
+        const_up_node.mutable_attr()->insert({"dtype", const_up_attr_type});
+        const_up_node.mutable_attr()->insert({"value", const_up_attr_value});
+
+        NodeDef reshape_up_node;
+        reshape_up_node.set_op("Reshape");
+        reshape_up_node.set_name(node_def->name() + "_up_reshape");
+        reshape_up_node.set_device(node_def->device());
+        reshape_up_node.add_input(weight_node->name());
+        reshape_up_node.add_input(const_up_node.name());
+
+        auto* reshape_up_attr = reshape_up_node.mutable_attr();
+        (*reshape_up_attr)["T"] = src_attr.at("T");
+        SetAttrValue(DT_INT32, &(*reshape_up_attr)["Tshape"]);
+
+        TensorId reshape_up_id = ParseTensorName(reshape_up_node.name());
+        mutation->AddNode(std::move(const_up_node), &status);
+        TF_ABORT_IF_ERROR(status);
+        mutation->AddNode(std::move(reshape_up_node), &status);
+        TF_ABORT_IF_ERROR(status);
+
+        auto* q_node_view = node_view->GetRegularFanin(1)
+                                .node_view()
+                                ->GetRegularFanin(0)
+                                .node_view();
+        mutation->AddOrUpdateRegularFanin(q_node_view, 0, reshape_up_id);
+
+        NodeDef const_down_node;
+        const_down_node.set_op("HostConst");
+        const_down_node.set_name(node_def->name() + "_down_const");
+        const_down_node.set_device(node_def->device());
+
+        AttrValue const_down_attr_type;
+        const_down_attr_type.set_type(DT_INT32);
+        AttrValue const_down_attr_value;
+        TensorProto* const_down_t = const_down_attr_value.mutable_tensor();
+
+        Tensor const_down_value_tensor = Tensor(DT_INT32, TensorShape({4}));
+        int32* const_down_value_tensor_ptr =
+            static_cast<int32*>(const_down_value_tensor.data());
+        const_down_value_tensor_ptr[0] = shape_value[0];
+        const_down_value_tensor_ptr[1] = shape_value[1];
+        const_down_value_tensor_ptr[2] = shape_value[2];
+        const_down_value_tensor_ptr[3] = shape_value[3];
+
+        const_down_value_tensor.AsProtoTensorContent(const_down_t);
+        const_down_node.mutable_attr()->insert({"dtype", const_down_attr_type});
+        const_down_node.mutable_attr()->insert(
+            {"value", const_down_attr_value});
+
+        NodeDef reshape_down_node;
+        reshape_down_node.set_op("Reshape");
+        reshape_down_node.set_name(node_def->name() + "_down_reshape");
+        reshape_down_node.set_device(node_def->device());
+        string deq_name =
+            node_view->GetRegularFanin(1).node_view()->node()->name();
+
+        reshape_down_node.add_input(deq_name);
+        reshape_down_node.add_input(const_down_node.name());
+
+        auto* reshape_down_attr = reshape_down_node.mutable_attr();
+        (*reshape_down_attr)["T"] = src_attr.at("T");
+        SetAttrValue(DT_INT32, &(*reshape_down_attr)["Tshape"]);
+
+        TensorId reshape_down_id = ParseTensorName(reshape_down_node.name());
+        mutation->AddNode(std::move(const_down_node), &status);
+        TF_ABORT_IF_ERROR(status);
+        mutation->AddNode(std::move(reshape_down_node), &status);
+        TF_ABORT_IF_ERROR(status);
+        mutation->AddOrUpdateRegularFanin(node_view, 1, reshape_down_id);
+      }
+    }
+  }
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
+}
+
 // Change the input order of Conv2DBackpropInput
 Status RunPrePass(OneDnnGraphContext* ctx) {
   TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
@@ -2858,6 +3060,10 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
   // often happens when multiple conv/mm share the same weight.
   TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
   TF_ABORT_IF_ERROR(DuplicateQuantize(&ctx));
+
+  // Insert Reshape before & after Q / DQ pair, when depthwise weight K = 1
+  TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
+  TF_ABORT_IF_ERROR(InsertReshapeForDepthwise(&ctx));
 
   TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
   TF_ABORT_IF_ERROR(RunRewritePass(&ctx));
