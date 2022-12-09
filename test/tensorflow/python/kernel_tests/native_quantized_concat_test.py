@@ -29,7 +29,7 @@ class QuantizedConcat(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testFull(self):
-    if not test_lib.is_gpu_available():
+    if not test.is_gpu_available():
       self.skipTest("Skip on CPU due to PreCI reports the issue which cannot be reproduced locally")
 
     test_shape = [[1,2], [3,4], [1,2,3], [2,2,3], [2,3,4], [3,4,5], [2,2,2,3], [2,2,2,2,3]]

@@ -32,7 +32,7 @@ function real_path() {
 }
 
 function get_git_desc() {
-  git_version=`git describe --always`
+  git_version=`git describe --always --abbrev=8`
   echo $git_version
 }
 
