@@ -49,6 +49,13 @@ using TranslationMap =
                                         const utils::MutableNodeView* node_view,
                                         dnnl::graph::op** onednn_graph_node)>>;
 
+// These ops are unlikely to appear in oneDNN Graph INT8 partitions. To reduce
+// the possibliliy in creating oneDNN Graph ops, we won't map those ops by
+// default.
+static const std::unordered_set<std::string> non_int8_candidate_set = {
+    {"FusedBatchNormGradV3", "LayerNormGrad", "MaxPoolGrad", "ReluGrad",
+     "GeluGrad", "ResizeBilinear", "Select"}};
+
 // Input and output index in LLGA op and TF op maybe different, e.g. diff_dst
 // input in TF BNGrad is 0, while in LLGA BNGrad is 1. Thus, we need to map the
 // corresponding input/output index. Op not included in the map means, TF and
@@ -1700,7 +1707,8 @@ const TranslationMap& getTranslationMap() {
       {"Mul", TranslateBinary},
       {"SquaredDifference", TranslateBinary},
 
-      {"ResizeBilinear", TranslateResize},
+      // TODO(itex): enable the op mapping
+      // {"ResizeBilinear", TranslateResize},
 
       {"AddN", TranslateAddN},
       {"BiasAdd", TranslateBiasAdd},
@@ -1876,7 +1884,8 @@ Status SelectNode(OneDnnGraphContext* ctx, int num_nodes,
                   std::unordered_set<std::string>* rewrite_nodes,
                   bool is_wildcard, dnnl::graph::graph* graph_ctx,
                   LLGAEdgeManager* edge_manager,
-                  AdditionalArgs* additional_args) {
+                  AdditionalArgs* additional_args,
+                  bool onednn_graph_all_type_flag) {
   ITEX_VLOG(2) << "====== Start selecting nodes, is_wildcard = " << is_wildcard;
 
   for (int f_node = 0; f_node < num_nodes; f_node++) {
@@ -1892,6 +1901,13 @@ Status SelectNode(OneDnnGraphContext* ctx, int num_nodes,
       // Layout rewrite pass does not rewrite preserved nodes, neither does LLGA
       // pass. Currently, LLGA only works with Layout pass ON.
       if (ctx->nodes_to_preserve.count(f_node_def->name()) > 0) continue;
+
+      // No need to add oneDNN Graph ops by default, if they are not possible in
+      // INT8 partitions.
+      if (!onednn_graph_all_type_flag &&
+          non_int8_candidate_set.find(f_node_def->op()) !=
+              non_int8_candidate_set.end())
+        continue;
     }
 
     if (is_wildcard) {
@@ -2075,11 +2091,8 @@ Status FuseFwPartitionWithLLGA(
     dnnl::graph::partition& p,  // NOLINT(runtime/references)
     std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete,
     LLGAEdgeManager* edge_manager, LLGAEdgeManager* edge_manager_tmp,
-    AdditionalArgs* additional_args) {
+    AdditionalArgs* additional_args, bool onednn_graph_all_type_flag) {
   auto* mutation = ctx->graph_view.GetMutationBuilder();
-
-  bool onednn_graph_all_type_flag =
-      GetOptimizerConfigFlags().enable_onednn_graph_all_type;
 
   ITEX_VLOG(2) << "IN REWRITE ";
   absl::flat_hash_set<int> f_nodes;
@@ -2845,78 +2858,6 @@ Status RunPrePass(OneDnnGraphContext* ctx) {
     auto* input_node_view = node_view->GetRegularFanin(input_index).node_view();
     auto* input_node_def = input_node_view->node();
     if (!IsShapeN(*input_node_def)) continue;
-
-    // TODO(itex): Support Conv2D with dynamic shape, once LLGA settle down
-    // their design. We may need to split "ShapeN" op into N * "Shape" op.
-
-    // int N;
-    // ITEX_CHECK_OK(GetNodeAttr(*input_node_def, "N", &N));
-
-    // // TODO(itex): will input_node_view->GetRegularFanouts().size() decrease
-    // if ((input_node_view->GetRegularFanouts().size() == 1) && (N == 2)) {
-    //   TensorId from_tensor_id =
-    //   ParseTensorName(node_def->input(input_index)); auto from_name =
-    //   from_tensor_id.node(); int from_index = from_tensor_id.index();
-
-    //   NodeDef new_input_node;
-    //   new_input_node.set_op("Shape");
-    //   new_input_node.set_name(input_node_def->name());
-    //   new_input_node.set_device(input_node_def->device());
-    //   // For ShapeN op, its input index and output index are corresponding
-    //   new_input_node.add_input(input_node_def->input(from_index));
-    //   auto* attr = new_input_node.mutable_attr();
-    //   auto& src_attr = input_node_def->attr();
-    //   (*attr)["T"] = src_attr.at("T");
-    //   (*attr)["out_type"] = src_attr.at("out_type");
-    //   mutation->AddNode(std::move(new_input_node), &status);
-    //   TF_ABORT_IF_ERROR(status);
-
-    //   // Now we use Shape op, which has only 1 output
-    //   TensorId new_from_tensor_id = {from_name, 0};
-    //   mutation->AddOrUpdateRegularFanin(node_view, input_index,
-    //                                     new_from_tensor_id);
-    // } else if ((input_node_view->GetRegularFanouts().size() == 2) && (N ==
-    // 2)) {
-    //   TensorId from_tensor_id =
-    //   ParseTensorName(node_def->input(input_index)); auto from_name =
-    //   from_tensor_id.node(); int from_index = from_tensor_id.index();
-
-    //   static uint64 count = 0;
-    //   auto new_from_name =
-    //       std::string(from_name) + "_Shape_" + std::to_string(count);
-    //   count++;
-
-    //   NodeDef new_input_node;
-    //   new_input_node.set_op("Shape");
-    //   new_input_node.set_name(new_from_name);
-    //   new_input_node.set_device(input_node_def->device());
-    //   // For ShapeN op, its input index and output index are corresponding
-    //   new_input_node.add_input(input_node_def->input(from_index));
-    //   auto* attr = new_input_node.mutable_attr();
-    //   auto& src_attr = input_node_def->attr();
-    //   (*attr)["T"] = src_attr.at("T");
-    //   (*attr)["out_type"] = src_attr.at("out_type");
-    //   // For 2 output ShapeN op, we just decrease 1 output rather than remove
-    //   // the node in this branch. The ShapeN will be removed in the above
-    //   branch
-    //   // which handles 1 output.
-    //   // // TODO(itex): set Old ShapeN attribute T = 1
-    //   // auto* src_mutable_attr = input_node_def->mutable_attr();
-    //   // SetAttrValue(1, &(*src_mutable_attr)["N"]);
-
-    //   mutation->AddNode(std::move(new_input_node), &status);
-    //   TF_ABORT_IF_ERROR(std::move(status));
-
-    //   // Now we use Shape op, which has only 1 output
-    //   TensorId new_from_tensor_id = {new_from_name, 0};
-    //   mutation->AddOrUpdateRegularFanin(node_view, input_index,
-    //                                     new_from_tensor_id);
-    // } else {
-    //   // LLGA cannot handle ShapeN op, thus ConvBwdInput or ConvBwdFilter
-    //   will
-    //   // not be rewritten to LLGA op
-    //   continue;
-    // }
   }
 
   TF_ABORT_IF_ERROR(mutation->Apply());
@@ -2950,17 +2891,22 @@ Status RunRewritePass(OneDnnGraphContext* ctx) {
   //     /*include_input_tensor_values=*/true,
   //     /*include_output_tensor_values=*/false));
 
+  bool onednn_graph_all_type_flag =
+      GetOptimizerConfigFlags().enable_onednn_graph_all_type;
+
   // Tranverse graph, select onednn graph nodes and mark wildcard nodes.
   ITEX_VLOG(2) << "BEFORE SELECT NODE ";
   LLGAEdgeManager edge_manager;
-  TF_ABORT_IF_ERROR(SelectNode(
-      ctx, num_nodes, tf_to_onednn_graph_op_translation_map, &wildcard_nodes,
-      &rewrite_nodes, false, &graph_ctx, &edge_manager, &addtional_args));
+  TF_ABORT_IF_ERROR(
+      SelectNode(ctx, num_nodes, tf_to_onednn_graph_op_translation_map,
+                 &wildcard_nodes, &rewrite_nodes, false, &graph_ctx,
+                 &edge_manager, &addtional_args, onednn_graph_all_type_flag));
 
   // Tranverse graph, select wildcard nodes.
-  TF_ABORT_IF_ERROR(SelectNode(
-      ctx, num_nodes, tf_to_onednn_graph_op_translation_map, &wildcard_nodes,
-      &rewrite_nodes, true, &graph_ctx, &edge_manager, &addtional_args));
+  TF_ABORT_IF_ERROR(
+      SelectNode(ctx, num_nodes, tf_to_onednn_graph_op_translation_map,
+                 &wildcard_nodes, &rewrite_nodes, true, &graph_ctx,
+                 &edge_manager, &addtional_args, onednn_graph_all_type_flag));
 
   auto l_partition_list =
       graph_ctx.get_partitions(dnnl::graph::partition::policy::fusion);
@@ -2972,7 +2918,7 @@ Status RunRewritePass(OneDnnGraphContext* ctx) {
       ITEX_VLOG(2) << "Number of Partitions = " << count;
       TF_ABORT_IF_ERROR(FuseFwPartitionWithLLGA(
           ctx, it, &invalidated_nodes, &nodes_to_delete, &edge_manager,
-          &edge_manager_tmp, &addtional_args));
+          &edge_manager_tmp, &addtional_args, onednn_graph_all_type_flag));
     }
   }
 
