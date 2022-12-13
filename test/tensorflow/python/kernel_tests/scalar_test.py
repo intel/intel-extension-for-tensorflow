@@ -36,9 +36,11 @@ import tensorflow.python.ops.nn_grad  # pylint: disable=unused-import
 # and Reshape.
 class ScalarTest(test.TestCase):
 
-  def check(self, op, args, error, correct=None, lenient=None, strict=[5, 6]):
+  def check(self, op, args, error, correct=None, lenient=None, strict=None):
     if lenient is None:
       lenient = []
+    if strict is None:
+      strict = [5, 6]
     # Use placeholders to bypass shape inference, since only the C++
     # G raphDef level is ever scalar lenient.
     def placeholders(args, feed):
@@ -67,10 +69,10 @@ class ScalarTest(test.TestCase):
               self.assertAllEqual(r, correct)
 
   def testConcat(self):
-    for data in (2, [3], 7), ([2], 3, 7), ([2], [3], 7):
-      self.check(array_ops.concat, (data, 0),
-                 r"Can't concatenate scalars \(use tf.stack instead\)",
-                 [2, 3, 7])
+    if test_util.is_gpu_available():
+      for data in (2, [3], 7), ([2], 3, 7), ([2], [3], 7):
+        self.check(array_ops.concat, (data, 0),
+                  r'Ranks of all input tensors should match', [2, 3, 7])
 
   def testFill(self):
     self.check(
