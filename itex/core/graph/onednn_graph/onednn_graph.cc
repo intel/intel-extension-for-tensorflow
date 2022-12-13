@@ -135,8 +135,9 @@ string GetOpInLLGAStyle(const utils::MutableNodeView* node_view) {
       op = "Conv2DBackpropFilterDynamic";
     }
   } else if (op == "LayerNorm") {
-    bool is_training;
-    TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "is_training", &is_training));
+    bool is_training = true;
+    // TODO(itex): investigate why Layernorm op doesn't have "is_training" attr.
+    TryGetNodeAttr(*node_def, "is_training", &is_training);
     if (is_training) {
       op = "LayerNormTraining";
     } else {
@@ -254,7 +255,7 @@ bool IsOpOutputFolded(const OneDnnGraphContext* ctx,
 
 void GetShapeFromConstShapeNode(const NodeDef* node,
                                 std::vector<int64_t>* shape_value,
-                                bool* is_success) {
+                                bool* is_success, DataType dt) {
   if (!IsAnyConst(*node)) {
     *is_success = false;
     return;
@@ -268,10 +269,26 @@ void GetShapeFromConstShapeNode(const NodeDef* node,
     return;
   }
 
-  for (int i = 0; i < shape_tensor.NumElements(); ++i) {
-    shape_value->push_back(shape_tensor.flat<int32>()(i));
+  switch (dt) {
+    case DT_INT64:
+      for (int i = 0; i < shape_tensor.NumElements(); ++i) {
+        shape_value->push_back(shape_tensor.flat<int64>()(i));
+      }
+      *is_success = true;
+      break;
+
+    case DT_INT32:
+      for (int i = 0; i < shape_tensor.NumElements(); ++i) {
+        shape_value->push_back(shape_tensor.flat<int32>()(i));
+      }
+      *is_success = true;
+      break;
+
+    default:
+      *is_success = false;
+      break;
   }
-  *is_success = true;
+
   return;
 }
 
@@ -385,9 +402,9 @@ Status SetAttr(const utils::MutableNodeView* node_view,
 
   // Strides in the batch and channel dimension is not supported
   if (tf_strides[0] != 1 || tf_strides[is_channel_last ? dims - 1 : 1] != 1) {
-    return errors::InvalidArgument(
-        "Strides in batch and channel dimensions is not supported: ",
-        node_def->op());
+    delete *onednn_graph_node;
+    *onednn_graph_node = nullptr;
+    return Status::OK();
   }
 
   std::vector<int64_t> strides(dims - 2);
@@ -518,7 +535,8 @@ Status SetAttr(const utils::MutableNodeView* node_view,
   return true;
 }
 
-void SetStaticShapeAttr(const utils::MutableNodeView* node_view,
+void SetStaticShapeAttr(const OneDnnGraphContext* ctx,
+                        const utils::MutableNodeView* node_view,
                         dnnl::graph::op** onednn_graph_node) {
   auto* node_def = node_view->node();
 
@@ -550,7 +568,9 @@ void SetStaticShapeAttr(const utils::MutableNodeView* node_view,
   if (is_input_sizes_constant) {
     std::vector<int64_t> size_value;
     bool is_success;
-    GetShapeFromConstShapeNode(size_node, &size_value, &is_success);
+    DataType dt = GetDataType(*node_def, ctx->node_type_map.GetInputTypeAttr(
+                                             *node_def, size_input_index));
+    GetShapeFromConstShapeNode(size_node, &size_value, &is_success, dt);
 
     if (!is_success) {
       // TODO(itex): do we have better way to check, instead of setting many
@@ -650,6 +670,7 @@ Status TranslateConv(const OneDnnGraphContext* ctx, const int node_index,
   auto* node_def = node_view->node();
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::Convolution, node_def->name());
+
   TF_ABORT_IF_ERROR(
       SetAttr(node_view, onednn_graph_node, LayerParams{true, false}));
   if (*onednn_graph_node == nullptr) {
@@ -675,10 +696,16 @@ Status TranslateConv2DBackpropInput(const OneDnnGraphContext* ctx,
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::ConvolutionBackpropData,
       node_def->name());
+
   TF_ABORT_IF_ERROR(
       SetAttr(node_view, onednn_graph_node, LayerParams{true, false}));
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  if (*onednn_graph_node == nullptr) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   if (*onednn_graph_node == nullptr) {
     onednn_graph_node = nullptr;
@@ -703,10 +730,15 @@ Status TranslateConv2DBackpropFilter(const OneDnnGraphContext* ctx,
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::ConvolutionBackpropFilters,
       node_def->name());
+
   TF_ABORT_IF_ERROR(
       SetAttr(node_view, onednn_graph_node, LayerParams{true, false}));
+  if (*onednn_graph_node == nullptr) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   if (*onednn_graph_node == nullptr) {
     onednn_graph_node = nullptr;
@@ -799,12 +831,16 @@ Status TranslateBNGrad(const OneDnnGraphContext* ctx, const int node_index,
   float epsilon;
   TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "epsilon", &epsilon));
   (*onednn_graph_node)->set_attr("epsilon", epsilon);
-  if (tf_data_format == "NCHW")
+  if (tf_data_format == "NCHW") {
     (*onednn_graph_node)->set_attr("data_format", std::string("NCX"));
-  else if (tf_data_format == "NHWC")
+  } else if (tf_data_format == "NHWC") {
     (*onednn_graph_node)->set_attr("data_format", std::string("NXC"));
-  else
-    return errors::InvalidArgument("Invalid data_format");
+  } else {
+    // Currently, only supports 2D BN
+    delete *onednn_graph_node;
+    *onednn_graph_node = nullptr;
+    return Status::OK();
+  }
   return Status::OK();
 }
 
@@ -850,12 +886,15 @@ Status TranslateBN(const OneDnnGraphContext* ctx, const int node_index,
   float epsilon;
   TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "epsilon", &epsilon));
   (*onednn_graph_node)->set_attr("epsilon", epsilon);
-  if (tf_data_format == "NCHW")
+  if (tf_data_format == "NCHW") {
     (*onednn_graph_node)->set_attr("data_format", std::string("NCX"));
-  else if (tf_data_format == "NHWC")
+  } else if (tf_data_format == "NHWC") {
     (*onednn_graph_node)->set_attr("data_format", std::string("NXC"));
-  else
-    return errors::InvalidArgument("Invalid data_format");
+  } else {
+    delete *onednn_graph_node;
+    *onednn_graph_node = nullptr;
+    return Status::OK();
+  }
   return Status::OK();
 }
 
@@ -933,7 +972,7 @@ Status TranslateReshape(const OneDnnGraphContext* ctx, const int node_index,
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::StaticReshape, node_def->name());
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   if (*onednn_graph_node == nullptr) {
     onednn_graph_node = nullptr;
@@ -960,7 +999,7 @@ Status TranslateTranspose(const OneDnnGraphContext* ctx, const int node_index,
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::StaticTranspose, node_def->name());
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   if (*onednn_graph_node == nullptr) {
     onednn_graph_node = nullptr;
@@ -997,14 +1036,14 @@ Status TranslateResize(const OneDnnGraphContext* ctx, const int node_index,
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::Interpolate, node_def->name());
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   if (*onednn_graph_node == nullptr) {
     onednn_graph_node = nullptr;
     return Status::OK();
   }
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   (*onednn_graph_node)->set_attr("mode", std::string("bilinear"));
 
@@ -1034,8 +1073,14 @@ Status TranslateMaxPool(const OneDnnGraphContext* ctx, const int node_index,
   auto* node_def = node_view->node();
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::MaxPool, node_def->name());
+
   TF_ABORT_IF_ERROR(
       SetAttr(node_view, onednn_graph_node, LayerParams{false, true}));
+  if (*onednn_graph_node == nullptr) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
   (*onednn_graph_node)->set_attr("rounding_type", std::string("floor"));
   return Status::OK();
 }
@@ -1053,8 +1098,14 @@ Status TranslateAvgPool(const OneDnnGraphContext* ctx, const int node_index,
       node_index, dnnl::graph::op::kind::AvgPool, node_def->name());
   // TODO(itex): Set exclude_pad
   (*onednn_graph_node)->set_attr("exclude_pad", false);
+
   TF_ABORT_IF_ERROR(
       SetAttr(node_view, onednn_graph_node, LayerParams{false, false}));
+  if (*onednn_graph_node == nullptr) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
   (*onednn_graph_node)->set_attr("rounding_type", std::string("floor"));
   return Status::OK();
 }
@@ -1070,8 +1121,14 @@ Status TranslateMaxPoolGrad(const OneDnnGraphContext* ctx, const int node_index,
   auto* node_def = node_view->node();
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::MaxPoolBackprop, node_def->name());
+
   TF_ABORT_IF_ERROR(
       SetAttr(node_view, onednn_graph_node, LayerParams{false, true}));
+  if (*onednn_graph_node == nullptr) {
+    onednn_graph_node = nullptr;
+    return Status::OK();
+  }
+
   return Status::OK();
 }
 
@@ -1589,7 +1646,7 @@ Status TranslateReduce(const OneDnnGraphContext* ctx, const int node_index,
     return Status::OK();
   }
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   if (*onednn_graph_node == nullptr) {
     onednn_graph_node = nullptr;
@@ -1615,7 +1672,7 @@ Status TranslateConcat(const OneDnnGraphContext* ctx, const int node_index,
   *onednn_graph_node = new dnnl::graph::op(
       node_index, dnnl::graph::op::kind::Concat, node_def->name());
 
-  SetStaticShapeAttr(node_view, onednn_graph_node);
+  SetStaticShapeAttr(ctx, node_view, onednn_graph_node);
 
   if (*onednn_graph_node == nullptr) {
     onednn_graph_node = nullptr;
