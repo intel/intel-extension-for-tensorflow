@@ -4484,8 +4484,6 @@ Status AddDropout(RemapperContext* ctx, const Dropout& matched,
   TF_ABORT_IF_ERROR(status);
   TF_ABORT_IF_ERROR(mutation->Apply());
 
-  (*nodes_to_delete)[matched.const_node_0] = true;
-  (*nodes_to_delete)[matched.const_node_1] = true;
   (*invalidated_nodes)[matched.select_0] = true;
   (*invalidated_nodes)[matched.select_1] = true;
   return Status::OK();
