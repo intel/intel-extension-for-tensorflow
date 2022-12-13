@@ -523,7 +523,7 @@ bool IsRandomShuffle(const NodeDef& node) {
 }
 
 bool IsRandomUniform(const NodeDef& node) {
-  return node.op() == "RandomUniform";
+  return node.op() == "RandomUniform" || node.op() == "_ITEXRandomUniform";
 }
 
 bool IsRank(const NodeDef& node) { return node.op() == "Rank"; }
