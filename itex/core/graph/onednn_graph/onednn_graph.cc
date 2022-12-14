@@ -1009,9 +1009,10 @@ Status TranslateTranspose(const OneDnnGraphContext* ctx, const int node_index,
   return Status::OK();
 }
 
-Status TranslateResize(const OneDnnGraphContext* ctx, const int node_index,
-                       const utils::MutableNodeView* node_view,
-                       dnnl::graph::op** onednn_graph_node) {
+[[maybe_unused]] Status TranslateResize(const OneDnnGraphContext* ctx,
+                                        const int node_index,
+                                        const utils::MutableNodeView* node_view,
+                                        dnnl::graph::op** onednn_graph_node) {
   if (IsOpOutputFolded(ctx, node_view)) {
     onednn_graph_node = nullptr;
     return Status::OK();
