@@ -44,6 +44,8 @@ class RsqrtTest(test.TestCase):
             # test tailed_no_tailed_size
             for in_size in tailed_no_tailed_size:
                 self._test_impl([in_size], dtype)
+            self._test_impl([128,1152,1,1], dtype)
+            self._test_impl([16,18,18,1], dtype)
             
 if __name__ == '__main__':
     test.main()    

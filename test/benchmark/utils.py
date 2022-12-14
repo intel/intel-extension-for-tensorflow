@@ -19,8 +19,8 @@ import tensorflow as tf
 
 common_2d_input_size = [[32, 8192], [33, 8193]]
 tailed_no_tailed_size = [8192, 16384 * 16384, 8193, 16385 * 16385]
-broadcast_binary_size_x = [[32,16,512,512], [32,16,512,512], [32,16,512,513]]
-broadcast_binary_size_y = [[32,1,512,512], [1,1,1,1], [32,16,512,513]]
+broadcast_binary_size_x = [[32,16,512,512], [32,16,512,512], [32,16,512,513], [16,256,32,32,32]]
+broadcast_binary_size_y = [[32,1,512,512], [1,1,1,1], [32,16,512,513], [1,256,1,1,1]]
 reduction_size = [[32,16,512,512], [32,1,512,513], [1,16,513,512], [1,1,1,1]]
 reduction_axis = [0, 1, 2, 3]
 reduction_keepdims = [False, True]

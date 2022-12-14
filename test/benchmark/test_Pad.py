@@ -45,7 +45,7 @@ class PadTest(test.TestCase):
     @multi_run(ITERATION)
     def testPad(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            for in_size in [[4,128,128,256], [4,16,16,256]]:
+            for in_size in [[4,128,128,256], [4,16,16,256], [16,512,14,14], [16,128,56,56]]:
                 self._test_impl(in_size, dtype)
 
 if __name__ == '__main__':

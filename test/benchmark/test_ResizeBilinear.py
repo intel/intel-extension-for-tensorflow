@@ -48,11 +48,11 @@ class ResizeBilinearTest(test.TestCase):
     @add_profiling
     @multi_run(ITERATION)
     def testResizeBilinear(self):
-        image_input_size = [[1, 1080, 1920, 3], [3, 768, 1024, 3]] # NHWC
-        target_size = [540, 960]
+        image_input_size = [[1, 1080, 1920, 3], [3, 768, 1024, 3], [16, 90, 120, 256], [16, 23, 30, 512]] # NHWC
+        target_size = [[540, 960], [540, 960], [90,120], [23,30]]
         for dtype in FLOAT_COMPUTE_TYPE:
-            for in_size in image_input_size:
-                self._test_impl(in_size, target_size, dtype)
+            for in_size,out_size in zip(image_input_size, target_size):
+                self._test_impl(in_size, out_size, dtype)
 
 if __name__ == '__main__':
     test.main()

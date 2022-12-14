@@ -36,7 +36,6 @@ class SpaceToBatchNDTest(test.TestCase):
         in_array = constant_op.constant(in_array, dtype=dtype)
         block_shape = [2,2]
         paddings = constant_op.constant(0, shape=[2, 2], dtype=dtypes.int32)
-      
         flush_cache()
         out_gpu = tf.raw_ops.SpaceToBatchND(input=in_array, block_shape=block_shape, paddings=paddings, name=None)
     @add_profiling
@@ -46,6 +45,7 @@ class SpaceToBatchNDTest(test.TestCase):
             # test tailed_no_tailed_size
             for in_size in broadcast_binary_size_x:
                 self._test_impl(in_size, dtype)
+            self._test_impl([16,128,170,128], dtype)
 
 if __name__ == '__main__':
     test.main()
