@@ -1,5 +1,5 @@
 diff --git a/Eigen/Core b/Eigen/Core
-index f44b77831..9721cc60d 100644
+index f44b77831..992ec5124 100644
 --- a/Eigen/Core
 +++ b/Eigen/Core
 @@ -29,7 +29,6 @@
@@ -5983,7 +5983,7 @@ index 4aa33a19f..435e005c0 100644
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const { return m_other; }
    template<typename PacketType>
 diff --git a/Eigen/src/Core/functors/UnaryFunctors.h b/Eigen/src/Core/functors/UnaryFunctors.h
-index a9cbfd967..e09121058 100644
+index a9cbfd967..b0d866560 100644
 --- a/Eigen/src/Core/functors/UnaryFunctors.h
 +++ b/Eigen/src/Core/functors/UnaryFunctors.h
 @@ -825,13 +825,17 @@ template<typename Scalar> struct scalar_isnan_op {
@@ -6113,20 +6113,15 @@ index a9cbfd967..e09121058 100644
    };
  };
  
-@@ -1061,12 +1081,7 @@ struct functor_traits<scalar_logistic_op<T> > {
-                 ? NumTraits<T>::AddCost * 15 + NumTraits<T>::MulCost * 11
-                 : NumTraits<T>::AddCost * 2 +
-                       functor_traits<scalar_exp_op<T> >::Cost),
--    PacketAccess =
--        packet_traits<T>::HasAdd && packet_traits<T>::HasDiv &&
--        (internal::is_same<T, float>::value
--             ? packet_traits<T>::HasMul && packet_traits<T>::HasMax &&
--                   packet_traits<T>::HasMin
--             : packet_traits<T>::HasNegate && packet_traits<T>::HasExp)
-+    PacketAccess = false,
-   };
+@@ -974,7 +994,7 @@ struct scalar_logistic_op {
+   }
  };
  
+-#ifndef EIGEN_GPU_COMPILE_PHASE
++#if !defined(EIGEN_GPU_COMPILE_PHASE) && !defined(EIGEN_USE_DPCPP)
+ /** \internal
+   * \brief Template specialization of the logistic function for float.
+   *
 diff --git a/Eigen/src/Core/util/ConfigureVectorization.h b/Eigen/src/Core/util/ConfigureVectorization.h
 index 739dab60d..23fc561a7 100644
 --- a/Eigen/src/Core/util/ConfigureVectorization.h
@@ -10612,7 +10607,7 @@ index b1ff1d8b1..54cfd1907 100644
  
   protected:
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h b/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h
-index f32ce27e9..fb704cdf4 100644
+index f32ce27e9..ac84b3e56 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h
 @@ -49,6 +49,132 @@

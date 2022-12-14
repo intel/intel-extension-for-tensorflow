@@ -185,6 +185,7 @@ struct no_nan_op {
                                                         const Packet& b) const {
     const Packet mask = pcmp_eq(b, pzero(b));
     Packet quotient = Binary().packetOp(a, b);
+#pragma unroll
     for (int i = 0; i < Eigen::internal::unpacket_traits<Packet>::size; i++) {
       if (mask[i] != 0) {
         quotient[i] = 0;
