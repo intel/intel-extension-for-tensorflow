@@ -445,7 +445,6 @@ void CopyAttrsQuantize(const utils::MutableNodeView* orig_node_view,
   const NodeDef* orig_node_def = orig_node_view->node();
   // Add attributes to new node.
   auto* new_attr = new_node->mutable_attr();
-  auto& src_attr = orig_node_def->attr();
 
   DataType dtype = DataType::DT_FLOAT;
   if (!HasNodeAttr(*orig_node_def, "dtype")) {

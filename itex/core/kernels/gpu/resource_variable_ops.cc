@@ -379,7 +379,6 @@ class ResourceScatterUpdateOp : public OpKernel {
                                 std::numeric_limits<Index>::max()));
 
     if (N > 0) {
-      auto index_size = indices.NumElements() * sizeof(Index);
       auto indices_flat = indices.flat<Index>();
       auto params_flat = params.flat_outer_dims<T>();
 

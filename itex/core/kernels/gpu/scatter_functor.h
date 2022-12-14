@@ -104,12 +104,12 @@ struct ScatterScalarOpITEX_GPUKernel {
                                 Index synthesized_updates_size,
                                 float* params_fp32)
       : params_(params),
+        params_fp32_(params_fp32),
         updates_(updates),
         indices_(indices),
         first_dim_size_(first_dim_size),
         indices_size_(indices_size),
-        synthesized_updates_size_(synthesized_updates_size),
-        params_fp32_(params_fp32) {}
+        synthesized_updates_size_(synthesized_updates_size) {}
 
   void operator()(sycl::nd_item<1> item) const {
     int64_t i = item.get_global_linear_id();
@@ -149,12 +149,12 @@ struct ScatterScalarOpITEX_GPUKernel<
                                 Index synthesized_updates_size,
                                 float* params_fp32)
       : params_(params),
+        params_fp32_(params_fp32),
         updates_(updates),
         indices_(indices),
         first_dim_size_(first_dim_size),
         indices_size_(indices_size),
-        synthesized_updates_size_(synthesized_updates_size),
-        params_fp32_(params_fp32) {}
+        synthesized_updates_size_(synthesized_updates_size) {}
 
   void operator()(sycl::nd_item<1> item) const {
     int64_t i = item.get_global_linear_id();

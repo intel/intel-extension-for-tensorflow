@@ -1752,7 +1752,7 @@ class OneDnnQuantizedConv2DWithDequantizeOp
       : OneDnnQuantizedConvOp<Device, Tinput, Tbias, Toutput, Tsummand,
                               quantized_bias_enabled, is_depthwise>(context) {}
 
-  void Compute(OpKernelContext* context) {
+  void Compute(OpKernelContext* context) override {
     // Compute int32 output tensor
     OneDnnConvOp<Device, Tinput, qint8, Tbias, Toutput, Tsummand, false,
                  quantized_bias_enabled, is_depthwise>::Compute(context);
@@ -1777,23 +1777,11 @@ class OneDnnQuantizedConv2DWithDequantizeOp
       const float max_input =
           context->input(this->kSrcMaxRangeIndex).template flat<float>()(0);
 
-      // min_freezed_output and max_freezed_output are the actual range
-      // for the output.
-      const float min_freezed_output =
-          context->input(this->kMinFreezedIndex).template flat<float>()(0);
-      const float max_freezed_output =
-          context->input(this->kMaxFreezedIndex).template flat<float>()(0);
-
-      float int_output_limit =
-          std::is_same<Toutput, quint8>::value ? 255.0f : 127.0f;
-
       const float* min_filter = min_filter_vector.flat<float>().data();
       const float* max_filter = max_filter_vector.flat<float>().data();
 
       float float_input_range =
           std::max(std::abs(min_input), std::abs(max_input));
-      float float_output_range =
-          std::max(std::abs(min_freezed_output), std::abs(max_freezed_output));
       const float int_const_scale_limit =
           (std::is_same<Tinput, quint8>::value) ? 255.0 * 127.0 : 127.0 * 127.0;
       for (size_t i = 0; i < depth; ++i) {

@@ -2298,7 +2298,6 @@ bool FindPadConvFwdBwd(const RemapperContext& ctx, int node_index,
   matched->pad = pad_node_view->node_index();
 
   const auto& bn_node_view = pad_node_view->GetRegularFanin(0).node_view();
-  const auto* bn_node_def = bn_node_view->node();
   if (HasControlFanout(*bn_node_view)) return false;
 
   matched->input_bn = bn_node_view->node_index();
@@ -3545,7 +3544,6 @@ Status AddConv2DBackpropInputWithSliceNodeLLGA(
   // Prepare control output edges for fused node
   for (const auto& out_control_view :
        conv_backpropinput_node_view->GetControlledFanouts()) {
-    int out_control_node_index = out_control_view.node_index();
     out_control_index.push_back(out_control_view.node_index());
   }
 
@@ -3966,7 +3964,6 @@ Status AddPadConvFwdBwd(RemapperContext* ctx, const PadConvFwdBwd& matched,
   auto* conv2d_view = ctx->graph_view.GetNode(matched.conv2d);
   auto* conv2d_bwd_filter_view =
       ctx->graph_view.GetNode(matched.conv2d_bwd_filter);
-  auto* pad_view = ctx->graph_view.GetNode(matched.pad);
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
 
