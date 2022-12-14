@@ -95,7 +95,7 @@ class PackOp : public OpKernel {
         inputs_flat.emplace_back(new typename TTypes<T, 2>::ConstMatrix(
             input.shaped<T, 2>({before_dim, after_dim})));
       }
-      Concat<T>(c, inputs_flat, &output_flat, /*one_size_input*/ true);
+      Concat<T>(c, inputs_flat, &output_flat);
     }
   }
 

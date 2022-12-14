@@ -49,7 +49,7 @@ void Concat(
     OpKernelContext* ctx,
     const std::vector<std::unique_ptr<typename TTypes<T, 2>::ConstMatrix>>&
         inputs,
-    typename TTypes<T, 2>::Matrix* output, bool one_size_input);
+    typename TTypes<T, 2>::Matrix* output);
 
 }  // namespace itex
 

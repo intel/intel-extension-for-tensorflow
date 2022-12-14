@@ -472,7 +472,14 @@ void Concat(
     OpKernelContext* c,
     const std::vector<std::unique_ptr<typename TTypes<T, 2>::ConstMatrix>>&
         inputs_flat,
-    typename TTypes<T, 2>::Matrix* output, bool one_size_input) {
+    typename TTypes<T, 2>::Matrix* output) {
+  bool one_size_input = true;
+  for (int i = 1; i < inputs_flat.size(); ++i) {
+    if (inputs_flat[i]->dimension(1) != inputs_flat[i - 1]->dimension(1)) {
+      one_size_input = false;
+      break;
+    }
+  }
   if (one_size_input) {
     if (output->size() < std::numeric_limits<int32>::max()) {
       ConcatFixedImpl<T, int32>(c, inputs_flat, output);
@@ -501,7 +508,7 @@ void Concat(
       OpKernelContext * ctx,                                                  \
       const std::vector<std::unique_ptr<typename TTypes<T, 2>::ConstMatrix>>& \
           inputs,                                                             \
-      typename TTypes<T, 2>::Matrix* output, bool one_size_input);
+      typename TTypes<T, 2>::Matrix* output);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU);
 REGISTER_ITEX_GPU(int32);
