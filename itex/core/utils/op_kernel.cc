@@ -541,9 +541,9 @@ Status OpKernelConstruction::GetAttr<TensorShape>(StringPiece attr_name,
 
   TF_OpKernelConstruction_GetAttrSize(ctx_, "shape", &list_size, &total_size,
                                       status_);
-  shape_list.resize(list_size);
-  TF_OpKernelConstruction_GetAttrInt64List(ctx_, "shape", shape_list.data(),
-                                           list_size, status_);
+  shape_list.resize(total_size);
+  TF_OpKernelConstruction_GetAttrTensorShape(ctx_, "shape", shape_list.data(),
+                                             total_size, status_);
   for (auto dim : shape_list) {
     shape->AddDim(dim);
   }

@@ -33,11 +33,10 @@ ITERATION = 5
 
 class ParallelConcatTest(test.TestCase):
     def _test_impl(self, x_size, out_size, dtype):
-        disable_eager_execution()
         x_array = np.random.normal(size=x_size)
         x_tensor = constant_op.constant(x_array, dtype=dtype)
         y_array = np.random.normal(size=x_size)
-        y_tensor = constant_op.constant(x_array, dtype=dtype)
+        y_tensor = constant_op.constant(y_array, dtype=dtype)
         flush_cache()
         out_gpu = gen_array_ops.parallel_concat(values=list([x_tensor, y_tensor]), shape=out_size)
 

@@ -229,7 +229,7 @@ REGISTER(itex::int64);
 #define REGISTER_KERNEL_FOR_GPU(TYPE)                                      \
   REGISTER_KERNEL_BUILDER(Name("_ParallelConcatStart")                     \
                               .Device(DEVICE_GPU)                          \
-                              .TypeConstraint<TYPE>("T"),                  \
+                              .TypeConstraint<TYPE>("dtype"),              \
                           ParallelConcatStart<GPUDevice, TYPE>);           \
   REGISTER_KERNEL_BUILDER(Name("_ParallelConcatUpdate")                    \
                               .Device(DEVICE_GPU)                          \
