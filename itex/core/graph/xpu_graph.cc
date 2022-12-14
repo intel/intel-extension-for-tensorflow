@@ -33,7 +33,6 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
       {"ITEX_ONEDNN_GRAPH", config.enable_onednn_graph},
       {"ITEX_REMAPPER", config.enable_remapper},
       {"ITEX_LAYOUT_OPT", config.enable_layout_opt},
-      {"ITEX_NATIVE_FORMAT", config.enable_native_format},
       {"ITEX_AUTO_MIXED_PRECISION", config.enable_auto_mixed_precision},
 #ifndef INTEL_CPU_ONLY
       {"ITEX_TILE_AS_DEVICE", TileAsDevice},

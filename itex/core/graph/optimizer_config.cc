@@ -49,7 +49,6 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   bool tf_constant_folding_flag;
   bool remapper_flag;
   bool auto_mixed_precision_flag;
-  bool native_format_flag;
   bool layout_opt_flag;
 
   auto cfg_ = itex::itex_get_config();
@@ -119,17 +118,6 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
                                          enable_itex_tf_constant_folding,
                                          &tf_constant_folding_flag));
 
-  if (USER_IS_SET(native_format)) {
-    native_format_flag = false;
-    if (USER_IS_ON(native_format)) {
-      native_format_flag = true;
-    }
-  } else {
-    HelperSetEnvOptimzerConfig("ITEX_NATIVE_FORMAT",
-                               "ITEX_ENABLE_NATIVE_FORMAT",
-                               enable_itex_native_format, &native_format_flag);
-  }
-
   if (USER_IS_SET(auto_mixed_precision)) {
     auto_mixed_precision_flag = false;
     if (USER_IS_ON(auto_mixed_precision)) {
@@ -155,7 +143,6 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   opt_config_flags->enable_tf_constant_folding = tf_constant_folding_flag;
   opt_config_flags->enable_remapper = remapper_flag;
   opt_config_flags->enable_auto_mixed_precision = auto_mixed_precision_flag;
-  opt_config_flags->enable_native_format = native_format_flag;
   opt_config_flags->enable_layout_opt = layout_opt_flag;
   opt_config_flags->remapper_run_pass = remapper_run_pass;
 }

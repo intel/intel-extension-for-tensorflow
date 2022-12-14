@@ -48,10 +48,6 @@ message GraphOptions {
   // graph.
   Toggle auto_mixed_precision = 4;
   AutoMixedPrecisionOptions auto_mixed_precision_options = 5;
-  // Optimize data format use plain format rather than block format.
-  // if run with native format mode. we don't need to have an OneDnn metadata
-  // tensor for the workspace.
-  Toggle native_format = 6;
 }
 
 message ConfigProto {
