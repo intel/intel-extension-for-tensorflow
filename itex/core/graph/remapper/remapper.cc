@@ -4488,9 +4488,10 @@ Status AddDropout(RemapperContext* ctx, const Dropout& matched,
 
 }  // namespace
 
-// `is_full` is true by default. When oneDNN Graph is enabled, we want to set it
-// as false. When is_full == false, we only fuse Const + Cast / instancenorm/
-// layernorm.
+// `is_full` is true by default. It will be set as false if this pass runs
+// before oneDNN Graph, that means only a few necessary fusions
+// (InstanceNorm/LayerNorm) will be enabled to keep the original graph as
+// complete as possible for oneDNN graph.
 // `level` means the order of current remapper pass. Simple fusions without any
 // variant  will be checked under level 0 only.
 Status RunRemapper(const char* device_name, const GrapplerItem& item,
@@ -4554,7 +4555,9 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       continue;
     }
 
-    if (is_full) {
+    // Put the fusions that always need to be enabled here no matter `is_full`
+    // is true or false.
+    {
       // Remap TF2.11 dropout select to TF2.10 cast+mul.
       Dropout dropout;
       if (FindDropout(ctx, i, &dropout)) {
@@ -4562,7 +4565,13 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
             AddDropout(&ctx, dropout, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
+    }
 
+    // The entry of pattern matcher. It will iterate all fusion registered.
+    TF_ABORT_IF_ERROR(LaunchPatternMatcher(&ctx, i, &invalidated_nodes,
+                                           &nodes_to_delete, is_full));
+
+    if (is_full) {
       // Remap Conv2D+BiasAdd+Activation+Add into the _ITEXFusedConv2D.
       ContractionWithBiasAndActivationAdd contract_with_bias_and_activation_add;
       if (FindContractionWithBiasAndActivationAdd(
@@ -4605,38 +4614,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
             &nodes_to_delete, is_gelu_approximate));
         continue;
       }
-    }
-    // The entry of the fusion pass. It will iterate all fusion registered.
-    TF_ABORT_IF_ERROR(LaunchPatternMatcher(&ctx, i, &invalidated_nodes,
-                                           &nodes_to_delete, is_full));
 
-    if (!is_full) {
-      // Only run in llga mode
-      // TODO(itex): create other names for functions below
-      bool onednn_graph_all_type_flag =
-          GetOptimizerConfigFlags().enable_onednn_graph_all_type;
-      bool onednn_graph_compiler_backend_flag =
-          GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
-      if (!onednn_graph_all_type_flag || !onednn_graph_compiler_backend_flag) {
-        continue;
-      }
-
-      ConvBackpropInputWithSlice conv_with_slice;
-      if (FindConv2DBackpropInputWithSliceLLGA(ctx, i, &conv_with_slice)) {
-        TF_ABORT_IF_ERROR(AddConv2DBackpropInputWithSliceNodeLLGA(
-            &ctx, conv_with_slice, &invalidated_nodes, &nodes_to_delete));
-        continue;
-      }
-
-      PadConvFwdBwd pad_conv_fwd_bwd;
-      if (FindPadConvFwdBwd(ctx, i, &pad_conv_fwd_bwd)) {
-        TF_ABORT_IF_ERROR(AddPadConvFwdBwd(
-            &ctx, pad_conv_fwd_bwd, &invalidated_nodes, &nodes_to_delete));
-        continue;
-      }
-    }
-
-    if (is_full) {
       // Remap {Conv2D,DepthwiseConv2D,Conv3D,MatMul}+BiasAdd into the
       // _ITEXFused{Conv2D,DepthwiseConv2dNative,Conv3D,MatMul}
       ContractionWithBiasAdd contract_with_bias;
@@ -4852,6 +4830,30 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       if (level != default_level && FindFusedBinary(ctx, i, &seq_binary)) {
         TF_ABORT_IF_ERROR(AddFusedBinaryNode(
             &ctx, seq_binary, &invalidated_nodes, &nodes_to_delete));
+      }
+    } else {
+      // Only run in llga mode
+      // TODO(itex): create other names for functions below
+      bool onednn_graph_all_type_flag =
+          GetOptimizerConfigFlags().enable_onednn_graph_all_type;
+      bool onednn_graph_compiler_backend_flag =
+          GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
+      if (!onednn_graph_all_type_flag || !onednn_graph_compiler_backend_flag) {
+        continue;
+      }
+
+      ConvBackpropInputWithSlice conv_with_slice;
+      if (FindConv2DBackpropInputWithSliceLLGA(ctx, i, &conv_with_slice)) {
+        TF_ABORT_IF_ERROR(AddConv2DBackpropInputWithSliceNodeLLGA(
+            &ctx, conv_with_slice, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      PadConvFwdBwd pad_conv_fwd_bwd;
+      if (FindPadConvFwdBwd(ctx, i, &pad_conv_fwd_bwd)) {
+        TF_ABORT_IF_ERROR(AddPadConvFwdBwd(
+            &ctx, pad_conv_fwd_bwd, &invalidated_nodes, &nodes_to_delete));
+        continue;
       }
     }
   }
