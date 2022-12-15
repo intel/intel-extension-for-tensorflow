@@ -120,6 +120,12 @@ inline bool HasAtMostOneFanoutAtPort0(const utils::MutableNodeView& node_view) {
 bool HasDataType(const NodeDef* node, const DataType& expected,
                  const string& type_attr = "T");
 
+// `is_full` is true by default. It will be set as false if this pass runs
+// before oneDNN Graph, that means only a few necessary fusions
+// (InstanceNorm/LayerNorm) will be enabled to keep the original graph as
+// complete as possible for oneDNN graph.
+// `level` means the order of current remapper pass. Simple fusions without any
+// variant  will be checked under level 0 only.
 Status RunRemapper(const char* device_name, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
                    bool is_full = true, int level = 0);
