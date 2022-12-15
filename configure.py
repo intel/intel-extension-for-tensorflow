@@ -209,6 +209,10 @@ def get_python_path(environ_cp, python_bin_path):
         checked_python_bin_path, '-c',
         'import site; print("\\n".join(site.getsitepackages()))'
     ]).split('\n')
+    user_paths = run_shell([
+        checked_python_bin_path, '-m',
+        'site', '--user-site'
+    ]).split('\n')
   except subprocess.CalledProcessError:
     library_paths = [
         run_shell([
@@ -218,12 +222,16 @@ def get_python_path(environ_cp, python_bin_path):
         ])
     ]
 
-  all_paths = set(python_paths + library_paths)
+  all_paths = set(python_paths + library_paths + user_paths)
 
   paths = []
   for path in all_paths:
     if os.path.isdir(path):
-      paths.append(path)
+      tf_path = path + os.path.sep + "tensorflow"
+      if os.path.exists(tf_path):
+        paths.append(path)
+  if len(paths) == 0:
+    raise Exception("Tensorflow package not found! Please install it first!")
   return paths
 
 
@@ -288,7 +296,7 @@ def setup_python(environ_cp):
       write_action_env_to_bazelrc('PYTHONPATH', environ_cp.get('PYTHONPATH'))
   # check tensorflw >=2.10.0
   # not check tensorflow-estimator version
-  package_list= subprocess.Popen(checked_python_lib_path + "/../../../bin/pip" + " list | grep \"^tensorflow \"", shell=True, stdout=subprocess.PIPE).stdout.read().decode()
+  package_list= subprocess.Popen(os.path.sep.join(checked_python_bin_path.split(os.path.sep)[:-1]) + os.path.sep + "pip" + " list | grep \"^tensorflow \"", shell=True, stdout=subprocess.PIPE).stdout.read().decode()
   tensorflow_list = package_list.splitlines()
   for line in tensorflow_list:
     if line.startswith("tensorflow  "):
