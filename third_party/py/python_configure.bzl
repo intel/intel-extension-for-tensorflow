@@ -104,8 +104,8 @@ def _get_python_lib(repository_ctx, python_bin):
         "try:",
         "  library_paths = site.getsitepackages()",
         "except AttributeError:",
-        "  from distutils.sysconfig import get_python_lib",
-        "  library_paths = [get_python_lib()]",
+        "  from sysconfig import get_path",
+        "  library_paths = [get_path('purelib')]",
         "all_paths = set(python_paths + library_paths)",
         "paths = []",
         "for path in all_paths:",
@@ -154,13 +154,13 @@ def _get_python_include(repository_ctx, python_bin):
             python_bin,
             "-c",
             "from __future__ import print_function;" +
-            "from distutils import sysconfig;" +
-            "print(sysconfig.get_python_inc())",
+            "import sysconfig;" +
+            "print(sysconfig.get_path('include'))",
         ],
         error_msg = "Problem getting python include path.",
         error_details = ("Is the Python binary path set up right? " +
                          "(See ./configure or " + PYTHON_BIN_PATH + ".) " +
-                         "Is distutils installed?"),
+                         "Is sysconfig installed?"),
     )
     return result.stdout.splitlines()[0]
 
