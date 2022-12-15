@@ -167,8 +167,8 @@ void Register_ApplyAdamWithWeightDecayOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "T: numbertype");
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_locking: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_nesterov: bool = false");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(
+        op_builder, &apply_adam_with_weight_decay_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ApplyAdamWithWeightDecay op registration failed: ";
@@ -197,7 +197,7 @@ void Register_ResourceApplyAdamWithWeightDecayOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_locking: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_nesterov: bool = false");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
+                                                    &empty_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ResourceApplyAdamWithWeightDecay op registration failed: ";

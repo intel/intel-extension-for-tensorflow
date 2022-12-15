@@ -293,7 +293,7 @@ void Register_LayerNormOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "data_format: { 'NHWC', 'NCHW'} = 'NHWC' ");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unchanged_shape_fn);
+                                                    &layer_norm_shape_fn);
 
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
@@ -324,7 +324,7 @@ void Register_LayerNormGradOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "data_format: { 'NHWC', 'NCHW'} = 'NHWC' ");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
+                                                    &layer_norm_grad_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "LayerNormGrad op registration failed: ";

@@ -20,6 +20,8 @@ limitations under the License.
 #include "tensorflow/c/ops.h"
 #include "tensorflow/c/tf_status.h"
 
+void empty_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status) {}
+
 void unchanged_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status) {
   TF_SetStatus(status, TF_OK, "");
   TF_ShapeHandle* handle = TF_NewShapeHandle();
@@ -70,4 +72,39 @@ void rnn_forward_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status) {
   TF_DeleteShapeHandle(i_handle);
   TF_DeleteShapeHandle(output_handle);
   TF_DeleteShapeHandle(unknown_handle);
+}
+
+void layer_norm_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status) {
+  TF_SetStatus(status, TF_OK, "");
+  TF_ShapeHandle* handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 0, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 0, handle, status);
+  TF_DeleteShapeHandle(handle);
+  handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 1, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 1, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 2, handle, status);
+  TF_DeleteShapeHandle(handle);
+}
+
+void layer_norm_grad_shape_fn(TF_ShapeInferenceContext* ctx,
+                              TF_Status* status) {
+  TF_SetStatus(status, TF_OK, "");
+  TF_ShapeHandle* handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 0, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 0, handle, status);
+  TF_DeleteShapeHandle(handle);
+  handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 2, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 1, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 2, handle, status);
+  TF_DeleteShapeHandle(handle);
+}
+
+void apply_adam_with_weight_decay_shape_fn(TF_ShapeInferenceContext* ctx,
+                                           TF_Status* status) {
+  TF_SetStatus(status, TF_OK, "");
+  TF_ShapeHandle* handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 10, handle, status);  // grad
+  TF_ShapeInferenceContextSetOutput(ctx, 0, handle, status);
 }
