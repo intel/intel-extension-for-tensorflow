@@ -971,7 +971,8 @@ class ConvOpBase : public OpKernel {
             filter_mem_ = CreateDnnlMemory(filter_md_prefer, onednn_engine_,
                                            filter_cached_data);
           }
-        } else {
+        }
+        if (filter_cached_data == nullptr) {
           // allocate temporay tensor for reordering filter
           int64_t reorder_filter_data_size =
               fwd_pd_.weights_desc().get_size() / sizeof(Tfilter);

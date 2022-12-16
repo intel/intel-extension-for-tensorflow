@@ -170,8 +170,26 @@ class LegacyOneDnnQuantizedMatMulOpBase : public OpKernel {
         }
         Tweight* weight_cached_data =
             this->weight_cache_manager.GetCache(context, expected_md);
-        weight_reorder_mem =
-            CreateDnnlMemory(expected_md, onednn_engine, weight_cached_data);
+        if (weight_cached_data != nullptr) {
+          weight_reorder_mem =
+              CreateDnnlMemory(expected_md, onednn_engine, weight_cached_data);
+        } else {
+          // Reorder if cache is failed since pd has already used any format.
+          int64_t reorder_size = expected_md.get_size() / sizeof(Tweight);
+          OP_REQUIRES_OK(context,
+                         context->allocate_temp(DataTypeToEnum<Tweight>::v(),
+                                                TensorShape({reorder_size}),
+                                                &weight_reorder_tensor));
+          void* weight_handle = GetTensorBuffer<Tweight>(&weight_tensor);
+          void* weight_reorder_handle =
+              GetTensorBuffer<Tweight>(&weight_reorder_tensor);
+          weight_mem =
+              CreateDnnlMemory(weight_md, onednn_engine, weight_handle);
+          weight_reorder_mem = CreateDnnlMemory(expected_md, onednn_engine,
+                                                weight_reorder_handle);
+          ReorderMemory(*context, &weight_mem, &weight_reorder_mem,
+                        onednn_engine);
+        }
       } else {
         // No reorder needed
         weight_mem = CreateDnnlMemory(
