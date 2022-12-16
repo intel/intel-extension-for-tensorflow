@@ -1255,31 +1255,9 @@ Status TranslateBinary(const OneDnnGraphContext* ctx, const int node_index,
       {"SquaredDifference", kind::SquaredDifference},
       {"Sub", kind::Subtract}};
 
+  // TODO(itex): Add scalar sanity check, if encountering shape inference issue
+  // caused by both input's are scalar tensors
   auto* node_def = node_view->node();
-  std::vector<OpInfo_TensorProperties> props;
-  TF_ABORT_IF_ERROR(
-      ctx->graph_properties.GetInputProperties(node_def->name(), &props));
-  if (props.size() != 2) {
-    onednn_graph_node = nullptr;
-    return Status::OK();
-  }
-
-  // TODO(itex): remove this restriction, once LLGA supports scalar
-  // LLGA doesn't support scalar tensors. Usually, we can handle it via
-  // regarding scalar tensor as 1-D tensor. But for binary ops, it may cause
-  // shape inference issue. We disable LLGA op rewrite in this condition.
-  bool left_is_scalar =
-      props[0].shape().unknown_rank() || IsScalar(props[0].shape());
-  bool right_is_scalar =
-      props[1].shape().unknown_rank() || IsScalar(props[1].shape());
-
-  // TODO(itex): investigate why we cannot allow input with non-scalar +
-  // scalar
-  if (left_is_scalar && right_is_scalar) {
-    onednn_graph_node = nullptr;
-    return Status::OK();
-  }
-
   auto it = TF_LLGA_op_map.find(node_def->op());
   if (it != TF_LLGA_op_map.end()) {
     *onednn_graph_node =
@@ -2896,6 +2874,99 @@ Status InsertReshapeForDepthwise(OneDnnGraphContext* ctx) {
   return Status::OK();
 }
 
+Status SeparateQuantizeAndDequantize(OneDnnGraphContext* ctx) {
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Init(*ctx->graph_view.graph()));
+
+  auto* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  ITEX_VLOG(2)
+      << "Separate QuantizeAndDequantizeV4 to QuantizeV2 and Dequantize pair";
+
+  int num_nodes = ctx->graph_view.graph()->node_size();
+  for (int idx = 0; idx < num_nodes; idx++) {
+    auto* node_view = ctx->graph_view.GetNode(idx);
+    auto* node_def = node_view->node();
+
+    // TODO(itex): handle Cast + QuantizeAndDequantizeV4 condition
+    if (node_def->op() == "QuantizeAndDequantizeV4" &&
+        IsAnyConst(*(node_view->GetRegularFanin(1).node_view()->node())) &&
+        IsAnyConst(*(node_view->GetRegularFanin(2).node_view()->node()))) {
+      DataType T;
+      TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "T", &T));
+      if (T != DT_FLOAT) continue;
+
+      // Create quantize node
+      NodeDef quant_node;
+      quant_node.set_op("QuantizeV2");
+      quant_node.set_name(node_def->name() + "_quantize");
+      quant_node.set_device(node_def->device());
+      quant_node.add_input(node_def->input(0));
+      quant_node.add_input(node_def->input(1));
+      quant_node.add_input(node_def->input(2));
+
+      // Set QuantizeV2 attributes
+      auto* new_q_attr = quant_node.mutable_attr();
+      auto& src_attr = node_def->attr();
+      if (src_attr.at("signed_input").b()) {
+        (*new_q_attr)["T"].set_type(DT_QINT8);
+      } else {
+        (*new_q_attr)["T"].set_type(DT_QUINT8);
+      }
+      // TODO(itex): Check the correctness here. QuantizeAndDequantizeV4 doesn't
+      // have attr "mode". And the its kernel implementation is SCALED style.
+      SetAttrValue("SCALED", &(*new_q_attr)["mode"]);
+      (*new_q_attr)["round_mode"] = src_attr.at("round_mode");
+      (*new_q_attr)["axis"] = src_attr.at("axis");
+      (*new_q_attr)["narrow_range"] = src_attr.at("narrow_range");
+      // TODO(itex): Check the correctness here. QuantizeAndDequantizeV4 doesn't
+      // have attr "ensure_minimum_range". So we here provide a small value for
+      // Quantize op
+      SetAttrValue(0.00001, &(*new_q_attr)["ensure_minimum_range"]);
+
+      // Create dequantize node
+      NodeDef dequant_node;
+      dequant_node.set_op("Dequantize");
+      dequant_node.set_name(node_def->name() + "_dequantize");
+      dequant_node.set_device(node_def->device());
+      dequant_node.add_input(quant_node.name());
+      dequant_node.add_input(quant_node.name() + ":1");
+      dequant_node.add_input(quant_node.name() + ":2");
+      // Set Dequantize attributes
+      auto* new_deq_attr = dequant_node.mutable_attr();
+      if (src_attr.at("signed_input").b()) {
+        (*new_deq_attr)["T"].set_type(DT_QINT8);
+      } else {
+        (*new_deq_attr)["T"].set_type(DT_QUINT8);
+      }
+      SetAttrValue("SCALED", &(*new_deq_attr)["mode"]);
+      (*new_deq_attr)["axis"] = src_attr.at("axis");
+      (*new_deq_attr)["dtype"] = src_attr.at("T");
+      (*new_deq_attr)["narrow_range"] = src_attr.at("narrow_range");
+
+      // Connect the output correctly
+      SafeTensorId unique_id(dequant_node.name(), 0);
+
+      mutation->AddNode(std::move(quant_node), &status);
+      mutation->AddNode(std::move(dequant_node), &status);
+
+      for (int i = 0; i < node_view->GetRegularFanout(0).size(); i++) {
+        auto* output_node_view = node_view->GetRegularFanout(0)[i].node_view();
+
+        // TODO(itex): check whether this works
+        // int in_idx = fanout_node_view->GetRegularFanout(0)[i].index();
+        int in_idx = GetRegularFaninIndex(node_view, output_node_view, 0);
+        ITEX_VLOG(2) << output_node_view->node()->name() << " "
+                     << std::to_string(in_idx);
+        mutation->AddOrUpdateRegularFanin(output_node_view, in_idx, unique_id);
+        TF_ABORT_IF_ERROR(std::move(status));
+      }
+    }
+  }
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
+}
+
 // Change the input order of Conv2DBackpropInput
 Status RunPrePass(OneDnnGraphContext* ctx) {
   TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
@@ -3053,6 +3124,10 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
 
   TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
   TF_ABORT_IF_ERROR(AddRetNode(&ctx));
+
+  // Separate QuantizeAndDequantizeV4 into QuantizeV2 and Dequantize
+  TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
+  TF_ABORT_IF_ERROR(SeparateQuantizeAndDequantize(&ctx));
 
   // Split the dequantize node with >1 outputs into two dequant node so
   // that the  onednngraph quantization patterns match.
