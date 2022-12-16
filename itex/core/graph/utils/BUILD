@@ -45,19 +45,6 @@ cc_library(
 )
 
 cc_library(
-    name = "function",
-    srcs = ["function.cc"],
-    hdrs = [
-        "function.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//itex/core/utils:common_utils",
-        "@local_config_tf//:tf_header_lib",
-    ],
-)
-
-cc_library(
     name = "graph_view_internal",
     hdrs = ["graph_view_internal.h"],
     visibility = ["//visibility:private"],
@@ -120,7 +107,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":function",
         ":utils",
         "//itex/core/utils:common_utils",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -147,7 +133,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/graph:optimizer_config",
-        "//itex/core/graph/utils:function",
         "//itex/core/graph/utils:graph_view",
         "//itex/core/utils/onednn:onednn_util",
     ],

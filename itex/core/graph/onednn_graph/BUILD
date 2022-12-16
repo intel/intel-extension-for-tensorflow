@@ -5,7 +5,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/graph:optimizer_config",
-        "//itex/core/graph/utils:function",
         "//itex/core/graph/utils:graph_common_utils",
         "//itex/core/graph/utils:graph_properties",
         "//itex/core/graph/utils:graph_view",

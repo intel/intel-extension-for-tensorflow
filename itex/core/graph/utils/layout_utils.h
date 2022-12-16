@@ -19,8 +19,8 @@ limitations under the License.
 #include <string>
 #include <unordered_set>
 
-#include "itex/core/graph/utils/function.h"
 #include "itex/core/graph/utils/graph_view.h"
+#include "itex/core/utils/function.h"
 #include "itex/core/utils/op_def_util.h"
 
 namespace itex {

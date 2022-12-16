@@ -13,12 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "itex/core/graph/utils/function.h"
+#include "itex/core/utils/function.h"
 
 #include "itex/core/utils/tf_buffer.h"
 
 namespace itex {
-namespace graph {
 
 FunctionLibraryDefinition::FunctionDefAndOpRegistration::
     FunctionDefAndOpRegistration(const FunctionDef& fdef_in)
@@ -84,5 +83,4 @@ FunctionLibraryDefinition::FindHelper(const string& func) const {
   }
 }
 
-}  // namespace graph
 }  // namespace itex

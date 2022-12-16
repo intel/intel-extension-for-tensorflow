@@ -10,7 +10,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices:xpu_device_util",
-        "//itex/core/graph/utils:function",
         "//itex/core/graph/utils:graph_properties",
         "//itex/core/graph/utils:graph_view",
         "//itex/core/graph/utils:grappler_item",

@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef ITEX_CORE_GRAPH_UTILS_FUNCTION_H_
-#define ITEX_CORE_GRAPH_UTILS_FUNCTION_H_
+#ifndef ITEX_CORE_UTILS_FUNCTION_H_
+#define ITEX_CORE_UTILS_FUNCTION_H_
 
 #include <memory>
 #include <string>
@@ -28,7 +28,6 @@ limitations under the License.
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
 namespace itex {
-namespace graph {
 
 class FunctionLibraryDefinition {
  public:
@@ -55,7 +54,6 @@ class FunctionLibraryDefinition {
   gtl::FlatMap<string, string> func_grad_ TF_GUARDED_BY(mu_);
 };
 
-}  // namespace graph
 }  // namespace itex
 
-#endif  // ITEX_CORE_GRAPH_UTILS_FUNCTION_H_
+#endif  // ITEX_CORE_UTILS_FUNCTION_H_

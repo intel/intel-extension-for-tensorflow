@@ -25,7 +25,7 @@ limitations under the License.
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "itex/core/graph/utils/function.h"
+#include "itex/core/utils/function.h"
 #include "itex/core/utils/status.h"
 #include "protos/graph.pb.h"
 
