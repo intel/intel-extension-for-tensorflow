@@ -20,8 +20,10 @@ limitations under the License.
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
+#include "absl/types/optional.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/macros.h"
 #include "itex/core/utils/stringpiece.h"
@@ -41,13 +43,7 @@ class TF_MUST_USE_RESULT Status;
 class Status {
  public:
   /// Create a success status.
-  Status() {
-    code_ = TF_OK;
-    message_ = std::string("");
-    message_.reserve(128);
-  }
-
-  ~Status() {}
+  Status() {}
 
   /// \brief Create a status with the specified error code and msg as a
   /// human-readable string containing more detailed information.
@@ -65,50 +61,149 @@ class Status {
   static Status OK() { return Status(); }
 
   /// Returns true if the status indicates success.
-  bool ok() const { return code_ == TF_OK; }
+  bool ok() const { return (state_ == nullptr); }
 
-  TF_Code code() const { return code_; }
+  TF_Code code() const { return ok() ? TF_OK : state_->code; }
 
-  const std::string& error_message() const { return message_; }
+  const std::string& error_message() const {
+    return ok() ? empty_string() : state_->msg;
+  }
 
   bool operator==(const Status& x) const;
   bool operator!=(const Status& x) const;
 
+  /// \brief If `ok()`, stores `new_status` into `*this`.  If `!ok()`,
+  /// preserves the current status, but may augment with additional
+  /// information about `new_status`.
+  ///
+  /// Convenient way of keeping track of the first error encountered.
+  /// Instead of:
+  ///   `if (overall_status.ok()) overall_status = new_status`
+  /// Use:
+  ///   `overall_status.Update(new_status);`
+  void Update(const Status& new_status);
+
   /// \brief Return a string representation of this status suitable for
   /// printing. Returns the string `"OK"` for success.
+  ///
+  /// By default, it returns combination of the error code name, the message and
+  /// any associated payload messages. This string is designed simply to be
+  /// human readable and its exact format should not be load bearing. Do not
+  /// depend on the exact format of the result of `ToString()` which is subject
+  /// to change.
   std::string ToString() const;
 
-  void IgnoreError();
+  // Ignores any errors. This method does nothing except potentially suppress
+  // complaints from any tools that are checking that errors are not dropped on
+  // the floor.
+  void IgnoreError() const;
+
+  //----------------------------------------------------------------------------
+  // Payload Management APIs (Cloned from absl::Status)
+  //----------------------------------------------------------------------------
+  // A payload may be attached to a status to provide additional context to an
+  // error that may not be satisfied by an existing `itex::error::Code`.
+  // Typically, this payload serves one of several purposes:
+  //
+  //   * It may provide more fine-grained semantic information about the error
+  //     to facilitate actionable remedies.
+  //   * It may provide human-readable contexual information that is more
+  //     appropriate to display to an end user.
+  //
+  // A payload consists of a [key,value] pair, where the key is a string
+  // referring to a unique "type URL" and the value is an object of type
+  // `absl::Cord` to hold the contextual data.
+  //
+  // The "type URL" should be unique and follow the format of a URL
+  // (https://en.wikipedia.org/wiki/URL) and, ideally, provide some
+  // documentation or schema on how to interpret its associated data. For
+  // example, the default type URL for a protobuf message type is
+  // "type.googleapis.com/packagename.messagename". Other custom wire formats
+  // should define the format of type URL in a similar practice so as to
+  // minimize the chance of conflict between type URLs.
+  // Users should ensure that the type URL can be mapped to a concrete
+  // C++ type if they want to deserialize the payload and read it effectively.
+  //
+  // To attach a payload to a status object, call `Status::SetPayload()`,
+  // passing it the type URL and an `absl::Cord` of associated data. Similarly,
+  // to extract the payload from a status, call `Status::GetPayload()`. You
+  // may attach multiple payloads (with differing type URLs) to any given
+  // status object, provided that the status is currently exhibiting an error
+  // code (i.e. is not OK).
+  // TODO(b/197552541): Use absl::Cord for payload value type.
+
+  // The Payload-related APIs are cloned from absl::Status.
+  //
+  // Returns the payload of a status given its unique `type_url` key, if
+  // present.
+  absl::optional<itex::StringPiece> GetPayload(
+      itex::StringPiece type_url) const;
+
+  // Sets the payload for a non-ok status using a `type_url` key, overwriting
+  // any existing payload for that `type_url`.
+  //
+  // This function does nothing if the Status is ok.
+  void SetPayload(itex::StringPiece type_url, itex::StringPiece payload);
+
+  // Erases the payload corresponding to the `type_url` key.  Returns `true` if
+  // the payload was present.
+  bool ErasePayload(itex::StringPiece type_url);
+
+  // Iterates over the stored payloads and calls the
+  // `visitor(type_key, payload)` callable for each one.
+  //
+  // The order of calls to `visitor()` is not specified and may change at
+  // any time and any mutation on the same Status object during visitation is
+  // forbidden and could result in undefined behavior.
+  void ForEachPayload(
+      const std::function<void(itex::StringPiece, itex::StringPiece)>& visitor)
+      const;
 
  private:
-  TF_Code code_;
-  std::string message_;
+  static const std::string& empty_string();
+  struct State {
+    TF_Code code;
+    std::string msg;
+    std::unordered_map<std::string, std::string> payloads;
+  };
+  // OK status has a `NULL` state_.  Otherwise, `state_` points to
+  // a `State` structure containing the error code and message(s)
+  std::unique_ptr<State> state_;
+
+  void SlowCopyFrom(const State* src);
 };
 
+// OkStatus()
+//
+// Returns an OK status, equivalent to a default constructed instance. Prefer
+// usage of `OkStatus()` when constructing such an OK status.
+Status OkStatus();
+
 inline Status::Status(const Status& s)
-    : code_(s.code()), message_(s.error_message()) {}
+    : state_((s.state_ == nullptr) ? nullptr : new State(*s.state_)) {}
 
 inline Status& Status::operator=(const Status& s) {
-  code_ = s.code();
-  message_ = s.error_message();
+  // The following condition catches both aliasing (when this == &s),
+  // and the common case where both s and *this are ok.
+  if (state_ != s.state_) {
+    SlowCopyFrom(s.state_.get());
+  }
   return *this;
 }
 
 #ifndef SWIG
-inline Status::Status(Status&& s) noexcept {
-  code_ = s.code();
-  message_ = std::move(s.error_message());
-}
+inline Status::Status(Status&& s) noexcept : state_(std::move(s.state_)) {}
 
 inline Status& Status::operator=(Status&& s) noexcept {
-  code_ = s.code_;
-  message_ = std::move(s.error_message());
+  if (state_ != s.state_) {
+    state_ = std::move(s.state_);
+  }
   return *this;
 }
 #endif  // SWIG
 
 inline bool Status::operator==(const Status& x) const {
-  return ToString() == x.ToString();
+  return (this->state_ == x.state_) || (ToString() == x.ToString());
 }
 
 inline bool Status::operator!=(const Status& x) const { return !(*this == x); }

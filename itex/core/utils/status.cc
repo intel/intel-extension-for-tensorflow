@@ -17,20 +17,72 @@ limitations under the License.
 
 #include "itex/core/utils/status.h"
 
+#include "absl/strings/escaping.h"
+#include "absl/strings/match.h"
 #include "itex/core/utils/stacktrace.h"
 
 namespace itex {
 
 Status::Status(TF_Code code, itex::StringPiece msg) {
-  code_ = code;
-  message_ = string(msg);
-
+  assert(code != tensorflow::error::OK);
+  state_ = std::unique_ptr<State>(new State);
+  state_->code = code;
+  state_->msg = std::string(msg);
   ITEX_VLOG(5) << "Generated non-OK status: \"" << *this << "\". "
                << CurrentStackTrace();
 }
 
-void Status::IgnoreError() {
+void Status::Update(const Status& new_status) {
+  if (ok()) {
+    *this = new_status;
+  }
+}
+
+void Status::SlowCopyFrom(const State* src) {
+  if (src == nullptr) {
+    state_ = nullptr;
+  } else {
+    state_ = std::unique_ptr<State>(new State(*src));
+  }
+}
+
+const std::string& Status::empty_string() {
+  static string* empty = new string;
+  return *empty;
+}
+
+void Status::IgnoreError() const {
   // do nothing
+}
+
+void Status::SetPayload(itex::StringPiece type_url, itex::StringPiece payload) {
+  if (ok()) return;
+  state_->payloads[std::string(type_url)] = std::string(payload);
+}
+
+absl::optional<itex::StringPiece> Status::GetPayload(
+    itex::StringPiece type_url) const {
+  if (ok()) return absl::nullopt;
+  auto payload_iter = state_->payloads.find(std::string(type_url));
+  if (payload_iter == state_->payloads.end()) return absl::nullopt;
+  return itex::StringPiece(payload_iter->second);
+}
+
+bool Status::ErasePayload(itex::StringPiece type_url) {
+  if (ok()) return false;
+  auto payload_iter = state_->payloads.find(std::string(type_url));
+  if (payload_iter == state_->payloads.end()) return false;
+  state_->payloads.erase(payload_iter);
+  return true;
+}
+
+void Status::ForEachPayload(
+    const std::function<void(itex::StringPiece, itex::StringPiece)>& visitor)
+    const {
+  if (ok()) return;
+  for (const auto& payload : state_->payloads) {
+    visitor(payload.first, payload.second);
+  }
 }
 
 string error_name(TF_Code code) {
@@ -97,16 +149,28 @@ string error_name(TF_Code code) {
 }
 
 string Status::ToString() const {
-  string result(error_name(code()));
-  result += ": ";
-  result += error_message();
-  return result;
+  if (state_ == nullptr) {
+    return "OK";
+  } else {
+    string result(error_name(code()));
+    result += ": ";
+    result += error_message();
+
+    for (const std::pair<const std::string, std::string>& element :
+         state_->payloads) {
+      absl::StrAppend(&result, " [", element.first, "='",
+                      absl::CHexEscape(element.second), "']");
+    }
+    return result;
+  }
 }
 
 std::ostream& operator<<(std::ostream& os, const Status& x) {
   os << x.ToString();
   return os;
 }
+
+Status OkStatus() { return Status(); }
 
 std::string* TfCheckOpHelperOutOfLine(const ::itex::Status& v,
                                       const char* msg) {
@@ -120,6 +184,7 @@ std::string* TfCheckOpHelperOutOfLine(const ::itex::Status& v,
 
 Status StatusFromTF_Status(const TF_Status* tf_status) {
   TF_Code code = TF_GetCode(tf_status);
+  if (code == TF_OK) return Status();
   std::string message(TF_Message(tf_status));
   return Status(code, message);
 }
