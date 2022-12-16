@@ -156,7 +156,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     new_git_repository(
         name = "onednn_graph",
         # llga public dev-graph-beta-3 branch
-        commit = "6ac650b1294f36607d689e819fc3855be21d1294",
+        commit = "147d9bcec306738be5f223028b181e0ba592caf7",
         remote = "https://github.com/oneapi-src/oneDNN.git",
         build_file = clean_dep("//third_party/onednn_graph:onednn_graph.BUILD"),
         verbose = True,

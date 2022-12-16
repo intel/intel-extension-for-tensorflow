@@ -12,7 +12,7 @@ except ImportError:
     from tensorflow.python.platform import test as test_lib
 import numpy as np
 import time
-
+import os
 
 @test_util.run_all_in_native_and_block_format
 @test_util.run_all_in_graph_and_eager_modes
@@ -21,6 +21,12 @@ class FusedConv3DTest(test_lib.TestCase):
   def testFusePadConv3d(self):
     if test_lib.is_gpu_available():
       self.skipTest("Skip on GPU due to the pattern not supported")
+
+    os.environ["ITEX_ONEDNN_GRAPH"] = "0"
+
+    # TODO(itex): This pattern is intentionally disabled with oneDNN Graph enabled. 
+    # We find this pattern has performance drop. Pad + cast + q + dq + cast pattern 
+    # is used for 3D Unet. To investigate the details in the future.
     tf.compat.v1.disable_eager_execution()
     x = constant_op.constant(np.random.rand(1, 5, 8, 7, 1),
         dtype=dtypes.float32)
