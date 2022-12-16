@@ -425,7 +425,8 @@ class OneDnnConvOp : public OpKernel {
             filter_mem_ = CreateDnnlMemory(fwd_pd_.weights_desc(),
                                            onednn_engine_, filter_cached_data);
           }
-        } else {
+        }
+        if (filter_cached_data == nullptr) {
           int64 reorder_filter_data_size =
               fwd_pd_.weights_desc().get_size() / sizeof(Tfilter);
           OP_REQUIRES_OK(context, context->allocate_temp(
@@ -1560,7 +1561,8 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
                 CreateDnnlMemory(this->fwd_pd_.weights_desc(),
                                  this->onednn_engine_, filter_cached_data);
           }
-        } else {
+        }
+        if (filter_cached_data == nullptr) {
           int64 reorder_filter_data_size =
               this->fwd_pd_.weights_desc().get_size() / sizeof(qint8);
           OP_REQUIRES_OK(context, context->allocate_temp(
