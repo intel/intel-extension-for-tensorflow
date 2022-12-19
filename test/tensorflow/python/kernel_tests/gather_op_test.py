@@ -255,6 +255,19 @@ class GatherTest(test.TestCase, parameterized.TestCase):
           gather = array_ops.gather(params, indices, axis=2)
           self.assertAllEqual(gather.eval(), np.zeros((0, 0, 2)))
 
+  @test_util.run_deprecated_v1
+  def testZeroSlicesGPU(self):
+    if not test.is_gpu_available():
+      self.skipTest("Skip on CPU")
+
+    with self.session(use_gpu=True):
+      for dtype in _TEST_TYPES:
+        for itype in np.int32, np.int64:
+          params = np.zeros((0,), dtype=dtype.as_numpy_dtype)
+          indices = np.array([1, 2], dtype=itype)
+          gather = array_ops.gather(params, indices, axis=0)
+          self.assertAllEqual(gather.eval(), np.zeros((2,)))
+
   @parameterized.parameters([
       # batch_dims=0 (equivalent to tf.gather)
       dict(  # 2D indices

@@ -37,17 +37,17 @@ class PackOp : public OpKernel {
   void Compute(OpKernelContext* c) override {
     const int num = c->num_inputs();
     const Tensor& first_input = c->input(0);
-
     int expanded_num_dims = first_input.dims() + 1;
-    if (axis_ < 0) axis_ += expanded_num_dims;
+    int axis = axis_;
+    if (axis < 0) axis += expanded_num_dims;
 
-    OP_REQUIRES(c, 0 <= axis_ && axis_ < expanded_num_dims,
+    OP_REQUIRES(c, 0 <= axis && axis < expanded_num_dims,
                 errors::InvalidArgument("axis = ", axis_, " not in [",
                                         -expanded_num_dims, ", ",
                                         expanded_num_dims, ")"));
 
     TensorShape output_shape(first_input.shape());
-    output_shape.InsertDim(axis_, num);
+    output_shape.InsertDim(axis, num);
 
     // In the num = 1 case, just reshape the input
     if (num == 1) {
@@ -62,16 +62,16 @@ class PackOp : public OpKernel {
     OP_REQUIRES_OK(c, c->allocate_output(0, output_shape, &output));
 
     int64 before_dim = 1;
-    for (int i = 0; i < axis_; ++i) {
+    for (int i = 0; i < axis; ++i) {
       before_dim *= output_shape.dim_size(i);
     }
 
     int64 after_dim = 1;
-    for (int i = axis_ + 1; i < output_shape.dims(); ++i) {
+    for (int i = axis + 1; i < output_shape.dims(); ++i) {
       after_dim *= output_shape.dim_size(i);
     }
 
-    const int64 axis_dim = output_shape.dim_size(axis_);
+    const int64 axis_dim = output_shape.dim_size(axis);
 
     const int64 output_size = output->NumElements();
     if (output_size > 0) {
