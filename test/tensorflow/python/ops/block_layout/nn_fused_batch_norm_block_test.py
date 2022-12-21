@@ -614,7 +614,7 @@ class BatchNormalizationTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testBatchNormGradTrainingShape3(self):
     x_shape = [1, 2, 1, 6]
-    self._runtests(x_shape, is_training=True, gradient_test=True)
+    self._runtests(x_shape, is_training=True, gradient_test=True, cpu_only=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradTrainingShape4(self):
