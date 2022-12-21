@@ -85,7 +85,7 @@ struct GroupScan {
       else
         local_mem_ptr[i] = init_;
     }
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
     // reduce
     T prefix = init_;
@@ -116,7 +116,7 @@ struct GroupScan {
       }
     }
 
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
 // write  output
 #pragma unroll
@@ -196,7 +196,7 @@ struct DeviceScanFirstStep {
       else
         local_mem_ptr[i] = init_;
     }
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
     // reduce
     T prefix = init_;
@@ -225,7 +225,7 @@ struct DeviceScanFirstStep {
         local_mem_ptr[local_start + i] = updated_prefix;
       }
     }
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
 // write  output
 #pragma unroll
@@ -675,13 +675,12 @@ template <typename T, typename Item, typename BinaryOp, int SubGroupSize,
 void slmScan(Item item, T* array, T* carry_array, const T* old_data,
              T* updated_data, const T init, BinaryOp binary_op) {
   constexpr int k = NumSubGroup / SubGroupSize;
-  auto group = item.get_group();
   auto sg_group = item.get_sub_group();
   int sg_id = sg_group.get_group_linear_id();
   int lid_in_sg = sg_group.get_local_linear_id();
 
   array[sg_id + lid_in_sg * NumSubGroup] = *old_data;
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   // ----------------------------
   // Three stage scan in SLM
@@ -694,7 +693,7 @@ void slmScan(Item item, T* array, T* carry_array, const T* old_data,
 
   // Second stage: compute subgroup prefix
   if (lid_in_sg == SubGroupSize - 1) carry_array[sg_id] = exclusive_sum + data;
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   if (sg_id == 0) {
     int offset = lid_in_sg * k;
@@ -705,10 +704,10 @@ void slmScan(Item item, T* array, T* carry_array, const T* old_data,
       carry = binary_op(carry, tmp);
     }
   }
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   array[offset + lid_in_sg] = binary_op(exclusive_sum, carry_array[sg_id]);
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   *updated_data = array[sg_id + lid_in_sg * NumSubGroup];
 }
