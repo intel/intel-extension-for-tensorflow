@@ -22,7 +22,6 @@ limitations under the License.
 
 #include "itex/core/utils/platform_types.h"
 #include "itex/core/utils/stringpiece.h"
-#include "itex/core/utils/types.h"
 
 namespace itex {
 namespace strings {

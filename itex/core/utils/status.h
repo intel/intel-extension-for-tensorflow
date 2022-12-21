@@ -18,6 +18,7 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_STATUS_H_
 #define ITEX_CORE_UTILS_STATUS_H_
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>

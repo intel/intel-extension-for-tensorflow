@@ -50,6 +50,9 @@ namespace itex {
 class OpKernelContext;
 class OpKernelConstruction;
 class PersistentTensor;
+class ResourceMgr;
+class ResourceMgrPool;
+class ScopedStepContainer;
 
 // Empty function, given to C-API requiring a function pointer
 void EmptyCopyFunctor(TF_OpKernelContext* tf_ctx, TF_Tensor* tf_source,
@@ -169,11 +172,20 @@ class OpOutputList {
 
 class OpKernelContext {
  public:
+#ifndef INTEL_CPU_ONLY
+  explicit OpKernelContext(TF_OpKernelContext* ctx)
+      : ctx_(ctx),
+        outputs_(TF_NumOutputs(ctx_)),
+        status_(TF_NewStatus()),
+        device_(ctx_, status_),
+        resource_mgr(nullptr) {}
+#else
   explicit OpKernelContext(TF_OpKernelContext* ctx)
       : ctx_(ctx),
         outputs_(TF_NumOutputs(ctx_)),
         status_(TF_NewStatus()),
         device_(ctx_, status_) {}
+#endif
 
   ~OpKernelContext() {
     if (inputs_ != nullptr) {
@@ -203,6 +215,7 @@ class OpKernelContext {
   void* tensor_data(int index);
 
   bool is_input_same(int index, std::vector<int64> shape);
+  int64_t step_id() const;
 
   //  Status input_list(StringPiece name, OpInputList* list);
   //
@@ -329,7 +342,12 @@ class OpKernelContext {
   const Eigen::GpuDevice& eigen_gpu_device() const {
     return device_.eigen_gpu_device_;
   }
+
 #endif  // INTEL_CPU_ONLY
+
+#ifndef INTEL_CPU_ONLY
+  ResourceMgr* resource_manager();
+#endif
 
   template <typename EigenDeviceType>
   const EigenDeviceType& eigen_device() const;
@@ -400,6 +418,9 @@ class OpKernelContext {
 #endif  // INTEL_CPU_ONLY
   };
   InternalDevice device_;
+#ifndef INTEL_CPU_ONLY
+  ResourceMgr* resource_mgr;
+#endif
 };
 
 template <>

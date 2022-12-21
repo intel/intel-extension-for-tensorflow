@@ -487,8 +487,13 @@ class Tensor {
     set_dtype(dtype);
 
     TF_Status* tf_status = TF_NewStatus();
-    TF_TensorBitcastFrom(other.buf_, static_cast<TF_DataType>(dtype), buf_,
-                         shape.dim_sizes().data(), shape.dims(), tf_status);
+    if (other.buf_) {
+      TF_TensorBitcastFrom(other.buf_, static_cast<TF_DataType>(dtype), buf_,
+                           shape.dim_sizes().data(), shape.dims(), tf_status);
+    } else {
+      TF_DeleteTensor(buf_);
+      buf_ = nullptr;
+    }
     Status s = StatusFromTF_Status(tf_status);
     ITEX_CHECK_EQ(Status::OK(), s);
     TF_DeleteStatus(tf_status);

@@ -42,6 +42,7 @@ struct GpuDevice;
 namespace itex {
 
 class Variant;
+class ResourceHandle;
 //
 // MemoryType is used to describe whether input or output Tensors of
 // an OpKernel should reside in "Host memory" (e.g., CPU memory) or
@@ -351,7 +352,7 @@ MATCH_TYPE_AND_ENUM(quint16, DT_QUINT16);
 MATCH_TYPE_AND_ENUM(qint32, DT_QINT32);
 MATCH_TYPE_AND_ENUM(Eigen::bfloat16, DT_BFLOAT16);
 MATCH_TYPE_AND_ENUM(Eigen::half, DT_HALF);
-// MATCH_TYPE_AND_ENUM(ResourceHandle, DT_RESOURCE);
+MATCH_TYPE_AND_ENUM(ResourceHandle, DT_RESOURCE);
 MATCH_TYPE_AND_ENUM(Variant, DT_VARIANT);
 
 template <>

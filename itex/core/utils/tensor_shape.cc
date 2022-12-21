@@ -362,6 +362,39 @@ void TensorShapeBase<Shape>::AddDim(int64 size) {
 }
 
 template <class Shape>
+Status TensorShapeBase<Shape>::AddDimWithStatus(int64_t size) {
+  if (!kIsPartial) {
+    if (ITEX_PREDICT_FALSE(size < 0)) {
+      return errors::InvalidArgument("Expected a non-negative size, got ",
+                                     size);
+    }
+  }
+
+  if (unknown_rank()) {
+    return Status();
+  }
+
+  if (ITEX_PREDICT_FALSE(ndims_byte() >= MaxDimensions())) {
+    return errors::InvalidArgument("Too many dimensions in tensor");
+  }
+
+  int64_t new_num_elements;
+  if (kIsPartial && (num_elements() < 0 || size < 0)) {
+    new_num_elements = -1;
+  } else {
+    new_num_elements = MultiplyWithoutOverflow(num_elements(), size);
+    if (ITEX_PREDICT_FALSE(new_num_elements < 0)) {
+      return errors::InvalidArgument("Encountered overflow when multiplying ",
+                                     num_elements(), " with ", size,
+                                     ", result: ", new_num_elements);
+    }
+  }
+
+  UnsafeAddDim(size, new_num_elements);
+  return Status();
+}
+
+template <class Shape>
 void TensorShapeBase<Shape>::UnsafeAddDim(int64 size, int64 new_num_elements) {
   const int nd = ndims_byte();
   if (tag() == REP16 && nd < 6 && size < kMaxRep16) {
@@ -512,6 +545,31 @@ template <class Shape>
 TensorShapeIter<Shape> TensorShapeBase<Shape>::end() const {
   ITEX_CHECK(!unknown_rank());
   return TensorShapeIter<Shape>(static_cast<const Shape*>(this), dims());
+}
+
+template <class Shape>
+Status TensorShapeBase<Shape>::BuildTensorShapeBase(
+    const TensorShapeProto& proto, TensorShapeBase* out) {
+  out->set_tag(REP16);
+  out->set_data_type(DT_INVALID);
+  // NOTE(irving): Unfortunately, TensorShape allows parsing protos with
+  // unknown_shape() set, and it seems hard to remove this without backwards
+  // compatibility issues.
+  if (kIsPartial && proto.unknown_rank()) {
+    out->set_ndims_byte(kUnknownRank);
+    out->set_num_elements(-1);
+  } else {
+    out->set_ndims_byte(0);
+    out->set_num_elements(1);
+    Status s = Status();
+    for (const auto& d : proto.dim()) {
+      s = out->AddDimWithStatus(d.size());
+      if (!s.ok()) {
+        return s;
+      }
+    }
+  }
+  return Status();
 }
 
 string TensorShapeRep::DebugString() const {

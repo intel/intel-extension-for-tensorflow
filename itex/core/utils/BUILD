@@ -16,6 +16,36 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "resource_hdrs",
+    srcs = [
+        "casts.h",
+        "errors.h",
+        "hash.h",
+        "intrusive_ptr.h",
+        "managed_stack_trace.h",
+        "mutex.h",
+        "mutex_data.h",
+        "numbers.h",
+        "platform_types.h",
+        "protobuf.h",
+        "refcount.h",
+        "resource_base.h",
+        "resource_handle.h",
+        "stack_frame.h",
+        "status.h",
+        "statusor.h",
+        "statusor_internals.h",
+        "str_util.h",
+        "strcat.h",
+        "tensor_coding.h",
+        "tensor_shape.h",
+        "thread_annotations.h",
+        "type_index.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "random",
     srcs = ["random.cc"],
@@ -90,6 +120,7 @@ cc_library(
     name = "tstring",
     hdrs = [
         "tstring.h",
+        ":resource_hdrs",
     ],
     deps = [
         "@com_google_absl//absl/strings",

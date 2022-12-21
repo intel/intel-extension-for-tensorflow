@@ -180,6 +180,9 @@ class TensorShapeBase : public TensorShapeRep {
   /// Construct an empty TensorShape, or an unknown rank PartialTensorShape
   TensorShapeBase();
 
+  static Status BuildTensorShapeBase(const TensorShapeProto& proto,
+                                     TensorShapeBase* out);
+
   TensorShapeBase(const TensorShapeProto& proto);  // NOLINT(runtime/explicit)
 
   /// Returns `true` iff `proto` is a valid tensor shape.
@@ -196,6 +199,10 @@ class TensorShapeBase : public TensorShapeRep {
   /// \brief Add a dimension to the end ("inner-most").
   /// REQUIRES: `size >= 0`
   void AddDim(int64 size);
+
+  /// Same as `AddDim` but returns a `Status`.
+  /// Use if unsure is `size >= 0`, to prevent `CHECK`-crashes.
+  Status AddDimWithStatus(int64_t size);
 
   /// Appends all the dimensions from `shape`.
   void AppendShape(const TensorShapeBase& shape);
@@ -423,6 +430,11 @@ class PartialTensorShape : public TensorShapeBase<PartialTensorShape> {
  public:
   PartialTensorShape() {}
   using TensorShapeBase<PartialTensorShape>::TensorShapeBase;
+
+  static Status BuildPartialTensorShape(const TensorShapeProto& proto,
+                                        PartialTensorShape* out) {
+    return BuildTensorShapeBase(proto, out);
+  }
 
   /// Add a dimension to the end ("inner-most"), returns a new
   /// PartialTensorShape.
