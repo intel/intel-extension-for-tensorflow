@@ -327,6 +327,31 @@ static const std::vector<int> GetConstFilterCheckList(
   return op_const_checklist_map.at(op_name);
 }
 
+void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
+                             NodeDef* new_node) {
+  CopyAttrsAll(orig_node_view, new_node);
+
+  // Check and set filter attribute.
+  auto* new_attr = new_node->mutable_attr();
+
+  PartialTensorShape partial_shape;
+  if (TryGetNodeAttr(*new_node, "element_shape", &partial_shape) ||
+      TryGetNodeAttr(*new_node, "element_shape_except0", &partial_shape)) {
+    int32_t rank = partial_shape.dims();
+    SetAttrValue(rank, &(*new_attr)["num_dims_of_element_shape"]);
+    if (rank == -1) {
+      std::vector<int64_t> dims;
+      SetAttrValue(dims, &(*new_attr)["dims_of_element_shape"]);
+    } else {
+      std::vector<int64_t> dims(rank);
+      for (int32_t i = 0; i < rank; ++i) {
+        dims[i] = static_cast<int64_t>(partial_shape.dim_size(i));
+      }
+      SetAttrValue(dims, &(*new_attr)["dims_of_element_shape"]);
+    }
+  }
+}
+
 void CopyAttrsAllCheckConstFilter(const utils::MutableNodeView* orig_node_view,
                                   NodeDef* new_node) {
   CopyAttrsAll(orig_node_view, new_node);
@@ -546,6 +571,7 @@ bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def) {
 
   // Op only used by ITEX.
   if (IsDataTypeExemptOp(op_name)) return true;
+  if (IsTensorArray(node_def)) return true;
 
   // Quantized op used by both normal TF and intel ITEX. Need to check whether
   // they are supported before rewritting.

@@ -32,7 +32,7 @@ namespace graph {
 namespace {
 namespace protobuf = ::google::protobuf;
 
-const std::vector<NativeFormatInfo>* GetNativeFormatInfo() {
+const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
       {"_FusedBatchMatMulV2", "_ITEXFusedBatchMatMulV2",
        CopyAttrsAllCheckConstFilter, AlwaysRewrite},
@@ -263,10 +263,83 @@ const std::vector<NativeFormatInfo>* GetNativeFormatInfo() {
        AlwaysRewrite}};
   return &rinfo;
 }
+
+const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
+  static std::vector<NativeFormatInfo> rinfo{
+      {"TensorArray", "_ITEXTensorArray", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayV2", "_ITEXTensorArray", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayV3", "_ITEXTensorArray", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayGrad", "_ITEXTensorArrayGrad", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayGradV2", "_ITEXTensorArrayGrad", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayGradV3", "_ITEXTensorArrayGrad", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayGradWithShape", "_ITEXTensorArrayGradWithShape",
+       CopyAttrsForTensorArray, AlwaysRewrite},
+      {"TensorArrayWrite", "_ITEXTensorArrayWrite", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayWriteV2", "_ITEXTensorArrayWrite", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayWriteV3", "_ITEXTensorArrayWrite", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayRead", "_ITEXTensorArrayRead", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayReadV2", "_ITEXTensorArrayRead", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayReadV3", "_ITEXTensorArrayRead", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayPack", "_ITEXTensorArrayPack", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayGather", "_ITEXTensorArrayGather", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayGatherV2", "_ITEXTensorArrayGather", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayGatherV3", "_ITEXTensorArrayGather", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayConcat", "_ITEXTensorArrayConcat", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayConcatV2", "_ITEXTensorArrayConcat", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayConcatV3", "_ITEXTensorArrayConcat", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayUnPack", "_ITEXTensorArrayUnPack", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayScatter", "_ITEXTensorArrayScatter", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayScatterV2", "_ITEXTensorArrayScatter",
+       CopyAttrsForTensorArray, AlwaysRewrite},
+      {"TensorArrayScatterV3", "_ITEXTensorArrayScatter",
+       CopyAttrsForTensorArray, AlwaysRewrite},
+      {"TensorArraySplit", "_ITEXTensorArraySplit", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArraySplitV2", "_ITEXTensorArraySplit", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArraySplitV3", "_ITEXTensorArraySplit", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArraySize", "_ITEXTensorArraySize", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArraySizeV2", "_ITEXTensorArraySize", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArraySizeV3", "_ITEXTensorArraySize", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayClose", "_ITEXTensorArrayClose", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayCloseV2", "_ITEXTensorArrayClose", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+      {"TensorArrayCloseV3", "_ITEXTensorArrayClose", CopyAttrsForTensorArray,
+       AlwaysRewrite},
+  };
+  return &rinfo;
+}
+
 }  // namespace
 
 const NativeFormatInfo* CheckForNodeNativeFormat(
-    const utils::MutableNodeView& node_view) {
+    const char* device_name, const utils::MutableNodeView& node_view) {
   NodeDef& node_def = *(node_view.node());
 
   if (!IsLayoutRewriteSupportedDataType(node_def)) return nullptr;
@@ -274,7 +347,19 @@ const NativeFormatInfo* CheckForNodeNativeFormat(
   // We now check if rewrite rule applies for this op. If rewrite rule passes
   // for this op, then we rewrite it to Native op.
   // Find matching NativeFormatInfo and then check that rewrite rule applies.
-  const std::vector<NativeFormatInfo>* rinfo = GetNativeFormatInfo();
+  const std::vector<NativeFormatInfo>* rinfo;
+  if (absl::StrContains("CPU", device_name)) {
+    rinfo = GetCPUNativeFormatInfo();
+  } else if (absl::StrContains("GPU", device_name)) {
+    rinfo = GetGPUNativeFormatInfo();
+  } else if (absl::StrContains("XPU", device_name)) {
+    rinfo = GetGPUNativeFormatInfo();
+  } else {
+    ITEX_LOG(WARNING) << "invalid device name, expected CPU/GPU/XPU, got "
+                      << device_name;
+    return nullptr;
+  }
+
   for (auto ri = rinfo->cbegin(); ri != rinfo->cend(); ++ri) {
     if (node_def.op() == ri->name && ri->rewrite_rule(node_view)) {
       return &*ri;
@@ -361,7 +446,7 @@ Status RunNativeLayout(const char* device_name, const GrapplerItem& item,
 
     const NativeFormatInfo* ri = nullptr;
     // We will first search if node is to be rewritten.
-    if ((ri = CheckForNodeNativeFormat(*node_view)) != nullptr) {
+    if ((ri = CheckForNodeNativeFormat(device_name, *node_view)) != nullptr) {
       const string& node_name = node_def->name();
       const string& op_name = node_def->op();
 

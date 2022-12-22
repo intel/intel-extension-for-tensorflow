@@ -126,11 +126,9 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
 
   // Put post Native Format rewrite pass for better co-working with oneDNN
   // layout.
-  if (device_name == DEVICE_CPU) {
-    optimized_graph_def.Swap(&graph_def);
-    SET_STATUS_IF_ERROR(tf_status, RunNativeLayout(device_name, item, graph_def,
-                                                   &optimized_graph_def));
-  }
+  optimized_graph_def.Swap(&graph_def);
+  SET_STATUS_IF_ERROR(tf_status, RunNativeLayout(device_name, item, graph_def,
+                                                 &optimized_graph_def));
 
   // Memory Optimization
   optimized_graph_def.Swap(&graph_def);

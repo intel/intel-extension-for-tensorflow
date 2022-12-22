@@ -116,6 +116,9 @@ void CopyAttrsAll(const utils::MutableNodeView* orig_node_view,
 void CopyAttrsAllCheckConstFilter(const utils::MutableNodeView* orig_node_view,
                                   NodeDef* new_node);
 
+void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
+                             NodeDef* new_node);
+
 // Function to copy attributes of OneDnnGraph
 void CopyAttrsOneDnnGraph(const utils::MutableNodeView* orig_node_view,
                           NodeDef* new_node);

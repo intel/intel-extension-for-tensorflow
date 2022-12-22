@@ -28,7 +28,6 @@ limitations under the License.
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/macros.h"
 #include "itex/core/utils/stringpiece.h"
-#include "itex/core/utils/types.h"
 #include "tensorflow/c/c_api_macros.h"
 #include "tensorflow/c/tf_status.h"
 

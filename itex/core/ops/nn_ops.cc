@@ -3037,6 +3037,280 @@ void Register_ITEXFusedAddV2WithSoftmaxOp() {
   }
 }
 
+// For TensorArray serial ops, we all follows semantic of v3 version. For v0,
+// v2,  will be handled as v3
+
+// TODO(itex): missed SetIsStateful and ShapeFn
+void Register_ITEXTensorArray() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArray");
+    TF_OpDefinitionBuilderAddInput(op_builder, "size: int32");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "flow: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dtype: type");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_dims_of_element_shape: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "dims_of_element_shape: list(int) = []");
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder, "element_shape: shape = { unknown_rank: true }");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dynamic_size: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "clear_after_read: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "identical_element_shapes: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "tensor_array_name: string = ''");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArray op registration failed: ";
+  }
+}
+
+// TODO(itex): missed SetIsStateful and ShapeFn
+void Register_ITEXTensorArrayGrad() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayGrad");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "grad_handle: resource");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "flow_out: float");
+
+    TF_OpDefinitionBuilderAddAttr(op_builder, "source: string");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayGrad op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayGradWithShape() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayGradWithShape");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "shape_to_prepend: int32");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "grad_handle: resource");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "flow_out: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "source: string");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayGradWithShape op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayWrite() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayWrite");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "index: int32");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "flow_out: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: type");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayWrite op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayRead() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayRead");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "index: int32");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "value: dtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dtype: type");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayRead op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayGather() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayGather");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "indices: int32");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "value: dtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dtype: type");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_dims_of_element_shape: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "dims_of_element_shape: list(int) = []");
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder, "element_shape: shape = { unknown_rank: true }");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayGather op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayPack() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayPack");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "value: dtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dtype: type");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_dims_of_element_shape: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "dims_of_element_shape: list(int) = []");
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder, "element_shape: shape = { unknown_rank: true }");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayPack op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayScatter() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayScatter");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "indices: int32");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "flow_out: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: type");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayScatter op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayUnpack() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayUnpack");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "flow_out: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: type");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayUnpack op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayConcat() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayConcat");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "value: dtype");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "lengths: int64");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dtype: type");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_dims_of_element_shape: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "dims_of_element_shape: list(int) = []");
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder, "element_shape_except0: shape = { unknown_rank: true }");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayConcat op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArraySplit() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArraySplit");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "lengths: int64");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "flow_out: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: type");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArraySplit op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArraySize() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArraySize");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderAddInput(op_builder, "flow_in: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "size: int32");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArraySize op registration failed: ";
+  }
+}
+
+void Register_ITEXTensorArrayClose() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXTensorArrayClose");
+    TF_OpDefinitionBuilderAddInput(op_builder, "handle: resource");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXTensorArrayClose op registration failed: ";
+  }
+}
+
 void Register_ITEXResizeBilinearOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

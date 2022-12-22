@@ -1891,6 +1891,31 @@ itex_xpu_library(
     alwayslink = True,
 )
 
+itex_xpu_library(
+    name = "tensorarray_ops",
+    srcs = [
+        "concat_lib.cc",
+        "split_lib.cc",
+        "tensor_array.cc",
+        "tensor_array_ops.cc",
+    ],
+    hdrs = [
+        "aggregate_ops.h",
+        "concat_lib.h",
+        "gpu_device_array.h",
+        "split_lib.h",
+        "tensor_array.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
 GPU_KERNELS = [
     ":aggregate_ops",
     ":argmax_op",
@@ -1997,6 +2022,7 @@ GPU_KERNELS = [
     ":unpack_op",
     ":where_op",
     ":xent_op",
+    ":tensorarray_ops",
 ]
 
 itex_xpu_library(
