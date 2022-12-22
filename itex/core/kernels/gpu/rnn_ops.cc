@@ -253,10 +253,15 @@ class RnnOp : public RnnCommonKernel {
         context, context->allocate_output(3, rmc_.workspace_shape, &workspace));
 
     // Call RNN functor
+    input_gemm_.SetContext(context);
+    h_gemm_.SetContext(context);
     functor::RnnFunctor<Device, T> func;
     func(context, rmc_, input, input_h, input_c, params, seq_lengths, dp_mask,
-         rec_dp_mask, output, output_h, output_c, workspace);
+         rec_dp_mask, output, output_h, output_c, workspace, &input_gemm_,
+         &h_gemm_);
   }
+  MatMulFunctor<Device, T, T, T, true> input_gemm_;
+  MatMulFunctor<Device, T, T, T, true> h_gemm_;
 };
 
 // Forward declarations of the functor specializations for GPU.
@@ -269,7 +274,9 @@ namespace functor {
       const Tensor* input, const Tensor* input_h, const Tensor* input_c,      \
       const Tensor* params, const Tensor* seq_lengths, const Tensor* dp_mask, \
       const Tensor* rec_dp_mask, Tensor* output, Tensor* output_h,            \
-      Tensor* output_c, Tensor* workspace);                                   \
+      Tensor* output_c, Tensor* workspace,                                    \
+      MatMulFunctor<GPUDevice, T, T, T, true>* input_gemm,                    \
+      MatMulFunctor<GPUDevice, T, T, T, true>* h_gemm);                       \
   extern template struct RnnFunctor<GPUDevice, T>;
 
 TF_CALL_half(DECLARE_GPU_SPEC);
@@ -341,10 +348,15 @@ class RnnGradOp : public RnnCommonKernel {
                                                      &params_backprop));
     // Call RNN gradient functor
     functor::RnnGradFunctor<Device, T> func;
+    hidden_gemm_.SetContext(context);
+    input_gemm_.SetContext(context);
+    params_wei_ih_gemm_.SetContext(context);
+    params_wei_hh_gemm_.SetContext(context);
     func(context, rmc_, input, input_h, input_c, params, seq_lengths, dp_mask,
          rec_dp_mask, output, output_h, output_c, workspace, output_backprop,
          output_h_backprop, output_c_backprop, input_backprop, input_h_backprop,
-         input_c_backprop, params_backprop);
+         input_c_backprop, params_backprop, &hidden_gemm_, &input_gemm_,
+         &params_wei_ih_gemm_, &params_wei_hh_gemm_);
   }
 
  private:
@@ -406,6 +418,11 @@ class RnnGradOp : public RnnCommonKernel {
 
     return Status::OK();
   }
+
+  MatMulFunctor<Device, T, T, T, false> hidden_gemm_;
+  MatMulFunctor<Device, T, T, T, true> input_gemm_;
+  MatMulFunctor<Device, T, T, T, true> params_wei_ih_gemm_;
+  MatMulFunctor<Device, T, T, T, true> params_wei_hh_gemm_;
 };
 
 // Forward declarations of the functor specializations for GPU.
@@ -422,7 +439,10 @@ namespace functor {
       const Tensor* output_backprop, const Tensor* output_h_backprop,          \
       const Tensor* output_c_backprop, Tensor* input_backprop,                 \
       Tensor* input_h_backprop, Tensor* input_c_backprop,                      \
-      Tensor* params_backprop);                                                \
+      Tensor* params_backprop, MatMulFunctor<GPUDevice, T, T, T, false>*,      \
+      MatMulFunctor<GPUDevice, T, T, T, true>*,                                \
+      MatMulFunctor<GPUDevice, T, T, T, true>*,                                \
+      MatMulFunctor<GPUDevice, T, T, T, true>*);                               \
   extern template struct RnnGradFunctor<GPUDevice, T>;
 
 TF_CALL_half(DECLARE_GPU_SPEC);

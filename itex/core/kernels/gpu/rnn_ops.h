@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <string>
 
+#include "itex/core/kernels/common/matmul_op.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/stringprintf.h"
@@ -84,22 +85,27 @@ struct RnnFunctor {
                   const Tensor* input_c, const Tensor* params,
                   const Tensor* seq_lengths, const Tensor* dp_mask,
                   const Tensor* rec_dp_mask, Tensor* output, Tensor* output_h,
-                  Tensor* output_c, Tensor* workspace);
+                  Tensor* output_c, Tensor* workspace,
+                  MatMulFunctor<Device, T, T, T, true>* input_gemm = nullptr,
+                  MatMulFunctor<Device, T, T, T, true>* h_gemm = nullptr);
 };
 
 template <typename Device, typename T>
 struct RnnGradFunctor {
-  void operator()(OpKernelContext* context, const RnnModelConfig& model_config,
-                  const Tensor* input, const Tensor* input_h,
-                  const Tensor* input_c, const Tensor* params,
-                  const Tensor* seq_lengths, const Tensor* dp_mask,
-                  const Tensor* rec_dp_mask, const Tensor* output,
-                  const Tensor* output_h, const Tensor* output_c,
-                  const Tensor* workspace, const Tensor* output_backprop,
-                  const Tensor* output_h_backprop,
-                  const Tensor* output_c_backprop, Tensor* input_backprop,
-                  Tensor* input_h_backprop, Tensor* input_c_backprop,
-                  Tensor* params_backprop);
+  void operator()(
+      OpKernelContext* context, const RnnModelConfig& model_config,
+      const Tensor* input, const Tensor* input_h, const Tensor* input_c,
+      const Tensor* params, const Tensor* seq_lengths, const Tensor* dp_mask,
+      const Tensor* rec_dp_mask, const Tensor* output, const Tensor* output_h,
+      const Tensor* output_c, const Tensor* workspace,
+      const Tensor* output_backprop, const Tensor* output_h_backprop,
+      const Tensor* output_c_backprop, Tensor* input_backprop,
+      Tensor* input_h_backprop, Tensor* input_c_backprop,
+      Tensor* params_backprop,
+      MatMulFunctor<Device, T, T, T, false>* hidden_gemm = nullptr,
+      MatMulFunctor<Device, T, T, T, true>* input_gemm = nullptr,
+      MatMulFunctor<Device, T, T, T, true>* params_wei_ih_gemm = nullptr,
+      MatMulFunctor<Device, T, T, T, true>* params_wei_hh_gemm = nullptr);
 };
 
 }  // namespace functor

@@ -955,6 +955,7 @@ itex_xpu_library(
         "reduction_itex_gpu_kernels.h",
         "rnn_ops.h",
         "rnn_ops_gpu.h",
+        "//itex/core/kernels/common:matmul_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
