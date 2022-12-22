@@ -172,7 +172,7 @@ class DevicePool {
       if (num_device <= 0) {
         ITEX_LOG(ERROR) << "Can not found any devices. "
                         << "To check runtime environment on your host, "
-                        << "please run itex/itex/tools/env_check.sh.";
+                        << "please run itex/tools/env_check.sh.";
       }
       assert((num_device > 0));
     });
