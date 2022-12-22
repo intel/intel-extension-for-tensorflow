@@ -103,7 +103,7 @@ class UniqueOp : public OpKernel {
                 errors::InvalidArgument("unique expects a 1D vector."));
 
     int64_t input_size = input.NumElements();
-    bool has_count_output = context->num_outputs();
+    bool has_count_output = (context->num_outputs() == 3);
 
     if (input_size == 0) {
       // Early exit for trivial case.
@@ -159,7 +159,12 @@ class UniqueOp : public OpKernel {
         context, input_size, segment_indicator_iter,
         sorted_input_unique_ids_ptr, (const KeyT)0, false, false, BinaryOp());
 
-    int uniq_size = sorted_input_unique_ids_ptr[input_size - 1] + 1;
+    int uniq_size;
+    stream
+        ->memcpy(&uniq_size, &(sorted_input_unique_ids_ptr[input_size - 1]),
+                 sizeof(int))
+        .wait();
+    uniq_size += 1;
 
     Tensor unique_input_inds;
     OP_REQUIRES_OK(context, context->allocate_temp(
@@ -260,6 +265,10 @@ class UniqueOp : public OpKernel {
                           UniqueOp<type, int32>)
 
 TF_CALL_float(REGISTER_UNIQUE_GPU);
+TF_CALL_int32(REGISTER_UNIQUE_GPU);
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_UNIQUE_GPU);
+#endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_UNIQUE_GPU
 
 }  // namespace itex
