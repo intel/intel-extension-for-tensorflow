@@ -53,8 +53,7 @@ namespace itex {
 Status GetTensorArray(OpKernelContext* ctx, TensorArray** tensor_array) {
   string container;
   string ta_handle;
-  const Tensor* resource_ptr = &ctx->input(0);
-  if (ctx->input_dtype(0) != DT_RESOURCE) {
+  if (ctx->input(0).dtype() != DT_RESOURCE) {
     return errors::Unimplemented(
         "TensorArray/TensorArrayV2 is not supported, please check is it "
         "rewritted as _ITEXTensorArray or directly use TensorArrayV3.");

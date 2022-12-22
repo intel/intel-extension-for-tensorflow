@@ -297,15 +297,6 @@ Status ResourceMgr::Delete(const ResourceHandle& handle) {
   return DoDelete(handle.hash_code(), handle.name(), "<unknown>");
 }
 
-static bool IsValidContainerName(StringPiece s) {
-  using strings::Scanner;
-  return Scanner(s)
-      .One(Scanner::LETTER_DIGIT_DOT)
-      .Any(Scanner::LETTER_DIGIT_DASH_DOT_SLASH)
-      .Eos()
-      .GetResult();
-}
-
 const ResourceHandle& HandleFromInput(OpKernelContext* ctx, int input) {
   return ctx->input(input).flat<ResourceHandle>()(0);
 }
