@@ -34,7 +34,10 @@ class FloorDivTest(test.TestCase):
     def _test_impl(self, size, dtype):
         x = np.random.normal(size=[size])
         x = constant_op.constant(x, dtype=dtype)
-        y = np.random.normal(size=[size])
+        if(dtype==dtypes.int32):
+            y = tf.ones([size], dtype=dtype)
+        else:
+            y = np.random.normal(size=[size])
         y = constant_op.constant(y, dtype=dtype)
         flush_cache()
         out_gpu = math_ops.floordiv(x, y)

@@ -43,6 +43,8 @@ class SpaceToDepthTest(test.TestCase):
         for dtype in FLOAT_COMPUTE_TYPE:
             # test tailed_no_tailed_size
             for in_size in broadcast_binary_size_x:
+                if(len(in_size) != 4):
+                    continue
                 self._test_impl(in_size, dtype)
 
 if __name__ == '__main__':
