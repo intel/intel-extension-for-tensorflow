@@ -466,7 +466,7 @@ class Tensor {
 
   template <typename T>
   T* base() const {
-    return reinterpret_cast<T*>(TF_TensorData(buf_));
+    return NumElements() ? reinterpret_cast<T*>(TF_TensorData(buf_)) : nullptr;
   }
 
   inline void CopyFromInternal(const Tensor& other, const TensorShape& shape) {
