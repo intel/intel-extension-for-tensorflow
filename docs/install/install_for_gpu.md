@@ -14,7 +14,7 @@ For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [I
 - Intel GPU Drivers 
   - Intel® Data Center GPU Flex Series [419.40](https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html)
 - Intel® oneAPI Base Toolkit 2022.3
-- TensorFlow 2.10.0
+- TensorFlow 2.11.0 or 2.10.0
 - Python 3.7-3.10
 - pip 19.0 or later (requires manylinux2014 support)
 
@@ -78,7 +78,7 @@ source /opt/intel/oneapi/setvars.sh --config="full/path/to/your/config.txt"
 
 The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.
 
-The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.10.0. 
+The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.11.0 or 2.10.0.
 
 
 ##### Virtual environment install 
@@ -92,13 +92,13 @@ On Linux, it is often necessary to first update pip to a version that supports m
 
 To install in virtual environment, you can run 
 ```bash
-(tf)$ pip install tensorflow==2.10.0
+(tf)$ pip install tensorflow==2.11.0
 ```
 
 ##### System environment install 
 If want to system install in $HOME, please append `--user` to the commands.
 ```bash
-$ pip install --user tensorflow==2.10.0
+$ pip install --user tensorflow==2.11.0
 ```
 And the following system environment install for Intel® Extension for TensorFlow* will use the same practice. 
 
