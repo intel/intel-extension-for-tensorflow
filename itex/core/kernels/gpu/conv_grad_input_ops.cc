@@ -32,14 +32,14 @@ namespace itex {
                               .TypeConstraint<T>("T")                        \
                               .HostMemory("input_sizes"),                    \
                           ConvBackpropInputOp<GPUDevice, T>);                \
-  REGISTER_KERNEL_BUILDER(Name("Conv2DBackpropInputWithSlice")               \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXConv2DBackpropInputWithSlice")          \
                               .Device(DEVICE_GPU)                            \
                               .TypeConstraint<T>("T")                        \
                               .HostMemory("begin")                           \
                               .HostMemory("size")                            \
                               .HostMemory("input_sizes"),                    \
                           ConvBackpropInputOp<GPUDevice, T, false, true>);   \
-  REGISTER_KERNEL_BUILDER(Name("Conv3DBackpropInputV2WithSlice")             \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXConv3DBackpropInputV2WithSlice")        \
                               .Device(DEVICE_GPU)                            \
                               .TypeConstraint<T>("T")                        \
                               .HostMemory("begin")                           \

@@ -51,10 +51,6 @@ void Register_QuantizedMatMulOp();
 void Register_QuantizedFusedBatchNormOp();
 
 // Custom kernels
-void Register_Conv2DBackpropFilterWithBiasOp();
-void Register_Conv2DBackpropInputWithSliceOp();
-void Register_Conv3DBackpropFilterWithBiasOp();
-void Register_Conv3DBackpropInputV2WithSliceOp();
 void Register_FusedBatchNormExGradOp();
 void Register_FusedBatchMatMulV2Op();
 void Register_FusedConv2DWithSumOp();
@@ -67,6 +63,10 @@ void Register_GeluGradOp();
 void Register_InstanceNormOp();
 // There are similar ops called "_FusedConv2D" or in "_FusedMatMul" TF-Proper.
 // We use such custom ops in ITEX to enable more features.
+void Register_ITEXConv2DBackpropFilterWithBiasOp();
+void Register_ITEXConv2DBackpropInputWithSliceOp();
+void Register_ITEXConv3DBackpropFilterWithBiasOp();
+void Register_ITEXConv3DBackpropInputV2WithSliceOp();
 void Register_ITEXFusedConv2DOp();
 void Register_ITEXFusedConv3DOp();
 void Register_ITEXFusedDepthwiseConv2dNativeOp();
@@ -115,15 +115,11 @@ void Register_ITEXBatchMatMulOp();
 void Register_ITEXBatchMatMulV2Op();
 void Register_ITEXCastOp();
 void Register_ITEXConv2DBackpropFilterOp();
-void Register_ITEXConv2DBackpropFilterWithBiasOp();
 void Register_ITEXConv2DBackpropInputOp();
-void Register_ITEXConv2DBackpropInputWithSliceOp();
 void Register_ITEXConv2DOp();
 void Register_ITEXConv3DBackpropFilterV2Op();
-void Register_ITEXConv3DBackpropFilterWithBiasOp();
 void Register_ITEXConv3DBackpropInputOp();
 void Register_ITEXConv3DBackpropInputV2Op();
-void Register_ITEXConv3DBackpropInputV2WithSliceOp();
 void Register_ITEXConv3DOp();
 void Register_ITEXDepthwiseConv2dNativeBackpropFilterOp();
 void Register_ITEXDepthwiseConv2dNativeBackpropInputOp();

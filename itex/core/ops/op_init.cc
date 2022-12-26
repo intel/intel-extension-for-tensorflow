@@ -86,10 +86,6 @@ void RegisterOps() {
   Register_QuantizedDepthwiseConv2DV2Op();
 
   // Custom kernels
-  Register_Conv2DBackpropFilterWithBiasOp();
-  Register_Conv2DBackpropInputWithSliceOp();
-  Register_Conv3DBackpropFilterWithBiasOp();
-  Register_Conv3DBackpropInputV2WithSliceOp();
   Register_FusedBatchNormExGradOp();
   Register_FusedBatchMatMulV2Op();
   Register_FusedConv2DWithSumOp();
@@ -114,6 +110,10 @@ void RegisterOps() {
   Register_InstanceNormOp();
   Register_GeluOp();
   Register_GeluGradOp();
+  Register_ITEXConv2DBackpropFilterWithBiasOp();
+  Register_ITEXConv2DBackpropInputWithSliceOp();
+  Register_ITEXConv3DBackpropFilterWithBiasOp();
+  Register_ITEXConv3DBackpropInputV2WithSliceOp();
   Register_ITEXFusedConv2DOp();
   Register_ITEXFusedConv3DOp();
   Register_ITEXFusedDepthwiseConv2dNativeOp();
@@ -148,15 +148,11 @@ void RegisterOps() {
   Register_ITEXBatchMatMulV2Op();
   Register_ITEXCastOp();
   Register_ITEXConv2DBackpropFilterOp();
-  Register_ITEXConv2DBackpropFilterWithBiasOp();
   Register_ITEXConv2DBackpropInputOp();
-  Register_ITEXConv2DBackpropInputWithSliceOp();
   Register_ITEXConv2DOp();
   Register_ITEXConv3DBackpropFilterV2Op();
-  Register_ITEXConv3DBackpropFilterWithBiasOp();
   Register_ITEXConv3DBackpropInputOp();
   Register_ITEXConv3DBackpropInputV2Op();
-  Register_ITEXConv3DBackpropInputV2WithSliceOp();
   Register_ITEXConv3DOp();
   Register_ITEXDepthwiseConv2dNativeBackpropFilterOp();
   Register_ITEXDepthwiseConv2dNativeBackpropInputOp();

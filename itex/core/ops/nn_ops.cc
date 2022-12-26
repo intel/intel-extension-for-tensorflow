@@ -486,11 +486,11 @@ void Register_PadWithFusedConv3DOp() {
   }
 }
 
-void Register_Conv3DBackpropFilterWithBiasOp() {
+void Register_ITEXConv3DBackpropFilterWithBiasOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("Conv3DBackpropFilterWithBias");
+        TF_NewOpDefinitionBuilder("_ITEXConv3DBackpropFilterWithBias");
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "filter_sizes: int32");
     TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
@@ -511,15 +511,15 @@ void Register_Conv3DBackpropFilterWithBiasOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "Conv3DBackpropFilterWithBias op registration failed: ";
+        << "_ITEXConv3DBackpropFilterWithBias op registration failed: ";
   }
 }
 
-void Register_Conv2DBackpropFilterWithBiasOp() {
+void Register_ITEXConv2DBackpropFilterWithBiasOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("Conv2DBackpropFilterWithBias");
+        TF_NewOpDefinitionBuilder("_ITEXConv2DBackpropFilterWithBias");
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "filter_sizes: int32");
     TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
@@ -541,15 +541,15 @@ void Register_Conv2DBackpropFilterWithBiasOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "Conv2DBackpropFilterWithBias op registration failed: ";
+        << "_ITEXConv2DBackpropFilterWithBias op registration failed: ";
   }
 }
 
-void Register_Conv3DBackpropInputV2WithSliceOp() {
+void Register_ITEXConv3DBackpropInputV2WithSliceOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("Conv3DBackpropInputV2WithSlice");
+        TF_NewOpDefinitionBuilder("_ITEXConv3DBackpropInputV2WithSlice");
     TF_OpDefinitionBuilderAddInput(op_builder, "input_sizes: Tshape");
     TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
@@ -572,15 +572,15 @@ void Register_Conv3DBackpropInputV2WithSliceOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "Conv3DBackpropInputV2WithSlice op registration failed: ";
+        << "_ITEXConv3DBackpropInputV2WithSlice op registration failed: ";
   }
 }
 
-void Register_Conv2DBackpropInputWithSliceOp() {
+void Register_ITEXConv2DBackpropInputWithSliceOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("Conv2DBackpropInputWithSlice");
+        TF_NewOpDefinitionBuilder("_ITEXConv2DBackpropInputWithSlice");
     TF_OpDefinitionBuilderAddInput(op_builder, "input_sizes: int32");
     TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
@@ -603,7 +603,7 @@ void Register_Conv2DBackpropInputWithSliceOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "Conv2DBackpropInputWithSlice op registration failed: ";
+        << "_ITEXConv2DBackpropInputWithSlice op registration failed: ";
   }
 }
 
@@ -1298,36 +1298,6 @@ void Register_ITEXConv2DBackpropFilterOp() {
   }
 }
 
-void Register_ITEXConv2DBackpropFilterWithBiasOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXConv2DBackpropFilterWithBias");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter_sizes: int32");
-    TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
-
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "bias_grad: T");
-
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "use_cudnn_on_gpu: bool = true");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, "fused_ops: list(string) = []");
-
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXConv2DBackpropFilterWithBias op registration failed: ";
-  }
-}
-
 void Register_ITEXConv3DBackpropFilterV2Op() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
@@ -1351,35 +1321,6 @@ void Register_ITEXConv3DBackpropFilterV2Op() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_ITEXConv3DBackpropFilterV2 op registration failed: ";
-  }
-}
-
-void Register_ITEXConv3DBackpropFilterWithBiasOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXConv3DBackpropFilterWithBias");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter_sizes: int32");
-    TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
-
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "bias_grad: T");
-
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int) >= 5");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  GetConvnet3dDataFormatAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, "fused_ops: list(string) = []");
-
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXConv3DBackpropFilterWithBias op registration failed: ";
   }
 }
 
@@ -1574,37 +1515,6 @@ void Register_ITEXConv2DBackpropInputOp() {
   }
 }
 
-void Register_ITEXConv2DBackpropInputWithSliceOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXConv2DBackpropInputWithSlice");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input_sizes: int32");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "begin: int32");
-    TF_OpDefinitionBuilderAddInput(op_builder, "size: int32");
-
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "bias_grad: T");
-
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "use_cudnn_on_gpu: bool = true");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
-
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXConv2DBackpropInputWithSlice op registration failed: ";
-  }
-}
-
 void Register_ITEXConv3DOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
@@ -1686,36 +1596,6 @@ void Register_ITEXConv3DBackpropInputV2Op() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_ITEXConv3DBackpropInputV2 op registration failed: ";
-  }
-}
-
-void Register_ITEXConv3DBackpropInputV2WithSliceOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXConv3DBackpropInputV2WithSlice");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input_sizes: Tshape");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "out_backprop: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "begin: int32");
-    TF_OpDefinitionBuilderAddInput(op_builder, "size: int32");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "Tshape: {int32, int64} = DT_INT32");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int) >= 5");
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  GetConvnet3dDataFormatAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1]");
-
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXConv3DBackpropInputV2WithSlice op registration failed: ";
   }
 }
 
