@@ -75,7 +75,7 @@ There are new requirements:
 
 1. Python should be 3.9 or newer version.
 
-2. Tensorflow should be 2.10.0 or newer version.
+2. Tensorflow should be 2.11.0 or 2.10.0.
 
 ### Set up Intel® Extenstion for Tensorflow*
 
