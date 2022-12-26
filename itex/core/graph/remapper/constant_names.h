@@ -73,9 +73,12 @@ constexpr char kTanh[] = "Tanh";
 // ITEX specific fused op names.
 constexpr char kAccMatMul[] = "_ITEXAccMatMul";
 constexpr char kAddV2WithSoftmax[] = "_ITEXFusedAddV2WithSoftmax";
-constexpr char kConv2DBackpropFilterWithBias[] = "_ITEXConv2DBackpropFilterWithBias";
-constexpr char kConv2DBackpropInputWithSlice[] = "_ITEXConv2DBackpropInputWithSlice";
-constexpr char kConv3DBackpropFilterWithBias[] = "_ITEXConv3DBackpropFilterWithBias";
+constexpr char kConv2DBackpropFilterWithBias[] =
+    "_ITEXConv2DBackpropFilterWithBias";
+constexpr char kConv2DBackpropInputWithSlice[] =
+    "_ITEXConv2DBackpropInputWithSlice";
+constexpr char kConv3DBackpropFilterWithBias[] =
+    "_ITEXConv3DBackpropFilterWithBias";
 constexpr char kConv3DBackpropInputWithSlice[] =
     "_ITEXConv3DBackpropInputV2WithSlice";
 constexpr char kDequantizeReshape[] = "_FusedDequantizeWithReshape";
