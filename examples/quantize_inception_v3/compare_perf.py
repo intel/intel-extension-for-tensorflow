@@ -16,7 +16,6 @@
 
 
 import json
-import matplotlib.pyplot as plt
 
 
 def autolabel(ax, rects):
@@ -72,14 +71,6 @@ format_print('accuracy(%)', accuracys)
 
 accuracys_perc = [accu*100 for accu in accuracys]
 
-t = ['FP32', 'INT8']
-x = [0, 1]
-plt.figure(figsize=(16,6))
-draw_bar(x, t, throughputs, 131, 'tab:green', 'Throughput(fps)', '', width=0.2)
-draw_bar(x, t,  latencys, 132, 'tab:blue', 'Latency(ms)', '', width=0.2)
-draw_bar(x, t,  accuracys_perc, 133, '#28a99d', 'Accuracys(%)', '', width=0.2)
-plt.savefig("fp32_int8_aboslute.png")
-print("\nSave to fp32_int8_aboslute.png\n")
 
 throughputs_times = [1, throughputs[1]/throughputs[0]]
 latencys_times = [1, latencys[1]/latencys[0]]
@@ -89,11 +80,3 @@ format_print('Model', ['FP32', 'INT8'])
 format_print('throughput_times', throughputs_times)
 format_print('latency_times', latencys_times)
 format_print('accuracy_times', accuracys_times)
-
-plt.figure(figsize=(16,6))
-draw_bar(x, t, throughputs_times, 131, 'tab:green', 'Throughput Normalized (larger is better)', '', width=0.2)
-draw_bar(x, t, latencys_times, 132, 'tab:blue', 'Latency Normalized (smaller is better)', '', width=0.2)
-draw_bar(x, t, accuracys_times, 133, '#28a99d', 'Accuracys Normalized (larger is better)', '', width=0.2)
-
-plt.savefig("fp32_int8_times.png")
-print("\nSave to fp32_int8_times.png")

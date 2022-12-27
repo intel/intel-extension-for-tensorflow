@@ -22,9 +22,7 @@ rm -rf $ENV_NAME
 python -m venv $ENV_NAME
 source $ENV_NAME/bin/activate
 pip install --upgrade pip
-pip install matplotlib 
-pip install tensorflow>=2.10.0 neural-compressor>=2.0 runipy notebook
-pip install tensorflow_hub tensorflow_datasets
-pip install --upgrade intel-extension-for-tensorflow[cpu]>=1.1.0
+pip install "tensorflow>=2.10.0" "neural-compressor>=2.0" runipy notebook
+pip install --upgrade "intel-extension-for-tensorflow[cpu]>=1.1.0"
 pip install ipykernel
 python -m ipykernel install --user --name=$ENV_NAME
