@@ -198,8 +198,8 @@ class OpKernelContext {
 
   int num_inputs() const;  // { return inputs->size(); }
 
-  // TODO(itex): Add TF_InputIsRef C-API to distinguish whether the input is
-  // ref tensor or not. Currently, input_dtype is not fully funtional at all !!
+  bool input_is_ref(int index) const;
+
   DataType input_dtype(int index) const;
   // Status input_dtype(StringPiece name, DataType* dtype) const;
 

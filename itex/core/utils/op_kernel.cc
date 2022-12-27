@@ -73,6 +73,10 @@ void EmptyCopyFunctor(TF_OpKernelContext* tf_ctx, TF_Tensor* tf_source,
 
 int OpKernelContext::num_inputs() const { return TF_NumInputs(ctx_); }
 
+bool OpKernelContext::input_is_ref(int index) const {
+  return TF_IsRefInput(ctx_, index, status_);
+}
+
 DataType OpKernelContext::input_dtype(int index) const {
   if (inputs_ != nullptr && inputs_->at(index) != nullptr) {
     return inputs_->at(index)->dtype();
@@ -610,7 +614,7 @@ string OpKernel::ShapeTraceString(const OpKernelContext& ctx) const {
   std::vector<string> tensor_shapes;
   tensor_shapes.reserve(num_inputs);
   for (int i = 0; i < num_inputs; i++) {
-    if (ctx.input(i).GetTFTensor() == nullptr) {
+    if (ctx.input_is_ref(i) || ctx.input(i).GetTFTensor() == nullptr) {
       tensor_shapes.emplace_back();  // Placeholder
       continue;
     }
