@@ -30,6 +30,7 @@ limitations under the License.
 #include "itex/core/utils/numeric_types.h"
 #include "itex/core/utils/stringpiece.h"
 #include "itex/core/utils/tstring.h"
+#include "protos/full_type.pb.h"
 #include "protos/types.pb.h"
 
 namespace Eigen {
@@ -495,5 +496,7 @@ MemoryType MTypeFromDType(const DataType dtype);
 //// object has device-allocated resources).
 // bool DataTypeAlwaysOnHost(DataType dt);
 
+// Maps a legacy DType proto enum to an equivalent FullType ID.
+void map_dtype_to_tensor(const DataType& dtype, FullTypeDef& t);  // NOLINT
 }  // namespace itex
 #endif  // ITEX_CORE_UTILS_TYPES_H_

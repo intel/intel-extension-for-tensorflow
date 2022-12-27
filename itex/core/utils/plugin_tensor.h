@@ -176,8 +176,8 @@ class Tensor {
   /// `AsProtoField()` fills in the repeated field for `proto.dtype()`, while
   /// `AsProtoTensorContent()` encodes the content in `proto.tensor_content()`
   /// in a compact form.
-  //  void AsProtoField(TensorProto* proto);
-  void AsProtoTensorContent(TensorProto* proto);
+  /// void AsProtoField(TensorProto* proto) const;
+  void AsProtoTensorContent(TensorProto* proto) const;
 
   DataType dtype() const { return shape_.data_type(); }
 

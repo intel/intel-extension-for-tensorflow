@@ -327,7 +327,7 @@ bool Tensor::FromProto(const TensorProto& proto) {
   CASES_WITH_DEFAULT(TYPE_ENUM, STMTS, ITEX_LOG(FATAL) << "Type not set"; \
                      , ITEX_LOG(FATAL) << "Unexpected type: " << TYPE_ENUM;)
 
-void Tensor::AsProtoTensorContent(TensorProto* proto) {
+void Tensor::AsProtoTensorContent(TensorProto* proto) const {
   proto->Clear();
   proto->set_dtype(dtype());
   shape_.AsProto(proto->mutable_tensor_shape());

@@ -107,6 +107,15 @@ template_rule(
 )
 
 template_rule(
+    name = "graph_debug_info_plugin",
+    src = "include/tensorflow/core/protobuf/graph_debug_info.proto",
+    out = "include/protos/graph_debug_info.proto",
+    substitutions = {
+        "package tensorflow;": "package itex;",
+    },
+)
+
+template_rule(
     name = "op_def_plugin",
     src = "include/tensorflow/core/framework/op_def.proto",
     out = "include/protos/op_def.proto",
@@ -259,6 +268,11 @@ cc_proto(
 )
 
 cc_proto(
+    name = "graph_debug_info",
+    src = "graph_debug_info.proto",
+)
+
+cc_proto(
     name = "op_def",
     src = "op_def.proto",
     deps = [
@@ -332,6 +346,8 @@ cc_library(
         ":xplane_proto",
         ":op_performance_data_proto",
         ":kernel_def_proto",
+        ":graph_debug_info_proto",
+        ":tensor_proto",
     ],
 )
 
