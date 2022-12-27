@@ -49,7 +49,7 @@
         <td colspan="3" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
         <td colspan="3" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
 		<td colspan="3" align="center"><a href="guide/launch.md">CPU launcher</a></td>
-        <td colspan="3" align="center"><a href="">INT8 quantization</a></td>
+        <td colspan="3" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
     </tr>
   </tbody>
   <thead>
