@@ -20,13 +20,13 @@ limitations under the License.
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/tensor_types.h"
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
 
 #define MAX_LENGTH 6
 
 enum class UpdateOp { ADD, SUB, SUB1, MUL };
-
 template <typename T, int vec_size>
 class FusedBinaryFunctor {
   using Tvec = AlignedVector<T, vec_size>;
@@ -71,6 +71,38 @@ class FusedBinaryFunctor {
       }
       return;
     } else {
+#if !defined(EIGEN_DONT_VECTORIZE_SYCL) && defined(__SYCL_DEVICE_ONLY__)
+      if (std::is_same<T, Eigen::bfloat16>::value) {
+        Tvec in0 = get_vec(0, id * vec_size, input0_);
+        Tvec in1 = get_vec(1, id * vec_size, input1_);
+        Tvec in2 = get_vec(2, id * vec_size, input2_);
+        sycl::vec<float, vec_size> in0_fp32 =
+            Eigen::bfloat16_impl::Bf16ToF32<vec_size>(
+                *reinterpret_cast<sycl::vec<uint16_t, vec_size>*>(&in0));
+        sycl::vec<float, vec_size> in1_fp32 =
+            Eigen::bfloat16_impl::Bf16ToF32<vec_size>(
+                *reinterpret_cast<sycl::vec<uint16_t, vec_size>*>(&in1));
+        sycl::vec<float, vec_size> in2_fp32 =
+            Eigen::bfloat16_impl::Bf16ToF32<vec_size>(
+                *reinterpret_cast<sycl::vec<uint16_t, vec_size>*>(&in2));
+        sycl::vec<float, vec_size> res =
+            cal(ops_[1], cal(ops_[0], in0_fp32, in1_fp32), in2_fp32);
+
+        if (num_inputs_ > 3) {
+          Tvec in3 = get_vec(3, id * vec_size, input3_);
+          sycl::vec<float, vec_size> in3_fp32 =
+              Eigen::bfloat16_impl::Bf16ToF32<vec_size>(
+                  *reinterpret_cast<sycl::vec<uint16_t, vec_size>*>(&in3));
+          res = cal(ops_[2], res, in3_fp32);
+        }
+
+        sycl::vec<uint16_t, vec_size>* out =
+            reinterpret_cast<sycl::vec<uint16_t, vec_size>*>(output_ +
+                                                             id * vec_size);
+        *out = Eigen::bfloat16_impl::F32ToBf16<vec_size>(res);
+        return;
+      }
+#endif
       Tvec res = cal(ops_[0], get_vec(0, id * vec_size, input0_),
                      get_vec(1, id * vec_size, input1_));
       res = cal(ops_[1], res, get_vec(2, id * vec_size, input2_));
