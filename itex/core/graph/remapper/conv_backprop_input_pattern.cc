@@ -86,8 +86,14 @@ class PadWithConvBackpropFilterFusion : public Fusion {
     const NodeDef* pad = properties.GetNode(&graph_view, "pad");
     const NodeDef* conv = properties.GetNode(&graph_view, "conv");
 
+    std::string conv_op_name = conv->op();
+    int is_itex_prefix = conv_op_name.find("_ITEX");
+    if (is_itex_prefix != -1) {
+      conv_op_name = conv_op_name.substr(5);
+    }
+
     // All the new conv has a prefix of PadWith, the others are the same.
-    std::string op = "_ITEXPadWith" + conv->op();
+    std::string op = "_ITEXPadWith" + conv_op_name;
 
     NodeDef fused_op;
     fused_op.set_name(conv->name());
