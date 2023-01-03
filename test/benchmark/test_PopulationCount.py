@@ -14,43 +14,43 @@
 # ==============================================================================
 
 
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops import gen_math_ops
+from tensorflow.python.ops import gen_bitwise_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
-from utils import tailed_no_tailed_size, broadcast_binary_size_x, broadcast_binary_size_y
+from utils import tailed_no_tailed_size
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
 
+try:
+    from intel_extension_for_tensorflow.python.test_func import test
+    INT_COMPUTE_TYPE = [dtypes.int32, dtypes.int64]
+except ImportError:
+    from tensorflow.python.platform import test
+    INT_COMPUTE_TYPE = [dtypes.int32, dtypes.int64]
+    
 ITERATION = 5
 
-class AddTest(test.TestCase):
-    def _test_impl(self, x_size, y_size, dtype):
-        x = np.random.normal(size=x_size)
-        x = constant_op.constant(x, dtype=dtype)
-        y = np.random.normal(size=y_size)
-        y = constant_op.constant(y, dtype=dtype)
+class PopulationCountTest(test.TestCase):
+    def _test_impl(self, size, dtype):
+        np.random.seed(4)
+        in_array = np.random.normal(size=size)
+        in_array = constant_op.constant(in_array, dtype=dtype)
         flush_cache()
-        out_gpu = gen_math_ops.add(x, y)
+        _ = gen_bitwise_ops.population_count(in_array)
 
     @add_profiling
     @multi_run(ITERATION)
-    def testAdd(self):
-        for dtype in FLOAT_COMPUTE_TYPE:
+    def testPopulationCount(self):
+        for dtype in INT_COMPUTE_TYPE:
             # test tailed_no_tailed_size
             for in_size in tailed_no_tailed_size:
-                self._test_impl([in_size], [in_size], dtype)
-            # test broadcast_binary_size
-            for in_size in zip(broadcast_binary_size_x, broadcast_binary_size_y):
-                self._test_impl(in_size[0], in_size[1], dtype)
+                self._test_impl([in_size], dtype)
 
 if __name__ == '__main__':
-    test.main()   
+    test.main()

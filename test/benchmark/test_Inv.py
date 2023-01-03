@@ -18,7 +18,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import gen_math_ops
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
@@ -36,7 +36,7 @@ class InvTest(test.TestCase):
         array = np.random.rand(*size)
         in_array = constant_op.constant(array, dtype=dtype)
         flush_cache()
-        out_gpu = math_ops.Reciprocal(x=in_array)
+        out_gpu = gen_math_ops.inv(x=in_array)
 
     @add_profiling
     @multi_run(ITERATION)

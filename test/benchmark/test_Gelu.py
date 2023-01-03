@@ -20,6 +20,7 @@ from tensorflow.python.ops import nn_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 from utils import tailed_no_tailed_size
+import intel_extension_for_tensorflow as itex
 
 try:
   from intel_extension_for_tensorflow.python.test_func import test
@@ -35,7 +36,7 @@ class GeluTest(test.TestCase):
     input_array = np.random.normal(size=size)
     input_tensor = constant_op.constant(input_array, dtype=dtype)
     flush_cache()
-    _ = nn_ops.gelu(input_tensor)
+    _ = itex.ops.gelu(input_tensor)
 
   @add_profiling
   @multi_run(ITERATION)
