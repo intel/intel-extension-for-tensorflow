@@ -150,6 +150,7 @@ itex_xpu_library(
     deps = [
         "//itex/core/devices:xpu_device_util",
         "//itex/core/kernels/gpu:matmul_op",
+        "//itex/core/kernels/gpu:transpose_op",
     ],
     alwayslink = True,
 )

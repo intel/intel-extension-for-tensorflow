@@ -185,7 +185,8 @@ class TridiagonalSolveOpGpu : public OpKernel {
         context, context->allocate_temp(DataTypeToEnum<Scalar>::value,
                                         transposed_rhs_shape, &transposed_rhs));
     if (num_rhs > 1) {
-      OP_REQUIRES_OK(context, DoMatrixTranspose(device, rhs, &transposed_rhs));
+      OP_REQUIRES_OK(context,
+                     DoConjugateMatrixTranspose(device, rhs, &transposed_rhs));
     } else {
       DeviceMemcpy<GPUDevice>(transposed_rhs.flat<Scalar>().data(),
                               rhs.flat<Scalar>().data(),
@@ -195,7 +196,7 @@ class TridiagonalSolveOpGpu : public OpKernel {
     // 3. Solve op(A) X = B (in column major form).
     auto transposed_rhs_reshaped =
         transposed_rhs.template flat_inner_dims<Scalar, 3>();
-    oneapi::mkl::transpose trans = oneapi::mkl::transpose::trans;
+    auto trans = oneapi::mkl::transpose::conjtrans;
     try {
       int64_t getrs_scratchpad_size =
           oneapi::mkl::lapack::getrs_batch_scratchpad_size<Scalar>(
@@ -232,8 +233,8 @@ class TridiagonalSolveOpGpu : public OpKernel {
 
     // 4. Transpose X to get the final result in row-major form.
     if (num_rhs > 1) {
-      OP_REQUIRES_OK(context,
-                     DoMatrixTranspose(device, transposed_rhs, output));
+      OP_REQUIRES_OK(
+          context, DoConjugateMatrixTranspose(device, transposed_rhs, output));
     } else {
       DeviceMemcpy<GPUDevice>(
           output->flat<Scalar>().data(), transposed_rhs.flat<Scalar>().data(),

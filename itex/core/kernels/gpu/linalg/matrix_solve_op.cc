@@ -167,8 +167,8 @@ class MatrixSolveOpGpu : public OpKernel {
     auto transposed_rhs_reshaped =
         transposed_rhs.template flat_inner_dims<Scalar, 3>();
 
-    oneapi::mkl::transpose trans = adjoint_ ? oneapi::mkl::transpose::conjtrans
-                                            : oneapi::mkl::transpose::trans;
+    auto trans = adjoint_ ? oneapi::mkl::transpose::conjtrans
+                          : oneapi::mkl::transpose::trans;
     try {
       int64_t getrs_scratchpad_size =
           oneapi::mkl::lapack::getrs_batch_scratchpad_size<Scalar>(
