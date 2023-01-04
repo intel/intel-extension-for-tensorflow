@@ -39,7 +39,7 @@ namespace itex {
       SwishOp<CPUDevice, type>);                                           \
   REGISTER_KERNEL_BUILDER(                                                 \
       Name("_ITEXMish").Device(DEVICE_CPU).TypeConstraint<type>("T"),      \
-      SwishOp<CPUDevice, type>);
+      MishOp<CPUDevice, type>);
 
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_CPU_KERNELS);
 #undef REGISTER_CPU_KERNELS
@@ -81,7 +81,7 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_GRAD_CPU_KERNELS);
       SwishOp<CPUDevice, type>);                                     \
   REGISTER_KERNEL_BUILDER(                                           \
       Name("Mish").Device(DEVICE_CPU).TypeConstraint<type>("T"),     \
-      SwishOp<CPUDevice, type>);
+      MishOp<CPUDevice, type>);
 
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_GELU_KERNELS);
 #undef REGISTER_GELU_KERNELS

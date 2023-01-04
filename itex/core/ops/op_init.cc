@@ -122,6 +122,7 @@ void RegisterOps() {
   Register_ITEXFusedQuantizedConv2DWithDequantizeOp();
   Register_ITEXFusedQuantizedConv2DWithCastOp();
   Register_ITEXFusedBinaryOp();
+  Register_ITEXMishOp();
   Register_ITEXRandomUniformOp();
   Register_LayerNormOp();
   Register_LayerNormGradOp();

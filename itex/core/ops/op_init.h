@@ -77,6 +77,7 @@ void Register_ITEXFusedQuantizedConv2DWithCastOp();
 void Register_ITEXFusedBinaryOp();
 void Register_ITEXRandomUniformOp();
 void Register_ITEXFusedAddV2WithSoftmaxOp();
+void Register_ITEXMishOp();
 void Register_ITEXTensorArray();
 void Register_ITEXTensorArrayGrad();
 void Register_ITEXTensorArrayGradWithShape();
