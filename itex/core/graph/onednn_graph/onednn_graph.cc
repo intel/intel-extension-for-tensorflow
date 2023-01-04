@@ -1908,6 +1908,22 @@ bool IsOneDnnGraphSupportedDataType(const NodeDef& node_def) {
 
 }  // namespace
 
+bool FindQDQPattern(OneDnnGraphContext* ctx, int num_nodes) {
+  for (int i = 0; i < num_nodes; i++) {
+    const auto* node_view = ctx->graph_view.GetNode(i);
+    const auto* node_def = node_view->node();
+
+    if (node_def->op() == "Dequantize") {
+      const auto* input_node_node =
+          node_view->GetRegularFanin(0).node_view()->node();
+      if (input_node_node->op() == "QuantizeV2") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Note: this function only handles LLGA graph, adding input/output for LLGA
 // ops. The function not changes the TF graph.
 
@@ -3023,6 +3039,15 @@ Status RunRewritePass(OneDnnGraphContext* ctx) {
 
   bool onednn_graph_all_type_flag =
       GetOptimizerConfigFlags().enable_onednn_graph_all_type;
+
+  if (!onednn_graph_all_type_flag) {
+    bool is_qdq_int8_graph = FindQDQPattern(ctx, num_nodes);
+    if (!is_qdq_int8_graph) {
+      ITEX_VLOG(2) << "Skip oneDNN Graph pass, since it is not INT8 graph and "
+                      "oneDNN Graph all datatype is not enabled";
+      return Status::OK();
+    }
+  }
 
   // Tranverse graph, select onednn graph nodes and mark wildcard nodes.
   ITEX_VLOG(2) << "BEFORE SELECT NODE ";
