@@ -40,13 +40,13 @@ class DequantizeReshapeOp : public OpKernel {
   }
 };
 
-#define REGISTER_KERNEL(TYPE)                                 \
-  REGISTER_KERNEL_BUILDER(Name("_FusedDequantizeWithReshape") \
-                              .Device(DEVICE_GPU)             \
-                              .TypeConstraint<TYPE>("T")      \
-                              .HostMemory("min_range")        \
-                              .HostMemory("max_range")        \
-                              .HostMemory("shape"),           \
+#define REGISTER_KERNEL(TYPE)                                     \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedDequantizeWithReshape") \
+                              .Device(DEVICE_GPU)                 \
+                              .TypeConstraint<TYPE>("T")          \
+                              .HostMemory("min_range")            \
+                              .HostMemory("max_range")            \
+                              .HostMemory("shape"),               \
                           DequantizeReshapeOp<GPUDevice, TYPE>);
 
 TF_CALL_qint8(REGISTER_KERNEL);

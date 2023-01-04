@@ -26,99 +26,11 @@ limitations under the License.
 // TODO(itex): Develop shape inference strategy. Some ops may fail with
 // Tensorflow debug build.
 
-void Register_FusedBatchNormExGradOp() {
+void Register_ITEXFusedMatMulGradOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedBatchNormExGrad");
-
-    TF_OpDefinitionBuilderAddInput(op_builder, "y_backprop: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "scale: float");
-    TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_1: U");
-    TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_2: U");
-    TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_3: U");
-    TF_OpDefinitionBuilderAddInput(op_builder, "offset: float");
-    TF_OpDefinitionBuilderAddInput(op_builder, "y: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "x_backprop: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "scale_backprop: U");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "offset_backprop: U");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_4: U");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_5: U");
-    TF_OpDefinitionBuilderAddOutput(op_builder,
-                                    "side_input_backprop: num_side_inputs * T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "U: {float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
-    TF_OpDefinitionBuilderAddAttr(
-        op_builder,
-        "data_format: { 'NHWC', 'NCHW', 'NDHWC', 'NCDHW' } = 'NHWC' ");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "activation_mode: string = \"Identity\"");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "num_side_inputs: int >= 0 = 0");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedBatchNormExGrad op registration failed: ";
-  }
-}
-
-void Register_FusedBatchMatMulV2Op() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedBatchMatMulV2");
-    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "y: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "args: num_args * T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "T: {bfloat16, half, float} = DT_FLOAT");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "adj_x: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "adj_y: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "num_args: int >= 0");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "fused_ops: list(string) = []");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedBatchMatMulV2 op registration failed: ";
-  }
-}
-
-void Register_FusedMatMulWithSumOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedMatMulWithSum");
-    TF_OpDefinitionBuilderAddInput(op_builder, "a: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "b: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "args: num_args * T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "product: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "transpose_a: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "transpose_b: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "num_args: int >= 0");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "fused_ops: list(string) = []");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "inplace_sum: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
-
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedMatMulWithSum op registration failed: ";
-  }
-}
-
-void Register_FusedMatMulGradOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedMatMulGrad");
+        TF_NewOpDefinitionBuilder("_ITEXFusedMatMulGrad");
     TF_OpDefinitionBuilderAddInput(op_builder, "a: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "b: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "product: T");
@@ -133,7 +45,7 @@ void Register_FusedMatMulGradOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedMatMulGrad op registration failed: ";
+        << "_ITEXFusedMatMulGrad op registration failed: ";
   }
 }
 
@@ -193,34 +105,6 @@ void Register_InstanceNormOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "InstanceNorm op registration failed: ";
-  }
-}
-
-void Register_FusedInstanceNormOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("FusedInstanceNorm");
-
-    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "scale: U");
-    TF_OpDefinitionBuilderAddInput(op_builder, "offset: U");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "y: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "U: {float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
-    TF_OpDefinitionBuilderAddAttr(
-        op_builder,
-        "data_format: { 'NHWC', 'NCHW', 'NDHWC', 'NCDHW' } = 'NHWC' ");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "activation_mode: string = \"Identity\"");
-    // Attributes for the LeakyRelu ----------------------------------------- //
-    TF_OpDefinitionBuilderAddAttr(op_builder, "leakyrelu_alpha: float = 0.2");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "FusedInstanceNorm op registration failed: ";
   }
 }
 
@@ -328,38 +212,6 @@ void Register_LayerNormGradOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "LayerNormGrad op registration failed: ";
-  }
-}
-
-void Register_FusedConv2DWithSumOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedConv2DWithSum");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "args: num_args * T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "num_args: int >= 0");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "use_cudnn_on_gpu: bool = true");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "fused_ops: list(string) = []");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "leakyrelu_alpha: float = 0.2");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "inplace_sum: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  GetPaddingAttrStringWithExplicit());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedConv2DWithSum op registration failed: ";
   }
 }
 

@@ -337,17 +337,17 @@ bool IsFusedBatchNormGrad(const NodeDef& node) {
 
 bool IsFusedMatmul(const NodeDef& node) {
   const auto& op = node.op();
-  return op == "_ITEXFusedMatMul" || op == "_FusedMatMulWithSum";
+  return op == "_ITEXFusedMatMul" || op == "_ITEXFusedMatMulWithSum";
 }
 
 bool IsFusedMatmulGrad(const NodeDef& node) {
   const auto& op = node.op();
-  return op == "_FusedMatMulGrad";
+  return op == "_ITEXFusedMatMulGrad";
 }
 
 bool IsFusedMatmulWithSum(const NodeDef& node) {
   const auto& op = node.op();
-  return op == "_FusedMatMulWithSum";
+  return op == "_ITEXFusedMatMulWithSum";
 }
 
 bool IsGather(const NodeDef& node) {

@@ -21,11 +21,11 @@ limitations under the License.
 #include "tensorflow/c/ops.h"
 #include "tensorflow/c/tf_status.h"
 
-void Register_FusedDequantizeWithReshapeOp() {
+void Register_ITEXFusedDequantizeWithReshapeOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedDequantizeWithReshape");
+        TF_NewOpDefinitionBuilder("_ITEXFusedDequantizeWithReshape");
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "min_range: float");
     TF_OpDefinitionBuilderAddInput(op_builder, "max_range: float");
@@ -45,6 +45,6 @@ void Register_FusedDequantizeWithReshapeOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedDequantizeWithReshape op registration failed: ";
+        << "_ITEXFusedDequantizeWithReshape op registration failed: ";
   }
 }

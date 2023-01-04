@@ -25,7 +25,7 @@ namespace itex {
                               .TypeConstraint<T>("T")              \
                               .TypeConstraint<U>("U"),             \
                           InstanceNormOp<GPUDevice, T, U, false>); \
-  REGISTER_KERNEL_BUILDER(Name("FusedInstanceNorm")                \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedInstanceNorm")           \
                               .Device(DEVICE_GPU)                  \
                               .TypeConstraint<T>("T")              \
                               .TypeConstraint<U>("U"),             \

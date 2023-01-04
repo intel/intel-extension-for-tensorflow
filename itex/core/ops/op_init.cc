@@ -86,10 +86,6 @@ void RegisterOps() {
   Register_QuantizedDepthwiseConv2DV2Op();
 
   // Custom kernels
-  Register_FusedBatchNormExGradOp();
-  Register_FusedBatchMatMulV2Op();
-  Register_FusedConv2DWithSumOp();
-  Register_FusedDequantizeWithReshapeOp();
   Register_ITEXFusedAddV2WithSoftmaxOp();
   Register_ITEXTensorArray();
   Register_ITEXTensorArrayGrad();
@@ -104,9 +100,6 @@ void RegisterOps() {
   Register_ITEXTensorArraySplit();
   Register_ITEXTensorArraySize();
   Register_ITEXTensorArrayClose();
-  Register_FusedMatMulGradOp();
-  Register_FusedMatMulWithSumOp();
-  Register_FusedInstanceNormOp();
   Register_InstanceNormOp();
   Register_GeluOp();
   Register_GeluGradOp();
@@ -114,10 +107,17 @@ void RegisterOps() {
   Register_ITEXConv2DBackpropInputWithSliceOp();
   Register_ITEXConv3DBackpropFilterWithBiasOp();
   Register_ITEXConv3DBackpropInputV2WithSliceOp();
+  Register_ITEXFusedBatchNormExGradOp();
+  Register_ITEXFusedBatchMatMulV2Op();
   Register_ITEXFusedConv2DOp();
+  Register_ITEXFusedConv2DWithSumOp();
   Register_ITEXFusedConv3DOp();
   Register_ITEXFusedDepthwiseConv2dNativeOp();
+  Register_ITEXFusedDequantizeWithReshapeOp();
+  Register_ITEXFusedInstanceNormOp();
   Register_ITEXFusedMatMulOp();
+  Register_ITEXFusedMatMulGradOp();
+  Register_ITEXFusedMatMulWithSumOp();
   Register_ITEXFusedQuantizeV2WithQuantizedConv2DOp();
   Register_ITEXFusedQuantizedConv2DWithDequantizeOp();
   Register_ITEXFusedQuantizedConv2DWithCastOp();
@@ -164,18 +164,13 @@ void RegisterOps() {
   Register_ITEXEluOp();
   Register_ITEXForwardAUGRUOp();
   Register_ITEXForwardGRUOp();
-  Register_ITEXFusedBatchMatMulV2Op();
   Register_ITEXFusedBatchNormExOp();
-  Register_ITEXFusedBatchNormExGradOp();
   Register_ITEXFusedBatchNormGradOp();
   Register_ITEXFusedBatchNormGradV2Op();
   Register_ITEXFusedBatchNormGradV3Op();
   Register_ITEXFusedBatchNormOp();
   Register_ITEXFusedBatchNormV2Op();
   Register_ITEXFusedBatchNormV3Op();
-  Register_ITEXFusedConv2DWithSumOp();
-  Register_ITEXFusedMatMulWithSumOp();
-  Register_ITEXFusedInstanceNormOp();
   Register_ITEXGeluGradOp();
   Register_ITEXGeluOp();
   Register_ITEXGRUOp();

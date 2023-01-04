@@ -32,17 +32,6 @@ namespace itex {
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_BATCH_MATMUL_CPU);
 #undef REGISTER_MATMUL_CPU
 
-// Register the intermediate kernel since graph won't be rewritten if nodes
-// number < 4.
-#define REGISTER_INTERMEDIATE_CPU_OP(TYPE)                \
-  REGISTER_KERNEL_BUILDER(Name("_FusedBatchMatMulV2")     \
-                              .Device(DEVICE_CPU)         \
-                              .TypeConstraint<TYPE>("T"), \
-                          BatchMatMulOp<CPUDevice, TYPE, TYPE, TYPE>);
-
-TF_CALL_CPU_NUMBER_TYPES(REGISTER_INTERMEDIATE_CPU_OP);
-#undef REGISTER_INTERMEDIATE_CPU_OP
-
 // BatchMatMul INT8 kernel registration
 #define REGISTER_NATIVE_KERNEL(op, kernel, lhs_type, rhs_type, output_type,   \
                                is_v2, output_type_name)                       \

@@ -41,10 +41,8 @@ const auto regular_inplace_rule = gtl::FlatSet<string>{
 };
 
 const auto add_inplace_rule = gtl::FlatSet<string>{
-    "_FusedConv2DWithSum",     "_FusedMatMulWithSum",
     "_ITEXFusedConv2DWithSum", "_ITEXFusedAccMatMulWithSum",
-    "_ITEXFusedMatMulWithSum", "_OneDnnFusedConv2D",
-    "_OneDnnFusedMatMul"};
+    "_ITEXFusedMatMulWithSum", "_OneDnnFusedConv2D", "_OneDnnFusedMatMul"};
 
 const auto onednngraph_inplace_rule =
     gtl::FlatSet<string>{"_OneDnnGraph", "OneDnnGraph"};

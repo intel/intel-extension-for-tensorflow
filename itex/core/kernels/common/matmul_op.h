@@ -1174,15 +1174,15 @@ class FusedMatMulGradOp : public OpKernel {
     OP_REQUIRES_OK(context, context->GetAttr("transpose_b", &transpose_b));
     OP_REQUIRES(context, !transpose_b,
                 errors::InvalidArgument(
-                    "_FusedMatMulGrad only supports transpose_b = false."));
-
-    OP_REQUIRES(context, fused_ops.size() == 1,
-                errors::InvalidArgument(
-                    "_FusedMatMulGrad must have 1 post-arguments at most."));
+                    "_ITEXFusedMatMulGrad only supports transpose_b = false."));
+    OP_REQUIRES(
+        context, fused_ops.size() == 1,
+        errors::InvalidArgument(
+            "_ITEXFusedMatMulGrad must have 1 post-arguments at most."));
     OP_REQUIRES(
         context, fused_ops[0] == "BiasAddGrad",
-        errors::InvalidArgument(
-            "The 1st post-argument of _FusedMatMulGrad must be BiasAddGrad."));
+        errors::InvalidArgument("The 1st post-argument of _ITEXFusedMatMulGrad"
+                                " must be BiasAddGrad."));
     fp32_math_mode_ = GetFP32MathMode<Device>();
     bool is_bf16_math_mode = false;
     if (context->HasAttr("is_bf16_math_mode")) {

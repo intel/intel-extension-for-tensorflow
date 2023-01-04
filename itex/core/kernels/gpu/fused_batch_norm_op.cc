@@ -84,7 +84,7 @@ REGISTER_FUSED_BATCHNORM_GPU(Eigen::half, float);
           .TypeConstraint<U>("U"),                                          \
       CustomFusedBatchNormGradOp<GPUDevice, T, U, true, false>)             \
   REGISTER_KERNEL_BUILDER(                                                  \
-      Name("_FusedBatchNormExGrad")                                         \
+      Name("_ITEXFusedBatchNormExGrad")                                     \
           .Device(DEVICE_GPU)                                               \
           .TypeConstraint<T>("T")                                           \
           .TypeConstraint<U>("U"),                                          \

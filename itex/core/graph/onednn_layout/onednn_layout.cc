@@ -149,26 +149,26 @@ bool RewriteCast(const utils::MutableNodeView& node_view) {
 static const std::vector<RewriteInfo>* GetRewriteInfo() {
   static std::vector<RewriteInfo> rinfo{
       // nn ops
-      {"_FusedBatchMatMulV2", "_OneDnnFusedBatchMatMulV2",
-       CopyAttrsAllCheckConstFilter, RewriteWithBlockInput},
       {"_FusedBatchNormEx", "_OneDnnFusedBatchNormEx", CopyAttrsAll,
        RewriteFusedBatchNormEx},
-      {"_FusedBatchNormExGrad", "_OneDnnFusedBatchNormExGrad", CopyAttrsAll,
+      {"_ITEXFusedBatchMatMulV2", "_OneDnnFusedBatchMatMulV2",
+       CopyAttrsAllCheckConstFilter, RewriteWithBlockInput},
+      {"_ITEXFusedBatchNormExGrad", "_OneDnnFusedBatchNormExGrad", CopyAttrsAll,
        RewriteFusedBatchNormExGrad},
-      {"_FusedConv2DWithSum", "_OneDnnFusedConv2D",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
-      {"_FusedMatMulGrad", "_OneDnnFusedMatMulGrad", CopyAttrsAll,
-       RewriteFusedMatMulGrad},
-      {"_FusedMatMulWithSum", "_OneDnnFusedMatMul",
-       CopyAttrsAllCheckConstFilter, RewriteMatMul},
       {"_ITEXFusedConv2D", "_OneDnnFusedConv2D", CopyAttrsAllCheckConstFilter,
        RewriteFusedConv},
+      {"_ITEXFusedConv2DWithSum", "_OneDnnFusedConv2D",
+       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
       {"_ITEXFusedDepthwiseConv2dNative", "_OneDnnFusedDepthwiseConv2dNative",
        CopyAttrsAllCheckConstFilter, RewriteFusedConv},
       {"_ITEXFusedConv3D", "_OneDnnFusedConv3D", CopyAttrsAllCheckConstFilter,
        RewriteFusedConv},
       {"_ITEXFusedMatMul", "_OneDnnFusedMatMul", CopyAttrsAllCheckConstFilter,
        RewriteMatMul},
+      {"_ITEXFusedMatMulGrad", "_OneDnnFusedMatMulGrad", CopyAttrsAll,
+       RewriteFusedMatMulGrad},
+      {"_ITEXFusedMatMulWithSum", "_OneDnnFusedMatMul",
+       CopyAttrsAllCheckConstFilter, RewriteMatMul},
       {"_PadWithConv2D", "_OneDnnPadWithConv2D", CopyAttrsAllCheckConstFilter,
        AlwaysRewrite},
       {"_PadWithConv3D", "_OneDnnPadWithConv3D", CopyAttrsAllCheckConstFilter,
@@ -231,7 +231,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        RewriteFusedBatchNormGradV3},
       // TODO(itex): change rewrite rule to RewriteWithBlockInput once support
       //             native format
-      {"FusedInstanceNorm", "_OneDnnFusedInstanceNorm", CopyAttrsAll,
+      {"_ITEXFusedInstanceNorm", "_OneDnnFusedInstanceNorm", CopyAttrsAll,
        AlwaysRewrite},
       {"Gelu", "_OneDnnGelu", CopyAttrsAll, AlwaysRewrite},
       {"GeluGrad", "_OneDnnGeluGrad", CopyAttrsAll, RewriteBackwardDataType},
@@ -403,7 +403,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        RewriteQuantize},
 
       // array ops
-      {"_FusedDequantizeWithReshape", "_OneDnnFusedDequantizeWithReshape",
+      {"_ITEXFusedDequantizeWithReshape", "_OneDnnFusedDequantizeWithReshape",
        CopyAttrsAll, AlwaysRewrite},
   };
 

@@ -81,7 +81,7 @@ constexpr char kConv3DBackpropFilterWithBias[] =
     "_ITEXConv3DBackpropFilterWithBias";
 constexpr char kConv3DBackpropInputWithSlice[] =
     "_ITEXConv3DBackpropInputV2WithSlice";
-constexpr char kDequantizeReshape[] = "_FusedDequantizeWithReshape";
+constexpr char kDequantizeReshape[] = "_ITEXFusedDequantizeWithReshape";
 constexpr char kFusedAccMatMul[] = "_ITEXFusedAccMatMul";
 constexpr char kFusedAccMatMulGrad[] = "_ITEXFusedAccMatMulGrad";
 constexpr char kFusedAccMatMulWithSum[] = "_ITEXFusedAccMatMulWithSum";
@@ -90,19 +90,19 @@ constexpr char kFusedApplyAdamWithWeightDecay[] =
     "_FusedApplyAdamWithWeightDecay";
 constexpr char kFusedAddN[] = "_FusedAddN";
 constexpr char kFusedApplyMomentum[] = "_FusedApplyMomentum";
-constexpr char kFusedBatchMatMul[] = "_FusedBatchMatMulV2";
+constexpr char kFusedBatchMatMul[] = "_ITEXFusedBatchMatMulV2";
 constexpr char kFusedBatchNormEx[] = "_FusedBatchNormEx";
-constexpr char kFusedBatchNormGradEx[] = "_FusedBatchNormExGrad";
+constexpr char kFusedBatchNormGradEx[] = "_ITEXFusedBatchNormExGrad";
 constexpr char kFusedBinary[] = "_ITEXFusedBinary";
 constexpr char kFusedConv2D[] = "_ITEXFusedConv2D";
-constexpr char kFusedConv2DWithSum[] = "_FusedConv2DWithSum";
+constexpr char kFusedConv2DWithSum[] = "_ITEXFusedConv2DWithSum";
 constexpr char kFusedConv3D[] = "_ITEXFusedConv3D";
 constexpr char kFusedDepthwiseConv2dNative[] =
     "_ITEXFusedDepthwiseConv2dNative";
 constexpr char kFusedMatMul[] = "_ITEXFusedMatMul";
-constexpr char kFusedMatMulWithSum[] = "_FusedMatMulWithSum";
-constexpr char kFusedMatMulGrad[] = "_FusedMatMulGrad";
-constexpr char kFusedInstanceNorm[] = "FusedInstanceNorm";
+constexpr char kFusedMatMulWithSum[] = "_ITEXFusedMatMulWithSum";
+constexpr char kFusedMatMulGrad[] = "_ITEXFusedMatMulGrad";
+constexpr char kFusedInstanceNorm[] = "_ITEXFusedInstanceNorm";
 constexpr char kFusedRandom[] = "_ITEXFusedRandom";
 constexpr char kFusedResourceApplyAdam[] = "_FusedResourceApplyAdam";
 constexpr char kFusedResourceApplyAdamWithWeightDecay[] =

@@ -506,7 +506,7 @@ class BatchMatMulCustomOp : public OpKernel {
   REGISTER_KERNEL_BUILDER(                                                   \
       Name("BatchMatMulV2").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"),    \
       BatchMatMulOp<GPUDevice, TYPE, TYPE, TYPE>);                           \
-  REGISTER_KERNEL_BUILDER(Name("_FusedBatchMatMulV2")                        \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBatchMatMulV2")                    \
                               .Device(DEVICE_GPU)                            \
                               .TypeConstraint<TYPE>("T"),                    \
                           BatchMatMulOp<GPUDevice, TYPE, TYPE, TYPE>);       \
@@ -516,7 +516,7 @@ class BatchMatMulCustomOp : public OpKernel {
   REGISTER_KERNEL_BUILDER(                                                   \
       Name("_ITEXFusedMatMul").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
       MatMulOp<GPUDevice, TYPE, TYPE, TYPE>)                                 \
-  REGISTER_KERNEL_BUILDER(Name("_FusedMatMulWithSum")                        \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedMatMulWithSum")                    \
                               .Device(DEVICE_GPU)                            \
                               .TypeConstraint<TYPE>("T"),                    \
                           MatMulOp<GPUDevice, TYPE, TYPE, TYPE>)
@@ -536,10 +536,11 @@ REGISTER_KERNEL_BUILDER(
     BatchMatMulCustomOp<GPUDevice, double, double>);
 #endif
 
-#define REGISTER_MATMUL_GRAD_GPU(TYPE)                                       \
-  REGISTER_KERNEL_BUILDER(                                                   \
-      Name("_FusedMatMulGrad").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
-      FusedMatMulGradOp<GPUDevice, TYPE, TYPE>)
+#define REGISTER_MATMUL_GRAD_GPU(TYPE)                    \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedMatMulGrad")    \
+                              .Device(DEVICE_GPU)         \
+                              .TypeConstraint<TYPE>("T"), \
+                          FusedMatMulGradOp<GPUDevice, TYPE, TYPE>)
 TF_CALL_float(REGISTER_MATMUL_GRAD_GPU);
 TF_CALL_bfloat16(REGISTER_MATMUL_GRAD_GPU);
 #undef REGISTER_MATMUL_GRAD_GPU

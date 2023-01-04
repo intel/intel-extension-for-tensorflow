@@ -34,9 +34,10 @@ namespace itex {
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T"),                         \
                           FusedConvOp<GPUDevice, T, T, T, T, T, false, true>)  \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("_FusedConv2DWithSum").Device(DEVICE_GPU).TypeConstraint<T>("T"),   \
-      FusedConvOp<GPUDevice, T, T, T, T, T>)                                   \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedConv2DWithSum")                      \
+                              .Device(DEVICE_GPU)                              \
+                              .TypeConstraint<T>("T"),                         \
+                          FusedConvOp<GPUDevice, T, T, T, T, T>)               \
   REGISTER_KERNEL_BUILDER(Name("_PadWithConv2D")                               \
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T")                          \

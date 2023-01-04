@@ -50,9 +50,6 @@ namespace itex {
                               .TypeConstraint<int32>("Tpaddings")              \
                               .HostMemory("paddings"),                         \
                           FusedConvOp<CPUDevice, T, T, T, T, T, true>);        \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("_FusedConv2DWithSum").Device(DEVICE_CPU).TypeConstraint<T>("T"),   \
-      FusedConvOp<CPUDevice, T, T, T, T, T>);                                  \
   REGISTER_KERNEL_BUILDER(Name("_PadWithConv2D")                               \
                               .Device(DEVICE_CPU)                              \
                               .TypeConstraint<T>("T")                          \

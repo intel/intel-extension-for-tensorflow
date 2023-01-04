@@ -492,7 +492,6 @@ void CopyAttrsQuantize(const utils::MutableNodeView* orig_node_view,
 
 bool IsQuantizedOp(const string& op_name) {
   static const std::unordered_set<string> QuantizedOp = {
-      "_FusedDequantizeWithReshape",
       "Dequantize",
       "QuantizedAvgPool",
       "QuantizedConcatV2",
@@ -509,7 +508,7 @@ bool IsQuantizedOp(const string& op_name) {
 // check these ops.
 bool IsDataTypeExemptOp(const string& op_name) {
   static const std::unordered_set<string> DataTypeExemptOp = {
-      "_FusedDequantizeWithReshape",
+      "_ITEXFusedDequantizeWithReshape",
       "ITEXQuantizedAvgPool",
       "QuantizedConcatV2",
       "QuantizedConv2DAndRequantize",
