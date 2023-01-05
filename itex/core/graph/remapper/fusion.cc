@@ -141,6 +141,7 @@ Status LaunchPatternMatcher(RemapperContext* ctx, int index,
       }
 
       for (auto const& index : properties.deleted) {
+        RemoveAllRegularFanin(ctx, index);
         deleted->at(index) = true;
       }
 

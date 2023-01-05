@@ -120,6 +120,13 @@ inline bool HasAtMostOneFanoutAtPort0(const utils::MutableNodeView& node_view) {
 bool HasDataType(const NodeDef* node, const DataType& expected,
                  const string& type_attr = "T");
 
+void SetFusedOpAttributes(NodeDef* fused,
+                          const absl::Span<const absl::string_view> fused_ops,
+                          int num_args);
+
+// Helper function to remove all regular Fanin from given node.
+void RemoveAllRegularFanin(RemapperContext* ctx, int node_idx);
+
 // `is_full` is true by default. It will be set as false if this pass runs
 // before oneDNN Graph, that means only a few necessary fusions
 // (InstanceNorm/LayerNorm) will be enabled to keep the original graph as
@@ -130,9 +137,6 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
                    bool is_full = true, int level = 0);
 
-void SetFusedOpAttributes(NodeDef* fused,
-                          const absl::Span<const absl::string_view> fused_ops,
-                          int num_args);
 }  // namespace graph
 }  // namespace itex
 
