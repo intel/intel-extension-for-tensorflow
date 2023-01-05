@@ -57,12 +57,9 @@ void gpu_allocate(const SP_Device* device, uint64_t size, int64_t memory_space,
       static_cast<ITEX_GPUDevice*>(device->device_handle);
   mem->struct_size = SP_DEVICE_MEMORY_BASE_STRUCT_SIZE;
   BFCAllocator* alloc = nullptr;
-  ITEX_GPUError_t error = ITEX_GPUGetAllocator(device_handle, &alloc);
-  if (error != ITEX_GPU_SUCCESS) {
-    ITEX_LOG(ERROR) << "Failed to allocate device buffer because "
-                    << ITEX_GPUGetErrorName(error);
-    return;
-  }
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
   mem->opaque = alloc->AllocateRaw(size);
   mem->size = size;
 }
@@ -71,12 +68,9 @@ void gpu_deallocate(const SP_Device* device, SP_DeviceMemoryBase* mem) {
   ITEX_GPUDevice* device_handle =
       static_cast<ITEX_GPUDevice*>(device->device_handle);
   BFCAllocator* alloc = nullptr;
-  ITEX_GPUError_t error = ITEX_GPUGetAllocator(device_handle, &alloc);
-  if (error != ITEX_GPU_SUCCESS) {
-    ITEX_VLOG(1) << "Failed to deallocate buffer by nullptr allocator because "
-                 << ITEX_GPUGetErrorName(error);
-    return;
-  }
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
   alloc->DeallocateRaw(mem->opaque);
   mem->opaque = nullptr;
   mem->size = 0;

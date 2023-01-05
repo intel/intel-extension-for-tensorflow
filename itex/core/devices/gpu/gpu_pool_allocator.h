@@ -28,7 +28,7 @@ class AllocatorPool {
   static ITEX_GPUError_t getAllocator(ITEX_GPUDevice* device,
                                       BFCAllocator** alloc) {
     auto allocs = AllocatorPool::GetAllocatorPool();
-    for (auto& [key, value] : allocs) {
+    for (const auto& [key, value] : allocs) {
       if (key == device) {
         *alloc = value;
         return ITEX_GPU_SUCCESS;
@@ -40,7 +40,9 @@ class AllocatorPool {
  private:
   static std::map<ITEX_GPUDevice*, BFCAllocator*>& GetAllocatorPool() {
     static std::once_flag init_alloc_flag;
-    static std::map<ITEX_GPUDevice*, BFCAllocator*> allocators;
+    // TODO(itex): try impl without objects with static storage duration:
+    // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
+    static auto* allocators = new std::map<ITEX_GPUDevice*, BFCAllocator*>;
 
     std::call_once(init_alloc_flag, []() {
       int device_count = 0;
@@ -48,20 +50,18 @@ class AllocatorPool {
       ITEX_GPUDevice* device = nullptr;
       for (int i = 0; i < device_count; ++i) {
         ITEX_GPUGetDevice(&device, i);
-        allocators.insert({device, new BFCAllocator(device)});
+        allocators->insert({device, new BFCAllocator(device)});
       }
     });
 
-    return allocators;
+    return *allocators;
   }
 };  // class AllocatorPool
 
-// clang-format off
 inline ITEX_GPUError_t ITEX_GPUGetAllocator(ITEX_GPUDevice* device,
-                                      BFCAllocator** alloc) {
+                                            BFCAllocator** alloc) {
   return AllocatorPool::getAllocator(device, alloc);
 }
-// clang-format on
 
 }  // namespace itex
 #endif  // ITEX_CORE_DEVICES_GPU_GPU_POOL_ALLOCATOR_H_
