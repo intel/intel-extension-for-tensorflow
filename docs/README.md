@@ -28,9 +28,10 @@
   </thead>
   <tbody>
     <tr>
-      <td colspan="4" align="center"><a href="install/experimental/install_for_cpu.md">Install for CPU</a></td>
-      <td colspan="4" align="center"><a href="install/install_for_gpu.md">Install for GPU</a></td>
-      <td colspan="4" align="center"><a href="install/how_to_build.md">Install by source build</a></td>
+      <td colspan="3" align="center"><a href="install/experimental/install_for_cpu.md">Install for CPU</a></td>
+      <td colspan="3" align="center"><a href="install/install_for_gpu.md">Install for GPU</a></td>
+      <td colspan="3" align="center"><a href="install/how_to_build.md">Install by source build</a></td>
+	  <td colspan="3" align="center"><a href="install/experimental/install_for_gpu_conda.md">Install Conda for GPU distributed</a></td>
     </tr>
   </tbody>
   <thead>

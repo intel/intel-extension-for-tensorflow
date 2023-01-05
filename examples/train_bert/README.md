@@ -12,7 +12,7 @@ Install the Intel® Extension for TensorFlow* in legacy running envrionment, Ten
 ## Hardware Requirements
 
 Verified Hardware Platforms:
- - Intel® Ponte Vecchio
+ - Intel® Data Center GPU Max Series
  - Intel CPU
  
 ## Prerequisites
