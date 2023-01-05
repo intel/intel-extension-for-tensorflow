@@ -59,7 +59,7 @@ RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/local/bin/python3 && \
     ln -sf $(which ${PYTHON}) /usr/bin/python
 
-ARG TF_VER="2.10"
+ARG TF_VER="2.11"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 
