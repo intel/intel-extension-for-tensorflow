@@ -9,11 +9,11 @@ This guide shows how to build an Intel® Extension for TensorFlow* PyPI package 
 
 Verified Hardware Platforms:
  - [Intel® Data Center GPU Flex Series 170](https://www.intel.com/content/www/us/en/products/docs/discrete-gpus/data-center-gpu/flex-series/overview.html)
-
+ - [Intel® Data Center GPU Max Series](https://www.intel.com/content/www/us/en/products/docs/processors/max-series/overview.html)
 
 ### Python
 
-Python 3.7 or newer is Required.
+Python 3.7-3.10
 
 ### Intel GPU Driver
 
@@ -26,7 +26,7 @@ Note: Please make sure to [install developer run-time packages](https://dgpu-doc
 
 ### TensorFlow
 
-Install TensorFlow 2.10 and refer to [Install TensorFlow](https://www.tensorflow.org/install).
+Install TensorFlow 2.11 or 2.10, and refer to [Install TensorFlow](https://www.tensorflow.org/install).
 
 Check TensorFlow version:
 ```
@@ -152,6 +152,7 @@ Reference for AOT compilation platforms:
 | GPU card                               | AOT target | Comments                                                     |
 | -------------------------------------- | ---------- | ------------------------------------------------------------ |
 | Intel® Data Center GPU Flex Series 170 | `ats-m150` | The Intel® Data Center GPU Flex Series (formerly code-named Arctic Sound-M) with high-power, 150W adapter. |
+| Intel® Data Center GPU Max Series | `pvc` | Intel® Data Center GPU Max Series (formerly code-named Ponte Vecchio). |
 
 For more GPU platforms, please refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html).
 

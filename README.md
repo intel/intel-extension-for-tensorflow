@@ -78,7 +78,9 @@ We welcome community contributions to Intel® Extension for TensorFlow*.
 This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](CODE_OF_CONDUCT.md). Please see [contribution guidelines](docs/community/contributing.md) for additional details.
 
 ## Resources
-- [TensorFlow](https://www.tensorflow.org/)
+- [TensorFlow GPU device plugins](https://www.tensorflow.org/install/gpu_plugins)
+- [Accelerating TensorFlow on Intel® Data Center GPU Flex Series](https://blog.tensorflow.org/2022/10/accelerating-tensorflow-on-intel-data-center-gpu-flex-series.html)
+- [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://cqpreview.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
 
 ## Support
 Please submit your questions, feature requests, and bug reports on the [GitHub issues](https://github.com/intel/intel-extension-for-tensorflow/issues) page.

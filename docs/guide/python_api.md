@@ -26,7 +26,7 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 | ------------------ | ------------------ | ------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------ |
 | `itex.set_backend` |`GPU`or`CPU` |`ITEX_XPU_BACKEND`                                           | `GPU`or`CPU`                                        | set `CPU`/`GPU` as specific `XPU` backend with optimization options for execution.  |
 | `itex.get_backend` |`N/A`| `N/A`                                                        | `N/A`                                        | Get the string of current XPU backend. For example `CPU`, `GPU` or `AUTO`. |
-| `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION` | `0`<br>`1`*<br>`1`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Ponte Vecchio) and default `OFF` in Intel CPU by hardware attributes|
+| `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION` | `0`<br>`1`*<br>`1`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Intel® Data Center GPU Max Series) and default `OFF` in Intel CPU by hardware attributes|
 
 **Notes:**
 1. The priority for setting values is as follows: Python APIs > Environment Variables > Default value.

@@ -3,17 +3,18 @@
 ## Hardware Requirements
 
 Verified Hardware Platforms:
- - Intel® Data Center GPU Flex Series 170
+ - Intel® Data Center GPU Max Series, Driver Version: [540](https://dgpu-docs.intel.com/releases/stable_540_20221205.html)
+ - Intel® Data Center GPU Flex Series 170, Driver Version: [540](https://dgpu-docs.intel.com/releases/stable_540_20221205.html)
  - *Experimental:* Intel® Arc™ A-Series
 
 For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [Intel® Arc™ A-Series GPU Software Installation](experimental/install_for_arc_gpu.md) for details.
 
 ## Software Requirements
-
-- Ubuntu 20.04 (64-bit)
-- Intel GPU Drivers 
-  - Intel® Data Center GPU Flex Series [419.40](https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html)
-- Intel® oneAPI Base Toolkit 2022.3
+- Ubuntu 22.04, RedHat 8.6 (64-bit)
+  - Intel® Data Center GPU Flex Series 
+- SUSE Linux Enterprise Server(SLES) 15 SP3/SP4, RedHat 8.6 (64-bit)
+  - Intel® Data Center GPU Max Series 
+- Intel® oneAPI Base Toolkit 2023.0
 - TensorFlow 2.11.0 or 2.10.0
 - Python 3.7-3.10
 - pip 19.0 or later (requires manylinux2014 support)
@@ -23,7 +24,8 @@ For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [I
 
 |Release|OS|Intel GPU|Install Intel GPU Driver|
 |-|-|-|-|
-|v1.0.0|Ubuntu 20.04|Intel® Data Center GPU Flex Series| Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-focal-dc.html) for latest driver installation. If install the verified Intel® Data Center GPU Flex Series [419.40](https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd=22.28.23726.1+i419~u20.04`|
+|v1.1.0|Ubuntu 22.04, RedHat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [540](https://dgpu-docs.intel.com/releases/stable_540_20221205.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd=22.43.24595.35+i538~22.04`|
+|v1.1.0|SLES 15 SP3/SP4, RedHat 8.6|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [540](https://dgpu-docs.intel.com/releases/stable_540_20221205.html), please append the specific version after components.|
 
 ## Install via Docker container
 
@@ -35,13 +37,21 @@ Run the following [Dockerfile build procedure](./../../docker/README.md) to buil
 
 #### Get docker container from dockerhub
 
-Pre-built docker images are available at [DockerHub](https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags).
-Please run the following command to pull the GPU Docker container image to your local machine.
+Pre-built docker images will be available at [DockerHub](https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags) around January 13. 
+Please run the following command to pull the Intel® Data Center GPU Flex Series Docker container image (`gpu-flex`) to your local machine.
 
 ```
-$ docker pull intel/intel-extension-for-tensorflow:gpu
-$ docker run -it -p 8888:8888 --device /dev/dri intel/intel-extension-for-tensorflow:gpu
+$ docker pull intel/intel-extension-for-tensorflow:gpu-flex
+$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu-flex
 ```
+
+Or pull the Intel® Data Center GPU Max Series Docker container image (`gpu-max`) to your local machine by the following command.
+
+```
+$ docker pull intel/intel-extension-for-tensorflow:gpu-max
+$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu-max
+```
+
 Then go to your browser on http://localhost:8888/
 
 ## Install via PyPI wheel in bare metal
@@ -52,20 +62,28 @@ Need to install components of Intel® oneAPI Base Toolkit:
 - Intel® oneAPI DPC++ Compiler
 - Intel® oneAPI Threading Building Blocks (oneTBB)
 - Intel® oneAPI Math Kernel Library (oneMKL)
+- Intel® oneAPI Collective Communications Library (oneCCL), required by Intel® Optimization for Horovod* only
 
-Download and install the verified DPC++ compiler and oneMKL in Ubuntu 20.04.
 
 ```bash
-$ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18852/l_BaseKit_p_2022.3.0.8767_offline.sh
-# 4 components are necessary: DPC++/C++ Compiler, DPC++ Libiary, Threading Building Blocks and oneMKL
-$ sudo sh ./l_BaseKit_p_2022.3.0.8767_offline.sh
+$ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/19079/l_BaseKit_p_2023.0.0.25537_offline.sh
+# 4 components are necessary: DPC++/C++ Compiler, DPC++ Libiary, oneTBB and oneMKL
+# if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too(Intel® oneAPI MPI Library will be installed automatically as its dependency)
+$ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 ```
 
 For any more details, please follow the procedure in https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html.
 
-### Setup environment variables
+#### Setup environment variables
 ```bash
-source /opt/intel/oneapi/setvars.sh
+# DPC++ Compiler/oneMKL/oneTBB
+source /path to basekit/intel/oneapi/compiler/latest/env/vars.sh
+source /path to basekit/intel/oneapi/mkl/env/latest/vars.sh
+source /path to basekit/intel/oneapi/tbb/env/latest/vars.sh
+
+# oneCCL (and Intel® oneAPI MPI Library as its dependency), required by Intel® Optimization for Horovod* only
+source /path to basekit/intel/oneapi/mpi/latest/env/vars.sh
+source /path to basekit/intel/oneapi/ccl/latest/env/vars.sh
 ```
 
 A user may install more components than Intel® Extension for TensorFlow* needs, and if required, `setvars.sh` can be customized to point to a specific directory by using a [configuration file](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-programming-guide/top/oneapi-development-environment-setup/use-the-setvars-script-with-linux-or-macos/use-a-config-file-for-setvars-sh-on-linux-or-macos.html):
@@ -81,7 +99,7 @@ The Python development and virtual environment setup recommendation by TensorFlo
 The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.11.0 or 2.10.0.
 
 
-##### Virtual environment install 
+###### Virtual environment install 
 
 You can follow the instructions in [stock tensorflow install](https://www.tensorflow.org/install/pip#step-by-step_instructions) to activate the virtual environment.
 
@@ -95,7 +113,7 @@ To install in virtual environment, you can run
 (tf)$ pip install tensorflow==2.11.0
 ```
 
-##### System environment install 
+###### System environment install 
 If want to system install in $HOME, please append `--user` to the commands.
 ```bash
 $ pip install --user tensorflow==2.11.0
