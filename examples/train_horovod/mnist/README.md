@@ -3,7 +3,7 @@
 ## Dependency
 - [Tensorflow](https://pypi.org/project/tensorflow/)
 - [Intel® Extension for TensorFlow*](https://pypi.org/project/intel-extension-for-tensorflow/)
-- [Intel® Optimization for Horovod*](https://pypi.org/project/intel-extension-for-horovod)
+- [Intel® Optimization for Horovod*](https://pypi.org/project/intel-optimization-for-horovod/)
 - others show as below 
 ```
 pip install gin gin-config tensorflow-addons tensorflow-model-optimization tensorflow-datasets
