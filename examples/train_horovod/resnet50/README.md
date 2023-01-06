@@ -1,7 +1,8 @@
 # Distributed training example with Intel® Optimization for Horovod*
 
 ## Model Information
-| **Use Case** |**Framework** | **Model Repo** | **Branch/Commit/Tag** | **Optional Patch** 
+
+| Use Case |Framework | Model Repo | Branch Commit Tag | Optional Patch 
 | :---: | :---: | :---: | :---: | :---: |
 | Training | Tensorflow | [Tensorflow-Models](https://github.com/tensorflow/models) | v2.8.0 | itex.yaml <br> itex_dummy.yaml <br> hvd_support_light.patch <br> or hvd_support.patch |
 
