@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate AlexNet by Quantization with Intel® Extenstion for Tensorflow* &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow* &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -64,7 +64,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Accelerate AlexNet by Quantization with Intel® Extenstion for Tensorflow*</li>
+      <li>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow*</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/examples/accelerate_alexnet_by_quantization/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -74,15 +74,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="accelerate-alexnet-by-quantization-with-intel-extenstion-for-tensorflow">
-<h1>Accelerate AlexNet by Quantization with Intel® Extenstion for Tensorflow*<a class="headerlink" href="#accelerate-alexnet-by-quantization-with-intel-extenstion-for-tensorflow" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="accelerate-alexnet-by-quantization-with-intel-extension-for-tensorflow">
+<h1>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow*<a class="headerlink" href="#accelerate-alexnet-by-quantization-with-intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="background">
 <h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
-<p>Low-precision inference can speed up inference obviously, by converting the FP32 model to INT8 or BF16 model. Intel provides hardware technology to accelerate the low precision model on Intel CPU &amp; GPU:</p>
-<ol class="simple">
-<li><p>Intel® Deep Learning Boost: It is present in the Second Generation Intel® Xeon® Scalable Processors and newer Xeon®, which supports to speed up INT8 and BF16 model by hardware.</p></li>
-<li><p>Intel GPU which supports INT8.</p></li>
-</ol>
+<p>Low-precision inference can speed up inference obviously, by converting the FP32 model to INT8 or BF16 model. Intel provides hardware technology to accelerate the low precision model on Intel GPU which supports INT8.</p>
 <p>Intel® Neural Compressor helps the user to simplify the processing to convert the FP32 model to INT8.</p>
 <p>At the same time, Intel® Neural Compressor will tune the quantization method to reduce the accuracy loss, which is a big blocker for low-precision inference.</p>
 <p>Intel® Neural Compressor is released in Intel® AI Analytics Toolkit and works with Intel® Optimization of TensorFlow*.</p>
@@ -90,40 +86,33 @@
 </div>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>By Intel® Extenstion for Tensorflow*, it’s easy to quantize FP32 model to INT8 model and be accelerated on Intel CPU and GPU.</p>
+<p>By Intel® Extension for Tensorflow*, it’s easy to quantize FP32 model to INT8 model and be accelerated on Intel CPU and GPU.</p>
 <p>The example reuses the existed End-To-End example: <a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/notebook/tensorflow/alexnet_mnist">Intel® Neural Compressor Sample for TensorFlow</a> provided by Intel® Neural Compressor, to show a pipeline to build up a CNN model to recognize handwriting number and speed up AI model with quantization by Intel® Neural Compressor.</p>
-<p>The original example is designed to run on Intel CPU. After installing Intel® Extenstion for Tensorflow*, it could run on Intel CPU and GPU.</p>
+<p>The original example is designed to run on Intel CPU with Stock Tensorflow* or Intel® Optimization for Tensorflow*. After installing Intel® Extension for Tensorflow*, it could run on Intel GPU.</p>
 <p>All steps follow this existed example. <strong>There is no any code to be changed.</strong></p>
 <p>Please read the example guide for detailed information.</p>
 <p>We will learn the acceleration of AI inference by Intel AI technology:</p>
 <ol class="simple">
-<li><p>Intel® Deep Learning Boost on CPU</p></li>
 <li><p>Intel GPU which supports INT8</p></li>
 <li><p>Intel® Neural Compressor</p></li>
-<li><p>Intel® Extenstion for Tensorflow*</p></li>
+<li><p>Intel® Extension for Tensorflow*</p></li>
 </ol>
 </div>
 <div class="section" id="hardware-environment">
 <h2>Hardware Environment<a class="headerlink" href="#hardware-environment" title="Permalink to this headline">¶</a></h2>
-<p>The example can run on Intel CPU &amp; GPU by Intel® Extenstion for Tensorflow*.</p>
-<div class="section" id="cpu">
-<h3>CPU<a class="headerlink" href="#cpu" title="Permalink to this headline">¶</a></h3>
-<p>This demo is recommended to use 2nd Generation Intel® Xeon® Scalable Processors or newer, which include:</p>
-<ol class="simple">
-<li><p>Intel® AVX512 instruction to speed up training &amp; inference AI model.</p></li>
-<li><p>Intel® Deep Learning Boost: Vector Neural Network Instruction (VNNI) to accelerate AI/DL Inference with INT8/BF16 Model.</p></li>
-</ol>
-<p>With Intel® Deep Learning Boost, the performance will be increased obviously. Without it, maybe it’s 1.x times of FP32.</p>
-<div class="section" id="intel-devcloud">
-<h4>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Permalink to this headline">¶</a></h4>
-<p>If you have no such CPU support Intel® Deep Learning Boost, you could register to Intel® DevCloud and try this example on new Xeon with Intel® Deep Learning Boost freely. To learn more about working with Intel® DevCloud, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a></p>
-</div>
-</div>
+<p>The example can run on Intel GPU by Intel® Extension for Tensorflow*.</p>
 <div class="section" id="gpu">
 <h3>GPU<a class="headerlink" href="#gpu" title="Permalink to this headline">¶</a></h3>
 <p>Support: Intel® Data Center Flex Series GPU.</p>
-<p>For local server, please install the GPU driver and oneAPI packages by refer to <a class="reference internal" href="../../docs/install/install_for_gpu.html"><span class="doc">Intel GPU Software Installation</span></a>.</p>
-<p>For Intel® DevCloud, the GPU driver and oneAPI packages are already installed.</p>
+<div class="section" id="local-server">
+<h4>Local Server<a class="headerlink" href="#local-server" title="Permalink to this headline">¶</a></h4>
+<p>Please install the GPU driver and oneAPI packages by refer to <a class="reference internal" href="../../docs/install/install_for_gpu.html"><span class="doc">Intel GPU Software Installation</span></a>.</p>
+</div>
+<div class="section" id="intel-devcloud">
+<h4>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Permalink to this headline">¶</a></h4>
+<p>If you have no such Intel GPU support INT8, you could register to Intel® DevCloud and try this example on the compute node with Intel GPU. To learn more about working with Intel® DevCloud, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a>.</p>
+<p>In Intel® DevCloud, the GPU driver and oneAPI packages are already installed.</p>
+</div>
 </div>
 </div>
 <div class="section" id="running-environment">
@@ -134,21 +123,12 @@
 <p>There are new requirements:</p>
 <ol class="simple">
 <li><p>Python should be 3.9 or newer version.</p></li>
-<li><p>Tensorflow should be 2.10.0 or newer version.</p></li>
+<li><p>Tensorflow should be 2.11.0 or 2.10.0.</p></li>
 </ol>
 </div>
-<div class="section" id="set-up-intel-extenstion-for-tensorflow">
-<h3>Set up Intel® Extenstion for Tensorflow*<a class="headerlink" href="#set-up-intel-extenstion-for-tensorflow" title="Permalink to this headline">¶</a></h3>
-<p>Please install Intel® Extenstion for Tensorflow* in the running envrionment:</p>
-<ol class="simple">
-<li><p>CPU</p></li>
-</ol>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span>
-</pre></div>
-</div>
-<ol class="simple">
-<li><p>GPU</p></li>
-</ol>
+<div class="section" id="set-up-intel-extension-for-tensorflow-for-gpu">
+<h3>Set up Intel® Extension for Tensorflow*- for GPU<a class="headerlink" href="#set-up-intel-extension-for-tensorflow-for-gpu" title="Permalink to this headline">¶</a></h3>
+<p>Please install Intel® Extension for Tensorflow* in the running environment:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
 </pre></div>
 </div>

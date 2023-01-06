@@ -118,9 +118,9 @@
              
   <div class="section" id="advanced-auto-mixed-precision">
 <h1>Advanced Auto Mixed Precision<a class="headerlink" href="#advanced-auto-mixed-precision" title="Permalink to this headline">¶</a></h1>
-<p>Mixed Precision uses lower-precision data types (such as FP16 or BF16) to make models run faster and with less memory consumption during training and inference.</p>
+<p>Mixed Precision uses lower-precision data types (such as FP16 or BF16) to make models run faster with less memory consumption during training and inference.</p>
 <p>Stock Tensorflow provides two ways to do this, Grappler Graph Optimization <a class="reference external" href="https://www.tensorflow.org/guide/graph_optimization">Auto Mixed Precision</a><strong>(AMP)</strong> and <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision API</a>.</p>
-<p>Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API in Stock TensorFlow, and provodes an <strong>Advanced Auto Mixed Precision</strong> feature for better performance.</p>
+<p>Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API in Stock TensorFlow, and provides an <strong>Advanced Auto Mixed Precision</strong> feature for better performance.</p>
 <ul class="simple">
 <li><p><a class="reference external" href="#overview">Overview</a></p></li>
 <li><p><a class="reference external" href="#advanced-auto-mixed-precision">Advanced Auto Mixed Precision</a></p></li>
@@ -133,9 +133,9 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>Intel® Extension for TensorFlow* provides two ways to support mixed precision:</p>
 <p>I. Keras Mixed Precision</p>
-<p>Support same Keras mixed precision API of stock Tensorflow. To learn Keras mixed precision API in Intel® Extension for TensorFlow*, refer to <a class="reference internal" href="keras_mixed_precision.html"><span class="doc">Keras Mixed Precision</span></a>.</p>
+<p>Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API available in Stock TensorFlow. To learn about Keras mixed precision, refer to <a class="reference internal" href="keras_mixed_precision.html"><span class="doc">Keras Mixed Precision</span></a>.</p>
 <p>II. Advanced Auto Mixed Precision</p>
-<p>Advanced Auto Mixed Precision (Advanced AMP) is similar with stock Tensorflow Auto Mixed Precision, but it has better usage and performance on Intel CPU and GPU.</p>
+<p>Advanced Auto Mixed Precision (Advanced AMP) is similar to stock Tensorflow Auto Mixed Precision, but it offers better usage and performance on Intel CPU and GPU.</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -233,9 +233,9 @@
 </table></div>
 <div class="section" id="graph-optimizer">
 <h3>Graph Optimizer<a class="headerlink" href="#graph-optimizer" title="Permalink to this headline">¶</a></h3>
-<p>Intel® Extension for TensorFlow* graph optimizer provides more powerful optimization for mixed precision graph as a stock TensorFlow custom graph optimizer.</p>
+<p>Intel® Extension for TensorFlow* graph optimizer provides more powerful optimization for mixed precision graph versus a stock TensorFlow custom graph optimizer.</p>
 <p>I. After Advanced AMP of Intel® Extension for TensorFlow* is enabled, the stock Tensorflow AMP components: AMP and Remapper will be disabled automatically.</p>
-<p>II. Intel® Extension for TensorFlow* AMP and Remapper work for mixed precision. The order is changed to: Remapper, AMP, so that fusion operations could be mixed precision.</p>
+<p>II. Intel® Extension for TensorFlow* AMP and Remapper work for mixed precision. The order is changed to Remapper, then AMP, so that fusion operations can be mixed precision.</p>
 <p>III. Intel® Extension for TensorFlow* implements some existing operations to cover those in stock Tensorflow, for better performance in Intel hardware.</p>
 <p>IV. Intel® Extension for TensorFlow* implements custom operations.</p>
 <p><img alt="workflow.png" src="../../_images/workflow.png" /></p>
@@ -244,21 +244,21 @@
 <h3>Feature<a class="headerlink" href="#feature" title="Permalink to this headline">¶</a></h3>
 <p>Advanced AMP based on Intel® Extension for TensorFlow* has more features to improve performance than stock TensorFlow AMP:</p>
 <ul class="simple">
-<li><p>Provide more aggressive sub-graph fusion, such as LayerNorm and InstanceNorm fusion.</p></li>
-<li><p>Support mixed precision in fused Operations, which is not supported by stock TensorFlow.</p></li>
+<li><p>Provides more aggressive sub-graph fusion, such as LayerNorm and InstanceNorm fusion.</p></li>
+<li><p>Supports mixed precision in fused Operations, which are not supported by stock TensorFlow.</p></li>
 </ul>
 </div>
 </div>
 <div class="section" id="tune-advanced-amp-manually">
 <h2>Tune Advanced AMP Manually<a class="headerlink" href="#tune-advanced-amp-manually" title="Permalink to this headline">¶</a></h2>
-<p>Generally, with default configuration, the Advanced AMP has good results balancing performance and accuracy in most cases.
-For advanced users with more knowledge of model and TensorFlow, you can manually tune Advanced AMP for special cases or for custom operation.</p>
-<p>Refer to <a class="reference internal" href="aamp_tune.html"><span class="doc">Tune Advanced Auto Mixed Precision</span></a> for this advantage operations.</p>
+<p>In most cases, with default configuration, Advanced AMP delivers good results with balanced performance and accuracy.
+For advanced users with more knowledge of model and TensorFlow, it is possible to manually tune Advanced AMP for special cases or custom operations.</p>
+<p>Refer to <a class="reference internal" href="aamp_tune.html"><span class="doc">Tune Advanced Auto Mixed Precision</span></a> for advanced operations.</p>
 </div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <p>I. Install Intel® Extension for TensorFlow* in running environment.</p>
-<p>After Installing Intel® Extension for TensorFlow*, it will be activated automatically as a plugin of stock TensorFlow.</p>
+<p>After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.</p>
 <p>Refer to <a class="reference external" href="/README.html#Install">installation</a> instructions for more details.</p>
 <p>II. Enable Advanced AMP.</p>
 <p>With the default configuration, the Advanced AMP has a good balance between performance and accuracy in most cases.</p>
@@ -299,7 +299,7 @@ For advanced users with more knowledge of model and TensorFlow, you can manually
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="quick-training-example">
 <h3>Quick Training Example<a class="headerlink" href="#quick-training-example" title="Permalink to this headline">¶</a></h3>
-<p>Train model for BF16 by Advanced AMP on GPU device.</p>
+<p>Train model for BF16 with Advanced AMP on GPU device.</p>
 <div class="section" id="setup">
 <h4>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h4>
 <p>Install Intel® Extension for TensorFlow*, refer to <a class="reference external" href="/README.html#Install">installation</a>.</p>
@@ -323,7 +323,7 @@ For advanced users with more knowledge of model and TensorFlow, you can manually
 </table></div>
 <div class="section" id="original-code">
 <h4>Original Code<a class="headerlink" href="#original-code" title="Permalink to this headline">¶</a></h4>
-<p>Insert the python API above in original code or set environment variables above before executing original code.</p>
+<p>Insert the python API above in the original code, or set environment variables above before executing the original code.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">keras</span>
 <span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">layers</span>
@@ -372,13 +372,13 @@ For advanced users with more knowledge of model and TensorFlow, you can manually
 <h3>Log and Save Optimized Graph<a class="headerlink" href="#log-and-save-optimized-graph" title="Permalink to this headline">¶</a></h3>
 <p>Advanced AMP supports outputting the log and optimized graph by setting environment variable:</p>
 <p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ITEX_AUTO_MIXED_PRECISION_LOG_PATH=&quot;/my/path/&quot;</span></code></p>
-<p>It will trigger Intel® Extension for TensorFlow* to save the post optimized graph and detailed convert log to local folder.</p>
+<p>It will trigger Intel® Extension for TensorFlow* to save the post optimization graph and detailed conversion log to a local folder.</p>
 <p>Use this to check the structure of the final graph to learn the mixed precision status. It also helps to know the rules to convert operations from FP32 to BF16.</p>
 <p>For detailed introduction, refer to <a class="reference external" href="aamp_tune.html#tuning-performance-example-by-advanced-amp-configure-list-manually">Tuning Performance Example by Advanced AMP Configure List Manually</a></p>
 </div>
 <div class="section" id="custom-operation">
 <h3>Custom Operation<a class="headerlink" href="#custom-operation" title="Permalink to this headline">¶</a></h3>
-<p>When writing a custom operation, add it to configuration list to enable Advanced AMP.</p>
+<p>When writing a custom operation, add it to the configuration list to enable Advanced AMP.</p>
 <p>Refer to <a class="reference external" href="aamp_tune.html#tune-advanced-auto-mixed-precision">Tune Advanced Auto Mixed Precision</a> for more details.</p>
 </div>
 </div>

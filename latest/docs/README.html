@@ -103,9 +103,10 @@
   </thead>
   <tbody>
     <tr>
-      <td colspan="4" align="center"><a href="install/experimental/install_for_cpu.md">Install for CPU</a></td>
-      <td colspan="4" align="center"><a href="install/install_for_gpu.md">Install for GPU</a></td>
-      <td colspan="4" align="center"><a href="install/how_to_build.md">Install by source build</a></td>
+      <td colspan="3" align="center"><a href="install/experimental/install_for_cpu.md">Install for CPU</a></td>
+      <td colspan="3" align="center"><a href="install/install_for_gpu.md">Install for GPU</a></td>
+      <td colspan="3" align="center"><a href="install/how_to_build.md">Install by source build</a></td>
+	  <td colspan="3" align="center"><a href="install/experimental/install_for_gpu_conda.md">Install Conda for GPU distributed</a></td>
     </tr>
   </tbody>
   <thead>
@@ -124,7 +125,7 @@
         <td colspan="3" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
         <td colspan="3" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
 		<td colspan="3" align="center"><a href="guide/launch.md">CPU launcher</a></td>
-        <td colspan="3" align="center"><a href="">INT8 quantization</a></td>
+        <td colspan="3" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
     </tr>
   </tbody>
   <thead>
@@ -156,23 +157,23 @@
 <h2>Hightlights<a class="headerlink" href="#hightlights" title="Permalink to this headline">¶</a></h2>
 <ul>
 <li><p>Environment variables &amp; Python API</p>
-<p>Generally, the default configuration of Intel® Extension for TensorFlow* provides good performance without any code changes.
-Intel® Extension for TensorFlow* also provides simple frontend Python APIs and utilities, for advanced users to get more performance optimizations with minor code changes for different kinds of application scenarios. Typically, only two or three clauses are required to be added to the original code.</p>
+<p>Generally, the default configuration of Intel® Extension for TensorFlow* will provide good performance without any code changes.
+Intel® Extension for TensorFlow* also provides simple frontend Python APIs and utilities, for advanced users to get more optimized performance with only minor code changes, for different kinds of application scenarios. Typically, only two or three clauses are required to be added to the original code.</p>
 </li>
 <li><p>Advanced auto mixed precision (AMP)</p>
-<p>Low precision data type <code class="docutils literal notranslate"><span class="pre">bfloat16</span></code> and<code class="docutils literal notranslate"> <span class="pre">float16</span></code> are natively supported from the <code class="docutils literal notranslate"><span class="pre">3rd</span> <span class="pre">Generation</span> <span class="pre">Xeon®</span> <span class="pre">Scalable</span> <span class="pre">Processors</span></code> <a class="reference external" href="https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html">Cooper Lake</a>  with <code class="docutils literal notranslate"><span class="pre">AVX512</span></code> instruction set and Intel® Data Center GPU with further boosted performance and with less memory consumption. The lower-precision data types support of Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.</p>
+<p>Low precision data types <code class="docutils literal notranslate"><span class="pre">bfloat16</span></code> and<code class="docutils literal notranslate"> <span class="pre">float16</span></code> are natively supported from the <code class="docutils literal notranslate"><span class="pre">3rd</span> <span class="pre">Generation</span> <span class="pre">Xeon®</span> <span class="pre">Scalable</span> <span class="pre">Processors</span></code> <a class="reference external" href="https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html">Cooper Lake</a>  with <code class="docutils literal notranslate"><span class="pre">AVX512</span></code> instruction set and Intel® Data Center GPU with further boosts to performance and with less memory consumption. The lower-precision data types supported by Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.</p>
 </li>
 <li><p>Graph optimization</p>
-<p>Intel® Extension for TensorFlow* provides graph optimization to fuse specific operator patterns to a new single operator for better performance, such as <code class="docutils literal notranslate"><span class="pre">Conv2D+ReLU</span></code> or <code class="docutils literal notranslate"><span class="pre">Linear+ReLU</span></code>.  The benefit of the fusions are delivered to users in a transparent fashion.</p>
+<p>Intel® Extension for TensorFlow* provides graph optimization to fuse specific operator patterns to a new single operator for better performance, such as <code class="docutils literal notranslate"><span class="pre">Conv2D+ReLU</span></code> or <code class="docutils literal notranslate"><span class="pre">Linear+ReLU</span></code>.  The benefits of the fusions are delivered to users in a transparent fashion.</p>
 </li>
 <li><p>Operator optimization</p>
-<p>Intel® Extension for TensorFlow* also optimizes operators and implements several customized operators for performance boost. The <code class="docutils literal notranslate"><span class="pre">itex.ops</span></code> namespace is used to extended TensorFlow public APIs implementation for better performance.</p>
+<p>Intel® Extension for TensorFlow* also optimizes operators and implements several customized operators for performance boost. The <code class="docutils literal notranslate"><span class="pre">itex.ops</span></code> namespace is used to extend TensorFlow public APIs implementation for better performance.</p>
 </li>
 <li><p>GPU profiler</p>
 <p>Intel® Extension for TensorFlow* provides support for TensorFlow <a class="reference external" href="https://www.tensorflow.org/guide/profiler">Profiler</a>. To enable the profiler, define three environment variables ( <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ZE_ENABLE_TRACING_LAYER=1</span></code>, <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">UseCyclesPerSecondTimer=1</span></code>, <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ENABLE_TF_PROFILER=1</span></code>)</p>
 </li>
 <li><p>INT8 quantization</p>
-<p>Intel® Extension for TensorFlow* co-works with <a class="reference external" href="https://github.com/intel/neural-compressor">Intel® Neural Compressor</a> to provide compatible TensorFlow INT8 quantization solution support with same uer experience.</p>
+<p>Intel® Extension for TensorFlow* co-works with <a class="reference external" href="https://github.com/intel/neural-compressor">Intel® Neural Compressor</a> to provide compatible TensorFlow INT8 quantization solution support with equivalent user experience.</p>
 </li>
 </ul>
 </div>

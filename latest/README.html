@@ -77,9 +77,9 @@
   <div class="section" id="intel-extension-for-tensorflow">
 <h1>Intel® Extension for TensorFlow*<a class="headerlink" href="#intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="https://pypi.org/project/intel-extension-for-tensorflow"><img alt="Python" src="https://img.shields.io/pypi/pyversions/tensorflow.svg?style=plastic" /></a>
-<a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/releases"><img alt="version" src="https://img.shields.io/badge/release-1.0.0-green" /></a>
+<a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/releases"><img alt="version" src="https://img.shields.io/badge/release-1.1.0-green" /></a>
 <a class="reference external" href="LICENSE.txt"><img alt="license" src="https://img.shields.io/badge/license-Apache%202-blue" /></a></p>
-<p>Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow <a class="reference external" href="https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md">PluggableDevice</a> interface to bring Intel XPU(GPU, CPU, etc) devices into <a class="reference external" href="https://github.com/tensorflow/tensorflow">TensorFlow</a> open source community for AI workload acceleration. It allows flexibly plugging an XPU into TensorFlow on-demand, and exposing computing power inside Intel’s hardware.</p>
+<p>Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow <a class="reference external" href="https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md">PluggableDevice</a> interface, aiming to bring Intel XPU (GPU, CPU, etc) devices into <a class="reference external" href="https://github.com/tensorflow/tensorflow">TensorFlow</a> open source community for AI workload acceleration. It allows users to flexibly plug an XPU into TensorFlow on-demand, exposing the computing power inside Intel’s hardware.</p>
 <p>This diagram provides a summary of the TensorFlow* PyPI package ecosystem.</p>
 <div align=center>
 <img src="docs/guide/images/pip_pkg_deps.png">
@@ -91,9 +91,9 @@
 <ul class="simple">
 <li><p>XPU specific implementation</p>
 <ul>
-<li><p>kernels &amp; operators</p></li>
-<li><p>graph optimizer</p></li>
-<li><p>device runtime</p></li>
+<li><p>Kernels &amp; operators</p></li>
+<li><p>Graph optimizer</p></li>
+<li><p>Device runtime</p></li>
 </ul>
 </li>
 <li><p>XPU configuration management</p>
@@ -139,13 +139,13 @@
 <td>TensorFlow</td>
 <td>Y</td>
 <td>Y</td>
-<td><a href="https://www.tensorflow.org/install">Install TensorFlow 2.10.0</a></td>
+<td><a href="https://www.tensorflow.org/install">Install TensorFlow 2.11.0 or 2.10.0</a></td>
 </tr>
 </tbody>
 </table></div>
 <div class="section" id="installation-channel">
 <h3>Installation Channel:<a class="headerlink" href="#installation-channel" title="Permalink to this headline">¶</a></h3>
-<p>Intel® Extension for TensorFlow* can be installed from the following channels:</p>
+<p>Intel® Extension for TensorFlow* can be installed through the following channels:</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -164,7 +164,7 @@
 </table></div>
 <div class="section" id="install-for-gpu">
 <h3>Install for GPU<a class="headerlink" href="#install-for-gpu" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.10.0</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.11.0</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -172,11 +172,11 @@
 </div>
 <div class="section" id="install-for-cpu-experimental">
 <h3>Install for CPU [Experimental]<a class="headerlink" href="#install-for-cpu-experimental" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.10.0</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.11.0</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>Sanity check by:</p>
+<p>Sanity check instructions:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
 </pre></div>
 </div>
@@ -184,7 +184,7 @@
 </div>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
-<p>Visit the <a class="reference external" href="https://intel.github.io/intel-extension-for-tensorflow/latest/">online document website</a>, and then get started the tour from Intel® Extension for TensorFlow* <a class="reference internal" href="examples/README.html"><span class="doc">examples</span></a>.</p>
+<p>Visit the <a class="reference external" href="https://intel.github.io/intel-extension-for-tensorflow/latest/">online document website</a>, and then get started with a tour of Intel® Extension for TensorFlow* <a class="reference internal" href="examples/README.html"><span class="doc">examples</span></a>.</p>
 </div>
 <div class="section" id="contributing">
 <h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
@@ -194,7 +194,9 @@
 <div class="section" id="resources">
 <h2>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://www.tensorflow.org/">TensorFlow</a></p></li>
+<li><p><a class="reference external" href="https://www.tensorflow.org/install/gpu_plugins">TensorFlow GPU device plugins</a></p></li>
+<li><p><a class="reference external" href="https://blog.tensorflow.org/2022/10/accelerating-tensorflow-on-intel-data-center-gpu-flex-series.html">Accelerating TensorFlow on Intel® Data Center GPU Flex Series</a></p></li>
+<li><p><a class="reference external" href="https://cqpreview.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html">Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*</a></p></li>
 </ul>
 </div>
 <div class="section" id="support">
@@ -206,8 +208,8 @@
 <p>See Intel’s <a class="reference external" href="https://www.intel.com/content/www/us/en/security-center/default.html">Security Center</a> for information on how to report a potential security issue or vulnerability.</p>
 <p>See also: <a class="reference internal" href="SECURITY.html"><span class="doc">Security Policy</span></a></p>
 </div>
-<div class="section" id="licence">
-<h2>Licence<a class="headerlink" href="#licence" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
 <p><a class="reference external" href="LICENSE.txt">Apache License 2.0</a></p>
 <p>This distribution includes third party software governed by separate license terms. This third party software, even if included with the distribution of the Intel software, may be governed by separate license terms, including without limitation, third party license terms, other Intel software license terms, and open source software license terms. These separate license terms govern your use of the third party programs as set forth in the <a class="reference external" href="third-party-programs/THIRD-PARTY-PROGRAMS">“THIRD-PARTY-PROGRAMS”</a> file.</p>
 </div>

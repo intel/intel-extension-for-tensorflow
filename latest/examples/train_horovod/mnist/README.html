@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distributed training example with Intel® Optimization for Horovod* &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                <a href="../../../../versions.html">latest ▼</a>
+                <p>Click link above to switch version</p>              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Distributed training example with Intel® Optimization for Horovod*</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/examples/train_horovod/mnist/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="distributed-training-example-with-intel-optimization-for-horovod">
+<h1>Distributed training example with Intel® Optimization for Horovod*<a class="headerlink" href="#distributed-training-example-with-intel-optimization-for-horovod" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="dependency">
+<h2>Dependency<a class="headerlink" href="#dependency" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://pypi.org/project/tensorflow/">Tensorflow</a></p></li>
+<li><p><a class="reference external" href="https://pypi.org/project/intel-extension-for-tensorflow/">Intel® Extension for TensorFlow*</a></p></li>
+<li><p><a class="reference external" href="https://pypi.org/project/intel-optimization-for-horovod/">Intel® Optimization for Horovod*</a></p></li>
+<li><p>others show as below</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">gin</span> <span class="n">gin</span><span class="o">-</span><span class="n">config</span> <span class="n">tensorflow</span><span class="o">-</span><span class="n">addons</span> <span class="n">tensorflow</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">optimization</span> <span class="n">tensorflow</span><span class="o">-</span><span class="n">datasets</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="model-examples-preparation">
+<h2>Model examples preparation<a class="headerlink" href="#model-examples-preparation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="model-repo">
+<h3>Model Repo<a class="headerlink" href="#model-repo" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">horovod</span><span class="o">/</span><span class="n">horovod</span><span class="o">.</span><span class="n">git</span> <span class="c1"># top commit: 0b19c</span>
+<span class="n">cd</span> <span class="n">horovod</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">tensorflow2</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="n">tensorflow2_keras_mnist</span><span class="o">.</span><span class="n">patch</span>
+</pre></div>
+</div>
+<p><strong>Notes</strong>:<br />Please refer to <a class="reference external" href="https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py">tensorflow2_keras_mnist.py</a> for other changes about how to enable horovod.</p>
+</div>
+</div>
+<div class="section" id="execution">
+<h2>Execution<a class="headerlink" href="#execution" title="Permalink to this headline">¶</a></h2>
+<p>To run on <strong>a</strong> machine with <strong>4</strong> XPUs:<br /><strong>Notes</strong>:<br />Please check log “### is_mpi”, “### gpus” to get how many XPUs in your platform. This case is on a machine with 2 Intel® Data Center GPU Max Series, and 2 tiles in each GPU are taken as 2 independent XPU devices, a total of 4 XPU devices.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">horovodrun</span> <span class="o">-</span><span class="n">np</span> <span class="mi">4</span> <span class="o">-</span><span class="n">H</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">4</span> <span class="n">python</span> <span class="o">./</span><span class="n">tensorflow2_keras_mnist</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="output">
+<h2>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">### len(sys.argv)  1</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">### is_mpi  4</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">### gpus  [PhysicalDevice(name=&#39;/physical_device:XPU:0&#39;, device_type=&#39;XPU&#39;), PhysicalDevice(name=&#39;/physical_device:XPU:1&#39;, device_type=&#39;XPU&#39;), PhysicalDevice(name=&#39;/physical_device:XPU:2&#39;, device_type=&#39;XPU&#39;), PhysicalDevice(name=&#39;/physical_device:XPU:3&#39;, device_type=&#39;XPU&#39;)]</span>
+<span class="o">...</span>
+<span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">55.830045</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">common_runtime</span><span class="o">/</span><span class="n">pluggable_device</span><span class="o">/</span><span class="n">pluggable_device_factory</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">272</span><span class="p">]</span> <span class="n">Created</span> <span class="n">TensorFlow</span> <span class="n">device</span> <span class="p">(</span><span class="o">/</span><span class="n">job</span><span class="p">:</span><span class="n">localhost</span><span class="o">/</span><span class="n">replica</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">task</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">device</span><span class="p">:</span><span class="n">XPU</span><span class="p">:</span><span class="mi">0</span> <span class="k">with</span> <span class="mi">0</span> <span class="n">MB</span> <span class="n">memory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">physical</span> <span class="n">PluggableDevice</span> <span class="p">(</span><span class="n">device</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">XPU</span><span class="p">,</span> <span class="n">pci</span> <span class="n">bus</span> <span class="nb">id</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">undefined</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">55.830610</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">common_runtime</span><span class="o">/</span><span class="n">pluggable_device</span><span class="o">/</span><span class="n">pluggable_device_factory</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">272</span><span class="p">]</span> <span class="n">Created</span> <span class="n">TensorFlow</span> <span class="n">device</span> <span class="p">(</span><span class="o">/</span><span class="n">job</span><span class="p">:</span><span class="n">localhost</span><span class="o">/</span><span class="n">replica</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">task</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">device</span><span class="p">:</span><span class="n">XPU</span><span class="p">:</span><span class="mi">0</span> <span class="k">with</span> <span class="mi">0</span> <span class="n">MB</span> <span class="n">memory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">physical</span> <span class="n">PluggableDevice</span> <span class="p">(</span><span class="n">device</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">XPU</span><span class="p">,</span> <span class="n">pci</span> <span class="n">bus</span> <span class="nb">id</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">undefined</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">55.830696</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">common_runtime</span><span class="o">/</span><span class="n">pluggable_device</span><span class="o">/</span><span class="n">pluggable_device_factory</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">272</span><span class="p">]</span> <span class="n">Created</span> <span class="n">TensorFlow</span> <span class="n">device</span> <span class="p">(</span><span class="o">/</span><span class="n">job</span><span class="p">:</span><span class="n">localhost</span><span class="o">/</span><span class="n">replica</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">task</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">device</span><span class="p">:</span><span class="n">XPU</span><span class="p">:</span><span class="mi">0</span> <span class="k">with</span> <span class="mi">0</span> <span class="n">MB</span> <span class="n">memory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">physical</span> <span class="n">PluggableDevice</span> <span class="p">(</span><span class="n">device</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">XPU</span><span class="p">,</span> <span class="n">pci</span> <span class="n">bus</span> <span class="nb">id</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">undefined</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">55.831773</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">common_runtime</span><span class="o">/</span><span class="n">pluggable_device</span><span class="o">/</span><span class="n">pluggable_device_factory</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">272</span><span class="p">]</span> <span class="n">Created</span> <span class="n">TensorFlow</span> <span class="n">device</span> <span class="p">(</span><span class="o">/</span><span class="n">job</span><span class="p">:</span><span class="n">localhost</span><span class="o">/</span><span class="n">replica</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">task</span><span class="p">:</span><span class="mi">0</span><span class="o">/</span><span class="n">device</span><span class="p">:</span><span class="n">XPU</span><span class="p">:</span><span class="mi">0</span> <span class="k">with</span> <span class="mi">0</span> <span class="n">MB</span> <span class="n">memory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">physical</span> <span class="n">PluggableDevice</span> <span class="p">(</span><span class="n">device</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">XPU</span><span class="p">,</span> <span class="n">pci</span> <span class="n">bus</span> <span class="nb">id</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">undefined</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">58.971265</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">grappler</span><span class="o">/</span><span class="n">optimizers</span><span class="o">/</span><span class="n">custom_graph_optimizer_registry</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">114</span><span class="p">]</span> <span class="n">Plugin</span> <span class="n">optimizer</span> <span class="k">for</span> <span class="n">device_type</span> <span class="n">XPU</span> <span class="ow">is</span> <span class="n">enabled</span><span class="o">.</span>
+<span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">58.982479</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">grappler</span><span class="o">/</span><span class="n">optimizers</span><span class="o">/</span><span class="n">custom_graph_optimizer_registry</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">114</span><span class="p">]</span> <span class="n">Plugin</span> <span class="n">optimizer</span> <span class="k">for</span> <span class="n">device_type</span> <span class="n">XPU</span> <span class="ow">is</span> <span class="n">enabled</span><span class="o">.</span>
+<span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">59.003327</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">grappler</span><span class="o">/</span><span class="n">optimizers</span><span class="o">/</span><span class="n">custom_graph_optimizer_registry</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">114</span><span class="p">]</span> <span class="n">Plugin</span> <span class="n">optimizer</span> <span class="k">for</span> <span class="n">device_type</span> <span class="n">XPU</span> <span class="ow">is</span> <span class="n">enabled</span><span class="o">.</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mf">59.070484</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">grappler</span><span class="o">/</span><span class="n">optimizers</span><span class="o">/</span><span class="n">custom_graph_optimizer_registry</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">114</span><span class="p">]</span> <span class="n">Plugin</span> <span class="n">optimizer</span> <span class="k">for</span> <span class="n">device_type</span> <span class="n">XPU</span> <span class="ow">is</span> <span class="n">enabled</span><span class="o">.</span>
+<span class="o">...</span>
+<span class="mi">0</span><span class="p">]</span> <span class="n">Epoch</span> <span class="mi">1</span><span class="o">/</span><span class="mi">24</span>
+<span class="mi">1</span><span class="o">/</span><span class="mi">125</span> <span class="p">[</span><span class="o">..............................</span><span class="p">]</span> <span class="o">-</span> <span class="n">ETA</span><span class="p">:</span> <span class="mi">20</span><span class="p">:</span><span class="mi">53</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">2.3020</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.0859</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">Epoch</span> <span class="mi">2</span><span class="o">/</span><span class="mi">24</span>
+<span class="mi">125</span><span class="o">/</span><span class="mi">125</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="n">xxms</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">0.1776</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.9456</span> <span class="o">-</span> <span class="n">lr</span><span class="p">:</span> <span class="mf">0.0030</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

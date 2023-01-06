@@ -15,7 +15,9 @@
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" /> 
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Examples" href="../../../examples/examples.html" />
+    <link rel="prev" title="Build from Source Code" href="../how_to_build.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -36,11 +38,37 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/features.html">Features</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../installation_guide.html">Installation Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../install_for_gpu.html">Intel GPU Software Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install_for_cpu.html"><em>Experimental:</em> Intel CPU Software Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install_for_gpu_conda.html">Conda Environment Installation Instructions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../how_to_build.html">Build from Source Code</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Intel® Extension for TensorFlow* for C++</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prepare">Prepare</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configure-the-build">Configure the build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-the-cc-library">Build the CC library</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#gpu-support">GPU support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cpu-only-experimental">CPU only (experimental)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#build-libtensorfow-cc-so">Build libtensorfow_cc.so</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integrate-the-cc-library">Integrate the CC library</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#linker">Linker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#load">Load</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#build-and-run">Build and run</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/FAQ.html">Frequently Asked Questions</a></li>
@@ -64,6 +92,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../installation_guide.html">Installation Guide</a> &raquo;</li>
       <li>Intel® Extension for TensorFlow* for C++</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../_sources/docs/install/experimental/install_for_cpp.md.txt" rel="nofollow"> View page source</a>
@@ -196,12 +225,12 @@ To support Intel® Extension for TensorFlow* cc library, we need to modify the o
 </div>
 <p>The updated example with Intel® Extension for TensorFlow* enabled</p>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">// example.cc</span>
-<span class="w"> </span>#include &quot;tensorflow/cc/client/client_session.h&quot;<span class="w"></span>
-<span class="w"> </span>#include &quot;tensorflow/cc/ops/standard_ops.h&quot;<span class="w"></span>
-<span class="w"> </span>#include &quot;tensorflow/core/framework/tensor.h&quot;<span class="w"></span>
+<span class="w">#include &quot;tensorflow/cc/client/client_session.h&quot;</span>
+<span class="w">#include &quot;tensorflow/cc/ops/standard_ops.h&quot;</span>
+<span class="w">#include &quot;tensorflow/core/framework/tensor.h&quot;</span>
 <span class="gi">+ #include &quot;tensorflow/c/c_api_experimental.h&quot;</span><span class="w"></span>
 
-<span class="w"> </span>int main() {<span class="w"></span>
+<span class="w">int main() {</span>
 <span class="w"> </span> using namespace tensorflow;<span class="w"></span>
 <span class="w"> </span> using namespace tensorflow::ops;<span class="w"></span>
 
@@ -276,7 +305,10 @@ $ ./example_test
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../how_to_build.html" class="btn btn-neutral float-left" title="Build from Source Code" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../../examples/examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

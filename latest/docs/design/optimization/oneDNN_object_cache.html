@@ -78,13 +78,13 @@
 <h1>oneDNN object cache optimization<a class="headerlink" href="#onednn-object-cache-optimization" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The OneDNN object (primitve/primitive description/memory) creation overhead becomes noticable, especially in small model latency scenarios.</p>
-<p>OneDNN object cache optimization is experimental feature for optimizing model latency by binding an oneDNN object to a TensorFlow graph node. You can enable this environment by setting the environment variable ‘ITEX_CACHE_ONEDNN_OBJECT’ to on. By default, it is off.</p>
+<p>The OneDNN object (primitive/primitive description/memory) creation overhead becomes noticeable, especially in small model latency scenarios.</p>
+<p>OneDNN object cache optimization is an experimental feature for optimizing model latency by binding a oneDNN object to a TensorFlow graph node. You can enable this environment by setting the environment variable ‘ITEX_CACHE_ONEDNN_OBJECT’ to on. By default, it is set to off.</p>
 <p>TensorFlow supports optimizations to support different scenarios:</p>
 <ul class="simple">
-<li><p><strong>Dynamic Shape</strong> - TensorFlow supports dynamic shape, which means a node may get different shape input. This optimization will invalid the cache by checking the input dims/shape with the oneDNN meta input (used in layout propagation).</p></li>
+<li><p><strong>Dynamic Shape</strong> - TensorFlow supports dynamic shape, which means a node can get different shape input. This optimization will invalidate the cache by checking the input dims/shape with the oneDNN meta input (used in layout propagation).</p></li>
 <li><p><strong>Operator Parallel Execution</strong> - TensorFlow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/config/threading">operator parallel execution</a>, which means a node may execute in different schedule threads. The oneDNN requires thread safe in this scenario only: <strong>user scratchpad</strong> and <strong>oneDNN stream creation on demand</strong>. This optimization is aligning to satisfy a oneDNN requirement.</p></li>
-<li><p><strong>Concurrently Execution</strong> - Tensorflow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session#as_default">concurrently execution</a>, which means a node may be executed in different thread concurrently. This optimization handles this case by adding a mutex lock.</p></li>
+<li><p><strong>Concurrent Execution</strong> - Tensorflow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session#as_default">concurrent execution</a>, which means a node may be executed in different thread concurrently. The optimization handles this case by adding a mutex lock.</p></li>
 </ul>
 </div>
 <div class="section" id="optimization-in-convolution">

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                <a href="../../versions.html">v1.1.0 ▼</a>
+                <p>Click link above to switch version</p>              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Intel® Extension for TensorFlow* Docker Container Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docker/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="intel-extension-for-tensorflow-docker-container-guide">
+<h1>Intel® Extension for TensorFlow* Docker Container Guide<a class="headerlink" href="#intel-extension-for-tensorflow-docker-container-guide" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>This document has instruction for running TensorFlow using Intel® Extension for TensorFlow* in docker container.</p>
+<p>Assumptions:</p>
+<ul class="simple">
+<li><p>Host machine installs Intel GPU.</p></li>
+<li><p>Host machine installs Linux kernel that is compatible with GPU drivers.</p></li>
+<li><p>Host machine has Intel GPU driver.</p></li>
+<li><p>Host machine installs Docker software.</p></li>
+</ul>
+<p>Refer to <a class="reference internal" href="../docs/install/install_for_gpu.html"><span class="doc">Install for GPU</span></a> and <a class="reference internal" href="../docs/install/experimental/install_for_cpu.html"><span class="doc">Install for CPU</span></a> for detail.</p>
+</div>
+<div class="section" id="binaries-preparation">
+<h2>Binaries Preparation<a class="headerlink" href="#binaries-preparation" title="Permalink to this headline">¶</a></h2>
+<p>Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
+</pre></div>
+</div>
+<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/horovod as well.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir ./models/horovod
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage-of-docker-container">
+<h2>Usage of Docker Container<a class="headerlink" href="#usage-of-docker-container" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="i-customize-build-script">
+<h3>I. Customize build script<a class="headerlink" href="#i-customize-build-script" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="./build.sh">build.sh</a> is provided as docker container build script. While OS version and some software version (such as Python and TensorFlow) is hard coded inside the script. If you prefer to use newer or later version, you can edit this script.</p>
+<p>For example, to build docker container with Python 3.9 and TensorFlow 2.11 on Ubuntu 20.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
+        docker build --build-arg UBUNTU_VERSION=20.04 \
+                                --build-arg PYTHON=python3.9 \
+                                --build-arg TF_VER=2.11 \
+                                --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
+                                -t $IMAGE_NAME \
+                                -f itex-cpu-ubuntu.Dockerfile .
+</pre></div>
+</div>
+</div>
+<div class="section" id="ii-build-the-container">
+<h3>II. Build the container<a class="headerlink" href="#ii-build-the-container" title="Permalink to this headline">¶</a></h3>
+<p>To build the docker container, enter into <a class="reference external" href="docker/./">docker</a> folder and run below commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="p">[</span><span class="n">gpu</span><span class="o">-</span><span class="n">flex</span><span class="o">/</span><span class="n">gpu</span><span class="o">-</span><span class="nb">max</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">centos</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">ubuntu</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="iii-running-container">
+<h3>III. Running container<a class="headerlink" href="#iii-running-container" title="Permalink to this headline">¶</a></h3>
+<p>Run following commands to start docker container. You can use <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using <code class="docutils literal notranslate"><span class="pre">--device</span> <span class="pre">/dev/dri</span></code> option and run the container:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:gpu-max
+docker run -v &lt;your-local-dir&gt;:/workspace \
+           -v /dev/dri/by-path:/dev/dri/by-path \
+           --device /dev/dri \
+           --privileged \
+           -e http_proxy=$http_proxy \
+           -e https_proxy=$https_proxy \
+           -e no_proxy=$no_proxy \
+           -it \
+           $IMAGE_NAME bash
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="verify-if-gpu-is-accessible-from-tensorflow">
+<h2>Verify if GPU is accessible from TensorFlow<a class="headerlink" href="#verify-if-gpu-is-accessible-from-tensorflow" title="Permalink to this headline">¶</a></h2>
+<p>You are inside container now. Run following command to verify GPU is visible to TensorFlow:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())&quot;</span>
+</pre></div>
+</div>
+<p>You should be able to see GPU device in list of devices. Sample output looks like below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;/device:CPU:0&quot;</span>
+<span class="n">device_type</span><span class="p">:</span> <span class="s2">&quot;CPU&quot;</span>
+<span class="n">memory_limit</span><span class="p">:</span> <span class="mi">268435456</span>
+<span class="n">locality</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="n">incarnation</span><span class="p">:</span> <span class="mi">9266936945121049176</span>
+<span class="n">xla_global_id</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span>
+<span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;/device:XPU:0&quot;</span>
+<span class="n">device_type</span><span class="p">:</span> <span class="s2">&quot;XPU&quot;</span>
+<span class="n">locality</span> <span class="p">{</span>
+<span class="n">bus_id</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">}</span>
+<span class="n">incarnation</span><span class="p">:</span> <span class="mi">15031084974591766410</span>
+<span class="n">physical_device_desc</span><span class="p">:</span> <span class="s2">&quot;device: 0, name: INTEL_XPU, pci bus id: &lt;undefined&gt;&quot;</span>
+<span class="n">xla_global_id</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span>
+<span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;/device:XPU:1&quot;</span>
+<span class="n">device_type</span><span class="p">:</span> <span class="s2">&quot;XPU&quot;</span>
+<span class="n">locality</span> <span class="p">{</span>
+<span class="n">bus_id</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">}</span>
+<span class="n">incarnation</span><span class="p">:</span> <span class="mi">17448926295332318308</span>
+<span class="n">physical_device_desc</span><span class="p">:</span> <span class="s2">&quot;device: 1, name: INTEL_XPU, pci bus id: &lt;undefined&gt;&quot;</span>
+<span class="n">xla_global_id</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

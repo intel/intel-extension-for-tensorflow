@@ -97,7 +97,7 @@
              
   <div class="section" id="customized-operators">
 <h1>Customized Operators<a class="headerlink" href="#customized-operators" title="Permalink to this headline">¶</a></h1>
-<p>Public API for extended XPU operators is provided by the <code class="docutils literal notranslate"><span class="pre">itex.ops</span></code> namespace. The extended API provides better performance than original public API.</p>
+<p>Public API for extended XPU operators is provided by the <code class="docutils literal notranslate"><span class="pre">itex.ops</span></code> namespace. The extended API provides better performance than the original public API.</p>
 <div class="section" id="itex-ops-adamwithweightdecayoptimizer">
 <h2><code class="docutils literal notranslate"><span class="pre">itex.ops.AdamWithWeightDecayOptimizer</span></code><a class="headerlink" href="#itex-ops-adamwithweightdecayoptimizer" title="Permalink to this headline">¶</a></h2>
 <p>This optimizer implements the Adam algorithm with weight decay</p>
@@ -134,7 +134,7 @@
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Normalize the activations of the previous layer for each given example in a batch independently, rather than across a batch like Batch Normalization. This applies a transformation that maintains the mean activation within each example close to 0 and the activation standard deviation close to 1. This python API <code class="docutils literal notranslate"><span class="pre">itex.ops.LayerNormalization</span></code> replaces <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/layers/LayerNormalization">tf.keras.layers.LayerNormalization</a>.</p>
+<p>Normalize the activations of the previous layer for each given example in a batch independently, rather than across a batch like Batch Normalization. This applies a transformation that maintains the mean activation within each example close to 0, and the activation standard deviation close to 1. This python API <code class="docutils literal notranslate"><span class="pre">itex.ops.LayerNormalization</span></code> replaces <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/layers/LayerNormalization">tf.keras.layers.LayerNormalization</a>.</p>
 <p>For example:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
 &gt;&gt;&gt; <span class="nv">data</span> <span class="o">=</span> tf.constant<span class="o">(</span>np.arange<span class="o">(</span><span class="m">10</span><span class="o">)</span>.reshape<span class="o">(</span><span class="m">5</span>, <span class="m">2</span><span class="o">)</span> * <span class="m">10</span>, <span class="nv">dtype</span><span class="o">=</span>tf.float32<span class="o">)</span>
@@ -158,7 +158,7 @@ tf.Tensor<span class="o">(</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Gaussian error linear unit (<code class="docutils literal notranslate"><span class="pre">GELU</span></code>) computes <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">P(X</span> <span class="pre">&lt;=</span> <span class="pre">x)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P(X)</span> <span class="pre">~</span> <span class="pre">N(0,</span> <span class="pre">1)</span></code>. The (GELU) nonlinearity weights inputs by their value, rather than gates inputs by their sign as in <code class="docutils literal notranslate"><span class="pre">ReLU</span></code>. This python API <code class="docutils literal notranslate"><span class="pre">itex.ops.gelu</span></code> replaces <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/gelu">tf.nn.gelu</a>.</p>
+<p>Gaussian error linear unit (<code class="docutils literal notranslate"><span class="pre">GELU</span></code>) computes <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">P(X</span> <span class="pre">&lt;=</span> <span class="pre">x)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P(X)</span> <span class="pre">~</span> <span class="pre">N(0,</span> <span class="pre">1)</span></code>. The (GELU) nonlinearity weights inputs by their value, rather than gating inputs by their sign as in <code class="docutils literal notranslate"><span class="pre">ReLU</span></code>. This python API <code class="docutils literal notranslate"><span class="pre">itex.ops.gelu</span></code> replaces <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/gelu">tf.nn.gelu</a>.</p>
 <p>For example:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
 &gt;&gt;&gt; <span class="nv">x</span> <span class="o">=</span> tf.constant<span class="o">([</span>-3.0, -1.0, <span class="m">0</span>.0, <span class="m">1</span>.0, <span class="m">3</span>.0<span class="o">]</span>, <span class="nv">dtype</span><span class="o">=</span>tf.float32<span class="o">)</span>
@@ -175,7 +175,7 @@ array<span class="o">([</span>-0.00363725, -0.158808  ,  <span class="m">0</span
 </div>
 <div class="section" id="itex-ops-itexlstm">
 <h2><code class="docutils literal notranslate"><span class="pre">itex.ops.ItexLSTM</span></code><a class="headerlink" href="#itex-ops-itexlstm" title="Permalink to this headline">¶</a></h2>
-<p>Long Short-Term Memory layer (first proposed in Hochreiter &amp; Schmidhuber, 1997), this python api <code class="docutils literal notranslate"><span class="pre">itex.ops.ItexLSTM</span></code> has same semantic with <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM">tf.keras.layers.LSTM</a>.</p>
+<p>Long Short-Term Memory layer (first proposed in Hochreiter &amp; Schmidhuber, 1997), this python api <code class="docutils literal notranslate"><span class="pre">itex.ops.ItexLSTM</span></code> is semantically the same as <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM">tf.keras.layers.LSTM</a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">ItexLSTM</span><span class="p">(</span>
     <span class="mi">200</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;tanh&#39;</span><span class="p">,</span>
     <span class="n">recurrent_activation</span><span class="o">=</span><span class="s1">&#39;sigmoid&#39;</span><span class="p">,</span>
@@ -186,7 +186,7 @@ array<span class="o">([</span>-0.00363725, -0.158808  ,  <span class="m">0</span
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Based on available runtime hardware and constraints, this layer will choose different implementations (ITEX-based or fallback-TensorFlow) to maximize the performance.<br />If a GPU is available and all the arguments to the layer meet the requirement of the ITEX kernel (see below for details), the layer will use a fast ITEX implementation.
+<p>Based on available runtime hardware and constraints, this layer will choose different implementations (ITEX-based or fallback-TensorFlow) to maximize the performance.<br />If a GPU is available and all the arguments to the layer meet the requirements of the ITEX kernel (see below for details), the layer will use a fast ITEX implementation.
 The requirements to use the ITEX implementation are:</p>
 <ol class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">activation</span></code> == <code class="docutils literal notranslate"><span class="pre">tanh</span></code></p></li>

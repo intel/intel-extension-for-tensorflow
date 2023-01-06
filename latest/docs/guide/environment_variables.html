@@ -106,7 +106,7 @@
 <h1>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>Intel® Extension for TensorFlow* provides environment varaibles for user to quickly adjust the configuration without any model code changes. Not all configuration options can be set by environment variable. For the rest, you’ll need to use the Python APIs. The priority for option setting is  Python APIs &gt; Environment Variables &gt; Default value.</p>
+<p>Intel® Extension for TensorFlow* provides environment variables for users to quickly adjust the configuration without any model code changes. Not all configuration options can be set via environment variable. For the rest, you’ll need to use the Python APIs. The priority for setting values is Python APIs &gt; Environment Variables &gt; Default value.</p>
 </div>
 <div class="section" id="environment-variables-only">
 <h2>Environment Variables only<a class="headerlink" href="#environment-variables-only" title="Permalink to this headline">¶</a></h2>
@@ -143,10 +143,10 @@
 </table><div class="section" id="itex-verbose-level-definition">
 <h3>ITEX_VERBOSE level definition<a class="headerlink" href="#itex-verbose-level-definition" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Level 1 is basic verbose information including device, graph, kernel and other infrastructure initialization log, that is displayed only once.</p></li>
-<li><p>Level 2 is help information including performance, functionality, debug and error log, that is displayed only once.</p></li>
-<li><p>Level 3 is normal tips or kernel execution log. It is reported multiple times across different iterations. Note that Intel® Extension for TensorFlow* will generate large size log using this level.</p></li>
-<li><p>Level 4 is for graph information. This level can dump node or whole graph information with large size. Example:</p></li>
+<li><p>Level 1 is basic verbose information including device, graph, kernel and other infrastructure initialization logs, displayed only once.</p></li>
+<li><p>Level 2 is help information including performance, functionality, debug and error logs, displayed only once.</p></li>
+<li><p>Level 3 is normal tips or kernel execution logs. It is reported multiple times across different iterations. Note that Intel® Extension for TensorFlow* will generate large size logs using this level.</p></li>
+<li><p>Level 4 is for graph information. This level can dump node or large-size whole graph information. Example:</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span> <span class="p">{</span>
   <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;bert/encoder/layer_0/attention/output/dense/BiasAdd&quot;</span>
@@ -170,7 +170,7 @@
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Level 5 or higher level are for the rest situations.</p></li>
+<li><p>Levels 5 or higher are used for any remaining situations.</p></li>
 </ul>
 </div>
 </div>

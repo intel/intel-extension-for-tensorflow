@@ -60,7 +60,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#itex-get-backend">itex.get_backend</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="#itex-config-protocol">itex Config Protocol</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#itex-config-protocol">Itex Config Protocol</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#itex-configproto">itex.ConfigProto</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-gpuoptions">itex.GPUOptions</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-graphoptions">itex.GraphOptions</a></li>
@@ -120,7 +120,7 @@
 <h1>Python APIs<a class="headerlink" href="#python-apis" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>Intel® Extension for TensorFlow* provides flexible Python APIs for configuring to different kinds of application scenarios.</p>
+<p>Intel® Extension for TensorFlow* provides flexible Python APIs to configure settings for different types of application scenarios.</p>
 <div class="section" id="prerequisite-import-intel-extension-for-tensorflow-as-itex">
 <h3>Prerequisite: <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">intel_extension_for_tensorflow</span> <span class="pre">as</span> <span class="pre">itex</span></code><a class="headerlink" href="#prerequisite-import-intel-extension-for-tensorflow-as-itex" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
@@ -138,7 +138,7 @@
 </div>
 <div class="section" id="python-apis-and-environment-variable-names">
 <h2>Python APIs and Environment Variable Names<a class="headerlink" href="#python-apis-and-environment-variable-names" title="Permalink to this headline">¶</a></h2>
-<p>You can easily configure and tune Intel® Extension for TensorFlow* run models using Python APIs and environment variable. We recommend Python APIs.</p>
+<p>You can easily configure and tune Intel® Extension for TensorFlow* run models using Python APIs and environment variables. We recommend Python APIs.</p>
 <div class="section" id="python-apis-and-preserved-environment-variable-names">
 <h3>Python APIs and preserved environment variable Names<a class="headerlink" href="#python-apis-and-preserved-environment-variable-names" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="docutils">
@@ -171,12 +171,12 @@
 <td><code>OFF</code><br><code>ON</code><br><code>ON</code><br/><code>OFF</code><br/></td>
 <td><code>ITEX_ONEDNN_GRAPH</code> <br><code>ITEX_LAYOUT_OPT</code><br><code>ITEX_REMAPPER</code><br><code>ITEX_AUTO_MIXED_PRECISION</code></td>
 <td><code>0</code><br><code>1</code>*<br><code>1</code><br/><code>0</code><br/></td>
-<td>Set configuration options for specific backend type (<code>CPU</code>/<code>GPU</code>) and graph optimization. <br/> *<code>ITEX_LAYOUT_OPT</code> default <code>ON</code> in Intel GPU (except Ponte Vecchio) and default <code>OFF</code> in Intel CPU by hardware attributes</td>
+<td>Set configuration options for specific backend type (<code>CPU</code>/<code>GPU</code>) and graph optimization. <br/> *<code>ITEX_LAYOUT_OPT</code> default <code>ON</code> in Intel GPU (except Intel® Data Center GPU Max Series) and default <code>OFF</code> in Intel CPU by hardware attributes</td>
 </tr>
 </tbody>
 </table><p><strong>Notes:</strong></p>
 <ol class="simple">
-<li><p>The priority for above value setting is Python APIs &gt; Environment Variables &gt; Default value.</p></li>
+<li><p>The priority for setting values is as follows: Python APIs &gt; Environment Variables &gt; Default value.</p></li>
 <li><p>If GPU backend was installed by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">intel-extension-for-tensorflow[gpu]</span></code>, the default backend will be <code class="docutils literal notranslate"><span class="pre">GPU</span></code>. If CPU backend was installed by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">intel-extension-for-tensorflow[cpu]</span></code>, the default backend is <code class="docutils literal notranslate"><span class="pre">CPU</span></code>.</p></li>
 </ol>
 </div>
@@ -185,7 +185,7 @@
 <h2>Set Intel® Extension for TensorFlow* Backend<a class="headerlink" href="#set-intel-extension-for-tensorflow-backend" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="itex-set-backend">
 <h3>itex.set_backend<a class="headerlink" href="#itex-set-backend" title="Permalink to this headline">¶</a></h3>
-<p>Intel® Extension for TensorFlow* provides multiple types of backends with different optimization options to execute. Only one backend is allowed in whole process, and only can be configured once before XPU device initialization.</p>
+<p>Intel® Extension for TensorFlow* provides multiple types of backends with different optimization options to execute. Only one backend is allowed in the whole process, and this can only be configured once before XPU device initialization.</p>
 <p>Set <code class="docutils literal notranslate"><span class="pre">CPU</span></code>/<code class="docutils literal notranslate"><span class="pre">GPU</span></code> with <code class="docutils literal notranslate"><span class="pre">config</span></code> as specific XPU backend type for execution.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span> <span class="p">(</span>
   <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;GPU&#39;</span><span class="p">,</span>
@@ -203,7 +203,7 @@
 <tbody>
 <tr>
 <td><code>backend</code></td>
-<td>The backend type to set. The default value is <code>CPU</code>.<br>  <br> * If <code>GPU</code>, the XPU backend type is set as <code>GPU</code> and all ops will be executed on concrete GPU backend.<br> * If <code>CPU</code>, the XPU backend type is set as <code>CPU</code> and and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by <code>pip install intel-extension-for-tensorflow[cpu]</code>, it's invalid to set XPU backend type as <code>GPU</code>.</td>
+<td>The backend type to set. The default value is <code>CPU</code>.<br>  <br> * If <code>GPU</code>, the XPU backend type is set as <code>GPU</code> and all ops will be executed on concrete GPU backend.<br> * If <code>CPU</code>, the XPU backend type is set as <code>CPU</code> and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by <code>pip install intel-extension-for-tensorflow[cpu]</code>, it's invalid to set XPU backend type as <code>GPU</code>.</td>
 </tr>
 <tr>
 <td><code>config</code></td>
@@ -235,7 +235,7 @@
 
 <span class="n">backend_cfg</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">gpu_options</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">GPUOptions</span><span class="p">(</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span><span class="p">))</span>
 
-<span class="c1"># Only allow setting once in backend device initialization</span>
+<span class="c1"># Only allow this setting once in backend device initialization</span>
 <span class="c1"># All operators will be executed in `GPU` backend with the option setting.</span>
 <span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s1">&#39;GPU&#39;</span><span class="p">,</span> <span class="n">backend_cfg</span><span class="p">)</span>
 
@@ -246,7 +246,7 @@
     <span class="nb">print</span><span class="p">(</span><span class="n">add_func</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>II. Set the specific XPU backend type and config for not explicitly specified device.</p>
+<p>II. Set the specific XPU backend type and config for a device not explicitly specified.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># TensorFlow graph mode or eager mode</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
@@ -285,12 +285,12 @@
 <td>Return the current XPU backend type string.</td>
 </tr>
 </tbody>
-</table><p>The following example demonstrates set the XPU backend type as <code class="docutils literal notranslate"><span class="pre">GPU</span></code> and check its value on the machine, while GPU backend is installed by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">intel-extension-for-tensorflow[gpu]</span></code>.</p>
+</table><p>The following example demonstrates setting the XPU backend type as <code class="docutils literal notranslate"><span class="pre">GPU</span></code> and checking its value on the machine, while GPU backend is installed by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">intel-extension-for-tensorflow[gpu]</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># TensorFlow and Intel® Extension for TensorFlow*</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 
-<span class="c1"># only allow setting once in backend device initialization</span>
+<span class="c1"># Only allow setting once in backend device initialization</span>
 <span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s1">&#39;GPU&#39;</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">get_backend</span><span class="p">())</span>
@@ -300,7 +300,7 @@
 </div>
 </div>
 <div class="section" id="itex-config-protocol">
-<h2>itex Config Protocol<a class="headerlink" href="#itex-config-protocol" title="Permalink to this headline">¶</a></h2>
+<h2>Itex Config Protocol<a class="headerlink" href="#itex-config-protocol" title="Permalink to this headline">¶</a></h2>
 <p><strong>itex.ConfigProto: ProtocolMessage for XPU configuration under different types of backends and optimization options.</strong></p>
 <p><strong>enum class</strong></p>
 <table border="1" class="docutils">
@@ -317,7 +317,7 @@
 </tr>
 <tr>
 <td>enum Toggle {<br/>    DEFAULT = 0;<br/>    ON = 1;<br/>    OFF = 2;<br/>}</td>
-<td>Configuration options for the graph optimizer. Unless otherwise noted, these  configuration options do not apply to explicitly triggered optimization passes in the optimizers field.</td>
+<td>Configuration options for the graph optimizer. Unless otherwise noted, these configuration options do not apply to explicitly triggered optimization passes in the optimizers field.</td>
 </tr>
 </tbody>
 </table><p><strong>Functions</strong></p>
@@ -377,19 +377,19 @@
 <tbody>
 <tr>
 <td><code>onednn_graph</code></td>
-<td>Toggle onednn_graph<br><br>Override the environment variable <code>ITEX_ONEDNN_GRAPH</code>. Set to enable or disable oneDNN graph(LLGA) optimization.The default value is <code>OFF</code>.<br>  <br> * If <code>ON</code>, will enable oneDNN graph in Intel® Extension for TensorFlow<em>.<br> * If <code>OFF</code>, will disable oneDNN graph in Intel® Extension for TensorFlow</em>.</td>
+<td>Toggle onednn_graph<br><br>Override the environment variable <code>ITEX_ONEDNN_GRAPH</code>. Set to enable or disable oneDNN graph(LLGA) optimization. The default value is <code>OFF</code>.<br>  <br> * If <code>ON</code>, will enable oneDNN graph in Intel® Extension for TensorFlow<em>.<br> * If <code>OFF</code>, will disable oneDNN graph in Intel® Extension for TensorFlow</em>.</td>
 </tr>
 <tr>
 <td><code>layout_opt</code></td>
-<td>Toggle layout_opt <br><br>Override the environment variable <code>ITEX_LAYOUT_OPT</code>. Set if oneDNN layout optimization is enabled to benefit from oneDNN block format.<br> Enable the oneDNN layout or not. The default value is <code>OFF</code>.<br>  <br> * If <code>ON</code>, will enable oneDNN layout optimization.<br> * If <code>OFF</code>, will disable oneDNN layout optimization.</td>
+<td>Toggle layout_opt <br><br>Override the environment variable <code>ITEX_LAYOUT_OPT</code>. Set if oneDNN layout optimization is enabled to benefit from oneDNN block format.<br> Enable or disable the oneDNN layout. The default value is <code>OFF</code>.<br>  <br> * If <code>ON</code>, will enable oneDNN layout optimization.<br> * If <code>OFF</code>, will disable oneDNN layout optimization.</td>
 </tr>
 <tr>
 <td><code>remapper</code></td>
-<td>Toggle remapper <br/><br/>Override the environment variable <code>ITEX_REMAPPER</code>. Set if remapper optimization is enabled to benefit from sub-graph fusion.<br/> Enable the remapper or not. The default value is <code>ON</code>.<br/>  <br/> * If <code>ON</code>, will enable remapper optimization.<br/> * If <code>OFF</code>, will disable remapper optimization.</td>
+<td>Toggle remapper <br/><br/>Override the environment variable <code>ITEX_REMAPPER</code>. Set if remapper optimization is enabled to benefit from sub-graph fusion.<br/> Enable or disable the remapper. The default value is <code>ON</code>.<br/>  <br/> * If <code>ON</code>, will enable remapper optimization.<br/> * If <code>OFF</code>, will disable remapper optimization.</td>
 </tr>
 <tr>
 <td><code>auto_mixed_precision</code></td>
-<td>Toggle auto_mixed_precision <br/><br/>Override the environment variable <code>ITEX_AUTO_MIXED_PRECISION</code>. Set if mixed precision is enabled to benefit from using both 16-bit and 32-bit floating-point types to accelerate modes.<br/>Enable the  auto mixed precision or not. The default value is <code>OFF</code>.<br/>  <br/> * If <code>ON</code>, will enable auto mixed precision optimization.<br/> * If <code>OFF</code>, will disable auto mixed precision optimization.</td>
+<td>Toggle auto_mixed_precision <br/><br/>Override the environment variable <code>ITEX_AUTO_MIXED_PRECISION</code>. Set if mixed precision is enabled to benefit from using both 16-bit and 32-bit floating-point types to accelerate modes.<br/>Enable or disable the  auto mixed precision. The default value is <code>OFF</code>.<br/>  <br/> * If <code>ON</code>, will enable auto mixed precision optimization.<br/> * If <code>OFF</code>, will disable auto mixed precision optimization.</td>
 </tr>
 </tbody>
 </table><p>Examples:</p>
@@ -495,7 +495,7 @@
 </tr>
 <tr>
 <td><code>COMPILER_VERSION</code></td>
-<td>The complier version. For example, <code>gcc-8.2.1 20180905, dpcpp-2022.1.0.122</code></td>
+<td>The compiler version. For example, <code>gcc-8.2.1 20180905, dpcpp-2022.1.0.122</code></td>
 </tr>
 <tr>
 <td><code>TF_COMPATIBLE_VERSION</code></td>

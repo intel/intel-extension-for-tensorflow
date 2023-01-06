@@ -98,10 +98,10 @@
              
   <div class="section" id="graph-fusion">
 <h1>Graph fusion<a class="headerlink" href="#graph-fusion" title="Permalink to this headline">¶</a></h1>
-<p>Intel® Extension for TensorFlow* provides graph optimization to fuse specified operator patterns into new single operator for better performance.</p>
+<p>Intel® Extension for TensorFlow* provides graph optimization to fuse specified operator patterns into a new single operator for better performance.</p>
 <div class="section" id="basic-fusion">
 <h2>Basic fusion<a class="headerlink" href="#basic-fusion" title="Permalink to this headline">¶</a></h2>
-<p>The basic list of supported fusions are shown below. These fusions requires  input and output the same data type.</p>
+<p>The basic list of supported fusions is shown below. These fusions require input and output of the same data type.</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -163,7 +163,7 @@
 <td>3</td>
 </tr>
 <tr>
-<td><code>MatMul</code>+<code>Bias</code>+<code>Add</code>+(<code>Relu</code>, <code>Relu6</code>, <code>Elu</code>,  <code>Gelu_erf</code>, <code>Gelu_tanh</code>, <code>Tanh</code>, <code>Sigmoid</code>)</td>
+<td><code>MatMul</code>+<code>Bias</code>+<code>Add</code>+(<code>Relu</code>, <code>Relu6</code>, <code>Elu</code>,  <code>Gelu_erf</code>, <code>Gelu_tanh</code>, <code>Tanh</code>, <code>Sigmoid</code>)</td>
 <td>4</td>
 </tr>
 <tr>
@@ -194,7 +194,7 @@
 </table></div>
 <div class="section" id="mixed-data-type-fusion">
 <h2>Mixed data type fusion<a class="headerlink" href="#mixed-data-type-fusion" title="Permalink to this headline">¶</a></h2>
-<p>As stock TensorFlow only supports same input output data type, inserting a cast node during <code class="docutils literal notranslate"><span class="pre">BF16</span></code> inference and training may break the existing fusion pattern and impact performance.</p>
+<p>As stock TensorFlow only supports same-data-type input and output, inserting a cast node during <code class="docutils literal notranslate"><span class="pre">BF16</span></code> inference and training may break the existing fusion pattern and impact performance.</p>
 <p>Intel® Extension for TensorFlow* provides mixed data type fusion, which removes the additional data type conversions on the graph level.</p>
 <p>Here is the list of supported mixed data type fusions, and we’ll take a closer look at <code class="docutils literal notranslate"><span class="pre">MatMul</span></code> as an example.</p>
 <table border="1" class="docutils">

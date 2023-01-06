@@ -17,7 +17,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Intel GPU Software Installation" href="install_for_gpu.html" />
-    <link rel="prev" title="Launch Script User Guide" href="../guide/launch.html" /> 
+    <link rel="prev" title="INT8 Quantization" href="../guide/INT8_quantization.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,7 +45,9 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="install_for_gpu.html">Intel GPU Software Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="experimental/install_for_cpu.html"><em>Experimental:</em> Intel CPU Software Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental/install_for_gpu_conda.html">Conda Environment Installation Instructions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="how_to_build.html">Build from Source Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental/install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
@@ -85,9 +87,11 @@
 <h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h1>
 <p>Intel® Extension for TensorFlow* can be installed from the following channels in order to match with different CPU and GPU software stack. User can choose the environent setup by PyPI, Docker container or even build from source code.</p>
 <ul class="simple">
-<li><p><a class="reference external" href="install_for_gpu.html">Install for GPU</a></p></li>
-<li><p><a class="reference external" href="experimental/install_for_cpu.html">Install for CPU</a></p></li>
-<li><p><a class="reference external" href="how_to_build.html">Install from source build</a></p></li>
+<li><p><a class="reference external" href="install_for_gpu.html">PyPI Install for GPU</a></p></li>
+<li><p><a class="reference external" href="experimental/install_for_cpu.html">PyPI Install for CPU</a></p></li>
+<li><p><a class="reference external" href="experimental/install_for_gpu_conda.html">Conda Install for GPU Distributed Training</a></p></li>
+<li><p><a class="reference external" href="how_to_build.html">Install from Source Build</a></p></li>
+<li><p><a class="reference external" href="experimental/install_for_cpp.html">Install C/C++ Calling Interface from Source Build</a></p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
@@ -97,7 +101,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../guide/launch.html" class="btn btn-neutral float-left" title="Launch Script User Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../guide/INT8_quantization.html" class="btn btn-neutral float-left" title="INT8 Quantization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="install_for_gpu.html" class="btn btn-neutral float-right" title="Intel GPU Software Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
