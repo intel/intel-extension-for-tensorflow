@@ -39,7 +39,6 @@ struct PostOpInfo {
   dnnl::algorithm alg;
   float alpha;
   float beta;
-  float scale;
 };
 
 // Helper data struct to record necessary info for output_scales
@@ -58,10 +57,6 @@ class PostOpUtil {
   // Return `true` if all ops are supported.
   bool AddOps(const std::vector<string>& fused_ops);
 
-  // Set extra input md for post binary op.
-  // Will report error if no binary op in post ops.
-  void SetBinaryInput(const dnnl::memory::desc& binary_md);
-
   // Set alpha for `LeakyRelu`.
   // Will report error if no `LeakyRelu` in post ops.
   void SetLeakyReluAlpha(float alpha);
@@ -77,7 +72,9 @@ class PostOpUtil {
   void SetOutputScale(const std::vector<float>& scales);
 
   // Set post op and output scale attribution for `attr`.
-  void SetPostOpAttr(dnnl::primitive_attr* attr);
+  // If `HasBinary()`, an extra parameter `md_list` is required.
+  void SetPostOpAttr(dnnl::primitive_attr* attr,
+                     const std::vector<dnnl::memory::desc>& md_list = {});
 
   // Check the given elewise op is supported by oneDNN or not.
   static bool IsSupportedActivation(const absl::string_view op_name);
@@ -110,7 +107,8 @@ class PostOpUtil {
   // Reasons for lazy evalution is that once postop attribures are set, OneDnn
   // doesn't allow to change the postop scales. So we have to set scale in
   // Compute(), when all context information is available
-  void SetPostOp(dnnl::post_ops* post_op);
+  void SetPostOp(dnnl::post_ops* post_op,
+                 const std::vector<dnnl::memory::desc>& md_list);
 
   // Save the post op and its corresponding scale factor
   // The first element is post op name, second element is corresponding scale
@@ -137,9 +135,6 @@ class PostOpUtil {
 
   // Helper vars for post op execution.
   float leaky_relu_alpha_ = NAN;
-
-  // Helper var for input of post binary op.
-  std::vector<dnnl::memory::desc> binary_md_list_;
 };
 
 }  // namespace itex

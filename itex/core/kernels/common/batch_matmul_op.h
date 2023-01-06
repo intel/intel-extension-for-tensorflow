@@ -315,6 +315,7 @@ class BatchMatMulOp : public OpKernel {
       post_op_input_index++;
     }
 
+    std::vector<memory::desc> md_list;
     if (this->post_op_util_.HasBinary()) {
       // BatchMatMul + Add needs to set add input md in node execution.
       const Tensor& add_tensor = ctx->input(post_op_input_index);
@@ -334,7 +335,7 @@ class BatchMatMulOp : public OpKernel {
       auto add_md = memory::desc(add_dims, OneDnnType<Toutput>(), add_strides);
 
       // FIXME(itex): Simply ingnore reorder this time, will fix it soon.
-      this->post_op_util_.SetBinaryInput(add_md);
+      md_list.push_back(add_md);
       add_mem_ = CreateDnnlMemory(add_md, onednn_engine_,
                                   GetTensorBuffer<Toutput>(&add_tensor));
       fwd_primitive_args_.insert(
@@ -342,7 +343,7 @@ class BatchMatMulOp : public OpKernel {
       post_op_input_index++;
     }
 
-    this->post_op_util_.SetPostOpAttr(&post_ops_attr);
+    this->post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
     return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
   }
 

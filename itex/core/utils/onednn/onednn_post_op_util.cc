@@ -17,56 +17,50 @@ limitations under the License.
 
 namespace itex {
 
-using kind = dnnl::primitive::kind;
 using algorithm = dnnl::algorithm;
+using kind = dnnl::primitive::kind;
+using memory = dnnl::memory;
 
 const std::vector<PostOpInfo>& PostOpUtil::GetAllPostOpInfo() {
   // Here's the const parameters for oneDNN post op, consider the simplest
   // expression:
   //   (alpha * x + beta) * scale
-  // Set alpha = 1, beta = 0 and scale = 1 by default.
+  // Set `alpha` = 1, `beta` = 0 by default. `scale` will be passed as runtime
+  // value.
   const float kAlphaZero = 0;
   const float kAlphaOne = 1;
   const float kBetaZero = 0;
   const float kBetaSix = 6;
-  const float kScaleOne = 1;
 
   // TODO(itex): Try map container to replace vector here.
   static std::vector<PostOpInfo> info_vec = {
       /* Kind: sum */
-      {"Add", kind::sum, algorithm::undef, kAlphaOne, kBetaZero, kScaleOne},
+      {"Add", kind::sum, algorithm::undef, kAlphaOne, kBetaZero},
 
       /* Kind: eltwise */
-      {"Elu", kind::eltwise, algorithm::eltwise_elu, kAlphaOne, kBetaZero,
-       kScaleOne},
+      {"Elu", kind::eltwise, algorithm::eltwise_elu, kAlphaOne, kBetaZero},
       // Here `Gelu` is a placeholder for activation check, it will be
       // converted to `"GeluExact` or `"GeluApproximate` after remapper.
-      {"Gelu", kind::eltwise, algorithm::undef, kAlphaOne, kBetaZero,
-       kScaleOne},
+      {"Gelu", kind::eltwise, algorithm::undef, kAlphaOne, kBetaZero},
       {"GeluExact", kind::eltwise, algorithm::eltwise_gelu_erf, kAlphaZero,
-       kBetaZero, kScaleOne},
+       kBetaZero},
       {"GeluApproximate", kind::eltwise, algorithm::eltwise_gelu_tanh,
-       kAlphaZero, kBetaZero, kScaleOne},
+       kAlphaZero, kBetaZero},
       {"HardSwish", kind::eltwise, algorithm::eltwise_hardswish, kAlphaZero,
-       kBetaZero, kScaleOne},
+       kBetaZero},
       {"LeakyRelu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero,
-       kBetaZero, kScaleOne},
-      {"Mish", kind::eltwise, algorithm::eltwise_mish, kAlphaZero, kBetaZero,
-       kScaleOne},
-      {"Relu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero, kBetaZero,
-       kScaleOne},
-      {"Relu6", kind::eltwise, algorithm::eltwise_clip_v2, kAlphaZero, kBetaSix,
-       kScaleOne},
+       kBetaZero},
+      {"Mish", kind::eltwise, algorithm::eltwise_mish, kAlphaZero, kBetaZero},
+      {"Relu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero, kBetaZero},
+      {"Relu6", kind::eltwise, algorithm::eltwise_clip_v2, kAlphaZero,
+       kBetaSix},
       {"Sigmoid", kind::eltwise, algorithm::eltwise_logistic, kAlphaOne,
-       kBetaZero, kScaleOne},
-      {"Swish", kind::eltwise, algorithm::eltwise_swish, kAlphaOne, kBetaZero,
-       kScaleOne},
-      {"Tanh", kind::eltwise, algorithm::eltwise_tanh, kAlphaZero, kBetaZero,
-       kScaleOne},
+       kBetaZero},
+      {"Swish", kind::eltwise, algorithm::eltwise_swish, kAlphaOne, kBetaZero},
+      {"Tanh", kind::eltwise, algorithm::eltwise_tanh, kAlphaZero, kBetaZero},
 
       /* Kind: binary */
-      {"BinaryAdd", kind::binary, algorithm::binary_add, kAlphaOne, kBetaZero,
-       kScaleOne},
+      {"BinaryAdd", kind::binary, algorithm::binary_add, kAlphaOne, kBetaZero},
   };
 
   return info_vec;
@@ -77,7 +71,8 @@ bool PostOpUtil::AddOps(const std::vector<string>& fused_ops) {
     const PostOpInfo* info = GetPostOpInfoByName(name);
     if (info != nullptr) {
       kind op_kind = info->kind;
-      const float scale_default = info->scale;
+      // Default `scale` is 1 if no runtime value is passed.
+      const float scale_default = 1;
 
       // Record post op info to internal oneDNN struct, it will be used for
       // creating pritimive desc.
@@ -128,15 +123,6 @@ bool PostOpUtil::AddOps(const std::vector<string>& fused_ops) {
   return true;
 }
 
-void PostOpUtil::SetBinaryInput(const dnnl::memory::desc& binary_md) {
-  ITEX_CHECK(this->has_binary_)
-      << "PostOpUtil: can't find binary op when set input md";
-  // TODO(ITEX): Do not .clear() and .push_back(). It is thread unsafe, and it
-  // will cause error in Bert weight sharing case, where multiple threads excute
-  // the same kernel.
-  this->binary_md_list_ = {binary_md};
-}
-
 void PostOpUtil::SetLeakyReluAlpha(float alpha) {
   ITEX_CHECK(this->has_leaky_relu_)
       << "PostOpUtil: can't find LeakyRelu when set alpha";
@@ -184,7 +170,9 @@ bool PostOpUtil::IsSupportedActivation(const absl::string_view op_name) {
   return false;
 }
 
-void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops) {
+void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops,
+                           const std::vector<memory::desc>& md_list) {
+  auto it = md_list.begin();
   for (const auto& postop_data : postop_scale_list_) {
     const absl::string_view name = postop_data.first;
     float scale = postop_data.second;
@@ -204,9 +192,9 @@ void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops) {
     } else if (op_kind == kind::sum) {
       post_ops->append_sum(scale);
     } else if (op_kind == kind::binary) {
-      ITEX_CHECK(this->binary_md_list_.size() == 1)
-          << "PostOpUtil: binary input md is set wrongly";
-      post_ops->append_binary(info->alg, this->binary_md_list_.front());
+      ITEX_CHECK(it != md_list.end()) << "PostOpUtil: missing binary input md";
+      post_ops->append_binary(info->alg, *it);
+      ++it;
     } else {
       // TODO(itex): Support `depthwise` and in future.
       ITEX_LOG(FATAL) << "PostOpUtil: unsupported post op fusion: " << name;
@@ -214,11 +202,12 @@ void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops) {
   }
 }
 
-void PostOpUtil::SetPostOpAttr(dnnl::primitive_attr* attr) {
+void PostOpUtil::SetPostOpAttr(dnnl::primitive_attr* attr,
+                               const std::vector<memory::desc>& md_list) {
   ITEX_DCHECK(attr);
   if (postop_scale_list_.size() != 0) {
     dnnl::post_ops post_ops = dnnl::post_ops();
-    SetPostOp(&post_ops);
+    SetPostOp(&post_ops, md_list);
     attr->set_post_ops(post_ops);
   }
   if (has_output_scales_) {

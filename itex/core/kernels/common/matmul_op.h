@@ -519,6 +519,8 @@ class MatMulOp : public OpKernel {
 
         post_op_util_.SetOutputScale(scales);
       }
+
+      std::vector<memory::desc> md_list;
       if (this->post_op_util_.HasBinary()) {
         // BatchMatMul + Add needs to set add input md in node execution.
         // const Tensor& add_tensor = context->input(kAddIndex_);
@@ -533,7 +535,7 @@ class MatMulOp : public OpKernel {
         auto add_strides = CalculateTFStrides(add_dims);
         auto add_md = memory::desc(add_dims, OneDnnType<Tpost>(), add_strides);
 
-        this->post_op_util_.SetBinaryInput(add_md);
+        md_list.push_back(add_md);
         add_mem_ = CreateDnnlMemory(add_md, dnnl_engine_,
                                     GetTensorBuffer<Tpost>(add_tensor_));
 
@@ -541,7 +543,7 @@ class MatMulOp : public OpKernel {
             DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem_);
       }
       // Set post ops attr after handling all fusions.
-      post_op_util_.SetPostOpAttr(&post_ops_attr);
+      post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
       auto matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
                                                     dnnl_engine_);
 
@@ -952,6 +954,8 @@ class MatMulFunctor {
 
         post_op_util_.SetOutputScale(scales);
       }
+
+      std::vector<memory::desc> md_list;
       if (this->post_op_util_.HasBinary()) {
         // BatchMatMul + Add needs to set add input md in node execution.
 
@@ -965,14 +969,14 @@ class MatMulFunctor {
         auto add_strides = CalculateTFStrides(add_dims);
         auto add_md = memory::desc(add_dims, OneDnnType<Tpost>(), add_strides);
 
-        this->post_op_util_.SetBinaryInput(add_md);
+        md_list.push_back(add_md);
         add_mem_ = CreateDnnlMemory(add_md, dnnl_engine_, add_tensor_data);
 
         fwd_primitive_args_.emplace(
             DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem_);
       }
       // Set post ops attr after handling all fusions.
-      post_op_util_.SetPostOpAttr(&post_ops_attr);
+      post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
       auto matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
                                                     dnnl_engine_);
 

@@ -331,6 +331,7 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       post_op_input_index++;
     }
 
+    std::vector<memory::desc> md_list;
     if (this->post_op_util_.HasBinary()) {
       // BatchMatMul + Add needs to set add input md in node execution.
       const Tensor& add_tensor = context->input(post_op_input_index);
@@ -359,7 +360,7 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       ITEX_CHECK(!is_reordered)
           << "Need to Reorder Add input of FusedBatchMatMul";
 
-      this->post_op_util_.SetBinaryInput(add_md);
+      md_list.push_back(add_md);
       auto add_mem = CreateDnnlMemory(add_md, onednn_engine,
                                       GetTensorBuffer<Toutput>(&add_tensor));
       fwd_args->insert(
@@ -367,7 +368,7 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       post_op_input_index++;
     }
 
-    this->post_op_util_.SetPostOpAttr(&post_ops_attr);
+    this->post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
     return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
   }
 
