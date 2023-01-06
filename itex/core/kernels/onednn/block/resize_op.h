@@ -31,7 +31,8 @@ using dnnl::primitive;
 using dnnl::prop_kind;
 
 namespace itex {
-template <typename Device, typename T, dnnl::algorithm alg>
+template <typename Device, typename InputT, typename OutputT,
+          dnnl::algorithm alg>
 class OneDnnResizeOp : public OpKernel {
  public:
   explicit OneDnnResizeOp(OpKernelConstruction* context) : OpKernel(context) {
@@ -86,7 +87,7 @@ class OneDnnResizeOp : public OpKernel {
         if (is_5d) {
           format = dnnl::memory::format_tag::ndhwc;
         }
-        src_md = memory::desc(src_dims, OneDnnType<T>(), format);
+        src_md = memory::desc(src_dims, OneDnnType<InputT>(), format);
       }
 
       auto batch_size = src_tf_shape.dim_size(0);
@@ -115,7 +116,7 @@ class OneDnnResizeOp : public OpKernel {
         dst_tf_shape = TensorShape(
             {batch_size, output_depth, output_height, output_width, channel});
       }
-      memory::desc dst_md = memory::desc(dst_dims, OneDnnType<T>(),
+      memory::desc dst_md = memory::desc(dst_dims, OneDnnType<OutputT>(),
                                          dnnl::memory::format_tag::any);
 
       auto fwd_desc =
@@ -129,31 +130,34 @@ class OneDnnResizeOp : public OpKernel {
                                                              onednn_engine);
       Tensor scratchpad_tensor;
       dnnl::memory scratchpad_mem;
-      int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
+      int64 scratchpad_size =
+          fwd_pd.scratchpad_desc().get_size() / sizeof(InputT);
       OP_REQUIRES_OK(context,
-                     context->allocate_temp(DataTypeToEnum<T>::v(),
+                     context->allocate_temp(DataTypeToEnum<InputT>::v(),
                                             TensorShape({scratchpad_size}),
                                             &scratchpad_tensor));
-      scratchpad_mem = dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine,
-                                    GetTensorBuffer<T>(&scratchpad_tensor));
+      scratchpad_mem =
+          dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine,
+                       GetTensorBuffer<InputT>(&scratchpad_tensor));
 
       auto fwd_primitive = dnnl::resampling_forward(fwd_pd);
 
-      dnnl::memory src_mem =
-          dnnl::memory(src_md, onednn_engine, GetTensorBuffer<T>(&src_tensor));
+      dnnl::memory src_mem = dnnl::memory(src_md, onednn_engine,
+                                          GetTensorBuffer<InputT>(&src_tensor));
 
       dnnl::memory reorder_mem;
       Tensor src_reorder_tensor;
       bool is_src_reordered = (src_md != fwd_pd.src_desc());
       if (is_src_reordered) {
-        int64 src_reorder_size = fwd_pd.src_desc().get_size() / sizeof(T);
+        int64 src_reorder_size = fwd_pd.src_desc().get_size() / sizeof(InputT);
         OP_REQUIRES_OK(context,
-                       context->allocate_temp(DataTypeToEnum<T>::v(),
+                       context->allocate_temp(DataTypeToEnum<InputT>::v(),
                                               TensorShape({src_reorder_size}),
                                               &src_reorder_tensor));
 
-        reorder_mem = CreateDnnlMemory(fwd_pd.src_desc(), onednn_engine,
-                                       GetTensorBuffer<T>(&src_reorder_tensor));
+        reorder_mem =
+            CreateDnnlMemory(fwd_pd.src_desc(), onednn_engine,
+                             GetTensorBuffer<InputT>(&src_reorder_tensor));
         ReorderMemory(*context, &src_mem, &reorder_mem, onednn_engine);
       }
 
@@ -166,7 +170,7 @@ class OneDnnResizeOp : public OpKernel {
                                    dst_onednn_shape);
 
       // Create dst memory
-      T* dst_data = dst_tensor->flat<T>().data();
+      OutputT* dst_data = dst_tensor->flat<OutputT>().data();
       auto dst_mem = CreateDnnlMemory(fwd_pd.dst_desc(), onednn_engine,
                                       static_cast<void*>(dst_data));
 

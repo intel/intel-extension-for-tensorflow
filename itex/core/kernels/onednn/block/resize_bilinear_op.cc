@@ -18,16 +18,16 @@ limitations under the License.
 
 namespace itex {
 #ifndef INTEL_CPU_ONLY
-#define REGISTER_KERNEL(T)                    \
-  REGISTER_KERNEL_BUILDER(                    \
-      Name("_OneDnnResizeBilinear")           \
-          .Device(DEVICE_GPU)                 \
-          .TypeConstraint<T>("T")             \
-          .HostMemory("size")                 \
-          .HostMemory("images_meta")          \
-          .HostMemory("size_meta")            \
-          .HostMemory("resized_images_meta"), \
-      OneDnnResizeOp<GPUDevice, T, dnnl::algorithm::resampling_linear>);
+#define REGISTER_KERNEL(T)                                        \
+  REGISTER_KERNEL_BUILDER(Name("_OneDnnResizeBilinear")           \
+                              .Device(DEVICE_GPU)                 \
+                              .TypeConstraint<T>("T")             \
+                              .HostMemory("size")                 \
+                              .HostMemory("images_meta")          \
+                              .HostMemory("size_meta")            \
+                              .HostMemory("resized_images_meta"), \
+                          OneDnnResizeOp<GPUDevice, T, float,     \
+                                         dnnl::algorithm::resampling_linear>);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNEL);
 
@@ -48,7 +48,8 @@ TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_GRAD_KERNEL);
 #define REGISTER_KERNEL(T)                                                     \
   REGISTER_KERNEL_BUILDER(                                                     \
       Name("_OneDnnResizeBilinear").Device(DEVICE_CPU).TypeConstraint<T>("T"), \
-      OneDnnResizeOp<CPUDevice, T, dnnl::algorithm::resampling_linear>);
+      OneDnnResizeOp<CPUDevice, T, float,                                      \
+                     dnnl::algorithm::resampling_linear>);
 
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL);
 
