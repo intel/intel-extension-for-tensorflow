@@ -20,6 +20,8 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import functools
+import sys
 
 # pylint: disable=g-bad-import-order
 import intel_extension_for_tensorflow.python.test_func.test_util as _test_util
@@ -36,9 +38,7 @@ from tensorflow.python.ops.gradient_checker import compute_gradient_error
 from tensorflow.python.ops.gradient_checker import compute_gradient
 # pylint: enable=unused-import,g-bad-import-order
 
-import functools
 
-import sys
 from tensorflow.python.util.tf_export import tf_export
 if sys.version_info.major == 2:
   import mock                # pylint: disable=g-import-not-at-top,unused-import

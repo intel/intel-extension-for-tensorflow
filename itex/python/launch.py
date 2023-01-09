@@ -1,3 +1,4 @@
+"""System module."""
 #   Copyright (c) 2022 Intel Corporation
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,9 +56,10 @@ class CPUinfo():
       self.get_socket_info()
     else:
       raise RuntimeError(
-        "{} platform is not supported!!!".format(platform.system()))
+          "{} platform is not supported!!!".format(platform.system()))
 
   def get_socket_info(self):
+    """A dummy docstring"""
     idx_active = 3
     if self.cpuinfo[0][idx_active] == '':
       idx_active = 2
@@ -120,12 +122,12 @@ class CPUinfo():
       if not numa_id in numa_ids:
         numa_ids.append(numa_id)
     if len(numa_ids) > 1:
-      logger.warning("Numa Aware: cores:{} on different NUMA nodes:{}".format(
-          str(core_list), str(numa_ids)))
+      logger.warning("Numa Aware: cores:%s on different NUMA nodes:%s", \
+                      'core_list', 'numa_ids')
     if len(numa_ids) == 0:
       logger.error(
           "invalid number of NUMA nodes; please make sure numa_ids >= 1")
-      exit(-1)
+      sys.exit(-1)
     return numa_ids
 
 
@@ -177,7 +179,8 @@ class Launcher():
   def is_numactl_available(self):
     numactl_available = False
     cmd = ["numactl", "-C", "0", "-m", "0", "ls"]
-    r = subprocess.run(cmd, env=os.environ, stdout=subprocess.DEVNULL)
+    r = subprocess.run(cmd, env=os.environ, stdout=subprocess.DEVNULL, \
+                       check=True)
     if r.returncode == 0:
       numactl_available = True
     return numactl_available
@@ -190,7 +193,7 @@ class Launcher():
     if enable_tcmalloc and enable_jemalloc:
       logger.error(
           "Unable to enable TCMalloc and JEMalloc at the same time")
-      exit(-1)
+      sys.exit(-1)
 
     if enable_tcmalloc:
       find_tc = self.add_lib_preload(lib_type="tcmalloc")
@@ -251,13 +254,13 @@ class Launcher():
 
   def set_env(self, env_name, env_value=None):
     if not env_value:
-      logger.warning("{} is None".format(env_name))
+      logger.warning("%s is None", 'env_name')
     if env_name not in os.environ:
       os.environ[env_name] = env_value
     elif os.environ[env_name] != env_value:
       logger.warning("{} in environment variable is {} "
-            "while the value you set is {}"
-            .format(env_name, os.environ[env_name], env_value))
+                     "while the value you set is {}"
+                     .format(env_name, os.environ[env_name], env_value))
     self.logger_env(env_name)
 
   # set_kmp_affinity is used to control whether to set KMP_AFFINITY or not.
@@ -265,9 +268,10 @@ class Launcher():
   # setting KMP_AFFINITY disables logical cores. In this case, KMP_AFFINITY
   # should not be set.
   def set_multi_thread_and_allocator(self, ncore_per_instance, num_inter,
-                                    num_intra, set_kmp_affinity=True,
-                                    enable_tcmalloc=True, enable_jemalloc=False,
-                                    use_default_allocator=False):
+                                     num_intra, set_kmp_affinity=True,
+                                     enable_tcmalloc=True,
+                                     enable_jemalloc=False,
+                                     use_default_allocator=False):
     '''
     Set multi-thread configuration and enable LLVM openMP and TCMalloc/JeMalloc.
     '''
@@ -276,7 +280,7 @@ class Launcher():
     self.set_env("OMP_NUM_THREADS", str(ncore_per_instance))
     if set_kmp_affinity:
       if len(self.cpuinfo.get_node_logical_cores(0)) > len(
-              self.cpuinfo.get_node_physical_cores(0)):
+          self.cpuinfo.get_node_physical_cores(0)):
         # HT is on
         self.set_env("KMP_AFFINITY",
                      "granularity=fine,verbose,compact,1,0")
@@ -295,8 +299,8 @@ class Launcher():
       except BaseException:
         logger.error(
             "tf_num_interop_threads should be an integer >= -1, "
-            "but input is {}.".format(num_inter))
-        exit(-1)
+            "but input is %s.", 'num_inter')
+        sys.exit(-1)
       self.set_env("TF_NUM_INTEROP_THREADS", num_inter)
     if num_intra is None:
       self.set_env("TF_NUM_INTRAOP_THREADS", str(ncore_per_instance))
@@ -307,8 +311,8 @@ class Launcher():
       except BaseException:
         logger.error(
             "tf_num_intraop_threads should be an integer >= 0, "
-            "but input is {}.".format(num_intra))
-        exit(-1)
+            "but input is %s.", 'num_intra')
+        sys.exit(-1)
       self.set_env("TF_NUM_INTRAOP_THREADS", num_intra)
 
   def set_itex(self, amp=False, enable_layout=False):
@@ -337,11 +341,13 @@ class MultiInstanceLauncher(Launcher):
         logger.error(
             "please specify the '--ncore_per_instance' "
             "if you have pass the --core_list params")
-        exit(-1)
-      elif args.ninstances > 1 and args.ncore_per_instance * args.ninstances < len(cores):
+        sys.exit(-1)
+      elif args.ninstances > 1 and args.ncore_per_instance \
+           * args.ninstances < len(cores):
         logger.warning("only first {} cores will be used, "
-        "but you specify {} cores in core_list".format(
-            args.ncore_per_instance * args.ninstances, len(cores)))
+                       "but you specify {} cores in core_list".format(
+                           args.ncore_per_instance * args.ninstances, \
+                           len(cores)))
       else:
         args.ninstances = len(cores) // args.ncore_per_instance
 
@@ -371,12 +377,13 @@ class MultiInstanceLauncher(Launcher):
                          "and skip_cross_node_cores. "
                          "Please make sure --ncore_per_instance < core(s) "
                          "per socket".format(
-              ncore_per_node, args.ncore_per_instance))
-          exit(-1)
+                             ncore_per_node, args.ncore_per_instance))
+          sys.exit(-1)
         elif num_leftover_cores == 0:
           # aren't any cross-node cores
           logger.info(
-              '--skip_cross_node_cores is set, but there are no cross-node cores.')
+              '--skip_cross_node_cores is set, but there are no \
+               cross-node cores.')
           args.ninstances = len(cores) // args.ncore_per_instance
         else:
           # skip cross-node cores
@@ -388,7 +395,8 @@ class MultiInstanceLauncher(Launcher):
           leftover_cores = set()
           while ncore_per_node * i <= len(cores):
             leftover_cores.update(
-                cores[ncore_per_node * i - num_leftover_cores: ncore_per_node * i])
+                cores[ncore_per_node * i - num_leftover_cores: \
+                ncore_per_node * i])
             i += 1
           cores = list(set(cores) - leftover_cores)
           assert len(cores) % args.ncore_per_instance == 0
@@ -398,14 +406,16 @@ class MultiInstanceLauncher(Launcher):
               1 and args.ncore_per_instance == -1:
         args.ninstances = 1
         args.ncore_per_instance = len(cores)
-      elif args.multi_instance and args.ninstances == -1 and args.ncore_per_instance == -1:
+      elif args.multi_instance and args.ninstances == -1 and \
+           args.ncore_per_instance == -1:
         args.throughput_mode = True
       elif args.ncore_per_instance == -1 and args.ninstances != -1:
         if args.ninstances > len(cores):
-          logger.error("there are {} total cores but you specify {} ninstances; "
-              "please make sure ninstances <= total_cores)".format(
-              len(cores), args.ninstances))
-          exit(-1)
+          logger.error("there are {} total cores but you specify \
+                        {} ninstances; "
+                       "please make sure ninstances <= total_cores)".format(
+                           len(cores), args.ninstances))
+          sys.exit(-1)
         else:
           args.ncore_per_instance = len(cores) // args.ninstances
       elif args.ncore_per_instance != -1 and args.ninstances == -1:
@@ -413,16 +423,18 @@ class MultiInstanceLauncher(Launcher):
           args.ninstances = len(cores) // args.ncore_per_instance
         else:
           cores = skip_cores(cores)
-      elif args.ncore_per_instance != -1 and args.ninstances != -1 and args.skip_cross_node_cores:
+      elif args.ncore_per_instance != -1 and args.ninstances != -1 \
+           and args.skip_cross_node_cores:
         cores = skip_cores(cores)
       else:
         if args.ninstances * args.ncore_per_instance > len(cores):
           logger.error(
               "Please make sure ninstances * ncore_per_instance <= total_cores")
-          exit(-1)
+          sys.exit(-1)
       if args.latency_mode:
         logger.warning(
-            "--latency_mode is exclusive to --ninstances, --ncore_per_instance, "
+            "--latency_mode is exclusive to --ninstances, \
+             --ncore_per_instance, "
             "--node_id and --use_logical_core. "
             "They won\'t take effect even if they are set explicitly.")
         args.ncore_per_instance = 4
@@ -431,7 +443,8 @@ class MultiInstanceLauncher(Launcher):
 
       if args.throughput_mode:
         logger.warning(
-            "--throughput_mode is exclusive to --ninstances, --ncore_per_instance, "
+            "--throughput_mode is exclusive to --ninstances, \
+             --ncore_per_instance, "
             "--node_id and --use_logical_core. "
             "They won\'t take effect even if they are set explicitly.")
         args.ninstances = self.cpuinfo.node_nums()
@@ -457,8 +470,9 @@ class MultiInstanceLauncher(Launcher):
           logger.warning(
               "Core binding with numactl is not available, "
               "and --disable_taskset is set. "
-              "Please unset --disable_taskset to use taskset insetad of numactl.")
-          exit(-1)
+              "Please unset --disable_taskset to use taskset \
+               insetad of numactl.")
+          sys.exit(-1)
 
     if not args.disable_taskset:
       enable_taskset = True
@@ -551,7 +565,8 @@ def add_itex_params(parser):
   # ITEX control
   group.add_argument("--enable_itex_amp", action='store_true', default=False,
                      help="Enable ITEX AMP")
-  group.add_argument("--enable_itex_layout_opt", action='store_true', default=False,
+  group.add_argument("--enable_itex_layout_opt", action='store_true', \
+                      default=False,
                      help="Enable ITEX layout opt")
 
 
@@ -563,28 +578,36 @@ def add_memory_allocator_params(parser):
                      help="Enable tcmalloc allocator")
   group.add_argument("--enable_jemalloc", action='store_true', default=False,
                      help="Enable jemalloc allocator")
-  group.add_argument("--use_default_allocator", action='store_true', default=False,
+  group.add_argument("--use_default_allocator", action='store_true', \
+                      default=False,
                      help="Use default memory allocator")
 
 
 def add_multi_instance_params(parser):
-
+  """A dummy docstring"""
   group = parser.add_argument_group("Multi-instance Parameters")
   # multi-instance control
   group.add_argument("--ncore_per_instance", metavar='\b', default=-1, type=int,
                      help="Cores per instance")
-  group.add_argument("--skip_cross_node_cores", action='store_true', default=False,
-                     help="If specified --ncore_per_instance, skips cross-node cores.")
+  group.add_argument("--skip_cross_node_cores", action='store_true', \
+                      default=False,
+                     help="If specified --ncore_per_instance, \
+                           skips cross-node cores.")
   group.add_argument("--ninstances", metavar='\b', default=-1, type=int,
-                     help="For multi-instance, you should give the cores number you used for per instance.")
+                     help="For multi-instance, you should give the \
+                           cores number you used for per instance.")
   group.add_argument("--instance_idx", metavar='\b', default="-1", type=int,
                      help="Specify instance index to assign ncores_per_instance for instance_idx; otherwise ncore_per_instance will be assigned sequentially to ninstances. Please refer to https://github.com/intel-innersource/frameworks.ai.infrastructure.intel-extension-for-tensorflow.intel-extension-for-tensorflow/tree/master/docs/guide/launch.md")
   group.add_argument("--latency_mode", action='store_true', default=False,
-                     help="By detault 4 core per instance and use all physical cores")
-  group.add_argument("--throughput_mode", action='store_true', default=False,
-                     help="By default one instance per node and use all physical cores")
+                     help="By detault 4 core per instance and use all \
+                           physical cores")
+  group.add_argument("--throughput_mode", action='store_true', \
+                      default=False,
+                     help="By default one instance per node and use \
+                           all physical cores")
   group.add_argument("--node_id", metavar='\b', default=-1, type=int,
-                     help="node id for multi-instance, by default all nodes will be used")
+                     help="node id for multi-instance, by default all \
+                           nodes will be used")
   group.add_argument("--use_logical_core", action='store_true', default=False,
                      help="Whether only use physical cores")
   group.add_argument("--disable_numactl", action='store_true', default=False,
@@ -592,13 +615,18 @@ def add_multi_instance_params(parser):
   group.add_argument("--disable_taskset", action='store_true', default=False,
                      help="Disable taskset")
   group.add_argument("--core_list", metavar='\b', default=None, type=str,
-                     help="Specify the core list as 'core_id, core_id, ....', otherwise, all the cores will be used.")
-  group.add_argument("--tf_num_interop_threads", metavar='\b', default=None, type=str,
+                     help="Specify the core list as 'core_id, core_id, \
+                           ....', otherwise, all the cores will be used.")
+  group.add_argument("--tf_num_interop_threads", metavar='\b', \
+                      default=None, type=str,
                      help="Set TF_NUM_INTEROP_THREADS, by default it is 1.")
-  group.add_argument("--tf_num_intraop_threads", metavar='\b', default=None, type=str,
-                     help="Set TF_NUM_INTRAOP_THREADS, by default it equals to number of cores per instance.")
+  group.add_argument("--tf_num_intraop_threads", metavar='\b', \
+                      default=None, type=str,
+                     help="Set TF_NUM_INTRAOP_THREADS, by default it \
+                           equals to number of cores per instance.")
   group.add_argument("--log_path", metavar='\b', default="", type=str,
-                     help="The log file directory. Default path is '', which means disable logging to files.")
+                     help="The log file directory. Default path is '', \
+                           which means disable logging to files.")
   group.add_argument("--log_file_prefix", metavar='\b', default="run", type=str,
                      help="log file prefix")
 
@@ -608,32 +636,50 @@ def parse_args():
   Helper function parsing the command line options
   @retval ArgumentParser
   """
-  parser = ArgumentParser(description="This is a script for launching Tensorflow training and inference on Intel Xeon CPU "
-                                      "with optimal configurations. Now, single instance inference/training, multi-instance "
+  parser = ArgumentParser(description="This is a script for launching \
+                          Tensorflow training and inference on Intel Xeon CPU "
+                                      "with optimal configurations. \
+                          Now, single instance inference/training, \
+                          multi-instance "
                                       "inference/training are enabled. "
-                                      "To get the peak performance on Intel Xeon CPU, the script optimizes the configuration "
-                                      "of thread and memory management. For thread management, the script configures thread "
-                                      "affinity and the preload of Intel OMP library. For memory management, it configures "
-                                      "NUMA binding and preload optimized memory allocation library (e.g. tcmalloc, jemalloc) "
+                                      "To get the peak performance on \
+                          Intel Xeon CPU, the script optimizes the \
+                          configuration "
+                                      "of thread and memory management. \
+                          For thread management, the script configures thread "
+                                      "affinity and the preload of Intel\
+                          OMP library. For memory management, it configures "
+                                      "NUMA binding and preload optimized\
+                          memory allocation library (e.g. tcmalloc, jemalloc) "
                                       "\n################################# Basic usage ############################# \n"
                                       "\n 1. single instance\n"
-                                      "\n   >>> python -m intel_extension_for_tensorflow.python.launch python_script args \n"
+                                      "\n   >>> python -m \
+                          intel_extension_for_tensorflow.python.launch \
+                          python_script args \n"
                                       "\n2. multi-instance \n"
-                                      "\n    >>> python -m intel_extension_for_tensorflow.python.launch --ninstances xxx --ncore_per_instance xx python_script args\n"
+                                      "\n    >>> python -m \
+                          intel_extension_for_tensorflow.python.launch \
+                          --ninstances xxx --ncore_per_instance xx \
+                          python_script args\n"
                                       "\n############################################################################# \n",
-                                      formatter_class=RawTextHelpFormatter)
+                          formatter_class=RawTextHelpFormatter)
 
   parser.add_argument("--multi_instance", action='store_true', default=False,
-                      help="Enable multi-instance, by default one instance per socket")
+                      help="Enable multi-instance, by default one \
+                            instance per socket")
 
   parser.add_argument("-m", "--module", default=False, action="store_true",
-                      help="Changes each process to interpret the launch script "
-                           "as a python module, executing with the same behavior as"
+                      help="Changes each process to interpret the \
+                            launch script "
+                           "as a python module, executing with the same \
+                            behavior as"
                            "'python -m'.")
 
   parser.add_argument("--no_python", default=False, action="store_true",
-                      help="Do not prepend the --program script with \"python\" - just exec "
-                           "it directly. Useful when the script is not a Python script.")
+                      help="Do not prepend the --program script \
+                            with \"python\" - just exec "
+                           "it directly. Useful when the script is \
+                            not a Python script.")
 
   add_memory_allocator_params(parser)
   add_itex_params(parser)
@@ -663,11 +709,11 @@ def main():
 
     args.log_file_prefix = '{}_{}'.format(
         args.log_file_prefix, datetime.now().strftime("%Y%m%d%H%M%S"))
-    fileHandler = logging.FileHandler(
+    file_handler = logging.FileHandler(
         "{0}/{1}_instances.log".format(args.log_path, args.log_file_prefix))
-    logFormatter = logging.Formatter(format_str)
-    fileHandler.setFormatter(logFormatter)
-    logger.addHandler(fileHandler)
+    log_formatter = logging.Formatter(format_str)
+    file_handler.setFormatter(log_formatter)
+    logger.addHandler(file_handler)
 
   if args.latency_mode and args.throughput_mode:
     raise RuntimeError(
@@ -676,7 +722,7 @@ def main():
   if not args.no_python and not args.program.endswith(".py"):
     logger.error(
         "For non Python script, you should use '--no_python' parameter.")
-    exit()
+    sys.exit()
 
   # Verify LD_PRELOAD
   if "LD_PRELOAD" in os.environ:
@@ -689,7 +735,7 @@ def main():
           lst_valid.append(item)
         else:
           logger.warning(
-              "{} doesn't exist. Removing it from LD_PRELOAD.".format(item))
+              "%s doesn't exist. Removing it from LD_PRELOAD.", 'item')
     if len(lst_valid) > 0:
       os.environ["LD_PRELOAD"] = ":".join(lst_valid)
     else:

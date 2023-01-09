@@ -9,12 +9,13 @@ from __future__ import print_function
 import fnmatch
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'intel_extension_for_tensorflow/python')) # pylint: disable=line-too-long
-from version import __version__
 
 from setuptools import setup
 from setuptools.command.install import install as InstallCommandBase
 from setuptools.dist import Distribution
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'intel_extension_for_tensorflow/python')) # pylint: disable=line-too-long
+from version import __version__
 
 
 # This version string is semver compatible, but incompatible with pip.
@@ -61,7 +62,8 @@ elif not is_cpu and is_gpu:
 elif is_cpu and is_gpu:
   raise Exception("This version does not yet support both CPU and GPU.")
 else:
-  raise Exception("There are no .so files in the folder of tensorflow-plugins, please check it.")
+  raise Exception("There are no .so files in the folder of \
+                   tensorflow-plugins, please check it.")
 
 
 class BinaryDistribution(Distribution):
@@ -107,7 +109,8 @@ class InstallCommand(InstallCommandBase):
 
   def finalize_options(self):
     ret = InstallCommandBase.finalize_options(self)  # pylint: disable=assignment-from-no-return
-    self.install_headers = os.path.join(self.install_platlib, 'intel_extension_for_tensorflow',
+    self.install_headers = os.path.join(self.install_platlib, \
+                           'intel_extension_for_tensorflow',
                                         'include')
     self.install_lib = self.install_platlib
     return ret
@@ -122,7 +125,7 @@ setup(
     url='https://github.com/intel/intel-extension-for-tensorflow',
     download_url='https://github.com/intel/intel-extension-for-tensorflow/tags',
     project_urls={
-            "Bug Tracker": "https://github.com/intel/intel-extension-for-tensorflow/issues",
+        "Bug Tracker": "https://github.com/intel/intel-extension-for-tensorflow/issues",
     },
     # pylint: enable=line-too-long
     author='Intel Corporation',
@@ -175,6 +178,6 @@ setup(
     license='Apache 2.0',
     keywords='Intel® Extension for Tensorflow*',
         cmdclass={
-        'install': InstallCommand,
-    },
+            'install': InstallCommand,
+        },
 )

@@ -25,13 +25,13 @@ from __future__ import print_function
 import fnmatch
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'intel_extension_for_tensorflow/python')) # pylint: disable=line-too-long
-from version import __version__
 
 from setuptools import setup
 from setuptools.command.install import install as InstallCommandBase
 from setuptools.dist import Distribution
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'intel_extension_for_tensorflow/python')) # pylint: disable=line-too-long
+from version import __version__
 
 # This version string is semver compatible, but incompatible with pip.
 # For pip, we will remove all '-' characters from this string, and use the
@@ -64,8 +64,8 @@ _ext_path = 'intel_extension_for_tensorflow'
 long_description = ''
 this_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
-    
+  long_description = f.read()
+
 class BinaryDistribution(Distribution):
 
   def has_ext_modules(self):
@@ -77,7 +77,8 @@ class InstallCommand(InstallCommandBase):
 
   def finalize_options(self):
     ret = InstallCommandBase.finalize_options(self)  # pylint: disable=assignment-from-no-return
-    self.install_headers = os.path.join(self.install_platlib, 'intel_extension_for_tensorflow',
+    self.install_headers = os.path.join(self.install_platlib, \
+                           'intel_extension_for_tensorflow',
                                         'include')
     self.install_lib = self.install_platlib
     return ret
@@ -92,7 +93,7 @@ setup(
     url='https://github.com/intel/intel-extension-for-tensorflow',
     download_url='https://github.com/intel/intel-extension-for-tensorflow/tags',
     project_urls={
-            "Bug Tracker": "https://github.com/intel/intel-extension-for-tensorflow/issues",
+        "Bug Tracker": "https://github.com/intel/intel-extension-for-tensorflow/issues",
     },
     # pylint: enable=line-too-long
     author='Intel Corporation',
@@ -108,7 +109,7 @@ setup(
     package_data={
         _ext_path: [
             '*.py',
-            'python/*.py', 
+            'python/*.py',
             'python/ops/*.py',
             'python/test_func/*.py',
             'core/utils/protobuf/*.py',
@@ -123,7 +124,7 @@ setup(
     distclass=BinaryDistribution,
     extras_require={
         'cpu': [f'intel_extension_for_tensorflow_lib=={_VERSION}.0'],
-        'gpu': [f'intel_extension_for_tensorflow_lib=={_VERSION}.1'], 
+        'gpu': [f'intel_extension_for_tensorflow_lib=={_VERSION}.1'],
     },
     # PyPI package information.
     classifiers=[
@@ -146,6 +147,6 @@ setup(
     license='Apache 2.0',
     keywords='Intel® Extension for Tensorflow*',
         cmdclass={
-        'install': InstallCommand,
-    },
+            'install': InstallCommand,
+        },
 )

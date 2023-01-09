@@ -17,15 +17,15 @@
 # pylint: disable=g-classes-have-attributes
 """Recurrent layers for TF 2."""
 
-import uuid
+#import uuid
 
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
-from tensorflow.python.eager import context
+#from tensorflow.python.eager import context
 from tensorflow.python.framework import config
 from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import ops
+#from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
+#from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import state_ops
@@ -54,7 +54,7 @@ def _canonical_to_params(weights, biases, shape, transpose_weights=False):
 
   ```
     Keras                                       Itex
-    kernel: (ic, 4 * hc)          <--------->  kernel: (4, hc, ic) 
+    kernel: (ic, 4 * hc)          <--------->  kernel: (4, hc, ic)
     recurrent_kernel: (hc, 4 * hc)             recurrent_kernel: (4, hc, hc)
   ```
 
@@ -321,21 +321,23 @@ class ItexLSTM(LSTMV1):
         logging.warning(_ITEX_NOT_AVAILABLE_MSG % self.name)
 
   def call(self, inputs, mask=None, training=None, initial_state=None):
+    """A dummy docstring."""
     # The input should be dense, padded with zeros. If a ragged input is fed
     # into the layer, it is padded and the row lengths are used for masking.
     inputs, row_lengths = backend.convert_inputs_if_ragged(inputs)
     is_ragged_input = (row_lengths is not None)
     self._validate_args_if_ragged(is_ragged_input, mask)
-    
+
     # TODO: support ragged_input and mask in the future
-    self._could_use_itex_kernel = (self._could_use_itex_kernel and (not is_ragged_input) and (mask is None))
-    
+    self._could_use_itex_kernel = (self._could_use_itex_kernel and \
+       (not is_ragged_input) and (mask is None))
+
     # LSTM does not support constants. Ignore it during process.
     inputs, initial_state, _ = self._process_inputs(
         inputs, initial_state, None)
 
     self._maybe_reset_cell_dropout_mask(self.cell)
-    
+
     if isinstance(mask, list):
       mask = mask[0]
 
@@ -357,7 +359,8 @@ class ItexLSTM(LSTMV1):
     })
 
     can_use_gpu = ((config.list_logical_devices('XPU')) and
-            (mask is None or is_itex_supported_inputs(mask, self.time_major)))
+                   (mask is None or is_itex_supported_inputs\
+                   (mask, self.time_major)))
     if self._could_use_itex_kernel and can_use_gpu:
       last_output, outputs, new_h, new_c = gpu_lstm(
           **gpu_lstm_kwargs)
@@ -385,10 +388,10 @@ class ItexLSTM(LSTMV1):
 
     if self.return_state:
       return [output] + list(states)
-    else:
-      return output
-      
+    return output
+
   def get_config(self):
+    """A dummy docstring."""
     config = {
         'units':
             self.units,
@@ -426,8 +429,8 @@ class ItexLSTM(LSTMV1):
             self.recurrent_dropout
     }
     base_config = super(ItexLSTM, self).get_config()
-    return dict(list(base_config.items()) + list(config.items()))    
-    
+    return dict(list(base_config.items()) + list(config.items()))
+
 def standard_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
                   go_backwards, time_major, unroll, zero_output_for_mask):
   """LSTM with standard kernel implementation.
@@ -481,7 +484,8 @@ def standard_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
       go_backwards=go_backwards,
       mask=mask,
       unroll=unroll,
-      input_length=sequence_lengths if sequence_lengths is not None else timesteps,
+      input_length=sequence_lengths if sequence_lengths \
+                   is not None else timesteps,
       time_major=time_major,
       zero_output_for_mask=zero_output_for_mask)
   return last_output, outputs, new_states[0], new_states[1]
@@ -527,9 +531,10 @@ def gpu_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
   #Maybe remove this in the future
   init_h = math_ops.cast(_read_variable_value(initial_state[0]), inputs.dtype)
   init_c = math_ops.cast(_read_variable_value(initial_state[1]), inputs.dtype)
-  kernel = math_ops.cast(_read_variable_value(cell.kernel), inputs.dtype) 
-  recurrent_kernel = math_ops.cast(_read_variable_value(cell.recurrent_kernel), inputs.dtype) 
-  bias = math_ops.cast(_read_variable_value(cell.bias),inputs.dtype)  
+  kernel = math_ops.cast(_read_variable_value(cell.kernel), inputs.dtype)
+  recurrent_kernel = math_ops.cast(_read_variable_value(cell.recurrent_kernel),\
+                                   inputs.dtype)
+  bias = math_ops.cast(_read_variable_value(cell.bias), inputs.dtype)
 
   if not time_major:
     inputs = array_ops.transpose(inputs, perm=(1, 0, 2))
@@ -542,20 +547,20 @@ def gpu_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
       biases=array_ops.split(bias, 4),
       shape=constant_op.constant([-1]),
       transpose_weights=True)
-  
+
   # TODO, generate mask in c++ side
   dropout = _read_variable_value(cell.dropout)
-  if dropout > 0 and dropout < 1.0:
+  if 0 < dropout < 1.0:
     dp_mask = cell.get_dropout_mask_for_cell(inputs[0], training, count=4)
     dp_mask = array_ops.concat(dp_mask, axis=0)
   else:
     dp_mask = 0
-    
+
   recurrent_dropout = _read_variable_value(cell.recurrent_dropout)
-  if recurrent_dropout > 0 and recurrent_dropout < 1.0:
+  if 0 < recurrent_dropout < 1.0:
     rec_dp_mask = cell.get_recurrent_dropout_mask_for_cell(
-            init_h, training, count=4)
-    rec_dp_mask = array_ops.concat(rec_dp_mask, axis=0)  
+        init_h, training, count=4)
+    rec_dp_mask = array_ops.concat(rec_dp_mask, axis=0)
   else:
     rec_dp_mask = 0
 
@@ -586,10 +591,14 @@ def gpu_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
         var_seq_length=True,
         is_training=training)
     # TODO: below reshape operation is added as tensorflow shape inference c api bug, maybe remove this once rebase tensorflow>=2.10.0
-    outputs = array_ops.reshape(outputs, 
-                [array_ops.shape(inputs)[0], array_ops.shape(inputs)[1], array_ops.shape(init_h)[1]])
-    h = array_ops.reshape(h, [array_ops.shape(init_h)[0], array_ops.shape(init_h)[1]])
-    c = array_ops.reshape(c, [array_ops.shape(init_c)[0], array_ops.shape(init_c)[1]])    
+    outputs = array_ops.reshape(outputs,
+                                [array_ops.shape(inputs)[0], \
+                                array_ops.shape(inputs)[1], \
+                                array_ops.shape(init_h)[1]])
+    h = array_ops.reshape(h, [array_ops.shape(init_h)[0], \
+                          array_ops.shape(init_h)[1]])
+    c = array_ops.reshape(c, [array_ops.shape(init_c)[0], \
+                          array_ops.shape(init_c)[1]])
     if go_backwards:
       outputs = array_ops.reverse_sequence_v2(
           outputs, sequence_lengths, seq_axis=0, batch_axis=1)
@@ -614,10 +623,14 @@ def gpu_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
         rnn_mode='lstm',
         is_training=training)
     # TODO: below reshape operation is added as tensorflow shape inference c api bug, maybe remove this once rebase tensorflow>=2.10.0
-    outputs = array_ops.reshape(outputs, 
-            [array_ops.shape(inputs)[0], array_ops.shape(inputs)[1], array_ops.shape(init_h)[1]])
-    h = array_ops.reshape(h, [array_ops.shape(init_h)[0], array_ops.shape(init_h)[1]])
-    c = array_ops.reshape(c, [array_ops.shape(init_c)[0], array_ops.shape(init_c)[1]])
+    outputs = array_ops.reshape(outputs,
+                                [array_ops.shape(inputs)[0], \
+                                array_ops.shape(inputs)[1], \
+                                array_ops.shape(init_h)[1]])
+    h = array_ops.reshape(h, [array_ops.shape(init_h)[0], \
+                          array_ops.shape(init_h)[1]])
+    c = array_ops.reshape(c, [array_ops.shape(init_c)[0], \
+                          array_ops.shape(init_c)[1]])
 
   last_output = outputs[-1]
   if not time_major:

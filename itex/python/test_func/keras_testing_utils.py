@@ -16,13 +16,13 @@
 # ==============================================================================
 """Utilities for unit-testing Keras."""
 
-import tensorflow.compat.v2 as tf
-
 import collections
 import contextlib
 import functools
 import itertools
 import threading
+
+import tensorflow.compat.v2 as tf
 
 import numpy as np
 from intel_extension_for_tensorflow.python.test_func import test_util
@@ -660,6 +660,7 @@ class _MultiIOSubclassModel(models.Model):
     self._shared_output_branch = shared_output_branch
 
   def call(self, inputs, **kwargs):
+    """A dummy docstring."""
     if self._shared_input_branch:
       for layer in self._shared_input_branch:
         inputs = layer(inputs)
@@ -711,6 +712,7 @@ class _MultiIOSubclassModelCustomBuild(models.Model):
       self._shared_output_branch = self._shared_output_branch_func()
 
   def call(self, inputs, **kwargs):
+    """A dummy docstring."""
     if self._shared_input_branch:
       for layer in self._shared_input_branch:
         inputs = layer(inputs)

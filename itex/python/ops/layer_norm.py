@@ -273,7 +273,8 @@ class LayerNormalization(Layer):
       self._is_one_axis_len = False
 
     if self.dtype == 'float64':
-      raise ValueError('Itex Layernorm only support float32, bfloat16 and float16.')
+      raise ValueError('Itex Layernorm only support float32, \
+                        bfloat16 and float16.')
 
     return can_use_onednn_layer_norm
 
