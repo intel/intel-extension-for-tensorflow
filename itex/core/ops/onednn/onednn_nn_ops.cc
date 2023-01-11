@@ -1071,11 +1071,11 @@ void Register_OneDnnFusedBatchNormGradV3Op() {
   }
 }
 
-void Register_OneDnnFusedBatchNormExGradOp() {
+void Register_OneDnnFusedBatchNormGradExOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_OneDnnFusedBatchNormExGrad");
+        TF_NewOpDefinitionBuilder("_OneDnnFusedBatchNormGradEx");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "y_backprop: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
@@ -1121,7 +1121,7 @@ void Register_OneDnnFusedBatchNormExGradOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_OneDnnFusedBatchNormExGrad op registration failed: ";
+        << "_OneDnnFusedBatchNormGradEx op registration failed: ";
   }
 }
 

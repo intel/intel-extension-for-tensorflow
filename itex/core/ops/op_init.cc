@@ -107,7 +107,7 @@ void RegisterOps() {
   Register_ITEXConv2DBackpropInputWithSliceOp();
   Register_ITEXConv3DBackpropFilterWithBiasOp();
   Register_ITEXConv3DBackpropInputV2WithSliceOp();
-  Register_ITEXFusedBatchNormExGradOp();
+  Register_ITEXFusedBatchNormGradExOp();
   Register_ITEXFusedBatchMatMulV2Op();
   Register_ITEXFusedConv2DOp();
   Register_ITEXFusedConv2DWithSumOp();
@@ -279,7 +279,7 @@ void RegisterOps() {
   Register_OneDnnFusedBatchNormGradOp();
   Register_OneDnnFusedBatchNormGradV2Op();
   Register_OneDnnFusedBatchNormGradV3Op();
-  Register_OneDnnFusedBatchNormExGradOp();
+  Register_OneDnnFusedBatchNormGradExOp();
   Register_OneDnnFusedConv2DOp();
   Register_OneDnnFusedConv3DOp();
   Register_OneDnnFusedDepthwiseConv2dNativeOp();

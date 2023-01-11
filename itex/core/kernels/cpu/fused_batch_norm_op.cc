@@ -73,7 +73,7 @@ REGISTER_FUSED_BATCHNORM_CPU(Eigen::bfloat16, float);
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<U>("U"),                         \
                           FusedBatchNormGradOp<CPUDevice, T, U, true, false>)  \
-  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBatchNormExGrad")                    \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBatchNormGradEx")                    \
                               .Device(DEVICE_CPU)                              \
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<U>("U"),                         \

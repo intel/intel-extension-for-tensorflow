@@ -153,7 +153,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        RewriteFusedBatchNormEx},
       {"_ITEXFusedBatchMatMulV2", "_OneDnnFusedBatchMatMulV2",
        CopyAttrsAllCheckConstFilter, RewriteWithBlockInput},
-      {"_ITEXFusedBatchNormExGrad", "_OneDnnFusedBatchNormExGrad", CopyAttrsAll,
+      {"_ITEXFusedBatchNormGradEx", "_OneDnnFusedBatchNormGradEx", CopyAttrsAll,
        RewriteFusedBatchNormExGrad},
       {"_ITEXFusedConv2D", "_OneDnnFusedConv2D", CopyAttrsAllCheckConstFilter,
        RewriteFusedConv},

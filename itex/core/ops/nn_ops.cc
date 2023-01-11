@@ -2471,11 +2471,11 @@ void Register_ITEXFusedBatchNormGradV3Op() {
   }
 }
 
-void Register_ITEXFusedBatchNormExGradOp() {
+void Register_ITEXFusedBatchNormGradExOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXFusedBatchNormExGrad");
+        TF_NewOpDefinitionBuilder("_ITEXFusedBatchNormGradEx");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "y_backprop: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
@@ -2506,7 +2506,7 @@ void Register_ITEXFusedBatchNormExGradOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXFusedBatchNormExGrad op registration failed: ";
+        << "_ITEXFusedBatchNormGradEx op registration failed: ";
   }
 }
 

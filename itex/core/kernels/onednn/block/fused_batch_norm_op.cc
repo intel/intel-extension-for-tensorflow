@@ -1049,7 +1049,7 @@ REGISTER_FUSED_BATCHNORM_GPU(Eigen::half, float);
           .TypeConstraint<U>("U"),                                \
       OneDnnFusedBatchNormGradOp<GPUDevice, T, U, true, false>);  \
   REGISTER_KERNEL_BUILDER(                                        \
-      Name("_OneDnnFusedBatchNormExGrad")                         \
+      Name("_OneDnnFusedBatchNormGradEx")                         \
           .Device(DEVICE_GPU)                                     \
           .HostMemory("y_backprop_meta")                          \
           .HostMemory("x_meta")                                   \
@@ -1117,7 +1117,7 @@ REGISTER_FUSED_BATCHNORM_CPU(Eigen::bfloat16, float);
           .TypeConstraint<U>("U"),                                \
       OneDnnFusedBatchNormGradOp<CPUDevice, T, U, true, false>);  \
   REGISTER_KERNEL_BUILDER(                                        \
-      Name("_OneDnnFusedBatchNormExGrad")                         \
+      Name("_OneDnnFusedBatchNormGradEx")                         \
           .Device(DEVICE_CPU)                                     \
           .TypeConstraint<T>("T")                                 \
           .TypeConstraint<U>("U"),                                \
