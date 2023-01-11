@@ -731,7 +731,11 @@ NodeDef AutoMixedPrecisionImpl::BuildCastNode(
   node.set_name(name);
   node.set_op("Cast");
   node.set_device(device);
-  node.add_input(strings::StrCat(src.node->name(), ":", src.port_id));
+  if (src.port_id == 0) {
+    node.add_input(src.node->name());
+  } else {
+    node.add_input(strings::StrCat(src.node->name(), ":", src.port_id));
+  }
   (*node.mutable_attr())["SrcT"].set_type(src_type);
   (*node.mutable_attr())["DstT"].set_type(dst_type);
   (*node.mutable_attr())["Truncate"].set_b(false);
