@@ -171,6 +171,18 @@ index c83ab9716949..e702caa78b2f 100644
  
  # Disables optional dependencies for Support like zlib and terminfo. You may
  # instead want to configure them using the macros in the corresponding bzl
+diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+index 2428b0cb7531..a7bf5e233c8b 100644
+--- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+@@ -23,6 +23,7 @@ exports_files(["LICENSE.TXT"])
+ # this `Make` variable.
+ llvm_copts = [
+     "$(STACK_FRAME_UNLIMITED)",
++    "-fvisibility=hidden",
+ ]
+ 
+ enum_targets_gen(
 diff --git a/utils/bazel/terminfo.bzl b/utils/bazel/terminfo.bzl
 index f7128269c13a..2505f7627239 100644
 --- a/utils/bazel/terminfo.bzl
