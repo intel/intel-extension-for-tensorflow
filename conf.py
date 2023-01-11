@@ -21,8 +21,8 @@ copyright = 'Copyright (c) 2022 Intel Corporation'
 author = 'Intel Corporation'
 
 # The full version, including alpha/beta/rc tags
-version = 'v1.0.0'
-release = 'v1.0.0'
+version = 'v1.1.0'
+release = 'v1.1.0'
 
 
 # -- General configuration ---------------------------------------------------
