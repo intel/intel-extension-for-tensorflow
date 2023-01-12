@@ -25,6 +25,9 @@ namespace graph {
 // Returns true if TensorShapeProto is 1-D tensor
 bool Is1D(const TensorShapeProto& proto);
 
+// Returns true if TensorShapeProto is 2-D tensor
+bool Is2D(const TensorShapeProto& proto);
+
 // Returns true if TensorShapeProto is a scalar
 bool IsScalar(const TensorShapeProto& proto);
 

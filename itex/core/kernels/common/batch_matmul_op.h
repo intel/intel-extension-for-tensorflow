@@ -56,6 +56,12 @@ class BatchMatMulOp : public OpKernel {
       OP_REQUIRES(ctx, this->post_op_util_.AddOps(fused_ops),
                   errors::InvalidArgument(
                       "Found unsupported fusion in Fused BatchMatMul."));
+      // Set alpha if get `LeakyRelu` after adding ops.
+      if (post_op_util_.HasLeakyRelu()) {
+        float alpha;
+        OP_REQUIRES_OK(ctx, ctx->GetAttr("leakyrelu_alpha", &alpha));
+        post_op_util_.SetLeakyReluAlpha(alpha);
+      }
     }
 
     ITEX_CHECK_OK(
@@ -109,7 +115,7 @@ class BatchMatMulOp : public OpKernel {
     dst_shape_.AddDim(d0);
     dst_shape_.AddDim(d3);
 
-    if (dst_shape_.num_elements() == 0) {
+    if (!post_op_util_.HasBias() && dst_shape_.num_elements() == 0) {
       OP_REQUIRES_OK(
           ctx, ctx->allocate_output(kDstIndex_, dst_shape_, &dst_tensor_));
       is_init_ = true;
@@ -138,6 +144,17 @@ class BatchMatMulOp : public OpKernel {
 
       // Create matmul forward primitive
       auto fwd_desc = matmul::desc(src_md, wei_md_prefer, dst_md);
+      if (post_op_util_.HasBias()) {
+        // bias use same dims as dst
+        auto bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
+                                    params->bias_strides);
+        // create bias memory
+        const Tensor& bias_tensor = ctx->input(kBiasIndex_);
+        bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_,
+                                     GetTensorBuffer<Toutput>(&bias_tensor));
+        // Reassigin desc if it has bias.
+        fwd_desc = matmul::desc(src_md, wei_md_prefer, bias_md, dst_md);
+      }
       auto fwd_pd = GetPrimitiveDesc(ctx, fwd_desc);
       matmul_primitive_ = matmul(fwd_pd);
 
@@ -205,6 +222,9 @@ class BatchMatMulOp : public OpKernel {
       fwd_primitive_args_.emplace(DNNL_ARG_WEIGHTS, weights_mem_);
       fwd_primitive_args_.emplace(DNNL_ARG_DST, dst_mem_);
       fwd_primitive_args_.emplace(DNNL_ARG_SCRATCHPAD, scratchpad_mem_);
+      if (post_op_util_.HasBias()) {
+        fwd_primitive_args_.emplace(DNNL_ARG_BIAS, bias_mem_);
+      }
       is_init_ = true;
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
@@ -236,7 +256,9 @@ class BatchMatMulOp : public OpKernel {
     if (!is_weight_reorder_) {
       weights_mem_.set_data_handle(context->tensor_data(kWeightIndex_));
     }
-
+    if (post_op_util_.HasBias()) {
+      bias_mem_.set_data_handle(context->tensor_data(kBiasIndex_));
+    }
     if (this->post_op_util_.HasBinary()) {
       add_mem_.set_data_handle(context->tensor_data(add_index_));
     }
@@ -415,6 +437,7 @@ class BatchMatMulOp : public OpKernel {
   bool is_weight_reorder_;
   const int kSrcIndex_ = 0;
   const int kWeightIndex_ = 1;
+  const int kBiasIndex_ = 2;
   const int kDstIndex_ = 0;
 
  private:
@@ -422,7 +445,7 @@ class BatchMatMulOp : public OpKernel {
   PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
 
   std::unordered_map<int, memory> fwd_primitive_args_;
-  memory src_mem_, weights_mem_, dst_mem_, add_mem_, scratchpad_mem_;
+  memory src_mem_, weights_mem_, dst_mem_, add_mem_, scratchpad_mem_, bias_mem_;
   dnnl::matmul matmul_primitive_;
   Tensor* dst_tensor_;
   std::shared_ptr<Tensor> scratchpad_tensor_;

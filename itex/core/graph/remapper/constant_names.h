@@ -58,6 +58,7 @@ constexpr char kReshape[] = "Reshape";
 constexpr char kResizeNearestNeighbor[] = "ResizeNearestNeighbor";
 constexpr char kResizeNearestNeighborGrad[] = "ResizeNearestNeighborGrad";
 constexpr char kRsqrt[] = "Rsqrt";
+constexpr char kShape[] = "Shape";
 constexpr char kSigmoid[] = "Sigmoid";
 constexpr char kSlice[] = "Slice";
 constexpr char kSoftplus[] = "Softplus";

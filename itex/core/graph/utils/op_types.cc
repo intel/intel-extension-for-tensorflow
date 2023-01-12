@@ -758,6 +758,11 @@ bool IsVariable(const NodeDef& node) {
          op == "_VarHandlesOp" || op == "_ReadVariablesOp";
 }
 
+bool IsVarHandle(const NodeDef& node) {
+  const auto& op = node.op();
+  return op == "VarHandleOp";
+}
+
 bool IsWhile(const NodeDef& node) {
   const auto& op = node.op();
   return op == "While" || op == "StatelessWhile";

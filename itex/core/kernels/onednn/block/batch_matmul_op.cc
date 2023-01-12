@@ -57,6 +57,12 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       OP_REQUIRES(context, this->post_op_util_.AddOps(fused_ops),
                   errors::InvalidArgument(
                       "Found unsupported fusion in Fused BatchMatMul."));
+      // Set alpha if get `LeakyRelu` after adding ops.
+      if (this->post_op_util_.HasLeakyRelu()) {
+        float alpha;
+        OP_REQUIRES_OK(context, context->GetAttr("leakyrelu_alpha", &alpha));
+        this->post_op_util_.SetLeakyReluAlpha(alpha);
+      }
     }
   }
 
@@ -64,6 +70,7 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
     try {
       const int src_index = 0;
       const int wei_index = 1;
+      const int bias_index = 2;
       const int dst_index = 0;
 
       const Tensor& src_tensor = context->input(src_index);
@@ -118,7 +125,7 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       dst_tf_shape.AddDim(d0);
       dst_tf_shape.AddDim(d3);
 
-      if (dst_tf_shape.num_elements() == 0) {
+      if (!this->post_op_util_.HasBias() && dst_tf_shape.num_elements() == 0) {
         Tensor* dst_tensor = nullptr;
         OneDnnShape dst_onednn_shape;
 
@@ -155,6 +162,17 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       // Create matmul forward primitive
       std::unordered_map<int, memory> fwd_primitive_args;
       auto fwd_desc = matmul::desc(src_fwd_md, wei_fwd_md, dst_fwd_md);
+      memory bias_mem;
+      if (this->post_op_util_.HasBias()) {
+        auto bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
+                                    params->bias_strides);
+        // create bias memory
+        const Tensor& bias_tensor = context->input(bias_index);
+        memory bias_mem = CreateDnnlMemory(
+            bias_md, onednn_engine, GetTensorBuffer<Toutput>(&bias_tensor));
+        // Reassigin desc if it has bias.
+        fwd_desc = matmul::desc(src_fwd_md, wei_fwd_md, bias_md, dst_fwd_md);
+      }
       auto fwd_pd = GetPrimitiveDesc(context, fwd_desc, &fwd_primitive_args,
                                      onednn_engine);
       auto fwd_primitive = matmul(fwd_pd);
@@ -271,6 +289,9 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
                                  is_wei_reordered ? wei_reorder_mem : wei_mem);
       fwd_primitive_args.emplace(DNNL_ARG_DST, dst_mem);
       fwd_primitive_args.emplace(DNNL_ARG_SCRATCHPAD, scratchpad_mem);
+      if (this->post_op_util_.HasBias()) {
+        fwd_primitive_args.emplace(DNNL_ARG_BIAS, bias_mem);
+      }
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
