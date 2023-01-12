@@ -4,6 +4,7 @@ load("//third_party/systemlibs:syslibs_configure.bzl", "syslibs_configure")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("//third_party/llvm_project:setup.bzl", "llvm_setup")
+load("//third_party/llvm_project:setup_13.bzl", "llvm_setup_13")
 
 def clean_dep(dep):
     return str(Label(dep))
@@ -168,6 +169,9 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     # llvm built in bazel
     llvm_setup(name = "llvm-project")
+
+    # llvm built in bazel
+    llvm_setup_13(name = "llvm-project-13")
 
     EIGEN_COMMIT = "d10b27fe37736d2944630ecd7557cefa95cf87c9"
     tf_http_archive(

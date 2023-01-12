@@ -103,14 +103,14 @@ _DEPS_LIST = [
     "@onednn_cpu",
 ] + if_graph_compiler(
     [
-        "@llvm-project//llvm:Core",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:Target",
-        "@llvm-project//llvm:ExecutionEngine",
-        "@llvm-project//llvm:MCJIT",
-        "@llvm-project//llvm:X86CodeGen",
-        "@llvm-project//llvm:AsmParser",
-        "@llvm-project//llvm:AllTargetsAsmParsers",
+        "@llvm-project-13//llvm:Core",
+        "@llvm-project-13//llvm:Support",
+        "@llvm-project-13//llvm:Target",
+        "@llvm-project-13//llvm:ExecutionEngine",
+        "@llvm-project-13//llvm:MCJIT",
+        "@llvm-project-13//llvm:X86CodeGen",
+        "@llvm-project-13//llvm:AsmParser",
+        "@llvm-project-13//llvm:AllTargetsAsmParsers",
     ],
 )
 
