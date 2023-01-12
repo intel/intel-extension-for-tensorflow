@@ -34,7 +34,7 @@ cc_library(
     hdrs = ["optimizer_config.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core/devices:device_backend_util_hdr",
+        ":config_util",
         "//itex/core/utils:common_utils",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
@@ -55,6 +55,17 @@ cc_library(
         "@com_google_absl//absl/strings:cord",
         "@com_google_absl//absl/types:optional",
         "@local_config_tf//:tf_header_lib",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "config_util",
+    srcs = ["config_util.cc"],
+    hdrs = ["config_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core:protos_all_cc",
     ],
     alwayslink = True,
 )

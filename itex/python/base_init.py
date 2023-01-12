@@ -16,6 +16,8 @@
 
 import tensorflow  # pylint: disable=unused-import
 import intel_extension_for_tensorflow_lib  # pylint: disable=unused-import
+from intel_extension_for_tensorflow.python.config import set_config  # pylint: disable=unused-import
+from intel_extension_for_tensorflow.python.config import get_config  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python.device import set_backend  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python.device import get_backend  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python import ops  # pylint: disable=unused-import,line-too-long

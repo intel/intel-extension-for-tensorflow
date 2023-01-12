@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,15 +19,20 @@ from __future__ import division
 from __future__ import print_function
 
 from intel_extension_for_tensorflow.python._pywrap_itex import *
+from intel_extension_for_tensorflow.core.utils.protobuf import config_pb2
 
-_VALID_DEVICE_BACKENDS = frozenset({"CPU", "GPU", "AUTO"})
+def set_config(config=None):
+  """set config"""
+  if config is None:
+    config = config_pb2.ConfigProto()
+  if not isinstance(config, config_pb2.ConfigProto):
+    raise TypeError('config must be a tf.ConfigProto, but got %s' %
+                    type(config))
+  config_str = config.SerializeToString()
+  ITEX_SetConfig(config_str)
 
-def set_backend(backend):
-  if backend.upper() in _VALID_DEVICE_BACKENDS:
-    ITEX_SetBackend(backend.upper())
-  else:
-    raise ValueError("Cannot specify %s as XPU backend, Only %s is VALID"
-                     % (backend, _VALID_DEVICE_BACKENDS))
-
-def get_backend():
-  return ITEX_GetBackend()
+def get_config():
+  config_str = ITEX_GetConfig()
+  config = config_pb2.ConfigProto()
+  config.ParseFromString(config_str)
+  return config

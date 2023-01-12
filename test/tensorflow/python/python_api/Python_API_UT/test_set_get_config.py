@@ -18,22 +18,21 @@ import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
+from intel_extension_for_tensorflow.core.utils.protobuf import config_pb2
 
-GPU_BACKEND = 'GPU'
-backend_gpuflag = 2.0
+class SetGetConfigTest(test_util.TensorFlowTestCase):
+    """test set_config and get_config itex python api"""
 
-class SetGetBackendTest(test_util.TensorFlowTestCase):
-    """test set_backend and get_backend itex python api"""
-    
     @test_util.run_deprecated_v1
-    def testSetGetBackend_gpu(self):
-        current_backend = 0.0
-        itex.set_backend(GPU_BACKEND)
-        if(itex.get_backend() == GPU_BACKEND.encode('utf-8')):
-            current_backend = backend_gpuflag
-        else:
-            current_backend = 0.0
-        self.assertAllClose(current_backend, backend_gpuflag, rtol=1e-2, atol=1e-2)
+    def testSetGetConfig_gpu(self):
+        graph_options = config_pb2.GraphOptions()
+        graph_options.auto_mixed_precision = config_pb2.ON
+        cfg = config_pb2.ConfigProto(graph_options=graph_options)
+
+        itex.set_config(cfg)
+        self.assertProtoEquals("""
+          graph_options { auto_mixed_precision: ON }
+        """, itex.get_config())
 
 if __name__ == "__main__":
     test.main()

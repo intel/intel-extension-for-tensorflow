@@ -20,7 +20,7 @@ limitations under the License.
 #include <iostream>
 #include <string>
 
-#include "itex/core/devices/device_backend_util.h"
+#include "itex/core/graph/config_util.h"
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/utils/gpu_resource_mgr_pool.h"
 #endif

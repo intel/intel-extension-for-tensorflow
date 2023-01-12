@@ -20,10 +20,9 @@ limitations under the License.
 namespace itex {
 
 static const char* frozen_backend = nullptr;
-static ConfigProto frozen_config;
 static bool backend_is_frozen = false;
 
-void itex_freeze_backend(const char* backend, const ConfigProto& config) {
+void itex_freeze_backend(const char* backend) {
   if (strcasecmp(backend, "GPU") == 0) {
     frozen_backend = itex::DEVICE_GPU;
   } else if (strcasecmp(backend, "CPU") == 0) {
@@ -36,10 +35,9 @@ void itex_freeze_backend(const char* backend, const ConfigProto& config) {
   }
 
   backend_is_frozen = true;
-  frozen_config = config;
 }
 
-void itex_freeze_backend(ITEX_BACKEND backend, const ConfigProto& config) {
+void itex_freeze_backend(ITEX_BACKEND backend) {
   std::string backend_s;
   switch (backend) {
     case ITEX_BACKEND_GPU:
@@ -79,16 +77,14 @@ ITEX_BACKEND itex_get_backend() {
   }
 }
 
-ConfigProto itex_get_config() { return frozen_config; }
-
-void itex_set_backend(const char* backend, const ConfigProto& config) {
+void itex_set_backend(const char* backend) {
   if (backend_is_frozen && (strcasecmp(backend, frozen_backend) != 0)) {
     ITEX_LOG(INFO) << "ITEX backend is already set as " << frozen_backend
                    << ", setting backend as " << backend << " is ignored";
     return;
   }
 
-  itex_freeze_backend(backend, config);
+  itex_freeze_backend(backend);
 }
 
 void itex_backend_to_string(ITEX_BACKEND backend, std::string* backend_string) {

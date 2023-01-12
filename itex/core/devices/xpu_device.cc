@@ -47,8 +47,7 @@ void xpu_device_count(const SP_Platform* platform, int* device_count,
 void xpu_create_device(const SP_Platform* platform,
                        SE_CreateDeviceParams* params, TF_Status* const status) {
   ITEX_BACKEND backend = itex_get_backend();
-  ConfigProto config = itex_get_config();
-  itex_freeze_backend(backend, config);
+  itex_freeze_backend(backend);
   switch (backend) {
     case ITEX_BACKEND_GPU:
       itex::gpu_create_device(platform, params, status);

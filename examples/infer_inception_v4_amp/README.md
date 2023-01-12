@@ -76,8 +76,7 @@ graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precis
 graph_options.auto_mixed_precision = itex.ON
 
 config = itex.ConfigProto(graph_options=graph_options)
-#itex.set_backend("cpu", config)
-itex.set_backend("gpu", config)
+itex.set_config(config)
 ```
 
 For FP16, modify one line above:

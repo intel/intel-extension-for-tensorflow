@@ -18,7 +18,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 
-#include "itex/core/devices/device_backend_util.h"
+#include "itex/core/graph/config_util.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/protobuf/config.pb.h"

@@ -18,7 +18,6 @@ limitations under the License.
 
 #include <string>
 
-#include "itex/core/utils/protobuf/config.pb.h"
 #include "itex/core/utils/types.h"
 
 constexpr char DEVICE_XPU_NAME[] = "XPU";
@@ -33,11 +32,10 @@ enum ITEX_BACKEND {
 namespace itex {
 
 ITEX_BACKEND itex_get_backend();
-ConfigProto itex_get_config();
-void itex_set_backend(const char* backend, const ConfigProto& config);
+void itex_set_backend(const char* backend);
 void itex_backend_to_string(ITEX_BACKEND backend, std::string* backend_string);
-void itex_freeze_backend(const char* backend, const ConfigProto& config);
-void itex_freeze_backend(ITEX_BACKEND backend, const ConfigProto& config);
+void itex_freeze_backend(const char* backend);
+void itex_freeze_backend(ITEX_BACKEND backend);
 
 // Get the real backend name of given device.
 // @return:
