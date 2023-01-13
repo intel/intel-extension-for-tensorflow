@@ -26,3 +26,4 @@ from intel_extension_for_tensorflow.python import version  # pylint: disable=unu
 from intel_extension_for_tensorflow.python import test_func  # pylint: disable=unused-import
 
 from intel_extension_for_tensorflow.core.utils.protobuf.config_pb2 import *  # pylint: disable=unused-import,wildcard-import,unused-wildcard-import
+from intel_extension_for_tensorflow.python.itex_experimental_api_opt import itex_experimental_api_opt
