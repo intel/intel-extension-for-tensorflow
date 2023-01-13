@@ -720,6 +720,7 @@ bool IsVerboseEnabled();
 #ifndef INTEL_CPU_ONLY
 const char* const USES_FP64_MATH = "uses-fp64-math";
 const char* const ASPECT_FP64_IS_NOT_SUPPORTED = "aspect fp64 is not supported";
+const char* const FP64_ERROR_FROM_MKL = "double type is not supported";
 
 inline void RunWithSyncHandler(OpKernelContext* context, OpKernel* op) {
   try {
@@ -727,7 +728,8 @@ inline void RunWithSyncHandler(OpKernelContext* context, OpKernel* op) {
   } catch (const sycl::exception& e) {
     const string& err_msg = e.what();
     if (err_msg.find(USES_FP64_MATH) != std::string::npos ||
-        err_msg.find(ASPECT_FP64_IS_NOT_SUPPORTED) != std::string::npos) {
+        err_msg.find(ASPECT_FP64_IS_NOT_SUPPORTED) != std::string::npos ||
+        err_msg.find(FP64_ERROR_FROM_MKL) != std::string::npos) {
       context->CtxFailureWithWarning(itex::Status(
           TF_Code::TF_ABORTED,
           strings::StrCat(
