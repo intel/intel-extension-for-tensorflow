@@ -545,7 +545,10 @@ REGISTER_KERNEL_BUILDER(Name("MaxPoolWithArgmax")
           .TypeConstraint<T>("T"),                                     \
       MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>); \
   REGISTER_KERNEL_BUILDER(                                             \
-      Name("MaxPool3DGrad").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
+      Name("MaxPool3DGrad")                                            \
+          .Device(DEVICE_GPU)                                          \
+          .TypeConstraint<T>("T")                                      \
+          .TypeConstraint<T>("TInput"),                                \
       MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>); \
   REGISTER_KERNEL_BUILDER(Name("MaxPoolGradWithArgmax")                \
                               .Device(DEVICE_GPU)                      \
