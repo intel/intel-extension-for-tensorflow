@@ -33,7 +33,7 @@ tf.compat.v1.disable_eager_execution()
 @test_util.run_all_in_native_and_block_format
 class FusedMatMulTest(test_util.TensorFlowTestCase):
     """test fused matmul"""
-    # {{node Mul}} = _OneDnnFusedBatchMatMulV2[T=DT_FLOAT, _XlaHasReferenceVars=false, adj_x=false, adj_y=false, fused_ops=["Mul"], 
+    # {{node Mul}} = _OneDnnFusedBatchMatMulV2[T=DT_FLOAT, _XlaHasReferenceVars=false, adj_x=false, adj_y=false, fused_ops=["BinaryMul"], 
     # is_filter_const=false, num_args=1, _device="/job:localhost/replica:0/task:0/device:XPU:0"]
     # (_arg_Placeholder_0_0/_9, _arg_Placeholder_1_0_1/_11, Mul/y, Placeholder_DMT_3, Placeholder_1_DMT_4, Mul/y_DMT_5) 
     # device: /job:localhost/replica:0/task:0/device:XPU:0
@@ -63,7 +63,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
             for node in graph.node:
                 if 'FusedBatchMatMulV2' in node.op:
                     fused_ops = node.attr['fused_ops'].list.s
-                    found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'Mul'
+                    found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'BinaryMul'
                     break
             self.assertTrue(found_fused_op, "this pattern has fusion issue!!")
         with self.session(use_gpu=False) as sess:
@@ -103,7 +103,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
             for node in graph.node:
                 if 'FusedBatchMatMulV2' in node.op:
                     fused_ops = node.attr['fused_ops'].list.s
-                    found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'Mul'
+                    found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'BinaryMul'
                     break
             self.assertTrue(found_fused_op, "this pattern has fusion issue!!")
 

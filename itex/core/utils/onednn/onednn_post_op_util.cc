@@ -61,6 +61,7 @@ const std::vector<PostOpInfo>& PostOpUtil::GetAllPostOpInfo() {
 
       /* Kind: binary */
       {"BinaryAdd", kind::binary, algorithm::binary_add, kAlphaOne, kBetaZero},
+      {"BinaryMul", kind::binary, algorithm::binary_mul, kAlphaOne, kBetaZero},
   };
 
   return info_vec;
@@ -84,7 +85,7 @@ bool PostOpUtil::AddOps(const std::vector<string>& fused_ops) {
         this->has_add_ = true;
         postop_scale_list_.push_back(std::make_pair(name, scale_default));
       } else if (op_kind == kind::binary) {
-        this->has_binary_ = true;
+        this->binary_num_++;
         // TODO(itex): Scale for binary is useless now, but it can be supported
         //             in future once oneDNN supports it.
         postop_scale_list_.push_back(std::make_pair(name, scale_default));
@@ -99,15 +100,10 @@ bool PostOpUtil::AddOps(const std::vector<string>& fused_ops) {
       // Simply record status of `BiasAdd` instead of putting it to table.
       if (name == "BiasAdd") {
         this->has_bias_ = true;
-      } else if (name == "Mul" || name == "Quantized" || name == "Requantize" ||
+      } else if (name == "Quantized" || name == "Requantize" ||
                  name == "Dequantize") {
-        // Handle special case BatchMatMul + Mul fusion or Quantized kernel
+        // Handle Quantized kernel.
         this->has_output_scales_ = true;
-        // TODO(itex): Remove "has_mul_", once we use binary::mul instead of
-        // output_scale to implement Mul fusion.
-        if (name == "Mul") {
-          this->has_mul_ = true;
-        }
 
         if (name == "Requantize") {
           this->has_requantize_ = true;
@@ -192,7 +188,6 @@ void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops,
     } else if (op_kind == kind::sum) {
       post_ops->append_sum(scale);
     } else if (op_kind == kind::binary) {
-      ITEX_CHECK(it != md_list.end()) << "PostOpUtil: missing binary input md";
       post_ops->append_binary(info->alg, *it);
       ++it;
     } else {
@@ -204,12 +199,17 @@ void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops,
 
 void PostOpUtil::SetPostOpAttr(dnnl::primitive_attr* attr,
                                const std::vector<memory::desc>& md_list) {
+  ITEX_CHECK(md_list.size() == this->binary_num_)
+      << "PostOpUtil: missing binary input md, required " << this->binary_num_
+      << ", but got " << md_list.size();
   ITEX_DCHECK(attr);
+
   if (postop_scale_list_.size() != 0) {
     dnnl::post_ops post_ops = dnnl::post_ops();
     SetPostOp(&post_ops, md_list);
     attr->set_post_ops(post_ops);
   }
+
   if (has_output_scales_) {
     if (output_scale_param_.scales.size()) {
       attr->set_output_scales(output_scale_param_.mask,

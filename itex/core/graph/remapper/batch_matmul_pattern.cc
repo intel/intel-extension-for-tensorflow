@@ -106,7 +106,7 @@ class BatchMatMulWithMulAndAddV2Fusion : public BatchMatMulFusion {
     fused_node.add_input(addend_node->name());
 
     CopyAllAttrs(*batch_matmul_node, &fused_node);
-    SetFusedOpAttributes(&fused_node, {kMul, kBinaryAdd}, /*num_args=*/2);
+    SetFusedOpAttributes(&fused_node, {kBinaryMul, kBinaryAdd}, /*num_args=*/2);
 
     utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
     Status status;

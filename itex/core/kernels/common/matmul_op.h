@@ -278,10 +278,6 @@ class MatMulOp : public OpKernel {
       bias_mem_.set_data_handle(context->tensor_data(kBiasIndex_));
     }
 
-    if (post_op_util_.HasAdd() || post_op_util_.HasBinary()) {
-      add_tensor_ = &context->input(kAddIndex_);
-    }
-
     OP_REQUIRES_OK(context,
                    context->allocate_temp(DataTypeToEnum<T>::v(),
                                           TensorShape({scratchpad_size_}),
@@ -291,6 +287,7 @@ class MatMulOp : public OpKernel {
 
     if (post_op_util_.HasAdd()) {
       int is_forward_success = kUnsuccess_;
+      add_tensor_ = &context->input(kAddIndex_);
       // Try to do in-place.
       // TODO(itex): Remove this workaround when inplace works.
       if (inplace_sum_) {
@@ -314,10 +311,6 @@ class MatMulOp : public OpKernel {
     } else {
       OP_REQUIRES_OK(context, context->allocate_output(kDstIndex_, dst_shape_,
                                                        &dst_tensor_));
-    }
-    if (post_op_util_.HasBinary()) {
-      // BatchMatMul + Add needs to set add input md in node execution.
-      add_mem_.set_data_handle(GetTensorBuffer<Tpost>(add_tensor_));
     }
     dst_mem_.set_data_handle(GetTensorBuffer<Tout>(dst_tensor_));
   }
@@ -460,14 +453,11 @@ class MatMulOp : public OpKernel {
         post_ops_attr.set_fpmath_mode(fp32_math_mode_);
       }
 
-      if (post_op_util_.HasAdd() || post_op_util_.HasBinary()) {
-        add_tensor_ = &context->input(kAddIndex_);
-      }
-
       // Handle Add fusion and decide output tensor buffer.
       if (post_op_util_.HasAdd()) {
         // const Tensor& add_tensor = context->input(kAddIndex_);
         int is_forward_success = kUnsuccess_;
+        add_tensor_ = &context->input(kAddIndex_);
 
         // Try to do in-place.
         // TODO(itex): Remove this workaround when inplace works.
@@ -497,53 +487,8 @@ class MatMulOp : public OpKernel {
                                                          &dst_tensor_));
       }
 
-      // Handle Mul fusion.
-      if (post_op_util_.HasOutputScales()) {
-        const Tensor& scale_tensor = context->input(kMulIndex_);
-        OP_REQUIRES(context, scale_tensor.NumElements() == 1,
-                    errors::InvalidArgument("Mul Tensor must be a scalar"));
-
-#ifndef INTEL_CPU_ONLY
-        if (IsMulCacheEmpty()) {
-          // Cache weight
-          const T* mul_device_data = scale_tensor.flat<T>().data();
-          CacheMul(context, mul_device_data);
-        }
-        T* mul_host_data = GetCachedMul(context);
-        float mul_value = static_cast<float>(mul_host_data[0]);
-#else
-        float mul_value =
-            static_cast<float>(scale_tensor.flat<Tpost>().data()[0]);
-#endif  // INTEL_CPU_ONLY
-        std::vector<float> scales = {mul_value};
-
-        post_op_util_.SetOutputScale(scales);
-      }
-
-      std::vector<memory::desc> md_list;
-      if (this->post_op_util_.HasBinary()) {
-        // BatchMatMul + Add needs to set add input md in node execution.
-        // const Tensor& add_tensor = context->input(kAddIndex_);
-
-        // Figure out the extended md for primitive execution
-        TensorShape tf_shape = add_tensor_->shape();
-
-        ITEX_CHECK(tf_shape.dims() >= 3)
-            << "Add input of FusedBatchMatMul must have 3 dims at least";
-
-        auto add_dims = TFShapeToOneDnnDims(tf_shape);
-        auto add_strides = CalculateTFStrides(add_dims);
-        auto add_md = memory::desc(add_dims, OneDnnType<Tpost>(), add_strides);
-
-        md_list.push_back(add_md);
-        add_mem_ = CreateDnnlMemory(add_md, dnnl_engine_,
-                                    GetTensorBuffer<Tpost>(add_tensor_));
-
-        fwd_primitive_args_.emplace(
-            DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem_);
-      }
       // Set post ops attr after handling all fusions.
-      post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
+      post_op_util_.SetPostOpAttr(&post_ops_attr);
       auto matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
                                                     dnnl_engine_);
 
@@ -639,54 +584,6 @@ class MatMulOp : public OpKernel {
     scratchpad_tensor_.reset();
   }
 
-  // TODO(itex): Wrap all cache related code to a module, reuse this module
-  inline bool IsMulCacheEmpty() TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    return (!mul_cached_tensor_.IsInitialized());
-  }
-
-  void AllocatePersistentTensor(OpKernelContext* context, Tensor** mul_tensor) {
-    ITEX_DCHECK(mul_tensor);
-    TensorShape mul_tf_shape;
-    // Only one number is stored
-    mul_tf_shape.AddDim(1);
-    AllocatorAttributes alloc_attr;
-    alloc_attr.set_on_host(true);
-    OP_REQUIRES_OK(context, context->allocate_persistent(
-                                DataTypeToEnum<T>::value, mul_tf_shape,
-                                &mul_cached_tensor_, mul_tensor, alloc_attr));
-  }
-
-#ifndef INTEL_CPU_ONLY
-  void CacheMul(OpKernelContext* context, const T* mul_device_data)
-      TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    mutex_lock lock(&mul_cache_mu_);
-
-    // If mul is already cached, there's nothing to do.
-    if (mul_cached_tensor_.IsInitialized()) {
-      return;
-    }
-
-    // Create cached mul buffer
-    Tensor* mul_tensor_ptr = nullptr;
-    AllocatePersistentTensor(context, &mul_tensor_ptr);
-    T* mul_host_data = const_cast<T*>(mul_tensor_ptr->flat<T>().data());
-
-    // TODO(itex): refactor the memcpy code
-    auto* ITEX_GPU_stream = context->GetDeviceStream();
-    auto event =
-        ITEX_GPU_stream->memcpy(mul_host_data, mul_device_data, 1 * sizeof(T));
-    event.wait();
-  }
-
-  T* GetCachedMul(OpKernelContext* context) TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    const Tensor& mul_cached_data = *mul_cached_tensor_.AccessTensor(context);
-
-    return static_cast<T*>(const_cast<T*>(mul_cached_data.flat<T>().data()));
-  }
-#endif  // INTEL_CPU_ONLY
-
  protected:
   bool adj_x_ = false;
   bool adj_y_ = false;
@@ -696,8 +593,8 @@ class MatMulOp : public OpKernel {
   bool enable_cache_ = false;
   bool is_init_ = false;
   bool is_input_zero_ = false;
-  const int kSrcIndex_ = 0, kDstIndex_ = 0, kWeightIndex_ = 1, kBiasIndex_ = 2,
-            kAddIndex_ = 3, kMulIndex_ = 2, kUnsuccess_ = -1;
+  static const int kSrcIndex_ = 0, kDstIndex_ = 0, kWeightIndex_ = 1,
+                   kBiasIndex_ = 2, kAddIndex_ = 3, kUnsuccess_ = -1;
 
   // Fusion util.
   PostOpUtil post_op_util_;
@@ -706,7 +603,7 @@ class MatMulOp : public OpKernel {
   WeightCacheManager<T> weight_cache_manager_;
 
  private:
-  mutex mul_cache_mu_, mu_compute_;
+  mutex mu_compute_;
   std::unordered_map<int, memory> fwd_primitive_args_;
   memory src_mem_, weights_mem_, weights_mem_input_, dst_mem_, bias_mem_,
       add_mem_, fuse_add_src_mem_, fuse_add_dst_mem_, scratchpad_mem_;
@@ -718,7 +615,6 @@ class MatMulOp : public OpKernel {
   int64_t scratchpad_size_ = 0;
   std::vector<int64> input_dims_, weights_dims_;
   TensorShape dst_shape_;
-  PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
   dnnl::stream dnnl_stream_;
   dnnl::engine dnnl_engine_;
@@ -800,10 +696,6 @@ class MatMulFunctor {
                     dnnl_engine_);
     }
 
-    if (post_op_util_.HasBinary()) {
-      // BatchMatMul + Add needs to set add input md in node execution.
-      add_mem_.set_data_handle(add_tensor_data);
-    }
     dst_mem_.set_data_handle(output_tensor_data);
   }
 
@@ -937,46 +829,8 @@ class MatMulFunctor {
                       dnnl_engine_);
       }
 
-      // Handle Mul fusion.
-      if (post_op_util_.HasOutputScales()) {
-#ifndef INTEL_CPU_ONLY
-        if (IsMulCacheEmpty()) {
-          // Cache weight
-          const T* mul_device_data = scale_data;
-          CacheMul(context, mul_device_data);
-        }
-        T* mul_host_data = GetCachedMul(context);
-        float mul_value = static_cast<float>(mul_host_data[0]);
-#else
-        float mul_value = static_cast<float>(scale_data[0]);
-#endif  // INTEL_CPU_ONLY
-        std::vector<float> scales = {mul_value};
-
-        post_op_util_.SetOutputScale(scales);
-      }
-
-      std::vector<memory::desc> md_list;
-      if (this->post_op_util_.HasBinary()) {
-        // BatchMatMul + Add needs to set add input md in node execution.
-
-        // Figure out the extended md for primitive execution
-        TensorShape tf_shape(add_tensor_dims);
-
-        ITEX_CHECK(tf_shape.dims() >= 3)
-            << "Add input of FusedBatchMatMul must have 3 dims at least";
-
-        auto add_dims = TFShapeToOneDnnDims(tf_shape);
-        auto add_strides = CalculateTFStrides(add_dims);
-        auto add_md = memory::desc(add_dims, OneDnnType<Tpost>(), add_strides);
-
-        md_list.push_back(add_md);
-        add_mem_ = CreateDnnlMemory(add_md, dnnl_engine_, add_tensor_data);
-
-        fwd_primitive_args_.emplace(
-            DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem_);
-      }
       // Set post ops attr after handling all fusions.
-      post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
+      post_op_util_.SetPostOpAttr(&post_ops_attr);
       auto matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
                                                     dnnl_engine_);
 
@@ -1082,54 +936,6 @@ class MatMulFunctor {
     scratchpad_tensor_.reset();
   }
 
-  // TODO(itex): Wrap all cache related code to a module, reuse this module
-  inline bool IsMulCacheEmpty() TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    return (!mul_cached_tensor_.IsInitialized());
-  }
-
-  void AllocatePersistentTensor(OpKernelContext* context, Tensor** mul_tensor) {
-    ITEX_DCHECK(mul_tensor);
-    TensorShape mul_tf_shape;
-    // Only one number is stored
-    mul_tf_shape.AddDim(1);
-    AllocatorAttributes alloc_attr;
-    alloc_attr.set_on_host(true);
-    OP_REQUIRES_OK(context, context->allocate_persistent(
-                                DataTypeToEnum<T>::value, mul_tf_shape,
-                                &mul_cached_tensor_, mul_tensor, alloc_attr));
-  }
-
-#ifndef INTEL_CPU_ONLY
-  void CacheMul(OpKernelContext* context, const T* mul_device_data)
-      TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    mutex_lock lock(&mul_cache_mu_);
-
-    // If mul is already cached, there's nothing to do.
-    if (mul_cached_tensor_.IsInitialized()) {
-      return;
-    }
-
-    // Create cached mul buffer
-    Tensor* mul_tensor_ptr = nullptr;
-    AllocatePersistentTensor(context, &mul_tensor_ptr);
-    T* mul_host_data = const_cast<T*>(mul_tensor_ptr->flat<T>().data());
-
-    // TODO(itex): refactor the memcpy code
-    auto* dpcpp_stream = context->GetDeviceStream();
-    auto event =
-        dpcpp_stream->memcpy(mul_host_data, mul_device_data, 1 * sizeof(T));
-    event.wait();
-  }
-
-  T* GetCachedMul(OpKernelContext* context) TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    const Tensor& mul_cached_data = *mul_cached_tensor_.AccessTensor(context);
-
-    return static_cast<T*>(const_cast<T*>(mul_cached_data.flat<T>().data()));
-  }
-#endif  // INTEL_CPU_ONLY
-
  protected:
   bool adj_x_ = false;
   bool adj_y_ = false;
@@ -1146,7 +952,7 @@ class MatMulFunctor {
   WeightCacheManager<T> weight_cache_manager_;
 
  private:
-  mutex mul_cache_mu_, mu_compute_;
+  mutex mu_compute_;
   std::unordered_map<int, memory> fwd_primitive_args_;
   memory src_mem_, weights_mem_, weights_mem_input_, dst_mem_, bias_mem_,
       add_mem_, fuse_add_src_mem_, fuse_add_dst_mem_, scratchpad_mem_;
@@ -1157,7 +963,6 @@ class MatMulFunctor {
   int64_t scratchpad_size_ = 0;
   std::vector<int64> input_dims_, weights_dims_;
   TensorShape dst_shape_;
-  PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
   dnnl::stream dnnl_stream_;
   dnnl::engine dnnl_engine_;
@@ -1393,13 +1198,13 @@ class FusedMatMulGradOp : public OpKernel {
   }
 
  protected:
-  const int kSrcIndex_ = 0, kDiffDstIndex_ = 1, kDiffWeightIndex_ = 0,
-            kDiffBiasIndex_ = 1;
+  static const int kSrcIndex_ = 0, kDiffDstIndex_ = 1, kDiffWeightIndex_ = 0,
+                   kDiffBiasIndex_ = 1;
   bool is_init_ = false;
   bool enable_cache_ = false;
 
  private:
-  mutex mul_cache_mu_, mu_compute_;
+  mutex mu_compute_;
   std::unordered_map<int, memory> fwd_primitive_args_;  // ?
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;

@@ -48,14 +48,27 @@ class BatchMatMulOp : public OpKernel {
     if (ctx->HasAttr("fused_ops")) {
       std::vector<string> fused_ops;
       OP_REQUIRES_OK(ctx, ctx->GetAttr("fused_ops", &fused_ops));
-      // TODO(itex): Replace Add(Sum) fusion to binary::add fusion manually.
-      //             Will refine all Add fusion to binary:add in future.
+
+      // TODO(itex): Replace Add(Sum)/Mul(output_scale) fusion to Binary post
+      //             op fusion manually. Will refine related fusion to binary
+      //             fusion in future.
       for (int i = 0; i < fused_ops.size(); ++i) {
         if (fused_ops[i] == "Add") fused_ops[i] = "BinaryAdd";
+        if (fused_ops[i] == "Mul") fused_ops[i] = "BinaryMul";
       }
-      OP_REQUIRES(ctx, this->post_op_util_.AddOps(fused_ops),
+      OP_REQUIRES(ctx, post_op_util_.AddOps(fused_ops),
                   errors::InvalidArgument(
                       "Found unsupported fusion in Fused BatchMatMul."));
+
+      if (post_op_util_.HasBinary()) {
+        const int binary_num = post_op_util_.GetBinaryNum();
+        OP_REQUIRES(
+            ctx, binary_num <= kMaxBinaryNum_,
+            errors::Unimplemented(
+                "The number of Binary op fusion in BatchMatMul is: ",
+                binary_num, ", which is greater than ", kMaxBinaryNum_));
+      }
+
       // Set alpha if get `LeakyRelu` after adding ops.
       if (post_op_util_.HasLeakyRelu()) {
         float alpha;
@@ -256,11 +269,14 @@ class BatchMatMulOp : public OpKernel {
     if (!is_weight_reorder_) {
       weights_mem_.set_data_handle(context->tensor_data(kWeightIndex_));
     }
+
     if (post_op_util_.HasBias()) {
       bias_mem_.set_data_handle(context->tensor_data(kBiasIndex_));
     }
-    if (this->post_op_util_.HasBinary()) {
-      add_mem_.set_data_handle(context->tensor_data(add_index_));
+
+    for (int i = 0; i < post_op_util_.GetBinaryNum(); ++i) {
+      binary_mem_[i].set_data_handle(
+          context->tensor_data(binary_start_index_ + i));
     }
 
     OP_REQUIRES_OK(context,
@@ -298,129 +314,53 @@ class BatchMatMulOp : public OpKernel {
 
   matmul::primitive_desc GetPrimitiveDesc(OpKernelContext* ctx,
                                           const matmul::desc& fwd_desc) {
-    int post_op_input_index = kWeightIndex_ + 1;
     dnnl::primitive_attr post_ops_attr;
     post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 
-    // TODO(itex): Since ITEX currently combine mul post op and scale of
-    // INT8 together. Here maybe slight accuracy difference with Intel-TF with
-    // INT8-BF16 BatchMatMul Intel-TF: INT8 scale (fp32) * mul (bf16) ITEX: INT8
-    // scale (fp32) * mul (fp32)
-    if (this->post_op_util_.HasOutputScales()) {
-      // mul_value = INT8 scale * mul
+    if (post_op_util_.HasOutputScales()) {
+      // mul_value = INT8 scale
       float mul_value = 1.0;
-      if (this->post_op_util_.HasMul()) {
-        // BatchMatMul + Mul needs to set scale in node execution
-        const Tensor& scale_tensor = ctx->input(post_op_input_index);
-
-        if (scale_tensor.NumElements() != 1) {
-          ITEX_LOG(FATAL) << "Mul tensor must be a scalar.";
-        }
-
-#ifndef INTEL_CPU_ONLY
-        if (IsMulCacheEmpty()) {
-          // Cache weight
-          const Toutput* mul_device_data = scale_tensor.flat<Toutput>().data();
-          CacheMul(ctx, mul_device_data);
-        }
-        Toutput* mul_host_data = GetCachedMul(ctx);
-        mul_value = static_cast<float>(mul_host_data[0]);
-#else
-        mul_value = static_cast<float>(scale_tensor.flat<Toutput>()(0));
-#endif  // INTEL_CPU_ONLY
-      }
-
       AccumulateMulAndInt8Scale(ctx, &mul_value);
 
       std::vector<float> scales = {mul_value};
-      this->post_op_util_.SetOutputScale(scales);
-      post_op_input_index++;
+      post_op_util_.SetOutputScale(scales);
     }
 
     std::vector<memory::desc> md_list;
-    if (this->post_op_util_.HasBinary()) {
-      // BatchMatMul + Add needs to set add input md in node execution.
-      const Tensor& add_tensor = ctx->input(post_op_input_index);
-      add_index_ = post_op_input_index;
+    binary_start_index_ =
+        1 + (post_op_util_.HasBias() ? kBiasIndex_ : kWeightIndex_);
+    for (int i = 0; i < post_op_util_.GetBinaryNum(); ++i) {
+      // FusedBatchMatMul need to set binary input md in node execution.
+      const Tensor& binary_tensor = ctx->input(binary_start_index_ + i);
 
-      // Same as input and weight of BatchMatMul, add tensor also needs to:
+      // Same as input and weight of BatchMatMul, binary tensor also needs to:
       //   1. Get original block/plain md
       //   2. Figure out the extended md for primitive execution
       //   3. Reorder original md to extended md if needed
-      TensorShape tf_shape = add_tensor.shape();
+      TensorShape tf_shape = binary_tensor.shape();
 
-      ITEX_CHECK(tf_shape.dims() >= 3)
-          << "Add input of FusedBatchMatMul must have 3 dims at least";
+      ITEX_CHECK(binary_tensor.NumElements() == 1 || tf_shape.dims() >= 3)
+          << "Binary input of FusedBatchMatMul must be scalar or have 3 dims "
+          << "at least, but got " << tf_shape.dims();
 
-      auto add_dims = TFShapeToOneDnnDims(tf_shape);
-      auto add_strides = CalculateTFStrides(add_dims);
-      auto add_md = memory::desc(add_dims, OneDnnType<Toutput>(), add_strides);
+      auto binary_dims = TFShapeToOneDnnDims(tf_shape);
+      auto binary_strides = CalculateTFStrides(binary_dims);
+      auto binary_md =
+          memory::desc(binary_dims, OneDnnType<Toutput>(), binary_strides);
 
       // FIXME(itex): Simply ingnore reorder this time, will fix it soon.
-      md_list.push_back(add_md);
-      add_mem_ = CreateDnnlMemory(add_md, onednn_engine_,
-                                  GetTensorBuffer<Toutput>(&add_tensor));
+      md_list.push_back(binary_md);
+      binary_mem_[i] = CreateDnnlMemory(
+          binary_md, onednn_engine_, GetTensorBuffer<Toutput>(&binary_tensor));
       fwd_primitive_args_.insert(
-          {DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem_});
-      post_op_input_index++;
+          {DNNL_ARG_ATTR_MULTIPLE_POST_OP(i) | DNNL_ARG_SRC_1, binary_mem_[i]});
     }
 
-    this->post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
+    post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
     return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
   }
 
  private:
-#ifndef INTEL_CPU_ONLY
-  // TODO(itex): Wrap all cache related code to a module, reuse this module
-  inline bool IsMulCacheEmpty() TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    return (!mul_cached_tensor_.IsInitialized());
-  }
-
-  void AllocatePersistentTensor(OpKernelContext* ctx, Tensor** mul_tensor) {
-    ITEX_DCHECK(mul_tensor);
-    TensorShape mul_tf_shape;
-    // Only one number is stored
-    mul_tf_shape.AddDim(1);
-    AllocatorAttributes alloc_attr;
-    alloc_attr.set_on_host(true);
-    OP_REQUIRES_OK(ctx, ctx->allocate_persistent(
-                            DataTypeToEnum<Toutput>::value, mul_tf_shape,
-                            &mul_cached_tensor_, mul_tensor, alloc_attr));
-  }
-
-  void CacheMul(OpKernelContext* ctx, const Toutput* mul_device_data)
-      TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    mutex_lock lock(&mul_cache_mu_);
-
-    // If mul is already cached, there's nothing to do.
-    if (mul_cached_tensor_.IsInitialized()) {
-      return;
-    }
-
-    // Create cached mul buffer
-    Tensor* mul_tensor_ptr = nullptr;
-    AllocatePersistentTensor(ctx, &mul_tensor_ptr);
-    Toutput* mul_host_data =
-        const_cast<Toutput*>(mul_tensor_ptr->flat<Toutput>().data());
-
-    // TODO(itex): refactor the memcpy code
-    auto* ITEX_GPU_stream = ctx->GetDeviceStream();
-    auto event = ITEX_GPU_stream->memcpy(mul_host_data, mul_device_data,
-                                         1 * sizeof(Toutput));
-    event.wait();
-  }
-
-  Toutput* GetCachedMul(OpKernelContext* ctx) TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    const Tensor& mul_cached_data = *mul_cached_tensor_.AccessTensor(ctx);
-
-    return static_cast<Toutput*>(
-        const_cast<Toutput*>(mul_cached_data.flat<Toutput>().data()));
-  }
-
-#endif  // INTEL_CPU_ONLY
-
   bool transpose_a_;
   bool transpose_b_;
   bool is_filter_const_ = false;
@@ -435,21 +375,23 @@ class BatchMatMulOp : public OpKernel {
   bool is_init_ = false;
   bool is_input_zero_ = false;
   bool is_weight_reorder_;
-  const int kSrcIndex_ = 0;
-  const int kWeightIndex_ = 1;
-  const int kBiasIndex_ = 2;
-  const int kDstIndex_ = 0;
+  static const int kSrcIndex_ = 0;
+  static const int kWeightIndex_ = 1;
+  static const int kBiasIndex_ = 2;
+  static const int kDstIndex_ = 0;
+  // Hard code the max number of supported binary post op fusion.
+  static const int kMaxBinaryNum_ = 2;
 
  private:
-  mutex mul_cache_mu_, mu_compute_;
-  PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
+  mutex mu_compute_;
 
   std::unordered_map<int, memory> fwd_primitive_args_;
-  memory src_mem_, weights_mem_, dst_mem_, add_mem_, scratchpad_mem_, bias_mem_;
+  memory src_mem_, weights_mem_, bias_mem_, dst_mem_,
+      binary_mem_[kMaxBinaryNum_], scratchpad_mem_;
   dnnl::matmul matmul_primitive_;
   Tensor* dst_tensor_;
   std::shared_ptr<Tensor> scratchpad_tensor_;
-  int64_t scratchpad_size_, add_index_;
+  int64_t scratchpad_size_, binary_start_index_;
   std::vector<int64> input_dims_, weights_dims_;
   TensorShape dst_shape_;
   dnnl::stream onednn_stream_;
@@ -459,7 +401,8 @@ class BatchMatMulOp : public OpKernel {
 // V2 is for latest Intel TF BatchMatMul INT8 new API.
 // V1 is for previous BatchMatMul INT8 V1 new API, it seems the V1 API is not
 // used by Intel-TF.
-// Currently, the V1 and V2 kernel differences only lie on construction function
+// Currently, the V1 and V2 kernel differences only lie on construction
+// function
 
 template <typename Device, typename Tlhs, typename Trhs, typename Toutput,
           bool is_v2 = true>
@@ -468,90 +411,57 @@ class QuantizedBatchMatMulV2Op
  public:
   explicit QuantizedBatchMatMulV2Op(OpKernelConstruction* context)
       : BatchMatMulOp<Device, Tlhs, Trhs, Toutput>(context) {
-    if (is_v2) {
-      this->post_op_util_.AddOps({"Quantized"});
+    int num_args = 0;
+    std::vector<string> fused_ops;
 
-      std::vector<string> fused_ops;
-      if (context->HasAttr("fused_ops")) {
-        OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops));
-      }
+    if (context->HasAttr("fused_ops")) {
+      OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops));
 
-      std::set<std::vector<string>> supported_fusions = {
-          {"Dequantize"},
-          {"Mul", "Dequantize"},
-          {"Add", "Dequantize"},
-          {"Mul", "Add", "Dequantize"}};
-
-      OP_REQUIRES(context,
-                  supported_fusions.find(fused_ops) != supported_fusions.end(),
-                  errors::Unimplemented(
-                      "Fusion is not implemented for BatchMatMul INT8: [",
-                      absl::StrJoin(fused_ops, ","), "]"));
-
+      // TODO(itex): Replace Add(Sum)/Mul(output_scale) fusion to Binary post
+      //             op fusion manually. Will refine related fusion to binary
+      //             fusion in future.
       for (int i = 0; i < fused_ops.size(); ++i) {
-        string op = fused_ops[i];
-        if (op == "Dequantize") {
-          continue;
-        } else if (op == "Mul") {
-          this->fused_ops_.push_back(op);
-        } else if (op == "Add") {
-          this->fused_ops_.push_back("BinaryAdd");
-        } else {
-          OP_REQUIRES(context, false,
-                      errors::Unimplemented(
-                          "BatchMatMul INT8 doesn't support post op: ", op));
-        }
+        if (fused_ops[i] == "Add") fused_ops[i] = "BinaryAdd";
+        if (fused_ops[i] == "Mul") fused_ops[i] = "BinaryMul";
       }
+    }
 
-      kInputIndexMinLhs = this->fused_ops_.size() + 2;
-      kInputIndexMaxLhs = this->fused_ops_.size() + 3;
-      kInputIndexMinRhs = this->fused_ops_.size() + 4;
-      kInputIndexMaxRhs = this->fused_ops_.size() + 5;
-
-      this->post_op_util_.AddOps(this->fused_ops_);
+    if (is_v2) {
+      kInputIndexMinLhs = fused_ops.size() + 1;
+      kInputIndexMaxLhs = fused_ops.size() + 2;
+      kInputIndexMinRhs = fused_ops.size() + 3;
+      kInputIndexMaxRhs = fused_ops.size() + 4;
     } else {
+      // Need to add Quantized flag for legacy API manually.
       this->post_op_util_.AddOps({"Quantized"});
 
-      if (context->HasAttr("fused_ops")) {
-        OP_REQUIRES_OK(context,
-                       context->GetAttr("fused_ops", &this->fused_ops_));
-      }
-      for (int i = 0; i < this->fused_ops_.size(); ++i) {
-        if (this->fused_ops_[i] == "Add") this->fused_ops_[i] = "BinaryAdd";
-      }
       if (context->HasAttr("num_args")) {
-        OP_REQUIRES_OK(context, context->GetAttr("num_args", &this->num_args_));
-      } else {
-        this->num_args_ = 0;
-      }
+        OP_REQUIRES_OK(context, context->GetAttr("num_args", &num_args));
 
-      if (context->HasAttr("fused_ops") && context->HasAttr("num_args")) {
-        if (this->fused_ops_ == std::vector<string>{"Mul"} ||
-            this->fused_ops_ == std::vector<string>{"Mul", "BinaryAdd"}) {
-          OP_REQUIRES(context, this->num_args_ == this->fused_ops_.size(),
+        if (context->HasAttr("fused_ops")) {
+          OP_REQUIRES(context, num_args == fused_ops.size(),
                       errors::InvalidArgument(
                           "_QuantizedFusedBatchMatMulV2AndDequantize should "
                           "have same number of additional "
                           "inputs as the number of fusions"));
-        } else {
-          OP_REQUIRES(
-              context, false,
-              errors::Unimplemented("Fusion is not implemented: [",
-                                    absl::StrJoin(this->fused_ops_, ","), "]"));
         }
       }
 
-      kInputIndexMinLhs = this->num_args_ + 2;
-      kInputIndexMaxLhs = this->num_args_ + 3;
-      kInputIndexMinRhs = this->num_args_ + 4;
-      kInputIndexMaxRhs = this->num_args_ + 5;
-
-      this->post_op_util_.AddOps(this->fused_ops_);
+      kInputIndexMinLhs = num_args + 2;
+      kInputIndexMaxLhs = num_args + 3;
+      kInputIndexMinRhs = num_args + 4;
+      kInputIndexMaxRhs = num_args + 5;
     }
+
+    OP_REQUIRES(context, this->post_op_util_.AddOps(fused_ops),
+                errors::Unimplemented(
+                    "Fusion is not implemented for QuantizedBatchMatMul: [",
+                    absl::StrJoin(fused_ops, ","), "]"));
 
     ITEX_CHECK_OK(ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false,
                                      &this->enable_cache_));
   }
+
   void AccumulateMulAndInt8Scale(OpKernelContext* context,
                                  float* mul_value) override {
     const float min_lhs =
@@ -573,10 +483,6 @@ class QuantizedBatchMatMulV2Op
   }
 
  private:
-  // INT8 kernel may need some post op information during runtime.
-  std::vector<string> fused_ops_;
-  int num_args_;
-
   int kInputIndexMinLhs;
   int kInputIndexMaxLhs;
   int kInputIndexMinRhs;

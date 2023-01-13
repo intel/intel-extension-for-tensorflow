@@ -83,15 +83,14 @@ class PostOpUtil {
   inline bool HasActivation() { return has_activation_; }
   inline bool HasAdd() { return has_add_; }
   inline bool HasBias() { return has_bias_; }
-  inline bool HasMul() { return has_mul_; }
-  inline bool HasBinary() { return has_binary_; }
+  inline bool HasBinary() { return binary_num_ != 0; }
   inline bool HasLeakyRelu() { return has_leaky_relu_; }
 
-  // TODO(itex): currently both INT8 output scale and batchmatmul + mul
-  // fusion use HasOutputScales(). We might need functions to separate
-  // them
   inline bool HasOutputScales() { return has_output_scales_; }
   inline bool HasRequantize() { return has_requantize_; }
+
+  // Record op number to support multiple Binary post op fusion.
+  inline int GetBinaryNum() { return binary_num_; }
 
  private:
   // Return the read-only table contains supported `PostOpInfo`.
@@ -122,10 +121,6 @@ class PostOpUtil {
   // Note `BiasAdd` is a special case, it doesn't have post op info because
   // it will be fused in primitive directly.
   bool has_bias_ = false;
-  // Used in BatchMatMul + Mul fusion, currently implemented by
-  // set_output_scales
-  bool has_mul_ = false;
-  bool has_binary_ = false;
   // Use this flag to check whether need to set alpha for `LeakyRelu`.
   bool has_leaky_relu_ = false;
 
@@ -133,6 +128,8 @@ class PostOpUtil {
   bool has_output_scales_ = false;
   bool has_requantize_ = false;
 
+  // Helper var for multilpe Binary post op fusion.
+  int binary_num_ = 0;
   // Helper vars for post op execution.
   float leaky_relu_alpha_ = NAN;
 };

@@ -33,6 +33,7 @@ constexpr char kAssignVariableOp[] = "AssignVariableOp";
 constexpr char kBatchMatMulV2[] = "BatchMatMulV2";
 constexpr char kBiasAdd[] = "BiasAdd";
 constexpr char kBinaryAdd[] = "BinaryAdd";
+constexpr char kBinaryMul[] = "BinaryMul";
 constexpr char kCast[] = "Cast";
 constexpr char kConcatV2[] = "ConcatV2";
 constexpr char kConst[] = "Const";

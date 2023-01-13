@@ -3261,7 +3261,7 @@ Status AddFusedContractionNode(RemapperContext* ctx,
   fused_op.set_op(kFusedBatchMatMul);
 
   CopyAllAttrs(contraction, &fused_op);
-  SetFusedOpAttributes(&fused_op, {"Mul"}, 1);
+  SetFusedOpAttributes(&fused_op, {kBinaryMul}, 1);
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
