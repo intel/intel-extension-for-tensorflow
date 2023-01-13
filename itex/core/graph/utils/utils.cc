@@ -226,13 +226,13 @@ bool NodeIsOnDevice(const char* device_name, const NodeDef* node) {
 bool NodeIsOnCpu(const NodeDef* node) {
   string task, device;
   return DeviceNameUtils::SplitDeviceName(node->device(), &task, &device) &&
-         absl::StartsWith(GetDeviceBackendName(device), DEVICE_CPU);
+         absl::StartsWith(GetDeviceBackendName(device.c_str()), DEVICE_CPU);
 }
 
 bool NodeIsOnGpu(const NodeDef* node) {
   string task, device;
   return DeviceNameUtils::SplitDeviceName(node->device(), &task, &device) &&
-         absl::StartsWith(GetDeviceBackendName(device), DEVICE_GPU);
+         absl::StartsWith(GetDeviceBackendName(device.c_str()), DEVICE_GPU);
 }
 
 bool HasControlInputs(const NodeDef& node) {

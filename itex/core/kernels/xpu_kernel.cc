@@ -28,7 +28,7 @@ limitations under the License.
 
 void TF_InitKernel() {
   // Register generic GPU kernels.
-  ITEX_BACKEND backend = itex::itex_get_backend();
+  ITEX_BACKEND backend = itex_get_backend();
   switch (backend) {
     case ITEX_BACKEND_GPU:
 #ifndef INTEL_CPU_ONLY

@@ -20,6 +20,10 @@ limitations under the License.
 
 #include "itex/core/utils/types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 constexpr char DEVICE_XPU_NAME[] = "XPU";
 
 enum ITEX_BACKEND {
@@ -29,12 +33,10 @@ enum ITEX_BACKEND {
   ITEX_BACKEND_DEFAULT = ITEX_BACKEND_GPU
 };
 
-namespace itex {
-
 ITEX_BACKEND itex_get_backend();
 void itex_set_backend(const char* backend);
-void itex_backend_to_string(ITEX_BACKEND backend, std::string* backend_string);
-void itex_freeze_backend(const char* backend);
+const char* itex_backend_to_string(ITEX_BACKEND backend);
+void itex_freeze_backend_internel(const char* backend);
 void itex_freeze_backend(ITEX_BACKEND backend);
 
 // Get the real backend name of given device.
@@ -44,8 +46,9 @@ void itex_freeze_backend(ITEX_BACKEND backend);
 //   3) XPU with GPU backend: DEVICE_GPU;
 //   4) TODO(itex): XPU with other backend
 // Return value will never be nullptr.
-const char* GetDeviceBackendName(const std::string& device_name);
+const char* GetDeviceBackendName(const char* device_name);
 
-}  // namespace itex
-
+#ifdef __cplusplus
+}
+#endif
 #endif  // ITEX_CORE_DEVICES_DEVICE_BACKEND_UTIL_H_

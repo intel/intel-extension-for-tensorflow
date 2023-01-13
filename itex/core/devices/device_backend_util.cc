@@ -17,12 +17,10 @@ limitations under the License.
 
 #include <cstring>
 
-namespace itex {
-
 static const char* frozen_backend = nullptr;
 static bool backend_is_frozen = false;
 
-void itex_freeze_backend(const char* backend) {
+void itex_freeze_backend_internel(const char* backend) {
   if (strcasecmp(backend, "GPU") == 0) {
     frozen_backend = itex::DEVICE_GPU;
   } else if (strcasecmp(backend, "CPU") == 0) {
@@ -84,48 +82,48 @@ void itex_set_backend(const char* backend) {
     return;
   }
 
-  itex_freeze_backend(backend);
+  itex_freeze_backend_internel(backend);
 }
 
-void itex_backend_to_string(ITEX_BACKEND backend, std::string* backend_string) {
+const char* itex_backend_to_string(ITEX_BACKEND backend) {
+  const char* backend_string;
   switch (backend) {
     case ITEX_BACKEND_GPU:
-      *backend_string = "GPU";
+      backend_string = const_cast<char*>("GPU");
       break;
     case ITEX_BACKEND_CPU:
-      *backend_string = "CPU";
+      backend_string = const_cast<char*>("CPU");
       break;
     case ITEX_BACKEND_AUTO:
-      *backend_string = "AUTO";
+      backend_string = const_cast<char*>("AUTO");
       break;
     default:
       ITEX_LOG(INFO) << "Unkown ITEX_BACKEND: " << backend;
-      *backend_string = "";
+      backend_string = const_cast<char*>("");
       break;
   }
+  return backend_string;
 }
 
-const char* GetDeviceBackendName(const std::string& device_name) {
-  if (device_name.find(DEVICE_XPU) != std::string::npos) {
+const char* GetDeviceBackendName(const char* device_name) {
+  if (strstr(device_name, itex::DEVICE_XPU) != nullptr) {
     ITEX_BACKEND backend = itex_get_backend();
     switch (backend) {
       case ITEX_BACKEND_GPU:
-        return DEVICE_GPU;
+        return itex::DEVICE_GPU;
       case ITEX_BACKEND_CPU:
-        return DEVICE_CPU;
+        return itex::DEVICE_CPU;
       case ITEX_BACKEND_AUTO:
-        return DEVICE_AUTO;
+        return itex::DEVICE_AUTO;
       default:
         return "";
     }
 
-  } else if (device_name.find(itex::DEVICE_GPU) != std::string::npos) {
-    return DEVICE_GPU;
-  } else if (device_name.find(itex::DEVICE_CPU) != std::string::npos) {
-    return DEVICE_CPU;
+  } else if (strstr(device_name, itex::DEVICE_GPU) != nullptr) {
+    return itex::DEVICE_GPU;
+  } else if (strstr(device_name, itex::DEVICE_CPU) != nullptr) {
+    return itex::DEVICE_CPU;
   } else {
     ITEX_CHECK(false) << "Unsupported device type: " << device_name;
   }
 }
-
-}  // namespace itex

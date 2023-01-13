@@ -24,9 +24,8 @@ namespace py = pybind11;
 
 namespace itex {
 static py::object ITEX_GetBackend() {
-  std::string backend;
-  itex_backend_to_string(itex_get_backend(), &backend);
-  PyObject* result = PyBytes_FromStringAndSize(backend.data(), backend.size());
+  const char* backend = itex_backend_to_string(itex_get_backend());
+  PyObject* result = PyBytes_FromStringAndSize(backend, strlen(backend));
   if (PyErr_Occurred() || result == nullptr) {
     throw py::error_already_set();
   }
