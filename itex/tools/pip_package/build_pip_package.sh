@@ -32,15 +32,14 @@ function real_path() {
 }
 
 function get_git_desc() {
-  git_version=`git describe --always --abbrev=8`
+  git_version=`git rev-parse --short=8 HEAD`
   echo $git_version
 }
 
 function get_compiler_version() {
   compiler_path=`cat .itex_configure.bazelrc | grep -Eo 'DPCPP_TOOLKIT_PATH=.*$' | cut -d '=' -f 2 | cut -d '"' -f 2`
   version=`${compiler_path}/bin/icx --version | grep -Eo '\([a-zA-Z0-9.]{10,}\)' | grep -Eo '[a-zA-Z0-9.]{10,}'`
-  gcc_version=`/usr/bin/gcc --version | grep gcc | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,}$'`
-  echo "gcc-${gcc_version}, dpcpp-${version}"
+  echo "dpcpp-${version}"
 }
 
 function get_onednn_git_version() {
@@ -64,7 +63,7 @@ function emit_version_info() {
   fi
   echo "__git_desc__= '`get_git_desc`'" >> $1
   echo "VERSION = __version__" >> $1
-  echo "GIT_VERSION = __git_desc__ if len(__git_desc__) > 8 else 'v' + __version__ + '-' + __git_desc__" >> $1
+  echo "GIT_VERSION = 'v' + __version__ + '-' + __git_desc__" >> $1
   echo "COMPILER_VERSION = '`get_compiler_version`'" >> $1
   if [ -f ${onednn_gpu_path} ]; then
     onednn_path=${onednn_gpu_path}
