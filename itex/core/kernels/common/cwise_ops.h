@@ -888,17 +888,8 @@ struct acosh : base<T, Eigen::internal::scalar_acosh_op<T>> {};
 template <typename T>
 struct cosh : base<T, Eigen::internal::scalar_cosh_op<T>> {};
 
-template <typename Scalar>
-struct scalar_atan2_op {
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_atan2_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar
-  operator()(const Scalar& y, const Scalar& x) const {
-    return std::atan2(y, x);
-  }
-};
-
 template <typename T>
-struct atan2 : base<T, scalar_atan2_op<T>> {};
+struct atan2 : base<T, Eigen::internal::scalar_atan2_op<T, T>> {};
 
 template <typename T>
 struct squared_difference

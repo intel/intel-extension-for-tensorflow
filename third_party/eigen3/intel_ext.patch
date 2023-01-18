@@ -94,7 +94,7 @@ index f44b77831..992ec5124 100644
  // Specialized functors to enable the processing of complex numbers
  // on CUDA devices
 diff --git a/Eigen/src/Core/GenericPacketMath.h b/Eigen/src/Core/GenericPacketMath.h
-index ebae1a34f..fe7332db4 100644
+index ebae1a34f..663c9cffa 100644
 --- a/Eigen/src/Core/GenericPacketMath.h
 +++ b/Eigen/src/Core/GenericPacketMath.h
 @@ -107,6 +107,7 @@ template<typename T> struct packet_traits : default_packet_traits
@@ -117,10 +117,14 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns -a (coeff-wise) */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pnegate(const Packet& a) { return -a; }
-@@ -223,6 +229,15 @@ pmin(const Packet& a, const Packet& b) { return numext::mini(a, b); }
+@@ -223,6 +229,19 @@ pmin(const Packet& a, const Packet& b) { return numext::mini(a, b); }
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pmax(const Packet& a, const Packet& b) { return numext::maxi(a, b); }
  
++/** \internal \returns the pow of \a a and \a exponent b  (coeff-wise) */
++template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
++ppow(const Packet& a, const Packet& b) { return numext::pow(a, b); }
++
 +template<typename OutPacket, typename InPacket> EIGEN_DEVICE_FUNC inline OutPacket 
 +pisnan(const InPacket& a) { using numext::isnan; return isnan(a); }
 +
@@ -133,7 +137,7 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns the absolute value of \a a */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pabs(const Packet& a) { using std::abs; return abs(a); }
-@@ -293,7 +308,14 @@ template<> EIGEN_DEVICE_FUNC inline double pzero<double>(const double& a) {
+@@ -293,7 +312,14 @@ template<> EIGEN_DEVICE_FUNC inline double pzero<double>(const double& a) {
  
  /** \internal \returns one bits */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
@@ -149,7 +153,7 @@ index ebae1a34f..fe7332db4 100644
  
  template <typename RealScalar>
  EIGEN_DEVICE_FUNC inline std::complex<RealScalar> ptrue(const std::complex<RealScalar>& /*a*/) {
-@@ -318,6 +340,9 @@ pxor(const Packet& a, const Packet& b) { return a ^ b; }
+@@ -318,6 +344,9 @@ pxor(const Packet& a, const Packet& b) { return a ^ b; }
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pandnot(const Packet& a, const Packet& b) { return pand(a, pxor(ptrue(b), b)); }
  
@@ -159,7 +163,7 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns a <= b as a bit mask */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pcmp_le(const Packet& a, const Packet& b)  { return a<=b ? ptrue(a) : pzero(a); }
-@@ -334,6 +359,24 @@ pcmp_eq(const Packet& a, const Packet& b) { return a==b ? ptrue(a) : pzero(a); }
+@@ -334,6 +363,24 @@ pcmp_eq(const Packet& a, const Packet& b) { return a==b ? ptrue(a) : pzero(a); }
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pcmp_lt_or_nan(const Packet& a, const Packet& b) { return a>=b ? pzero(a) : ptrue(a); }
  
@@ -184,6 +188,17 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns \a or \b for each field in packet according to \mask */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pselect(const Packet& mask, const Packet& a, const Packet& b) {
+@@ -573,6 +620,10 @@ Packet pacos(const Packet& a) { EIGEN_USING_STD_MATH(acos); return acos(a); }
+ template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+ Packet patan(const Packet& a) { EIGEN_USING_STD_MATH(atan); return atan(a); }
+ 
++/** \internal \returns the arc tangent of \a a (coeff-wise) */
++template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
++Packet patan2(const Packet& a, const Packet& b) { EIGEN_USING_STD_MATH(atan2); return atan2(a, b); }
++
+ /** \internal \returns the hyperbolic sine of \a a (coeff-wise) */
+ template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+ Packet psinh(const Packet& a) { EIGEN_USING_STD_MATH(sinh); return sinh(a); }
 diff --git a/Eigen/src/Core/MathFunctions.h b/Eigen/src/Core/MathFunctions.h
 index 96cb24fcb..1aea7f4ff 100644
 --- a/Eigen/src/Core/MathFunctions.h
@@ -385,10 +400,10 @@ index 76f3366d7..e4cbafc05 100644
    // output.value = static_cast<uint16_t>(input);
 diff --git a/Eigen/src/Core/arch/DPCPP/BFloat16.h b/Eigen/src/Core/arch/DPCPP/BFloat16.h
 new file mode 100644
-index 000000000..f790d8ce6
+index 000000000..12ae9bd43
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/BFloat16.h
-@@ -0,0 +1,694 @@
+@@ -0,0 +1,697 @@
 +/* Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 +
 +Licensed under the Apache License, Version 2.0 (the "License");
@@ -929,6 +944,9 @@ index 000000000..f790d8ce6
 +}
 +EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 atan(const bfloat16& a) {
 +  return bfloat16(sycl::atan(float(a)));
++}
++EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 atan2(const bfloat16& a, const bfloat16& b) {
++  return bfloat16(sycl::atan2(float(a), float(b)));
 +}
 +EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 sinh(const bfloat16& a) {
 +  return bfloat16(sycl::sinh(float(a)));
@@ -2324,10 +2342,10 @@ index 000000000..0632da9e1
 +#endif  // EIGEN_INTEROP_HEADERS_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/MathFunctions.h b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
 new file mode 100644
-index 000000000..7835df4a0
+index 000000000..75cd0193e
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
-@@ -0,0 +1,539 @@
+@@ -0,0 +1,533 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -2706,72 +2724,66 @@ index 000000000..7835df4a0
 +SYCL_PACKET_MATH_UNARY_BFLOAT16(lgamma)
 +#undef SYCL_PACKET_MATH_UNARY_BFLOAT16
 +
-+#define SYCL_PMIN(packet_type, expr)                                   \
-+  template <>                                                          \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pmin<packet_type>( \
-+      const packet_type& a, const packet_type& b) {                    \
-+    return expr;                                                       \
++#define SYCL_PACKET_MATH_BINARY(packet_type, op, expr)                  \
++  template <>                                                           \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type p##op<packet_type>( \
++  const packet_type& a, const packet_type& b) {                         \
++    return expr;                                                        \
 +  }
 +
-+SYCL_PMIN(sycl::cl_float4, sycl::fmin(a, b))
-+SYCL_PMIN(sycl::cl_half2, sycl::fmin(a, b))
-+#undef SYCL_PMIN
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, min, sycl::fmin(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, min, sycl::fmin(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, max, sycl::fmax(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, max, sycl::fmax(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, pow, sycl::pow(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, pow, sycl::pow(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, atan2, sycl::atan2(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, atan2, sycl::atan2(a, b))
 +
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4h2 pmin<Packet4h2>(
-+    const Packet4h2& a, const Packet4h2& b) {
-+  Packet4h2 r;
-+  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);
-+  const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a);
-+  const sycl::cl_half2* b_alias = reinterpret_cast<const sycl::cl_half2*>(&b);
-+  r_alias[0] = pmin(a_alias[0], b_alias[0]);
-+  r_alias[1] = pmin(a_alias[1], b_alias[1]);
-+  r_alias[2] = pmin(a_alias[2], b_alias[2]);
-+  r_alias[3] = pmin(a_alias[3], b_alias[3]);
-+  return r;
++#define SYCL_PACKET_MATH_BINARY_HALF8(expr)                                    \
++template <>                                                                    \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4h2 p##expr<Packet4h2>(            \
++    const Packet4h2& a, const Packet4h2& b) {                                  \
++  Packet4h2 r;                                                                 \
++  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);            \
++  const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a); \
++  const sycl::cl_half2* b_alias = reinterpret_cast<const sycl::cl_half2*>(&b); \
++  r_alias[0] = p##expr(a_alias[0], b_alias[0]);                                \
++  r_alias[1] = p##expr(a_alias[1], b_alias[1]);                                \
++  r_alias[2] = p##expr(a_alias[2], b_alias[2]);                                \
++  r_alias[3] = p##expr(a_alias[3], b_alias[3]);                                \
++  return r;                                                                    \
 +}
 +
-+#define SYCL_PMAX(packet_type, expr)                                   \
-+  template <>                                                          \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pmax<packet_type>( \
-+      const packet_type& a, const packet_type& b) {                    \
-+    return expr;                                                       \
-+  }
++SYCL_PACKET_MATH_BINARY_HALF8(max)
++SYCL_PACKET_MATH_BINARY_HALF8(min)
++SYCL_PACKET_MATH_BINARY_HALF8(pow)
++SYCL_PACKET_MATH_BINARY_HALF8(atan2)
++#undef SYCL_PACKET_MATH_BINARY_HALF8
 +
-+SYCL_PMAX(sycl::cl_float4, sycl::fmax(a, b))
-+SYCL_PMAX(sycl::cl_half2, sycl::fmax(a, b))
-+#undef SYCL_PMAX
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4h2 pmax<Packet4h2>(
-+    const Packet4h2& a, const Packet4h2& b) {
-+  Packet4h2 r;
-+  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);
-+  const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a);
-+  const sycl::cl_half2* b_alias = reinterpret_cast<const sycl::cl_half2*>(&b);
-+  r_alias[0] = pmax(a_alias[0], b_alias[0]);
-+  r_alias[1] = pmax(a_alias[1], b_alias[1]);
-+  r_alias[2] = pmax(a_alias[2], b_alias[2]);
-+  r_alias[3] = pmax(a_alias[3], b_alias[3]);
-+  return r;
-+}
-+
-+#define SYCL_PACKET_MATH_BINARY_BFLOAT16(expr, in_type, out_type)               \
++#define SYCL_PACKET_MATH_BINARY_BFLOAT16(op, expr, in_type, out_type)           \
 +  template <>                                                                   \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE in_type p##expr<in_type>(               \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE in_type p##op<in_type>(                 \
 +      const in_type& a, const in_type& b) {                                     \
-+    out_type r = sycl::f##expr(                                                 \
++    out_type r = sycl::expr(                                                    \
 +        Eigen::bfloat16_impl::Bf16ToF32<unpacket_traits<in_type>::size>(a),     \
 +        Eigen::bfloat16_impl::Bf16ToF32<unpacket_traits<in_type>::size>(b));    \
 +    return Eigen::bfloat16_impl::F32ToBf16<unpacket_traits<out_type>::size>(r); \
 +  }
 +
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(max, Packet2bf16, Packet2f32)
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(min, Packet2bf16, Packet2f32)
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(max, Packet4bf16, Packet4f32)
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(min, Packet4bf16, Packet4f32)
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(max, Packet8bf16, Packet8f32)
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(min, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, fmax, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, fmin, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, fmax, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, fmin, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, fmax, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, fmin, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(pow, pow, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(pow, pow, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(pow, pow, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(atan2, atan2, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(atan2, atan2, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(atan2, atan2, Packet8bf16, Packet8f32)
++
 +#undef SYCL_PACKET_MATH_BINARY_BFLOAT16
 +
 +#define SYCL_PISNAN(INTYPE, EXPR)                            \
@@ -5958,7 +5970,7 @@ index 9208ab21d..05065da30 100644
  
  #endif
 diff --git a/Eigen/src/Core/functors/BinaryFunctors.h b/Eigen/src/Core/functors/BinaryFunctors.h
-index d8b7b1eba..f484d3a92 100644
+index d8b7b1eba..5d9742ae0 100644
 --- a/Eigen/src/Core/functors/BinaryFunctors.h
 +++ b/Eigen/src/Core/functors/BinaryFunctors.h
 @@ -42,7 +42,7 @@ struct scalar_sum_op : binary_op_base<LhsScalar,RhsScalar>
@@ -5970,6 +5982,137 @@ index d8b7b1eba..f484d3a92 100644
    template<typename Packet>
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
    { return internal::predux(a); }
+@@ -50,7 +50,7 @@ struct scalar_sum_op : binary_op_base<LhsScalar,RhsScalar>
+ template<typename LhsScalar,typename RhsScalar>
+ struct functor_traits<scalar_sum_op<LhsScalar,RhsScalar> > {
+   enum {
+-    Cost = (NumTraits<LhsScalar>::AddCost+NumTraits<RhsScalar>::AddCost)/2, // rough estimate!
++    Cost = (int(NumTraits<LhsScalar>::AddCost) + int(NumTraits<RhsScalar>::AddCost)) / 2, // rough estimate!
+     PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasAdd && packet_traits<RhsScalar>::HasAdd
+     // TODO vectorize mixed sum
+   };
+@@ -88,7 +88,7 @@ struct scalar_product_op  : binary_op_base<LhsScalar,RhsScalar>
+ template<typename LhsScalar,typename RhsScalar>
+ struct functor_traits<scalar_product_op<LhsScalar,RhsScalar> > {
+   enum {
+-    Cost = (NumTraits<LhsScalar>::MulCost + NumTraits<RhsScalar>::MulCost)/2, // rough estimate!
++    Cost = (int(NumTraits<LhsScalar>::MulCost) + int(NumTraits<RhsScalar>::MulCost))/2, // rough estimate!
+     PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasMul && packet_traits<RhsScalar>::HasMul
+     // TODO vectorize mixed product
+   };
+@@ -405,10 +405,23 @@ struct scalar_pow_op  : binary_op_base<Scalar,Exponent>
+ #endif
+   EIGEN_DEVICE_FUNC
+   inline result_type operator() (const Scalar& a, const Exponent& b) const { return numext::pow(a, b); }
++
++  template<typename Packet>
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const
++  {
++    return ppow(a,b);
++  }
+ };
++
+ template<typename Scalar, typename Exponent>
+ struct functor_traits<scalar_pow_op<Scalar,Exponent> > {
+-  enum { Cost = 5 * NumTraits<Scalar>::MulCost, PacketAccess = false };
++  enum { 
++    Cost = 5 * NumTraits<Scalar>::MulCost,
++    PacketAccess = (!NumTraits<Scalar>::IsComplex && !NumTraits<Scalar>::IsInteger &&
++                    packet_traits<Scalar>::HasExp && packet_traits<Scalar>::HasLog &&
++                    packet_traits<Scalar>::HasRound && packet_traits<Scalar>::HasCmp
++                   )
++  };
+ };
+ 
+ 
+@@ -439,7 +452,7 @@ struct scalar_difference_op : binary_op_base<LhsScalar,RhsScalar>
+ template<typename LhsScalar,typename RhsScalar>
+ struct functor_traits<scalar_difference_op<LhsScalar,RhsScalar> > {
+   enum {
+-    Cost = (NumTraits<LhsScalar>::AddCost+NumTraits<RhsScalar>::AddCost)/2,
++    Cost = (int(NumTraits<LhsScalar>::AddCost) + int(NumTraits<RhsScalar>::AddCost)) / 2,
+     PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasSub && packet_traits<RhsScalar>::HasSub
+   };
+ };
+@@ -564,6 +577,78 @@ struct functor_traits<scalar_absolute_difference_op<LhsScalar,RhsScalar> > {
+ };
+ 
+ 
++template <typename LhsScalar, typename RhsScalar>
++struct scalar_atan2_op {
++  using Scalar = LhsScalar;
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE std::enable_if_t<is_same<LhsScalar,RhsScalar>::value, Scalar>
++  operator()(const Scalar& y, const Scalar& x) const {
++    EIGEN_USING_STD(atan2);
++    return static_cast<Scalar>(atan2(y, x));
++  }
++  template <typename Packet>
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
++      std::enable_if_t<is_same<LhsScalar, RhsScalar>::value, Packet>
++      packetOp(const Packet& y, const Packet& x) const {
++#if 0
++    // See https://en.cppreference.com/w/cpp/numeric/math/atan2
++    // for how corner cases are supposed to be handled according to the
++    // IEEE floating-point standard (IEC 60559).
++
++    const Packet kSignMask = pset1<Packet>(-Scalar(0));
++    const Packet kPi = pset1<Packet>(Scalar(EIGEN_PI));
++    const Packet kPiO2 = pset1<Packet>(Scalar(EIGEN_PI / 2));
++    const Packet kPiO4 = pset1<Packet>(Scalar(EIGEN_PI / 4));
++    const Packet k3PiO4 = pset1<Packet>(Scalar(3.0 * (EIGEN_PI / 4)));
++
++    // Various predicates about the inputs.
++    Packet x_signbit = pand(x, kSignMask);
++    Packet x_has_signbit = pcmp_lt(por(x_signbit, kPi), pzero(x));
++    Packet x_is_zero = pcmp_eq(x, pzero(x));
++    Packet x_neg = pandnot(x_has_signbit, x_is_zero);
++
++    Packet y_signbit = pand(y, kSignMask);
++    Packet y_is_zero = pcmp_eq(y, pzero(y));
++    Packet x_is_not_nan = pcmp_eq(x, x);
++    Packet y_is_not_nan = pcmp_eq(y, y);
++
++    // Compute the normal case. Notice that we expect that
++    // finite/infinite = +/-0 here.
++    Packet result = patan(pdiv(y, x));
++
++    // Compute shift for when x != 0 and y != 0.
++    Packet shift = pselect(x_neg, por(kPi, y_signbit), pzero(x));
++
++    // Special cases:
++    //   Handle  x = +/-inf && y = +/-inf.
++    Packet is_not_nan = pcmp_eq(result, result);
++    result =
++        pselect(is_not_nan, padd(shift, result),
++                pselect(x_neg, por(k3PiO4, y_signbit), por(kPiO4, y_signbit)));
++    //   Handle x == +/-0.
++    result = pselect(
++        x_is_zero, pselect(y_is_zero, pzero(y), por(y_signbit, kPiO2)), result);
++    //   Handle y == +/-0.
++    result = pselect(
++        y_is_zero,
++        pselect(x_has_signbit, por(y_signbit, kPi), por(y_signbit, pzero(y))),
++        result);
++    // Handle NaN inputs.
++    Packet kQNaN = pset1<Packet>(NumTraits<Scalar>::quiet_NaN());
++    return pselect(pand(x_is_not_nan, y_is_not_nan), result, kQNaN);
++#else
++    return internal::patan2(y, x);
++#endif
++  }
++};
++
++template<typename LhsScalar,typename RhsScalar>
++    struct functor_traits<scalar_atan2_op<LhsScalar, RhsScalar>> {
++  enum {
++    PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasATan && packet_traits<LhsScalar>::HasDiv && !NumTraits<LhsScalar>::IsInteger && !NumTraits<LhsScalar>::IsComplex,
++    Cost =
++        scalar_div_cost<LhsScalar, PacketAccess>::value + 5 * NumTraits<LhsScalar>::MulCost + 5 * NumTraits<LhsScalar>::AddCost
++  };
++};
+ 
+ //---------- binary functors bound to a constant, thus appearing as a unary functor ----------
+ 
 diff --git a/Eigen/src/Core/functors/NullaryFunctors.h b/Eigen/src/Core/functors/NullaryFunctors.h
 index 4aa33a19f..435e005c0 100644
 --- a/Eigen/src/Core/functors/NullaryFunctors.h
