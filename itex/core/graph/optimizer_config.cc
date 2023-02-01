@@ -42,6 +42,7 @@ void HelperSetEnvOptimzerConfig(std::string new_name, std::string old_name,
 }  // namespace
 
 void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
+  bool sharding_flag;
   bool onednn_graph_flag;
   bool onednn_graph_all_type_flag;
   bool onednn_graph_compiler_backend_flag;
@@ -55,6 +56,16 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
 #define USER_IS_ON(CFG) cfg_.graph_options().CFG() == itex::Toggle::ON
 #define USER_IS_OFF(CFG) cfg_.graph_options().CFG() == itex::Toggle::OFF
 #define USER_IS_SET(CFG) cfg_.graph_options().CFG()
+
+  if (USER_IS_SET(sharding)) {
+    sharding_flag = false;
+    if (USER_IS_ON(sharding)) {
+      sharding_flag = true;
+    }
+  } else {
+    ITEX_CHECK_OK(itex::ReadBoolFromEnvVar(
+        "ITEX_SHARDING", enable_itex_sharding, &sharding_flag));
+  }
 
   if (USER_IS_SET(onednn_graph)) {
     onednn_graph_flag = false;
@@ -134,6 +145,7 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
 #undef USER_IS_SET
 
   // Set OptimizerConfigFlags.
+  opt_config_flags->enable_sharding = sharding_flag;
   opt_config_flags->enable_onednn_graph = onednn_graph_flag;
   opt_config_flags->enable_onednn_graph_all_type = onednn_graph_all_type_flag;
   opt_config_flags->enable_onednn_graph_compiler_backend =

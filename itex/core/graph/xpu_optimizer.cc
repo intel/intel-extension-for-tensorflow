@@ -73,6 +73,15 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
   GraphDef optimized_graph_def = graph_def;
   auto config = GetOptimizerConfigFlags();
 
+  if (config.enable_sharding) {
+    optimized_graph_def.Swap(&graph_def);
+    // TODO(itex): enable the pass when the PR is merged.
+    // SET_STATUS_IF_ERROR(tf_status,
+    //                     mlir::tfg::RunMlirImportExport(graph_def,
+    //                     &optimized_graph_def));
+    optimized_graph_def = graph_def;
+  }
+
   if (config.enable_remapper) {
     // We don't want full scope remapper here if oneDNN graph is enabled.
     for (int i = 0; i < config.remapper_run_pass; ++i) {

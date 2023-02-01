@@ -48,6 +48,11 @@ message GraphOptions {
   // graph.
   Toggle auto_mixed_precision = 4;
   AutoMixedPrecisionOptions auto_mixed_precision_options = 5;
+
+  // Auto sharding (default is OFF)
+  // Shard single device graph on multiple devices.
+  Toggle sharding = 6;
+  ShardingConfig sharding_config = 7;
 }
 
 message ConfigProto {
@@ -83,4 +88,24 @@ message DebugOptions {
   string auto_mixed_precision_log_path = 1;
   // Run the graph with sync mode (default is OFF).
   Toggle xpu_force_sync = 2;
+}
+
+message ShardingConfig {
+  bool auto_mode = 1;
+  // A list of devices and their configs to run auto sharding.
+  repeated ShardingDevices devices = 2;
+}
+
+message ShardingDevices {
+  // Automatically select best config based on cost model.
+  string device_type = 1;
+  // Device number for each device type that is allowed for auto sharding.
+  int32 device_num = 2;
+  // Batch size on each device.
+  int32 batch_size = 3;
+  // Accumulate stage number is used for gradient accumulation, which means
+  // running a configured number of steps without updating the model variables
+  // while accumulating the gradients of those steps and then using the
+  // accumulated gradients to compute the variable updates.
+  int32 stage_num = 4;
 }
