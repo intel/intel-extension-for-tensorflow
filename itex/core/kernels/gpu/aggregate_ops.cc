@@ -148,9 +148,10 @@ class AddNOp<Device, Variant> : public OpKernel {
         a.flat<dtype>() + b.flat<dtype>();                 \
     break;
         TF_CALL_NUMBER_TYPES(DTYPE_CASE)
-        default:
-          break;
 #undef DTYPE_CASE
+        default:
+          ITEX_LOG(FATAL) << "Trying to compute AddN for unsupported dtype: "
+                          << DataTypeString(out.dtype());
       }
     };
 
@@ -158,7 +159,7 @@ class AddNOp<Device, Variant> : public OpKernel {
     TF_Status* tf_status = TF_NewStatus();
     TF_AddNVariant(tf_ctx, binary_add_func, tf_status);
     Status status = StatusFromTF_Status(tf_status);
-    ITEX_CHECK_OK(status);
+    OP_REQUIRES_OK(ctx, status);
     TF_DeleteStatus(tf_status);
   }
 };
