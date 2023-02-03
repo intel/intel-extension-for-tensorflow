@@ -21,7 +21,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "itex/core/kernels/gpu/reduction_itex_gpu_kernels.h"
+#include "itex/core/kernels/gpu/col_reduction_kernels.h"
 #include "itex/core/kernels/gpu/rnn_ops.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"

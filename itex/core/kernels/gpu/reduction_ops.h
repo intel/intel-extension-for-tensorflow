@@ -18,7 +18,9 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_REDUCTION_OPS_H_
 #define ITEX_CORE_KERNELS_GPU_REDUCTION_OPS_H_
 
-#include "itex/core/kernels/gpu/reduction_itex_gpu_kernels.h"
+#include "itex/core/kernels/gpu/col_reduction_kernels.h"
+#include "itex/core/kernels/gpu/full_reduction_kernels.h"
+#include "itex/core/kernels/gpu/row_reduction_kernels.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"

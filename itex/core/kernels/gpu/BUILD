@@ -9,7 +9,7 @@ itex_xpu_library(
     srcs = ["aggregate_ops.cc"],
     hdrs = [
         "aggregate_ops.h",
-        "reduction_itex_gpu_kernels.h",
+        "full_reduction_kernels.h",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -674,9 +674,11 @@ itex_xpu_library(
         "in_topk_op_gpu.cc",
     ],
     hdrs = [
+        "col_reduction_kernels.h",
+        "full_reduction_kernels.h",
         "in_topk_op.h",
-        "reduction_itex_gpu_kernels.h",
         "reduction_ops.h",
+        "row_reduction_kernels.h",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -706,7 +708,7 @@ itex_xpu_library(
 itex_xpu_library(
     name = "l2loss_op",
     srcs = ["l2loss_op.cc"],
-    hdrs = ["reduction_itex_gpu_kernels.h"],
+    hdrs = ["full_reduction_kernels.h"],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
@@ -917,9 +919,11 @@ itex_xpu_library(
         "reduction_ops_sum.cc",
     ],
     hdrs = [
-        "reduction_itex_gpu_kernels.h",
+        "col_reduction_kernels.h",
+        "full_reduction_kernels.h",
         "reduction_ops.h",
         "reduction_ops_common.h",
+        "row_reduction_kernels.h",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -952,7 +956,7 @@ itex_xpu_library(
         "rnn_ops_gpu.cc",
     ],
     hdrs = [
-        "reduction_itex_gpu_kernels.h",
+        "col_reduction_kernels.h",
         "rnn_ops.h",
         "rnn_ops_gpu.h",
         "//itex/core/kernels/common:matmul_hdrs",

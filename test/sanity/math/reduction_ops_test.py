@@ -125,6 +125,27 @@ class SumReductionTest(BaseReductionTest):
                                                           np.ndarray):
             reduction_axes = tuple(reduction_axes)
         return np.sum(x, axis=reduction_axes, keepdims=keepdims)
+        
+    @test_util.run_deprecated_v1
+    def testVecColReduciton(self):
+        arr = np.ones([2, 128 * 128 * 128, 32], dtype=np.float32)
+        row_sum = np.sum(arr, axis=1)
+
+        with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+            tf_row_sum = self._tf_reduce(arr, 1, False)
+            tf_out_row = self.evaluate(tf_row_sum)
+        self.assertAllClose(row_sum, tf_out_row)        
+
+    @test_util.run_deprecated_v1
+    def testRowReduciton(self):
+      for size in [32, 33, 256 * 8 * 4, 256 * 8 * 4 + 1]:
+        arr = np.ones([2, size], dtype=np.float32)
+        row_sum = np.sum(arr, axis=1)
+
+        with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+            tf_row_sum = self._tf_reduce(arr, 1, False)
+            tf_out_row = self.evaluate(tf_row_sum)
+        self.assertAllClose(row_sum, tf_out_row)          
 
     @test_util.run_deprecated_v1
     def testFloat32(self):

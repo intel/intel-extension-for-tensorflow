@@ -25,6 +25,23 @@ limitations under the License.
 
 namespace itex {
 
+namespace reduciton_helper {
+template <typename T>
+using LocalAcc = sycl::accessor<T, 1, sycl::access::mode::read_write,
+                                sycl::access::target::local>;
+
+template <typename T>
+struct Identity {
+  inline T operator()(T x) const { return x; }
+};
+}  // namespace reduciton_helper
+
+// return the ceil of log2, requiring x>0
+inline unsigned int ceil_log2(unsigned int x) {
+  int t = 32u - __builtin_clz(x);
+  return x == (1 << (t - 1)) ? t - 1 : t;
+}
+
 template <typename T>
 struct DefaultComputeType {
   using type = T;

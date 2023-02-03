@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/aggregate_ops.h"
 
-#include "itex/core/kernels/gpu/reduction_itex_gpu_kernels.h"
+#include "itex/core/kernels/gpu/full_reduction_kernels.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/op_kernel.h"
