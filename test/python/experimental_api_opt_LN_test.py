@@ -22,7 +22,6 @@ import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
 SHAPE = (5,2)
-np.random.seed(1)
 class LayerNormalizationTest(test_util.TensorFlowTestCase):
     """test layer normalization op"""
 
@@ -38,17 +37,18 @@ class LayerNormalizationTest(test_util.TensorFlowTestCase):
         fp32_tol: The relative and absolute tolerance for float32.
         fp16_tol: The relative and absolute tolerance for float16.
         """
+        result = []
         param_shape = [batch_input_shape[i] for i in axis]
         param_elems = 1
         for dim in param_shape:
             param_elems *= dim
         beta = np.arange(param_elems, dtype='float32').reshape(param_shape)
         gamma = np.arange(1, param_elems + 1, dtype='float32').reshape(param_shape)
+        np.random.seed(5)
         x = np.random.normal(size=batch_input_shape)
-        # After itex.itex_experimental_api_opt() is called, tf layer is overloaded.
-        # So we only run one case.
-        for epsilon in (1e-3,):
-            for dtype in ('float32',):
+
+        for epsilon in 1e-12, 1e-3:
+            for dtype in 'float32', 'float16':
                 '''wenjie: LayerNorm op does not register float16 on CPU
                    test case for float16 needs to be enabled when registration is done
                 '''
@@ -59,27 +59,35 @@ class LayerNormalizationTest(test_util.TensorFlowTestCase):
                     epsilon=epsilon, beta_initializer=tf.constant_initializer(beta),
                     gamma_initializer=tf.constant_initializer(gamma))
                 tf_result = tf_layer(tf.cast(x, dtype))
-                itex.itex_experimental_api_opt()
-                itex_layer = tf.keras.layers.LayerNormalization(
-                    axis=axis, dtype=dtype, batch_input_shape=batch_input_shape,
-                    epsilon=epsilon, beta_initializer=tf.constant_initializer(beta),
-                    gamma_initializer=tf.constant_initializer(gamma))
-                itex_result = itex_layer(tf.cast(x, dtype))
-
-                if dtype == 'float32':
-                    tol = fp32_tol
-                else:
-                    assert dtype == 'float16'
-                    tol = fp16_tol
-
-                # We use absolute tolerances in addition to relative tolerances, because
-                # some of the values are very close to zero.
-                self.assertAllClose(tf_result, itex_result, rtol=tol, atol=tol)
+                result.append((tf_result, fp32_tol if dtype == 'float32' else fp16_tol))
+        return result
 
     def testForward(self):
         # For numeric stability, we ensure the axis's dimension(s) have at least 4
         # elements.
-        self._testForwardPass((2, 3, 4, 5), (3,))
-
+        res_tf = []
+        res_itex = []
+        res_tf += self._testForwardPass((4, 3), (0,))
+        res_tf += self._testForwardPass((3, 4), (1,))
+        res_tf += self._testForwardPass((4, 3, 2), (0,))
+        res_tf += self._testForwardPass((2, 4, 2), (1,))
+        res_tf += self._testForwardPass((4, 5, 6), (2,))
+        res_tf += self._testForwardPass((2, 3, 2), (0, 2))
+        res_tf += self._testForwardPass((2, 2, 2, 2), (1, 3))
+        res_tf += self._testForwardPass((2, 2, 2, 2), (2, 3))
+        res_tf += self._testForwardPass((2, 3, 4, 5), (3,))
+        itex.itex_experimental_api_opt()
+        res_itex += self._testForwardPass((4, 3), (0,))
+        res_itex += self._testForwardPass((3, 4), (1,))
+        res_itex += self._testForwardPass((4, 3, 2), (0,))
+        res_itex += self._testForwardPass((2, 4, 2), (1,))
+        res_itex += self._testForwardPass((4, 5, 6), (2,))
+        res_itex += self._testForwardPass((2, 3, 2), (0, 2))
+        res_itex += self._testForwardPass((2, 2, 2, 2), (1, 3))
+        res_itex += self._testForwardPass((2, 2, 2, 2), (2, 3))
+        res_itex += self._testForwardPass((2, 3, 4, 5), (3,))
+        for i in range(len(res_tf)):
+            tol = res_tf[i][1]
+            self.assertAllClose(res_tf[i][0], res_itex[i][0], rtol=tol, atol=tol)
 if __name__ == "__main__":
     test.main()
