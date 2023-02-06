@@ -115,15 +115,15 @@ class OneDnnDequantizeReshapeOp : public OpKernel {
                                : src_tensor.NumElements();
       memory::desc src_md;
       // Get dst_md.
-      memory::dims dst_dims = src_dims;
       memory::desc dst_md;
 
       if (src_onednn_shape.IsOneDnnTensor()) {
         src_md = src_onednn_shape.GetOneDnnLayout();
-        dst_md = src_onednn_shape.GetTfLayout();
+        dst_md = memory::desc(src_dims, OneDnnType<float>(),
+                              src_onednn_shape.GetFormatTag());
       } else {
         src_md = CreatePlainMemDescWithFormatTag<T>(src_dims);
-        dst_md = src_md;
+        dst_md = CreatePlainMemDescWithFormatTag<float>(src_dims);
       }
       dst_md.data.data_type = memory::convert_to_c(OneDnnType<float>());
       // Set the scale factor for quantize

@@ -236,10 +236,12 @@ class OneDnnQuantizeV2Op : public OpKernel {
       // Here, we take the dequantize implementation as reference
       memory::desc dst_md;
       if (src_onednn_shape.IsOneDnnTensor()) {
-        dst_md = src_onednn_shape.GetOneDnnLayout();
-        // There is no API in OneDnn v1.x to construct memory descriptor with
-        // same .data field but different type.
-        dst_md.data.data_type = memory::convert_to_c(OneDnnType<T>());
+        // OneDNN 3.0 doesn't support format::any as dst format in Reorder,
+        // so simply set src TF format to it.
+        // FIXME(itex): Change it to format::any to propagate block format
+        //              to next op once oneDNN has suppported it.
+        dst_md = memory::desc(dst_dims, OneDnnType<T>(),
+                              src_onednn_shape.GetFormatTag());
       } else {
         dst_md = CreatePlainMemDescWithFormatTag<T>(dst_dims);
       }
