@@ -681,6 +681,11 @@ class ConvOpBase : public OpKernel {
   void InitOrSetMemory(OpKernelContext* context) {
     if (!(enable_cache_ && is_init_ && context->is_input_same(0, input_dims_) &&
           context->is_input_same(1, filter_dims_) && !is_format_reordered_)) {
+      if (is_init_ && !(context->is_input_same(0, input_dims_) &&
+                        context->is_input_same(1, filter_dims_))) {
+        // Did not cache filter in dynamic shape.
+        is_filter_const_ = false;
+      }
       Init(context);
       return;
     }
@@ -695,6 +700,8 @@ class ConvOpBase : public OpKernel {
 
     if (is_filter_reordered_) {
       if (!is_filter_const_) {
+        OP_REQUIRES(context, is_cpu_,
+                    errors::Aborted("Invalid filter format!"));
         filter_mem_input_.set_data_handle(context->tensor_data(kFilterIndex_));
         filter_mem_.set_data_handle(GetTensorBuffer<Tfilter>(&tmp_weight_));
         weight_reorder_.execute(onednn_stream_, weight_reorder_args_);
@@ -831,8 +838,12 @@ class ConvOpBase : public OpKernel {
                                : memory::format_tag::dhwio;
       memory::desc filter_md =
           memory::desc({filter_dims}, OneDnnType<Tfilter>(), filter_format);
-      memory::desc filter_md_prefer = memory::desc(
-          {filter_dims}, OneDnnType<Tfilter>(), memory::format_tag::any);
+      memory::desc filter_md_prefer = filter_md;
+      if (is_filter_const_ || is_cpu_) {
+        // Only use block weight when filter is const or on CPU device.
+        filter_md_prefer = memory::desc({filter_dims}, OneDnnType<Tfilter>(),
+                                        memory::format_tag::any);
+      }
       dst_md_ =
           memory::desc({dst_dims_onednn_}, OneDnnType<Tbias>(), data_layout);
       // the convolution primitive is optimized for NHWC
@@ -1085,6 +1096,8 @@ class ConvOpBase : public OpKernel {
 
   bool enable_cache_ = false;
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
+
+  bool is_cpu_ = std::is_same<Device, CPUDevice>::value;
 
   // ExtendInt8PostOps is only used in Int8 ops.
   virtual void ExtendInt8PostOps(OpKernelContext* context) {}

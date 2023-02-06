@@ -300,8 +300,11 @@ class ConvBackpropFilterOp
                            : memory::format_tag::dhwio;
       auto diff_filter_md =
           memory::desc(diff_filter_dims, OneDnnType<T>(), diff_filter_format);
-      auto diff_filter_md_prefer = memory::desc(
-          diff_filter_dims, OneDnnType<T>(), memory::format_tag::any);
+      auto diff_filter_md_prefer = diff_filter_md;
+      if (std::is_same<Device, CPUDevice>::value) {
+        diff_filter_md_prefer = memory::desc(diff_filter_dims, OneDnnType<T>(),
+                                             memory::format_tag::any);
+      }
 
       memory::desc diff_bias_md = memory::desc(
           {diff_bias_dims}, OneDnnType<T>(), dnnl::memory::format_tag::x);
@@ -570,8 +573,11 @@ class ConvBackpropInputOp
                                      : memory::format_tag::dhwio;
       auto filter_md =
           memory::desc(fwd_filter_dims, OneDnnType<T>(), filter_format);
-      auto filter_md_prefer = memory::desc(fwd_filter_dims, OneDnnType<T>(),
-                                           memory::format_tag::any);
+      auto filter_md_prefer = filter_md;
+      if (std::is_same<Device, CPUDevice>::value) {
+        filter_md_prefer = memory::desc(fwd_filter_dims, OneDnnType<T>(),
+                                        memory::format_tag::any);
+      }
       auto diff_dst_md =
           memory::desc(diff_dst_dims, OneDnnType<T>(), data_layout);
       auto diff_src_dims = fwd_src_dims;
