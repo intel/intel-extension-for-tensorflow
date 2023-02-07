@@ -734,11 +734,14 @@ inline void RunWithSyncHandler(OpKernelContext* context, OpKernel* op) {
           TF_Code::TF_ABORTED,
           strings::StrCat(
               op->type(),
-              " Op uses fp64 data type, while fp64 instructions are "
+              " op uses fp64 data type, while fp64 instructions are "
               "not supported on the platform.")));
     } else {
-      // catch other SYCL exceptions instead of throwing here?
-      std::rethrow_exception(std::current_exception());
+      context->CtxFailure(itex::Status(
+          TF_Code::TF_INTERNAL,
+          strings::StrCat(
+              op->type(),
+              " op executes failed with error message: ", err_msg.c_str())));
     }
   }
 }
