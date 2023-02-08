@@ -178,12 +178,7 @@ class OneDnnGraphOp : public OpKernel {
               : dnnl::graph::logical_tensor::property_type::undef;
 
       auto tf_input_shape = ctx->input(index).shape();
-      if (tf_input_shape.dims() == 0) {
-        // Workaround here, since LLGA not support scalar tensor. So treat
-        // scalar tensor's shape = {1}
-        onednn_graph_input_shape = {1};
-
-      } else {
+      if (tf_input_shape.dims() > 0) {
         for (int i = 0; i < tf_input_shape.dims(); i++)
           onednn_graph_input_shape.push_back(tf_input_shape.dim_size(i));
       }
