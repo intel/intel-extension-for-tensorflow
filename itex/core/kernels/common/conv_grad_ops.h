@@ -245,11 +245,11 @@ class ConvBackpropFilterOp
         const int kPadIndex = kOutbpropIdx + 1;
         conv_util.InitPadWithFusion(kPadIndex, true);
       }
-
+      bool is_grouped_convolution;
       conv_util.InitFwdDimensions(
           src_shape, filter_shape, &fwd_src_dims, &fwd_filter_dims,
           &stride_dims, &dilation_dims, &dst_dims_tf, &dst_dims_onednn,
-          &pad_left_dims, &pad_right_dims);
+          &pad_left_dims, &pad_right_dims, &is_grouped_convolution);
       conv_util.GetInputDimension(diff_dst_shape, &diff_dst_dims);
 
       OneDnnTensorFormat data_format_onednn =
@@ -270,20 +270,34 @@ class ConvBackpropFilterOp
 
       const std::vector<DNNL_SIZE_DTYPE>& diff_filter_array =
           this->is_conv2d_
-              ? (is_depthwise ? std::vector<DNNL_SIZE_DTYPE>(
-                                    {diff_filter_dims
-                                         [FilterGroupDims::GROUP_FILTER_DIM_H],
-                                     diff_filter_dims
-                                         [FilterGroupDims::GROUP_FILTER_DIM_W],
-                                     diff_filter_dims
-                                         [FilterGroupDims::GROUP_FILTER_DIM_G],
-                                     diff_filter_dims
-                                         [FilterGroupDims::GROUP_FILTER_DIM_O]})
-                              : std::vector<DNNL_SIZE_DTYPE>(
-                                    {diff_filter_dims[DimensionIndex::Dim_H],
-                                     diff_filter_dims[DimensionIndex::Dim_W],
-                                     diff_filter_dims[DimensionIndex::Dim_I],
-                                     diff_filter_dims[DimensionIndex::Dim_O]}))
+              ? (is_depthwise
+                     ? std::vector<DNNL_SIZE_DTYPE>(
+                           {diff_filter_dims
+                                [FilterGroupDims::GROUP_FILTER_DIM_H],
+                            diff_filter_dims
+                                [FilterGroupDims::GROUP_FILTER_DIM_W],
+                            diff_filter_dims
+                                [FilterGroupDims::GROUP_FILTER_DIM_G],
+                            diff_filter_dims
+                                [FilterGroupDims::GROUP_FILTER_DIM_O]})
+                     : (is_grouped_convolution
+                            ? std::vector<DNNL_SIZE_DTYPE>(
+                                  {diff_filter_dims
+                                       [FilterGroupDims::GROUP_FILTER_DIM_H],
+                                   diff_filter_dims
+                                       [FilterGroupDims::GROUP_FILTER_DIM_W],
+                                   diff_filter_dims
+                                       [FilterGroupDims::GROUP_FILTER_DIM_I],
+                                   diff_filter_dims[FilterGroupDims::
+                                                        GROUP_FILTER_DIM_O] *
+                                       diff_filter_dims
+                                           [FilterGroupDims::
+                                                GROUP_FILTER_DIM_G]})
+                            : std::vector<DNNL_SIZE_DTYPE>(
+                                  {diff_filter_dims[DimensionIndex::Dim_H],
+                                   diff_filter_dims[DimensionIndex::Dim_W],
+                                   diff_filter_dims[DimensionIndex::Dim_I],
+                                   diff_filter_dims[DimensionIndex::Dim_O]})))
               : std::vector<DNNL_SIZE_DTYPE>(
                     {diff_filter_dims[DimensionIndex3D::Dim3d_D],
                      diff_filter_dims[DimensionIndex3D::Dim3d_H],
@@ -295,8 +309,9 @@ class ConvBackpropFilterOp
           {diff_filter_array.data(), diff_filter_array.size()});
 
       const auto diff_filter_format =
-          this->is_conv2d_ ? (is_depthwise ? memory::format_tag::hwigo
-                                           : memory::format_tag::hwio)
+          this->is_conv2d_ ? (is_depthwise || is_grouped_convolution
+                                  ? memory::format_tag::hwigo
+                                  : memory::format_tag::hwio)
                            : memory::format_tag::dhwio;
       auto diff_filter_md =
           memory::desc(diff_filter_dims, OneDnnType<T>(), diff_filter_format);
@@ -505,7 +520,6 @@ class ConvBackpropInputOp
       } else {
         src_shape = src_sizes_tensor.shape();
       }
-
       OneDnnConvUtil conv_util(context, this->data_format_, this->strides_,
                                this->dilations_, this->padding_,
                                this->explicit_paddings_, this->is_conv2d_,
@@ -545,11 +559,12 @@ class ConvBackpropInputOp
       memory::dims pad_left_dims, pad_right_dims, dilation_dims, stride_dims,
           bias_dims;
       memory::dims dst_dims_tf, dst_dims_onednn;
+      bool is_grouped_convolution;
 
       conv_util.InitFwdDimensions(
           src_shape, filter_shape, &fwd_src_dims, &fwd_filter_dims,
           &stride_dims, &dilation_dims, &dst_dims_tf, &dst_dims_onednn,
-          &pad_left_dims, &pad_right_dims);
+          &pad_left_dims, &pad_right_dims, &is_grouped_convolution);
       conv_util.GetInputDimension(diff_dst_shape, &diff_dst_dims);
 
       // OneDNN dilations start from 0.
@@ -568,8 +583,9 @@ class ConvBackpropInputOp
       memory::format_tag data_layout =
           OneDnnTensorFormatToTag(data_format_onednn);
       const auto filter_format = this->is_conv2d_
-                                     ? (is_depthwise ? memory::format_tag::hwigo
-                                                     : memory::format_tag::hwio)
+                                     ? (is_depthwise || is_grouped_convolution
+                                            ? memory::format_tag::hwigo
+                                            : memory::format_tag::hwio)
                                      : memory::format_tag::dhwio;
       auto filter_md =
           memory::desc(fwd_filter_dims, OneDnnType<T>(), filter_format);

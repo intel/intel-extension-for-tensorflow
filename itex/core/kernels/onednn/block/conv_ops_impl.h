@@ -242,7 +242,6 @@ class OneDnnConvOp : public OpKernel {
       memory::dims src_dims, filter_dims, pad_left_dims, pad_right_dims,
           dilation_dims, stride_dims, bias_dims;
       memory::dims dst_dims_tf;
-
       OneDnnConvUtil conv_util(context, data_format_, strides_, dilations_,
                                padding_, explicit_paddings_, is_conv2d_,
                                is_depthwise);
@@ -253,11 +252,11 @@ class OneDnnConvOp : public OpKernel {
 
         conv_util.InitPadWithFusion(kPadIndex, true);
       }
-
-      conv_util.InitFwdDimensions(src_tf_shape, filter_tf_shape, &src_dims,
-                                  &filter_dims, &stride_dims, &dilation_dims,
-                                  &dst_dims_tf, &dst_dims_onednn_,
-                                  &pad_left_dims, &pad_right_dims);
+      bool is_grouped_convolution;
+      conv_util.InitFwdDimensions(
+          src_tf_shape, filter_tf_shape, &src_dims, &filter_dims, &stride_dims,
+          &dilation_dims, &dst_dims_tf, &dst_dims_onednn_, &pad_left_dims,
+          &pad_right_dims, &is_grouped_convolution);
 
       // OneDNN dilations start from 0.
       for (int i = 0; i < dilation_dims.size(); ++i) {
@@ -292,10 +291,10 @@ class OneDnnConvOp : public OpKernel {
       // Although filter shape (filter_dims) required is in OneDnn order,
       // the layout is Tensorflow's layout (HWIO) and (HWIGO) for
       // depthwise/group convolutions.
-      auto filter_layout = is_conv2d_
-                               ? (is_depthwise ? memory::format_tag::hwigo
-                                               : memory::format_tag::hwio)
-                               : memory::format_tag::dhwio;
+      auto filter_layout = is_conv2d_ ? (is_depthwise || is_grouped_convolution
+                                             ? memory::format_tag::hwigo
+                                             : memory::format_tag::hwio)
+                                      : memory::format_tag::dhwio;
       memory::desc src_md =
           src_onednn_shape_.IsOneDnnTensor()
               ? src_onednn_shape_.GetOneDnnLayout()
@@ -1334,11 +1333,11 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
 
         conv_util.InitPadWithFusion(kPadIndex, true);
       }
-
-      conv_util.InitFwdDimensions(src_tf_shape, filter_tf_shape, &src_dims,
-                                  &filter_dims, &stride_dims, &dilation_dims,
-                                  &dst_dims_tf, &this->dst_dims_onednn_,
-                                  &pad_left_dims, &pad_right_dims);
+      bool is_grouped_convolution;
+      conv_util.InitFwdDimensions(
+          src_tf_shape, filter_tf_shape, &src_dims, &filter_dims, &stride_dims,
+          &dilation_dims, &dst_dims_tf, &this->dst_dims_onednn_, &pad_left_dims,
+          &pad_right_dims, &is_grouped_convolution);
 
       // OneDNN dilations start from 0.
       for (int i = 0; i < dilation_dims.size(); ++i) {

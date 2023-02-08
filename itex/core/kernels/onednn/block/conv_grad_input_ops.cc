@@ -116,11 +116,12 @@ class OneDnnConvBackpropInputOp
       memory::dims pad_left_dims, pad_right_dims, dilation_dims, stride_dims,
           bias_dims;
       memory::dims dst_dims_tf, dst_dims_onednn;
+      bool is_grouped_convolution;
 
       conv_util.InitFwdDimensions(
           src_shape, filter_shape, &fwd_src_dims, &fwd_filter_dims,
           &stride_dims, &dilation_dims, &dst_dims_tf, &dst_dims_onednn,
-          &pad_left_dims, &pad_right_dims);
+          &pad_left_dims, &pad_right_dims, &is_grouped_convolution);
       conv_util.GetInputDimension(diff_dst_shape, &diff_dst_dims);
 
       // OneDNN dilations start from 0.
@@ -141,8 +142,9 @@ class OneDnnConvBackpropInputOp
                   errors::InvalidArgument("Invalid data format"));
 
       auto filter_layout = this->is_conv2d_
-                               ? (is_depthwise ? memory::format_tag::hwigo
-                                               : memory::format_tag::hwio)
+                               ? (is_depthwise || is_grouped_convolution
+                                      ? memory::format_tag::hwigo
+                                      : memory::format_tag::hwio)
                                : memory::format_tag::dhwio;
       memory::desc filter_md =
           memory::desc(fwd_filter_dims, OneDnnType<T>(), filter_layout);

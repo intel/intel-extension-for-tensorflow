@@ -54,12 +54,14 @@ class OneDnnConvUtil {
   std::vector<int64_t> explicit_paddings_;
   bool is_conv2d_;
   bool is_depthwise_;
+  bool is_grouped_convolution_;
 
  public:
   OneDnnConvUtil(OpKernelContext* context, TensorFormat data_format,
                  std::vector<int32_t> strides, std::vector<int32_t> dilations,
                  Padding padding, std::vector<int64_t> explicit_paddings,
-                 bool is_conv2d, bool is_depthwise)
+                 bool is_conv2d, bool is_depthwise,
+                 bool is_grouped_convolution = false)
       : context_(context),
         data_format_(data_format),
         strides_(strides),
@@ -67,7 +69,8 @@ class OneDnnConvUtil {
         padding_(padding),
         explicit_paddings_(explicit_paddings),
         is_conv2d_(is_conv2d),
-        is_depthwise_(is_depthwise) {}
+        is_depthwise_(is_depthwise),
+        is_grouped_convolution_(is_grouped_convolution) {}
 
   virtual ~OneDnnConvUtil() { context_ = nullptr; }
 
@@ -203,11 +206,6 @@ class OneDnnConvUtil {
     int input_depth = GetTensorDim(input_shape, data_format_, 'C');
 
     if (is_conv2d_) {  // Conv2D
-      OP_REQUIRES(context_, input_depth == filter_shape.dim_size(2),
-                  errors::InvalidArgument(
-                      "input and filter must have the same depth: ",
-                      input_depth, " vs ", filter_shape.dim_size(2)));
-
       // TF filter is always in (rows, cols, in_depth, out_depth) order.
       int filter_rows =
           static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_H));
@@ -217,6 +215,12 @@ class OneDnnConvUtil {
           static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_I));
       int filter_out_depth =
           static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_O));
+      OP_REQUIRES(context_, input_depth % filter_in_depth == 0,
+                  errors::InvalidArgument(
+                      "input depth must be evenly divisible by filter depth: ",
+                      input_depth, " vs ", filter_in_depth));
+      is_grouped_convolution_ = filter_in_depth != input_depth;
+      int group_count = input_depth / filter_in_depth;
       // OneDNN always needs filter in OIHW format for regular convolutions
       // and GOIHW for grouped/depthwise convolutions,
       // OIHW = (out_depth, in_depth, rows, cols)
@@ -227,6 +231,16 @@ class OneDnnConvUtil {
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_G] = filter_in_depth;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_O] = filter_out_depth;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_I] = 1;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_H] = filter_rows;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_W] = filter_cols;
+        *filter_dims = filter_dims_tmp;
+      } else if (is_grouped_convolution_) {
+        // TODO(intel-tf): Directly set filter_dims. Same for other places.
+        std::vector<DNNL_SIZE_DTYPE> filter_dims_tmp(5, -1);
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_G] = group_count;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_O] =
+            filter_out_depth / group_count;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_I] = filter_in_depth;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_H] = filter_rows;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_W] = filter_cols;
         *filter_dims = filter_dims_tmp;
@@ -372,6 +386,8 @@ class OneDnnConvUtil {
     if (is_depthwise_) {
       out_depth = (filter_shape.dim_size(TF_2DFILTER_DIM_I) *
                    filter_shape.dim_size(TF_2DFILTER_DIM_O));
+    } else if (is_grouped_convolution_) {
+      out_depth = filter_shape.dim_size(TF_2DFILTER_DIM_O);
     } else {
       out_depth = filter_shape.dim_size(
           is_conv2d_ ? static_cast<int>(TF_2DFILTER_DIM_O)
@@ -447,6 +463,17 @@ class OneDnnConvUtil {
                               {{out_planes, out_rows, out_cols}}, out_depth);
     *output_dims_tf_order = TFShapeToOneDnnDims(out_shape);
 
+    if (is_grouped_convolution_) {
+      int input_depth = GetTensorDim(input_shape, data_format_, 'C');
+      int filter_in_depth =
+          static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_I));
+      int num_groups = input_depth / filter_in_depth;
+      OP_REQUIRES(
+          context_, out_depth % num_groups == 0 && out_depth >= num_groups,
+          errors::InvalidArgument(
+              "output depth must be evenly divisible by number of groups: ",
+              out_depth, " vs ", num_groups));
+    }
     if (is_conv2d_) {
       // For Conv2D, OneDNN always needs output in NCHW format.
       std::vector<DNNL_SIZE_DTYPE> output_dims_onednn_tmp(4, -1);
@@ -485,7 +512,7 @@ class OneDnnConvUtil {
       dnnl::memory::dims* strides, dnnl::memory::dims* dilations,
       dnnl::memory::dims* output_dims_tf_order,
       dnnl::memory::dims* output_dims_onednn, dnnl::memory::dims* pad_left_dims,
-      dnnl::memory::dims* pad_right_dims) {
+      dnnl::memory::dims* pad_right_dims, bool* is_grouped_convolution) {
     GetInputDimension(input_shape, input_dims);
     GetFilterDimension(input_shape, filter_shape, filter_dims);
     GetStrideDimension(strides);
@@ -493,6 +520,7 @@ class OneDnnConvUtil {
     GetOutputAndPadDimension(input_shape, filter_shape, *strides, *dilations,
                              output_dims_tf_order, output_dims_onednn,
                              pad_left_dims, pad_right_dims);
+    *is_grouped_convolution = is_grouped_convolution_;
   }
 
   // Helper function for Pad fusion. It will set fused Pad tensor to
@@ -803,10 +831,11 @@ class ConvOpBase : public OpKernel {
         conv_util.InitPadWithFusion(kPadIndex, true);
       }
 
+      bool is_grouped_convolution;
       conv_util.InitFwdDimensions(
           src_tensor_shape, filter_tensor_shape, &src_dims, &filter_dims,
           &stride_dims, &dilation_dims, &dst_dims_tf, &dst_dims_onednn_,
-          &pad_left_dims, &pad_right_dims);
+          &pad_left_dims, &pad_right_dims, &is_grouped_convolution);
 
       // OneDNN dilations start from 0.
       for (int i = 0; i < dilation_dims.size(); ++i) {
@@ -832,10 +861,10 @@ class ConvOpBase : public OpKernel {
           OneDnnTensorFormatToTag(data_format_onednn_);
       memory::desc src_md =
           memory::desc({src_dims}, OneDnnType<Tinput>(), data_layout);
-      auto filter_format = is_conv2d_
-                               ? (is_depthwise ? memory::format_tag::hwigo
-                                               : memory::format_tag::hwio)
-                               : memory::format_tag::dhwio;
+      auto filter_format = is_conv2d_ ? (is_depthwise || is_grouped_convolution
+                                             ? memory::format_tag::hwigo
+                                             : memory::format_tag::hwio)
+                                      : memory::format_tag::dhwio;
       memory::desc filter_md =
           memory::desc({filter_dims}, OneDnnType<Tfilter>(), filter_format);
       memory::desc filter_md_prefer = filter_md;
