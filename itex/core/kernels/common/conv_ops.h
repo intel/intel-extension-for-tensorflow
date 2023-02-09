@@ -873,24 +873,23 @@ class ConvOpBase : public OpKernel {
         filter_md_prefer = memory::desc({filter_dims}, OneDnnType<Tfilter>(),
                                         memory::format_tag::any);
       }
-      dst_md_ =
-          memory::desc({dst_dims_onednn_}, OneDnnType<Tbias>(), data_layout);
       // the convolution primitive is optimized for NHWC
       memory::format_tag tag_opt =
           is_conv2d_ ? memory::format_tag::nhwc : memory::format_tag::ndhwc;
       memory::desc src_md_opt =
           memory::desc({src_dims}, OneDnnType<Tinput>(), tag_opt);
-      memory::desc dst_md_opt;
 
       // TODO(itex): redesign the code for Tsummand
       // The reason for using Tsummand is to deal with the situation for int8
       // fusion conv + bias + add + relu fusion. Two inputs for add op may be
       // respectively quint8 and qint8.
-
       dst_md_ =
           memory::desc({dst_dims_onednn_}, OneDnnType<Tsummand>(), data_layout);
-      dst_md_opt =
+      auto dst_md_opt =
           memory::desc({dst_dims_onednn_}, OneDnnType<Tsummand>(), tag_opt);
+      // Handle INT8 fusion, where Tsummand s8 and Toutput u8
+      add_dst_md_ =
+          memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(), tag_opt);
 
       this->ExtendInt8PostOps(context);
 
@@ -1102,6 +1101,8 @@ class ConvOpBase : public OpKernel {
   dnnl::memory::dims dst_dims_onednn_;
 
   memory::desc dst_md_;
+  // This one for dnnl sum fusion.
+  memory::desc add_dst_md_;
 
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;
@@ -1137,12 +1138,6 @@ class ConvOpBase : public OpKernel {
       const memory::dims& dst_dims_onednn, TensorShape dst_tensor_shape,
       Tensor** dst_tensor, Tensor* dst_tensor_opt) {
     ITEX_DCHECK(dst_tensor);
-    auto dst_md_opt = conv_pd.dst_desc();
-
-    // Handle INT8 fusion, where Tsummand s8 and Toutput u8
-    if (!std::is_same<Tsummand, Toutput>::value) {
-      dst_md_opt.data.data_type = memory::convert_to_c(OneDnnType<Toutput>());
-    }
 
     if (post_op_util_.HasAdd() &&
         (std::is_same<Toutput, float>::value ||
@@ -1179,13 +1174,13 @@ class ConvOpBase : public OpKernel {
             CreateDnnlMemory(this->dst_md_, this->onednn_engine_,
                              GetTensorBuffer<Toutput>(&add_tensor));
         auto fuse_add_dst =
-            CreateDnnlMemory(dst_md_opt, this->onednn_engine_,
+            CreateDnnlMemory(this->add_dst_md_, this->onednn_engine_,
                              GetTensorBuffer<Toutput>(*dst_tensor));
 
+        // Reset data handle to tmp tensor if the dst needs to be reordered.
         if (this->is_format_reordered_) {
-          fuse_add_dst =
-              CreateDnnlMemory(dst_md_opt, this->onednn_engine_,
-                               GetTensorBuffer<Tsummand>(dst_tensor_opt));
+          fuse_add_dst.set_data_handle(
+              GetTensorBuffer<Tsummand>(dst_tensor_opt));
         }
         ReorderMemory(*context, &fuse_add_src, &fuse_add_dst,
                       this->onednn_engine_);

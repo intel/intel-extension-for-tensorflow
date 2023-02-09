@@ -529,10 +529,9 @@ class LegacyQuantizedConvOpBase
 
       // Here is workaround to always forward add tensor in conv + bias + add +
       // relu int8 fusion
-      // TODO(itex): Implement code for "inplace_sum = False" and discuss with
+      // FIXME(itex): Implement code for "inplace_sum = False" and discuss with
       // LPOT about new design.
       // JIRA: https://jira.devtools.intel.com/browse/TFDO-5059
-
       if (std::is_same<Toutput, qint8>::value &&
           std::is_same<Tsummand, qint8>::value &&
           context->input(kSummandDataIndex).dtype() == DT_QUINT8) {
@@ -541,7 +540,7 @@ class LegacyQuantizedConvOpBase
         // issue by internal type check in forward_input_to_output_with_shape.
         // Since ITEX have to use set_output here, it will always inplace, and
         // cause crash.
-
+        // TODO(itex): Discuss with INC to fix incorrect pb.
         OP_REQUIRES_OK(context,
                        context->allocate_output(this->kDstIndex_,
                                                 dst_tensor_shape, dst_tensor));

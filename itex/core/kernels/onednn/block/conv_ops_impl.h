@@ -320,16 +320,20 @@ class OneDnnConvOp : public OpKernel {
       if (std::is_same<Toutput, Tsummand>::value) {
         dst_md = memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(),
                               memory::format_tag::any);
+        add_dst_md_ = dst_md;
       } else if ((std::is_same<Toutput, float>::value ||
                   std::is_same<Toutput, Eigen::half>::value) &&
                  std::is_same<Tfilter, qint8>::value) {
         auto dst_format_tag = src_onednn_shape_.GetFormatTag();
         dst_md = memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(),
                               dst_format_tag);
+        add_dst_md_ = dst_md;
         src_md_prefer = src_md;
       } else {
         dst_md = memory::desc({dst_dims_onednn_}, OneDnnType<Tsummand>(),
                               memory::format_tag::any);
+        add_dst_md_ = memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(),
+                                   memory::format_tag::any);
       }
       // TODO(itex): Currently, we have 2 separate code in dealing with post
       // op.  Try to combine these two codes together
@@ -373,8 +377,15 @@ class OneDnnConvOp : public OpKernel {
         post_ops_attr.set_fpmath_mode(fp32_math_mode_);
       }
       fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, onednn_engine_);
-
       fwd_primitive_ = dnnl::convolution_forward(fwd_pd_);
+
+      // Create a temp conv primitve desc to get real add md.
+      auto add_fwd_desc =
+          ConvFwdDesc(prop_kind::forward, dnnl::algorithm::convolution_direct,
+                      src_md_prefer, filter_md_prefer, add_dst_md_, stride_dims,
+                      dilation_dims, pad_left_dims, pad_right_dims);
+      auto add_fwd_pd = ConvFwdPd(add_fwd_desc, onednn_engine_);
+      add_dst_md_ = add_fwd_pd.dst_desc();
 
       int64 dst_data_size = fwd_pd_.dst_desc().get_size() / sizeof(Toutput);
       dst_shape_ = TensorShape({dst_data_size});
@@ -503,6 +514,9 @@ class OneDnnConvOp : public OpKernel {
   dnnl::memory bias_mem_;
   dnnl::memory::dims dst_dims_onednn_;
 
+  // This one for dnnl sum fusion.
+  dnnl::memory::desc add_dst_md_;
+
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;
 
@@ -557,17 +571,11 @@ class OneDnnConvOp : public OpKernel {
       OneDnnShape* dst_onednn_shape, TensorShape tensor_shape,
       Tensor** dst_tensor) {
     ITEX_DCHECK(dst_tensor);
-    auto dst_md = conv_pd.dst_desc();
-
-    // TODO(itex): code here seems only related to int8, could we delete it
-    if (!std::is_same<Tsummand, Toutput>::value) {
-      dst_md.data.data_type = memory::convert_to_c(OneDnnType<Toutput>());
-    }
 
     // NHWC Conv may prefer NCHW (also plain format) as its primitive format.
     // Need to record this info in meta data to reorder the data correctly.
-    SetOutputTensorShape(dst_md, dst_tf_format, &tensor_shape, dst_onednn_shape,
-                         true /*is_onednn*/);
+    SetOutputTensorShape(add_dst_md_, dst_tf_format, &tensor_shape,
+                         dst_onednn_shape, true /*is_onednn*/);
 
     // TODO(itex): Try to apply the code below to Int8 situation
     if (post_op_util_.HasAdd() &&
@@ -612,11 +620,11 @@ class OneDnnConvOp : public OpKernel {
                       "OneDnnConvOp: Invalid data format in AddN fusion."));
       auto add_md = add_onednn_shape.IsOneDnnTensor()
                         ? add_onednn_shape.GetOneDnnLayout()
-                        : memory::desc(dst_dims_onednn, OneDnnType<Toutput>(),
+                        : memory::desc(dst_dims_onednn, OneDnnType<Tsummand>(),
                                        dst_layout);
       memory fuse_add_src = memory(add_md, this->onednn_engine_,
                                    GetTensorBuffer<Toutput>(&add_tensor));
-      memory fuse_add_dst = memory(dst_md, this->onednn_engine_,
+      memory fuse_add_dst = memory(add_dst_md_, this->onednn_engine_,
                                    GetTensorBuffer<Toutput>(*dst_tensor));
       ReorderMemory(*context, &fuse_add_src, &fuse_add_dst,
                     this->onednn_engine_);
@@ -972,26 +980,19 @@ class OneDnnQuantizedConvSumReluOp
       DataType summand_type = summand.dtype();
       ITEX_CHECK((summand_type == DT_QINT8) || (summand_type == DT_QUINT8));
 
-      OneDnnShape summand_onednn_shape;
-      GetOneDnnShape(context, kSummandDataIndex, &summand_onednn_shape);
-      auto dst_md = summand_onednn_shape.GetOneDnnLayout();
-
       // TODO(itex): Handle both block and plain layout tensors
       if (std::is_same<Toutput, quint8>::value && summand_type == DT_QINT8) {
         // TODO(itex): TF proper uses bitcastfrom, check whether there is
         // problem here.
         OP_REQUIRES_OK(
             context, summand.BitcastFrom(summand, DT_QUINT8, summand.shape()));
-        dst_md.data.data_type = memory::convert_to_c(OneDnnType<Toutput>());
-        summand_onednn_shape.SetOneDnnLayout(dst_md);
       }
 
       // Here is workaround to always forward add tensor in conv + bias + add +
       // relu int8 fusion
-      // TODO(itex): Implement code for "inplace_sum = False" and discuss with
+      // FIXME(itex): Implement code for "inplace_sum = False" and discuss with
       // LPOT about new design.
       // JIRA: https://jira.devtools.intel.com/browse/TFDO-5059
-
       if (std::is_same<Toutput, qint8>::value &&
           std::is_same<Tsummand, qint8>::value &&
           context->input(kSummandDataIndex).dtype() == DT_QUINT8) {
@@ -1000,6 +1001,7 @@ class OneDnnQuantizedConvSumReluOp
         // issue by internal type check in forward_input_to_output_with_shape.
         // Since ITEX have to use set_output here, it will always inplace, and
         // cause crash.
+        // TODO(itex): Discuss with INC to fix incorrect pb.
         OP_REQUIRES_OK(context,
                        context->allocate_output(this->kDstIndex_, tensor_shape,
                                                 dst_tensor));
@@ -1008,7 +1010,9 @@ class OneDnnQuantizedConvSumReluOp
                             context->input(kSummandDataIndex));
       }
 
-      AllocateMetaData(context, this->kDstIndex_, summand_onednn_shape);
+      SetOutputTensorShape(this->add_dst_md_, output_tf_format, &tensor_shape,
+                           output_onednn_shape, true /*is_onednn*/);
+      AllocateMetaData(context, this->kDstIndex_, *output_onednn_shape);
       *dst_tensor = context->mutable_output(this->kDstIndex_);
       return;
     }
@@ -1383,9 +1387,8 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
           memory::desc(src_dims, OneDnnType<qint8>(), memory::format_tag::any);
       if (src_dims[1] == 3 && std::is_same<Device, GPUDevice>::value) {
         // This is fusion from FP32 to INT8, so need change the data type.
-        src_md_prefer = src_md;
-        src_md_prefer.data.data_type =
-            memory::convert_to_c(OneDnnType<qint8>());
+        src_md_prefer = memory::desc(src_dims, OneDnnType<qint8>(),
+                                     memory::format_tag::any);
       }
 
       memory::desc filter_md =
@@ -1403,9 +1406,13 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
       if (std::is_same<Toutput, Tsummand>::value) {
         dst_md = memory::desc({this->dst_dims_onednn_}, OneDnnType<Toutput>(),
                               memory::format_tag::any);
+        this->add_dst_md_ = dst_md;
       } else {
         dst_md = memory::desc({this->dst_dims_onednn_}, OneDnnType<Tsummand>(),
                               memory::format_tag::any);
+        this->add_dst_md_ =
+            memory::desc({this->dst_dims_onednn_}, OneDnnType<Toutput>(),
+                         memory::format_tag::any);
       }
 
       // TODO(itex): Currently, we have 2 separate code in dealing with post
@@ -1448,8 +1455,15 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
       this->post_op_util_.SetPostOpAttr(&post_ops_attr);
       post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       this->fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, this->onednn_engine_);
-
       this->fwd_primitive_ = dnnl::convolution_forward(this->fwd_pd_);
+
+      // Create a temp conv primitve desc to get real add dst md.
+      auto add_fwd_desc = ConvFwdDesc(
+          prop_kind::forward, dnnl::algorithm::convolution_direct,
+          src_md_prefer, filter_md_prefer, this->add_dst_md_, stride_dims,
+          dilation_dims, pad_left_dims, pad_right_dims);
+      auto add_fwd_pd = ConvFwdPd(add_fwd_desc, this->onednn_engine_);
+      this->add_dst_md_ = add_fwd_pd.dst_desc();
 
       int64 dst_data_size =
           this->fwd_pd_.dst_desc().get_size() / sizeof(Toutput);
@@ -1689,26 +1703,15 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
       OneDnnShape* dst_onednn_shape, TensorShape tensor_shape,
       Tensor** dst_tensor) override {
     ITEX_DCHECK(dst_tensor);
-    auto dst_md = conv_pd.dst_desc();
-
-    // TODO(itex): code here seems only related to int8, could we delete it
-    if (!std::is_same<Tsummand, Toutput>::value) {
-      dst_md.data.data_type = memory::convert_to_c(OneDnnType<Toutput>());
-    }
 
     // NHWC Conv may prefer NCHW (also plain format) as its primitive format.
     // Need to record this info in meta data to reorder the data correctly.
-    SetOutputTensorShape(dst_md, dst_tf_format, &tensor_shape, dst_onednn_shape,
-                         true /*is_onednn*/);
+    SetOutputTensorShape(conv_pd.dst_desc(), dst_tf_format, &tensor_shape,
+                         dst_onednn_shape, true /*is_onednn*/);
     {
-      OP_REQUIRES(context,
-                  (!this->post_op_util_.HasAdd() ||
-                   (this->post_op_util_.HasAdd() &&
-                    (std::is_same<Toutput, qint8>::value ||
-                     std::is_same<Toutput, quint8>::value ||
-                     std::is_same<Toutput, qint32>::value))),
-                  errors::InvalidArgument(
-                      "OneDnnConvOp: Invalid data type in AddN fusion."));
+      OP_REQUIRES(
+          context, !this->post_op_util_.HasAdd(),
+          errors::InvalidArgument("OneDnnConvOp: Don't support AddN fusion."));
       AllocateOutputSetOneDnnShape(context, this->kDstIndex_, dst_tensor,
                                    tensor_shape, *dst_onednn_shape);
     }
