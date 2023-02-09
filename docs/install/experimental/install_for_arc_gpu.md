@@ -187,15 +187,13 @@ If you prefer to have access to full Intel® oneAPI you need to install at least
 
 - Intel® oneAPI DPC++ Compiler
 
-- Intel® oneAPI Threading Building Blocks (oneTBB)
-
 - Intel® oneAPI Math Kernel Library (oneMKL)
 
 Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.
 
 ```bash
 $ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18852/l_BaseKit_p_2022.3.0.8767_offline.sh
-# 4 components are necessary: DPC++/C++ Compiler, DPC++ Libiary, Threading Building Blocks and oneMKL
+# 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL
 $ sudo sh ./l_BaseKit_p_2022.3.0.8767_offline.sh
 ```
 

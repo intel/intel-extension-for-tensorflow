@@ -53,7 +53,7 @@ driver_list_for_rhel=(
   "pkgconf-pkg-config"
 )
 
-oneapi_list=(compiler tbb mkl ccl)
+oneapi_list=(compiler mkl ccl)
 
 tf_require_list=(
   "absl-py"
@@ -239,9 +239,6 @@ check_intel_oneapi() {
           ;;
         mkl)
           installed_status_oneapi "libmkl_sycl.so" "Intel(R) OneAPI Math Kernel Library" "MKLROOT"
-          ;;
-        tbb)
-          installed_status_oneapi "libtbb.so" "Intel(R) OneAPI Threading Building Blocks" "TBBROOT"
           ;;
         ccl)
           if [[ ${IS_DETAIL} -eq 1 ]]; then

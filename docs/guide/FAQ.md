@@ -37,9 +37,8 @@ This section shows common problems and solutions for compilation and runtime iss
 
 ### Runtime
 
-| Error                                                        | Solution                                                     | Comments                                                  |
-| ------------------------------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------- |
-| ModuleNotFoundError: No module named 'tensorflow'            | install TensorFlow                                           | ITEX depends on TensorFlow                                |
-| tensorflow.python.framework.errors_impl.NotFoundError: libmkl_sycl.so.2: cannot open shared object file: No such file or directory | `source /opt/intel/oneapi/setvars.sh`                        | set env vars of oneAPI Base Toolkit                       |
-| INTEL MKL ERROR: /opt/intel/oneapi/mkl/latest/lib/intel64/libmkl_avx512.so.2: undefined symbol: mkl_sparse_optimize_bsr_trsm_i8.<br/>Intel MKL FATAL ERROR: Cannot load libmkl_avx512.so.2 or libmkl_def.so.2. | `export LD_PRELOAD=/opt/intel/oneapi/mkl/latest/lib/intel64/libmkl_core.so:/opt/intel/oneapi/mkl/latest/lib/intel64/libmkl_tbb_thread.so` | It's a known issue and will be fixed in the next release. |
+| Error                                                        | Solution                              | Comments                            |
+| ------------------------------------------------------------ | ------------------------------------- | ----------------------------------- |
+| ModuleNotFoundError: No module named 'tensorflow'            | install TensorFlow                    | ITEX depends on TensorFlow          |
+| tensorflow.python.framework.errors_impl.NotFoundError: libmkl_sycl.so.2: cannot open shared object file: No such file or directory | `source /opt/intel/oneapi/setvars.sh` | set env vars of oneAPI Base Toolkit |
 

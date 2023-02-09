@@ -118,7 +118,7 @@ def call_compiler(argv, link = False, dpcpp = True):
     link_flags.append("-L%{ONEAPI_MKL_PATH}/lib/intel64")
     link_flags.append("-lmkl_sycl")
     link_flags.append("-lmkl_intel_ilp64")
-    link_flags.append("-lmkl_tbb_thread")
+    link_flags.append("-lmkl_sequential")
     link_flags.append("-lmkl_core")
 
   flags += common_flags
