@@ -38,13 +38,13 @@ namespace itex {
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T"),                         \
                           FusedConvOp<GPUDevice, T, T, T, T, T>)               \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithConv2D")                               \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithConv2D")                           \
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<int32>("Tpaddings")              \
                               .HostMemory("paddings"),                         \
                           ConvOpBase<GPUDevice, T, T, T, T, T, true>)          \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithFusedConv2D")                          \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithFusedConv2D")                      \
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<int32>("Tpaddings")              \
@@ -58,13 +58,13 @@ TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_CONV2D);
   REGISTER_KERNEL_BUILDER(                                                \
       Name("_ITEXFusedConv3D").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
       FusedConvOp<GPUDevice, T, T, T, T, T>)                              \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithConv3D")                          \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithConv3D")                      \
                               .Device(DEVICE_GPU)                         \
                               .TypeConstraint<T>("T")                     \
                               .TypeConstraint<int32>("Tpaddings")         \
                               .HostMemory("paddings"),                    \
                           ConvOpBase<GPUDevice, T, T, T, T, T, true>)     \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithFusedConv3D")                     \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithFusedConv3D")                 \
                               .Device(DEVICE_GPU)                         \
                               .TypeConstraint<T>("T")                     \
                               .TypeConstraint<int32>("Tpaddings")         \

@@ -44,11 +44,11 @@ constexpr char kConv3DBackpropFilterV2[] = "Conv3DBackpropFilterV2";
 constexpr char kDequantize[] = "Dequantize";
 constexpr char kFill[] = "Fill";
 constexpr char kFusedBatchNormV3[] = "FusedBatchNormV3";
-constexpr char kGelu[] = "Gelu";
+constexpr char kGelu[] = "ITEXGelu";
 constexpr char kLeakyRelu[] = "LeakyRelu";
 constexpr char kMatMul[] = "MatMul";
 constexpr char kMean[] = "Mean";
-constexpr char kMish[] = "Mish";
+constexpr char kMish[] = "_ITEXMish";
 constexpr char kMul[] = "Mul";
 constexpr char kPad[] = "Pad";
 constexpr char kQuantizeV2[] = "QuantizeV2";
@@ -69,7 +69,7 @@ constexpr char kSqrt[] = "Sqrt";
 constexpr char kSquare[] = "Square";
 constexpr char kSquaredDifference[] = "SquaredDifference";
 constexpr char kSub[] = "Sub";
-constexpr char kSwish[] = "Swish";
+constexpr char kSwish[] = "_ITEXSwish";
 constexpr char kTanh[] = "Tanh";
 
 // ITEX specific fused op names.
@@ -110,12 +110,12 @@ constexpr char kFusedResourceApplyAdam[] = "_FusedResourceApplyAdam";
 constexpr char kFusedResourceApplyAdamWithWeightDecay[] =
     "_FusedResourceApplyAdamWithWeightDecay";
 constexpr char kFusedResourceApplyMomentum[] = "_FusedResourceApplyMomentum";
-constexpr char kInstanceNorm[] = "InstanceNorm";
-constexpr char kLayerNorm[] = "LayerNorm";
-constexpr char kPadWithConv2D[] = "_PadWithConv2D";
-constexpr char kPadWithConv3D[] = "_PadWithConv3D";
-constexpr char kPadWithFusedConv2D[] = "_PadWithFusedConv2D";
-constexpr char kPadWithFusedConv3D[] = "_PadWithFusedConv3D";
+constexpr char kInstanceNorm[] = "_ITEXInstanceNorm";
+constexpr char kLayerNorm[] = "ITEXLayerNorm";
+constexpr char kPadWithConv2D[] = "_ITEXPadWithConv2D";
+constexpr char kPadWithConv3D[] = "_ITEXPadWithConv3D";
+constexpr char kPadWithFusedConv2D[] = "_ITEXPadWithFusedConv2D";
+constexpr char kPadWithFusedConv3D[] = "_ITEXPadWithFusedConv3D";
 constexpr char kQuantizeV2WithQuantizedConv2D[] =
     "_ITEXQuantizeV2WithQuantizedConv2D";
 constexpr char kFusedQuantizedConv2DWithDequantize[] =

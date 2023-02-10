@@ -43,7 +43,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         run_options = config_pb2.RunOptions(output_partition_graphs=True)
         metadata = config_pb2.RunMetadata()
         fused = tf.nn.bias_add(tf.matmul(x, y), b)
-        fused = load_ops_library.gelu(fused,approximate=False)
+        fused = load_ops_library.itex_gelu(fused,approximate=False)
         fused = array_ops.identity(fused)
 
         with self.session(use_gpu=True) as sess:

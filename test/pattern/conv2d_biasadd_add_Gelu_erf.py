@@ -41,7 +41,7 @@ class FusedConv2DTest(test_util.TensorFlowTestCase):
         
         bias_add = nn_ops.bias_add(conv, b)
         output= array_ops.identity(math_ops.add_n([bias_add, conv2]))
-        output = array_ops.identity(load_ops_library.gelu(output,approximate=False))
+        output = array_ops.identity(load_ops_library.itex_gelu(output,approximate=False))
         run_options = config_pb2.RunOptions(output_partition_graphs=True)
         metadata = config_pb2.RunMetadata()
 

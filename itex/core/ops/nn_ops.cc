@@ -84,30 +84,6 @@ void Register_GeluGradOp() {
   }
 }
 
-void Register_InstanceNormOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("InstanceNorm");
-
-    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "scale: U");
-    TF_OpDefinitionBuilderAddInput(op_builder, "offset: U");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "y: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {float, half, bfloat16}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "U: {float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
-    TF_OpDefinitionBuilderAddAttr(
-        op_builder,
-        "data_format: { 'NHWC', 'NCHW', 'NDHWC', 'NCDHW' } = 'NHWC' ");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "InstanceNorm op registration failed: ";
-  }
-}
-
 void Register_ITEXInstanceNormOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
@@ -212,129 +188,6 @@ void Register_LayerNormGradOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "LayerNormGrad op registration failed: ";
-  }
-}
-
-void Register_PadWithConv2DOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_PadWithConv2D");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "paddings: Tpaddings");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "Tpaddings: {int32, int64} = DT_INT32");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "use_cudnn_on_gpu: bool = true");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "padding: {'VALID'}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_PadWithConv2D op registration failed: ";
-  }
-}
-
-void Register_PadWithConv3DOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_PadWithConv3D");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "paddings: Tpaddings");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "Tpaddings: {int32, int64} = DT_INT32");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "use_cudnn_on_gpu: bool = true");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "padding: {'VALID'}");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  GetConvnet3dDataFormatAttrString());
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_PadWithConv3D op registration failed: ";
-  }
-}
-
-void Register_PadWithFusedConv2DOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_PadWithFusedConv2D");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "args: num_args * T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "paddings: Tpaddings");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "num_args: int >= 0");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "Tpaddings: {int32, int64} = DT_INT32");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "use_cudnn_on_gpu: bool = true");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "fused_ops: list(string) = []");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "leakyrelu_alpha: float = 0.2");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "padding: {'VALID'}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_PadWithFusedConv2D op registration failed: ";
-  }
-}
-
-void Register_PadWithFusedConv3DOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_PadWithFusedConv3D");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "args: num_args * T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "paddings: Tpaddings");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "num_args: int >= 0");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "Tpaddings: {int32, int64} = DT_INT32");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "dilations: list(int) = [1, 1, 1, 1, 1]");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "fused_ops: list(string) = []");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "leakyrelu_alpha: float = 0.2");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "padding: {'VALID'}");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  GetConvnet3dDataFormatAttrString());
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_PadWithFusedConv3D op registration failed: ";
   }
 }
 
@@ -698,24 +551,6 @@ void Register_QuantizedFusedBatchMatMulV2AndDequantizeOp() {
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_QuantizedFusedBatchMatMulV2AndDequantize op "
            "registration failed: ";
-  }
-}
-
-void Register_SwishOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("Swish");
-    TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "T: {bfloat16, half, float} = DT_FLOAT");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "alpha: float = 1.0");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
-
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "Swish op registration failed: ";
   }
 }
 
@@ -2588,7 +2423,7 @@ void Register_ITEXLeakyReluGradOp() {
 void Register_ITEXGeluOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
-    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("_ITEXGelu");
+    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("ITEXGelu");
     TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
     TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
@@ -2598,7 +2433,7 @@ void Register_ITEXGeluOp() {
 
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXGelu op registration failed: ";
+        << "ITEXGelu op registration failed: ";
   }
 }
 
@@ -2606,7 +2441,7 @@ void Register_ITEXGeluGradOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXGeluGrad");
+        TF_NewOpDefinitionBuilder("ITEXGeluGrad");
     TF_OpDefinitionBuilderAddInput(op_builder, "gradients: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "backprops: T");
@@ -2618,7 +2453,7 @@ void Register_ITEXGeluGradOp() {
 
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXGeluGrad op registration failed.";
+        << "ITEXGeluGrad op registration failed.";
   }
 }
 
@@ -2730,22 +2565,6 @@ void Register_ITEXSoftmaxOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_ITEXSoftmax op registration failed: ";
-  }
-}
-
-void Register_MishOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("Mish");
-    TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "T: {bfloat16, half, float} = DT_FLOAT");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "Mish op registration failed: ";
   }
 }
 
@@ -3133,7 +2952,7 @@ void Register_ITEXLayerNormOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXLayerNorm");
+        TF_NewOpDefinitionBuilder("ITEXLayerNorm");
     TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "scale: U");
     TF_OpDefinitionBuilderAddInput(op_builder, "offset: U");
@@ -3150,7 +2969,7 @@ void Register_ITEXLayerNormOp() {
                                                     &unchanged_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXLayerNorm op registration failed: ";
+        << "ITEXLayerNorm op registration failed: ";
   }
 }
 
@@ -3158,7 +2977,7 @@ void Register_ITEXLayerNormGradOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXLayerNormGrad");
+        TF_NewOpDefinitionBuilder("ITEXLayerNormGrad");
     TF_OpDefinitionBuilderAddInput(op_builder, "y_backprop: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "scale: U");
@@ -3179,7 +2998,7 @@ void Register_ITEXLayerNormGradOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXLayerNormGrad op registration failed: ";
+        << "ITEXLayerNormGrad op registration failed: ";
   }
 }
 

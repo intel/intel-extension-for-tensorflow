@@ -50,7 +50,7 @@ class FusedConv3DTest(test_util.TensorFlowTestCase):
         conv = nn_ops.Conv3D(input=conv2, filter=w, strides=[1, 1, 1, 1, 1], padding='SAME',data_format='NDHWC')
         bias_add = nn_ops.bias_add(conv, b)
         output= array_ops.identity(math_ops.add_n([bias_add, conv2]))
-        conv_bias_gelu_erf = load_ops_library.gelu(output,approximate=False)
+        conv_bias_gelu_erf = load_ops_library.itex_gelu(output,approximate=False)
         fused = array_ops.identity(conv_bias_gelu_erf)
         
         # fused pattern output value from gpu side

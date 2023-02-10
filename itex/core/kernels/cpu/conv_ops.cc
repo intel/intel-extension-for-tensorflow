@@ -49,21 +49,7 @@ namespace itex {
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<int32>("Tpaddings")              \
                               .HostMemory("paddings"),                         \
-                          FusedConvOp<CPUDevice, T, T, T, T, T, true>);        \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithConv2D")                               \
-                              .Device(DEVICE_CPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<int32>("Tpaddings")              \
-                              .HostMemory("paddings"),                         \
-                          ConvOpBase<CPUDevice, T, T, T, T, T, true>);         \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithFusedConv2D")                          \
-                              .Device(DEVICE_CPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<int32>("Tpaddings")              \
-                              .HostMemory("paddings"),                         \
                           FusedConvOp<CPUDevice, T, T, T, T, T, true>);
-// TODO(itex): remove registration of intermediate kernels. Remapper should
-// directly generate _ITEXFusedxxx.
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_CPU_CONV2D);
 #undef REGISTER_CPU_CONV2D
 
@@ -85,21 +71,7 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_CPU_CONV2D);
                               .TypeConstraint<T>("T")                     \
                               .TypeConstraint<int32>("Tpaddings")         \
                               .HostMemory("paddings"),                    \
-                          FusedConvOp<CPUDevice, T, T, T, T, T, true>);   \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithConv3D")                          \
-                              .Device(DEVICE_CPU)                         \
-                              .TypeConstraint<T>("T")                     \
-                              .TypeConstraint<int32>("Tpaddings")         \
-                              .HostMemory("paddings"),                    \
-                          ConvOpBase<CPUDevice, T, T, T, T, T, true>);    \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithFusedConv3D")                     \
-                              .Device(DEVICE_CPU)                         \
-                              .TypeConstraint<T>("T")                     \
-                              .TypeConstraint<int32>("Tpaddings")         \
-                              .HostMemory("paddings"),                    \
                           FusedConvOp<CPUDevice, T, T, T, T, T, true>);
-// TODO(itex): remove registration of intermediate kernels. Remapper should
-// directly generate _ITEXFusedxxx.
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_CPU_CONV3D);
 #undef REGISTER_CPU_CONV3D
 

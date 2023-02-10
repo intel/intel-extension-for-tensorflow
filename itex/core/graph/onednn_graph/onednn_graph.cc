@@ -53,8 +53,9 @@ using TranslationMap =
 // the possibliliy in creating oneDNN Graph ops, we won't map those ops by
 // default.
 static const std::unordered_set<std::string> non_int8_candidate_set = {
-    {"FusedBatchNormGradV3", "LayerNormGrad", "MaxPoolGrad", "ReluGrad",
-     "GeluGrad", "ResizeBilinear", "Select"}};
+    {"FusedBatchNormGradV3", "LayerNormGrad", "ITEXLayerNormGrad",
+     "MaxPoolGrad", "ReluGrad", "GeluGrad", "ITEXGeluGrad", "ResizeBilinear",
+     "Select"}};
 
 // Input and output index in LLGA op and TF op maybe different, e.g. diff_dst
 // input in TF BNGrad is 0, while in LLGA BNGrad is 1. Thus, we need to map the
@@ -76,7 +77,9 @@ static const std::unordered_map<std::string, std::vector<int>>
         {"FusedBatchNormV3Training", {0, 3, 4, 1, 2}},
         {"FusedBatchNormGradV3", {1, 0, 3, 4, 2}},
         {"GeluGrad", {1, 0}},
+        {"ITEXGeluGrad", {1, 0}},
         {"LayerNormGrad", {1, 0, 3, 4, 2}},
+        {"ITEXLayerNormGrad", {1, 0, 3, 4, 2}},
         {"MaxPoolGrad", {0, 2}},
         {"QuantizeV2", {0}},
         {"ReluGrad", {1, 0}},
@@ -99,6 +102,7 @@ static const std::unordered_map<std::string, std::vector<int>>
         {"LayerNormTraining", {0, 1, 2}},
         {"LayerNormInference", {0}},
         {"LayerNormGrad", {0, 1, 2}},
+        {"ITEXLayerNormGrad", {0, 1, 2}},
         {"QuantizeV2", {0}},
         {"Dequantize", {0}}};
 
@@ -134,7 +138,7 @@ string GetOpInLLGAStyle(const utils::MutableNodeView* node_view) {
     } else {
       op = "Conv2DBackpropFilterDynamic";
     }
-  } else if (op == "LayerNorm") {
+  } else if (op == "LayerNorm" || op == "ITEXLayerNorm") {
     bool is_training = true;
     // TODO(itex): investigate why Layernorm op doesn't have "is_training" attr.
     TryGetNodeAttr(*node_def, "is_training", &is_training);
@@ -1167,7 +1171,9 @@ Status TranslateEltwise(const OneDnnGraphContext* ctx, const int node_index,
   static std::map<std::string, kind> TF_LLGA_op_map = {
       {"Elu", kind::Elu},
       {"Gelu", kind::GELU},
+      {"ITEXGelu", kind::GELU},
       {"GeluGrad", kind::GELUBackprop},
+      {"ITEXGeluGrad", kind::GELUBackprop},
       {"LeakyRelu", kind::LeakyReLU},
       {"Sigmoid", kind::Sigmoid},
       {"Relu", kind::ReLU},
@@ -1712,7 +1718,9 @@ const TranslationMap& getTranslationMap() {
       {"FusedBatchNormV3", TranslateBN},
       {"FusedBatchNormGradV3", TranslateBNGrad},
       {"LayerNorm", TranslateLN},
+      {"ITEXLayerNorm", TranslateLN},
       {"LayerNormGrad", TranslateLNGrad},
+      {"ITEXLayerNormGrad", TranslateLNGrad},
       ////// pool
       {"AvgPool", TranslateAvgPool},
       {"MaxPool", TranslateMaxPool},
@@ -1733,7 +1741,9 @@ const TranslationMap& getTranslationMap() {
       {"Relu", TranslateEltwise},
       {"ReluGrad", TranslateEltwise},
       {"Gelu", TranslateEltwise},
+      {"ITEXGelu", TranslateEltwise},
       {"GeluGrad", TranslateEltwise},
+      {"ITEXGeluGrad", TranslateEltwise},
       {"Reshape", TranslateReshape},
       {"Transpose", TranslateTranspose},
       {"Softmax", TranslateSoftmax},

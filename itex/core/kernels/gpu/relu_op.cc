@@ -20,30 +20,33 @@ limitations under the License.
 
 namespace itex {
 // Registration of the forward kernels.
-#define REGISTER_GPU_KERNELS(type)                                    \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("Relu").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
-      ReluOp<GPUDevice, type>);                                       \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("Elu").Device(DEVICE_GPU).TypeConstraint<type>("T"),       \
-      EluOp<GPUDevice, type>);                                        \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("Relu6").Device(DEVICE_GPU).TypeConstraint<type>("T"),     \
-      Relu6Op<GPUDevice, type>);                                      \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("LeakyRelu").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
-      LeakyReluOp<GPUDevice, type>);                                  \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("Gelu").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
-      GeluOp<GPUDevice, type>);                                       \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("Mish").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
-      MishOp<GPUDevice, type>);                                       \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("Selu").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
-      SeluOp<GPUDevice, type>);                                       \
-  REGISTER_KERNEL_BUILDER(                                            \
-      Name("Swish").Device(DEVICE_GPU).TypeConstraint<type>("T"),     \
+#define REGISTER_GPU_KERNELS(type)                                     \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("Relu").Device(DEVICE_GPU).TypeConstraint<type>("T"),       \
+      ReluOp<GPUDevice, type>);                                        \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("Elu").Device(DEVICE_GPU).TypeConstraint<type>("T"),        \
+      EluOp<GPUDevice, type>);                                         \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("Relu6").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
+      Relu6Op<GPUDevice, type>);                                       \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("LeakyRelu").Device(DEVICE_GPU).TypeConstraint<type>("T"),  \
+      LeakyReluOp<GPUDevice, type>);                                   \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("Gelu").Device(DEVICE_GPU).TypeConstraint<type>("T"),       \
+      GeluOp<GPUDevice, type>);                                        \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("ITEXGelu").Device(DEVICE_GPU).TypeConstraint<type>("T"),   \
+      GeluOp<GPUDevice, type>);                                        \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("_ITEXMish").Device(DEVICE_GPU).TypeConstraint<type>("T"),  \
+      MishOp<GPUDevice, type>);                                        \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("Selu").Device(DEVICE_GPU).TypeConstraint<type>("T"),       \
+      SeluOp<GPUDevice, type>);                                        \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("_ITEXSwish").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
       SwishOp<GPUDevice, type>);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_KERNELS);
@@ -74,6 +77,9 @@ TF_CALL_double(REGISTER_GPU_KERNELS);
       LeakyReluGradOp<GPUDevice, type>);                                  \
   REGISTER_KERNEL_BUILDER(                                                \
       Name("GeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
+      GeluGradOp<GPUDevice, type>);                                       \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("ITEXGeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),  \
       GeluGradOp<GPUDevice, type>);                                       \
   REGISTER_KERNEL_BUILDER(                                                \
       Name("SeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \

@@ -42,6 +42,7 @@ const std::vector<PostOpInfo>& PostOpUtil::GetAllPostOpInfo() {
       // Here `Gelu` is a placeholder for activation check, it will be
       // converted to `"GeluExact` or `"GeluApproximate` after remapper.
       {"Gelu", kind::eltwise, algorithm::undef, kAlphaOne, kBetaZero},
+      {"ITEXGelu", kind::eltwise, algorithm::undef, kAlphaOne, kBetaZero},
       {"GeluExact", kind::eltwise, algorithm::eltwise_gelu_erf, kAlphaZero,
        kBetaZero},
       {"GeluApproximate", kind::eltwise, algorithm::eltwise_gelu_tanh,
@@ -50,13 +51,15 @@ const std::vector<PostOpInfo>& PostOpUtil::GetAllPostOpInfo() {
        kBetaZero},
       {"LeakyRelu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero,
        kBetaZero},
-      {"Mish", kind::eltwise, algorithm::eltwise_mish, kAlphaZero, kBetaZero},
+      {"_ITEXMish", kind::eltwise, algorithm::eltwise_mish, kAlphaZero,
+       kBetaZero},
       {"Relu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero, kBetaZero},
       {"Relu6", kind::eltwise, algorithm::eltwise_clip_v2, kAlphaZero,
        kBetaSix},
       {"Sigmoid", kind::eltwise, algorithm::eltwise_logistic, kAlphaOne,
        kBetaZero},
-      {"Swish", kind::eltwise, algorithm::eltwise_swish, kAlphaOne, kBetaZero},
+      {"_ITEXSwish", kind::eltwise, algorithm::eltwise_swish, kAlphaOne,
+       kBetaZero},
       {"Tanh", kind::eltwise, algorithm::eltwise_tanh, kAlphaZero, kBetaZero},
 
       /* Kind: binary */

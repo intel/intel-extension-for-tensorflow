@@ -100,7 +100,6 @@ void RegisterOps() {
   Register_ITEXTensorArraySplit();
   Register_ITEXTensorArraySize();
   Register_ITEXTensorArrayClose();
-  Register_InstanceNormOp();
   Register_GeluOp();
   Register_GeluGradOp();
   Register_ITEXConv2DBackpropFilterWithBiasOp();
@@ -122,21 +121,21 @@ void RegisterOps() {
   Register_ITEXFusedQuantizedConv2DWithDequantizeOp();
   Register_ITEXFusedQuantizedConv2DWithCastOp();
   Register_ITEXFusedBinaryOp();
+  Register_ITEXInstanceNormOp();
   Register_ITEXMishOp();
+  Register_ITEXPadWithConv2DOp();
+  Register_ITEXPadWithConv3DOp();
+  Register_ITEXPadWithFusedConv2DOp();
+  Register_ITEXPadWithFusedConv3DOp();
   Register_ITEXRandomUniformOp();
+  Register_ITEXSwishOp();
   Register_LayerNormOp();
   Register_LayerNormGradOp();
-  Register_MishOp();
   Register_ITEXRnnOp();
   Register_ITEXRnnGradOp();
   Register_OneDnnGraphOp();
-  Register_PadWithConv2DOp();
-  Register_PadWithConv3DOp();
-  Register_PadWithFusedConv2DOp();
-  Register_PadWithFusedConv3DOp();
   RegisterRMSPropComputeRMSOp();
   RegisterRMSPropVarUpdateOp();
-  Register_SwishOp();
 
   // Native kernels
   Register_ITEXAddNOp();
@@ -174,7 +173,6 @@ void RegisterOps() {
   Register_ITEXGeluGradOp();
   Register_ITEXGeluOp();
   Register_ITEXGRUOp();
-  Register_ITEXInstanceNormOp();
   Register_ITEXLayerNormOp();
   Register_ITEXLayerNormGradOp();
   Register_ITEXLeakyReluGradOp();
@@ -185,10 +183,6 @@ void RegisterOps() {
   Register_ITEXMaxPoolGradOp();
   Register_ITEXMaxPoolOp();
   Register_ITEXMklLayerNormOp();
-  Register_ITEXPadWithConv2DOp();
-  Register_ITEXPadWithConv3DOp();
-  Register_ITEXPadWithFusedConv2DOp();
-  Register_ITEXPadWithFusedConv3DOp();
   Register_ITEXPadWithConv2DBackpropFilterOp();
   Register_ITEXPadWithConv2DBackpropFilterWithBiasOp();
   Register_ITEXPadWithConv3DBackpropFilterV2Op();
@@ -231,7 +225,6 @@ void RegisterOps() {
   Register_ITEXResizeBilinearGradOp();
   Register_ITEXSliceOp();
   Register_ITEXSoftmaxOp();
-  Register_ITEXSwishOp();
   Register_ITEXTransposeOp();
 
   Register_ITEXQuantizedConcatV2Op();

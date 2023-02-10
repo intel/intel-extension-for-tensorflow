@@ -19,22 +19,32 @@ limitations under the License.
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
 namespace itex {
 
-#define REGISTER_LAYERNORM_GPU(T, U)                   \
-  REGISTER_KERNEL_BUILDER(Name("LayerNorm")            \
-                              .Device(DEVICE_GPU)      \
-                              .TypeConstraint<T>("T")  \
-                              .TypeConstraint<U>("U"), \
+#define REGISTER_LAYERNORM_GPU(T, U)                     \
+  REGISTER_KERNEL_BUILDER(Name("ITEXLayerNorm")          \
+                              .Device(DEVICE_GPU)        \
+                              .TypeConstraint<T>("T")    \
+                              .TypeConstraint<U>("U"),   \
+                          LayerNormOp<GPUDevice, T, U>); \
+  REGISTER_KERNEL_BUILDER(Name("LayerNorm")              \
+                              .Device(DEVICE_GPU)        \
+                              .TypeConstraint<T>("T")    \
+                              .TypeConstraint<U>("U"),   \
                           LayerNormOp<GPUDevice, T, U>);
 REGISTER_LAYERNORM_GPU(float, float);
 REGISTER_LAYERNORM_GPU(Eigen::bfloat16, float);
 REGISTER_LAYERNORM_GPU(Eigen::half, float);
 #undef REGISTER_LAYERNORM_GPU
 
-#define REGISTER_LAYERNORM_GRAD_GPU(T, U)              \
-  REGISTER_KERNEL_BUILDER(Name("LayerNormGrad")        \
-                              .Device(DEVICE_GPU)      \
-                              .TypeConstraint<T>("T")  \
-                              .TypeConstraint<U>("U"), \
+#define REGISTER_LAYERNORM_GRAD_GPU(T, U)                    \
+  REGISTER_KERNEL_BUILDER(Name("ITEXLayerNormGrad")          \
+                              .Device(DEVICE_GPU)            \
+                              .TypeConstraint<T>("T")        \
+                              .TypeConstraint<U>("U"),       \
+                          LayerNormGradOp<GPUDevice, T, U>); \
+  REGISTER_KERNEL_BUILDER(Name("LayerNormGrad")              \
+                              .Device(DEVICE_GPU)            \
+                              .TypeConstraint<T>("T")        \
+                              .TypeConstraint<U>("U"),       \
                           LayerNormGradOp<GPUDevice, T, U>);
 REGISTER_LAYERNORM_GRAD_GPU(float, float);
 REGISTER_LAYERNORM_GRAD_GPU(Eigen::bfloat16, float);

@@ -55,7 +55,7 @@ def _layer_norm(
   min_epsilon = 1.001e-5
   epsilon = epsilon if epsilon > min_epsilon else min_epsilon
 
-  y, running_mean, running_var = load_ops_library.layer_norm(
+  y, running_mean, running_var = load_ops_library.itex_layer_norm(
       x,
       scale,
       offset,

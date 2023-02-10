@@ -53,7 +53,6 @@ void Register_QuantizedFusedBatchNormOp();
 // Custom kernels
 void Register_GeluOp();
 void Register_GeluGradOp();
-void Register_InstanceNormOp();
 // There are similar ops called "_FusedConv2D" or in "_FusedMatMul" TF-Proper.
 // We use such custom ops in ITEX to enable more features.
 void Register_ITEXConv2DBackpropFilterWithBiasOp();
@@ -77,7 +76,12 @@ void Register_ITEXFusedQuantizedConv2DWithCastOp();
 void Register_ITEXFusedBinaryOp();
 void Register_ITEXRandomUniformOp();
 void Register_ITEXFusedAddV2WithSoftmaxOp();
+void Register_ITEXInstanceNormOp();
 void Register_ITEXMishOp();
+void Register_ITEXPadWithConv2DOp();
+void Register_ITEXPadWithConv3DOp();
+void Register_ITEXPadWithFusedConv2DOp();
+void Register_ITEXPadWithFusedConv3DOp();
 void Register_ITEXTensorArray();
 void Register_ITEXTensorArrayGrad();
 void Register_ITEXTensorArrayGradWithShape();
@@ -93,17 +97,11 @@ void Register_ITEXTensorArraySize();
 void Register_ITEXTensorArrayClose();
 void Register_LayerNormOp();
 void Register_LayerNormGradOp();
-void Register_MishOp();
 void Register_ITEXRnnOp();
 void Register_ITEXRnnGradOp();
 void Register_OneDnnGraphOp();
-void Register_PadWithConv2DOp();
-void Register_PadWithConv3DOp();
-void Register_PadWithFusedConv2DOp();
-void Register_PadWithFusedConv3DOp();
 void RegisterRMSPropComputeRMSOp();
 void RegisterRMSPropVarUpdateOp();
-void Register_SwishOp();
 
 // Native kernels
 void Register_ITEXAddNOp();
@@ -141,7 +139,6 @@ void Register_ITEXFusedBatchNormV3Op();
 void Register_ITEXGeluGradOp();
 void Register_ITEXGeluOp();
 void Register_ITEXGRUOp();
-void Register_ITEXInstanceNormOp();
 void Register_ITEXLayerNormOp();
 void Register_ITEXLayerNormGradOp();
 void Register_ITEXLeakyReluGradOp();
@@ -152,10 +149,6 @@ void Register_ITEXMaxPool3DOp();
 void Register_ITEXMaxPoolGradOp();
 void Register_ITEXMaxPoolOp();
 void Register_ITEXMklLayerNormOp();
-void Register_ITEXPadWithConv2DOp();
-void Register_ITEXPadWithConv3DOp();
-void Register_ITEXPadWithFusedConv2DOp();
-void Register_ITEXPadWithFusedConv3DOp();
 void Register_ITEXPadWithConv2DBackpropFilterOp();
 void Register_ITEXPadWithConv2DBackpropFilterWithBiasOp();
 void Register_ITEXPadWithConv3DBackpropFilterV2Op();

@@ -62,4 +62,4 @@ def gelu(features, approximate=False, name=None):
   """
   with ops.name_scope(name, "Gelu", [features]):
     features = ops.convert_to_tensor(features, name="features")
-    return load_ops_library.gelu(features, approximate)
+    return load_ops_library.itex_gelu(features, approximate)

@@ -18,7 +18,7 @@ limitations under the License.
 namespace itex {
 
 #define REGISTER_LAYERNORM_CPU(T, U)                     \
-  REGISTER_KERNEL_BUILDER(Name("_ITEXLayerNorm")         \
+  REGISTER_KERNEL_BUILDER(Name("ITEXLayerNorm")          \
                               .Device(DEVICE_CPU)        \
                               .TypeConstraint<T>("T")    \
                               .TypeConstraint<U>("U"),   \
@@ -33,7 +33,7 @@ REGISTER_LAYERNORM_CPU(Eigen::bfloat16, float);
 #undef REGISTER_LAYERNORM_CPU
 
 #define REGISTER_LAYERNORM_GRAD_CPU(T, U)                    \
-  REGISTER_KERNEL_BUILDER(Name("_ITEXLayerNormGrad")         \
+  REGISTER_KERNEL_BUILDER(Name("ITEXLayerNormGrad")          \
                               .Device(DEVICE_CPU)            \
                               .TypeConstraint<T>("T")        \
                               .TypeConstraint<U>("U"),       \

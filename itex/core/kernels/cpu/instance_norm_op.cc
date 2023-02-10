@@ -27,12 +27,7 @@ namespace itex {
                               .Device(DEVICE_CPU)                  \
                               .TypeConstraint<T>("T")              \
                               .TypeConstraint<U>("U"),             \
-                          InstanceNormOp<CPUDevice, T, U, true>);  \
-  REGISTER_KERNEL_BUILDER(Name("InstanceNorm")                     \
-                              .Device(DEVICE_CPU)                  \
-                              .TypeConstraint<T>("T")              \
-                              .TypeConstraint<U>("U"),             \
-                          InstanceNormOp<CPUDevice, T, U, false>);
+                          InstanceNormOp<CPUDevice, T, U, true>);
 
 REGISTER_INSTANCE_NORM_CPU(float, float);
 REGISTER_INSTANCE_NORM_CPU(Eigen::bfloat16, float);

@@ -355,7 +355,10 @@ bool IsGather(const NodeDef& node) {
   return op == "Gather" || op == "GatherV2";
 }
 
-bool IsGelu(const NodeDef& node) { return node.op() == "Gelu"; }
+bool IsGelu(const NodeDef& node) {
+  const auto& op = node.op();
+  return op == "Gelu" || op == "ITEXGelu";
+}
 
 bool IsGreater(const NodeDef& node) { return node.op() == "Greater"; }
 
@@ -399,7 +402,9 @@ bool IsImmutableConst(const NodeDef& node) {
 
 bool IsInvGrad(const NodeDef& node) { return node.op() == "InvGrad"; }
 
-bool IsInstanceNorm(const NodeDef& node) { return node.op() == "InstanceNorm"; }
+bool IsInstanceNorm(const NodeDef& node) {
+  return node.op() == "_ITEXInstanceNorm";
+}
 
 bool IsLeakyRelu(const NodeDef& node) { return node.op() == "LeakyRelu"; }
 

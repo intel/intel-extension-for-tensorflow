@@ -20,7 +20,7 @@ limitations under the License.
 namespace itex {
 
 #define REGISTER_INSTANCE_NORM_GPU(T, U)                           \
-  REGISTER_KERNEL_BUILDER(Name("InstanceNorm")                     \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXInstanceNorm")                \
                               .Device(DEVICE_GPU)                  \
                               .TypeConstraint<T>("T")              \
                               .TypeConstraint<U>("U"),             \
