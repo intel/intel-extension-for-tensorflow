@@ -53,7 +53,7 @@ class FusedConv2DTest(test_util.TensorFlowTestCase):
             for node in graph.node:
                 if "FusedConv2D" in node.op:
                     fused_ops = node.attr['fused_ops'].list.s
-                    found_fused_op = len(fused_ops) == 2 and fused_ops[0] == b'BiasAdd' and fused_ops[1] == b'Mish'
+                    found_fused_op = len(fused_ops) == 2 and fused_ops[0] == b'BiasAdd' and fused_ops[1] == b'_ITEXMish'
                     break
             self.assertTrue(found_fused_op, "this pattern has fusion issue!!")
             self.assertAllClose(expected_result, result)

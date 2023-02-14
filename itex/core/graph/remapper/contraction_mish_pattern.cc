@@ -87,7 +87,7 @@ class Conv2DWithMishFusion : public Fusion {
     fused_op.add_input(conv2d->input(2));
 
     CopyAllAttrs(*conv2d, &fused_op);
-    SetFusedOpAttributes(&fused_op, {"BiasAdd", "Mish"}, 1);
+    SetFusedOpAttributes(&fused_op, {"BiasAdd", "_ITEXMish"}, 1);
 
     Status status;
     utils::Mutation* mutation = graph_view.GetMutationBuilder();
