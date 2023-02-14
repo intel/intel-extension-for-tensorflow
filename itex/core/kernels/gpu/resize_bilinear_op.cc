@@ -34,6 +34,7 @@ limitations under the License.
 namespace itex {
 
 typedef Eigen::GpuDevice GPUDevice;
+typedef Eigen::internal::TensorIntDivisor<int> FastDivisor;
 
 template <typename Device, typename T>
 class ResizeBilinearOp : public OpKernel {
@@ -75,7 +76,9 @@ struct ResizeBilinearKernel {
   ResizeBilinearKernel(const T* images, int total_count, float height_scale,
                        float width_scale, int batch, int in_height,
                        int in_width, int channels, int out_height,
-                       int out_width, float* output)
+                       int out_width, FastDivisor channels_fast_divisor,
+                       FastDivisor out_height_fast_divisor,
+                       FastDivisor out_width_fast_divisor, float* output)
       : images(images),
         total_count(total_count),
         height_scale(height_scale),
@@ -86,19 +89,26 @@ struct ResizeBilinearKernel {
         channels(channels),
         out_height(out_height),
         out_width(out_width),
+        channels_fast_divisor(channels_fast_divisor),
+        out_height_fast_divisor(out_height_fast_divisor),
+        out_width_fast_divisor(out_width_fast_divisor),
         output(output) {}
   void operator()(sycl::nd_item<1> item) const {
     auto id = item.get_global_linear_id();
 
     if (id >= total_count) return;
 
-    int idx = id;
-    const int c = idx % channels;
-    idx /= channels;
-    const int x = idx % out_width;
-    idx /= out_width;
-    const int y = idx % out_height;
-    const int b = idx / out_height;
+    int prev_id = id;
+    int n = id;
+    n = n / channels_fast_divisor;
+    const int c = prev_id - n * channels;
+    prev_id = n;
+    n = n / out_width_fast_divisor;
+    const int x = prev_id - n * out_width;
+    prev_id = n;
+    n = n / out_height_fast_divisor;
+    const int b = n;
+    const int y = prev_id - n * out_height;
 
     const float in_y = (static_cast<float>(y) + 0.5f) * height_scale - 0.5f;
 
@@ -148,6 +158,9 @@ struct ResizeBilinearKernel {
   int channels;
   int out_height;
   int out_width;
+  FastDivisor channels_fast_divisor;
+  FastDivisor out_height_fast_divisor;
+  FastDivisor out_width_fast_divisor;
   float* output;
 };
 
@@ -156,7 +169,10 @@ struct LegacyResizeBilinearKernel {
   LegacyResizeBilinearKernel(const T* images, int total_count,
                              float height_scale, float width_scale, int batch,
                              int in_height, int in_width, int channels,
-                             int out_height, int out_width, float* output)
+                             int out_height, int out_width,
+                             FastDivisor channels_fast_divisor,
+                             FastDivisor out_height_fast_divisor,
+                             FastDivisor out_width_fast_divisor, float* output)
       : images(images),
         total_count(total_count),
         height_scale(height_scale),
@@ -167,19 +183,26 @@ struct LegacyResizeBilinearKernel {
         channels(channels),
         out_height(out_height),
         out_width(out_width),
+        channels_fast_divisor(channels_fast_divisor),
+        out_height_fast_divisor(out_height_fast_divisor),
+        out_width_fast_divisor(out_width_fast_divisor),
         output(output) {}
   void operator()(sycl::nd_item<1> item) const {
     auto id = item.get_global_linear_id();
 
     if (id >= total_count) return;
 
-    int idx = id;
-    const int c = idx % channels;
-    idx /= channels;
-    const int x = idx % out_width;
-    idx /= out_width;
-    const int y = idx % out_height;
-    const int b = idx / out_height;
+    int prev_id = id;
+    int n = id;
+    n = n / channels_fast_divisor;
+    const int c = prev_id - n * channels;
+    prev_id = n;
+    n = n / out_width_fast_divisor;
+    const int x = prev_id - n * out_width;
+    prev_id = n;
+    n = n / out_height_fast_divisor;
+    const int b = n;
+    const int y = prev_id - n * out_height;
 
     const float in_y = y * height_scale;
     const int top_y_index = sycl::floor(in_y);
@@ -228,6 +251,9 @@ struct LegacyResizeBilinearKernel {
   int channels;
   int out_height;
   int out_width;
+  FastDivisor channels_fast_divisor;
+  FastDivisor out_height_fast_divisor;
+  FastDivisor out_width_fast_divisor;
   float* output;
 };
 
@@ -256,6 +282,17 @@ struct ResizeBilinear<GPUDevice, T> {
     const int total_count = batch * out_height * out_width * channels;
     if (total_count == 0) return;
 
+#define EigenFastDivisor(divisor, num)                     \
+  Eigen::internal::TensorIntDivisor<int> divisor;          \
+  if (num != 0) {                                          \
+    divisor = Eigen::internal::TensorIntDivisor<int>(num); \
+  }
+
+    EigenFastDivisor(channels_fast_divisor, channels);
+    EigenFastDivisor(out_width_fast_divisor, out_width);
+    EigenFastDivisor(out_height_fast_divisor, out_height);
+#undef EigenFastDivisor
+
     auto stream = d.stream();
     auto group_size =
         (*stream)
@@ -268,7 +305,8 @@ struct ResizeBilinear<GPUDevice, T> {
         impl::ResizeBilinearKernel<T> task(
             images.data(), total_count, height_scale, width_scale, batch,
             in_height, in_width, channels, out_height, out_width,
-            output.data());
+            channels_fast_divisor, out_height_fast_divisor,
+            out_width_fast_divisor, output.data());
         cgh.parallel_for<ResizeBilinearTask<T>>(
             sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
                               sycl::range<1>(group_size)),
@@ -279,7 +317,8 @@ struct ResizeBilinear<GPUDevice, T> {
         impl::LegacyResizeBilinearKernel<T> task(
             images.data(), total_count, height_scale, width_scale, batch,
             in_height, in_width, channels, out_height, out_width,
-            output.data());
+            channels_fast_divisor, out_height_fast_divisor,
+            out_width_fast_divisor, output.data());
         cgh.parallel_for<LegacyResizeBilinearTask<T>>(
             sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
                               sycl::range<1>(group_size)),
@@ -387,6 +426,9 @@ struct ResizeBilinearGradKernel {
                            const float height_scale, const float width_scale,
                            int batch, int original_height, int original_width,
                            int channels, int resized_height, int resized_width,
+                           FastDivisor channels_fast_divisor,
+                           FastDivisor resized_height_fast_divisor,
+                           FastDivisor resized_width_fast_divisor,
                            T* output_grad)
       : total_count(total_count),
         input_grad(input_grad),
@@ -398,6 +440,9 @@ struct ResizeBilinearGradKernel {
         channels(channels),
         resized_height(resized_height),
         resized_width(resized_width),
+        channels_fast_divisor(channels_fast_divisor),
+        resized_height_fast_divisor(resized_height_fast_divisor),
+        resized_width_fast_divisor(resized_width_fast_divisor),
         output_grad(output_grad) {}
   void operator()(sycl::nd_item<1> item) const {
     auto in_idx = item.get_global_linear_id();
@@ -405,13 +450,17 @@ struct ResizeBilinearGradKernel {
 
     // in_idx = c + channels * (x + resized_width * (y + resized_height *
     // b))
-    int idx = in_idx;
-    const int c = idx % channels;
-    idx /= channels;
-    const int x = idx % resized_width;
-    idx /= resized_width;
-    const int y = idx % resized_height;
-    const int b = idx / resized_height;
+    int prev_id = in_idx;
+    int n = in_idx;
+    n = n / channels_fast_divisor;
+    const int c = prev_id - n * channels;
+    prev_id = n;
+    n = n / resized_width_fast_divisor;
+    const int x = prev_id - n * resized_width;
+    prev_id = n;
+    n = n / resized_height_fast_divisor;
+    const int b = n;
+    const int y = prev_id - n * resized_height;
 
     const float original_y =
         (static_cast<float>(y) + 0.5f) * height_scale - 0.5f;
@@ -470,17 +519,21 @@ struct ResizeBilinearGradKernel {
   int channels;
   int resized_height;
   int resized_width;
+  FastDivisor channels_fast_divisor;
+  FastDivisor resized_height_fast_divisor;
+  FastDivisor resized_width_fast_divisor;
   T* output_grad;
 };
 
 template <typename T>
 struct LegacyResizeBilinearGradKernel {
-  LegacyResizeBilinearGradKernel(const int total_count, const float* input_grad,
-                                 const float height_scale,
-                                 const float width_scale, int batch,
-                                 int original_height, int original_width,
-                                 int channels, int resized_height,
-                                 int resized_width, T* output_grad)
+  LegacyResizeBilinearGradKernel(
+      const int total_count, const float* input_grad, const float height_scale,
+      const float width_scale, int batch, int original_height,
+      int original_width, int channels, int resized_height, int resized_width,
+      FastDivisor channels_fast_divisor,
+      FastDivisor resized_height_fast_divisor,
+      FastDivisor resized_width_fast_divisor, T* output_grad)
       : total_count(total_count),
         input_grad(input_grad),
         height_scale(height_scale),
@@ -491,6 +544,9 @@ struct LegacyResizeBilinearGradKernel {
         channels(channels),
         resized_height(resized_height),
         resized_width(resized_width),
+        channels_fast_divisor(channels_fast_divisor),
+        resized_height_fast_divisor(resized_height_fast_divisor),
+        resized_width_fast_divisor(resized_width_fast_divisor),
         output_grad(output_grad) {}
 
   void operator()(sycl::nd_item<1> item) const {
@@ -498,13 +554,17 @@ struct LegacyResizeBilinearGradKernel {
     if (in_idx >= total_count) return;
     // in_idx = c + channels * (x + resized_width * (y + resized_height *
     // b))
-    int idx = in_idx;
-    const int c = idx % channels;
-    idx /= channels;
-    const int x = idx % resized_width;
-    idx /= resized_width;
-    const int y = idx % resized_height;
-    const int b = idx / resized_height;
+    int prev_id = in_idx;
+    int n = in_idx;
+    n = n / channels_fast_divisor;
+    const int c = prev_id - n * channels;
+    prev_id = n;
+    n = n / resized_width_fast_divisor;
+    const int x = prev_id - n * resized_width;
+    prev_id = n;
+    n = n / resized_height_fast_divisor;
+    const int b = n;
+    const int y = prev_id - n * resized_height;
 
     const float original_y = y * height_scale;
     const int top_y_index = sycl::floor(original_y);
@@ -560,6 +620,9 @@ struct LegacyResizeBilinearGradKernel {
   int channels;
   int resized_height;
   int resized_width;
+  FastDivisor channels_fast_divisor;
+  FastDivisor resized_height_fast_divisor;
+  FastDivisor resized_width_fast_divisor;
   T* output_grad;
 };
 
@@ -585,6 +648,17 @@ struct ResizeBilinearGrad<GPUDevice, T> {
     total_count = batch * resized_height * resized_width * channels;
     if (total_count == 0) return;
 
+#define EigenFastDivisor(divisor, num)                     \
+  Eigen::internal::TensorIntDivisor<int> divisor;          \
+  if (num != 0) {                                          \
+    divisor = Eigen::internal::TensorIntDivisor<int>(num); \
+  }
+
+    EigenFastDivisor(channels_fast_divisor, channels);
+    EigenFastDivisor(resized_width_fast_divisor, resized_width);
+    EigenFastDivisor(resized_height_fast_divisor, resized_height);
+#undef EigenFastDivisor
+
     // Initialize output_grad with all zeros.
     output_grad.device(d) = output_grad.constant(T(0));
 
@@ -600,7 +674,8 @@ struct ResizeBilinearGrad<GPUDevice, T> {
         impl::ResizeBilinearGradKernel<T> task(
             total_count, input_grad.data(), height_scale, width_scale, batch,
             original_height, original_width, channels, resized_height,
-            resized_width, output_grad.data());
+            resized_width, channels_fast_divisor, resized_height_fast_divisor,
+            resized_width_fast_divisor, output_grad.data());
 
         cgh.parallel_for<ResizeBilinearGradKernelTask<T>>(
             sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
@@ -612,7 +687,8 @@ struct ResizeBilinearGrad<GPUDevice, T> {
         impl::LegacyResizeBilinearGradKernel<T> task(
             total_count, input_grad.data(), height_scale, width_scale, batch,
             original_height, original_width, channels, resized_height,
-            resized_width, output_grad.data());
+            resized_width, channels_fast_divisor, resized_height_fast_divisor,
+            resized_width_fast_divisor, output_grad.data());
 
         cgh.parallel_for<LegacyResizeBilinearGradKernelTask<T>>(
             sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
