@@ -28,6 +28,12 @@ py_library(
     ],
 )
 
+py_binary(
+    name = "gen_itex_version",
+    srcs = ["gen_itex_version.py"],
+    visibility = ["//visibility:public"],
+)
+
 # This targe should only be used for API generation.
 py_library(
     name = "modules_with_exports",

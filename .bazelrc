@@ -34,6 +34,9 @@ build --define=INCLUDEDIR=$(PREFIX)/include
 # host build is useless
 build --distinct_host_configuration=false
 
+# Build github revision info to binary
+build --workspace_status_command=./itex/tools/get_itex_version.sh
+
 # Default options should come above this line
 
 # Options from ./configure

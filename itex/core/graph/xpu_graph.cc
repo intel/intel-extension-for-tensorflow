@@ -23,6 +23,7 @@ limitations under the License.
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/numbers.h"
 #include "itex/core/utils/tf_version.h"
+#include "itex/core/version.h"
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
 void InitGlobalSetting(const OptimizerConfigFlags& config) {
@@ -57,6 +58,14 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
     ITEX_VLOG(1) << "ITEX config " << str.substr(5) << " is " << statues;
   }
 
+  // Print Stock TF and ITEX info.
+  itex::TensorFlowVersion tf_version;
+  auto* itex_version = GetITEXVersion();
+  ITEX_VLOG(1) << "Stock Tensorflow version: " << tf_version;
+  ITEX_VLOG(1) << "Intel Extension for Tensorflow version: "
+               << itex_version->major << "." << itex_version->minor << "."
+               << itex_version->patch << ", commit: " << itex_version->hash;
+
 #ifdef INTEL_CPU_ONLY
   const int32_t cpu_num = itex::port::MaxParallelism();
 
@@ -84,9 +93,6 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
   // Initialize CPU allocator:
   //   For stock TF version >= 2.9, stock TF will enable MklCPUAllocator by
   //   default. but for TF version < 2.9, need users manually enable it.
-  itex::TensorFlowVersion tf_version;
-  ITEX_VLOG(2) << "Stock Tensorflow version: " << tf_version;
-
   bool enable_onednn = true;
   ITEX_CHECK_OK(
       itex::ReadBoolFromEnvVar("TF_ENABLE_ONEDNN_OPTS", true, &enable_onednn));
