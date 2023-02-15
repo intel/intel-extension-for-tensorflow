@@ -67,13 +67,11 @@ class DistributionVec {
   Distribution* dist;
 };
 
-template <typename RealType>
-class DistributionVec<
-    random::PhiloxRandom, RealType,
-    random::UniformDistribution<random::PhiloxRandom, RealType>> {
+template <class Generator, typename RealType>
+class DistributionVec<Generator, RealType,
+                      random::UniformDistribution<Generator, RealType>> {
  public:
-  typedef random::UniformDistribution<random::PhiloxRandom, RealType>
-      Distribution;
+  typedef random::UniformDistribution<Generator, RealType> Distribution;
 
   explicit DistributionVec(Distribution* dist, const RealType* cmp_data) {
     this->dist = dist;
@@ -87,8 +85,8 @@ class DistributionVec<
     }
   }
 
-  typename Distribution::ResultType operator()(random::PhiloxRandom* gen) {
-    typename random::PhiloxRandom::ResultType sample = (*gen)();
+  typename Distribution::ResultType operator()(Generator* gen) {
+    typename Generator::ResultType sample = (*gen)();
     typename Distribution::ResultType result;
 
     for (int i = 0; i < Distribution::kResultElementCount; ++i) {
@@ -121,17 +119,16 @@ class DistributionVec<
 };
 
 // A class to fill a specified range of random groups
-template <class Distribution, bool VariableSamplesPerOutput>
-struct FillPhiloxRandomTask;
+template <class Generator, class Distribution, bool VariableSamplesPerOutput>
+struct FillRandomTask;
 
 // Specialization for distribution that takes a fixed number of samples for
 // each output.
-template <class Distribution>
-struct FillPhiloxRandomTask<Distribution, false> {
+template <class Generator, class Distribution>
+struct FillRandomTask<Generator, Distribution, false> {
   typedef typename Distribution::ResultElementType T;
-  static void Run(random::PhiloxRandom gen, T* data, int64 size,
-                  const T* cmp_data, int64 start_group, int64 limit_group,
-                  Distribution dist) {
+  static void Run(Generator gen, T* data, int64 size, const T* cmp_data,
+                  int64 start_group, int64 limit_group, Distribution dist) {
     const int kGroupSize = Distribution::kResultElementCount;
 
     gen.Skip(start_group);
@@ -139,8 +136,7 @@ struct FillPhiloxRandomTask<Distribution, false> {
 
     // First fill all the full-size groups
     int64 limit_group_full = std::min(limit_group, size / kGroupSize);
-    DistributionVec<random::PhiloxRandom, T, Distribution> dist_vec(&dist,
-                                                                    cmp_data);
+    DistributionVec<Generator, T, Distribution> dist_vec(&dist, cmp_data);
     for (int64 index = start_group; index < limit_group_full; ++index) {
       auto samples = dist_vec(&gen);
       std::copy(&samples[0], &samples[0] + kGroupSize, data + offset);
@@ -154,43 +150,49 @@ struct FillPhiloxRandomTask<Distribution, false> {
       auto samples = dist_vec(&gen);
       std::copy(&samples[0], &samples[0] + remaining_size, data + offset);
     }
-    dist_vec.VecPost(
-        data + start_group * kGroupSize,
-        (limit_group_full - start_group) * kGroupSize + remaining_size);
+
+    // PhiloxRandom returns a 128-bit random bits each invocation, which cannot
+    // directly use AVX2/AVX512. Thus `VecPost` will be executed after all
+    // random bits are generated. For other generators, such as PCGRandom
+    // (1024-bit), it is better to execute `VecPost` immediately after each
+    // invocation.
+    if (std::is_same<Generator, PhiloxRandom>::value) {
+      dist_vec.VecPost(
+          data + start_group * kGroupSize,
+          (limit_group_full - start_group) * kGroupSize + remaining_size);
+    }
   }
 };
 
 // Specialization for distribution that takes a variable number of samples for
 // each output. This will be slower due to the generality.
-template <class Distribution>
-struct FillPhiloxRandomTask<Distribution, true> {
+template <class Generator, class Distribution>
+struct FillRandomTask<Generator, Distribution, true> {
   typedef typename Distribution::ResultElementType T;
   static constexpr int64 kReservedSamplesPerOutput = 256;
 
-  static void Run(random::PhiloxRandom base_gen, T* data, int64 size,
-                  const T* cmp_data, int64 start_group, int64 limit_group,
-                  Distribution dist) {
+  static void Run(Generator base_gen, T* data, int64 size, const T* cmp_data,
+                  int64 start_group, int64 limit_group, Distribution dist) {
     const int kGroupSize = Distribution::kResultElementCount;
 
     static const int kGeneratorSkipPerOutputGroup =
-        kGroupSize * kReservedSamplesPerOutput /
-        PhiloxRandom::kResultElementCount;
+        kGroupSize * kReservedSamplesPerOutput / Generator::kResultElementCount;
 
     int64 offset = start_group * kGroupSize;
 
     // First fill all the full-size groups
     int64 limit_group_full = std::min(limit_group, size / kGroupSize);
     int64 group_index;
-    DistributionVec<SingleSampleAdapter<PhiloxRandom>, T, Distribution>
-        dist_vec(&dist, cmp_data);
+    DistributionVec<SingleSampleAdapter<Generator>, T, Distribution> dist_vec(
+        &dist, cmp_data);
     for (group_index = start_group; group_index < limit_group_full;
          ++group_index) {
       // Reset the generator to the beginning of the output group region
       // This is necessary if we want the results to be independent of order
       // of work
-      PhiloxRandom gen = base_gen;
+      Generator gen = base_gen;
       gen.Skip(group_index * kGeneratorSkipPerOutputGroup);
-      SingleSampleAdapter<PhiloxRandom> single_samples(&gen);
+      SingleSampleAdapter<Generator> single_samples(&gen);
 
       auto samples = dist_vec(&single_samples);
       std::copy(&samples[0], &samples[0] + kGroupSize, data + offset);
@@ -200,17 +202,20 @@ struct FillPhiloxRandomTask<Distribution, true> {
     // If there are any remaining elements that need to be filled, process them
     int64 remaining_size = 0;
     if (limit_group_full < limit_group) {
-      PhiloxRandom gen = base_gen;
+      Generator gen = base_gen;
       gen.Skip(group_index * kGeneratorSkipPerOutputGroup);
-      SingleSampleAdapter<PhiloxRandom> single_samples(&gen);
+      SingleSampleAdapter<Generator> single_samples(&gen);
 
       remaining_size = size - limit_group_full * kGroupSize;
       auto samples = dist_vec(&single_samples);
       std::copy(&samples[0], &samples[0] + remaining_size, data + offset);
     }
-    dist_vec.VecPost(
-        data + start_group * kGroupSize,
-        (limit_group_full - start_group) * kGroupSize + remaining_size);
+
+    if (std::is_same<Generator, PhiloxRandom>::value) {
+      dist_vec.VecPost(
+          data + start_group * kGroupSize,
+          (limit_group_full - start_group) * kGroupSize + remaining_size);
+    }
   }
 };
 
@@ -248,11 +253,14 @@ struct FillPhiloxRandom<CPUDevice, Distribution> {
         total_group_count, Eigen::TensorOpCost(0, 0, kGroupCost),
         [&gen, data, size, cmp_data, dist](Eigen::Index first,
                                            Eigen::Index last) {
-          FillPhiloxRandomTask<
-              Distribution,
-              Distribution::kVariableSamplesPerOutput>::Run(gen, data, size,
-                                                            cmp_data, first,
-                                                            last, dist);
+          FillRandomTask<PhiloxRandom, Distribution,
+                         Distribution::kVariableSamplesPerOutput>::Run(gen,
+                                                                       data,
+                                                                       size,
+                                                                       cmp_data,
+                                                                       first,
+                                                                       last,
+                                                                       dist);
         });
   }
 };
