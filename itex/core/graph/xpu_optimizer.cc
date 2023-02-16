@@ -16,6 +16,7 @@ limitations under the License.
 #include "itex/core/graph/xpu_optimizer.h"
 
 #include "itex/core/graph/auto_mixed_precision/auto_mixed_precision.h"
+#include "itex/core/graph/generic_layout_optimizer/generic_layout_optimizer.h"
 #include "itex/core/graph/memory_opt_pass/memory_opt_pass.h"
 #include "itex/core/graph/native_layout/native_layout.h"
 #include "itex/core/graph/onednn_graph/onednn_graph.h"
@@ -81,6 +82,12 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
     //                     &optimized_graph_def));
     optimized_graph_def = graph_def;
   }
+
+  optimized_graph_def.Swap(&graph_def);
+  GenericLayoutOptimizer generic_layout_opt;
+  SET_STATUS_IF_ERROR(tf_status,
+                      generic_layout_opt.Optimize(device_name, item, graph_def,
+                                                  &optimized_graph_def));
 
   if (config.enable_remapper) {
     // We don't want full scope remapper here if oneDNN graph is enabled.

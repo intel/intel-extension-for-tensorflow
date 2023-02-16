@@ -7,6 +7,7 @@ cc_library(
         ":optimizer_config_hdr",
         "//itex/core/devices:xpu_device_util",
         "//itex/core/graph/auto_mixed_precision",
+        "//itex/core/graph/generic_layout_optimizer",
         "//itex/core/graph/memory_opt_pass",
         "//itex/core/graph/native_layout",
         "//itex/core/graph/onednn_graph",

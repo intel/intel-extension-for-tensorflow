@@ -432,6 +432,8 @@ bool IsMax(const NodeDef& node) { return node.op() == "Max"; }
 
 bool IsMaximum(const NodeDef& node) { return node.op() == "Maximum"; }
 
+bool IsMaxPool3D(const NodeDef& node) { return node.op() == "MaxPool3D"; }
+
 bool IsMaxPoolGrad(const NodeDef& node) { return node.op() == "MaxPoolGrad"; }
 
 bool IsMean(const NodeDef& node) { return node.op() == "Mean"; }

@@ -128,6 +128,7 @@ bool IsLogicalOr(const NodeDef& node);
 bool IsLoopCond(const NodeDef& node);
 bool IsMatMul(const NodeDef& node);
 bool IsMax(const NodeDef& node);
+bool IsMaxPool3D(const NodeDef& node);
 bool IsMaxPoolGrad(const NodeDef& node);
 bool IsMaximum(const NodeDef& node);
 bool IsMean(const NodeDef& node);
