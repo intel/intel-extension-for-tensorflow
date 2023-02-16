@@ -75,9 +75,10 @@ For any more details, please follow the procedure in https://www.intel.com/conte
 
 #### Setup environment variables
 ```bash
-# DPC++ Compiler/oneMKL
+# DPC++ Compiler/oneMKL/tbb
 source /path to basekit/intel/oneapi/compiler/latest/env/vars.sh
-source /path to basekit/intel/oneapi/mkl/env/latest/vars.sh
+source /path to basekit/intel/oneapi/mkl/latest/env/vars.sh
+source /path to basekit/intel/oneapi/tbb/latest/env/vars.sh
 
 # oneCCL (and Intel® oneAPI MPI Library as its dependency), required by Intel® Optimization for Horovod* only
 source /path to basekit/intel/oneapi/mpi/latest/env/vars.sh

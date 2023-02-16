@@ -72,7 +72,7 @@ python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__
 ## Resources
 - [TensorFlow GPU device plugins](https://www.tensorflow.org/install/gpu_plugins)
 - [Accelerating TensorFlow on Intel® Data Center GPU Flex Series](https://blog.tensorflow.org/2022/10/accelerating-tensorflow-on-intel-data-center-gpu-flex-series.html)
-- [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://cqpreview.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
+- [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://www.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
 
 ## Support
 Please submit your questions, feature requests, and bug reports on the [GitHub issues](https://github.com/intel/intel-extension-for-tensorflow/issues) page.
