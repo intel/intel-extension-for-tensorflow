@@ -40,7 +40,7 @@ cc_library(
     hdrs = ["optimizer_config.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":config_util",
+        ":config_util_hdr",
         "//itex/core/utils:common_utils",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
@@ -74,4 +74,13 @@ cc_library(
         "//itex/core:protos_all_cc",
     ],
     alwayslink = True,
+)
+
+cc_library(
+    name = "config_util_hdr",
+    hdrs = ["config_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core:protos_all_cc",
+    ],
 )

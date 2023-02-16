@@ -9,7 +9,7 @@ pybind_extension(
     deps = [
         "//itex/core:protos_all_cc",
         "//itex/core/devices:device_backend_util_hdr",
-        "//itex/core/graph:config_util",
+        "//itex/core/graph:config_util_hdr",
         "//itex/core/kernels:libitex_common",
         "//itex/core/utils:env_var",
         "@com_google_absl//absl/strings",

@@ -62,6 +62,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices:device_backend_util",
+        "//itex/core/graph:config_util",
         "//itex/core/ops:op_impl",
     ],
 )
@@ -75,6 +76,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices:device_backend_util",
+        "//itex/core/graph:config_util",
         "//itex/core/ops:op_impl",
     ],
 )
