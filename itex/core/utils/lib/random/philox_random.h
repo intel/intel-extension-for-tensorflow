@@ -251,6 +251,87 @@ class PhiloxRandom {
   Key key_;
 };
 
+class PCGRandom {
+ public:
+  // The number of elements that will be returned.
+  static constexpr int kResultElementCount = 1024;
+  using ResultType = Array<uint32, kResultElementCount>;
+  using StateType = Array<uint64, kResultElementCount>;
+  using StateElementType = uint64;
+  using ResultElementType = uint32;
+
+  // Cost of generation of a single element (in cycles).
+  static constexpr int kElementCost = 10;
+
+  PHILOX_DEVICE_INLINE
+  PCGRandom() {}
+
+  PHILOX_DEVICE_INLINE
+  explicit PCGRandom(uint64 seed) {
+    for (int i = 0; i < kResultElementCount; i++) {
+      state_[i] = seed;
+    }
+  }
+
+  PHILOX_DEVICE_INLINE
+  explicit PCGRandom(uint64 seed_lo, uint64 seed_hi) {
+    for (int i = 0; i < kResultElementCount; i++) {
+      state_[i] = seed_lo;
+    }
+  }
+
+  // Skip the specified number of samples of 128-bits in the current stream.
+  PHILOX_DEVICE_INLINE
+  void Skip(uint64 count) {
+    for (int i = 0; i < kResultElementCount; i++) {
+      uint64 cur_inc = i * 2 + 1;
+      uint64 cur_mul = 6364136223846793005ULL;
+      uint64 acc_mult = 1;
+      uint64 acc_plus = 0;
+      while (count > 0) {
+        if (count & 1) {
+          acc_mult *= cur_mul;
+          acc_plus = acc_plus * cur_mul + cur_inc;
+        }
+        cur_inc = (cur_mul + 1) * cur_inc;
+        cur_mul *= cur_mul;
+        count = count >> 1;
+      }
+      state_[i] = acc_mult * state_[i] + acc_plus;
+    }
+  }
+
+  // Returns a group of four random numbers using the underlying Philox
+  // algorithm.
+  PHILOX_DEVICE_INLINE ResultType operator()() const {
+    ResultType result = ComputeSingleRound();
+    return result;
+  }
+
+ private:
+  // We use the same constants as recommended by the original paper.
+  // Helper function to skip the next sample of 128-bits in the current stream.
+  PHILOX_DEVICE_INLINE void SkipOne() { Skip(1); }
+
+  PHILOX_DEVICE_INLINE
+  ResultType ComputeSingleRound() const {
+    ResultType xorshifted;
+    ResultType rot;
+    ResultType result;
+    for (int i = 0; i < kResultElementCount; i++) {
+      xorshifted[i] = ((state_[i] >> 18u) ^ state_[i]) >> 27u;
+      rot[i] = state_[i] >> 59u;
+      result[i] =
+          (xorshifted[i] >> rot[i]) | (xorshifted[i] << ((-rot[i]) & 31));
+      state_[i] = state_[i] * 6364136223846793005ULL + (i * 2 + 1);
+    }
+    return result;
+  }
+
+ private:
+  StateType state_;
+};
+
 }  // namespace random
 }  // namespace itex
 

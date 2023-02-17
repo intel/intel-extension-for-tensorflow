@@ -79,6 +79,43 @@ class GuardedPhiloxRandom {
   TF_DISALLOW_COPY_AND_ASSIGN(GuardedPhiloxRandom);
 };
 
+class GuardedPCGRandom {
+ public:
+  // Must call Init to finish initialization
+  GuardedPCGRandom() : initialized_(false) {}
+
+  // Initialize the generator from attributes "seed" and "seed2".
+  // If both seeds are unspecified, use random seeds.
+  // Must be called exactly once.
+  Status Init(OpKernelConstruction* context);
+
+  // Initialize with given seeds.
+  void Init(int64 seed, int64 seed2);
+
+  // Reserve a certain number of 256-bit samples.
+  // This function is thread safe.  The returned generator is valid for the
+  // given number of samples, and can be used without a lock.
+  random::PCGRandom ReserveSamples256(int64 samples);
+
+  // Reserve a certain number of 32-bit samples.
+  random::PCGRandom ReserveSamples32(int64 samples) {
+    return ReserveSamples256((samples + 7) / 8);
+  }
+
+  // Reserve enough random samples in the generator for the given output count.
+  random::PCGRandom ReserveRandomOutputs(int64 output_count, int multiplier) {
+    int64 conservative_sample_count = output_count * multiplier;
+    return ReserveSamples256(conservative_sample_count);
+  }
+
+ private:
+  mutex mu_;
+  random::PCGRandom generator_ TF_GUARDED_BY(mu_);
+  bool initialized_;
+
+  TF_DISALLOW_COPY_AND_ASSIGN(GuardedPCGRandom);
+};
+
 }  // namespace itex
 
 #endif  // ITEX_CORE_UTILS_LIB_RANDOM_GUARDED_PHILOX_RANDOM_H_

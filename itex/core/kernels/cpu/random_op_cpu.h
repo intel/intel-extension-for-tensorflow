@@ -32,6 +32,7 @@ limitations under the License.
 namespace itex {
 
 namespace functor {
+using random::PCGRandom;
 using random::PhiloxRandom;
 using random::SingleSampleAdapter;
 
@@ -41,7 +42,7 @@ using random::SingleSampleAdapter;
 template <typename Device, class Distribution>
 struct FillPhiloxRandom {
   typedef typename Distribution::ResultElementType T;
-  void operator()(OpKernelContext* ctx, const Device&, random::PhiloxRandom gen,
+  void operator()(OpKernelContext* ctx, const Device&, PhiloxRandom gen,
                   T* data, int64 size, Distribution dist,
                   const uint64* key = nullptr,
                   const uint64* counter = nullptr) {
@@ -52,24 +53,20 @@ struct FillPhiloxRandom {
   }
 };
 
-template <class Generator, typename RealType, class Distribution>
-class DistributionVec {
- public:
-  explicit DistributionVec(Distribution* dist) { this->dist = dist; }
-
-  typename Distribution::ResultType operator()(Generator* gen) {
-    return (*dist)(gen);
+template <typename Device, class Distribution>
+struct FillPCGRandom {
+  typedef typename Distribution::ResultElementType T;
+  void operator()(OpKernelContext* ctx, const Device&, PCGRandom gen, T* data,
+                  int64 size, Distribution dist) {
+    ITEX_CHECK(false)
+        << "Default `FillPCGRandom` implementation should not be executed. "
+        << "The cause of this error is probably that `FillPCGRandom` does "
+        << "not support this device or random distribution yet.";
   }
-
-  void VecPost(RealType* data, int64 length) {}
-
- private:
-  Distribution* dist;
 };
 
 template <class Generator, typename RealType>
-class DistributionVec<Generator, RealType,
-                      random::UniformDistribution<Generator, RealType>> {
+class DistributionVec {
  public:
   typedef random::UniformDistribution<Generator, RealType> Distribution;
 
@@ -93,10 +90,25 @@ class DistributionVec<Generator, RealType,
       result[i] = Distribution::Converter(sample[i]);
     }
 
+    // PhiloxRandom returns a 128-bit random bits each invocation, which cannot
+    // directly use AVX2/AVX512. Thus post vectorized ops will be executed after
+    // all random bits are generated. For other generators, such as PCGRandom
+    // (1024*8-bit), it is better to execute post vectorized ops immediately
+    // after each invocation.
+    InnerVecPost(&result[0], Distribution::kResultElementCount);
+
     return result;
   }
 
+  // Skip the outer VecPost for PCGRandom.
   void VecPost(RealType* data, int64 length) {
+    if (std::is_same<Generator, PCGRandom>::value) return;
+
+    VecPostImpl(data, length);
+  }
+
+ private:
+  void VecPostImpl(RealType* data, int64 length) {
     auto result_t = typename TTypes<RealType>::Tensor(data, length);
 
     if (has_fused_cmp) {
@@ -112,7 +124,13 @@ class DistributionVec<Generator, RealType,
     }
   }
 
- private:
+  // Currently, only PCGRandom is supported.
+  void InnerVecPost(RealType* data, int64 length) {
+    if (!std::is_same<Generator, PCGRandom>::value) return;
+
+    VecPostImpl(data, length);
+  }
+
   Distribution* dist;
   bool has_fused_cmp;
   RealType real_thr;
@@ -131,12 +149,19 @@ struct FillRandomTask<Generator, Distribution, false> {
                   int64 start_group, int64 limit_group, Distribution dist) {
     const int kGroupSize = Distribution::kResultElementCount;
 
-    gen.Skip(start_group);
+    // Decide skip strides according to different kResultElementCount:
+    // * `1 = (4 + 3) / 4` for normal Distribution.
+    // * `1 = (2 + 3) / 4` for double/int64 Distribution.
+    // * `4 = (16 + 3) / 4` for vectorized float/bfloat16 Distribution.
+    // * `1 = (1024 + 1023) / 1024` for PCG generator.
+    const int skip_strides =
+        (kGroupSize + gen.kResultElementCount - 1) / gen.kResultElementCount;
+    gen.Skip(start_group * skip_strides);
     int64 offset = start_group * kGroupSize;
 
     // First fill all the full-size groups
     int64 limit_group_full = std::min(limit_group, size / kGroupSize);
-    DistributionVec<Generator, T, Distribution> dist_vec(&dist, cmp_data);
+    DistributionVec<Generator, T> dist_vec(&dist, cmp_data);
     for (int64 index = start_group; index < limit_group_full; ++index) {
       auto samples = dist_vec(&gen);
       std::copy(&samples[0], &samples[0] + kGroupSize, data + offset);
@@ -151,16 +176,9 @@ struct FillRandomTask<Generator, Distribution, false> {
       std::copy(&samples[0], &samples[0] + remaining_size, data + offset);
     }
 
-    // PhiloxRandom returns a 128-bit random bits each invocation, which cannot
-    // directly use AVX2/AVX512. Thus `VecPost` will be executed after all
-    // random bits are generated. For other generators, such as PCGRandom
-    // (1024-bit), it is better to execute `VecPost` immediately after each
-    // invocation.
-    if (std::is_same<Generator, PhiloxRandom>::value) {
-      dist_vec.VecPost(
-          data + start_group * kGroupSize,
-          (limit_group_full - start_group) * kGroupSize + remaining_size);
-    }
+    dist_vec.VecPost(
+        data + start_group * kGroupSize,
+        (limit_group_full - start_group) * kGroupSize + remaining_size);
   }
 };
 
@@ -183,8 +201,8 @@ struct FillRandomTask<Generator, Distribution, true> {
     // First fill all the full-size groups
     int64 limit_group_full = std::min(limit_group, size / kGroupSize);
     int64 group_index;
-    DistributionVec<SingleSampleAdapter<Generator>, T, Distribution> dist_vec(
-        &dist, cmp_data);
+    DistributionVec<SingleSampleAdapter<Generator>, T> dist_vec(&dist,
+                                                                cmp_data);
     for (group_index = start_group; group_index < limit_group_full;
          ++group_index) {
       // Reset the generator to the beginning of the output group region
@@ -211,13 +229,39 @@ struct FillRandomTask<Generator, Distribution, true> {
       std::copy(&samples[0], &samples[0] + remaining_size, data + offset);
     }
 
-    if (std::is_same<Generator, PhiloxRandom>::value) {
-      dist_vec.VecPost(
-          data + start_group * kGroupSize,
-          (limit_group_full - start_group) * kGroupSize + remaining_size);
-    }
+    dist_vec.VecPost(
+        data + start_group * kGroupSize,
+        (limit_group_full - start_group) * kGroupSize + remaining_size);
   }
 };
+
+// Declares the common part for CPU-specialized FillPhiloxRandom/FillPCGRandom.
+template <class Generator, class Distribution>
+void FillRandom(
+    OpKernelContext* ctx, const CPUDevice& d, Generator gen,
+    typename Distribution::ResultElementType* data, int64 size,
+    Distribution dist,
+    const typename Distribution::ResultElementType* cmp_data = nullptr) {
+  const int kGroupSize = Distribution::kResultElementCount;
+
+  int64 total_group_count = (size + kGroupSize - 1) / kGroupSize;
+
+  const int kGroupCost =
+      kGroupSize * (Generator::kElementCost + Distribution::kElementCost);
+
+  d.parallelFor(
+      total_group_count, Eigen::TensorOpCost(0, 0, kGroupCost),
+      [&gen, data, size, cmp_data, dist](Eigen::Index first,
+                                         Eigen::Index last) {
+        FillRandomTask<Generator, Distribution,
+                       Distribution::kVariableSamplesPerOutput>::Run(gen, data,
+                                                                     size,
+                                                                     cmp_data,
+                                                                     first,
+                                                                     last,
+                                                                     dist);
+      });
+}
 
 // Declares the partially CPU-specialized functor struct.
 //
@@ -233,35 +277,27 @@ struct FillPhiloxRandom<CPUDevice, Distribution> {
   // Partial specialization for CPU to fill the entire region with randoms
   // It splits the work into several tasks and run them in parallel
   void operator()(
-      OpKernelContext* ctx, const CPUDevice& d, random::PhiloxRandom gen,
+      OpKernelContext* ctx, const CPUDevice& d, PhiloxRandom gen,
       typename Distribution::ResultElementType* data, int64 size,
       Distribution dist, const uint64* key = nullptr,
       const uint64* counter = nullptr,
       const typename Distribution::ResultElementType* cmp_data = nullptr) {
-    const int kGroupSize = Distribution::kResultElementCount;
-
-    int64 total_group_count = (size + kGroupSize - 1) / kGroupSize;
-
-    const int kGroupCost = kGroupSize * (random::PhiloxRandom::kElementCost +
-                                         Distribution::kElementCost);
-
     if (key != nullptr && counter != nullptr) {
       gen = GetPhiloxRandomFromCounterKeyMem(counter, key);
     }
 
-    d.parallelFor(
-        total_group_count, Eigen::TensorOpCost(0, 0, kGroupCost),
-        [&gen, data, size, cmp_data, dist](Eigen::Index first,
-                                           Eigen::Index last) {
-          FillRandomTask<PhiloxRandom, Distribution,
-                         Distribution::kVariableSamplesPerOutput>::Run(gen,
-                                                                       data,
-                                                                       size,
-                                                                       cmp_data,
-                                                                       first,
-                                                                       last,
-                                                                       dist);
-        });
+    FillRandom(ctx, d, gen, data, size, dist, cmp_data);
+  }
+};
+
+template <class Distribution>
+struct FillPCGRandom<CPUDevice, Distribution> {
+  void operator()(
+      OpKernelContext* ctx, const CPUDevice& d, PCGRandom gen,
+      typename Distribution::ResultElementType* data, int64 size,
+      Distribution dist,
+      const typename Distribution::ResultElementType* cmp_data = nullptr) {
+    FillRandom(ctx, d, gen, data, size, dist, cmp_data);
   }
 };
 

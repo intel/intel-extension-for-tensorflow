@@ -126,7 +126,7 @@ class RandomUniformIntOp : public OpKernel {
     auto output_flat = output->flat<IntType>();
     functor::FillPhiloxRandom<Device, Distribution>()(
         ctx, ctx->eigen_device<Device>(),
-        // Multiplier 256 is the same as in FillPhiloxRandomTask; do not change
+        // Multiplier 256 is the same as in FillRandomTask; do not change
         // it just here.
         generator_.ReserveRandomOutputs(output_flat.size(), 256),
         output_flat.data(), output_flat.size(), dist);
@@ -135,6 +135,34 @@ class RandomUniformIntOp : public OpKernel {
  private:
   GuardedPhiloxRandom generator_;
 };
+
+// TODO(itex): Remove this limitation once GPU PCGRandom is ready.
+#ifdef INTEL_CPU_ONLY
+template <typename Device, class Distribution>
+class PCGRandomOp : public OpKernel {
+ public:
+  typedef typename Distribution::ResultElementType T;
+  explicit PCGRandomOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+    OP_REQUIRES_OK(ctx, generator_.Init(ctx));
+  }
+
+  void Compute(OpKernelContext* ctx) override {
+    const Tensor& shape = ctx->input(0);
+    Tensor* output;
+    OP_REQUIRES_OK(ctx, AllocateOutputWithShape(ctx, shape, 0, &output));
+    auto output_flat = output->flat<T>();
+    functor::FillPCGRandom<Device, Distribution>()(
+        ctx, ctx->eigen_device<Device>(),
+        // Multiplier 256 is the same as in FillRandomTask; do not change
+        // it just here.
+        generator_.ReserveRandomOutputs(output_flat.size(), 256),
+        output_flat.data(), output_flat.size(), Distribution());
+  }
+
+ private:
+  GuardedPCGRandom generator_;
+};
+#endif
 
 }  // namespace itex
 
