@@ -138,8 +138,7 @@ class UniqueOp : public OpKernel {
             /*keys_in = */ input_ptr,
             /*indices_in = */ static_cast<ValueT*>(nullptr),
             /*keys_out = */ sorted_input_ptr,
-            /*indices_out = */ sorted_input_inds_ptr,
-            /*num_bits = */ 30));
+            /*indices_out = */ sorted_input_inds_ptr));
 
     Tensor sorted_input_unique_ids;
     OP_REQUIRES_OK(
@@ -208,7 +207,7 @@ class UniqueOp : public OpKernel {
                                 /*GROUP_SIZE*/ 256, /*SUBGROUP_SIZE*/ 16>(
             context, uniq_size, unique_input_inds_ptr,
             static_cast<ValueT*>(nullptr), sorted_unique_input_inds_ptr,
-            sorted_unique_perm_ptr, impl::Log2Ceiling(input_size)));
+            sorted_unique_perm_ptr));
 
     Tensor* output = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(

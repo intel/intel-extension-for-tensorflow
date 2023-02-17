@@ -15,8 +15,8 @@ limitations under the License.
 
 #ifndef ITEX_CORE_KERNELS_GPU_UNIQUE_OP_H_
 #define ITEX_CORE_KERNELS_GPU_UNIQUE_OP_H_
-
 #include <iterator>
+#include <limits>
 
 #include "itex/core/kernels/gpu/unique_op_helpers.h"
 #include "itex/core/utils/group_radix_sort.h"
@@ -357,22 +357,24 @@ struct RadixSortKernel {
     KeyT* d_input_iter = d_input + local_id * KEYS_PER_ITEM;
     ValueT* d_input_inds_iter = d_input_inds_ptr + local_id * KEYS_PER_ITEM;
 
-    KeyT item_scores[KEYS_PER_ITEM] = {0u};
-    ValueT item_boxIds[KEYS_PER_ITEM] = {0};
+    KeyT item_scores[KEYS_PER_ITEM];
+    ValueT item_boxIds[KEYS_PER_ITEM];
 
 #pragma unroll
     for (int i = 0; i < KEYS_PER_ITEM; i++) {
       if (local_id * KEYS_PER_ITEM + i < num_instances) {
         item_scores[i] = d_input_iter[i];
         item_boxIds[i] = d_input_inds_iter[i];
+      } else {
+        item_scores[i] = std::numeric_limits<KeyT>::max();
       }
     }
     // get the pointer of share local memory
     uint8_t* local_mem = scratch.get_pointer().get();
-    // Sorting the scores
+    // Sorting the scores in ascending order
     Sortor(item.get_group(), item.get_sub_group(), local_id, local_mem)
-        .SortDescending(item_scores, item_boxIds, sorted_input_ptr,
-                        sorted_input_inds_ptr, num_instances, 0, num_bits);
+        .Sort(item_scores, item_boxIds, sorted_input_ptr, sorted_input_inds_ptr,
+              num_instances, 0, num_bits);
   }
 
  private:
