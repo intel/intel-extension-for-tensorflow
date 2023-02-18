@@ -14,93 +14,78 @@ struct ColReductionPolicy {
   static constexpr int SUB_GROUP_SIZE = 16;
   static constexpr int NUM_SUB_GROUP = GROUP_SIZE / SUB_GROUP_SIZE;
   static constexpr int ITEM_PER_THREAD = 16;
-  static constexpr int VEC_SIZE = 4;
   static constexpr int MAX_LOCAL_ITEM_ON_Z = 8;
 };
 
-inline void PacketStore(
-    float* ptr, int offset,
-    const sycl::vec<float, ColReductionPolicy::VEC_SIZE>& array) {
-  *(reinterpret_cast<sycl::vec<float, ColReductionPolicy::VEC_SIZE>*>(
-      ptr + offset)) = array;
-}
+#define PACKET_DEF(T, N)                                                      \
+  inline void PacketLoad(const T* ptr, int offset, sycl::vec<T, N>* array) {  \
+    *array = *(reinterpret_cast<const sycl::vec<T, N>*>(ptr + offset));       \
+  }                                                                           \
+  inline void PacketStore(T* ptr, int offset, const sycl::vec<T, N>& array) { \
+    *(reinterpret_cast<sycl::vec<T, N>*>(ptr + offset)) = array;              \
+  }
+PACKET_DEF(float, 4)
+PACKET_DEF(float, 8)
+PACKET_DEF(double, 2)
+PACKET_DEF(itex::int32, 4)
+PACKET_DEF(itex::int64, 2)
+PACKET_DEF(uint8_t, 16)
+#undef PACKET_DEF
 
-inline void PacketStore(
-    sycl::half* ptr, int offset,
-    const sycl::vec<float, ColReductionPolicy::VEC_SIZE>& array) {
-  sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE> tmp;
+inline void PacketLoad(const sycl::half* ptr, int offset,
+                       sycl::vec<float, 8>* array) {
+  sycl::vec<sycl::half, 8> in_array =
+      *(reinterpret_cast<const sycl::vec<sycl::half, 8>*>(ptr + offset));
+
 #pragma unroll
-  for (int i = 0; i < ColReductionPolicy::VEC_SIZE; ++i)
-    tmp[i] = static_cast<sycl::half>(array[i]);
-  *(reinterpret_cast<sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE>*>(
-      ptr + offset)) = tmp;
-}
-
-inline void PacketStore(
-    Eigen::half* ptr, int offset,
-    const sycl::vec<float, ColReductionPolicy::VEC_SIZE>& array) {
-  sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE> tmp;
-#pragma unroll
-  for (int i = 0; i < ColReductionPolicy::VEC_SIZE; ++i)
-    tmp[i] = static_cast<sycl::half>(array[i]);
-  *(reinterpret_cast<sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE>*>(
-      ptr + offset)) = tmp;
-}
-
-inline void PacketStore(
-    Eigen::bfloat16* ptr, int offset,
-    const sycl::vec<float, ColReductionPolicy::VEC_SIZE>& array) {
-  sycl::vec<uint16_t, ColReductionPolicy::VEC_SIZE> tmp;
-#pragma unroll
-  for (int i = 0; i < ColReductionPolicy::VEC_SIZE; ++i)
-    tmp[i] = Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(array[i]).value;
-  *(reinterpret_cast<sycl::vec<uint16_t, ColReductionPolicy::VEC_SIZE>*>(
-      ptr + offset)) = tmp;
-}
-
-inline void PacketLoad(const float* ptr, int offset,
-                       sycl::vec<float, ColReductionPolicy::VEC_SIZE>* array) {
-  *array =
-      *(reinterpret_cast<const sycl::vec<float, ColReductionPolicy::VEC_SIZE>*>(
-          ptr + offset));
+  for (int i = 0; i < 8; ++i) (*array)[i] = static_cast<float>(in_array[i]);
 }
 
 inline void PacketLoad(const Eigen::half* ptr, int offset,
-                       sycl::vec<float, ColReductionPolicy::VEC_SIZE>* array) {
-  sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE> in_array =
-      *(reinterpret_cast<
-          const sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE>*>(ptr +
-                                                                      offset));
+                       sycl::vec<float, 8>* array) {
+  sycl::vec<sycl::half, 8> in_array =
+      *(reinterpret_cast<const sycl::vec<sycl::half, 8>*>(ptr + offset));
 
 #pragma unroll
-  for (int i = 0; i < ColReductionPolicy::VEC_SIZE; ++i)
-    (*array)[i] = static_cast<float>(in_array[i]);
+  for (int i = 0; i < 8; ++i) (*array)[i] = static_cast<float>(in_array[i]);
 }
 
-inline void PacketLoad(const sycl::half* ptr, int offset,
-                       sycl::vec<float, ColReductionPolicy::VEC_SIZE>* array) {
-  sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE> in_array =
-      *(reinterpret_cast<
-          const sycl::vec<sycl::half, ColReductionPolicy::VEC_SIZE>*>(ptr +
-                                                                      offset));
-
-#pragma unroll
-  for (int i = 0; i < ColReductionPolicy::VEC_SIZE; ++i)
-    (*array)[i] = static_cast<float>(in_array[i]);
-}
+#define PACKET_STORE_HALF(T, N)                                             \
+  inline void PacketStore(T* ptr, int offset,                               \
+                          const sycl::vec<float, N>& array) {               \
+    sycl::vec<sycl::half, N> tmp;                                           \
+    for (int i = 0; i < N; ++i) tmp[i] = static_cast<sycl::half>(array[i]); \
+    *(reinterpret_cast<sycl::vec<sycl::half, N>*>(ptr + offset)) = tmp;     \
+  }
+PACKET_STORE_HALF(sycl::half, 4)
+PACKET_STORE_HALF(sycl::half, 8)
+PACKET_STORE_HALF(Eigen::half, 4)
+PACKET_STORE_HALF(Eigen::half, 8)
+#undef PACKET_STORE_HALF
 
 inline void PacketLoad(const Eigen::bfloat16* ptr, int offset,
-                       sycl::vec<float, ColReductionPolicy::VEC_SIZE>* array) {
-  sycl::vec<uint16_t, ColReductionPolicy::VEC_SIZE> in_array =
-      *(reinterpret_cast<
-          const sycl::vec<uint16_t, ColReductionPolicy::VEC_SIZE>*>(ptr +
-                                                                    offset));
+                       sycl::vec<float, 8>* array) {
+  sycl::vec<uint16_t, 8> in_array =
+      *(reinterpret_cast<const sycl::vec<uint16_t, 8>*>(ptr + offset));
 
 #pragma unroll
-  for (int i = 0; i < ColReductionPolicy::VEC_SIZE; ++i)
+  for (int i = 0; i < 8; ++i)
     (*array)[i] = Eigen::bfloat16_impl::bfloat16_to_float(
         Eigen::bfloat16_impl::raw_uint16_to_bfloat16(in_array[i]));
 }
+
+#define PACKET_STORE_BF(N)                                                    \
+  inline void PacketStore(Eigen::bfloat16* ptr, int offset,                   \
+                          const sycl::vec<float, N>& array) {                 \
+    sycl::vec<uint16_t, N> tmp;                                               \
+    for (int i = 0; i < N; ++i)                                               \
+      tmp[i] =                                                                \
+          Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(array[i]).value; \
+    *(reinterpret_cast<sycl::vec<uint16_t, N>*>(ptr + offset)) = tmp;         \
+  }
+PACKET_STORE_BF(4)
+PACKET_STORE_BF(8)
+#undef PACKET_STORE_BF
 
 template <typename InputT, typename OutputT, typename InitValueT,
           typename InputFunctor, typename OutputFunctor, typename BinaryOp>
@@ -158,9 +143,6 @@ inline void compute_tile(int* num_sg, int* num_row, const int extend_y,
     *num_sg = DivUp(*num_row * tile_z, ColReductionPolicy::SUB_GROUP_SIZE);
     gap = *num_sg * ColReductionPolicy::SUB_GROUP_SIZE - *num_row * tile_z;
   }
-  // printf("SubGroupSize: %d, *num_sg: %d, num_row: %d, gap: %d\n",
-  // SubGroupSize,
-  //        num_sg, num_row, gap);
 }
 
 inline void compute_tile(const int group_size, int* num_row, const int extend_y,
@@ -172,8 +154,6 @@ inline void compute_tile(const int group_size, int* num_row, const int extend_y,
     gap = group_size - *num_row * tile_z;
   }
   if (gap < 0) --*num_row;
-  // printf("num_row: %d, gap: %d\n",
-  //  num_row, 1024 - num_row * extend_z);
 }
 
 template <typename InT, typename OutT, typename InitValueT,
@@ -348,9 +328,7 @@ void TreeColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
     sycl::range<3> local(1, 1, num_sg * SubGroupSize);
     sycl::range<3> global(extend_x, 1, num_segments_z * local[2]);
     int elems_per_thread = DivUp(extend_y, tile_y);
-    // printf("num_segments_y: %d, tile_y: %d, num_segments_z: %d, "
-    //        "elems_per_thread: %d, steps: %d\n",
-    //        1, tile_y, num_segments_z, elems_per_thread, steps);
+
     stream->submit([&](sycl::handler& cgh) {
       reduciton_helper::LocalAcc<InitValueT> scratch(tile_y * tile_z, cgh);
       ColReductionKernel<InputT, OutputT, InitValueT,
@@ -394,7 +372,8 @@ struct SGVecColReductionKernel {
         op(op_) {}
   [[intel::reqd_sub_group_size(ColReductionPolicy::SUB_GROUP_SIZE)]] void
   operator()(sycl::nd_item<3> item) const {
-    typedef sycl::vec<float, ColReductionPolicy::VEC_SIZE> vecT;
+    constexpr int VEC_SIZE = 4 * sizeof(float) / sizeof(InT);
+    typedef sycl::vec<InitValueT, VEC_SIZE> vecT;
 
     // get start index
     int x_group_id = item.get_group(0);
@@ -412,10 +391,9 @@ struct SGVecColReductionKernel {
     // each subgroup load data and reduce elems_per_item
     vecT aggregate(0.0f);
 
-    int z_offset = z_group_id * local_item_on_z * ColReductionPolicy::VEC_SIZE +
-                   group_z_id * ColReductionPolicy::VEC_SIZE;
+    int z_offset =
+        z_group_id * local_item_on_z * VEC_SIZE + group_z_id * VEC_SIZE;
 
-    // vecT mean_value = *(reinterpret_cast<const vecT*>(mean_data + z_offset));
     for (int i = 0; i < elems_per_item; ++i) {
       int y_idx = y_group_id * num_sub_group * elems_per_item * k +
                   subgroup_id * elems_per_item * k + group_k_id + i * k;
@@ -425,7 +403,7 @@ struct SGVecColReductionKernel {
       vecT tmp;
       PacketLoad(in_data, offset, &tmp);
 
-      for (int j = 0; j < ColReductionPolicy::VEC_SIZE; ++j) {
+      for (int j = 0; j < VEC_SIZE; ++j) {
         aggregate[j] = op(aggregate[j], tmp[j]);
       }
     }
@@ -445,7 +423,7 @@ struct SGVecColReductionKernel {
                 slm_k_id * ColReductionPolicy::SUB_GROUP_SIZE + lane_id];
 
     // reduce within each subgroup
-    for (int i = 0; i < ColReductionPolicy::VEC_SIZE; ++i) {
+    for (int i = 0; i < VEC_SIZE; ++i) {
       value[i] = sycl::reduce_over_group(sg, value[i], op);
     }
 
@@ -460,16 +438,15 @@ struct SGVecColReductionKernel {
     if (lane_id == 0 && slm_k_id == 0) {
       vecT tmp = scratch[slm_z_id * k * num_sub_group];
       for (int i = 1; i < k; ++i) {
-        for (int j = 0; j < ColReductionPolicy::VEC_SIZE; ++j) {
+        for (int j = 0; j < VEC_SIZE; ++j) {
           tmp[j] =
               op(tmp[j], scratch[slm_z_id * k * num_sub_group +
                                  i * ColReductionPolicy::SUB_GROUP_SIZE][j]);
         }
       }
-      int offset = x_group_id * extend_z * num_segments_y +
-                   y_group_id * extend_z +
-                   z_group_id * local_item_on_z * ColReductionPolicy::VEC_SIZE +
-                   slm_z_id * ColReductionPolicy::VEC_SIZE;
+      int offset =
+          x_group_id * extend_z * num_segments_y + y_group_id * extend_z +
+          z_group_id * local_item_on_z * VEC_SIZE + slm_z_id * VEC_SIZE;
 
       PacketStore(out, offset, tmp);
     }
@@ -496,7 +473,8 @@ void SGVecColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
                        int extend_x, int extend_y, int extend_z,
                        InitValueT init, BinaryOp op, InputFunctor in_func,
                        OutputFunctor out_func) {
-  typedef sycl::vec<float, ColReductionPolicy::VEC_SIZE> vecT;
+  constexpr int VEC_SIZE = 4 * sizeof(float) / sizeof(InputT);
+  typedef sycl::vec<InitValueT, VEC_SIZE> vecT;
   typedef typename std::remove_cv<
       typename std::remove_reference<InputT>::type>::type BaseInputT;
 
@@ -504,7 +482,7 @@ void SGVecColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
 
   int elems_per_item = ColReductionPolicy::ITEM_PER_THREAD;
   int num_sub_group = ColReductionPolicy::NUM_SUB_GROUP;
-  int work_item_on_z = extend_z / ColReductionPolicy::VEC_SIZE;
+  int work_item_on_z = extend_z / VEC_SIZE;
   int local_item_on_z =
       work_item_on_z <= ColReductionPolicy::MAX_LOCAL_ITEM_ON_Z
           ? work_item_on_z
@@ -560,18 +538,20 @@ void SGVecColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
 
     global = sycl::range<3>{static_cast<size_t>(extend_x), local[1],
                             num_segments_z * local[2]};
+
+    typedef sycl::vec<InitValueT, 4 * sizeof(float) / sizeof(InitValueT)> vecT2;
     stream->submit([&](sycl::handler& cgh) {
-      reduciton_helper::LocalAcc<vecT> scratch(
+      reduciton_helper::LocalAcc<vecT2> scratch(
           num_sub_group * ColReductionPolicy::SUB_GROUP_SIZE, cgh);
       SGVecColReductionKernel<
-          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT>,
+          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT2>,
           reduciton_helper::Identity<InitValueT>, OutputFunctor, BinaryOp>
           task(inter_out, out_data, scratch, extend_x, num_segments_y, extend_z,
                ColReductionPolicy::ITEM_PER_THREAD, num_sub_group, 1, k,
                local_item_on_z, reduciton_helper::Identity<InitValueT>(),
                out_func, op);
       cgh.parallel_for<SGVecColReductionKernel<
-          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT>,
+          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT2>,
           reduciton_helper::Identity<InitValueT>, OutputFunctor, BinaryOp>>(
           sycl::nd_range<3>(global, local), task);
     });
@@ -613,37 +593,28 @@ void LaunchColReduction(
 
   int elems_per_item = extend_y / (extend_x * extend_z);
 
-  // TODO(itex): remove hardcode when Preci update compiler
-  // const int hardward_concurrent_work_group = stream->get_device()
-  // .get_info<sycl::ext::intel::info::device::gpu_subslices_per_slice>();
-  const int hardward_concurrent_work_group = 64;
+  // maximum_work_item = EU * Thread_Per_EU * native_SIMD_width
+  // choose native_SIMD_width rather than max is for safety consideration
+  auto dev = stream->get_device();
+  const int hardware_reside_work_item =
+      dev.get_info<sycl::ext::intel::info::device::gpu_eu_count>() *
+      dev.get_info<sycl::ext::intel::info::device::gpu_hw_threads_per_eu>() *
+      dev.get_info<sycl::ext::intel::info::device::gpu_eu_simd_width>();
+  constexpr int VEC_SIZE = 4 * sizeof(float) / sizeof(InputT);
 
-  typedef typename std::remove_cv<
-      typename std::remove_reference<InputT>::type>::type BaseInputT;
-
-  constexpr bool is_floating_datatype =
-      (std::is_same<BaseInputT, Eigen::half>::value ||
-       std::is_same<BaseInputT, sycl::half>::value ||
-       std::is_same<BaseInputT, Eigen::bfloat16>::value ||
-       std::is_same<BaseInputT, float>::value);
   bool reach_minimum_occpu =
-      (extend_x * extend_y * extend_z / ColReductionPolicy::VEC_SIZE /
-           ColReductionPolicy::GROUP_SIZE /
-           ColReductionPolicy::ITEM_PER_THREAD >=
-       (hardward_concurrent_work_group * 2));
-  bool reach_vec_alignment = (extend_z % ColReductionPolicy::VEC_SIZE == 0) &&
-                             ((ColReductionPolicy::SUB_GROUP_SIZE %
-                                   (extend_z / ColReductionPolicy::VEC_SIZE) ==
-                               0) ||
-                              ((extend_z / ColReductionPolicy::VEC_SIZE) %
-                                   ColReductionPolicy::MAX_LOCAL_ITEM_ON_Z ==
-                               0));
+      (extend_x * extend_y * extend_z / VEC_SIZE) >= hardware_reside_work_item;
+  bool reach_vec_alignment =
+      (extend_z % VEC_SIZE == 0) &&
+      ((ColReductionPolicy::SUB_GROUP_SIZE % (extend_z / VEC_SIZE) == 0) ||
+       ((extend_z / VEC_SIZE) % ColReductionPolicy::MAX_LOCAL_ITEM_ON_Z == 0));
   bool use_vectorization_pass = reach_minimum_occpu && reach_vec_alignment;
-  // std::cout << "reach_minimum_occpu: " << reach_minimum_occpu
-  //           << " ,reach_vec_alignment: " << reach_vec_alignment
-  //           << " , is floating: " << is_floating_datatype << std::endl;
 
-  if (elems_per_item < 4 && extend_y < 64) {
+  if (use_vectorization_pass) {
+    SGVecColReduction<InputT, OutputT, InitValueT, Op, InputFunctor,
+                      OutputFunctor>(ctx, in_data, out_data, extend_x, extend_y,
+                                     extend_z, init_val, op, in_func, out_func);
+  } else if (elems_per_item < 4 && extend_y < 64) {
     const int out_size = extend_x * extend_z;
     int GroupSize = std::min(512, max_group_size);
     int num_wg = (out_size + GroupSize - 1) / GroupSize;
@@ -658,18 +629,6 @@ void LaunchColReduction(
                                           InputFunctor, OutputFunctor, Op>>(
           range, task);
     });
-  } else if constexpr (is_floating_datatype) {
-    if (use_vectorization_pass) {
-      SGVecColReduction<InputT, OutputT, InitValueT, Op, InputFunctor,
-                        OutputFunctor>(ctx, in_data, out_data, extend_x,
-                                       extend_y, extend_z, init_val, op,
-                                       in_func, out_func);
-    } else {
-      TreeColReduction<InputT, OutputT, InitValueT, Op, InputFunctor,
-                       OutputFunctor>(ctx, in_data, out_data, extend_x,
-                                      extend_y, extend_z, init_val, op, in_func,
-                                      out_func);
-    }
   } else {
     TreeColReduction<InputT, OutputT, InitValueT, Op, InputFunctor,
                      OutputFunctor>(ctx, in_data, out_data, extend_x, extend_y,

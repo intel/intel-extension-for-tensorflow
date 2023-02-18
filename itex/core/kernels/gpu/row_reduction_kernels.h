@@ -67,7 +67,7 @@ struct GroupRowReduction {
   static constexpr int GROUP_SIZE = 256;
   static constexpr int ITEMS_PER_THREAD = 8;
   static constexpr int TILES_SIZE = ITEMS_PER_THREAD * GROUP_SIZE;
-  static constexpr int VEC_LENGTH = 4;
+  static constexpr int VEC_LENGTH = 4 * sizeof(float) / sizeof(InputT);
   static constexpr int WORDS = ITEMS_PER_THREAD / VEC_LENGTH;
 
   // valid_items < TILES_SIZE
@@ -173,8 +173,39 @@ struct GroupRowReduction<Eigen::bfloat16, OutputT, InitValueT, InputFunctor,
   static constexpr int GROUP_SIZE = 256;
   static constexpr int ITEMS_PER_THREAD = 8;
   static constexpr int TILES_SIZE = ITEMS_PER_THREAD * GROUP_SIZE;
-  static constexpr int VEC_LENGTH = 4;
+  static constexpr int VEC_LENGTH = 4 * sizeof(float) / sizeof(InputT);
   static constexpr int WORDS = ITEMS_PER_THREAD / VEC_LENGTH;
+
+  inline void ConsumRange(cl::sycl::nd_item<1> item, int offset,
+                          int /*valid_items*/, Int2Type<true> /*is_full_tile*/,
+                          InitValueT* aggregate) const {
+    auto lid = item.get_local_linear_id();
+    auto g = item.get_group();
+
+    typedef sycl::vec<uint16_t, VEC_LENGTH> VecT;
+    uint16_t input_items[ITEMS_PER_THREAD];
+    VecT* vec_items = reinterpret_cast<VecT*>(input_items);
+
+    VecT* vec_in =
+        reinterpret_cast<VecT*>(in_data + offset + (lid * VEC_LENGTH));
+
+#pragma unroll
+    for (int i = 0; i < WORDS; ++i) {
+      vec_items[i] = vec_in[i * GROUP_SIZE];
+    }
+
+    InitValueT thread_aggregate = init;
+#pragma unroll
+    for (int i = 0; i < ITEMS_PER_THREAD; ++i) {
+      InputT data =
+          Eigen::bfloat16_impl::raw_uint16_to_bfloat16(input_items[i]);
+      thread_aggregate = op(thread_aggregate, InitValueT(in_func(data)));
+    }
+
+    InitValueT updated_thread_aggregate =
+        cl::sycl::reduce_over_group(g, thread_aggregate, op);
+    *aggregate = op(*aggregate, updated_thread_aggregate);
+  }
 
   // valid_items < TILES_SIZE
   inline void ConsumRange(cl::sycl::nd_item<1> item, int offset,
@@ -208,7 +239,7 @@ struct GroupRowReduction<Eigen::bfloat16, OutputT, InitValueT, InputFunctor,
 #pragma unroll
       for (int i = 0; i < loops; ++i) {
         ConsumRange(item, start_offset + i * TILES_SIZE, TILES_SIZE,
-                    Int2Type<false>(), &aggregate);
+                    Int2Type<true>(), &aggregate);
       }
       if (extra)
         ConsumRange(item, start_offset + loops * TILES_SIZE, extra,

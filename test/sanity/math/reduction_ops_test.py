@@ -145,7 +145,19 @@ class SumReductionTest(BaseReductionTest):
         with self.session(graph=ops.Graph(), use_gpu=True) as sess:
             tf_row_sum = self._tf_reduce(arr, 1, False)
             tf_out_row = self.evaluate(tf_row_sum)
-        self.assertAllClose(row_sum, tf_out_row)          
+        self.assertAllClose(row_sum, tf_out_row)      
+        
+    @test_util.run_deprecated_v1
+    def testReducitonBF16(self):
+      for axis in [None, 0, 1]:
+        arr = np.ones([2, 1025], dtype=dtypes.bfloat16.as_numpy_dtype)
+        row_sum = np.sum(arr.astype(np.float32), axis=axis)
+
+        with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+            tf_row_sum = self._tf_reduce(arr, axis, False)
+            tf_out_row = self.evaluate(tf_row_sum)
+        self.assertAllClose(row_sum, tf_out_row, 1e-2, 1e-2) 
+           
 
     @test_util.run_deprecated_v1
     def testFloat32(self):

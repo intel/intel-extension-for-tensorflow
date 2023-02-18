@@ -355,13 +355,13 @@ struct ReduceFunctor<Eigen::internal::AndReducer> {
                      const ReductionAxes& reduction_axes,
                      const Eigen::internal::AndReducer& reducer) {
     //  as bool is not supported by compiler reduce api, use uint8_t
-    typedef bool T;
     typedef uint8_t InitValueT;
     typedef sycl::bit_and<InitValueT> BinaryOp;
     InitValueT init = InitValueT(1);
-    ReduceGPUImpl<const T, T, InitValueT, BinaryOp, ReductionAxes>(
-        ctx, reinterpret_cast<const T*>(in.data()),
-        reinterpret_cast<T*>(out.data()), in.rank(), in.dimension(0),
+    ReduceGPUImpl<const InitValueT, InitValueT, InitValueT, BinaryOp,
+                  ReductionAxes>(
+        ctx, reinterpret_cast<const InitValueT*>(in.data()),
+        reinterpret_cast<InitValueT*>(out.data()), in.rank(), in.dimension(0),
         in.rank() >= 2 ? in.dimension(1) : 1,
         in.rank() >= 3 ? in.dimension(2) : 1, out.rank(), init, BinaryOp(),
         reduction_axes);
@@ -381,13 +381,13 @@ struct ReduceFunctor<Eigen::internal::OrReducer> {
                      const ReductionAxes& reduction_axes,
                      const Eigen::internal::OrReducer& reducer) {
     //  as bool is not supported by compiler reduce api, use uint8_t
-    typedef bool T;
     typedef uint8_t InitValueT;
     typedef sycl::bit_or<InitValueT> BinaryOp;
     InitValueT init = InitValueT(0);
-    ReduceGPUImpl<const T, T, InitValueT, BinaryOp, ReductionAxes>(
-        ctx, reinterpret_cast<const T*>(in.data()),
-        reinterpret_cast<T*>(out.data()), in.rank(), in.dimension(0),
+    ReduceGPUImpl<const InitValueT, InitValueT, InitValueT, BinaryOp,
+                  ReductionAxes>(
+        ctx, reinterpret_cast<const InitValueT*>(in.data()),
+        reinterpret_cast<InitValueT*>(out.data()), in.rank(), in.dimension(0),
         in.rank() >= 2 ? in.dimension(1) : 1,
         in.rank() >= 3 ? in.dimension(2) : 1, out.rank(), init, BinaryOp(),
         reduction_axes);
