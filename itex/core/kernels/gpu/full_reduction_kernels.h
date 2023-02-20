@@ -106,6 +106,141 @@ struct GroupReduceKernel {
   Op op_;
 };
 
+// TODO(itex): it's a workaround for the case when op is mulitplies and data
+// type is int64, currently compiler has accuracy issue for that, remove this
+// workaround when compiler fix is ready
+template <typename OutputT, typename InputFunctor, typename OutputFunctor,
+          typename InitValueT, typename Op>
+struct GroupReduceKernel<itex::int64, OutputT, InputFunctor, OutputFunctor,
+                         InitValueT, Op> {
+  typedef itex::int64 InputT;
+  static constexpr int SubGroupSize = 16;
+  GroupReduceKernel(InputT* in_data, OutputT* out_data, InputFunctor in_func,
+                    OutputFunctor out_func, InitValueT init_val, int in_size,
+                    int elems_per_group, Op op)
+      : in_data_(in_data),
+        out_data_(out_data),
+        in_func_(in_func),
+        out_func_(out_func),
+        init_val_(init_val),
+        in_size_(in_size),
+        elems_per_group_(elems_per_group),
+        op_(op) {}
+  [[sycl::reqd_sub_group_size(SubGroupSize)]] void operator()(
+      sycl::nd_item<1> item) const {
+    auto group_id = item.get_group(0);
+    if ((group_id + 1) * elems_per_group_ > in_size_)
+      ConsumRange(item, Int2Type<false>());
+    else
+      ConsumRange(item, Int2Type<true>());
+  }
+
+  inline InitValueT SGReduce(sycl::sub_group sg, const InitValueT value) const {
+    InitValueT result = value;
+#pragma unroll
+    for (int i = SubGroupSize / 2; i > 0; i >>= 1) {
+      InitValueT new_value = sg.shuffle_down(result, i);
+      result = op_(result, new_value);
+    }
+    return result;
+  }
+
+  inline InitValueT GroupReduce(sycl::nd_item<1> item,
+                                const InitValueT data) const {
+    auto sg = item.get_sub_group();
+    auto sg_id = sg.get_group_linear_id();
+    auto lane_id = sg.get_local_linear_id();
+    const int sg_num = sg.get_group_linear_range();
+
+    // subgroup number is expected to <= 32
+    sycl::multi_ptr<InitValueT[32], sycl::access::address_space::local_space>
+        scratch = sycl::ext::oneapi::group_local_memory<InitValueT[32]>(
+            item.get_group());
+    auto* ref_scratch = scratch.get();
+
+    int cur_sg_num = sg_num;
+    InitValueT result = SGReduce(sg, data);
+    while (cur_sg_num > 1) {
+      if (lane_id == 0 && sg_id < cur_sg_num) ref_scratch[0][sg_id] = result;
+      item.barrier(sycl::access::fence_space::local_space);
+      if (sg_id < std::max(cur_sg_num / SubGroupSize, 1)) {
+        int offset = sg_id * SubGroupSize + lane_id;
+        if (offset < cur_sg_num)
+          result = ref_scratch[0][offset];
+        else
+          result = init_val_;
+        result = SGReduce(sg, result);
+      }
+      cur_sg_num /= SubGroupSize;
+    }
+    return result;
+  }
+
+  void ConsumRange(sycl::nd_item<1> item, Int2Type<false> /*can_vec*/) const {
+    auto lid = item.get_local_id(0);
+    auto group_id = item.get_group(0);
+    int group_size = item.get_local_range(0);
+
+    int group_start = group_id * elems_per_group_;
+    int group_end = group_start + elems_per_group_;
+    group_end = group_end > in_size_ ? in_size_ : group_end;
+    if (group_start >= in_size_) return;
+
+    InitValueT sum = init_val_;
+#pragma unroll
+    for (int index = group_start + lid; index < group_end;
+         index += group_size) {
+      sum = op_(sum, InitValueT(in_func_(in_data_[index])));
+    }
+    InitValueT res = GroupReduce(item, sum);
+    if (lid == 0) out_data_[group_id] = OutputT(out_func_(res));
+  }
+
+  inline void ConsumRange(sycl::nd_item<1> item,
+                          Int2Type<true> /*can_vec*/) const {
+    auto lid = item.get_local_id(0);
+    auto group_id = item.get_group(0);
+    auto group_size = item.get_local_range(0);
+
+    typedef sycl::vec<InputT, FullReducePolicy::VEC_LENGTH> VecT;
+    InputT input_items[FullReducePolicy::ITEMS_PER_THREAD];
+    VecT* vec_items = reinterpret_cast<VecT*>(input_items);
+
+    int group_start = group_id * elems_per_group_;
+
+    InitValueT aggregate = init_val_;
+    int loops =
+        elems_per_group_ / (group_size * FullReducePolicy::ITEMS_PER_THREAD);
+    for (int l = 0; l < loops; ++l) {
+      int start_offset =
+          group_start + l * group_size * FullReducePolicy::ITEMS_PER_THREAD;
+      VecT* vec_in = reinterpret_cast<VecT*>(
+          in_data_ + start_offset + (lid * FullReducePolicy::VEC_LENGTH));
+
+#pragma unroll
+      for (int i = 0; i < FullReducePolicy::WORDS; ++i) {
+        vec_items[i] = vec_in[i * group_size];
+      }
+
+#pragma unroll
+      for (int i = 0; i < FullReducePolicy::ITEMS_PER_THREAD; ++i) {
+        aggregate = op_(aggregate, InitValueT(in_func_(input_items[i])));
+      }
+    }
+    InitValueT res = GroupReduce(item, aggregate);
+    if (lid == 0) out_data_[group_id] = OutputT(out_func_(res));
+  }
+
+  InputT* in_data_;
+  OutputT* out_data_;
+  InputFunctor in_func_;
+  OutputFunctor out_func_;
+  InitValueT init_val_;
+  int in_size_;
+  int elems_per_group_;
+  Op op_;
+};
+
 template <typename OutputT, typename InputFunctor, typename OutputFunctor,
           typename InitValueT, typename Op>
 struct GroupReduceKernel<Eigen::bfloat16, OutputT, InputFunctor, OutputFunctor,

@@ -483,6 +483,13 @@ class ProdReductionTest(BaseReductionTest):
     return np.prod(x, axis=reduction_axes, keepdims=keepdims)
 
   @test_util.run_deprecated_v1
+  def testInt64(self):
+    reduction_dims = [0]
+    np_arr = np.array([4096, 1, 3]).astype(np.int64)
+    for dim in reduction_dims:
+      self._compare(np_arr, dim, False)
+            
+  @test_util.run_deprecated_v1
   def testFloat32(self):
     for rank in range(1, _MAX_RANK + 1):
       np_arr = self._makeIncremental((2,) * rank, dtypes.float32)
