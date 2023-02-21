@@ -415,6 +415,71 @@ def itex_experimental_api_opt():
 
     return outputs
 
+  def itex_instance_norm_call(self, inputs):
+    """ITEX version 'call' function for InstanceNormalization in tensorflow_addons package.
+
+    This is implemented by itex_layer_norm.
+    The InstanceNormalization takes the axis as input,
+    and the size of gamma and beta is the size of the specified axis.
+    """
+    input_shape = array_ops.shape(inputs)
+    ndims = len(input_shape)
+    axis = self.axis
+    if axis < 0:
+      axis = ndims + axis
+    broadcast_shape = [1] * len(input_shape)
+    broadcast_shape[axis] = input_shape[axis]
+
+    if axis != 1:
+      # Because itex_layer_norm computes mean and variance across the last axis,
+      # But the InstanceNorm in tensorflow_addons pkg computes them on axes 
+      # except for the first and the specified axis, So for convenience transpose 
+      # the specified axis to the axis at subscript 1 position, and collapse subsequent 
+      # axes as the last axis.
+      perm_shape = list(range(0, ndims))
+      perm_shape.pop(axis)
+      perm_shape.insert(1, axis)
+      inputs = array_ops.transpose(inputs, perm_shape)
+
+    # Collapse dims after 1.
+    in_dim = 1
+    tensor_shape = array_ops.shape(inputs)
+    for dim in range(0, ndims):
+      dim_tensor = tensor_shape[dim]
+      if dim > 1:
+        in_dim = in_dim * dim_tensor
+
+    squeezed_shape = [tensor_shape[0], tensor_shape[1], in_dim]
+    inputs = array_ops.reshape(inputs, squeezed_shape)
+
+    # self.gamma and self.beta have the wrong shape for layer_norm, so
+    # we cannot pass them as the scale and offset parameters. Therefore, we
+    # create two constant tensors in correct shapes for layer_norm and
+    # later construct a separate calculation on the scale and offset.
+    scale = array_ops.ones([in_dim], dtype=dtypes.float32)
+    offset = array_ops.zeros([in_dim], dtype=dtypes.float32)
+
+    outputs, _, _ = _layer_norm(inputs,
+                                scale=scale,
+                                offset=offset,
+                                epsilon=self.epsilon,
+                                is_training=True)
+    outputs = array_ops.reshape(outputs, tensor_shape)
+    if axis != 1:
+      perm_back_shape = list(range(0, ndims))
+      perm_back_shape.pop(1)
+      perm_back_shape.insert(axis, 1)
+      outputs = array_ops.transpose(outputs, perm_back_shape)
+
+    if self.gamma is not None:
+      gamma = array_ops.reshape(self.gamma, broadcast_shape)
+      outputs = outputs * math_ops.cast(gamma, outputs.dtype)
+    if self.beta is not None:
+      beta = array_ops.reshape(self.beta, broadcast_shape)
+      outputs = outputs + math_ops.cast(beta, outputs.dtype)
+
+    return outputs
+
   try:
     tf.keras.layers.Dense.call = itex_dense_layer_call
     tf.keras.layers.LayerNormalization.call = itex_layer_norm_call
@@ -430,3 +495,8 @@ def itex_experimental_api_opt():
     keras.layers.LayerNormalization.build = itex_layer_norm_build
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental api optimization: Keras is not installed.") # pylint: disable=line-too-long
+  try:
+    import tensorflow_addons as tfa
+    tfa.layers.InstanceNormalization.call = itex_instance_norm_call
+  except BaseException: # pylint: disable=broad-except
+    logger.warning("itex experimental api optimization: tensorflow_addons is not installed.") # pylint: disable=line-too-long
