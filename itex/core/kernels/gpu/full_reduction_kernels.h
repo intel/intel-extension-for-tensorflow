@@ -198,11 +198,13 @@ struct GroupReduceKernel<itex::int64, OutputT, InputFunctor, OutputFunctor,
 
   inline void ConsumRange(sycl::nd_item<1> item,
                           Int2Type<true> /*can_vec*/) const {
+    constexpr int VEC_LENGTH = sizeof(float) * 4 / sizeof(InputT);
+    constexpr int WORDS = FullReducePolicy::ITEMS_PER_THREAD / VEC_LENGTH;
     auto lid = item.get_local_id(0);
     auto group_id = item.get_group(0);
     auto group_size = item.get_local_range(0);
 
-    typedef sycl::vec<InputT, FullReducePolicy::VEC_LENGTH> VecT;
+    typedef sycl::vec<InputT, VEC_LENGTH> VecT;
     InputT input_items[FullReducePolicy::ITEMS_PER_THREAD];
     VecT* vec_items = reinterpret_cast<VecT*>(input_items);
 
@@ -214,11 +216,11 @@ struct GroupReduceKernel<itex::int64, OutputT, InputFunctor, OutputFunctor,
     for (int l = 0; l < loops; ++l) {
       int start_offset =
           group_start + l * group_size * FullReducePolicy::ITEMS_PER_THREAD;
-      VecT* vec_in = reinterpret_cast<VecT*>(
-          in_data_ + start_offset + (lid * FullReducePolicy::VEC_LENGTH));
+      VecT* vec_in =
+          reinterpret_cast<VecT*>(in_data_ + start_offset + (lid * VEC_LENGTH));
 
 #pragma unroll
-      for (int i = 0; i < FullReducePolicy::WORDS; ++i) {
+      for (int i = 0; i < WORDS; ++i) {
         vec_items[i] = vec_in[i * group_size];
       }
 
