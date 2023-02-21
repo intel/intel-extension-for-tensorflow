@@ -602,8 +602,9 @@ def _impl(ctx):
                     flag_group(flags = [
                         "-std=c++17",
                         "-fPIC",
-                        "-fhonor-infinities",
-                        "-fhonor-nans",
+                        # ref: https://github.com/intel/llvm/blob/sycl/clang/docs/UsersManual.rst#controlling-floating-point-behavior
+                        "-fno-finite-math-only",
+                        "-fno-approx-func",
                         "-DITEX_USE_MKL=%{TF_NEED_MKL}",
                         "-DITEX_ENABLE_DOUBLE=1",
                         "-DEIGEN_USE_DPCPP=1",
