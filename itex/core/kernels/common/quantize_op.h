@@ -293,13 +293,17 @@ class QuantizeV2Op : public OpKernel {
 #ifdef INTEL_CPU_ONLY
         shift_data = shift_vec.data();
 #else
+        // TODO(itex): cache offset tensor on gpu, after HostDataCache class is
+        // provided in oneDNN v3 upgrade
         OP_REQUIRES_OK(context, context->allocate_temp(DataTypeToEnum<S>::v(),
                                                        src_tf_shape,
                                                        &shift_device_tensor));
         auto* stream = context->GetDeviceStream();
-        DeviceMemcpy<Device>(
-            const_cast<char*>(shift_device_tensor.tensor_data().data()),
-            shift_vec.data(), shift_vec.size() * sizeof(S), stream);
+        stream
+            ->memcpy(
+                const_cast<char*>(shift_device_tensor.tensor_data().data()),
+                shift_vec.data(), shift_vec.size() * sizeof(S))
+            .wait();
         shift_data = GetTensorBuffer<S>(&shift_device_tensor);
 #endif
 
