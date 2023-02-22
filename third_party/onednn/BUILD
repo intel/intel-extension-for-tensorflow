@@ -1,4 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//lib:selects.bzl", "selects")
 
 exports_files(["LICENSE"])
 
@@ -21,6 +22,40 @@ config_setting(
     name = "build_with_tbb",
     define_values = {
         "build_with_tbb": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v3_and_gpu",
+    define_values = {
+        "device": "gpu",
+        "onednn_version": "3",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v2_and_gpu",
+    define_values = {
+        "device": "gpu",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v3_and_cpu",
+    define_values = {
+        "device": "cpu",
+        "onednn_version": "3",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v2_and_cpu",
+    define_values = {
+        "device": "cpu",
     },
     visibility = ["//visibility:public"],
 )
@@ -59,4 +94,20 @@ py_binary(
         "@onednn_cpu//:__subpackages__",
         "@onednn_gpu//:__subpackages__",
     ],
+)
+
+config_setting(
+    name = "build_with_llga_debug",
+    define_values = {
+        "build_with_llga_debug": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "build_with_graph_compiler",
+    define_values = {
+        "build_with_graph_compiler": "true",
+    },
+    visibility = ["//visibility:public"],
 )

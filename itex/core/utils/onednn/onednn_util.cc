@@ -89,8 +89,15 @@ void WeightCacheManager<T>::SetCache(
                  context->allocate_persistent(
                      DataTypeToEnum<ShortDT>::value, weight_md_tf_shape,
                      &weight_cached_md_, &weight_md_cached_tensor, alloc_attr));
+#ifdef ITEX_ONEDNN_3_0
+  dnnl_memory_desc_t c_weight_expected_md;
+  dnnl_memory_desc_clone(&c_weight_expected_md, weight_expected_md.get());
+  *reinterpret_cast<dnnl_memory_desc_t*>(
+      weight_md_cached_tensor->flat<ShortDT>().data()) = c_weight_expected_md;
+#else
   *reinterpret_cast<dnnl::memory::desc*>(
       weight_md_cached_tensor->flat<ShortDT>().data()) = weight_expected_md;
+#endif
 }
 
 template <typename T>
@@ -140,13 +147,25 @@ bool BiasCacheManager<T>::IsEmpty() TF_LOCKS_EXCLUDED(mu_) {
   return (!bias_cached_data_.IsInitialized());
 }
 
+#ifdef ITEX_ONEDNN_3_0
+template <typename T>
+void BiasCacheManager<T>::SetCache(OpKernelContext* context,
+                                   const dnnl::memory::desc& bias_md,
+                                   const dnnl::primitive_attr& bias_attr,
+                                   void* bias_data,
+                                   const dnnl::engine& onednn_engine,
+                                   const dnnl::memory& scales_mem)
+    TF_LOCKS_EXCLUDED(mu_)
+#else
 template <typename T>
 void BiasCacheManager<T>::SetCache(OpKernelContext* context,
                                    const dnnl::memory::desc& bias_md,
                                    const dnnl::primitive_attr& bias_attr,
                                    void* bias_data,
                                    const dnnl::engine& onednn_engine)
-    TF_LOCKS_EXCLUDED(mu_) {
+    TF_LOCKS_EXCLUDED(mu_)
+#endif
+{
   mutex_lock lock(&mu_);
 
   if (bias_cached_data_.IsInitialized()) {
@@ -176,6 +195,10 @@ void BiasCacheManager<T>::SetCache(OpKernelContext* context,
       dnnl::reorder(bias_mem, bias_scaled_mem, bias_attr);
   std::unordered_map<int, dnnl::memory> reorder_args = {
       {DNNL_ARG_SRC, bias_mem}, {DNNL_ARG_DST, bias_scaled_mem}};
+#ifdef ITEX_ONEDNN_3_0
+  if (scales_mem != dnnl::memory())
+    reorder_args.insert({DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, scales_mem});
+#endif
 
   // Execute reorder
   auto onednn_stream = CreateDnnlStream(*context, onednn_engine);

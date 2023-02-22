@@ -42,21 +42,34 @@ constexpr int INVALID_LLGA_ID = -1;
 // TODO(itex): Create another class for LLGA meta tensor.
 class OneDnnShape {
  private:
+  // IMPORTANT: don't add any data structure has runtime size, such std::vector
+  // in OneDnnShapeData. It will cause wrong result in calculating meta tensor
+  // size by sizeof().
   typedef struct OneDnnShapeData {
     // Flag to indicate if the tensor is an OneDnn tensor or not
     bool is_onednn_tensor_ = false;
     OneDnnTensorFormat tf_data_format_ = OneDnnTensorFormat::FORMAT_INVALID;
     // OneDnn layout
+#ifdef ITEX_ONEDNN_3_0
+    dnnl_memory_desc_t md_;
+#else
     dnnl::memory::desc md_;
+#endif
     // TF dimension corresponding to this OneDnn dimension
     dnnl_dims_t map_;
     // TODO(itex): For Tensorflow, oneDNN Graph shape and stride are actually
     // the same thing, and we could merge them together. TF don't have
     // additional stride information for Tensor. shape for OneDnn Graph logical
     // tensor
+#ifdef ITEX_ONEDNN_3_0
+    dnnl_dims_t shape_;
+    // stride for OneDnn Graph logical tensor
+    dnnl_dims_t stride_;
+#else
     dnnl_graph_dims_t shape_;
     // stride for OneDnn Graph logical tensor
     dnnl_graph_dims_t stride_;
+#endif
     // layout_id for OneDnn Graph logical tensor
     int64_t layout_id_ = INVALID_LLGA_ID;
   } OneDnnShapeData;
@@ -90,24 +103,52 @@ class OneDnnShape {
   // Returns and dnnl::memory::dims object that contains the sizes of this
   // OneDnnShape object.
   inline dnnl::memory::dims GetSizesAsOneDnnDims() const {
+#ifdef ITEX_ONEDNN_3_0
+    ITEX_CHECK_EQ(data_.is_onednn_tensor_, true);
+    dnnl_dims_t* dims_c;
+    int ndims = 0;
+    dnnl_memory_desc_query(data_.md_, dnnl_query_ndims_s32, &ndims);
+    if (ndims == 0) return dnnl::memory::dims();
+    dnnl_memory_desc_query(data_.md_, dnnl_query_dims, &dims_c);
+    return dnnl::memory::dims(*dims_c, *dims_c + ndims);
+#else
     ITEX_CHECK_EQ(data_.is_onednn_tensor_, true);
     return data_.md_.dims();
+#endif
   }
 
   // Get DataType
   inline dnnl::memory::data_type GetElemType() const {
+#ifdef ITEX_ONEDNN_3_0
+    dnnl_data_type_t dt;
+    dnnl_memory_desc_query(data_.md_, dnnl_query_data_type, &dt);
+    return static_cast<dnnl::memory::data_type>(dt);
+#else
     return data_.md_.data_type();
+#endif
   }
 
   // Return TensorShape that describes the Tensorflow shape of the tensor
   // represented by this OneDnnShape.
   TensorShape GetTfShape() const;
-
+#ifdef ITEX_ONEDNN_3_0
+  inline void SetOneDnnLayout(const dnnl::memory::desc& md) {
+    dnnl_memory_desc_clone(&data_.md_, md.get());
+  }
+#else
   inline void SetOneDnnLayout(const dnnl::memory::desc& md) { data_.md_ = md; }
+#endif
 
   // Get memory desc for OneDnn layout
+#ifdef ITEX_ONEDNN_3_0
+  inline const dnnl::memory::desc GetOneDnnLayout() const {
+    dnnl_memory_desc_t tmp;
+    dnnl_memory_desc_clone(&tmp, data_.md_);
+    return dnnl::memory::desc(tmp);
+  }
+#else
   inline const dnnl::memory::desc GetOneDnnLayout() const { return data_.md_; }
-
+#endif
   // Get memory desc for TF layout, only used in onednntotf op
   const dnnl::memory::desc GetTfLayout() const;
 
@@ -147,27 +188,47 @@ class OneDnnShape {
   }
 
   // Set shape of logical tensor.
+#ifdef ITEX_ONEDNN_3_0
+  inline void SetShape(dnnl::graph::logical_tensor::dims shape) {
+#else
   inline void SetShape(dnnl::graph::logical_tensor::dims_t shape) {
+#endif
     for (size_t i = 0; i < shape.size(); i++) data_.shape_[i] = shape[i];
   }
 
   // Get shape of logical tensor.
+#ifdef ITEX_ONEDNN_3_0
+  inline const dnnl::graph::logical_tensor::dims GetShape() {
+    dnnl::graph::logical_tensor::dims retVal;
+    for (int i = 0; i < DNNL_MAX_NDIMS; i++)
+#else
   inline const dnnl::graph::logical_tensor::dims_t GetShape() {
     dnnl::graph::logical_tensor::dims_t retVal;
     for (int i = 0; i < DNNL_GRAPH_MAX_NDIMS; i++)
+#endif
       if (data_.shape_[i] != -1) retVal.push_back(data_.shape_[i]);
     return retVal;
   }
 
   // Set stride of logical tensor.
+#ifdef ITEX_ONEDNN_3_0
+  inline void SetStride(dnnl::graph::logical_tensor::dims stride) {
+#else
   inline void SetStride(dnnl::graph::logical_tensor::dims_t stride) {
+#endif
     for (int i = 0; i < stride.size(); i++) data_.stride_[i] = stride[i];
   }
 
   // Get stride of logical tensor.
+#ifdef ITEX_ONEDNN_3_0
+  inline const dnnl::graph::logical_tensor::dims GetStride() {
+    dnnl::graph::logical_tensor::dims retVal;
+    for (int i = 0; i < DNNL_MAX_NDIMS; i++)
+#else
   inline const dnnl::graph::logical_tensor::dims_t GetStride() {
     dnnl::graph::logical_tensor::dims_t retVal;
     for (int i = 0; i < DNNL_GRAPH_MAX_NDIMS; i++)
+#endif
       if (data_.stride_[i] != -1) retVal.push_back(data_.stride_[i]);
     return retVal;
   }
@@ -183,7 +244,7 @@ class OneDnnShape {
   // to know the relationship between OneDnn dims (data_.size_) and actual TF
   // tensor dims
   void SetTfDimOrder(OneDnnTensorFormat format);
-};
+};  // NOLINT
 
 // Get input onednnshape by metatensor
 // Don't change the OneDnnShape loads from the meta tensor
@@ -238,15 +299,24 @@ inline void SetOutputTensorShape(const dnnl::memory::desc& dst_md,
 
     // Set TF shape to 1D with full size.
     TensorShape new_tf_shape;
+#ifdef ITEX_ONEDNN_3_0
+    new_tf_shape.AddDim(dst_md.get_size() /
+                        dnnl::memory::data_type_size(dst_md.get_data_type()));
+#else
     new_tf_shape.AddDim(dst_md.get_size() /
                         dnnl::memory::data_type_size(dst_md.data_type()));
+#endif
     *tf_shape = new_tf_shape;
   }
 }
 
 // Check whether the layout is blocked directly from its attribute
 inline bool IsBlockedMd(const dnnl::memory::desc& md) {
+#ifdef ITEX_ONEDNN_3_0
+  return md.get_inner_nblks() != 0;
+#else
   return md.data.format_desc.blocking.inner_nblks != 0;
+#endif
 }
 
 inline int GetTensorMetaDataIndex(int n, int num_inputs) {

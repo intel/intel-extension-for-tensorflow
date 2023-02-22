@@ -71,6 +71,8 @@ class PostOpUtil {
   // scale, which is only available in node execution
   void SetOutputScale(const std::vector<float>& scales);
 
+  std::vector<float>& GetOutputScale() { return output_scale_param_.scales; }
+
   // Set post op and output scale attribution for `attr`.
   // If `HasBinary()`, an extra parameter `md_list` is required.
   void SetPostOpAttr(dnnl::primitive_attr* attr,
