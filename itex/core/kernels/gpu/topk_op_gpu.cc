@@ -415,6 +415,53 @@ namespace functor {
 
 typedef Eigen::GpuDevice GPUDevice;
 
+template <typename KeyT, typename ValueT>
+void DispatchToFallBackRadixSort(const gpuStream_t& stream,
+                                 const KeyT* key_array, KeyT* key_src,
+                                 KeyT* key_dst, ValueT* value_src,
+                                 ValueT* value_dst, const int num_rows,
+                                 const int num_cols, const int max_group_size) {
+  int group_size = max_group_size;
+
+  int RADIX_BITS = 4;
+  int RADIX_STATUS = 1 << RADIX_BITS;
+
+  const int slm_size =
+      stream->get_device()
+          .template get_info<sycl::info::device::local_mem_size>();
+  while (RADIX_STATUS * group_size * sizeof(int) >= slm_size &&
+         group_size >= 32) {
+    group_size >>= 1;
+  }
+  while (RADIX_STATUS * group_size * sizeof(int) >= slm_size &&
+         RADIX_BITS > 1) {
+    --RADIX_BITS;
+    RADIX_STATUS = 1 << RADIX_BITS;
+  }
+  if (RADIX_STATUS * group_size * sizeof(int) >= slm_size) {
+    std::stringstream ss;
+    ss << "Not Supported hardware, as SLM is too small, required "
+          "minumum size is "
+       << RADIX_STATUS * group_size * sizeof(int)
+       << " got hardward slm siz: " << slm_size;
+    ITEX_LOG(FATAL) << ss.str();
+  }
+
+  switch (RADIX_BITS) {
+#define HANDLE_N(NUM)                                                        \
+  case (NUM):                                                                \
+    LaunchFallBackKeyValueRadixSort<KeyT, ValueT, NUM, false>(               \
+        stream, key_array, key_src, key_dst, value_src, value_dst, num_rows, \
+        num_cols, group_size);                                               \
+    break;
+    HANDLE_N(4)
+    HANDLE_N(3)
+    HANDLE_N(2)
+    HANDLE_N(1)
+#undef HANDLE_N
+  }
+}
+
 //  for large k case, directly sort
 template <typename T, typename IndexT>
 void LaunchLargeKKernel(OpKernelContext* context, const T* input,
@@ -424,7 +471,6 @@ void LaunchLargeKKernel(OpKernelContext* context, const T* input,
                         const int num_cols, const int max_group_size) {
   const auto& d = context->eigen_gpu_device();
   auto& stream = d.stream();
-  int group_size = max_group_size;
   Tensor values_tmp_ping;
   Tensor indices_tmp_ping;
   OP_REQUIRES_OK(context,
@@ -459,43 +505,10 @@ void LaunchLargeKKernel(OpKernelContext* context, const T* input,
   T* values_dst = values_tmp_ping.flat<T>().data();
   IndexT* indices_dst = indices_tmp_ping.flat<IndexT>().data();
 
-  int RADIX_BITS = 4;
-  int RADIX_STATUS = 1 << RADIX_BITS;
+  DispatchToFallBackRadixSort(stream, input, values_src, values_dst,
+                              indices_src, indices_dst, num_rows, num_cols,
+                              max_group_size);
 
-  const int slm_size =
-      stream->get_device()
-          .template get_info<sycl::info::device::local_mem_size>();
-  while (RADIX_STATUS * group_size * sizeof(int) >= slm_size &&
-         group_size >= 32) {
-    group_size >>= 1;
-  }
-  while (RADIX_STATUS * group_size * sizeof(int) >= slm_size &&
-         RADIX_BITS > 1) {
-    --RADIX_BITS;
-    RADIX_STATUS = 1 << RADIX_BITS;
-  }
-  if (RADIX_STATUS * group_size * sizeof(int) >= slm_size) {
-    std::stringstream ss;
-    ss << "Not Supported hardware, as SLM is too small, required "
-          "minumum size is "
-       << RADIX_STATUS * group_size * sizeof(int)
-       << " got hardward slm siz: " << slm_size;
-    ITEX_LOG(FATAL) << ss.str();
-  }
-
-  switch (RADIX_BITS) {
-#define HANDLE_N(NUM)                                                    \
-  case (NUM):                                                            \
-    LaunchFallBackKeyValueRadixSort<T, IndexT, NUM, false>(              \
-        stream, input, values_src, values_dst, indices_src, indices_dst, \
-        num_rows, num_cols, group_size);                                 \
-    break;
-    HANDLE_N(4)
-    HANDLE_N(3)
-    HANDLE_N(2)
-    HANDLE_N(1)
-#undef HANDLE_N
-  }
   if (num_topk < num_cols) {
     // Need to copy subsets of sorted_indices and sorted_outputs to
     // indices and outputs.
@@ -613,7 +626,12 @@ void TopKFunctor<GPUDevice, T, IndexT>::operator()(
   }
 }
 
-#define INSTANTIATE_GPU(T) template struct TopKFunctor<GPUDevice, T, int32>;
+#define INSTANTIATE_GPU(T)                                                   \
+  template struct TopKFunctor<GPUDevice, T, int32>;                          \
+  template void DispatchToFallBackRadixSort<T, int32>(                       \
+      const gpuStream_t& stream, const T* key_array, T* key_src, T* key_dst, \
+      int32* value_src, int32* value_dst, const int num_rows,                \
+      const int num_cols, const int max_group_size);
 TF_CALL_GPU_NUMBER_TYPES(INSTANTIATE_GPU);
 TF_CALL_INTEGRAL_TYPES(INSTANTIATE_GPU);
 #ifdef ITEX_ENABLE_DOUBLE

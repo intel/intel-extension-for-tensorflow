@@ -1832,6 +1832,7 @@ itex_xpu_library(
     name = "unique_op",
     srcs = ["unique_op.cc"],
     hdrs = [
+        "topk_op.h",
         "unique_op.h",
         "unique_op_helpers.h",
     ],

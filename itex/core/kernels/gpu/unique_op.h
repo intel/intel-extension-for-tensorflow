@@ -18,6 +18,7 @@ limitations under the License.
 #include <iterator>
 #include <limits>
 
+#include "itex/core/kernels/gpu/topk_op.h"
 #include "itex/core/kernels/gpu/unique_op_helpers.h"
 #include "itex/core/utils/group_radix_sort.h"
 #include "itex/core/utils/op_kernel.h"
@@ -396,7 +397,7 @@ Status LaunchRadixSortKernel(sycl::queue* stream, const int32_t num_instances,
                              sycl::range<1> global_range,
                              sycl::range<1> local_range,
                              size_t local_memory_size,
-                             int num_bits = sizeof(KeyT)) {
+                             int num_bits = sizeof(KeyT) * 8) {
   stream->submit([&](sycl::handler& cgh) {
     __shared__<uint8_t> scratch(sycl::range<1>{local_memory_size}, cgh);
     RadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE, Sortor> task(
@@ -414,7 +415,7 @@ template <typename KeyT, typename ValueT, int KEYS_PER_ITEM, int GROUP_SIZE,
           int SUBGROUP_SIZE>
 Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
                          KeyT* keys_in, ValueT* indices_in, KeyT* keys_out,
-                         ValueT* indices_out, int num_bits = sizeof(KeyT)) {
+                         ValueT* indices_out, int num_bits = sizeof(KeyT) * 8) {
   if (size == 0) return Status(TF_INVALID_ARGUMENT, "Invalid Value");
   const GPUDevice& device = context->eigen_device<GPUDevice>();
   sycl::queue* stream = device.stream();
@@ -425,23 +426,36 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
         DataTypeToEnum<ValueT>::value, TensorShape({size}), &tmp_indices_in));
     ValueT* mutable_indices_in = tmp_indices_in.flat<ValueT>().data();
     indices_in = mutable_indices_in;
-    ITEX_CHECK_OK(LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1),
-                                                ValueT(size), indices_in));
   }
 
-  using Rsortor = GroupRadixSortor<
-      KeyT, /*key_per_item==*/KEYS_PER_ITEM, /*group_size=*/GROUP_SIZE,
-      /*subgroup_size =*/SUBGROUP_SIZE, sycl::group<1>, ValueT>;
-  // Compute the required local memory size
-  size_t local_memory_size = Rsortor::LocalStorage::SIZE;
-  const int32_t num_wg = (size + GROUP_SIZE - 1) / GROUP_SIZE;
-  sycl::range<1> global_range(num_wg * GROUP_SIZE);
-  sycl::range<1> local_range(GROUP_SIZE);
+  if (size <= KEYS_PER_ITEM * GROUP_SIZE) {
+    ITEX_CHECK_OK(LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1),
+                                                ValueT(size), indices_in));
 
-  return LaunchRadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE,
-                               Rsortor>(
-      stream, size, keys_in, indices_in, keys_out, indices_out, global_range,
-      local_range, local_memory_size, num_bits);
+    using Rsortor = GroupRadixSortor<
+        KeyT, /*key_per_item==*/KEYS_PER_ITEM, /*group_size=*/GROUP_SIZE,
+        /*subgroup_size =*/SUBGROUP_SIZE, sycl::group<1>, ValueT>;
+    // Compute the required local memory size
+    size_t local_memory_size = Rsortor::LocalStorage::SIZE;
+    const int32_t num_wg = 1;
+    sycl::range<1> global_range(num_wg * GROUP_SIZE);
+    sycl::range<1> local_range(GROUP_SIZE);
+
+    return LaunchRadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE,
+                                 Rsortor>(
+        stream, size, keys_in, indices_in, keys_out, indices_out, global_range,
+        local_range, local_memory_size, num_bits);
+  } else {
+    Tensor tmp_keys_buffer;
+    TF_RETURN_IF_ERROR(context->allocate_temp(
+        DataTypeToEnum<KeyT>::value, TensorShape({size}), &tmp_keys_buffer));
+
+    ::itex::functor::DispatchToFallBackRadixSort(
+        stream, keys_in, keys_out, tmp_keys_buffer.flat<KeyT>().data(),
+        indices_out, indices_in, 1, size, GROUP_SIZE);
+
+    return Status::OK();
+  }
 }
 
 template <typename InputIteratorT, typename OutputIteratorT, typename BinaryOp>
