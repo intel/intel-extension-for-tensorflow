@@ -119,11 +119,15 @@ inline Status EraseCancellableNodesAroundContraction(
         return false;
       }
       TensorProto tensor_proto = const_nodedef->attr().at("value").tensor();
+      DataType dtype = tensor_proto.dtype();
+
       if (!shape_tensor.FromProto(tensor_proto)) {
         return false;
       }
       for (int i = 0; i < shape_tensor.NumElements(); ++i) {
-        shape_value.push_back(shape_tensor.flat<int32_t>()(i));
+        auto temp = (dtype == DT_INT32) ? shape_tensor.flat<int32_t>()(i)
+                                        : shape_tensor.flat<int64_t>()(i);
+        shape_value.push_back(static_cast<int32_t>(temp));
       }
       int32_t perm_dim_1 = 0;
       perm_dim_1 = shape_value[1];
