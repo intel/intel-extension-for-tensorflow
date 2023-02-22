@@ -39,13 +39,13 @@ Refer to [Install oneAPI Base Toolkit Packages](install_for_gpu.md#install-oneap
 
 ### Install Bazel
 
-To build Intel® Extension for TensorFlow*, install Bazel 4.2.1 or later ones. Refer to [install Bazel](https://docs.bazel.build/versions/main/install-ubuntu.html).
+To build Intel® Extension for TensorFlow*, install Bazel 5.3.0 or later ones. Refer to [install Bazel](https://docs.bazel.build/versions/main/install-ubuntu.html).
 
 Here are the recommended commands:
 
 ```
-$ wget https://github.com/bazelbuild/bazel/releases/download/4.2.1/bazel-4.2.1-installer-linux-x86_64.sh
-$ bash bazel-4.2.1-installer-linux-x86_64.sh --user
+$ wget https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
+$ bash bazel-5.3.0-installer-linux-x86_64.sh --user
 ```
 Check Bazel:
 ```bash
@@ -81,7 +81,7 @@ Configure your system build by running the `./configure` command at the root of 
 - For GPU
 
 ```
-You have bazel 4.2.1 installed.
+You have bazel 5.3.0 installed.
 Python binary path: /path/to/python
 
 Found possible Python library paths:
@@ -112,7 +112,7 @@ Configuration finished
 - For CPU
 
 ```
-You have bazel 4.2.1 installed.
+You have bazel 5.3.0 installed.
 Python binary path: /path/to/python
 
 Found possible Python library paths:
