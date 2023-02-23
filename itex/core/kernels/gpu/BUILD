@@ -339,8 +339,8 @@ itex_xpu_library(
         "cast_op_impl.cc",
     ],
     hdrs = [
-        "cast_op.h",
         "cast_op_impl.h",
+        "//itex/core/kernels/common:cast_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -489,8 +489,8 @@ itex_xpu_library(
         "dilation_ops_gpu.cc",
     ],
     hdrs = [
-        "cast_op.h",
         "dilation_ops.h",
+        "//itex/core/kernels/common:cast_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -776,6 +776,7 @@ itex_xpu_library(
     name = "quantized_matmul",
     srcs = ["quantized_matmul.cc"],
     hdrs = [
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/common:quantized_matmul_common_hdrs",
         "//itex/core/kernels/onednn/block:quantized_hdrs",
@@ -824,6 +825,7 @@ itex_xpu_library(
     name = "quantized_conv",
     srcs = ["quantized_conv_ops.cc"],
     hdrs = [
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:conv_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/common:quantized_conv_hdrs",
@@ -1703,9 +1705,9 @@ itex_xpu_library(
     name = "resize_bilinear_ops",
     srcs = ["resize_bilinear_op.cc"],
     hdrs = [
-        "cast_op.h",
         "image_resizer_state.h",
         "resize_bilinear_op.h",
+        "//itex/core/kernels/common:cast_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,

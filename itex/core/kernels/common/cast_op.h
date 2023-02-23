@@ -15,8 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef ITEX_CORE_KERNELS_GPU_CAST_OP_H_
-#define ITEX_CORE_KERNELS_GPU_CAST_OP_H_
+#ifndef ITEX_CORE_KERNELS_COMMON_CAST_OP_H_
+#define ITEX_CORE_KERNELS_COMMON_CAST_OP_H_
 
 #include <limits>
 
@@ -198,6 +198,27 @@ struct LSBZeroSetter<std::complex<I>, O> {
 };
 
 }  // namespace functor
+
+template <typename Device, typename SrcType, typename DstType>
+struct CastDataType {
+  void operator()(const Device& d, typename TTypes<SrcType>::ConstFlat input,
+                  typename TTypes<DstType>::Flat output) {
+    output.device(d) = input.template cast<DstType>();
+  }
+};
+#ifndef INTEL_CPU_ONLY
+typedef Eigen::GpuDevice GPUDevice;
+template <typename SrcType, typename DstType>
+struct CastDataType<GPUDevice, SrcType, DstType> {
+  void operator()(const GPUDevice& d, typename TTypes<SrcType>::ConstFlat input,
+                  typename TTypes<DstType>::Flat output) {
+    // Use existing cast functor instead of directly casting Eigen tensor, as
+    // otherwise we need to instantiate the cast function in a .cu.cc file
+    functor::CastFunctor<GPUDevice, DstType, SrcType> cast;
+    cast(d, output, input);
+  }
+};
+#endif
 }  // namespace itex
 
 namespace Eigen {  // copy from official tensorflow
@@ -252,4 +273,4 @@ struct functor_traits<scalar_cast_op<std::complex<From>, std::complex<To>>>
 }  // namespace internal
 }  // namespace Eigen
 
-#endif  // ITEX_CORE_KERNELS_GPU_CAST_OP_H_
+#endif  // ITEX_CORE_KERNELS_COMMON_CAST_OP_H_

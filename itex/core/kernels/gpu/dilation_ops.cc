@@ -20,7 +20,7 @@ limitations under the License.
 #include <cfloat>
 #include <vector>
 
-#include "itex/core/kernels/gpu/cast_op.h"
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/utils/common_shape_fns.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gtl/array_slice.h"

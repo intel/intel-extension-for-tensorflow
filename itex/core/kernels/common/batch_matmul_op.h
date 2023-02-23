@@ -24,6 +24,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/matmul_op.h"
 
 namespace itex {
@@ -396,6 +397,9 @@ class BatchMatMulOp : public OpKernel {
   TensorShape dst_shape_;
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 // V2 is for latest Intel TF BatchMatMul INT8 new API.

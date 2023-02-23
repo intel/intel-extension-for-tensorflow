@@ -9,6 +9,7 @@ cc_library(
     srcs = ["qmatmul_op.cc"],
     hdrs = [
         "matmul_common.h",
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:matmul_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/onednn/block:quantized_hdrs",
@@ -28,6 +29,7 @@ cc_library(
     srcs = ["quantized_fused_matmul.cc"],
     hdrs = [
         "matmul_common.h",
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:matmul_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/onednn/block:quantized_hdrs",

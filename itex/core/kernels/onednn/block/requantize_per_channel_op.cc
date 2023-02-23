@@ -16,6 +16,7 @@ limitations under the License.
 #include <cmath>
 #include <limits>
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
 #include "itex/core/utils/onednn/onednn_util.h"
@@ -159,6 +160,9 @@ class OneDnnRequantizePerChannelOp : public OpKernel {
   const int kOutputMaxIndex = 2;
   // TODO(itex): use template para T instead of out_type_
   DataType out_type_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 // TODO(itex): Enable OneDnnRequantizePerChannel for CPUDevice

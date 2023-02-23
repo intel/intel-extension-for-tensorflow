@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/no_ops.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
@@ -188,6 +189,10 @@ class OneDnnDequantizeOp : public OpKernel {
   QuantizeMode mode_;
   int axis_;
   bool narrow_range_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, int32> zero_point_cache_;
+#endif
 };
 
 #ifndef INTEL_CPU_ONLY

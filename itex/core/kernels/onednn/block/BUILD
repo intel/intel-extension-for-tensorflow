@@ -110,6 +110,7 @@ itex_xpu_library(
     hdrs = [
         "conv_ops_impl.h",
         "quantized_ops.h",
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:conv_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
     ],
@@ -140,6 +141,7 @@ itex_xpu_library(
     name = "dequantize_op",
     srcs = ["dequantize_op.cc"],
     hdrs = [
+        "//itex/core/kernels/common:host_data_cache_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
     ],
     copts = tf_copts(),
@@ -167,6 +169,9 @@ itex_xpu_library(
 itex_xpu_library(
     name = "dequantize_reshape_op",
     srcs = ["dequantize_reshape_op.cc"],
+    hdrs = [
+        "//itex/core/kernels/common:host_data_cache_hdrs",
+    ],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
@@ -290,6 +295,7 @@ itex_xpu_library(
     name = "quantize_op",
     srcs = ["quantize_op.cc"],
     hdrs = [
+        "//itex/core/kernels/common:host_data_cache_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
     ],
     copts = tf_copts(),
@@ -318,6 +324,7 @@ itex_xpu_library(
 itex_xpu_library(
     name = "requantize_per_channel_op",
     srcs = ["requantize_per_channel_op.cc"],
+    hdrs = ["//itex/core/kernels/common:host_data_cache_hdrs"],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
@@ -428,6 +435,7 @@ itex_xpu_library(
     hdrs = [
         "conv_ops_impl.h",
         "quantized_ops.h",
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:conv_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
     ],

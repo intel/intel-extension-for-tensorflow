@@ -22,7 +22,9 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/kernels/common/conv_ops.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/onednn/block/quantized_ops.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/errors.h"
@@ -163,6 +165,7 @@ class OneDnnConvOp : public OpKernel {
       if (!is_filter_const_) {
         filter_mem_input_.set_data_handle(context->tensor_data(kFilterIndex_));
         filter_mem_.set_data_handle(GetTensorBuffer<Tfilter>(&tmp_weight_));
+
         weight_reorder_.execute(onednn_stream_, weight_reorder_args_);
       }
     } else {
@@ -411,6 +414,7 @@ class OneDnnConvOp : public OpKernel {
         src_reorder_args_.insert({DNNL_ARG_SRC, src_mem_input_});
         src_reorder_args_.insert({DNNL_ARG_DST, src_mem_});
         src_reorder_ = dnnl::reorder(src_mem_input_, src_mem_);
+
         src_reorder_.execute(onednn_stream_, src_reorder_args_);
       } else {
         src_mem_ = src_mem_input_;
@@ -559,6 +563,10 @@ class OneDnnConvOp : public OpKernel {
   WeightCacheManager<Tfilter> weight_cache_manager_;
 
   mutex mu_compute_;
+
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 
  protected:
   // ExtendInt8PostOps is only used in Int8 ops.
@@ -870,6 +878,9 @@ class OneDnnQuantizedConvOp
   std::vector<float> scales_;
   // Bias cache manager
   BiasCacheManager<Tbias> bias_cache_manager;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> bias_scale_cache_;
+#endif
 };
 
 template <typename Device, typename Tinput, typename Tbias, typename Toutput,
@@ -1257,6 +1268,7 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
           context->tensor_data(this->kSrcIndex_));
       this->src_mem_.set_data_handle(
           GetTensorBuffer<qint8>(this->src_data_output_.get()));
+
       this->src_reorder_.execute(this->onednn_stream_, this->src_reorder_args_);
     } else {
       this->src_mem_.set_data_handle(context->tensor_data(this->kSrcIndex_));
@@ -1268,6 +1280,7 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
             context->tensor_data(this->kFilterIndex_));
         this->filter_mem_.set_data_handle(
             GetTensorBuffer<qint8>(&this->tmp_weight_));
+
         this->weight_reorder_.execute(this->onednn_stream_,
                                       this->weight_reorder_args_);
       }
@@ -1592,6 +1605,7 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
           this->weight_reorder_args_.insert({DNNL_ARG_DST, this->filter_mem_});
           this->weight_reorder_ =
               dnnl::reorder(this->filter_mem_input_, this->filter_mem_);
+
           this->weight_reorder_.execute(this->onednn_stream_,
                                         this->weight_reorder_args_);
         }
@@ -1703,7 +1717,6 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
       OneDnnShape* dst_onednn_shape, TensorShape tensor_shape,
       Tensor** dst_tensor) override {
     ITEX_DCHECK(dst_tensor);
-
     // NHWC Conv may prefer NCHW (also plain format) as its primitive format.
     // Need to record this info in meta data to reorder the data correctly.
     SetOutputTensorShape(conv_pd.dst_desc(), dst_tf_format, &tensor_shape,
@@ -1744,6 +1757,10 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
   QuantizeRoundMode round_mode_;
   int axis_;
   bool narrow_range_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, float> src_reorder_scale_cache_;
+#endif
 };
 
 template <typename Device, typename Tinput, typename Tbias, typename Toutput,

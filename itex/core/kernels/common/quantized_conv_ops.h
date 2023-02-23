@@ -23,7 +23,9 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/kernels/common/conv_ops.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/onednn/block/quantized_ops.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/errors.h"
@@ -651,6 +653,10 @@ class LegacyQuantizedConvOpBase
   std::vector<float> scales_;
   // Bias cache manager
   BiasCacheManager<Tbias> bias_cache_manager;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, float> bias_scale_cache_;
+#endif
 };
 
 }  // namespace itex

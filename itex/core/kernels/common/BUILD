@@ -16,10 +16,19 @@ cc_library(
 )
 
 filegroup(
+    name = "host_data_cache_hdrs",
+    srcs = [
+        "host_data_cache.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "batch_matmul_hdrs",
     srcs = [
         "batch_matmul_op.h",
         "fill_functor.h",
+        "host_data_cache.h",
         "matmul_op.h",
     ],
     visibility = ["//visibility:public"],
@@ -30,6 +39,7 @@ filegroup(
     srcs = [
         "conv_grad_ops.h",
         "conv_ops.h",
+        "host_data_cache.h",
     ],
     visibility = ["//visibility:public"],
 )
@@ -38,6 +48,7 @@ filegroup(
     name = "dequantize_hdrs",
     srcs = [
         "dequantize_op.h",
+        "host_data_cache.h",
     ],
     visibility = ["//visibility:public"],
 )
@@ -56,6 +67,7 @@ filegroup(
     srcs = [
         "fused_batch_norm_functor.h",
         "fused_batch_norm_op.h",
+        "host_data_cache.h",
     ],
     visibility = ["//visibility:public"],
 )
@@ -72,6 +84,7 @@ filegroup(
     name = "matmul_hdrs",
     srcs = [
         "fill_functor.h",
+        "host_data_cache.h",
         "matmul_op.h",
     ],
     visibility = ["//visibility:public"],
@@ -106,6 +119,7 @@ filegroup(
 filegroup(
     name = "quantize_hdrs",
     srcs = [
+        "host_data_cache.h",
         "quantize_op.h",
     ],
     visibility = ["//visibility:public"],
@@ -140,6 +154,7 @@ filegroup(
     name = "quantized_matmul_common_hdrs",
     srcs = [
         "fill_functor.h",
+        "host_data_cache.h",
         "quantized_matmul_common.h",
     ],
     visibility = ["//visibility:public"],
@@ -148,6 +163,12 @@ filegroup(
 filegroup(
     name = "quantized_conv_hdrs",
     srcs = ["quantized_conv_ops.h"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "cast_hdrs",
+    srcs = ["cast_op.h"],
     visibility = ["//visibility:public"],
 )
 

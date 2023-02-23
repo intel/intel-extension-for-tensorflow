@@ -20,6 +20,7 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_util.h"
 #include "itex/core/utils/op_kernel.h"
@@ -165,6 +166,10 @@ class DequantizeOp : public OpKernel {
   QuantizeMode mode_;
   int axis_;
   bool narrow_range_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, int32> zero_point_cache_;
+#endif
 };
 
 }  // namespace itex

@@ -20,7 +20,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 
-#include "itex/core/kernels/gpu/cast_op.h"
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/gpu_device_functions.h"
 #include "itex/core/utils/logging.h"

@@ -23,6 +23,8 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/kernels/common/cast_op.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/onednn/block/quantized_ops.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/logging.h"

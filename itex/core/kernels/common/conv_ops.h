@@ -22,6 +22,7 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/common_shape_fns.h"
 #include "itex/core/utils/errors.h"
@@ -1058,6 +1059,9 @@ class ConvOpBase : public OpKernel {
   WeightCacheManager<Tfilter> weight_cache_manager_;
 
   mutex mu_compute_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 
  protected:
   std::vector<int64_t> explicit_paddings_;

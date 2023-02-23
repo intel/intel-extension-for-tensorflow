@@ -74,7 +74,6 @@ class OneDnnCastOp : public OpKernel {
         //              to next op once oneDNN has suppported it.
         dst_md = dnnl::memory::desc(src_dims, OneDnnType<DstT>(),
                                     src_onednn_shape.GetFormatTag());
-
       } else {
         src_dims = TFShapeToOneDnnDims(src_tf_shape);
         src_md = CreatePlainMemDescWithFormatTag<SrcT>(src_dims);

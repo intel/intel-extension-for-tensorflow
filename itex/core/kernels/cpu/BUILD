@@ -288,6 +288,7 @@ itex_xpu_library(
     name = "quantized_matmul",
     srcs = ["quantized_matmul.cc"],
     hdrs = [
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/common:quantized_matmul_common_hdrs",
         "//itex/core/kernels/onednn/block:quantized_hdrs",
@@ -306,6 +307,7 @@ itex_xpu_library(
     name = "quantized_conv",
     srcs = ["quantized_conv_ops.cc"],
     hdrs = [
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:conv_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/common:quantized_conv_hdrs",
@@ -381,6 +383,7 @@ itex_xpu_library(
     srcs = ["einsum_op.cc"],
     hdrs = [
         "//itex/core/kernels/common:einsum_hdrs",
+        "//itex/core/kernels/common:host_data_cache_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,

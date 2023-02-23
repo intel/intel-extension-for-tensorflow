@@ -19,7 +19,7 @@ limitations under the License.
 
 #include <memory>
 
-#include "itex/core/kernels/gpu/cast_op.h"
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/kernels/gpu/image_resizer_state.h"
 #include "itex/core/utils/gpu_device_functions.h"
 #include "itex/core/utils/logging.h"
@@ -335,28 +335,6 @@ TF_CALL_GPU_NUMBER_TYPES(DEFINE_GPU_SPECS);
 #undef DEFINE_GPU_SPECS
 
 }  // namespace functor
-
-namespace {
-
-template <typename Device, typename SrcType, typename DstType>
-struct CastDataType {
-  void operator()(const Device& d, typename TTypes<SrcType>::ConstFlat input,
-                  typename TTypes<DstType>::Flat output) {
-    output.device(d) = input.template cast<DstType>();
-  }
-};
-
-template <typename SrcType, typename DstType>
-struct CastDataType<GPUDevice, SrcType, DstType> {
-  void operator()(const GPUDevice& d, typename TTypes<SrcType>::ConstFlat input,
-                  typename TTypes<DstType>::Flat output) {
-    // Use existing cast functor instead of directly casting Eigen tensor, as
-    // otherwise we need to instantiate the cast function in a .cu.cc file
-    functor::CastFunctor<GPUDevice, DstType, SrcType> cast;
-    cast(d, output, input);
-  }
-};
-}  // namespace
 
 template <typename T>
 class ResizeBilinearGradKernelTask;

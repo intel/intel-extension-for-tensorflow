@@ -1,11 +1,8 @@
 /* Copyright (c) 2021-2022 Intel Corporation
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +15,7 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/matmul_op.h"
 #include "itex/core/kernels/common/no_ops.h"
 #include "itex/core/kernels/onednn/block/matmul_op.h"
@@ -379,6 +377,9 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
  private:
   static const int kSrcIndex_ = 0, kWeightIndex_ = 1, kBiasIndex_ = 2,
                    kDstIndex_ = 0, kMaxBinaryNum_ = 2;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 template <typename Device, typename Tlhs, typename Trhs, typename Toutput>

@@ -24,6 +24,7 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/kernels/common/fill_functor.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/bcast.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_post_op_util.h"
@@ -618,6 +619,9 @@ class MatMulOp : public OpKernel {
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
   dnnl::stream dnnl_stream_;
   dnnl::engine dnnl_engine_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 template <typename Device, typename T, typename Tout, typename Tpost,
@@ -968,6 +972,9 @@ class MatMulFunctor {
   dnnl::engine dnnl_engine_;
 
   OpKernelContext* context_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 template <typename Device, typename T, typename Tgrad>

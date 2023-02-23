@@ -24,7 +24,9 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/kernels/common/fill_functor.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/no_ops.h"
 #include "itex/core/kernels/onednn/block/quantized_ops.h"
 #include "itex/core/utils/errors.h"
@@ -128,7 +130,6 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
           scaled_bias_data = this->GetScaledBias(context, fwd_pd_, bias_tensor,
                                                  &scaled_bias_tensor);
         }
-
         Tbias* bias_data =
             std::is_same<Tweight, qint8>::value
                 ? scaled_bias_data

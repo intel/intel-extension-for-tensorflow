@@ -35,6 +35,7 @@ limitations under the License.
 /////////////////////////////////////////////////////////////////////////////
 
 #include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/no_ops.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
@@ -440,6 +441,11 @@ class OneDnnQuantizeV2Op : public OpKernel {
   bool narrow_range_;
   DataType dtype_;
   bool is_classic_asymmetric_algorithm_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, int32> zero_point_cache_;
+  HostDataCache<Device, S> asym_shift_cache_;
+#endif
 };
 
 #ifndef INTEL_CPU_ONLY

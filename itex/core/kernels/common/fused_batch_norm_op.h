@@ -23,6 +23,7 @@ limitations under the License.
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/kernels/common/fused_batch_norm_functor.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_util.h"
 #include "itex/core/utils/op_kernel.h"
@@ -577,6 +578,9 @@ class QuantizedFusedBatchNormOp
 
  protected:
   DataType out_dt_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 template <typename Device, typename T, typename U, bool reserved_space,
@@ -722,7 +726,6 @@ class FusedBatchNormGradOp : public OpKernel {
       auto shift_md =
           dnnl::memory::desc({static_cast<int64_t>(depth)}, OneDnnType<U>(),
                              dnnl::memory::format_tag::a);
-
       auto propagation_fwd = dnnl::prop_kind::forward_training;
       auto propagation_bwd = dnnl::prop_kind::backward;
 
