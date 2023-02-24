@@ -340,17 +340,54 @@ def itex_experimental_api_opt():
   using itex api in some tf and keras functions.
   '''
   try:
+    from keras.utils import tf_utils
     from pkg_resources import packaging # pylint: disable=import-outside-toplevel
     version = packaging.version.parse
     if version(tf.__version__) < version("2.9.0"):
       return
     tf_ln_call = copy_func(tf.keras.layers.LayerNormalization.call)
-    tf_ln_build = copy_func(tf.keras.layers.LayerNormalization.build)
   except BaseException: # pylint: disable=broad-except
     return
   def itex_layer_norm_build(self, input_shape):
-    tf_ln_build(self, input_shape)
+    self._param_dtype = None
+    # Raise parameters of fp16 layer tch norm to fp32
+    if self.dtype == dtypes.float16 or self.dtype == dtypes.bfloat16: # pylint: disable=no-else-return
+      self._param_dtype = dtypes.float32
+    else:
+      self._param_dtype =  self.dtype or dtypes.float32
+    self.axis = tf_utils.validate_axis(self.axis, input_shape)
+    input_shape = tf.TensorShape(input_shape)
+    param_shape = [input_shape[dim] for dim in self.axis]
     self._use_layernorm = _can_use_onednn_layer_norm(self, len(input_shape))
+    if self.scale:
+        self.gamma = self.add_weight(
+            name="gamma",
+            shape=param_shape,
+            dtype=self._param_dtype if self._use_layernorm else None,
+            initializer=self.gamma_initializer,
+            regularizer=self.gamma_regularizer,
+            constraint=self.gamma_constraint,
+            trainable=True,
+            experimental_autocast=False,
+        )
+    else:
+        self.gamma = None
+
+    if self.center:
+        self.beta = self.add_weight(
+            name="beta",
+            shape=param_shape,
+            dtype=self._param_dtype if self._use_layernorm else None,
+            initializer=self.beta_initializer,
+            regularizer=self.beta_regularizer,
+            constraint=self.beta_constraint,
+            trainable=True,
+            experimental_autocast=False,
+        )
+    else:
+        self.beta = None
+
+    self.built = True
 
   def itex_layer_norm_call(self, inputs):
     if not self._use_layernorm: # pylint: disable=protected-access

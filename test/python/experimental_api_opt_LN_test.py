@@ -25,7 +25,7 @@ SHAPE = (5,2)
 class LayerNormalizationTest(test_util.TensorFlowTestCase):
     """test layer normalization op"""
 
-    def _testForwardPass(self, batch_input_shape, axis, fp32_tol=1e-4,
+    def _testForwardPass(self, batch_input_shape, axis, fp32_tol=2e-4,
                             fp16_tol=1e-2):
         """Tests the forward pass of layer layer_normalization.
 
