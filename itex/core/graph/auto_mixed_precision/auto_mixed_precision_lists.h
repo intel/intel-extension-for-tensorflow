@@ -365,7 +365,7 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
   gtl::FlatSet<string> AllowList() override {
     // Add ops supported only by GPU devices.
     auto add_list_ops =
-        gtl::FlatSet<string>{"Einsum", "_ITEXFusedAddV2WithSoftmax", "Mean"};
+        gtl::FlatSet<string>{"Einsum", "_ITEXFusedAddV2WithSoftmax"};
     for (auto op : add_list_ops) {
       allow_list_ops.insert(op);
     }
@@ -389,13 +389,6 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
     };
     for (auto op : add_list_ops) {
       deny_list_ops.insert(op);
-    }
-
-    auto remove_list_ops = gtl::FlatSet<string>{
-        "Mean",
-    };
-    for (auto op : remove_list_ops) {
-      deny_list_ops.erase(op);
     }
 
     UpdateList("DENYLIST", &deny_list_ops);
