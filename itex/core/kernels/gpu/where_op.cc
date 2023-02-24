@@ -58,6 +58,9 @@ Status InputCumSum<T, TIndex>::Compute(
   return Status::OK();
 }
 
+// Explicit instantiation for SparseSliceOp.
+template struct InputCumSum<int, int64_t>;
+
 template <int NDIM, typename T, typename TIndex>
 struct WhereKernel {
   WhereKernel(const T* input_ptr, TIndex* input_cumsum_ptr, int64_t* output_ptr,
