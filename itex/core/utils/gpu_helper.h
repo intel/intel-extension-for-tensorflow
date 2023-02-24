@@ -20,6 +20,7 @@ limitations under the License.
 #include <cstdint>
 #include <utility>
 
+#include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/logging.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
@@ -140,6 +141,24 @@ struct DirectStore {
   DST* dst;
   int32 row_size;
 };
+
+inline void GetNumWorkGroups(sycl::device xpu_device, int32 workgroup_size,
+                             int max_workgroups, int waves,
+                             int* num_workgroups) {
+  const int hw_concurrent_work_group = xpu_device.template get_info<
+      sycl::ext::intel::info::device::gpu_subslices_per_slice>();
+
+  int subslices_count = IsXeHPC(&xpu_device) ? hw_concurrent_work_group
+                                             : hw_concurrent_work_group * 2;
+
+  const int32_t hw_max_workgroup_size =
+      xpu_device.template get_info<sycl::info::device::max_work_group_size>();
+
+  *num_workgroups = std::max<int>(
+      1, std::min<int32_t>(
+             max_workgroups,
+             subslices_count * hw_max_workgroup_size / workgroup_size * waves));
+}
 
 template <typename T>
 inline T DivUp(T a, T b) {

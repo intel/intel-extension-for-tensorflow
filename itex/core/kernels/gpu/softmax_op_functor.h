@@ -552,14 +552,17 @@ inline Status LaunchSoftmaxWorkGroupSMemImpl(const GPUDevice& device,
                                              STORE device_store,
                                              const int32 rows,
                                              const int32 cols) {
-  int max_group_size = 128;
-  sycl::range<1> local_range(max_group_size);
-  sycl::range<1> global_range(rows * max_group_size);
+  int workgroup_size = 128;
+  sycl::range<1> local_range(workgroup_size);
+  int num_wg;
+  GetNumWorkGroups(device.stream()->get_device(), workgroup_size, rows, 32,
+                   &num_wg);
+  sycl::range<1> global_range(num_wg * workgroup_size);
 
   return SoftmaxWorkgroupSMemImpl<LOAD, STORE, ComputeType, pack_size,
                                   algorithm>(device, device_load, device_store,
                                              rows, cols, global_range,
-                                             local_range, max_group_size);
+                                             local_range, workgroup_size);
 }
 
 template <typename LOAD, typename STORE, typename ComputeType,
@@ -693,7 +696,10 @@ inline Status LaunchSoftmaxWorkGroupUncachedImpl(const GPUDevice& device,
           ->get_device()
           .template get_info<sycl::info::device::max_work_group_size>();
   sycl::range<1> local_range(max_group_size);
-  sycl::range<1> global_range(rows * max_group_size);
+  int num_wg;
+  GetNumWorkGroups(device.stream()->get_device(), max_group_size, rows, 32,
+                   &num_wg);
+  sycl::range<1> global_range(num_wg * max_group_size);
 
   return SoftmaxWorkGroupUncachedImpl<LOAD, STORE, ComputeType, pack_size,
                                       algorithm>(
