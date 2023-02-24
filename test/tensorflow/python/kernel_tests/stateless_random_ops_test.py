@@ -236,6 +236,10 @@ class StatelessOpsTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testMatchFloat(self):
+    # remove condition after change StatelessRandomUniform random
+    # generator from PhiloxRandom to PCGRandom
+    if not test.is_gpu_available():
+      self.skipTest("No GPU available")
     self._test_match(self._float_cases())
 
   @test_util.run_deprecated_v1
