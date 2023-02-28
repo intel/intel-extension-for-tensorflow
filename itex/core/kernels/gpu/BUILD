@@ -1398,6 +1398,19 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_math_ops",
+    srcs = ["sparse_reshape_op.cc"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:sparse_math_lib",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_xent_op",
     srcs = [
         "sparse_xent_op.cc",
@@ -2029,6 +2042,7 @@ GPU_KERNELS = [
     ":spacetobatch_op",
     ":sparse_slice_op",
     ":sparse_tensor_dense_mat_mul_op",
+    ":sparse_math_ops",
     ":sparse_xent_op",
     ":split_op",
     ":split_v_op",

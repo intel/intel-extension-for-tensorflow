@@ -289,6 +289,19 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_math_lib",
+    srcs = ["reshape_util.cc"],
+    hdrs = ["reshape_util.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "transpose_functor",
     srcs = ["transpose_functor.cc"],
     hdrs = ["transpose_functor.h"],

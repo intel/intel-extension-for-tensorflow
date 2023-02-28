@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2022 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
@@ -180,6 +180,16 @@ class TensorShapeBase : public TensorShapeRep {
   /// Construct an empty TensorShape, or an unknown rank PartialTensorShape
   TensorShapeBase();
 
+  // These factory methods should be used instead of the constructors that take
+  // an array of sizes if calling code cannot validate that the sizes specify a
+  // valid `TensorShape`.
+  // The value in `*out` is valid iff the returned value is `Status::OK`.
+  static Status BuildTensorShapeBase(gtl::ArraySlice<int64_t> dim_sizes,
+                                     TensorShapeBase* out);
+  static Status BuildTensorShapeBase(std::initializer_list<int64_t> dim_sizes,
+                                     TensorShapeBase* out) {
+    return BuildTensorShapeBase(gtl::ArraySlice<int64_t>(dim_sizes), out);
+  }
   static Status BuildTensorShapeBase(const TensorShapeProto& proto,
                                      TensorShapeBase* out);
 
@@ -279,7 +289,7 @@ class TensorShapeBase : public TensorShapeRep {
 
  private:
   void RecomputeNumElements();
-  void InitDims(gtl::ArraySlice<int64> dim_sizes);
+  Status InitDims(gtl::ArraySlice<int64> dim_sizes);
 
   // True for PartialTensorShape, false for TensorShape
   static constexpr bool kIsPartial =
@@ -313,6 +323,23 @@ std::ostream& operator<<(std::ostream& os, const TensorShapeBase<Shape>& tsb) {
 class TensorShape : public TensorShapeBase<TensorShape> {
  public:
   using TensorShapeBase<TensorShape>::TensorShapeBase;
+
+  // These factory methods should be used instead of the constructors that take
+  // an array of sizes if calling code cannot validate that the sizes specify a
+  // valid `TensorShape`.
+  // The value in `*out` is valid iff the returned value is `Status::OK`.
+  static Status BuildTensorShape(gtl::ArraySlice<int64_t> dim_sizes,
+                                 TensorShape* out) {
+    return BuildTensorShapeBase(dim_sizes, out);
+  }
+  static Status BuildTensorShape(std::initializer_list<int64_t> dim_sizes,
+                                 TensorShape* out) {
+    return BuildTensorShape(gtl::ArraySlice<int64_t>(dim_sizes), out);
+  }
+  static Status BuildTensorShape(const TensorShapeProto& proto,
+                                 TensorShape* out) {
+    return BuildTensorShapeBase(proto, out);
+  }
 
   /// Allow a TensorShape to be used as a PartialTensorShape without copying
   operator const PartialTensorShape&() const;  // NOLINT(runtime/explicit)
