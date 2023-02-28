@@ -25,6 +25,23 @@ limitations under the License.
 
 namespace {
 
+inline bool IsMultipleStreamEnabled() {
+  static bool is_multiple_stream_enabled = false;
+  static const char* env = std::getenv("ITEX_ENABLE_MULTIPLE_STREAM");
+  if (env == nullptr) {
+    return is_multiple_stream_enabled;
+  }
+
+  std::string str_value = absl::AsciiStrToLower(env);
+  if (str_value == "0" || str_value == "false") {
+    is_multiple_stream_enabled = false;
+  } else if (str_value == "1" || str_value == "true") {
+    is_multiple_stream_enabled = true;
+  }
+
+  return is_multiple_stream_enabled;
+}
+
 inline bool RunOnLevelZero() {
   char* sycl_device_filter = getenv("SYCL_DEVICE_FILTER");
   // Current default backend platform is Level-Zero
@@ -248,6 +265,13 @@ class StreamPool {
 
   static ITEX_GPUError_t createStream(ITEX_GPUDevice* device_handle,
                                       ITEX_GPUStream** stream_p) {
+    if (IsMultipleStreamEnabled()) {
+      sycl::property_list propList{sycl::property::queue::in_order()};
+      StreamPool::GetStreamsPool(device_handle)
+          .push_back(std::make_shared<ITEX_GPUStream>(
+              DevicePool::getDeviceContext(), *device_handle,
+              ITEX_GPUAsyncHandler, propList));
+    }
     *stream_p = StreamPool::GetStreamsPool(device_handle).back().get();
     return ITEX_GPU_SUCCESS;
   }
@@ -346,31 +370,37 @@ ITEX_GPUError_t ITEX_GPUGetStreamPool(ITEX_GPUDevice* device_handle,
 }
 
 ITEX_GPUError_t ITEX_GPUCreateEvent(ITEX_GPUDevice* device_handle,
-                                    ITEX_GPUEvent** event_handle) {
-  *event_handle = new sycl::event();
+                                    ITEX_GPUEvent* event_handle) {
+  *event_handle = sycl::event();
   return ITEX_GPU_SUCCESS;
 }
 
 ITEX_GPUError_t ITEX_GPUDestroyEvent(ITEX_GPUDevice* device_handle,
-                                     ITEX_GPUEvent* event_handle) {
-  delete event_handle;
+                                     ITEX_GPUEvent event_handle) {
   return ITEX_GPU_SUCCESS;
 }
 
 ITEX_GPUError_t ITEX_GPUStreamWaitEvent(ITEX_GPUStream* stream,
-                                        ITEX_GPUEvent* event) {
-  // TODO(itex): queue.wait_for(event)?
-  stream->wait();
-  // event->wait();
+                                        ITEX_GPUEvent event) {
+  if (IsMultipleStreamEnabled()) {
+    const std::vector<ITEX_GPUEvent> event_list{event};
+    stream->ext_oneapi_submit_barrier(event_list);
+  } else {
+    stream->wait();
+  }
   return ITEX_GPU_SUCCESS;
 }
 
 ITEX_GPUError_t ITEX_GPUStreamWaitStream(ITEX_GPUStream* dependent,
                                          ITEX_GPUStream* other) {
-  // TODO(itex): queue.wait_for(event)?
-  dependent->wait();
-  other->wait();
-  // event->wait();
+  if (IsMultipleStreamEnabled()) {
+    ITEX_GPUEvent event = other->ext_oneapi_submit_barrier();
+    const std::vector<ITEX_GPUEvent> event_list{event};
+    dependent->ext_oneapi_submit_barrier(event_list);
+  } else {
+    dependent->wait();
+    other->wait();
+  }
   return ITEX_GPU_SUCCESS;
 }
 

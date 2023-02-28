@@ -141,11 +141,12 @@ void gpu_create_stream_dependency(const SP_Device* device, SP_Stream dependent,
 void gpu_get_stream_status(const SP_Device* device, SP_Stream stream,
                            TF_Status* status) {
   // TF_SetStatus(status, TF_OK, "");
+  ITEX_LOG(ERROR) << "DPC++: gpu_get_stream_status not implemented.";
 }
 
 void gpu_create_event(const SP_Device* device, SP_Event* event,
                       TF_Status* status) {
-  ITEX_GPUEvent* event_handle;
+  ITEX_GPUEvent event_handle;
   ITEX_GPUDevice* device_handle =
       static_cast<ITEX_GPUDevice*>(device->device_handle);
   ITEX_GPUCreateEvent(device_handle, &event_handle);
@@ -157,21 +158,34 @@ void gpu_create_event(const SP_Device* device, SP_Event* event,
 void gpu_destroy_event(const SP_Device* device, SP_Event event) {
   ITEX_GPUDevice* device_handle =
       static_cast<ITEX_GPUDevice*>(device->device_handle);
-  ITEX_GPUEvent* event_handle = static_cast<SP_Event_st*>(event)->event_handle;
+  ITEX_GPUEvent event_handle = static_cast<SP_Event_st*>(event)->event_handle;
   ITEX_GPUDestroyEvent(device_handle, event_handle);
   delete event;
 }
 
 // Requests the current status of the event from the underlying platform.
 SE_EventStatus gpu_get_event_status(const SP_Device* device, SP_Event event) {
-  // TODO(itex): query event status from dpc++ runtime
-  return SE_EVENT_COMPLETE;
+  ITEX_GPUEvent event_handle = static_cast<SP_Event_st*>(event)->event_handle;
+  auto event_status =
+      event_handle.get_info<cl::sycl::info::event::command_execution_status>();
+  switch (event_status) {
+    case cl::sycl::info::event_command_status::submitted:
+    case cl::sycl::info::event_command_status::running:
+      return SE_EVENT_PENDING;
+    case cl::sycl::info::event_command_status::complete:
+      return SE_EVENT_COMPLETE;
+    default:
+      return SE_EVENT_UNKNOWN;
+  }
 }
 
 // Inserts the specified event at the end of the specified stream.
 void gpu_record_event(const SP_Device* device, SP_Stream stream, SP_Event event,
                       TF_Status* status) {
-  // printf("dpc++ record_event not implemented\n");
+  ITEX_GPUStream* stream_handle =
+      static_cast<SP_Stream_st*>(stream)->stream_handle;
+  ITEX_GPUEvent recorded_event = stream_handle->ext_oneapi_submit_barrier();
+  event->event_handle = recorded_event;
 }
 
 // Wait for the specified event at the end of the specified stream.
@@ -179,7 +193,7 @@ void gpu_wait_for_event(const SP_Device* const device, SP_Stream stream,
                         SP_Event event, TF_Status* const status) {
   ITEX_GPUStream* stream_handle =
       static_cast<SP_Stream_st*>(stream)->stream_handle;
-  ITEX_GPUEvent* event_handle = static_cast<SP_Event_st*>(event)->event_handle;
+  ITEX_GPUEvent event_handle = static_cast<SP_Event_st*>(event)->event_handle;
   ITEX_GPUStreamWaitEvent(stream_handle, event_handle);
 }
 
@@ -277,7 +291,7 @@ void gpu_sync_memcpy_dtod(const SP_Device* device,
 // Causes the host code to synchronously wait for the event to complete.
 void gpu_block_host_for_event(const SP_Device* device, SP_Event event,
                               TF_Status* status) {
-  event->event_handle->wait();
+  event->event_handle.wait();
 }
 
 void gpu_block_host_until_done(const SP_Device* device, SP_Stream stream,

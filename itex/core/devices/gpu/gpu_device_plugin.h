@@ -26,8 +26,8 @@ struct SP_Stream_st {
 };
 
 struct SP_Event_st {
-  explicit SP_Event_st(ITEX_GPUEvent* event_h) : event_handle(event_h) {}
-  ITEX_GPUEvent* event_handle;
+  explicit SP_Event_st(ITEX_GPUEvent event_h) : event_handle(event_h) {}
+  ITEX_GPUEvent event_handle;
 };
 
 struct SP_Timer_st {
