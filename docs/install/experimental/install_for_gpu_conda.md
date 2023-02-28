@@ -38,6 +38,10 @@ pip install --upgrade pip
 pip install tensorflow==2.11.0
 pip install intel-extension-for-tensorflow[gpu]
 ```
+Check the environment for GPU:
+```bash
+bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+```
 Verify install:
 ```
 python3 -c "import intel_extension_for_tensorflow as itex; print(itex.version.GIT_VERSION)"

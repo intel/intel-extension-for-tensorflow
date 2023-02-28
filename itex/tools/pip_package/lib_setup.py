@@ -89,6 +89,10 @@ for path in so_lib_paths:
       ['../' + x for x in find_files('*', path) if '.py' not in x]
   )
 
+env_check_tool = []
+if is_gpu:
+  env_check_tool = ['tools/*']
+
 long_description = """# Intel® Extension for Tensorflow* library
 
 [![Python](https://img.shields.io/pypi/pyversions/tensorflow.svg?style=plastic)](https://pypi.org/project/intel-extension-for-tensorflow)
@@ -142,7 +146,7 @@ setup(
         _ext_path: [
             'python/*.so',
             'libitex_common.so'
-        ] + matches,
+        ] + matches + env_check_tool,
         _plugin_path: [
             '*'
         ],

@@ -53,6 +53,13 @@ Intel® Extension for TensorFlow* can be installed through the following channel
 pip install tensorflow==2.11.0
 pip install --upgrade intel-extension-for-tensorflow[gpu]
 ```
+
+Environment check instructions for GPU:
+
+```bash
+bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+```
+
 Please refer to [GPU installation](docs/install/install_for_gpu.md) for details.
 
 ### Install for CPU [Experimental]

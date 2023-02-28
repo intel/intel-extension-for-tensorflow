@@ -138,6 +138,7 @@ function prepare_src() {
   # lib_itex
   cp LICENSE.txt ${LIB_TMPDIR}/
   cp -r third-party-programs ${LIB_TMPDIR}/
+  cp -r tools/ ${LIB_TMPDIR}/
   cp itex/tools/pip_package/lib_setup.py ${LIB_TMPDIR}/setup.py
   mkdir -p ${LIB_TMPDIR}/intel_extension_for_tensorflow
   mkdir -p ${LIB_TMPDIR}/tensorflow-plugins
@@ -149,6 +150,8 @@ function prepare_src() {
   mkdir ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
   cp -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py ${LIB_TMPDIR}/intel_extension_for_tensorflow/python/
   mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/*wrap* ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
+  mkdir ${LIB_TMPDIR}/intel_extension_for_tensorflow/tools
+  mv ${LIB_TMPDIR}/tools/* ${LIB_TMPDIR}/intel_extension_for_tensorflow/tools
 }
 
 function build_wheel() {

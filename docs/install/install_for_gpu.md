@@ -127,6 +127,11 @@ To install a GPU-only version in virtual environment, which depends on Intel GPU
 (tf)$ pip install --upgrade intel-extension-for-tensorflow[gpu]
 ```
 
+##### Check the Environment for GPU
+```bash
+(tf)$ bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+```
+
 ##### Verify the Installation 
 ```
 python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
