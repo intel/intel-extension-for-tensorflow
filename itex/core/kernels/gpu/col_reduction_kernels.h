@@ -372,7 +372,8 @@ struct SGVecColReductionKernel {
         op(op_) {}
   [[intel::reqd_sub_group_size(ColReductionPolicy::SUB_GROUP_SIZE)]] void
   operator()(sycl::nd_item<3> item) const {
-    constexpr int VEC_SIZE = 4 * sizeof(float) / sizeof(InT);
+    constexpr int VEC_SIZE =
+        4 * sizeof(float) / std::min(sizeof(InT), sizeof(OutT));
     typedef sycl::vec<InitValueT, VEC_SIZE> vecT;
 
     // get start index
@@ -389,7 +390,7 @@ struct SGVecColReductionKernel {
     int x_offset = x_group_id * extend_y * extend_z;
 
     // each subgroup load data and reduce elems_per_item
-    vecT aggregate(0.0f);
+    vecT aggregate(0);
 
     int z_offset =
         z_group_id * local_item_on_z * VEC_SIZE + group_z_id * VEC_SIZE;
@@ -539,19 +540,18 @@ void SGVecColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
     global = sycl::range<3>{static_cast<size_t>(extend_x), local[1],
                             num_segments_z * local[2]};
 
-    typedef sycl::vec<InitValueT, 4 * sizeof(float) / sizeof(InitValueT)> vecT2;
     stream->submit([&](sycl::handler& cgh) {
-      reduciton_helper::LocalAcc<vecT2> scratch(
+      reduciton_helper::LocalAcc<vecT> scratch(
           num_sub_group * ColReductionPolicy::SUB_GROUP_SIZE, cgh);
       SGVecColReductionKernel<
-          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT2>,
+          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT>,
           reduciton_helper::Identity<InitValueT>, OutputFunctor, BinaryOp>
           task(inter_out, out_data, scratch, extend_x, num_segments_y, extend_z,
                ColReductionPolicy::ITEM_PER_THREAD, num_sub_group, 1, k,
                local_item_on_z, reduciton_helper::Identity<InitValueT>(),
                out_func, op);
       cgh.parallel_for<SGVecColReductionKernel<
-          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT2>,
+          InitValueT, OutputT, InitValueT, reduciton_helper::LocalAcc<vecT>,
           reduciton_helper::Identity<InitValueT>, OutputFunctor, BinaryOp>>(
           sycl::nd_range<3>(global, local), task);
     });

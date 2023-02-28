@@ -149,14 +149,19 @@ class SumReductionTest(BaseReductionTest):
         
     @test_util.run_deprecated_v1
     def testReducitonBF16(self):
-      for axis in [None, 0, 1]:
-        arr = np.ones([2, 1025], dtype=dtypes.bfloat16.as_numpy_dtype)
-        row_sum = np.sum(arr.astype(np.float32), axis=axis)
+        shapes = [[8 * 8 * 8, 320], [64 * 64 * 64, 64], [4 * 4 * 4, 320],
+                  [32 * 32 * 32, 128], [128 * 128 * 128 * 32]]
+        axis = 0
+        for shape in shapes:
+            arr = np.random.uniform(low=-1, high=1, size=shape).astype(
+                dtypes.bfloat16.as_numpy_dtype)
+            row_sum = np.sum(arr.astype(np.float32), axis=axis)
+            row_sum_bf16 = row_sum.astype(dtypes.bfloat16.as_numpy_dtype)
 
-        with self.session(graph=ops.Graph(), use_gpu=True) as sess:
-            tf_row_sum = self._tf_reduce(arr, axis, False)
-            tf_out_row = self.evaluate(tf_row_sum)
-        self.assertAllClose(row_sum, tf_out_row, 1e-2, 1e-2) 
+            with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+                tf_row_sum = self._tf_reduce(arr, axis, False)
+                tf_out_row = self.evaluate(tf_row_sum)
+            self.assertAllClose(row_sum_bf16, tf_out_row, 1e-3, 1e-3)
            
 
     @test_util.run_deprecated_v1
