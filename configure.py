@@ -204,6 +204,8 @@ def get_python_path(environ_cp, python_bin_path):
     python_paths = environ_cp.get('PYTHONPATH').split(':')
 
   checked_python_bin_path = check_safe_python_bin_path(python_bin_path)
+  library_paths = []
+  user_paths = []
   try:
     library_paths = run_shell([
         checked_python_bin_path, '-c',
