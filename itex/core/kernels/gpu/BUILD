@@ -1399,12 +1399,22 @@ itex_xpu_library(
 
 itex_xpu_library(
     name = "sparse_math_ops",
-    srcs = ["sparse_reshape_op.cc"],
+    srcs = [
+        "sparse_reshape_op.cc",
+        "sparse_segment_reduction_ops.cc",
+        "sparse_segment_reduction_util.cc",
+    ],
+    hdrs = [
+        "segment_reduction_ops.h",
+        "sparse_segment_reduction_ops.h",
+        "sparse_segment_reduction_util.h",
+    ],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
         "//itex/core/kernels/common:sparse_math_lib",
     ],
     alwayslink = True,
@@ -2040,9 +2050,9 @@ GPU_KERNELS = [
     ":softplus_op",
     ":softsign_op",
     ":spacetobatch_op",
+    ":sparse_math_ops",
     ":sparse_slice_op",
     ":sparse_tensor_dense_mat_mul_op",
-    ":sparse_math_ops",
     ":sparse_xent_op",
     ":split_op",
     ":split_v_op",

@@ -1,0 +1,237 @@
+/* Copyright (c) 2023 Intel Corporation
+
+Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+#ifndef ITEX_CORE_KERNELS_GPU_SPARSE_SEGMENT_REDUCTION_UTIL_H_
+#define ITEX_CORE_KERNELS_GPU_SPARSE_SEGMENT_REDUCTION_UTIL_H_
+
+#include <algorithm>
+
+#include "itex/core/utils/op_kernel.h"
+#include "itex/core/utils/plugin_tensor.h"
+
+namespace itex {
+
+namespace functor {
+template <typename T, typename Index, typename SegmentId, typename ReductionF,
+          typename AtomicReductionF>
+struct SparseSegmentReductionFunctor {
+  Status operator()(OpKernelContext* context, bool is_mean, bool is_sqrtn,
+                    T default_value, typename TTypes<T, 2>::ConstTensor input,
+                    Index data_size, typename TTypes<Index>::ConstVec indices,
+                    typename TTypes<SegmentId>::ConstVec segment_ids,
+                    typename TTypes<Index>::Vec segment_offsets,
+                    typename TTypes<float, 2>::Tensor output);
+};
+}  // namespace functor
+
+namespace impl {
+
+template <typename Tindex, typename Tsegmentids>
+struct SegmentOffsetsKernel {
+  SegmentOffsetsKernel(Tindex size, Tsegmentids nsegments,
+                       const Tsegmentids* segment_ids, Tindex* segment_offsets)
+      : size_(size),
+        nsegments_(nsegments),
+        segment_ids_(segment_ids),
+        segment_offsets_(segment_offsets) {}
+  void operator()(sycl::nd_item<1> item) const {
+    auto i = item.get_global_linear_id();
+    if (i >= size_ + 1) return;
+    // IDs are clipped to [-1, nsegments] so that out-of-bounds IDs are ignored.
+    // Note that we can't report invalid IDs from the GPU without incurring
+    // additional overhead.
+    auto clip = [&](Tsegmentids id) {
+      return sycl::min(sycl::max(Tsegmentids(-1), id), nsegments_);
+    };
+    const Tsegmentids cur_id = (i < size_) ? clip(segment_ids_[i]) : nsegments_;
+    const Tsegmentids prev_id =
+        (i == 0) ? Tsegmentids(-1) : clip(segment_ids_[i - 1]);
+    // At segment boundaries, write the offset for this ID and any missing IDs
+    // since the previous one.
+    for (Tsegmentids id = prev_id + 1; id <= cur_id; ++id) {
+      segment_offsets_[id] = i;
+    }
+  }
+
+ private:
+  Tindex size_;
+  Tsegmentids nsegments_;
+  const Tsegmentids* segment_ids_;
+  Tindex* segment_offsets_;
+};
+
+template <typename T, typename Index, typename SegmentId, typename ReductionF,
+          typename AtomicReductionF, int OuterDimTileSize, typename = void>
+struct SortedSegmentMeanKernel {
+  SortedSegmentMeanKernel(Index input_outer_dim_size, Index inner_dim_size,
+                          Index output_outer_dim_size, const Index* indices,
+                          const SegmentId* segment_ids,
+                          const Index* segment_offsets, const T* input,
+                          float* output, Index total_stripe_count,
+                          float initial_value)
+      : input_outer_dim_size(input_outer_dim_size),
+        inner_dim_size(inner_dim_size),
+        output_outer_dim_size(output_outer_dim_size),
+        segment_ids(segment_ids),
+        segment_offsets(segment_offsets),
+        indices(indices),
+        input(input),
+        output(output),
+        total_stripe_count(total_stripe_count),
+        initial_value(initial_value) {}
+  void operator()(sycl::nd_item<1> item) const {
+    auto id = item.get_global_id(0);
+    if (id >= total_stripe_count) return;
+    auto segment_offset = id % inner_dim_size;
+    auto input_outer_dim_index_base =
+        id / inner_dim_size * Index(OuterDimTileSize);
+    float reduce_res = initial_value;
+    Index first_segment_id = segment_ids[input_outer_dim_index_base];
+    Index last_output_segment_id = output_outer_dim_size;
+    auto actual_stripe_height =
+        Index(OuterDimTileSize) <
+                (input_outer_dim_size - input_outer_dim_index_base)
+            ? Index(OuterDimTileSize)
+            : (input_outer_dim_size - input_outer_dim_index_base);
+    ReductionF reduction_op;
+    AtomicReductionF atom_reduction_op;
+    for (Index j = 0; j < actual_stripe_height; j++) {
+      Index current_output_segment_id =
+          segment_ids[input_outer_dim_index_base + j];
+      if (current_output_segment_id > last_output_segment_id) {
+        const Index total_segment_number =
+            segment_offsets[last_output_segment_id + 1] -
+            segment_offsets[last_output_segment_id];
+        if (total_segment_number) reduce_res /= total_segment_number;
+        auto output_index =
+            last_output_segment_id * inner_dim_size + segment_offset;
+        if (last_output_segment_id == first_segment_id) {
+          atom_reduction_op(output + output_index, &reduce_res);
+        } else {
+          reduction_op(output + output_index, &reduce_res);
+        }
+        reduce_res = initial_value;
+      }
+      float fetch_add;
+      fetch_add = static_cast<float>(
+          input[indices[input_outer_dim_index_base + j] * inner_dim_size +
+                segment_offset]);
+      reduction_op(&reduce_res, &fetch_add);
+
+      last_output_segment_id = current_output_segment_id;
+    }
+    auto output_index =
+        last_output_segment_id * inner_dim_size + segment_offset;
+
+    const Index total_segment_number =
+        segment_offsets[last_output_segment_id + 1] -
+        segment_offsets[last_output_segment_id];
+
+    if (total_segment_number) reduce_res /= total_segment_number;
+    atom_reduction_op(output + output_index, &reduce_res);
+  }
+
+ private:
+  Index input_outer_dim_size;
+  Index inner_dim_size;
+  Index output_outer_dim_size;
+  const SegmentId* segment_ids;
+  const Index* segment_offsets;
+  const Index* indices;
+  const T* input;
+  float* output;
+  Index total_stripe_count;
+  float initial_value;
+};
+
+}  // namespace impl
+
+template <typename T, typename Index, typename SegmentId, int OuterDimTileSize,
+          typename ReductionF, typename AtomicReductionF>
+struct LaunchSortedSegmentMeanKernel {
+  Status operator()(const Eigen::GpuDevice& device,
+                    const Index input_outer_dim_size,
+                    const Index inner_dim_size,
+                    const Index output_outer_dim_size, const Index* indices,
+                    const SegmentId* segment_ids, const Index* segment_offset,
+                    const T* input, float* output,
+                    const Index total_stripe_count, const float initial_value) {
+    auto stream = device.stream();
+    auto work_group_size =
+        (*stream)
+            .get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    auto num_work_group =
+        (total_stripe_count + work_group_size - 1) / work_group_size;
+
+    sycl::range<1> local_size(work_group_size);
+
+    sycl::range<1> global_size(num_work_group * work_group_size);
+    stream->submit([&](sycl::handler& cgh) {
+      impl::SortedSegmentMeanKernel<T, Index, SegmentId, ReductionF,
+                                    AtomicReductionF, OuterDimTileSize>
+          task(input_outer_dim_size, inner_dim_size, output_outer_dim_size,
+               indices, segment_ids, segment_offset, input, output,
+               total_stripe_count, initial_value);
+      cgh.parallel_for<impl::SortedSegmentMeanKernel<
+          T, Index, SegmentId, ReductionF, AtomicReductionF, OuterDimTileSize>>(
+          sycl::nd_range<1>(global_size, local_size), task);
+    });
+
+    return Status::OK();
+  }
+};
+
+template <typename Tindex, typename Tsegmentids>
+struct LaunchSegmentOffsetsKernel {
+  Status operator()(const Eigen::GpuDevice& d, Tindex size, Tindex nsegments,
+                    const Tsegmentids* segment_ids, Tindex* segment_offsets) {
+    auto stream = d.stream();
+    auto work_group_size =
+        (*stream)
+            .get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    auto total_size = size + 1;
+    auto num_work_group = (total_size + work_group_size - 1) / work_group_size;
+
+    sycl::range<1> local_size(work_group_size);
+    sycl::range<1> global_size(num_work_group * work_group_size);
+    stream->submit([&](sycl::handler& cgh) {
+      impl::SegmentOffsetsKernel<Tindex, Tsegmentids> task(
+          size, nsegments, segment_ids, segment_offsets);
+      cgh.parallel_for<impl::SegmentOffsetsKernel<Tindex, Tsegmentids>>(
+          sycl::nd_range<1>(global_size, local_size), task);
+    });
+    return Status::OK();
+  }
+};
+
+Status ValidateSegmentReduction(OpKernelContext* c, const Tensor& input,
+                                const Tensor& segment_ids);
+Status ValidateUnsortedSegmentReduction(OpKernel* op_kernel,
+                                        OpKernelContext* context,
+                                        const Tensor& data,
+                                        const Tensor& segment_ids,
+                                        const Tensor& num_segments);
+Status ValidateSparseSegmentReduction(OpKernelContext* context,
+                                      const Tensor& input,
+                                      const Tensor& indices,
+                                      const Tensor& segment_ids,
+                                      bool has_num_segments);
+
+}  // namespace itex
+#endif  // ITEX_CORE_KERNELS_GPU_SPARSE_SEGMENT_REDUCTION_UTIL_H_
