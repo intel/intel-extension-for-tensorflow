@@ -29,9 +29,11 @@ limitations under the License.
 #include "itex/core/utils/tf_buffer.h"
 #include "itex/core/utils/types.h"
 #include "protos/tensor.pb.h"
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
+
+#ifndef ITEX_BUILD_JAX
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/tf_tensor.h"
-#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
 class TensorProto;
@@ -713,5 +715,5 @@ typename TTypes<T, NDIMS>::ConstTensor Tensor::flat_inner_outer_dims(
 Status MakeShape(const Tensor& shape_t, TensorShape* out);
 
 }  // namespace itex
-
+#endif
 #endif  // ITEX_CORE_UTILS_PLUGIN_TENSOR_H_

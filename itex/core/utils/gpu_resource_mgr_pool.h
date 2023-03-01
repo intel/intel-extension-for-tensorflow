@@ -16,6 +16,7 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_GPU_RESOURCE_MGR_POOL_H_
 #define ITEX_CORE_UTILS_GPU_RESOURCE_MGR_POOL_H_
 
+#ifndef ITEX_BUILD_JAX
 #include <map>
 #include <vector>
 
@@ -68,4 +69,5 @@ inline ITEX_GPUError_t GetResourceMgr(ITEX_GPUStream* stream,
 // clang-format on
 
 }  // namespace itex
+#endif
 #endif  // ITEX_CORE_UTILS_GPU_RESOURCE_MGR_POOL_H_

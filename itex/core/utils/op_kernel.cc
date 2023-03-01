@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef ITEX_BUILD_JAX
 #include "itex/core/utils/op_kernel.h"
 
 #include <iostream>
@@ -995,3 +996,4 @@ const Eigen::GpuDevice& OpKernelContext::eigen_device() const {
 #endif  // INTEL_CPU_ONLY
 
 }  // namespace itex
+#endif  // ITEX_BUILD_JAX

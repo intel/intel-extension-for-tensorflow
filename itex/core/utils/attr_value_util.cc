@@ -53,12 +53,16 @@ string SummarizeString(const string& str) {
 }
 
 string SummarizeTensor(const TensorProto& tensor_proto) {
+#ifndef ITEX_BUILD_JAX
   Tensor t;
   if (!t.FromProto(tensor_proto)) {
     return strings::StrCat(
         "<Invalid TensorProto: ", tensor_proto.ShortDebugString(), ">");
   }
   return t.DebugString();
+#else
+  ITEX_LOG(FATAL) << "SummarizeTensor is not implemented.";
+#endif
 }
 
 string SummarizeFunc(const NameAttrList& func) {

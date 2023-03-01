@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef ITEX_BUILD_JAX
 #include "itex/core/utils/onednn/onednn_util.h"
 
 #include <unordered_map>
@@ -220,3 +221,4 @@ TF_CALL_QUANTIZED_TYPES(DEFINE_BIAS_CACHE);
 #undef DEFINE_BIAS_CACHE
 
 }  // namespace itex
+#endif  // ITEX_BUILD_JAX

@@ -24,7 +24,11 @@ limitations under the License.
 #include <string>
 #include <utility>
 
+#ifdef ITEX_BUILD_JAX
+#include "itex/core/utils/ctstring.h"
+#else
 #include "tensorflow/c/tf_tstring.h"
+#endif
 
 // TODO(itex): This include is temporary, and will be superfluous once
 // absl::string_view is aliased to std::string_view.

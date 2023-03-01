@@ -36,10 +36,12 @@ limitations under the License.
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/types.h"
 #include "protos/node_def.pb.h"
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
+
+#ifndef ITEX_BUILD_JAX
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/kernels.h"
 #include "tensorflow/c/kernels_experimental.h"
-#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/devices/gpu/eigen_stream_device.h"
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
@@ -915,5 +917,5 @@ void CheckNotInComputeAsync(OpKernelContext* ctx,
                             const char* correct_macro_name);
 
 }  // namespace itex
-
+#endif
 #endif  // ITEX_CORE_UTILS_OP_KERNEL_H_

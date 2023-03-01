@@ -47,7 +47,6 @@ cc_library(
         "//third_party/eigen3",
         "@eigen_archive//:eigen",
         "@local_config_tf//:protos_all",
-        "@local_config_tf//:tf_header_lib",
     ] + onednn_graph_deps(),
     alwayslink = True,
 )

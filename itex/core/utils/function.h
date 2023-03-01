@@ -16,6 +16,7 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_FUNCTION_H_
 #define ITEX_CORE_UTILS_FUNCTION_H_
 
+#ifndef ITEX_BUILD_JAX
 #include <memory>
 #include <string>
 
@@ -55,5 +56,5 @@ class FunctionLibraryDefinition {
 };
 
 }  // namespace itex
-
+#endif
 #endif  // ITEX_CORE_UTILS_FUNCTION_H_

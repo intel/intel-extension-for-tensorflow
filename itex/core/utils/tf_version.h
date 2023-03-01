@@ -16,6 +16,7 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_TF_VERSION_H_
 #define ITEX_CORE_UTILS_TF_VERSION_H_
 
+#ifndef ITEX_BUILD_JAX
 #include <string>
 #include <vector>
 
@@ -121,4 +122,5 @@ std::ostream& operator<<(std::ostream& os, const TensorFlowVersion& x) {
 
 }  // namespace itex
 
+#endif
 #endif  // ITEX_CORE_UTILS_TF_VERSION_H_

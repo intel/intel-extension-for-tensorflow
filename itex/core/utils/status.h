@@ -28,8 +28,69 @@ limitations under the License.
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/macros.h"
 #include "itex/core/utils/stringpiece.h"
+
+#ifdef ITEX_BUILD_JAX
+
+#include "protos/error_codes.pb.h"
+#ifndef TF_Code
+#define TF_Code itex::error::Code
+#endif
+#ifndef TF_OK
+#define TF_OK itex::error::OK
+#endif
+#ifndef TF_CANCELLED
+#define TF_CANCELLED itex::error::CANCELLED
+#endif
+#ifndef TF_UNKNOWN
+#define TF_UNKNOWN itex::error::UNKNOWN
+#endif
+#ifndef TF_INVALID_ARGUMENT
+#define TF_INVALID_ARGUMENT itex::error::INVALID_ARGUMENT
+#endif
+#ifndef TF_DEADLINE_EXCEEDED
+#define TF_DEADLINE_EXCEEDED itex::error::DEADLINE_EXCEEDED
+#endif
+#ifndef TF_NOT_FOUND
+#define TF_NOT_FOUND itex::error::NOT_FOUND
+#endif
+#ifndef TF_ALREADY_EXISTS
+#define TF_ALREADY_EXISTS itex::error::ALREADY_EXISTS
+#endif
+#ifndef TF_PERMISSION_DENIED
+#define TF_PERMISSION_DENIED itex::error::PERMISSION_DENIED
+#endif
+#ifndef TF_UNAUTHENTICATED
+#define TF_UNAUTHENTICATED itex::error::UNAUTHENTICATED
+#endif
+#ifndef TF_RESOURCE_EXHAUSTED
+#define TF_RESOURCE_EXHAUSTED itex::error::RESOURCE_EXHAUSTED
+#endif
+#ifndef TF_FAILED_PRECONDITION
+#define TF_FAILED_PRECONDITION itex::error::FAILED_PRECONDITION
+#endif
+#ifndef TF_ABORTED
+#define TF_ABORTED itex::error::ABORTED
+#endif
+#ifndef TF_OUT_OF_RANGE
+#define TF_OUT_OF_RANGE itex::error::OUT_OF_RANGE
+#endif
+#ifndef TF_UNIMPLEMENTED
+#define TF_UNIMPLEMENTED itex::error::UNIMPLEMENTED
+#endif
+#ifndef TF_INTERNAL
+#define TF_INTERNAL itex::error::INTERNAL
+#endif
+#ifndef TF_UNAVAILABLE
+#define TF_UNAVAILABLE itex::error::UNAVAILABLE
+#endif
+#ifndef TF_DATA_LOSS
+#define TF_DATA_LOSS itex::error::DATA_LOSS
+#endif
+
+#else
 #include "tensorflow/c/c_api_macros.h"
 #include "tensorflow/c/tf_status.h"
+#endif
 
 namespace itex {
 
@@ -237,6 +298,7 @@ inline std::string* TfCheckOpHelper(::itex::Status v, const char* msg) {
   while (false && (::itex::Status::OK() == (val))) ITEX_LOG(FATAL)
 #endif
 
+#ifndef ITEX_BUILD_JAX
 // Returns a "status" from "tf_status".
 Status StatusFromTF_Status(const TF_Status* tf_status);
 
@@ -252,7 +314,7 @@ struct StatusDeleter {
 };
 
 using StatusUniquePtr = std::unique_ptr<TF_Status, StatusDeleter>;
-
+#endif
 }  // namespace itex
 
 #endif  // ITEX_CORE_UTILS_STATUS_H_

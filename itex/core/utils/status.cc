@@ -182,6 +182,7 @@ std::string* TfCheckOpHelperOutOfLine(const ::itex::Status& v,
   return new string(r);
 }
 
+#ifndef ITEX_BUILD_JAX
 Status StatusFromTF_Status(const TF_Status* tf_status) {
   TF_Code code = TF_GetCode(tf_status);
   if (code == TF_OK) return Status();
@@ -198,5 +199,6 @@ TF_Status* TF_StatusFromStatus(const Status& status, TF_Status* tf_status) {
 
   return tf_status;
 }
+#endif
 
 }  // namespace itex

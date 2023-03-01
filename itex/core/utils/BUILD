@@ -79,6 +79,10 @@ cc_library(
         [
             "*.h",
         ],
+        exclude = [
+            "ctstring.h",
+            "ctstring_internal.h",
+        ],
     ),
     linkstatic = 1,
     deps = [

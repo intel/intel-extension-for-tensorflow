@@ -160,6 +160,37 @@ void AppendToMessage(::itex::Status* status, Args... args) {
 //   if (errors::IsInvalidArgument(status)) { ... }
 //   switch (status.code()) { case error::INVALID_ARGUMENT: ... }
 
+#ifdef ITEX_BUILD_JAX
+#define DECLARE_ERROR(FUNC, CONST)                                        \
+  template <typename... Args>                                             \
+  ::itex::Status FUNC(Args... args) {                                     \
+    return ::itex::Status(                                                \
+        CONST, ::itex::strings::StrCat(                                   \
+                   ::itex::errors::internal::PrepareForStrCat(args)...)); \
+  }                                                                       \
+  inline bool Is##FUNC(const ::itex::Status& status) {                    \
+    return status.code() == CONST;                                        \
+  }
+
+DECLARE_ERROR(Cancelled, itex::error::Code::CANCELLED)
+DECLARE_ERROR(InvalidArgument, itex::error::Code::INVALID_ARGUMENT)
+DECLARE_ERROR(NotFound, itex::error::Code::NOT_FOUND)
+DECLARE_ERROR(AlreadyExists, itex::error::Code::ALREADY_EXISTS)
+DECLARE_ERROR(ResourceExhausted, itex::error::Code::RESOURCE_EXHAUSTED)
+DECLARE_ERROR(Unavailable, itex::error::Code::UNAVAILABLE)
+DECLARE_ERROR(FailedPrecondition, itex::error::Code::FAILED_PRECONDITION)
+DECLARE_ERROR(OutOfRange, itex::error::Code::OUT_OF_RANGE)
+DECLARE_ERROR(Unimplemented, itex::error::Code::UNIMPLEMENTED)
+DECLARE_ERROR(Internal, itex::error::Code::INTERNAL)
+DECLARE_ERROR(Aborted, itex::error::Code::ABORTED)
+DECLARE_ERROR(DeadlineExceeded, itex::error::Code::DEADLINE_EXCEEDED)
+DECLARE_ERROR(DataLoss, itex::error::Code::DATA_LOSS)
+DECLARE_ERROR(Unknown, itex::error::Code::UNKNOWN)
+DECLARE_ERROR(PermissionDenied, itex::error::Code::PERMISSION_DENIED)
+DECLARE_ERROR(Unauthenticated, itex::error::Code::UNAUTHENTICATED)
+
+#undef DECLARE_ERROR
+#else
 #define DECLARE_ERROR(FUNC, CONST)                                             \
   template <typename... Args>                                                  \
   ::itex::Status FUNC(Args... args) {                                          \
@@ -189,6 +220,7 @@ DECLARE_ERROR(PermissionDenied, PERMISSION_DENIED)
 DECLARE_ERROR(Unauthenticated, UNAUTHENTICATED)
 
 #undef DECLARE_ERROR
+#endif
 
 // Produces a formatted string pattern from the name which can uniquely identify
 // this node upstream to produce an informative error message. The pattern

@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef ITEX_BUILD_JAX
 #include "itex/core/utils/plugin_tensor.h"
 
 #include <algorithm>
@@ -581,3 +582,4 @@ string Tensor::SummarizeValue(int64 max_entries, bool print_v2) const {
   }
 }
 }  // namespace itex
+#endif  // ITEX_BUILD_JAX

@@ -17,6 +17,7 @@ limitations under the License.
 
 #ifndef ITEX_CORE_UTILS_RESOURCE_MGR_H_
 #define ITEX_CORE_UTILS_RESOURCE_MGR_H_
+#ifndef ITEX_BUILD_JAX
 #ifndef INTEL_CPU_ONLY
 
 #include <memory>
@@ -570,5 +571,6 @@ Status DeleteResource(OpKernelContext* ctx, const ResourceHandle& p);
 
 }  //  end namespace itex
 
+#endif
 #endif
 #endif  // ITEX_CORE_UTILS_RESOURCE_MGR_H_

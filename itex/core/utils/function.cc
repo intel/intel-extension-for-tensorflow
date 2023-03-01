@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef ITEX_BUILD_JAX
 #include "itex/core/utils/function.h"
 
 #include "itex/core/utils/tf_buffer.h"
@@ -84,3 +85,4 @@ FunctionLibraryDefinition::FindHelper(const string& func) const {
 }
 
 }  // namespace itex
+#endif  // ITEX_BUILD_JAX

@@ -440,6 +440,30 @@ void StatusOr<T>::IgnoreError() const {
   }                                                    \
   lhs = std::move(statusor).ValueOrDie()
 
+#define TF_ASSIGN_OR_SET_STATUS(tf_status, lhs, rexpr)                        \
+  TF_ASSIGN_OR_SET_STATUS_IMPL(                                               \
+      TF_STATUS_MACROS_CONCAT_NAME(_status_or_value, __COUNTER__), tf_status, \
+      lhs, rexpr)
+
+#define TF_ASSIGN_OR_SET_STATUS_IMPL(statusor, tf_status, lhs, rexpr) \
+  auto statusor = (rexpr);                                            \
+  if (ITEX_PREDICT_FALSE(!statusor.ok())) {                           \
+    TF_StatusFromStatus(statusor.status(), tf_status);                \
+    return;                                                           \
+  }                                                                   \
+  lhs = std::move(statusor.ValueOrDie())
+
+#define TF_ASSIGN_OR_ABORT(lhs, rexpr) \
+  TF_ASSIGN_OR_ABORT_IMPL(             \
+      TF_STATUS_MACROS_CONCAT_NAME(_status_or_value, __COUNTER__), lhs, rexpr)
+
+#define TF_ASSIGN_OR_ABORT_IMPL(statusor, lhs, rexpr) \
+  auto statusor = (rexpr);                            \
+  if (ITEX_PREDICT_FALSE(!statusor.ok())) {           \
+    ITEX_LOG(FATAL) << statusor.status().ToString();  \
+  }                                                   \
+  lhs = std::move(statusor.ValueOrDie())
+
 }  // namespace itex
 
 #endif  // ITEX_CORE_UTILS_STATUSOR_H_

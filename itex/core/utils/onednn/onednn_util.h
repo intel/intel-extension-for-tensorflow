@@ -190,6 +190,7 @@ inline dnnl::memory::data_type OneDnnType<Eigen::bfloat16>() {
   return dnnl::memory::data_type::bf16;
 }
 
+#ifndef ITEX_BUILD_JAX
 template <typename Device>
 inline dnnl::engine& CreateDnnlEngine(const OpKernelContext& ctx);
 
@@ -226,7 +227,7 @@ inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
       << "Create oneDNN stream for unsupported engine.";
   return dnnl::stream(engine);
 }
-
+#endif
 inline dnnl::memory CreateDnnlMemory(const dnnl::memory::desc& md,
                                      const dnnl::engine& engine,
                                      void* data_handle = nullptr) {
@@ -446,6 +447,7 @@ inline dnnl::memory::dims CalculateTFStrides(
   return strides;
 }
 
+#ifndef ITEX_BUILD_JAX
 template <typename T>
 inline void* GetTensorBuffer(const Tensor* tensor) {
   ITEX_CHECK_NOTNULL(tensor);
@@ -564,6 +566,7 @@ class BiasCacheManager {
   mutex mu_;
   PersistentTensor bias_cached_data_ TF_GUARDED_BY(mu_);
 };
+#endif
 
 template <typename Device>
 inline dnnl::fpmath_mode GetFP32MathMode() {
