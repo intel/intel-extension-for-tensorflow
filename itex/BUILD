@@ -21,6 +21,19 @@ itex_xpu_binary(
 )
 
 itex_xpu_binary(
+    name = "libitex_xla_extension.so",
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@local_config_dpcpp//dpcpp:using_dpcpp": [
+            # "//itex/core/compiler/xla/pjrt:xpu_pjrt_client",
+            "@local_config_tf//:jax_internal",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+itex_xpu_binary(
     name = "itex_gpu_cc",
     linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
     linkshared = True,
@@ -81,6 +94,12 @@ cc_binary(
 config_setting(
     name = "linux_x86_64",
     values = {"cpu": "k8"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "build_for_jax",
+    define_values = {"build_for_jax": "true"},
     visibility = ["//visibility:public"],
 )
 

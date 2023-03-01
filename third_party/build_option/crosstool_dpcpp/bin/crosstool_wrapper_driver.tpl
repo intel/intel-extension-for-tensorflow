@@ -101,6 +101,7 @@ def call_compiler(argv, link = False, dpcpp = True):
   link_flags.append("-Wl,-rpath=%{DPCPP_ROOT_DIR}/lib/")
   link_flags.append("-Wl,-rpath=%{DPCPP_ROOT_DIR}/compiler/lib/intel64_lin/")
   link_flags.append("-Wl,-rpath=%{TF_SHARED_LIBRARY_DIR}/python")
+  link_flags.append("-Wl,-rpath=%{JAX_SHARED_LIBRARY_DIR}")
   link_flags.append("-L%{TF_SHARED_LIBRARY_DIR}/python/")
   link_flags.append("-lze_loader")
   link_flags.append("-lOpenCL")

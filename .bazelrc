@@ -19,6 +19,10 @@ build:llga-debug --define=build_with_llga_debug=true
 # This config option is used for LLGA (OneDnnGraph) graph compiler backend
 build:graph-compiler --define=build_with_graph_compiler=true
 
+build:jax --config=gpu
+build:jax --copt=-DITEX_BUILD_JAX
+build:jax --define=build_for_jax=true
+
 build --define=use_fast_cpp_protos=true
 build --define=allow_oversize_protos=true
 

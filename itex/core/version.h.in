@@ -30,6 +30,9 @@ limitations under the License.
 /// Git commit hash
 #define ITEX_VERSION_HASH "@ITEX_VERSION_HASH@"
 
+/// Jax version
+#define JAX_VERSION_STRING "@JAX_VERSION_STRING@"
+
 // clang-format on
 
 /// Structure containing version information as per [Semantic
@@ -47,6 +50,10 @@ const itex_version_t* GetITEXVersion() {
       ITEX_VERSION_HASH};
 
   return &itex_version;
+}
+
+const char* GetJaxVersion() {
+  return JAX_VERSION_STRING;
 }
 
 #endif

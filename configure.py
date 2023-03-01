@@ -353,6 +353,24 @@ def cleanup_makefile():
         if f.endswith('BUILD'):
           os.remove(os.path.join(root, f))
 
+def get_var_from_name(environ_cp, var_name):
+  var = environ_cp.get(var_name)
+  if var is not None:
+    var_content = var.strip().lower()
+    true_strings = ('1', 't', 'true', 'y', 'yes')
+    false_strings = ('0', 'f', 'false', 'n', 'no')
+    if var_content in true_strings:
+      var = True
+    elif var_content in false_strings:
+      var = False
+    else:
+      raise UserInputError(
+          'Environment variable %s must be set as a boolean indicator.\n'
+          'The following are accepted as TRUE : %s.\n'
+          'The following are accepted as FALSE: %s.\n'
+          'Current value is %s.' %
+          (var_name, ', '.join(true_strings), ', '.join(false_strings), var))
+  return var
 
 def get_var(environ_cp,
             var_name,
@@ -402,23 +420,7 @@ def get_var(environ_cp,
   else:
     question += ' [y/N]: '
 
-  var = environ_cp.get(var_name)
-  if var is not None:
-    var_content = var.strip().lower()
-    true_strings = ('1', 't', 'true', 'y', 'yes')
-    false_strings = ('0', 'f', 'false', 'n', 'no')
-    if var_content in true_strings:
-      var = True
-    elif var_content in false_strings:
-      var = False
-    else:
-      raise UserInputError(
-          'Environment variable %s must be set as a boolean indicator.\n'
-          'The following are accepted as TRUE : %s.\n'
-          'The following are accepted as FALSE: %s.\n'
-          'Current value is %s.' %
-          (var_name, ', '.join(true_strings), ', '.join(false_strings), var))
-
+  var = get_var_from_name(environ_cp, var_name)
   while var is None:
     user_input_origin = get_input(question)
     user_input = user_input_origin.strip().lower()
@@ -852,6 +854,27 @@ def check_safe_workspace_path(workspace):
 
   raise Exception("Invalid workspace path!")
 
+def set_jax_path(environ_cp):
+  if get_var_from_name(environ_cp, 'BUILD_JAX'):
+    cmd = os.path.sep.join(environ_cp['PYTHON_BIN_PATH'].split(os.path.sep)[:-1]) + os.path.sep + "pip" + " list | grep \"^jaxlib \""
+    package_list= subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read().decode()
+    jaxlib_list = package_list.splitlines()
+    if len(jaxlib_list) == 0:
+      print("Jaxlib package not found! Please install it by 'pip install jaxlib==0.4.4'")
+      sys.exit(1)
+    for line in jaxlib_list:
+      if line.startswith("jaxlib"):
+        name, version = line.split()
+        current_jaxlib_version = convert_version_to_int(version)
+        min_jaxlib_version = convert_version_to_int("0.4.4")
+        if current_jaxlib_version < min_jaxlib_version:
+          print('Make sure you installed jaxlib version >= 0.4.4')
+          sys.exit(1)
+      else:
+        print('Make sure you installed jaxlib version >= 0.4.4')
+        sys.exit(1)
+  jax_shared_lib_dir = environ_cp['PYTHON_LIB_PATH'] + "/jaxlib/"
+  write_action_env_to_bazelrc("JAX_SHARED_LIBRARY_DIR", jax_shared_lib_dir)
 
 def main():
   global _ITEX_WORKSPACE_ROOT
@@ -893,6 +916,11 @@ def main():
     set_action_env_var(environ_cp, 'TF_NEED_MKL', 'MKL', False)
     if environ_cp.get('TF_NEED_MKL') == '1':
       set_mkl_path(environ_cp)
+    set_action_env_var(environ_cp, 'BUILD_JAX', 'JAX', False,
+                       question="Do you wish to build for JAX support?",
+                       yes_reply="JAX support will be enabled, please follow 'bazel build --config=jax'.",
+                       no_reply="No JAX support will be enabled.")
+    set_jax_path(environ_cp)
   else:
     print('Only CPU support is available for '
           'Intel® Extension for TensorFlow*.')

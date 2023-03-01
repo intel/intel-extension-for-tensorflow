@@ -13,4 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-echo -n "ITEX_REVISION `git -c log.showSignature=false log --no-abbrev-commit --oneline -1 --format=%H`"
+echo -e "ITEX_REVISION `git -c log.showSignature=false log --no-abbrev-commit --oneline -1 --format=%H`"
+echo -e "JAX_VERSION `pip show jax | grep Version | cut -d " " -f2`\n"

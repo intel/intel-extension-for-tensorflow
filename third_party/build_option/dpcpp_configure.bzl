@@ -25,6 +25,8 @@ _PYTHON_LIB_PATH = "PYTHON_LIB_PATH"
 
 _TF_SHARED_LIBRARY_DIR = "TF_SHARED_LIBRARY_DIR"
 
+_JAX_SHARED_LIBRARY_DIR = "JAX_SHARED_LIBRARY_DIR"
+
 _PYTHON_LIB_DIR = "PYTHON_LIB_DIR"
 
 _PYTHON_BIN_PATH = "PYTHON_BIN_PATH"
@@ -397,6 +399,10 @@ def _sycl_autoconf_imp(repository_ctx):
         dpcpp_defines["%{TF_SHARED_LIBRARY_DIR}"] = repository_ctx.os.environ[_TF_SHARED_LIBRARY_DIR]
         dpcpp_defines["%{DPCPP_COMPILER_VERSION}"] = str(get_dpcpp_version(repository_ctx))
         dpcpp_defines["%{PYTHON_LIB_PATH}"] = repository_ctx.os.environ[_PYTHON_LIB_PATH]
+        if repository_ctx.os.environ.get(_JAX_SHARED_LIBRARY_DIR) != None:
+            dpcpp_defines["%{JAX_SHARED_LIBRARY_DIR}"] = repository_ctx.os.environ[_JAX_SHARED_LIBRARY_DIR]
+        else:
+            dpcpp_defines["%{JAX_SHARED_LIBRARY_DIR}"] = "dummy"
 
         dpcpp_internal_inc_dirs = find_dpcpp_include_path(repository_ctx)
         dpcpp_internal_inc = "\", \"".join(dpcpp_internal_inc_dirs)
