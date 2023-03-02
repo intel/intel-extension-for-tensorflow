@@ -231,8 +231,10 @@ itex_xpu_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
+        ":reduction_ops",
         "//itex:core",
         "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/common:transpose_functor",
     ],
     alwayslink = True,
 )

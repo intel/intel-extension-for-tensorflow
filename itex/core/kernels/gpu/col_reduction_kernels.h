@@ -27,9 +27,14 @@ struct ColReductionPolicy {
 PACKET_DEF(float, 4)
 PACKET_DEF(float, 8)
 PACKET_DEF(double, 2)
+PACKET_DEF(itex::uint8, 16)
+PACKET_DEF(itex::uint16, 8)
+PACKET_DEF(itex::uint32, 4)
+PACKET_DEF(itex::uint64, 2)
+PACKET_DEF(itex::int8, 16)
+PACKET_DEF(itex::int16, 8)
 PACKET_DEF(itex::int32, 4)
 PACKET_DEF(itex::int64, 2)
-PACKET_DEF(uint8_t, 16)
 #undef PACKET_DEF
 
 inline void PacketLoad(const sycl::half* ptr, int offset,
@@ -138,7 +143,7 @@ inline void compute_tile(int* num_sg, int* num_row, const int extend_y,
   constexpr int minimum = 4;
   *num_sg = DivUp(*num_row * tile_z, ColReductionPolicy::SUB_GROUP_SIZE);
   int gap = *num_sg * ColReductionPolicy::SUB_GROUP_SIZE - *num_row * tile_z;
-  while (*num_sg < max_sub_group && *num_row < extend_y && gap > minimum) {
+  while (gap > minimum && *num_sg < max_sub_group && *num_row < extend_y) {
     ++*num_row;
     *num_sg = DivUp(*num_row * tile_z, ColReductionPolicy::SUB_GROUP_SIZE);
     gap = *num_sg * ColReductionPolicy::SUB_GROUP_SIZE - *num_row * tile_z;
@@ -272,9 +277,9 @@ void TreeColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
     int max_elems_per_thread =
         DivUp(num_segments_z * extend_x * (extend_y / tile_y),
               (4 * 64 * (max_group_size / (num_sg * SubGroupSize))));
-    int min_elems_per_treahd =
+    int min_elems_per_thread =
         DivUp(DivUp(extend_y, tile_y) * tile_z, max_group_size * 16);
-    int elems_per_thread = std::max(max_elems_per_thread, min_elems_per_treahd);
+    int elems_per_thread = std::max(max_elems_per_thread, min_elems_per_thread);
 
     int num_segments_y = DivUp(extend_y, tile_y * elems_per_thread);
     Tensor scratch_tensor;
@@ -490,11 +495,9 @@ void SGVecColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
           : ColReductionPolicy::MAX_LOCAL_ITEM_ON_Z;
   int k = ColReductionPolicy::SUB_GROUP_SIZE / local_item_on_z;
 
-  if (extend_y * 2 <= num_sub_group * elems_per_item * k) {
-    while (num_sub_group * elems_per_item * k >= extend_y * 2 &&
-           elems_per_item > 1) {
-      elems_per_item >>= 1;
-    }
+  while (num_sub_group * elems_per_item * k >= extend_y * 2 &&
+         elems_per_item > 1) {
+    elems_per_item >>= 1;
   }
 
   int num_segments_y = DivUp(extend_y, num_sub_group * elems_per_item * k);

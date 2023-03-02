@@ -18,6 +18,8 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_BIAS_OP_H_
 #define ITEX_CORE_KERNELS_GPU_BIAS_OP_H_
 
+#include "itex/core/kernels/common/transpose_functor.h"
+#include "itex/core/kernels/gpu/reduction_ops.h"
 #include "itex/core/utils/tensor_types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 

@@ -175,8 +175,14 @@ void ReduceGPUImpl(
                        in_func, out_func);
   } else if (in_rank == 2 && out_rank == 1 &&
              reduction_axes[0] == 0) {  // column reduction
-    LaunchColReduction(ctx, in_data, out_data, init, 1, in_dim0, in_dim1, op,
-                       in_func, out_func);
+    if (in_dim1 == 1) {
+      const int in_size = in_dim0;
+      LaunchFullReduction(ctx, in_data, out_data, init, in_size, op, in_func,
+                          out_func);
+    } else {
+      LaunchColReduction(ctx, in_data, out_data, init, 1, in_dim0, in_dim1, op,
+                         in_func, out_func);
+    }
   } else if (in_rank == 3 && out_rank == 2 &&
              reduction_axes[0] == 1) {  // column reduction
     LaunchColReduction(ctx, in_data, out_data, init, in_dim0, in_dim1, in_dim2,

@@ -14,7 +14,6 @@
 # ==============================================================================
 
 
-
 from turtle import ycor
 import numpy as np
 import tensorflow as tf
@@ -30,25 +29,41 @@ try:
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
+    # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]
 
 ITERATION = 5
+bias_add_grad_shapes = [
+    [32, 118, 1, 256],
+    [32, 128],
+    [32, 1],
+    [32, 2014, 1, 128],
+    [32, 29, 1, 128],
+    [32, 29, 1, 64],
+    [32, 473, 1, 256],
+    [32, 8177, 1, 64],
+    [1, 17, 33, 33, 1],
+    [1, 17, 33, 33, 32]
+]
+bias_add_grad_shapes += broadcast_binary_size_x
+
 
 class BiasAddGradTest(test.TestCase):
     def _test_impl(self, size, dtype):
+        np.random.seed(1)
         x = np.random.normal(size=size)
         x = constant_op.constant(x, dtype=dtype)
         flush_cache()
         out = gen_nn_ops.bias_add_grad(x)
-
 
     @add_profiling
     @multi_run(ITERATION)
     def testBiasAddGrad(self):
         for dtype in FLOAT_COMPUTE_TYPE:
             # should not use too large size, otherwise it will fail to allocate memory
-            for in_size in broadcast_binary_size_x:
+            for in_size in bias_add_grad_shapes:
                 self._test_impl(in_size, dtype)
+
 
 if __name__ == '__main__':
     test.main()
