@@ -5,6 +5,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("//third_party/llvm_project:setup.bzl", "llvm_setup")
 load("//third_party/llvm_project:setup_13.bzl", "llvm_setup_13")
+load("//third_party:tf_runtime/workspace.bzl", tf_runtime = "repo")
+load("//third_party/stablehlo:workspace.bzl", stablehlo = "repo")
 
 def clean_dep(dep):
     return str(Label(dep))
@@ -26,6 +28,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     """All external dependencies for TF builds"""
     dpcpp_configure(name = "local_config_dpcpp")
     syslibs_configure(name = "local_config_syslibs")
+    tf_runtime()
+    stablehlo()
 
     http_archive(
         name = "bazel_toolchains",
@@ -208,6 +212,38 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
             "https://storage.googleapis.com/mirror.tensorflow.org/pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
             "https://pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
         ],
+    )
+
+    git_repository(
+        name = "mlir-hlo",
+        commit = "1b862a645b61b954c3353bca3469e51f3f3b1ca7",
+        remote = "https://github.com/tensorflow/mlir-hlo/",
+        verbose = True,
+        patches = ["//third_party/mlir_hlo:mlir_hlo.patch"],
+        patch_args = ["-p1"],
+        patch_cmds = [
+            "git log -1 --format=%H > COMMIT",
+        ],
+    )
+
+    git_repository(
+        name = "spir_headers",
+        commit = "93754d52d6cbbfd61f4e87571079e8a28e65f8ca",
+        remote = "https://github.com/KhronosGroup/SPIRV-Headers.git",
+        verbose = True,
+        patch_cmds = [
+            "git log -1 --format=%H > COMMIT",
+        ],
+    )
+
+    new_git_repository(
+        name = "llvm_spir",
+        commit = "a3b372cb2d0250fbd5e395c3d32613f1644dfeb5",
+        remote = "https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git",
+        build_file = "//third_party/llvm_spir:llvm_spir.BUILD",
+        verbose = True,
+        patches = ["//third_party/llvm_spir:llvm_spir.patch"],
+        patch_args = ["-p1"],
     )
 
     _itex_bind()
