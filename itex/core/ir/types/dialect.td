@@ -15,15 +15,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef TFType_DIALECT
+#ifdef TFType_DIALECT
+#else
 #define TFType_DIALECT
 
 include "mlir/IR/EnumAttr.td"
 include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 
+
 // ODS Definition for the dialect, see https://mlir.llvm.org/docs/OpDefinitions/
 // for more information.
+
 
 //===----------------------------------------------------------------------===//
 // TF Type dialect definitions
@@ -41,12 +44,11 @@ def ITEXTypeDialect : Dialect {
   }];
 
   let cppNamespace = "::mlir::itex_type";
-  let useDefaultTypePrinterParser = 0;
   let extraClassDeclaration = [{
-    ::mlir::Type parseType(::mlir::DialectAsmParser & parser) const override;
-    void printType(::mlir::Type type, ::mlir::DialectAsmPrinter & printer)
-        const override;
+     ::mlir::Type parseType(::mlir::DialectAsmParser &parser) const override;
+     void printType(::mlir::Type type, ::mlir::DialectAsmPrinter &printer) const override;
   }];
+  let useDefaultAttributePrinterParser = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -56,4 +58,4 @@ def ITEXTypeDialect : Dialect {
 include "itex/core/ir/types/types.td"
 include "itex/core/ir/types/attributes.td"
 
-#endif  // TFG_DIALECT
+#endif // TFG_DIALECT

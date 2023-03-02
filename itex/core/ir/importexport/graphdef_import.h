@@ -18,19 +18,29 @@ limitations under the License.
 #ifndef ITEX_CORE_IR_IMPORTEXPORT_GRAPHDEF_IMPORT_H_
 #define ITEX_CORE_IR_IMPORTEXPORT_GRAPHDEF_IMPORT_H_
 
-#include "itex/core/utils/statusor.h"
 #include "mlir/IR/BuiltinOps.h"   // from @llvm-project
 #include "mlir/IR/MLIRContext.h"  // from @llvm-project
 #include "mlir/IR/OwningOpRef.h"  // from @llvm-project
+// #include "tensorflow/core/framework/function.h"
 #include "protos/graph.pb.h"
+// #include "tensorflow/core/graph/graph.h"
+#include "itex/core/utils/statusor.h"
 #include "protos/graph_debug_info.pb.h"
 
 namespace mlir {
 namespace tfg {
+
 // Convert a GraphDef directly to TFG.
 itex::StatusOr<OwningOpRef<ModuleOp>> ImportGraphDef(
     MLIRContext* context, const itex::GraphDebugInfo& debug_info,
     const itex::GraphDef& graph_def);
+
+// // Converts a graph and function library to a TFG module.
+// itex::StatusOr<OwningOpRef<ModuleOp>> ImportGraphAndFunctionsToMlir(
+//     MLIRContext *context, const itex::GraphDebugInfo &debug_info,
+//     const itex::Graph &graph,
+//     const itex::FunctionLibraryDefinition &flib_def);
+
 }  // namespace tfg
 }  // namespace mlir
 

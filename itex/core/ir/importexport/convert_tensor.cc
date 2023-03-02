@@ -27,9 +27,9 @@ limitations under the License.
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/protobuf.h"
+#include "itex/core/utils/statusor.h"
 #include "itex/core/utils/tensor_coding.h"
 #include "itex/core/utils/tstring.h"
-#include "itex/core/utils/types.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -92,17 +92,13 @@ ElementsAttr ConvertBf16Tensor(const Tensor& input_tensor,
                                RankedTensorType type) {
   auto buffer = llvm::makeArrayRef(static_cast<char*>(input_tensor.data()),
                                    input_tensor.TotalBytes());
-  return DenseElementsAttr::getFromRawBuffer(
-      type, buffer,
-      /*isSplatBuffer=*/type.getNumElements() == 1);
+  return DenseElementsAttr::getFromRawBuffer(type, buffer);
 }
 
 ElementsAttr ConvertHalfTensor(const Tensor& tensor, RankedTensorType type) {
   auto buffer = llvm::makeArrayRef(static_cast<char*>(tensor.data()),
                                    tensor.TotalBytes());
-  return DenseElementsAttr::getFromRawBuffer(
-      type, buffer,
-      /*isSplatBuffer=*/type.getNumElements() == 1);
+  return DenseElementsAttr::getFromRawBuffer(type, buffer);
 }
 
 itex::StatusOr<ElementsAttr> ConvertStringTensor(const Tensor& input_tensor,
@@ -120,8 +116,7 @@ itex::StatusOr<ElementsAttr> ConvertStringTensor(const Tensor& input_tensor,
 }
 
 itex::StatusOr<ElementsAttr> ConvertTensor(const Tensor& input_tensor,
-                                           Builder builder,
-                                           TFGraphDialect* tfgDialect) {
+                                           Builder builder) {
   const auto& input_dtype = input_tensor.dtype();
   const auto& input_shape = input_tensor.shape();
   Type elt_type;
@@ -161,8 +156,8 @@ itex::StatusOr<ElementsAttr> ConvertTensor(const Tensor& input_tensor,
     default:
       // TODO(shpeisman): restructure code to reuse dialect pointer across
       // calls.
-      return ElementsAttr(OpaqueElementsAttr::get(tfgDialect, type,
-                                                  MangleTensor(input_tensor)));
+      return ElementsAttr(
+          itex_type::TensorProtoAttr::get(type, MangleTensor(input_tensor)));
   }
 
 #undef CONVERT_FLAT
@@ -210,8 +205,7 @@ static int NumberOfMaterializedElements(const TensorProto& tensor) {
 }
 
 itex::StatusOr<ElementsAttr> ConvertTensorProto(const TensorProto& input_tensor,
-                                                Builder builder,
-                                                TFGraphDialect* tfgDialect) {
+                                                Builder builder) {
   // If there is only one actual element in the proto, but its shape would
   // indicate there are more values, then this is representing a splat tensor.
   // We can create an MLIR Attribute more efficiently in this case.
@@ -229,7 +223,7 @@ itex::StatusOr<ElementsAttr> ConvertTensorProto(const TensorProto& input_tensor,
     shape->add_dim()->set_size(1);
 
     TF_ASSIGN_OR_RETURN(ElementsAttr single_attr,
-                        ConvertTensorProto(tensor_copy, builder, tfgDialect));
+                        ConvertTensorProto(tensor_copy, builder));
 
     std::vector<int64_t> original_dimensions;
     for (auto dim : input_tensor_shape) original_dimensions.push_back(dim.size);
@@ -243,7 +237,7 @@ itex::StatusOr<ElementsAttr> ConvertTensorProto(const TensorProto& input_tensor,
     return InvalidArgument("Failed to parse input_tensor: ",
                            input_tensor.DebugString());
   }
-  return ConvertTensor(t, builder, tfgDialect);
+  return ConvertTensor(t, builder);
 }
 
 void ConvertToTensorShapeProto(ArrayRef<int64_t> shape,
@@ -261,7 +255,8 @@ PartialTensorShape ConvertTypeToTensorShape(const Type& type) {
 
   if (auto tensor_type = type.dyn_cast<RankedTensorType>()) {
     TensorShapeProto tensor_shape_proto;
-    ConvertToTensorShapeProto(tensor_type.getShape(), &tensor_shape_proto);
+    ConvertToTensorShapeProto(ConvertMlirShapeToTF(tensor_type.getShape()),
+                              &tensor_shape_proto);
     return PartialTensorShape(tensor_shape_proto);
   }
 
@@ -276,7 +271,9 @@ ShapeAttr ConvertTypeToTensorShapeAttr(const Type& type) {
   }
 
   if (auto tensor_type = type.dyn_cast<RankedTensorType>()) {
-    return ShapeAttr::get(type.getContext(), tensor_type.getShape());
+    return ShapeAttr::get(
+        type.getContext(),
+        llvm::makeArrayRef(ConvertMlirShapeToTF(tensor_type.getShape())));
   }
 
   // If type is not a RankedTensor or UnrankedTensor, it must be a scalar.
@@ -314,15 +311,12 @@ void ConvertComplexElementsAttr(const DenseElementsAttr attr,
   }
 }
 
-// Converts an MLIR opaque elements attribute to a TensorFlow tensor proto.
-Status ConvertOpaqueElementsAttr(const ElementsAttr attr,
-                                 TensorProto* output_tensor) {
-  if (attr.isa<OpaqueElementsAttr>()) {
-    auto mangled_tensor = attr.cast<OpaqueElementsAttr>().getValue();
-    absl::string_view tensor_view(mangled_tensor.data(), mangled_tensor.size());
-    return mangling_util::DemangleTensor(tensor_view, output_tensor);
-  }
-  return InvalidArgument("Unexpected elements attribute type from MLIR.");
+// Converts an Tensor proto attribute to a TensorFlow tensor proto.
+Status ConvertTensorProtoAttr(const mlir::itex_type::TensorProtoAttr attr,
+                              TensorProto* output_tensor) {
+  auto mangled_tensor = attr.getValue();
+  absl::string_view tensor_view(mangled_tensor.data(), mangled_tensor.size());
+  return mangling_util::DemangleTensor(tensor_view, output_tensor);
 }
 
 template <typename T>
@@ -357,7 +351,6 @@ void ConvertHalfElementsAttr(const DenseElementsAttr attr,
                              RepeatedField<int>* output) {
   if (attr.isSplat()) {
     auto value = attr.getSplatValue<Eigen::half>().x;
-    // if (value != Eigen::half(0) || std::signbit(static_cast<float>(value)))
     if (std::signbit(static_cast<float>(value))) output->Add(value);
   } else {
     output->Reserve(attr.getNumElements());
@@ -412,8 +405,8 @@ Status ConvertToTensorProto(const ElementsAttr attr, TensorProto* output) {
   output->set_dtype(output_dtype);
   ConvertToTensorShapeProto(shape, output->mutable_tensor_shape());
 
-  if (attr.isa<OpaqueElementsAttr>())
-    return ConvertOpaqueElementsAttr(attr.cast<OpaqueElementsAttr>(), output);
+  if (auto tensor_attr = attr.dyn_cast<mlir::itex_type::TensorProtoAttr>())
+    return ConvertTensorProtoAttr(tensor_attr, output);
 
   auto dense_attr = attr.dyn_cast<DenseElementsAttr>();
   if (!dense_attr) return InvalidArgument("Unsupported elements attr");
@@ -498,6 +491,25 @@ Status ConvertToTensor(const ElementsAttr attr, Tensor* output_tensor) {
     return InvalidArgument("Couldn't convert tensor proto to tensor.");
   }
   return Status::OK();
+}
+
+llvm::SmallVector<int64_t> ConvertMlirShapeToTF(llvm::ArrayRef<int64_t> shape) {
+  return llvm::to_vector(llvm::map_range(shape, [](int64_t dim) {
+    return mlir::ShapedType::isDynamic(dim) ? -1 : dim;
+  }));
+}
+
+llvm::SmallVector<int64_t> ConvertTFShapeToMlir(llvm::ArrayRef<int64_t> shape) {
+  return llvm::to_vector(llvm::map_range(shape, [](int64_t dim) {
+    return dim == -1 ? mlir::ShapedType::kDynamic : dim;
+  }));
+}
+
+mlir::RankedTensorType GetTypeFromTFTensorShape(llvm::ArrayRef<int64_t> shape,
+                                                mlir::Type elementType,
+                                                mlir::Attribute encoding) {
+  return mlir::RankedTensorType::get(ConvertTFShapeToMlir(shape), elementType,
+                                     encoding);
 }
 
 }  // namespace tfg

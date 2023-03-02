@@ -43,17 +43,22 @@ def repo_13(name):
 
 def repo(name):
     """Imports LLVM."""
-    LLVM_COMMIT = "b540ee540266f42b238e683c775c32a10c184ab5"
-    LLVM_SHA256 = "2caa79550b0456ab710f822258ab5f41c0f91fb4c04428bbf049aefbc2aa69e0"
 
-    tf_http_archive(
+    LLVM_COMMIT = "ac1ec9e2904a696e360b40572c3b3c29d67981ef"
+
+    # TF commit: 850f6f7e58deb4d947f2542842459b7a7021d2c0
+    LLVM_SHA256 = "3a7cd0be43916c6d860d08e46f084eae8035a248e87097725e95d4a966119d93"
+
+    new_git_repository(
         name = name,
-        sha256 = LLVM_SHA256,
-        strip_prefix = "llvm-project-{commit}".format(commit = LLVM_COMMIT),
-        urls = [
-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/llvm/llvm-project/archive/{commit}.tar.gz".format(commit = LLVM_COMMIT),
-            "https://github.com/llvm/llvm-project/archive/{commit}.tar.gz".format(commit = LLVM_COMMIT),
+        commit = LLVM_COMMIT,
+        remote = "https://github.com/llvm/llvm-project.git",
+        build_file = clean_dep("//third_party/llvm_project:llvm.BUILD"),
+        verbose = True,
+        patches = [
+            "//third_party/llvm_project:spirv.patch",
+            "//third_party/llvm_project:llvm_build.patch",
+            "//third_party/llvm_project:mlir.patch",
         ],
-        build_file = "//third_party/llvm_project:llvm.BUILD",
-        patch_file = "//third_party/llvm_project:llvm_build.patch",
+        patch_args = ["-p1"],
     )

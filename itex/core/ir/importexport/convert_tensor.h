@@ -34,16 +34,14 @@ namespace tfg {
 
 // Converts an TensorFlow tensor proto into an MLIR elements attribute.
 itex::StatusOr<ElementsAttr> ConvertTensorProto(
-    const itex::TensorProto& input_tensor, Builder builder,
-    TFGraphDialect* tfgDialect);
+    const itex::TensorProto& input_tensor, Builder builder);
 
 // Converts an TensorFlow tensor into an MLIR elements attribute.
 itex::StatusOr<ElementsAttr> ConvertTensor(const itex::Tensor& input_tensor,
-                                           Builder builder,
-                                           TFGraphDialect* tfgDialect);
+                                           Builder builder);
 
 // Converts a shape from MLIR to a TensorFlow tensor shape proto.
-void ConvertToTensorShapeProto(llvm::ArrayRef<int64_t> shape,
+void ConvertToTensorShapeProto(ArrayRef<int64_t> shape,
                                itex::TensorShapeProto* output_shape);
 
 // Converts an MLIR type to a TensorFlow tensor shape.
@@ -62,7 +60,9 @@ template <typename ShapeContainerT>
 void SetTensorShapeProto(ShapeContainerT shape, itex::TensorShapeProto* proto) {
   if (shape.hasRank()) {
     for (int64_t dim : shape.getShape()) {
-      proto->add_dim()->set_size(dim);
+      // TODO(hinsu): Use itex::kTFDynamicSize instead of -1 without
+      // depending on tensorflow/compiler
+      proto->add_dim()->set_size(mlir::ShapedType::isDynamic(dim) ? -1 : dim);
     }
   } else {
     proto->set_unknown_rank(true);
@@ -75,6 +75,17 @@ itex::Status ConvertToTensorProto(ElementsAttr attr,
 
 // Converts an MLIR elements attribute to a TensorFlow tensor.
 itex::Status ConvertToTensor(ElementsAttr attr, itex::Tensor* output_tensor);
+
+// Converts a TF shape to MLIR shape, i.e. -1 becomes kDynamicSize.
+llvm::SmallVector<int64_t> ConvertTFShapeToMlir(llvm::ArrayRef<int64_t> shape);
+
+// Converts an MLIR shape to TF shape, i.e. kDynamicSize becomes -1.
+llvm::SmallVector<int64_t> ConvertMlirShapeToTF(llvm::ArrayRef<int64_t> shape);
+
+// Creates a TF TensorShape using MLIR shape, element type and encoding.
+mlir::RankedTensorType GetTypeFromTFTensorShape(llvm::ArrayRef<int64_t> shape,
+                                                mlir::Type elementType,
+                                                mlir::Attribute encoding = {});
 
 }  // namespace tfg
 }  // namespace mlir

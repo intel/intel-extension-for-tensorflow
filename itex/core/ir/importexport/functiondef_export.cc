@@ -23,11 +23,10 @@ limitations under the License.
 #include "itex/core/ir/dialect.h"
 #include "itex/core/ir/importexport/convert_attributes.h"
 #include "itex/core/ir/importexport/convert_types.h"
-#include "itex/core/ir/importexport/export.h"
+#include "itex/core/ir/importexport/graphdef_export.h"
 #include "itex/core/ir/ops.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/statusor.h"
-#include "llvm/Support/Debug.h"
 #include "mlir/IR/BuiltinAttributes.h"  // from @llvm-project
 #include "mlir/IR/OperationSupport.h"   // from @llvm-project
 #include "protos/attr_value.pb.h"
@@ -50,8 +49,8 @@ namespace tfg {
 // of an operation or a block operand if a function argument) and store the
 // result in the provided name string. The `control_ty` is the instance of the
 // `ControlType` to compare against and detect a control dependency case.
-static Status GetValueName(Value operand, Type control_ty,
-                           std::string& name) {  // NOLINT
+static itex::StatusOr<std::string> GetValueName(Value operand,
+                                                Type control_ty) {
   bool is_control = (operand.getType() == control_ty);
   OpResult op_result = operand.dyn_cast<OpResult>();
   if (!op_result) {
@@ -60,7 +59,7 @@ static Status GetValueName(Value operand, Type control_ty,
 
     // Function arguments are coming as pair: the even are the actual tensors
     // while the odd position are the associated control input.
-    name.clear();
+    std::string name;
     if (is_control) name = "^";
     DictionaryAttr arg_attrs = function_interface_impl::getArgAttrDict(
         block_operand.getParentBlock()->getParentOp(), arg_num - is_control);
@@ -72,7 +71,7 @@ static Status GetValueName(Value operand, Type control_ty,
           "Can't export graph with missing op-name for function parameter #",
           arg_num);
     absl::StrAppend(&name, arg_name.getValue().str());
-    return {};
+    return name;
   }
   GetResultOp get_result = op_result.getDefiningOp<GetResultOp>();
   Operation* producer;
@@ -81,7 +80,7 @@ static Status GetValueName(Value operand, Type control_ty,
   } else {
     if (!get_result)
       return InvalidArgument("Missing get_result operation as input");
-    producer = get_result.value().getDefiningOp();
+    producer = get_result.getValue().getDefiningOp();
     if (!producer)
       return InvalidArgument("Expect a tfg operation as input to GetResultOp");
   }
@@ -91,13 +90,13 @@ static Status GetValueName(Value operand, Type control_ty,
   if (!name_attr)
     return InvalidArgument("Can't export graph with missing op-name");
 
-  name.clear();
+  std::string name;
   if (is_control) name = "^";
   absl::StrAppend(&name, name_attr.getValue().str());
   if (get_result)
-    absl::StrAppend(&name, ":", get_result.name().str(), ":",
-                    get_result.number());
-  return {};
+    absl::StrAppend(&name, ":", get_result.getName().str(), ":",
+                    get_result.getNumber());
+  return name;
 }
 
 // Export a function argument or returned value as an ArgDef entry.
@@ -146,23 +145,22 @@ static Status ExportArgDef(OpDef::ArgDef* arg, DictionaryAttr arg_attrs,
 
 itex::StatusOr<FunctionDef> ConvertGenericFunctionToFunctionDef(
     GraphFuncOp func_op) {
-  if (!func_op.generic())
+  if (!func_op.getGeneric())
     return InvalidArgument(
         "Expected a generic function in ConvertGenericFunctionToFunctionDef");
   auto control_ty = tfg::ControlType::get(func_op.getContext());
-  Dialect* tfg_dialect = func_op->getDialect();
+  auto* tfg_dialect = cast<TFGraphDialect>(func_op->getDialect());
 
   FunctionDef fdef;
-  for (Operation& op : func_op.getBody()->without_terminator()) {
+  for (Operation& op : func_op.SingleBlock::getBody()->without_terminator()) {
     if (op.getDialect() != tfg_dialect)
       return InvalidArgument("Non tfg op encountered when exporting function");
 
     if (isa<GetResultOp>(&op)) continue;
 
-    TF_RETURN_IF_ERROR(ConvertOperationToNode(
-        op, fdef.add_node_def(), [&](Value operand, std::string& output_name) {
-          return GetValueName(operand, control_ty, output_name);
-        }));
+    TF_RETURN_IF_ERROR(ConvertToNodeDef(
+        &op, fdef.add_node_def(), tfg_dialect,
+        [&](Value value) { return GetValueName(value, control_ty); }));
   }
 
   const std::string func_name = func_op.getName().str();
@@ -220,13 +218,10 @@ itex::StatusOr<FunctionDef> ConvertGenericFunctionToFunctionDef(
                              " because missing attributes for arg #", arg_num);
     DictionaryAttr arg_attrs = args_attr[arg_num].cast<DictionaryAttr>();
     FunctionDef::ArgAttrs func_def_arg_attrs;
-    // TF_RETURN_WITH_CONTEXT_IF_ERROR(
-    //     ExportArgDef(arg, arg_attrs, &func_def_arg_attrs),
-    //     " when exporting argument ", arg_num, " for function ",
-    //     func_op.getName().str());
     TF_RETURN_WITH_CONTEXT_IF_ERROR(
         ExportArgDef(arg, arg_attrs, &func_def_arg_attrs),
-        " when exporting argument ");
+        " when exporting argument ", arg_num, " for function ",
+        func_op.getName().str());
 
     // On top of the signature, function arguments can have attribute directul
     // on the FunctionDef.
@@ -238,11 +233,10 @@ itex::StatusOr<FunctionDef> ConvertGenericFunctionToFunctionDef(
   // An ArgDef entry needs to be constructed for all non-control returned value,
   // and a mapping from the output name to the signature is also recorded in the
   // FunctionDef.
-  auto return_op =
-      llvm::cast<tfg::ReturnOp>(func_op.getBody()->getTerminator());
+  auto return_op = llvm::cast<tfg::ReturnOp>(
+      func_op.SingleBlock::getBody()->getTerminator());
   ArrayAttr results_attr = func_op.getAllResultAttrs();
-  std::string ret_name;
-  for (auto indexed_result : llvm::enumerate(return_op->getOperands())) {
+  for (auto& indexed_result : llvm::enumerate(return_op->getOperands())) {
     int res_num = indexed_result.index();
     if (res_num >= results_attr.size())
       return InvalidArgument("Can't export function ", func_op.getName().str(),
@@ -259,23 +253,22 @@ itex::StatusOr<FunctionDef> ConvertGenericFunctionToFunctionDef(
     if (ret_val.getType() == control_ty) {
       // When we return a control dependency, it is not really a returned value
       // but it is added to the `control_ret` field of the FunctionDef.
-      TF_RETURN_IF_ERROR(GetValueName(ret_val, control_ty, ret_name));
+      TF_ASSIGN_OR_RETURN(std::string ret_name,
+                          GetValueName(ret_val, control_ty));
       fdef.mutable_control_ret()->insert(
           {name.getValue().str(), StringRef(ret_name).drop_front().str()});
       continue;
     }
     // Tensor results are turned into an ArgDef in the `output_arg` field.
     OpDef::ArgDef* output = signature->add_output_arg();
-    // TF_RETURN_WITH_CONTEXT_IF_ERROR(ExportArgDef(output, res_attrs),
-    //                                 " when exporting result ", res_num,
-    //                                 " for function ",
-    //                                 func_op.getName().str());
     TF_RETURN_WITH_CONTEXT_IF_ERROR(ExportArgDef(output, res_attrs),
-                                    " when exporting result ");
+                                    " when exporting result ", res_num,
+                                    " for function ", func_op.getName().str());
 
     // The `ret` field of the FunctionDef keeps a mapping of the returned value
     // name to the entried in the FunctionDef signature.
-    TF_RETURN_IF_ERROR(GetValueName(ret_val, control_ty, ret_name));
+    TF_ASSIGN_OR_RETURN(std::string ret_name,
+                        GetValueName(ret_val, control_ty));
     fdef.mutable_ret()->insert({name.getValue().str(), ret_name});
   }
 
@@ -307,7 +300,7 @@ itex::StatusOr<FunctionDef> ConvertGenericFunctionToFunctionDef(
 
   // Finally the dialect attributes (prefixed by `tf.` in general) are converted
   // as-is and stored on the `attr` field of the FunctionDef.
-  llvm::SmallVector<NamedAttribute, 8> funcAttrs(func_op->getDialectAttrs());
+  SmallVector<NamedAttribute, 8> funcAttrs(func_op->getDialectAttrs());
   TF_RETURN_IF_ERROR(ConvertAttributes(funcAttrs, {"tfg.func_attrs"},
                                        /*remove_ref_type=*/false,
                                        fdef.mutable_attr()));

@@ -1,4 +1,5 @@
 /* Copyright (c) 2023 Intel Corporation
+
 Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,22 +20,17 @@ limitations under the License.
 
 #include <string>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "itex/core/ir/dialect.h"
 #include "itex/core/utils/node_def_util.h"
 #include "itex/core/utils/statusor.h"
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/DenseSet.h"
 #include "mlir/IR/Attributes.h"    // from @llvm-project
 #include "mlir/IR/Builders.h"      // from @llvm-project
 #include "mlir/IR/BuiltinTypes.h"  // from @llvm-project
+#include "protos/op_def.pb.h"
+#include "protos/resource_handle.pb.h"
 
 namespace mlir {
-namespace itex_type {
-class FullTypeAttr;
-}  // namespace itex_type
-
 namespace tfg {
 
 // Convert the list of MLIR Attributes `attrs` to the `itex::AttrValueMap`
@@ -59,13 +55,11 @@ ShapeAttr ConvertTypeToTensorShapeAttr(const Type& type);
 // exclused in this function because the function might be renamed when the
 // function definition is imported.
 itex::StatusOr<Attribute> ConvertNonFuncAttributeValue(
-    const itex::AttrValue& value, Builder& builder,  // NOLINT
-    TFGraphDialect* tfgDialect);
+    const itex::AttrValue& value, Builder& builder);  // NOLINT
 
 // Converts all kinds of AttrValue proto into an MLIR attribute.
 itex::StatusOr<Attribute> ConvertAttributeValue(const itex::AttrValue& value,
-                                                Builder& builder,  // //NOLINT
-                                                TFGraphDialect* tfgDialect);
+                                                Builder& builder);  // NOLINT
 
 // Convert the MLIR FullTyoe attribute `attr` and return a
 // `itex::FullTypeDef`.
@@ -74,8 +68,18 @@ itex::StatusOr<itex::FullTypeDef> ConvertAttribute(
 
 // Converts fulltype proto to attribute.
 itex::StatusOr<::mlir::itex_type::FullTypeAttr> ConvertAttribute(
-    const itex::FullTypeDef& full_type, Builder& builder,  // NOLINT
-    TFGraphDialect* tfgDialect);
+    const itex::FullTypeDef& full_type, Builder& builder);  // NOLINT
+
+// Convert an array of handle data (pairs of data types and shapes) to an array
+// attribute of tensor types.
+itex::StatusOr<ArrayAttr> ConvertHandleData(
+    Builder builder, const itex::protobuf::RepeatedPtrField<
+                         itex::ResourceHandleProto_DtypeAndShape>& handle_data);
+
+// Convert an array of handle data into the `handle_data` field of the provided
+// ArgDef. Each entry of the array is expected to be a TensorType.
+itex::Status ConvertHandleData(ArrayAttr handle_data_arr,
+                               itex::OpDef::ArgDef* arg);
 
 }  // namespace tfg
 }  // namespace mlir

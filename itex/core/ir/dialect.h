@@ -67,6 +67,7 @@ using mlir::itex_type::VariantType;        // NOLINT
 using mlir::itex_type::VersionAttr;        // NOLINT
 
 struct TFGraphOpAsmInterface;
+class TFOp;
 }  // namespace tfg
 }  // namespace mlir
 

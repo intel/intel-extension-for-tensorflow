@@ -17,7 +17,6 @@ limitations under the License.
 
 #ifndef ITEX_CORE_IR_UTILITY_H_
 #define ITEX_CORE_IR_UTILITY_H_
-
 #include <utility>
 
 #include "itex/core/ir/dialect.h"

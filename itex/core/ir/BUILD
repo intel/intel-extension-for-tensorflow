@@ -112,6 +112,8 @@ cc_library(
     srcs = [
         "interfaces.cc",
         "ops.cc",
+        "tf_op_names.cc",
+        "tf_op_names.inc",
         "tf_op_wrapper.cc",
         "utility.cc",
     ],
@@ -152,7 +154,7 @@ cc_library(
         ":Dialect",
         "//itex/core/ir/importexport:convert_tensor",
         "//itex/core/ir/importexport:convert_types",
-        "//itex/core/ir/importexport:export",
+        "//itex/core/ir/importexport:graphdef_export",
         "//itex/core/ir/types:Dialect",
         "//itex/core/utils:common_utils",
         "@llvm-project//llvm:Support",

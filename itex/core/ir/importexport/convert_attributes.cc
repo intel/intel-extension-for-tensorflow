@@ -27,22 +27,23 @@ limitations under the License.
 #include "itex/core/ir/types/dialect.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/statusor.h"
-#include "itex/core/utils/type_traits.h"
 #include "llvm/ADT/StringSet.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Builders.h"                // from @llvm-project
 #include "mlir/IR/BuiltinAttributes.h"       // from @llvm-project
 #include "mlir/IR/Location.h"                // from @llvm-project
-#include "mlir/Parser/Parser.h"              // from @llvm-project
 #include "mlir/Support/DebugStringHelper.h"  // from @llvm-project
 #include "protos/attr_value.pb.h"
+#include "protos/full_type.pb.h"
+#include "protos/op_def.pb.h"
 
 using itex::AttrValue;
 using itex::AttrValueMap;
 using itex::DataType;
 using itex::NodeDef;
 using itex::Status;
+using itex::StatusOr;
 using itex::TensorProto;
 using itex::TensorShapeProto;
 using itex::errors::InvalidArgument;
@@ -180,7 +181,7 @@ Status ConvertAttribute(const ArrayAttr& attr, bool remove_ref_type,
 }
 }  // namespace
 
-itex::StatusOr<AttrValue> ConvertAttribute(Attribute attr) {
+StatusOr<AttrValue> ConvertAttribute(Attribute attr) {
   AttrValue value;
   if (auto symbol_ref = attr.dyn_cast<SymbolRefAttr>()) {
     TF_RETURN_IF_ERROR(
@@ -286,10 +287,8 @@ Status SetShapeAttribute(absl::string_view name, ShapedType shaped_type,
 // Converts non func AttrValue proto into an MLIR attribute. Func attribute is
 // exclused in this function because the function might be renamed when the
 // function definition is imported.
-itex::StatusOr<Attribute> ConvertNonFuncAttributeValue(
-    const AttrValue& value, Builder& builder,  // NOLINT
-    TFGraphDialect* tfgDialect) {
-  assert(tfgDialect == builder.getContext()->getLoadedDialect("tfg"));
+StatusOr<Attribute> ConvertNonFuncAttributeValue(const AttrValue& value,
+                                                 Builder& builder) {  // NOLINT
   switch (value.value_case()) {
     case AttrValue::kI:
       return builder.getI64IntegerAttr(value.i());
@@ -307,7 +306,7 @@ itex::StatusOr<Attribute> ConvertNonFuncAttributeValue(
     case AttrValue::kShape:
       return ConvertTensorShapeProto(value.shape(), builder.getContext());
     case AttrValue::kTensor:
-      return ConvertTensorProto(value.tensor(), builder, tfgDialect);
+      return ConvertTensorProto(value.tensor(), builder);
     case AttrValue::kList: {
       absl::InlinedVector<Attribute, 8> attrs;
       for (const auto& item : value.list().i())
@@ -329,16 +328,14 @@ itex::StatusOr<Attribute> ConvertNonFuncAttributeValue(
         attrs.push_back(attr);
       }
       for (const auto& item : value.list().tensor()) {
-        TF_ASSIGN_OR_RETURN(auto attr,
-                            ConvertTensorProto(item, builder, tfgDialect));
+        TF_ASSIGN_OR_RETURN(auto attr, ConvertTensorProto(item, builder));
         attrs.push_back(attr);
       }
       for (const auto& func_attr : value.list().func()) {
         NamedAttrList subattrs;
         for (const auto& subattr : func_attr.attr()) {
-          TF_ASSIGN_OR_RETURN(
-              auto attr,
-              ConvertAttributeValue(subattr.second, builder, tfgDialect));
+          TF_ASSIGN_OR_RETURN(auto attr,
+                              ConvertAttributeValue(subattr.second, builder));
           if (subattr.first.empty())
             return InvalidArgument("empty func_attr name");
           subattrs.push_back(builder.getNamedAttr(subattr.first, attr));
@@ -359,17 +356,15 @@ itex::StatusOr<Attribute> ConvertNonFuncAttributeValue(
   }
 }
 
-itex::StatusOr<Attribute> ConvertAttributeValue(const AttrValue& value,
-                                                Builder& builder,  // NOLINT
-                                                TFGraphDialect* tfgDialect) {
+StatusOr<Attribute> ConvertAttributeValue(const AttrValue& value,
+                                          Builder& builder) {  // NOLINT
   switch (value.value_case()) {
     case AttrValue::kFunc: {
       NamedAttrList attrs;
       for (const auto& func_attr : value.func().attr()) {
         if (func_attr.first.empty()) return InvalidArgument("empty attr name");
-        TF_ASSIGN_OR_RETURN(
-            auto attr,
-            ConvertAttributeValue(func_attr.second, builder, tfgDialect));
+        TF_ASSIGN_OR_RETURN(auto attr,
+                            ConvertAttributeValue(func_attr.second, builder));
         attrs.push_back(builder.getNamedAttr(func_attr.first, attr));
       }
       auto func_attrs = builder.getDictionaryAttr(attrs);
@@ -377,19 +372,17 @@ itex::StatusOr<Attribute> ConvertAttributeValue(const AttrValue& value,
                            func_attrs);
     }
     default:
-      return ConvertNonFuncAttributeValue(value, builder, tfgDialect);
+      return ConvertNonFuncAttributeValue(value, builder);
   }
 }
 
-itex::StatusOr<::mlir::itex_type::FullTypeAttr> ConvertAttribute(
-    const itex::FullTypeDef& full_type, Builder& builder,  // NOLINT
-    TFGraphDialect* tfgDialect) {
+StatusOr<itex_type::FullTypeAttr> ConvertAttribute(
+    const itex::FullTypeDef& full_type, Builder& builder) {  // NOLINT
   using FullTypeAttr = ::mlir::itex_type::FullTypeAttr;
 
   SmallVector<FullTypeAttr> args;
   for (const itex::FullTypeDef& it : full_type.args()) {
-    TF_ASSIGN_OR_RETURN(FullTypeAttr arg,
-                        ConvertAttribute(it, builder, tfgDialect));
+    TF_ASSIGN_OR_RETURN(FullTypeAttr arg, ConvertAttribute(it, builder));
     args.push_back(arg);
   }
 
@@ -411,7 +404,7 @@ itex::StatusOr<::mlir::itex_type::FullTypeAttr> ConvertAttribute(
                            attr);
 }
 
-itex::StatusOr<itex::FullTypeDef> ConvertAttribute(
+StatusOr<itex::FullTypeDef> ConvertAttribute(
     itex_type::FullTypeAttr full_type) {
   using FullTypeDef = itex::FullTypeDef;
 
@@ -436,9 +429,55 @@ itex::StatusOr<itex::FullTypeDef> ConvertAttribute(
                              mlir::debugString(full_type.getAttr()));
   }
 
-  ret.set_type_id(static_cast<itex::FullTypeId>(full_type.getType_id()));
+  ret.set_type_id(static_cast<itex::FullTypeId>(full_type.getTypeId()));
 
   return ret;
+}
+
+StatusOr<ArrayAttr> ConvertHandleData(
+    Builder builder,
+    const itex::protobuf::RepeatedPtrField<
+        itex::ResourceHandleProto_DtypeAndShape>& handle_data) {
+  SmallVector<Attribute> dtype_and_shape;
+  for (const auto& handle : handle_data) {
+    if (handle.dtype() == itex::DT_INVALID)
+      return InvalidArgument("Invalid dtype for handle_data");
+    Type dtype;
+    TF_RETURN_IF_ERROR(ConvertDataType(handle.dtype(), builder, &dtype));
+    TF_ASSIGN_OR_RETURN(
+        ShapeAttr shape,
+        ConvertTensorShapeProto(handle.shape(), builder.getContext()));
+    TensorType handle_type;
+    if (shape.hasRank()) {
+      handle_type = RankedTensorType::get(shape.getShape(), dtype);
+    } else {
+      handle_type = UnrankedTensorType::get(dtype);
+    }
+    dtype_and_shape.push_back(TypeAttr::get(handle_type));
+  }
+  return builder.getArrayAttr(dtype_and_shape);
+}
+
+Status ConvertHandleData(ArrayAttr handle_data_arr, itex::OpDef::ArgDef* arg) {
+  if (!handle_data_arr) return {};
+  for (auto handle_data_attr : handle_data_arr.getAsRange<TypeAttr>()) {
+    TensorType handle_type = handle_data_attr.getValue().dyn_cast<TensorType>();
+    if (!handle_type) {
+      return InvalidArgument("Expected an array of tensor types, but got ",
+                             debugString(handle_data_arr));
+    }
+    auto* handle_data = arg->add_handle_data();
+    if (handle_type.hasRank()) {
+      ConvertToTensorShapeProto(handle_type.getShape(),
+                                handle_data->mutable_shape());
+    } else {
+      handle_data->mutable_shape()->set_unknown_rank(true);
+    }
+    DataType dtype;
+    TF_RETURN_IF_ERROR(ConvertToDataType(handle_type.getElementType(), &dtype));
+    handle_data->set_dtype(dtype);
+  }
+  return {};
 }
 
 }  // namespace tfg

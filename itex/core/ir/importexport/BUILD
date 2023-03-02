@@ -4,11 +4,9 @@ cc_library(
     name = "import",
     srcs = [
         "functiondef_import.cc",
-        "import.cc",
     ],
     hdrs = [
         "functiondef_import.h",
-        "import.h",
     ],
     deps = [
         ":convert_attributes",
@@ -29,14 +27,14 @@ cc_library(
 )
 
 cc_library(
-    name = "export",
+    name = "graphdef_export",
     srcs = [
-        "export.cc",
         "functiondef_export.cc",
+        "graphdef_export.cc",
     ],
     hdrs = [
-        "export.h",
         "functiondef_export.h",
+        "graphdef_export.h",
     ],
     deps = [
         ":convert_attributes",
@@ -45,8 +43,6 @@ cc_library(
         "//itex/core/ir:Dialect",
         "//itex/core/ir/types:Dialect",
         "//itex/core/utils:common_utils",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
@@ -129,25 +125,6 @@ cc_library(
         "//itex/core/ir/types:Dialect",
         "//itex/core/utils:common_utils",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:Support",
-        "@local_config_tf//:protos_all",
-    ],
-)
-
-cc_library(
-    name = "graphdef_export",
-    srcs = ["graphdef_export.cc"],
-    hdrs = ["graphdef_export.h"],
-    deps = [
-        ":convert_attributes",
-        ":convert_types",
-        ":export",
-        "//itex/core/ir:Dialect",
-        "//itex/core/ir/types:Dialect",
-        "//itex/core/utils:common_utils",
-        "@com_google_absl//absl/strings",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",

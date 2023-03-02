@@ -42,8 +42,8 @@ static bool IsStatefulImpl(const FunctionLibraryDefinition& func,
 
 bool TensorFlowOpRegistryInterface::isStateful(Operation* op) const {
   // Handle TFG internal ops.
-  if (isa<ReturnOp, YieldOp, ConditionOp>(op)) return false;
-  if (auto func = dyn_cast<GraphFuncOp>(op)) return func.is_stateful();
+  if (op->hasTrait<OpTrait::IntrinsicOperation>()) return false;
+  if (auto func = dyn_cast<GraphFuncOp>(op)) return func.getIsStateful();
   // Handle TFG region ops.
   // TODO(jeffniu): Region ops should be marked with a trait.
   StringRef op_name = op->getName().stripDialect();

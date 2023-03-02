@@ -40,11 +40,11 @@ itex::Status ConvertToDataType(Type type, itex::DataType* dtype);
 
 // Converts an TensorFlow shape to the one used in MLIR.
 void ConvertToMlirShape(const itex::TensorShape& input_shape,
-                        llvm::SmallVectorImpl<int64_t>* shape);
+                        SmallVectorImpl<int64_t>* shape);
 
 // Converts an TensorFlow shape proto to the one used in MLIR.
 itex::Status ConvertToMlirShape(const itex::TensorShapeProto& input_shape,
-                                llvm::SmallVectorImpl<int64_t>* shape);
+                                SmallVectorImpl<int64_t>* shape);
 
 // Given a tensor shape and dtype, get the corresponding MLIR tensor type.
 itex::StatusOr<Type> ConvertToMlirTensorType(

@@ -27,5 +27,7 @@ cc_library(
         "//itex/core/ir/importexport:graphdef_export",
         "//itex/core/ir/importexport:graphdef_import",
         "//itex/core/utils:common_utils",
+        "@llvm-project//mlir:Pass",
+        "@llvm-project//mlir:Transforms",
     ],
 )

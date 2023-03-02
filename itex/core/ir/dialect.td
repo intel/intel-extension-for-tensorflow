@@ -118,6 +118,13 @@ def TFGraphDialect : Dialect {
       return {"tfg.experimental_full_type"};
     }
 
+    StringAttr getLiftedGraphFuncNameAttrIdentifier() const {
+      return lifted_graph_func_name_;
+    }
+    static constexpr StringRef getLiftedGraphFuncNameKey() {
+      return {"_mlir_lifted_graph"};
+    }
+
     // Cached accessor for the control type.
     ControlType getControlType() const { return control_ty_; }
 
@@ -134,14 +141,23 @@ def TFGraphDialect : Dialect {
     llvm::unique_function<void(Operation *, OpAsmPrinter &)>
     getOperationPrinter(Operation *op) const override;
 
+    // Functions for checking operation categories.
+    #define GET_OP_CATEGORIES
+    #include "itex/core/ir/tf_op_names.inc"
+
   private:
     // Fallback implementation of OpAsmOpInterface.
     TFGraphOpAsmInterface *fallbackOpAsmInterface_ = nullptr;
+
+    // Cached TensorFlow operation names.
+    #define GET_OP_NAME_DECLS
+    #include "itex/core/ir/tf_op_names.inc"
 
     // Cached identifier for efficiency purpose.
     StringAttr assigned_device_key_;
     StringAttr device_key_;
     StringAttr fulltype_key_;
+    StringAttr lifted_graph_func_name_;
     StringAttr name_key_;
     StringAttr tfg_description_key_;
     StringAttr tfg_full_type_key_;
@@ -154,18 +170,10 @@ def TFGraphDialect : Dialect {
   }];
 
   let cppNamespace = "::mlir::tfg";
+
+  let useDefaultAttributePrinterParser = 1;
   let hasNonDefaultDestructor = 1;
   let hasOperationInterfaceFallback = 1;
 }
-
-//===----------------------------------------------------------------------===//
-// TFGraph dialect types definitions
-//===----------------------------------------------------------------------===//
-
-include "itex/core/ir/types/types.td"
-
-// Base class for the operations in this dialect.
-class TFGraph_Op<string mnemonic, list<Trait> traits = []> :
-    Op<TFGraphDialect, mnemonic, traits>;
 
 #endif // TFG_DIALECT

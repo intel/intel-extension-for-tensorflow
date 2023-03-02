@@ -24,24 +24,10 @@ limitations under the License.
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "itex/core/ir/dialect.h"
-#include "itex/core/ir/importexport/convert_attributes.h"
-#include "itex/core/ir/importexport/convert_types.h"
-#include "itex/core/ir/importexport/functiondef_import.h"
-#include "itex/core/ir/importexport/import.h"
-#include "itex/core/ir/ops.h"
-#include "itex/core/ir/types/dialect.h"
-#include "itex/core/utils/errors.h"
-#include "itex/core/utils/full_type_util.h"
 #include "itex/core/utils/function.h"
 #include "itex/core/utils/node_def_util.h"
-#include "itex/core/utils/statusor.h"
-#include "itex/core/utils/stringpiece.h"
-#include "itex/core/utils/tensor_id.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopeExit.h"
-#include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/ThreadPool.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Builders.h"            // from @llvm-project
 #include "mlir/IR/BuiltinAttributes.h"   // from @llvm-project
@@ -57,25 +43,41 @@ limitations under the License.
 #include "protos/full_type.pb.h"
 #include "protos/function.pb.h"
 #include "protos/graph.pb.h"
-#include "protos/graph_debug_info.pb.h"
 #include "protos/node_def.pb.h"
+// #include "tensorflow/core/framework/op.h"
+#include "itex/core/utils/op_def_builder.h"
 #include "protos/op_def.pb.h"
+#include "protos/versions.pb.h"
+// #include "tensorflow/core/graph/graph.h"
+#include "itex/core/ir/dialect.h"
+#include "itex/core/ir/importexport/convert_attributes.h"
+#include "itex/core/ir/importexport/convert_types.h"
+#include "itex/core/ir/importexport/functiondef_import.h"
+#include "itex/core/ir/ops.h"
+#include "itex/core/ir/types/dialect.h"
+#include "itex/core/utils/errors.h"
+#include "itex/core/utils/statusor.h"
+#include "itex/core/utils/stringpiece.h"
+#include "itex/core/utils/tensor_id.h"
+#include "protos/graph_debug_info.pb.h"
 
 using itex::DataType;
 using itex::DataTypeVector;
 using itex::FullTypeDef;
 using itex::FunctionDef;
+using itex::FunctionLibraryDefinition;
+// using itex::Graph;
 using itex::GraphDebugInfo;
 using itex::GraphDef;
 using itex::NodeDef;
 using itex::OpDef;
 // using itex::OpRegistrationData;
 // using itex::OpRegistry;
-using itex::FunctionLibraryDefinition;
 using itex::Status;
 using itex::StatusOr;
 using itex::StringPiece;
 using itex::TensorId;
+using itex::VersionDef;
 using itex::errors::InvalidArgument;
 using itex::errors::NotFound;
 
@@ -242,9 +244,33 @@ class GraphDefImporter {
 };
 }  // namespace
 
+// Convert a VersionDef to an MLIR version attribute.
+static VersionAttr ConvertVersionAttr(MLIRContext* context,
+                                      const VersionDef& version) {
+  ArrayRef<int32_t> bad_consumers(version.bad_consumers().data(),
+                                  version.bad_consumers().size());
+  return VersionAttr::get(context, version.producer(), version.min_consumer(),
+                          bad_consumers);
+}
+
+// Returns true if the function is a generic function, i.e. it contains
+// placeholder attributes.
+//
+// TODO(jeffniu): Having to iterate over every function just to check for
+// placeholder attributes is slow. Since most functions are not generic, we can
+// speculate by converting all functions as non-generic until we see a
+// placeholder attribute, bail out, and fall back to the generic function
+// converter.
+static bool IsGenericFunction(const FunctionDef& fdef) {
+  for (const NodeDef& node : fdef.node_def())
+    for (const auto& named_attr : node.attr())
+      if (!named_attr.second.placeholder().empty()) return true;
+
+  return false;
+}
+
 StatusOr<OwningOpRef<ModuleOp>> GraphDefImporter::ConvertGraphDef(
     const GraphDef& graph) {
-  // function_library_ = FunctionLibraryDefinition(graph);
   // Create the module.
   OwningOpRef<ModuleOp> module = ModuleOp::create(unknown_loc_);
 
@@ -252,7 +278,7 @@ StatusOr<OwningOpRef<ModuleOp>> GraphDefImporter::ConvertGraphDef(
   auto builder = OpBuilder::atBlockBegin(module->getBody());
   auto graph_op = builder.create<GraphOp>(
       module->getLoc(), ConvertVersionAttr(ctx_, graph.versions()));
-  graph_op.nodes().push_back(new Block);
+  graph_op.getNodes().push_back(new Block);
 
   // Populate the function op defs.
   function_op_defs_.reserve(graph.library().function_size());
@@ -268,31 +294,24 @@ StatusOr<OwningOpRef<ModuleOp>> GraphDefImporter::ConvertGraphDef(
     gradient_map.emplace(gradient.function_name(), gradient.gradient_func());
 
   // Convert the graph.
-  ConversionState s(&graph_op.nodes().front(), placeholder_state_);
+  ConversionState s(&graph_op.getNodes().front(), placeholder_state_);
   TF_RETURN_IF_ERROR(
-      ConvertNodes(builder, s, graph.node(), &graph_op.nodes().front()));
+      ConvertNodes(builder, s, graph.node(), &graph_op.getNodes().front()));
 
   // A function to convert a generic or non-generic function.
   const auto convert_func = [this, &gradient_map](GraphFuncOp func_op,
                                                   const FunctionDef& function) {
-    // TODO(jeffniu): `IsGenericFunction` is slow.
     if (IsGenericFunction(function)) {
       // Generic functions aren't on the hot path so just call the old
       // importer.
       OpBuilder builder(ctx_);
-      // TF_RETURN_WITH_CONTEXT_IF_ERROR(
-      //     ConvertGenericFunction(func_op, function, builder),
-      //     "While importing generic function: ", function.signature().name());
       TF_RETURN_WITH_CONTEXT_IF_ERROR(
           ConvertGenericFunction(func_op, function, builder),
-          "While importing generic function: ");
+          "While importing generic function: ", function.signature().name());
     } else {
-      // TF_RETURN_WITH_CONTEXT_IF_ERROR(
-      //     ConvertFunctionDef(func_op, gradient_map, function),
-      //     "While importing function: ", function.signature().name());
       TF_RETURN_WITH_CONTEXT_IF_ERROR(
           ConvertFunctionDef(func_op, gradient_map, function),
-          "While importing function: ");
+          "While importing function: ", function.signature().name());
     }
     return Status::OK();
   };
@@ -353,7 +372,7 @@ Status GraphDefImporter::ConvertFunctionAttributes(
     // TODO(b/230143351): `ConvertAttributeValue` is a little slow due to
     // `ConvertTensorProto` and `ConvertTensorShapeProto`.
     TF_ASSIGN_OR_RETURN(Attribute attr,
-                        ConvertAttributeValue(name_attr.second, b_, dialect_));
+                        ConvertAttributeValue(name_attr.second, b_));
     attrs.append(absl::StrCat("tf.", name_attr.first), attr);
   }
 
@@ -361,18 +380,18 @@ Status GraphDefImporter::ConvertFunctionAttributes(
   const itex::OpDef& signature = function.signature();
   if (signature.name().empty())
     return InvalidArgument("Function without a name");
-  attrs.append(op.sym_nameAttrName(), b_.getStringAttr(signature.name()));
+  attrs.append(op.getSymNameAttrName(), b_.getStringAttr(signature.name()));
 
   if (!signature.description().empty()) {
-    attrs.append(op.descriptionAttrName(),
+    attrs.append(op.getDescriptionAttrName(),
                  b_.getStringAttr(signature.description()));
   }
   if (signature.is_stateful())
-    attrs.append(op.is_statefulAttrName(), b_.getUnitAttr());
+    attrs.append(op.getIsStatefulAttrName(), b_.getUnitAttr());
   auto grad_it = gradient_map.find(signature.name());
   if (grad_it != gradient_map.end()) {
     StringPiece name = grad_it->second;
-    attrs.append(op.gradientAttrName(),
+    attrs.append(op.getGradientAttrName(),
                  FlatSymbolRefAttr::get(ctx_, {name.data(), name.size()}));
   }
 
@@ -389,9 +408,9 @@ Status GraphDefImporter::ConvertFunctionAttributes(
       resource_arg_unique_ids_keys.push_back(unique_id.first);
       resource_arg_unique_ids_values.push_back(unique_id.second);
     }
-    attrs.append(op.resource_arg_unique_ids_keysAttrName(),
+    attrs.append(op.getResourceArgUniqueIdsKeysAttrName(),
                  b_.getI32TensorAttr(resource_arg_unique_ids_keys));
-    attrs.append(op.resource_arg_unique_ids_valuesAttrName(),
+    attrs.append(op.getResourceArgUniqueIdsValuesAttrName(),
                  b_.getI32TensorAttr(resource_arg_unique_ids_values));
   }
   return Status::OK();
@@ -413,9 +432,8 @@ Status GraphDefImporter::ConvertArgumentAttributes(const OpDef::ArgDef& def,
     attrs.append(dialect_->getTfgHandleDataAttrIdentifier(), handle_data);
   }
   if (def.has_experimental_full_type()) {
-    TF_ASSIGN_OR_RETURN(
-        itex_type::FullTypeAttr full_type,
-        ConvertAttribute(def.experimental_full_type(), b_, dialect_));
+    TF_ASSIGN_OR_RETURN(itex_type::FullTypeAttr full_type,
+                        ConvertAttribute(def.experimental_full_type(), b_));
     attrs.append(dialect_->getTfgFullTypeAttrIdentifier(), full_type);
   }
   return Status::OK();
@@ -528,9 +546,9 @@ Status GraphDefImporter::ConvertFunctionDef(
   const OpDef& signature = function.signature();
   // TODO(jeffniu): Does the name need to be mangled?
 
-  func_op.body().push_back(new Block);
-  Block* body = &func_op.body().front();
-  auto builder = OpBuilder::atBlockBegin(func_op.getBody());
+  func_op.getBody().push_back(new Block);
+  Block* body = &func_op.getBody().front();
+  auto builder = OpBuilder::atBlockBegin(func_op.SingleBlock::getBody());
 
   // Convert the attributes.
   NamedAttrList func_attrs;
@@ -554,9 +572,8 @@ Status GraphDefImporter::ConvertFunctionDef(
     auto attr_it = function.arg_attr().find(it.index());
     if (attr_it != function.arg_attr().end()) {
       for (const auto& name_attr : attr_it->second.attr()) {
-        TF_ASSIGN_OR_RETURN(
-            Attribute attr,
-            ConvertAttributeValue(name_attr.second, b_, dialect_));
+        TF_ASSIGN_OR_RETURN(Attribute attr,
+                            ConvertAttributeValue(name_attr.second, b_));
         attrs.append("tf." + name_attr.first, attr);
       }
     }
@@ -621,9 +638,9 @@ Status GraphDefImporter::ConvertFunctionDef(
                            b_.getArrayAttr(control_ret_attrs));
 
   // Finalize the function attributes.
-  func_attrs.append(func_op.arg_attrsAttrName(), b_.getArrayAttr(arg_attrs));
-  func_attrs.append(func_op.res_attrsAttrName(), b_.getArrayAttr(res_attrs));
-  func_attrs.append(func_op.function_typeAttrName(),
+  func_attrs.append(func_op.getArgAttrsAttrName(), b_.getArrayAttr(arg_attrs));
+  func_attrs.append(func_op.getResAttrsAttrName(), b_.getArrayAttr(res_attrs));
+  func_attrs.append(func_op.getFunctionTypeAttrName(),
                     TypeAttr::get(b_.getFunctionType(arg_types, res_types)));
   func_op->setAttrs(func_attrs.getDictionary(ctx_));
 
@@ -638,6 +655,7 @@ Status GraphDefImporter::ConvertNodes(
   for (const NodeDef& node : nodes) {
     TF_RETURN_IF_ERROR(ConvertNodeDef(builder, s, node));
   }
+
   // If the placeholder has remaining uses, then an input is missing.
   if (ITEX_PREDICT_FALSE(!s.GetPlaceholder().use_empty())) {
     // Stringify a result ID.
@@ -686,9 +704,15 @@ StatusOr<unsigned> GraphDefImporter::ArgNumType(const NamedAttrList& attrs,
                                                 SmallVectorImpl<Type>& types) {
   // Check whether a type list attribute is specified.
   if (!arg_def.type_list_attr().empty()) {
-    if (auto v = attrs.get(arg_def.type_list_attr()).dyn_cast<ArrayAttr>()) {
-      for (Type dtype : v.getAsValueRange<TypeAttr>()) {
-        types.push_back(UnrankedTensorType::get(dtype));
+    if (auto v =
+            attrs.get(arg_def.type_list_attr()).dyn_cast_or_null<ArrayAttr>()) {
+      for (Attribute attr : v) {
+        if (auto dtype = attr.dyn_cast<TypeAttr>()) {
+          types.push_back(UnrankedTensorType::get(dtype.getValue()));
+        } else {
+          return InvalidArgument("Expected '", arg_def.type_list_attr(),
+                                 "' to be a list of types");
+        }
       }
       return v.size();
     }
@@ -698,7 +722,8 @@ StatusOr<unsigned> GraphDefImporter::ArgNumType(const NamedAttrList& attrs,
   unsigned num = 1;
   // Check whether a number attribute is specified.
   if (!arg_def.number_attr().empty()) {
-    if (auto v = attrs.get(arg_def.number_attr()).dyn_cast<IntegerAttr>()) {
+    if (auto v =
+            attrs.get(arg_def.number_attr()).dyn_cast_or_null<IntegerAttr>()) {
       num = v.getValue().getZExtValue();
     } else {
       return NotFound("Type attr not found: ", arg_def.number_attr());
@@ -713,7 +738,7 @@ StatusOr<unsigned> GraphDefImporter::ArgNumType(const NamedAttrList& attrs,
     return InvalidArgument("Arg '", arg_def.name(),
                            "' has invalid type and no type attribute");
   } else {
-    if (auto v = attrs.get(arg_def.type_attr()).dyn_cast<TypeAttr>()) {
+    if (auto v = attrs.get(arg_def.type_attr()).dyn_cast_or_null<TypeAttr>()) {
       dtype = v.getValue();
     } else {
       return NotFound("Type attr not found: ", arg_def.type_attr());
@@ -726,6 +751,9 @@ StatusOr<unsigned> GraphDefImporter::ArgNumType(const NamedAttrList& attrs,
 Status GraphDefImporter::ConvertNodeDef(OpBuilder& builder, ConversionState& s,
                                         const NodeDef& node) {
   ITEX_VLOG(4) << "Importing: " << node.name();
+  if (node.op().empty())
+    return InvalidArgument("Node ", node.name(), " has an empty op name");
+
   OperationState state(ConvertLocation(node), absl::StrCat("tfg.", node.op()));
 
   // The GraphImporter does light shape inference, but here we will defer all of
@@ -761,12 +789,11 @@ Status GraphDefImporter::ConvertNodeDef(OpBuilder& builder, ConversionState& s,
   // If the op doesn't have a FullType, try to infer one.
   const auto add_full_type = [&](const FullTypeDef& full_type_def) {
     TF_ASSIGN_OR_RETURN(itex_type::FullTypeAttr full_type,
-                        ConvertAttribute(full_type_def, b_, dialect_));
+                        ConvertAttribute(full_type_def, b_));
     state.addAttribute(dialect_->getFullTypeAttrIdentifier(), full_type);
     return Status::OK();
   };
   if (node.has_experimental_type()) {
-    ITEX_LOG(INFO) << "222 node.has_experimental_type() ";
     TF_RETURN_IF_ERROR(add_full_type(node.experimental_type()));
     // } else if (op_reg_data && op_reg_data->type_ctor) {
   }
@@ -782,7 +809,7 @@ Status GraphDefImporter::ConvertNodeDef(OpBuilder& builder, ConversionState& s,
     if (name_attr.first.empty())
       return InvalidArgument("Node ", node.name(), " has an empty attr name");
     TF_ASSIGN_OR_RETURN(Attribute attr,
-                        ConvertAttributeValue(name_attr.second, b_, dialect_));
+                        ConvertAttributeValue(name_attr.second, b_));
     state.addAttribute(name_attr.first, attr);
   }
 
@@ -790,9 +817,8 @@ Status GraphDefImporter::ConvertNodeDef(OpBuilder& builder, ConversionState& s,
   for (const auto& attr_def : op_def->attr()) {
     if (attr_def.has_default_value() &&
         !state.attributes.get(attr_def.name())) {
-      TF_ASSIGN_OR_RETURN(
-          Attribute attr,
-          ConvertAttributeValue(attr_def.default_value(), b_, dialect_));
+      TF_ASSIGN_OR_RETURN(Attribute attr,
+                          ConvertAttributeValue(attr_def.default_value(), b_));
       state.addAttribute(attr_def.name(), attr);
     }
   }
@@ -896,6 +922,18 @@ StatusOr<OwningOpRef<ModuleOp>> ImportGraphDef(MLIRContext* context,
                             graph_def, debug_info);
   return importer.ConvertGraphDef(graph_def);
 }
+
+// StatusOr<OwningOpRef<ModuleOp>> ImportGraphAndFunctionsToMlir(
+//     MLIRContext *context, const GraphDebugInfo &debug_info, const Graph
+//     &graph, const FunctionLibraryDefinition &flib_def) {
+//   // TODO(b/231723721): This conversion path is slow because both the graph
+//   and
+//   // the function library are converted to GraphDef.
+//   GraphDef graph_def;
+//   graph.ToGraphDef(&graph_def);
+//   *graph_def.mutable_library() = flib_def.ToProto();
+//   return ImportGraphDef(context, debug_info, graph_def);
+// }
 
 }  // namespace tfg
 }  // namespace mlir
