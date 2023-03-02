@@ -19,8 +19,6 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/ops_util.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
-#include "itex/core/utils/op_kernel.h"
-#include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
@@ -191,40 +189,110 @@ class SliceOp : public OpKernel {
       return;
     }
 
+    // The output tensor of SliceOp is concated from several consecutive memory
+    // segments from the input tensor. If a segment's element number is not
+    // divisible by vec_size, then eigen::slice's packet function will move
+    // vec_size elements in scalar way in some workitems. This make low GPU
+    // occupancy and we should not use it.
+    const int vec_bytes = 16;
+    const int vec_size = vec_bytes / sizeof(T);
+    int64 max_consecutive_element_number = 1;
+    for (int i = input_dims - 1; i >= 0; --i) {
+      max_consecutive_element_number *= size[i];
+      if (begin[i] != 0 || size[i] != input.dim_size(i)) break;
+    }
+    const bool is_vectorizable = max_consecutive_element_number % vec_size == 0;
+
     if (output_shape.num_elements() > 0) {
+      const GPUDevice device = context->eigen_gpu_device();
+      auto& stream = device.stream();
+      auto dev = (*stream).get_device();
+      const int hardware_reside_work_item =
+          dev.get_info<sycl::ext::intel::info::device::gpu_eu_count>() *
+          dev.get_info<
+              sycl::ext::intel::info::device::gpu_hw_threads_per_eu>() *
+          dev.get_info<sycl::ext::intel::info::device::gpu_eu_simd_width>();
+
+      // use Eigen::SliceOp when every consecutive memory segments
+      // is suitable for packet and total element number is larger than
+      // hardware_reside_work_item
+      if (is_vectorizable &&
+          output_shape.num_elements() > hardware_reside_work_item) {
 #define HANDLE_DIM(NDIM)                                       \
   if (input_dims == NDIM) {                                    \
     HandleCase<Device, T, NDIM>(context, begin, size, result); \
     return;                                                    \
   }
 
-      HANDLE_DIM(1);
-      HANDLE_DIM(2);
-      HANDLE_DIM(3);
-      HANDLE_DIM(4);
-      HANDLE_DIM(5);
-      HANDLE_DIM(6);
-      HANDLE_DIM(7);
-
+        HANDLE_DIM(1);
+        HANDLE_DIM(2);
+        HANDLE_DIM(3);
+        HANDLE_DIM(4);
+        HANDLE_DIM(5);
+        HANDLE_DIM(6);
+        HANDLE_DIM(7);
 #undef HANDLE_DIM
+        OP_REQUIRES(
+            context, false,
+            errors::Unimplemented("SliceOp : Unhandled input dimensions"));
+      } else {
+        // else use scalar kernel to load elements.
+#define HANDLE_SCALAR_DIM(INDEXTYPE, NDIM)                     \
+  if (input_dims == NDIM) {                                    \
+    functor::ScalarSlice<T, INDEXTYPE, NDIM>()(                \
+        context->eigen_gpu_device(), input.flat<T>().data(),   \
+        result->flat<T>().data(), input.shape(), begin, size); \
+    return;                                                    \
+  }
 
-      OP_REQUIRES(
-          context, false,
-          errors::Unimplemented("SliceOp : Unhandled input dimensions"));
+        if (input.NumElements() > Eigen::NumTraits<int>::highest()) {
+          HANDLE_SCALAR_DIM(int64_t, 1);
+          HANDLE_SCALAR_DIM(int64_t, 2);
+          HANDLE_SCALAR_DIM(int64_t, 3);
+          HANDLE_SCALAR_DIM(int64_t, 4);
+          HANDLE_SCALAR_DIM(int64_t, 5);
+          HANDLE_SCALAR_DIM(int64_t, 6);
+          HANDLE_SCALAR_DIM(int64_t, 7);
+          OP_REQUIRES(
+              context, false,
+              errors::Unimplemented("SliceOp : Unhandled input dimensions"));
+        } else {
+          HANDLE_SCALAR_DIM(int, 1);
+          HANDLE_SCALAR_DIM(int, 2);
+          HANDLE_SCALAR_DIM(int, 3);
+          HANDLE_SCALAR_DIM(int, 4);
+          HANDLE_SCALAR_DIM(int, 5);
+          HANDLE_SCALAR_DIM(int, 6);
+          HANDLE_SCALAR_DIM(int, 7);
+          OP_REQUIRES(
+              context, false,
+              errors::Unimplemented("SliceOp : Unhandled input dimensions"));
+        }
+#undef HANDLE_SCALAR_DIM
+      }
     }
   }
 };
 
-#define DEFINE_GPU_KERNELS(T)                       \
-  template struct functor::Slice<GPUDevice, T, 1>;  \
-  template struct functor::Slice<GPUDevice, T, 2>;  \
-  template struct functor::Slice<GPUDevice, T, 3>;  \
-  template struct functor::Slice<GPUDevice, T, 4>;  \
-  template struct functor::Slice<GPUDevice, T, 5>;  \
-  template struct functor::Slice<GPUDevice, T, 6>;  \
-  template struct functor::Slice<GPUDevice, T, 7>;  \
-  template struct functor::SubSliceFunctor<T, int>; \
-  template struct functor::SubSliceFunctor<T, int64_t>;
+#define DEFINE_GPU_KERNELS_DIM(T, DIM)                           \
+  template struct functor::Slice<GPUDevice, T, DIM>;             \
+  template struct functor::ScalarSlice<T, int, DIM>;             \
+  template struct functor::ScalarSlice<T, int64_t, DIM>;         \
+  template struct functor::ScalarSliceKernel<T, int, DIM>;       \
+  template struct functor::ScalarSliceKernel<T, int64_t, DIM>;   \
+  template struct functor::PaddedScalarSliceKernel<T, int, DIM>; \
+  template struct functor::PaddedScalarSliceKernel<T, int64_t, DIM>;
+
+#define DEFINE_GPU_KERNELS(T)                           \
+  template struct functor::SubSliceFunctor<T, int>;     \
+  template struct functor::SubSliceFunctor<T, int64_t>; \
+  DEFINE_GPU_KERNELS_DIM(T, 1);                         \
+  DEFINE_GPU_KERNELS_DIM(T, 2);                         \
+  DEFINE_GPU_KERNELS_DIM(T, 3);                         \
+  DEFINE_GPU_KERNELS_DIM(T, 4);                         \
+  DEFINE_GPU_KERNELS_DIM(T, 5);                         \
+  DEFINE_GPU_KERNELS_DIM(T, 6);                         \
+  DEFINE_GPU_KERNELS_DIM(T, 7);
 
 TF_CALL_GPU_NUMBER_TYPES(DEFINE_GPU_KERNELS);
 TF_CALL_bool(DEFINE_GPU_KERNELS);
@@ -239,6 +307,7 @@ TF_CALL_complex128(DEFINE_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 
 #undef DEFINE_GPU_KERNELS
+#undef DEFINE_GPU_KERNELS_DIM
 
 #define REGISTER_GPU(type)                               \
   REGISTER_KERNEL_BUILDER(Name("Slice")                  \

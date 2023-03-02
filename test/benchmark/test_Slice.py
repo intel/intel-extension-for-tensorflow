@@ -32,21 +32,27 @@ except ImportError:
 ITERATION = 5
 
 class SliceTest(test.TestCase):
-    def _test_impl(self, in_size, dtype):
+    def _test_impl(self, in_size, begin, size, dtype):
         x = np.random.normal(size=in_size)
         x = constant_op.constant(x, dtype=dtype)
-        begin = constant_op.constant([0, 0, 0], dtype=dtypes.int32)
-        size = constant_op.constant([2, 10, 10], dtype=dtypes.int32)
+        begin = constant_op.constant(begin, dtype=dtypes.int32)
+        size = constant_op.constant(size, dtype=dtypes.int32)
         flush_cache()
         out_gpu = array_ops.slice(x, begin, size)
 
     @add_profiling
     @multi_run(ITERATION)
     def testSlice(self):
-        size_list = [[64, 179, 32], [3, 179, 2048]]
+        case_list = [[[64, 179, 32], [0, 0, 0], [2, 10, 10]],
+                     [[64, 179, 32], [0, 0, 0], [2, 10, 16]],
+                     [[8, 179, 128], [0, 0, 0], [2, 10, 121]],
+                     [[32, 1024, 64],[0, 0, 0],[32, 1023, 10]],
+                     [[32, 1024, 64],[0, 0, 0],[32, 512, 61]],
+                     [[32, 1024, 64],[0, 0, 0],[32, 512, 64]],
+                     [[64, 1024, 1024], [0, 0, 0], [64, 1024, 512]]]
         for dtype in FLOAT_COMPUTE_TYPE:
-            for in_size in size_list:
-                self._test_impl(in_size, dtype)
+            for case in case_list:
+                self._test_impl(case[0], case[1], case[2], dtype)
 
 if __name__ == '__main__':
     test.main()
