@@ -39,13 +39,22 @@ try:
   from keras.optimizers.optimizer_v2 import nadam as nadam_v2
   from keras.optimizers.optimizer_v2 import rmsprop as rmsprop_v2
 except ImportError:
-  from keras.optimizer_v2 import adadelta as adadelta_v2
-  from keras.optimizer_v2 import adagrad as adagrad_v2
-  from keras.optimizer_v2 import adam as adam_v2
-  from keras.optimizer_v2 import adamax as adamax_v2
-  from keras.optimizer_v2 import gradient_descent as gradient_descent_v2
-  from keras.optimizer_v2 import nadam as nadam_v2
-  from keras.optimizer_v2 import rmsprop as rmsprop_v2
+  try:
+    from keras.optimizer_v2 import adadelta as adadelta_v2
+    from keras.optimizer_v2 import adagrad as adagrad_v2
+    from keras.optimizer_v2 import adam as adam_v2
+    from keras.optimizer_v2 import adamax as adamax_v2
+    from keras.optimizer_v2 import gradient_descent as gradient_descent_v2
+    from keras.optimizer_v2 import nadam as nadam_v2
+    from keras.optimizer_v2 import rmsprop as rmsprop_v2
+  except ImportError:
+    from keras.optimizers.legacy import adadelta as adadelta_v2
+    from keras.optimizers.legacy import adagrad as adagrad_v2
+    from keras.optimizers.legacy import adam as adam_v2
+    from keras.optimizers.legacy import adamax as adamax_v2
+    from keras.optimizers.legacy import gradient_descent as gradient_descent_v2
+    from keras.optimizers.legacy import nadam as nadam_v2
+    from keras.optimizers.legacy import rmsprop as rmsprop_v2
 from keras.utils import tf_contextlib
 from keras.utils import tf_inspect
 
