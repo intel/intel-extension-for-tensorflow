@@ -448,10 +448,98 @@ class LegacyQuantizedConvOpBase
   Tbias* GetBiasHandle(OpKernelContext* context,
                        const Tensor& bias_tensor) override {
     if (std::is_same<Tbias, qint32>::value) {
+#ifdef ITEX_ONEDNN_3_0
+      if (std::is_same<Toutput, qint32>::value) {
+        return static_cast<Tbias*>(
+            const_cast<Tbias*>(bias_tensor.flat<Tbias>().data()));
+      }
+      Tensor scaled_bias;
+      TF_ABORT_IF_ERROR(context->allocate_temp(
+          DataTypeToEnum<float>::v(), bias_tensor.shape(), &scaled_bias));
+      const Device& d = context->eigen_device<Device>();
+
+      Tensor bias_tensor_int32;
+      ITEX_CHECK_OK(bias_tensor_int32.BitcastFrom(bias_tensor, DT_INT32,
+                                                  bias_tensor.shape()));
+      CastDataType<Device, int32, float>{}(
+          d, const_cast<const Tensor&>(bias_tensor_int32).flat<int32>(),
+          scaled_bias.flat<float>());
+
+      const std::vector<float>& scale = this->post_op_util_.GetOutputScale();
+      float* bias_scales_ptr;
+      if (std::is_same<Toutput, float>::value ||
+          std::is_same<Toutput, Eigen::bfloat16>::value ||
+          std::is_same<Toutput, Eigen::half>::value) {
+        const float min_input =
+            context->input(kSrcMinRangeIndex).flat<float>()(0);
+        const float max_input =
+            context->input(kSrcMaxRangeIndex).flat<float>()(0);
+        const Tensor& min_filter_vector = context->input(kFilterMinRangeIndex);
+        const Tensor& max_filter_vector = context->input(kFilterMaxRangeIndex);
+        const float* min_filter = min_filter_vector.flat<float>().data();
+        const float* max_filter = max_filter_vector.flat<float>().data();
+
+        const float int_const_scale_limit =
+            (std::is_same<Tinput, quint8>::value) ? 255.0 * 127.0
+                                                  : 127.0 * 127.0;
+        // Re-scale bias if either of following 2 conditions are met:
+        // 1. Bias is not const;
+        // 2. Bias is const, but bias cache is empty (first iteration).
+
+        // TODO(itex): avoid to use new memory
+        size_t depth = min_filter_vector.NumElements();
+        scales_.resize(depth);
+
+        for (size_t i = 0; i < depth; ++i) {
+          float tmp_scale =
+              (std::max(std::abs(max_input), std::abs(min_input)) *
+               std::max(std::abs(max_filter[i]), std::abs(min_filter[i]))) /
+              int_const_scale_limit;
+          // TODO(itex): Check whether delete some instuctions about
+          // scales_are_valid is correct
+          scales_[i] = tmp_scale;
+        }
+        if (bias_cache_manager.IsEmpty()) {
+          bias_scales_ptr = bias_scale_cache_.GetCachedPtr(
+              context, scales_.data(), scales_.size());
+        }
+
+      } else {
+        if (bias_cache_manager.IsEmpty()) {
+          bias_scales_ptr = bias_scale_cache_.GetCachedPtr(
+              context, scale.data(), scale.size());
+        }
+      }
+      if (bias_cache_manager.IsEmpty()) {
+        dnnl::primitive_attr bias_attr;
+        memory bias_scales_mem({{static_cast<dnnl_dim_t>(scale.size())},
+                                memory::data_type::f32,
+                                memory::format_tag::x},
+                               this->onednn_engine_,
+                               reinterpret_cast<void*>(bias_scales_ptr));
+        if (scale.size() == 1) {
+          bias_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+        } else {
+          bias_attr.set_scales_mask(DNNL_ARG_SRC, 1);
+        }
+
+        auto bias_md =
+            memory::desc({static_cast<int>(bias_tensor.NumElements())},
+                         OneDnnType<float>(), memory::format_tag::x);
+        void* bias_data = static_cast<void*>(
+            const_cast<float*>(scaled_bias.flat<float>().data()));
+
+        // TODO(itex): Check whether the bias_md is always equals to
+        // conv_pd.bias_desc()
+        bias_cache_manager.SetCache(context, bias_md, bias_attr, bias_data,
+                                    this->onednn_engine_, bias_scales_mem);
+      }
+      return static_cast<Tbias*>(bias_cache_manager.GetCache(context));
+#else
       return static_cast<Tbias*>(
           const_cast<Tbias*>(bias_tensor.flat<Tbias>().data()));
+#endif
     }
-
     const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
     const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
     const Tensor& min_filter_vector = context->input(kFilterMinRangeIndex);
@@ -468,6 +556,10 @@ class LegacyQuantizedConvOpBase
     // TODO(itex): avoid to use new memory
     size_t depth = min_filter_vector.NumElements();
     scales_.resize(depth);
+
+#ifdef ITEX_ONEDNN_3_0
+    const std::vector<float>& scale = this->post_op_util_.GetOutputScale();
+#endif
     for (size_t i = 0; i < depth; ++i) {
       float tmp_scale =
           int_const_scale_limit /
@@ -475,16 +567,35 @@ class LegacyQuantizedConvOpBase
            std::max(std::abs(max_filter[i]), std::abs(min_filter[i])));
       // TODO(itex): Check whether delete some instuctions about
       // scales_are_valid is correct
+#ifdef ITEX_ONEDNN_3_0
+      scales_[i] = tmp_scale * scale[i];
+#else
       scales_[i] = tmp_scale;
+#endif
     }
     // TODO(itex): is_bias_const_ is useless, delete it
     if (!is_bias_const_ || bias_cache_manager.IsEmpty()) {
       dnnl::primitive_attr bias_attr;
+#ifdef ITEX_ONEDNN_3_0
+      float* bias_scales_ptr =
+          bias_scale_cache_.GetCachedPtr(context, scales_.data(), depth);
+      memory bias_scales_mem({{static_cast<dnnl_dim_t>(depth)},
+                              memory::data_type::f32,
+                              memory::format_tag::x},
+                             this->onednn_engine_,
+                             reinterpret_cast<void*>(bias_scales_ptr));
+      if (depth == 1) {
+        bias_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+      } else {
+        bias_attr.set_scales_mask(DNNL_ARG_SRC, 1);
+      }
+#else
       if (depth == 1) {
         bias_attr.set_output_scales(0, scales_);
       } else {
         bias_attr.set_output_scales(1, scales_);
       }
+#endif
 
       auto bias_md = memory::desc({static_cast<int>(bias_tensor.NumElements())},
                                   OneDnnType<Tbias>(), memory::format_tag::x);
@@ -493,8 +604,14 @@ class LegacyQuantizedConvOpBase
 
       // TODO(itex): Check whether the bias_md is always equals to
       // conv_pd.bias_desc()
+
+#ifdef ITEX_ONEDNN_3_0
+      bias_cache_manager.SetCache(context, bias_md, bias_attr, bias_data,
+                                  this->onednn_engine_, bias_scales_mem);
+#else
       bias_cache_manager.SetCache(context, bias_md, bias_attr, bias_data,
                                   this->onednn_engine_);
+#endif
     }
     return bias_cache_manager.GetCache(context);
   }
@@ -590,12 +707,26 @@ class LegacyQuantizedConvOpBase
                    std::max(std::abs(max_filter[i]), std::abs(min_filter[i])));
     }
     dnnl::primitive_attr reorder_attr;
+#ifdef ITEX_ONEDNN_3_0
+    float* output_scale_ptr =
+        output_scale_cache_.GetCachedPtr(context, scales.data(), depth);
+    memory output_scales_mem({{static_cast<dnnl_dim_t>(depth)},
+                              memory::data_type::f32,
+                              memory::format_tag::x},
+                             this->onednn_engine_,
+                             reinterpret_cast<void*>(output_scale_ptr));
+    if (depth == 1) {
+      reorder_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+    } else {
+      reorder_attr.set_scales_mask(DNNL_ARG_SRC, 2);
+    }
+#else
     if (depth == 1) {
       reorder_attr.set_output_scales(0, scales);
     } else {
       reorder_attr.set_output_scales(2, scales);
     }
-
+#endif
     // TODO(itex) Remove this hard code.
     auto summand_md =
         memory::desc(dst_dims_onednn, OneDnnType<Tbias>(),
@@ -617,7 +748,12 @@ class LegacyQuantizedConvOpBase
     dnnl::reorder summand_scaled_primitive =
         dnnl::reorder(summand_mem, dst_mem, reorder_attr);
     std::unordered_map<int, dnnl::memory> reorder_args = {
-        {DNNL_ARG_SRC, summand_mem}, {DNNL_ARG_DST, dst_mem}};
+        {DNNL_ARG_SRC, summand_mem},
+        {DNNL_ARG_DST, dst_mem},
+#ifdef ITEX_ONEDNN_3_0
+        {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, output_scales_mem},
+#endif
+    };
     auto onednn_stream = CreateDnnlStream(*context, this->onednn_engine_);
     summand_scaled_primitive.execute(onednn_stream, reorder_args);
   }

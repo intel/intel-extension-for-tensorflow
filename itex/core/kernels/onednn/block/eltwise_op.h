@@ -85,10 +85,16 @@ class OneDnnEltwiseBaseOp : public OpKernel {
       // Create eltwise forward primitive
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = eltwise_forward::primitive_desc(
+          onednn_engine, prop_kind::forward, algo_, src_md, src_md, alpha_,
+          beta_, attr);
+#else
       auto fwd_desc = eltwise_forward::desc(prop_kind::forward, algo_, src_md,
                                             alpha_, beta_);
       auto fwd_pd =
           eltwise_forward::primitive_desc(fwd_desc, attr, onednn_engine);
+#endif
       auto fwd_primitive = eltwise_forward(fwd_pd);
 
       // Create src memory, check if src needs to be reordered
@@ -304,6 +310,23 @@ class OneDnnEltwiseGradBaseOp : public OpKernel {
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+#ifdef INTEL_CPU_ONLY
+      auto fwd_pd = eltwise_forward::primitive_desc(
+          onednn_engine, prop_kind::forward_training, algo_, _src_md, _src_md,
+          alpha_, beta_, attr);
+      auto eltwise_bwd_pd = eltwise_backward::primitive_desc(
+          onednn_engine, algo_, _src_md, _diff_dst_md, _src_md, alpha_, beta_,
+          fwd_pd, attr);
+#else
+      auto fwd_pd = eltwise_forward::primitive_desc(
+          onednn_engine, prop_kind::forward_training, algo_, src_md, src_md,
+          alpha_, beta_, attr);
+      auto eltwise_bwd_pd = eltwise_backward::primitive_desc(
+          onednn_engine, algo_, src_md, diff_dst_md, src_md, alpha_, beta_,
+          fwd_pd, attr);
+#endif
+#else
 #ifdef INTEL_CPU_ONLY
       auto fwd_desc = eltwise_forward::desc(prop_kind::forward_training, algo_,
                                             _src_md, alpha_, beta_);
@@ -319,8 +342,10 @@ class OneDnnEltwiseGradBaseOp : public OpKernel {
       auto bwd_desc =
           eltwise_backward::desc(algo_, diff_dst_md, src_md, alpha_, beta_);
 #endif  // INTEL_CPU_ONLY
+
       auto eltwise_bwd_pd = eltwise_backward::primitive_desc(
           bwd_desc, attr, onednn_engine, fwd_pd);
+#endif
       auto eltwise_bwd_primitive = eltwise_backward(eltwise_bwd_pd);
 
       dnnl::memory src_mem = CreateDnnlMemory(src_md, onednn_engine,

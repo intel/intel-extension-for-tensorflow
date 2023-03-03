@@ -371,13 +371,14 @@ class PoolingOpBase : public OpKernel {
   }
 
   void PoolParamsToDims(const OneDnnPoolParameters* pool_params,
-                        memory::dims* filter_dims, memory::dims* strides,
-                        memory::dims* padding_left, memory::dims* padding_right,
-                        bool is_pool2d) {
+                        memory::dims* filter_dims, memory::dims* dilation_dims,
+                        memory::dims* strides, memory::dims* padding_left,
+                        memory::dims* padding_right, bool is_pool2d) {
     if (is_pool2d) {
       // Pool2D
       *filter_dims =
           memory::dims({pool_params->window_rows, pool_params->window_cols});
+      *dilation_dims = memory::dims({0, 0});
       *strides =
           memory::dims({pool_params->row_stride, pool_params->col_stride});
       *padding_left = memory::dims({static_cast<int>(pool_params->pad_top),
@@ -389,6 +390,7 @@ class PoolingOpBase : public OpKernel {
       *filter_dims =
           memory::dims({pool_params->window_planes, pool_params->window_rows,
                         pool_params->window_cols});
+      *dilation_dims = memory::dims({0, 0, 0});
       *strides =
           memory::dims({pool_params->planes_stride, pool_params->row_stride,
                         pool_params->col_stride});
@@ -577,9 +579,12 @@ class PoolingOp : public PoolingForwardOpBase<T> {
       ITEX_DCHECK(output_tensor);
 
       dnnl::memory::dims filter_dims, strides, padding_left, padding_right;
+      dnnl::memory::dims dilation_dims;
+
       // Get src/filter/stride/padding information.
-      this->PoolParamsToDims(&pool_params, &filter_dims, &strides,
-                             &padding_left, &padding_right, is_pool2d);
+      this->PoolParamsToDims(&pool_params, &filter_dims, &dilation_dims,
+                             &strides, &padding_left, &padding_right,
+                             is_pool2d);
 
       // Get the input memory descriptor.
       dnnl::memory::dims src_dims = TFShapeToOneDnnDimsInNC(
@@ -591,14 +596,20 @@ class PoolingOp : public PoolingForwardOpBase<T> {
       dnnl::memory::desc dst_md(dst_dims, OneDnnType<T>(),
                                 this->data_format_onednn_);
 
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::pooling_forward::primitive_desc fwd_pd(
+          onednn_engine, pooling_prop_kind, algo, src_md, dst_md, strides,
+          filter_dims, dilation_dims, padding_left, padding_right, attr);
+#else
       dnnl::pooling_forward::desc fwd_desc(pooling_prop_kind, algo, src_md,
                                            dst_md, strides, filter_dims,
                                            padding_left, padding_right);
 
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       dnnl::pooling_forward::primitive_desc fwd_pd(fwd_desc, attr,
                                                    onednn_engine);
+#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
@@ -753,13 +764,14 @@ class OneDnnPoolOpBase : public OpKernel {
   }
 
   void PoolParamsToDims(const OneDnnPoolParameters* pool_params,
-                        memory::dims* filter_dims, memory::dims* strides,
-                        memory::dims* padding_left,
+                        memory::dims* filter_dims, memory::dims* dilation_dims,
+                        memory::dims* strides, memory::dims* padding_left,
                         memory::dims* padding_right) {
     if (this->is_2d_) {
       // Pool2D
       *filter_dims =
           memory::dims({pool_params->window_rows, pool_params->window_cols});
+      *dilation_dims = memory::dims({0, 0});
       *strides =
           memory::dims({pool_params->row_stride, pool_params->col_stride});
       *padding_left = memory::dims({static_cast<int>(pool_params->pad_top),
@@ -771,6 +783,7 @@ class OneDnnPoolOpBase : public OpKernel {
       *filter_dims =
           memory::dims({pool_params->window_planes, pool_params->window_rows,
                         pool_params->window_cols});
+      *dilation_dims = memory::dims({0, 0, 0});
       *strides =
           memory::dims({pool_params->planes_stride, pool_params->row_stride,
                         pool_params->col_stride});

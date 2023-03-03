@@ -164,23 +164,23 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
                                 : wei_fwd_md;
 
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
+      memory::desc bias_md;
+      memory bias_mem;
+      if (this->post_op_util_.HasBias()) {
+        const Tensor& bias_tensor = context->input(kBiasIndex_);
+
+        bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
+                               params->bias_strides);
+        // create bias memory
+        memory bias_mem = CreateDnnlMemory(
+            bias_md, onednn_engine, GetTensorBuffer<Toutput>(&bias_tensor));
+      }
 
       // Create matmul forward primitive
       std::unordered_map<int, memory> fwd_primitive_args;
-      auto fwd_desc = matmul::desc(src_fwd_md, wei_fwd_md, dst_fwd_md);
-      memory bias_mem;
-      if (this->post_op_util_.HasBias()) {
-        auto bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
-                                    params->bias_strides);
-        // create bias memory
-        const Tensor& bias_tensor = context->input(kBiasIndex_);
-        memory bias_mem = CreateDnnlMemory(
-            bias_md, onednn_engine, GetTensorBuffer<Toutput>(&bias_tensor));
-        // Reassigin desc if it has bias.
-        fwd_desc = matmul::desc(src_fwd_md, wei_fwd_md, bias_md, dst_fwd_md);
-      }
-      auto fwd_pd = GetPrimitiveDesc(context, fwd_desc, &fwd_primitive_args,
-                                     onednn_engine);
+      auto fwd_pd =
+          GetPrimitiveDesc(context, src_fwd_md, wei_fwd_md, bias_md, dst_fwd_md,
+                           &fwd_primitive_args, onednn_engine);
       auto fwd_primitive = matmul(fwd_pd);
 
       // Create src memory, check if src needs to be reordered
@@ -298,6 +298,18 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       if (this->post_op_util_.HasBias()) {
         fwd_primitive_args.emplace(DNNL_ARG_BIAS, bias_mem);
       }
+#ifdef ITEX_ONEDNN_3_0
+      if (this->post_op_util_.HasOutputScales()) {
+        float alpha = this->post_op_util_.GetOutputScale()[0];
+        float* output_scale_ptr =
+            output_scale_cache_.GetCachedPtr(context, &alpha, 1);
+        dnnl::memory scale_mem(
+            {{1}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x},
+            onednn_engine, output_scale_ptr);
+        fwd_primitive_args.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
+                                   scale_mem);
+      }
+#endif
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
@@ -315,7 +327,8 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
   }
 
   matmul::primitive_desc GetPrimitiveDesc(
-      OpKernelContext* context, const matmul::desc& fwd_desc,
+      OpKernelContext* context, memory::desc src_md, memory::desc wei_md,
+      memory::desc bias_md, memory::desc dst_md,
       std::unordered_map<int, memory>* fwd_args,
       const dnnl::engine& onednn_engine) {
     dnnl::primitive_attr post_ops_attr;
@@ -371,7 +384,23 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
     }
 
     this->post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
-    return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
+#ifdef ITEX_ONEDNN_3_0
+    if (this->post_op_util_.HasBias()) {
+      return matmul::primitive_desc(onednn_engine, src_md, wei_md, bias_md,
+                                    dst_md, post_ops_attr);
+    } else {
+      return matmul::primitive_desc(onednn_engine, src_md, wei_md, dst_md,
+                                    post_ops_attr);
+    }
+#else
+    if (this->post_op_util_.HasBias()) {
+      auto fwd_desc = matmul::desc(src_md, wei_md, bias_md, dst_md);
+      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
+    } else {
+      auto fwd_desc = matmul::desc(src_md, wei_md, dst_md);
+      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
+    }
+#endif
   }
 
  private:

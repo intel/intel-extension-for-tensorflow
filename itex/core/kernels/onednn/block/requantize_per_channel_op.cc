@@ -95,7 +95,11 @@ class OneDnnRequantizePerChannelOp : public OpKernel {
       }
 
       dnnl::primitive_attr reorder_attr;
+#ifdef ITEX_ONEDNN_3_0
+      reorder_attr.set_scales_mask(DNNL_ARG_SRC, 2);
+#else
       reorder_attr.set_output_scales(2, scales);
+#endif
 
       memory::dims dims_onednn_order =
           TFShapeToOneDnnDimsInNC(input.shape(), FORMAT_NHWC);
@@ -119,15 +123,28 @@ class OneDnnRequantizePerChannelOp : public OpKernel {
             const_cast<quint8*>(output->flat<quint8>().data()));
       }
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
-
+#ifdef ITEX_ONEDNN_3_0
+      float* output_scale_ptr =
+          output_scale_cache_.GetCachedPtr(context, scales.data(), depth);
+      dnnl::memory output_scales_mem({{static_cast<dnnl_dim_t>(depth)},
+                                      dnnl::memory::data_type::f32,
+                                      dnnl::memory::format_tag::x},
+                                     onednn_engine,
+                                     reinterpret_cast<void*>(output_scale_ptr));
+#endif
       auto src_mem = CreateDnnlMemory(input_md, onednn_engine, input_buf);
       auto dst_mem = CreateDnnlMemory(output_md, onednn_engine, output_buf);
 
       dnnl::reorder reorder_prim =
           dnnl::reorder(src_mem, dst_mem, reorder_attr);
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
-      std::unordered_map<int, memory> reorder_args = {{DNNL_ARG_SRC, src_mem},
-                                                      {DNNL_ARG_DST, dst_mem}};
+      std::unordered_map<int, memory> reorder_args = {
+          {DNNL_ARG_SRC, src_mem},
+          {DNNL_ARG_DST, dst_mem},
+#ifdef ITEX_ONEDNN_3_0
+          {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, output_scales_mem},
+#endif
+      };
       reorder_prim.execute(onednn_stream, reorder_args);
 
       Tensor* output_min = nullptr;

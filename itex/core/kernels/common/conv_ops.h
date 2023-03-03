@@ -33,14 +33,15 @@ limitations under the License.
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/padding.h"
 #include "itex/core/utils/tensor_format.h"
-
 namespace itex {
 
 using dnnl::convolution_forward;
 using dnnl::memory;
 using dnnl::primitive;
 using dnnl::prop_kind;
+#ifndef ITEX_ONEDNN_3_0
 using ConvFwdDesc = dnnl::convolution_forward::desc;
+#endif
 using ConvFwdPd = dnnl::convolution_forward::primitive_desc;
 
 #define DNNL_SIZE_DTYPE int64_t
@@ -882,11 +883,34 @@ class ConvOpBase : public OpKernel {
           memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(), tag_opt);
 
       this->ExtendInt8PostOps(context);
+      // Set post op attribution.
+      dnnl::primitive_attr post_ops_attr;
+      post_op_util_.SetPostOpAttr(&post_ops_attr);
+      post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+      if (std::is_same<Tinput, float>::value) {
+        post_ops_attr.set_fpmath_mode(fp32_math_mode_);
+      }
+#ifdef ITEX_ONEDNN_3_0
+      if (this->post_op_util_.HasOutputScales() &&
+          post_op_util_.GetOutputScale().size() > 1 && is_depthwise) {
+        // For depthwise convolution mask should be 1<<0 + 1<<1 in onednn3.0
+        post_ops_attr.set_scales_mask(DNNL_ARG_WEIGHTS, 3);
+      }
+#endif
 
+#ifndef ITEX_ONEDNN_3_0
       ConvFwdDesc fwd_desc =
           ConvFwdDesc(prop_kind::forward, dnnl::algorithm::convolution_direct,
                       src_md_opt, filter_md_prefer, dst_md_opt, stride_dims,
                       dilation_dims, pad_left_dims, pad_right_dims);
+      fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, onednn_engine_);
+#else
+      fwd_pd_ =
+          ConvFwdPd(onednn_engine_, prop_kind::forward,
+                    dnnl::algorithm::convolution_direct, src_md_opt,
+                    filter_md_prefer, dst_md_opt, stride_dims, dilation_dims,
+                    pad_left_dims, pad_right_dims, post_ops_attr);
+#endif
 
       if (post_op_util_.HasBias()) {
         const Tensor& bias_tensor = context->input(kBiasIndex_);
@@ -897,23 +921,38 @@ class ConvOpBase : public OpKernel {
         // GetBiasHandle is needed for INT8 kernels, where bias scaling is
         // required.
         Tbias* bias_data = this->GetBiasHandle(context, bias_tensor);
+
+#ifdef ITEX_ONEDNN_3_0
+        // OneDNN 3.0 requires float Bias for bias in INT8 model, will have an
+        // internal conversion when bias is INT8.
+        if (std::is_same<Tbias, qint32>::value &&
+            !std::is_same<Toutput, qint32>::value) {
+          bias_md = memory::desc(bias_dims, OneDnnType<float>(),
+                                 memory::format_tag::x);
+          bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_,
+                                       static_cast<void*>(bias_data));
+        } else {
+          bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_, bias_data);
+        }
+#else
         bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_, bias_data);
+#endif
 
         fwd_primitives_args_.insert({DNNL_ARG_BIAS, bias_mem_});
+#ifndef ITEX_ONEDNN_3_0
         fwd_desc = ConvFwdDesc(
             prop_kind::forward, dnnl::algorithm::convolution_direct, src_md_opt,
             filter_md_prefer, bias_md, dst_md_opt, stride_dims, dilation_dims,
             pad_left_dims, pad_right_dims);
+        fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, onednn_engine_);
+#else
+        fwd_pd_ = ConvFwdPd(onednn_engine_, prop_kind::forward,
+                            dnnl::algorithm::convolution_direct, src_md_opt,
+                            filter_md_prefer, bias_md, dst_md_opt, stride_dims,
+                            dilation_dims, pad_left_dims, pad_right_dims,
+                            post_ops_attr);
+#endif
       }
-
-      // Set post op attribution.
-      dnnl::primitive_attr post_ops_attr;
-      post_op_util_.SetPostOpAttr(&post_ops_attr);
-      post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-      if (std::is_same<Tinput, float>::value) {
-        post_ops_attr.set_fpmath_mode(fp32_math_mode_);
-      }
-      fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, onednn_engine_);
 
       // keep tensor out of if block to avoid of being deallocated
       is_format_reordered_ = data_layout != tag_opt;
@@ -1027,6 +1066,20 @@ class ConvOpBase : public OpKernel {
       fwd_primitives_args_.insert({DNNL_ARG_WEIGHTS, filter_mem_});
       fwd_primitives_args_.insert({DNNL_ARG_DST, dst_mem_opt_});
       fwd_primitives_args_.insert({DNNL_ARG_SCRATCHPAD, scratchpad_mem_});
+#ifdef ITEX_ONEDNN_3_0
+      if (this->post_op_util_.HasOutputScales()) {
+        float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
+            context, this->post_op_util_.GetOutputScale().data(),
+            this->post_op_util_.GetOutputScale().size());
+        dnnl::memory output_scales_mem(
+            {{static_cast<dnnl_dim_t>(post_op_util_.GetOutputScale().size())},
+             memory::data_type::f32,
+             memory::format_tag::x},
+            onednn_engine_, reinterpret_cast<void*>(output_scale_ptr));
+        fwd_primitives_args_.insert(
+            {DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS, output_scales_mem});
+      }
+#endif
 
       // reorder back if needed
       if (is_format_reordered_) {

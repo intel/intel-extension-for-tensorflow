@@ -162,6 +162,23 @@ class OneDnnConvBackpropInputOp
       memory::desc diff_src_md_prefer =
           memory::desc(diff_src_dims, OneDnnType<T>(), memory::format_tag::any);
 
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+      if (std::is_same<T, float>::value) {
+        attr.set_fpmath_mode(this->fp32_math_mode_);
+      }
+
+#ifdef ITEX_ONEDNN_3_0
+      ConvFwdPd fwd_pd =
+          ConvFwdPd(onednn_engine, prop_kind::forward,
+                    dnnl::algorithm::convolution_direct, diff_src_md_prefer,
+                    filter_md_prefer, diff_dst_md_prefer, stride_dims,
+                    dilation_dims, pad_left_dims, pad_right_dims, attr);
+      ConvBwdInputPd bwd_input_pd = ConvBwdInputPd(
+          onednn_engine, dnnl::algorithm::convolution_direct,
+          diff_src_md_prefer, filter_md_prefer, diff_dst_md_prefer, stride_dims,
+          dilation_dims, pad_left_dims, pad_right_dims, fwd_pd, attr);
+#else
       // Create descriptor and primitive descriptor for convolution forward.
       ConvFwdDesc fwd_desc = ConvFwdDesc(
           prop_kind::forward, dnnl::algorithm::convolution_direct,
@@ -173,16 +190,10 @@ class OneDnnConvBackpropInputOp
           filter_md_prefer, diff_dst_md_prefer, stride_dims, dilation_dims,
           pad_left_dims, pad_right_dims);
 
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-      if (std::is_same<T, float>::value) {
-        attr.set_fpmath_mode(this->fp32_math_mode_);
-      }
-
       ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, attr, onednn_engine);
       ConvBwdInputPd bwd_input_pd =
           ConvBwdInputPd(bwd_input_desc, attr, onednn_engine, fwd_pd);
-
+#endif
       // Check whether filter and diff_dst need to be reordered.
       bool is_filter_reordered = (filter_md != bwd_input_pd.weights_desc());
       auto filter_mem = CreateDnnlMemory(filter_md, onednn_engine,

@@ -98,8 +98,10 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
       }
 
       memory::dims filter_dims, strides, padding_left, padding_right;
-      this->PoolParamsToDims(&pool_params, &filter_dims, &strides,
-                             &padding_left, &padding_right);
+      memory::dims dilation_dims;
+
+      this->PoolParamsToDims(&pool_params, &filter_dims, &dilation_dims,
+                             &strides, &padding_left, &padding_right);
 
       // Create forward primitive.
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
@@ -111,14 +113,20 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
         pooling_prop_kind = prop_kind::forward_inference;
       else
         pooling_prop_kind = prop_kind::forward_training;
-      auto fwd_desc =
-          pooling_forward::desc(pooling_prop_kind, alg, src_md, dst_md, strides,
-                                filter_dims, padding_left, padding_right);
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = pooling_forward::primitive_desc(
+          onednn_engine, pooling_prop_kind, alg, src_md, dst_md, strides,
+          filter_dims, dilation_dims, padding_left, padding_right, attr);
+#else
+      auto fwd_desc =
+          pooling_forward::desc(pooling_prop_kind, alg, src_md, dst_md, strides,
+                                filter_dims, padding_left, padding_right);
       auto fwd_pd =
           pooling_forward::primitive_desc(fwd_desc, attr, onednn_engine);
+#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
@@ -168,7 +176,7 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
             {DNNL_ARG_WORKSPACE, ws_mem},
             {DNNL_ARG_SCRATCHPAD, scratchpad_mem}};
         fwd_primitive.execute(onednn_stream, fwd_primitive_args);
-      } else if (alg == dnnl::algorithm::pooling_avg) {
+      } else if (alg == dnnl::algorithm::pooling_avg_exclude_padding) {
         std::unordered_map<int, memory> fwd_primitive_args = {
             {DNNL_ARG_SRC, src_mem},
             {DNNL_ARG_DST, dst_mem},
@@ -236,7 +244,7 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
         src_tf_shape = src_onednn_shape.IsOneDnnTensor()
                            ? src_onednn_shape.GetTfShape()
                            : src_tensor.shape();
-      } else if (alg == dnnl::algorithm::pooling_avg) {
+      } else if (alg == dnnl::algorithm::pooling_avg_exclude_padding) {
         // For AvgPoolGrad, the 1st input is src shape
         auto shape_vec = src_tensor.vec<int32>();
         for (int i = 0; i < src_tensor.NumElements(); i++) {
@@ -250,8 +258,10 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
                        src_tf_shape);
       OP_REQUIRES_OK(context, context->status());
       memory::dims filter_dims, strides, padding_left, padding_right;
-      this->PoolParamsToDims(&pool_params, &filter_dims, &strides,
-                             &padding_left, &padding_right);
+      memory::dims dilation_dims;
+
+      this->PoolParamsToDims(&pool_params, &filter_dims, &dilation_dims,
+                             &strides, &padding_left, &padding_right);
 
       bool is_pool2d = (this->ksize_.size() == 4);
       memory::dims src_dims =
@@ -278,6 +288,17 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
           memory::desc(diff_dst_dims, OneDnnType<T>(), memory::format_tag::any);
 
       // Create primitive.
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = pooling_forward::primitive_desc(
+          onednn_engine, prop_kind::forward_training, alg, src_md,
+          diff_dst_md_any, strides, filter_dims, dilation_dims, padding_left,
+          padding_right);
+      auto pooling_bwd_pd = pooling_backward::primitive_desc(
+          onednn_engine, alg, src_md, diff_dst_md_any, strides, filter_dims,
+          dilation_dims, padding_left, padding_right, fwd_pd, attr);
+#else
       auto bwd_desc =
           pooling_backward::desc(alg, src_md, diff_dst_md_any, strides,
                                  filter_dims, padding_left, padding_right);
@@ -285,11 +306,9 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
           prop_kind::forward_training, alg, src_md, diff_dst_md_any, strides,
           filter_dims, padding_left, padding_right);
       auto fwd_pd = pooling_forward::primitive_desc(fwd_desc, onednn_engine);
-
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       auto pooling_bwd_pd = pooling_backward::primitive_desc(
           bwd_desc, attr, onednn_engine, fwd_pd);
+#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
@@ -356,7 +375,7 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
              {DNNL_ARG_DIFF_SRC, diff_src_mem},
              {DNNL_ARG_SCRATCHPAD, scratchpad_mem}}};
         bwd_primitive.execute(onednn_stream, bwd_primitive_args);
-      } else if (alg == dnnl::algorithm::pooling_avg) {
+      } else if (alg == dnnl::algorithm::pooling_avg_exclude_padding) {
         std::unordered_map<int, memory> bwd_primitive_args = {
             {{DNNL_ARG_DIFF_DST,
               is_diff_dst_reordered ? diff_dst_reorder_mem : diff_dst_mem},
@@ -446,18 +465,22 @@ TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_KERNEL);
 #define REGISTER_KERNEL(TYPE)                                                  \
   REGISTER_KERNEL_BUILDER(                                                     \
       Name("_OneDnnAvgPool").Device(DEVICE_CPU).TypeConstraint<TYPE>("T"),     \
-      OneDnnPoolOp<CPUDevice, TYPE, dnnl::algorithm::pooling_avg>)             \
+      OneDnnPoolOp<CPUDevice, TYPE,                                            \
+                   dnnl::algorithm::pooling_avg_exclude_padding>)              \
   REGISTER_KERNEL_BUILDER(                                                     \
       Name("_OneDnnAvgPool3D").Device(DEVICE_CPU).TypeConstraint<TYPE>("T"),   \
-      OneDnnPoolOp<CPUDevice, TYPE, dnnl::algorithm::pooling_avg>)             \
+      OneDnnPoolOp<CPUDevice, TYPE,                                            \
+                   dnnl::algorithm::pooling_avg_exclude_padding>)              \
   REGISTER_KERNEL_BUILDER(                                                     \
       Name("_OneDnnAvgPoolGrad").Device(DEVICE_CPU).TypeConstraint<TYPE>("T"), \
-      OneDnnPoolGradOp<CPUDevice, TYPE, dnnl::algorithm::pooling_avg>);        \
+      OneDnnPoolGradOp<CPUDevice, TYPE,                                        \
+                       dnnl::algorithm::pooling_avg_exclude_padding>);         \
   REGISTER_KERNEL_BUILDER(                                                     \
       Name("_OneDnnAvgPool3DGrad")                                             \
           .Device(DEVICE_CPU)                                                  \
           .TypeConstraint<TYPE>("T"),                                          \
-      OneDnnPoolGradOp<CPUDevice, TYPE, dnnl::algorithm::pooling_avg>);
+      OneDnnPoolGradOp<CPUDevice, TYPE,                                        \
+                       dnnl::algorithm::pooling_avg_exclude_padding>);
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL);
 #undef REGISTER_KERNEL
 
@@ -466,27 +489,30 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL);
       Name("_OneDnnQuantizedAvgPool") \
           .Device(DEVICE_CPU)         \
           .TypeConstraint<TYPE>("T"), \
-      OneDnnPoolOp<CPUDevice, TYPE, dnnl::algorithm::pooling_avg>)
+      OneDnnPoolOp<CPUDevice, TYPE,   \
+                   dnnl::algorithm::pooling_avg_exclude_padding>)
 TF_CALL_qint8(REGISTER_KERNEL);
 TF_CALL_quint8(REGISTER_KERNEL);
 #undef REGISTER_KERNEL
 
 #else  // Below is GPU part.
-#define REGISTER_KERNEL(TYPE)                                       \
-  REGISTER_KERNEL_BUILDER(                                          \
-      Name("_OneDnnAvgPool")                                        \
-          .Device(DEVICE_GPU)                                       \
-          .TypeConstraint<TYPE>("T")                                \
-          .HostMemory("input_meta")                                 \
-          .HostMemory("output_meta"),                               \
-      OneDnnPoolOp<GPUDevice, TYPE, dnnl::algorithm::pooling_avg>); \
-  REGISTER_KERNEL_BUILDER(                                          \
-      Name("_OneDnnAvgPool3D")                                      \
-          .Device(DEVICE_GPU)                                       \
-          .TypeConstraint<TYPE>("T")                                \
-          .HostMemory("input_meta")                                 \
-          .HostMemory("output_meta"),                               \
-      OneDnnPoolOp<GPUDevice, TYPE, dnnl::algorithm::pooling_avg>);
+#define REGISTER_KERNEL(TYPE)                                      \
+  REGISTER_KERNEL_BUILDER(                                         \
+      Name("_OneDnnAvgPool")                                       \
+          .Device(DEVICE_GPU)                                      \
+          .TypeConstraint<TYPE>("T")                               \
+          .HostMemory("input_meta")                                \
+          .HostMemory("output_meta"),                              \
+      OneDnnPoolOp<GPUDevice, TYPE,                                \
+                   dnnl::algorithm::pooling_avg_exclude_padding>); \
+  REGISTER_KERNEL_BUILDER(                                         \
+      Name("_OneDnnAvgPool3D")                                     \
+          .Device(DEVICE_GPU)                                      \
+          .TypeConstraint<TYPE>("T")                               \
+          .HostMemory("input_meta")                                \
+          .HostMemory("output_meta"),                              \
+      OneDnnPoolOp<GPUDevice, TYPE,                                \
+                   dnnl::algorithm::pooling_avg_exclude_padding>);
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNEL);
 #undef REGISTER_KERNEL
 
@@ -505,30 +531,33 @@ TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNEL);
           .HostMemory("max_input_meta")   \
           .HostMemory("min_output_meta")  \
           .HostMemory("max_output_meta"), \
-      OneDnnPoolOp<GPUDevice, TYPE, dnnl::algorithm::pooling_avg>);
+      OneDnnPoolOp<GPUDevice, TYPE,       \
+                   dnnl::algorithm::pooling_avg_exclude_padding>);
 TF_CALL_qint8(REGISTER_KERNEL);
 TF_CALL_quint8(REGISTER_KERNEL);
 #undef REGISTER_KERNEL
 
-#define REGISTER_KERNEL(TYPE)                                           \
-  REGISTER_KERNEL_BUILDER(                                              \
-      Name("_OneDnnAvgPoolGrad")                                        \
-          .Device(DEVICE_GPU)                                           \
-          .TypeConstraint<TYPE>("T")                                    \
-          .HostMemory("orig_input_shape")                               \
-          .HostMemory("orig_input_meta")                                \
-          .HostMemory("grad_meta")                                      \
-          .HostMemory("output_meta"),                                   \
-      OneDnnPoolGradOp<GPUDevice, TYPE, dnnl::algorithm::pooling_avg>); \
-  REGISTER_KERNEL_BUILDER(                                              \
-      Name("_OneDnnAvgPool3DGrad")                                      \
-          .Device(DEVICE_GPU)                                           \
-          .TypeConstraint<TYPE>("T")                                    \
-          .HostMemory("orig_input_shape")                               \
-          .HostMemory("orig_input_meta")                                \
-          .HostMemory("grad_meta")                                      \
-          .HostMemory("output_meta"),                                   \
-      OneDnnPoolGradOp<GPUDevice, TYPE, dnnl::algorithm::pooling_avg>);
+#define REGISTER_KERNEL(TYPE)                                          \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("_OneDnnAvgPoolGrad")                                       \
+          .Device(DEVICE_GPU)                                          \
+          .TypeConstraint<TYPE>("T")                                   \
+          .HostMemory("orig_input_shape")                              \
+          .HostMemory("orig_input_meta")                               \
+          .HostMemory("grad_meta")                                     \
+          .HostMemory("output_meta"),                                  \
+      OneDnnPoolGradOp<GPUDevice, TYPE,                                \
+                       dnnl::algorithm::pooling_avg_exclude_padding>); \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("_OneDnnAvgPool3DGrad")                                     \
+          .Device(DEVICE_GPU)                                          \
+          .TypeConstraint<TYPE>("T")                                   \
+          .HostMemory("orig_input_shape")                              \
+          .HostMemory("orig_input_meta")                               \
+          .HostMemory("grad_meta")                                     \
+          .HostMemory("output_meta"),                                  \
+      OneDnnPoolGradOp<GPUDevice, TYPE,                                \
+                       dnnl::algorithm::pooling_avg_exclude_padding>);
 TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_KERNEL);
 #undef REGISTER_KERNEL
 #endif  // INTEL_CPU_ONLY

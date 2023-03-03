@@ -243,7 +243,64 @@ class QuantizeV2Op : public OpKernel {
       void* shift_data = nullptr;                  // unified shift data
       std::transform(min_range.begin(), min_range.end(), shift_vec.begin(),
                      [](float v) -> S { return static_cast<S>(-v); });
-
+#ifdef ITEX_ONEDNN_3_0
+      float* scale_factor_ptr = output_scale_cache_.GetCachedPtr(
+          context, scale_factor.data(), num_slices);
+      int32* zero_point_ptr = zero_point_cache_.GetCachedPtr(
+          context, zero_points.data(), num_slices);
+      memory output_scales_mem(
+          {{num_slices}, memory::data_type::f32, memory::format_tag::x},
+          onednn_engine, reinterpret_cast<void*>(scale_factor_ptr));
+      memory zero_points_mem(
+          {{num_slices}, memory::data_type::s32, memory::format_tag::x},
+          onednn_engine, reinterpret_cast<void*>(zero_point_ptr));
+      if (mode_ == QuantizeMode::SCALED) {
+        if (num_slices == 1) {
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+          // For MIN_FIRST, we use legacy implementation
+          // if (mode_ == QuantizeMode::MIN_FIRST) {
+          //   post_ops_attr.set_zero_points(DNNL_ARG_DST, 0, zero_points);
+          // }
+        } else {
+          int mask = static_cast<int>(std::pow(2, axis_));
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC, mask);
+          // if (mode_ == QuantizeMode::MIN_FIRST) {
+          //   post_ops_attr.set_zero_points(DNNL_ARG_DST, mask, zero_points);
+          // }
+        }
+        // Create Reorder primitive
+        std::unique_ptr<dnnl::reorder::primitive_desc> reorder_pd =
+            std::make_unique<dnnl::reorder::primitive_desc>(
+                onednn_engine, src_md, onednn_engine, dst_md, post_ops_attr);
+        fwd_primitive = std::make_unique<dnnl::reorder>(*reorder_pd);
+        fwd_pd = std::move(reorder_pd);
+      } else if (mode_ == QuantizeMode::MIN_FIRST &&
+                 is_classic_asymmetric_algorithm_) {
+        if (num_slices == 1) {
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+          post_ops_attr.set_zero_points_mask(DNNL_ARG_DST, 0);
+        } else {
+          int mask = static_cast<int>(std::pow(2, axis_));
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC, mask);
+          post_ops_attr.set_zero_points_mask(DNNL_ARG_DST, mask);
+        }
+        // Create Reorder primitive
+        std::unique_ptr<dnnl::reorder::primitive_desc> reorder_pd =
+            std::make_unique<dnnl::reorder::primitive_desc>(
+                onednn_engine, src_md, onednn_engine, dst_md, post_ops_attr);
+        fwd_primitive = std::make_unique<dnnl::reorder>(*reorder_pd);
+        fwd_pd = std::move(reorder_pd);
+      } else if (mode_ == QuantizeMode::MIN_FIRST &&
+                 !is_classic_asymmetric_algorithm_) {
+        if (num_slices == 1) {
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC_0, 0);
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC_1, 0);
+        } else {
+          int mask = static_cast<int>(std::pow(2, axis_));
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC_0, mask);
+          post_ops_attr.set_scales_mask(DNNL_ARG_SRC_1, mask);
+        }
+#else
       if (mode_ == QuantizeMode::SCALED) {
         if (num_slices == 1) {
           post_ops_attr.set_output_scales(0, scale_factor);
@@ -290,6 +347,12 @@ class QuantizeV2Op : public OpKernel {
           post_ops_attr.set_scales(DNNL_ARG_SRC_0, mask, scale_factor);
           post_ops_attr.set_scales(DNNL_ARG_SRC_1, mask, scale_factor);
         }
+#endif
+
+#ifdef ITEX_ONEDNN_3_0
+        shift_data = static_cast<void*>(asym_shift_cache_.GetCachedPtr(
+            context, shift_vec.data(), shift_vec.size()));
+#else
 
 #ifdef INTEL_CPU_ONLY
         shift_data = shift_vec.data();
@@ -306,16 +369,24 @@ class QuantizeV2Op : public OpKernel {
                 shift_vec.data(), shift_vec.size() * sizeof(S))
             .wait();
         shift_data = GetTensorBuffer<S>(&shift_device_tensor);
-#endif
+#endif  // INTEL_CPU_ONLY
+#endif  // ITEX_ONEDNN_3_0
 
         memory::dims shift_dims(src_tf_shape.dims(), 1);
         memory::desc shift_md = CreatePlainMemDescWithFormatTag<S>(shift_dims);
         // Create Binary primitive
+#ifdef ITEX_ONEDNN_3_0
+        std::unique_ptr<dnnl::binary::primitive_desc> binary_pd =
+            std::make_unique<dnnl::binary::primitive_desc>(
+                onednn_engine, dnnl::algorithm::binary_add, src_md, shift_md,
+                dst_md, post_ops_attr);
+#else
         auto fwd_desc = dnnl::binary::desc(dnnl::algorithm::binary_add, src_md,
                                            shift_md, dst_md);
         std::unique_ptr<dnnl::binary::primitive_desc> binary_pd =
             std::make_unique<dnnl::binary::primitive_desc>(
                 fwd_desc, post_ops_attr, onednn_engine);
+#endif
         fwd_primitive = std::make_unique<dnnl::binary>(*binary_pd);
         fwd_pd = std::move(binary_pd);
       }
@@ -376,13 +447,32 @@ class QuantizeV2Op : public OpKernel {
       std::unordered_map<int, memory> fwd_primitive_args;
       if (mode_ == QuantizeMode::SCALED || (mode_ == QuantizeMode::MIN_FIRST &&
                                             is_classic_asymmetric_algorithm_)) {
-        fwd_primitive_args = {{DNNL_ARG_SRC, src_mem}, {DNNL_ARG_DST, dst_mem}};
+        fwd_primitive_args = {
+            {DNNL_ARG_SRC, src_mem},
+            {DNNL_ARG_DST, dst_mem},
+#ifdef ITEX_ONEDNN_3_0
+            {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, output_scales_mem},
+#endif
+        };
+#ifdef ITEX_ONEDNN_3_0
+        if (mode_ == QuantizeMode::MIN_FIRST &&
+            is_classic_asymmetric_algorithm_) {
+          fwd_primitive_args.emplace(DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_DST,
+                                     zero_points_mem);
+        }
+#endif
 
       } else if (mode_ == QuantizeMode::MIN_FIRST &&
                  !is_classic_asymmetric_algorithm_) {
-        fwd_primitive_args = {{DNNL_ARG_SRC_0, src_mem},
-                              {DNNL_ARG_SRC_1, shift_mem},
-                              {DNNL_ARG_DST, dst_mem}};
+        fwd_primitive_args = {
+            {DNNL_ARG_SRC_0, src_mem},
+            {DNNL_ARG_SRC_1, shift_mem},
+            {DNNL_ARG_DST, dst_mem},
+#ifdef ITEX_ONEDNN_3_0
+            {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC_0, output_scales_mem},
+            {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC_1, output_scales_mem},
+#endif
+        };
       }
 
       fwd_primitive->execute(onednn_stream, fwd_primitive_args);

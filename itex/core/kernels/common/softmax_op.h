@@ -58,10 +58,16 @@ class SoftmaxOp : public OpKernel {
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = dnnl::softmax_forward::primitive_desc(
+          onednn_engine, dnnl::prop_kind::forward_training,
+          dnnl::algorithm::softmax_accurate, src_md, src_md, axis, attr);
+#else
       auto fwd_desc = dnnl::softmax_forward::desc(
           dnnl::prop_kind::forward_training, src_md, axis);
       auto fwd_pd =
           dnnl::softmax_forward::primitive_desc(fwd_desc, attr, onednn_engine);
+#endif
       auto src_mem =
           dnnl::memory(src_md, onednn_engine, GetTensorBuffer<T>(&src_tensor));
 

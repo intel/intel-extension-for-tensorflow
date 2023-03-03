@@ -174,7 +174,7 @@ class OneDnnConvBackpropFilterOp
       for (int i = 0; i < dilation_dims.size(); ++i) {
         --dilation_dims[i];
       }
-
+#ifndef ITEX_ONEDNN_3_0
       ConvFwdDesc fwd_desc = ConvFwdDesc(
           prop_kind::forward, dnnl::algorithm::convolution_direct,
           fwd_src_md_prefer, diff_filter_md_prefer, diff_dst_md_prefer,
@@ -200,16 +200,43 @@ class OneDnnConvBackpropFilterOp
             diff_filter_md_prefer, diff_bias_md, diff_dst_md_prefer,
             stride_dims, dilation_dims, pad_left_dims, pad_right_dims);
       }
-
+#endif
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(this->fp32_math_mode_);
       }
-
+#ifdef ITEX_ONEDNN_3_0
+      ConvFwdPd fwd_pd;
+      ConvBwdFilterPd bwd_filter_pd;
+      if (bias_enabled) {
+        fwd_pd = ConvFwdPd(onednn_engine, prop_kind::forward,
+                           dnnl::algorithm::convolution_direct,
+                           fwd_src_md_prefer, diff_filter_md_prefer,
+                           diff_bias_md, diff_dst_md_prefer, stride_dims,
+                           dilation_dims, pad_left_dims, pad_right_dims, attr);
+        bwd_filter_pd = ConvBwdFilterPd(
+            onednn_engine, dnnl::algorithm::convolution_direct,
+            fwd_src_md_prefer, diff_filter_md_prefer, diff_bias_md,
+            diff_dst_md_prefer, stride_dims, dilation_dims, pad_left_dims,
+            pad_right_dims, fwd_pd, attr);
+      } else {
+        fwd_pd =
+            ConvFwdPd(onednn_engine, prop_kind::forward,
+                      dnnl::algorithm::convolution_direct, fwd_src_md_prefer,
+                      diff_filter_md_prefer, diff_dst_md_prefer, stride_dims,
+                      dilation_dims, pad_left_dims, pad_right_dims, attr);
+        bwd_filter_pd =
+            ConvBwdFilterPd(onednn_engine, dnnl::algorithm::convolution_direct,
+                            fwd_src_md_prefer, diff_filter_md_prefer,
+                            diff_dst_md_prefer, stride_dims, dilation_dims,
+                            pad_left_dims, pad_right_dims, fwd_pd, attr);
+      }
+#else
       ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, attr, onednn_engine);
       ConvBwdFilterPd bwd_filter_pd =
           ConvBwdFilterPd(bwd_filter_desc, attr, onednn_engine, fwd_pd);
+#endif
 
       // Allocate output tensors: diff_fitler.
       TensorShape diff_filter_shape;

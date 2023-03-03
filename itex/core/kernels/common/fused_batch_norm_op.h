@@ -35,7 +35,6 @@ limitations under the License.
 #include "itex/core/utils/tensor_types.h"
 #include "itex/core/utils/types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
-
 namespace itex {
 
 // "is_batch_norm_ex" template argument is not used in kernel actually, since
@@ -170,7 +169,11 @@ class FusedBatchNormOp : public OpKernel {
                              dnnl::memory::format_tag::a);
       auto propagation = (is_training_ || is_batch_norm_ex_)
                              ? dnnl::prop_kind::forward_training
+#ifdef ITEX_ONEDNN_3_0
+                             : dnnl::prop_kind::forward_inference;
+#else
                              : dnnl::prop_kind::forward_scoring;
+#endif
       auto flag = dnnl::normalization_flags::use_scale |
                   dnnl::normalization_flags::use_shift;
       if (!is_training_) {
@@ -183,13 +186,18 @@ class FusedBatchNormOp : public OpKernel {
           flag |= dnnl::normalization_flags::fuse_norm_relu;
         }
       }
-      dnnl::batch_normalization_forward::desc bn_fwd_desc(propagation, src_md,
-                                                          epsilon_, flag);
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
+          onednn_engine, propagation, src_md, src_md, epsilon_, flag, attr);
+#else
+      dnnl::batch_normalization_forward::desc bn_fwd_desc(propagation, src_md,
+                                                          epsilon_, flag);
       dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
           bn_fwd_desc, attr, onednn_engine);
+#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
@@ -547,9 +555,13 @@ class QuantizedFusedBatchNormOp
 #endif  // INTEL_CPU_ONLY
 
     const float max_abs = std::max(std::abs(min), std::abs(max));
-    const float scale = 127.0f / max_abs;
+    float scale = 127.0f / max_abs;
     dnnl::primitive_attr scale_attr;
+#ifdef ITEX_ONEDNN_3_0
+    scale_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+#else
     scale_attr.set_output_scales(0, {scale});
+#endif
     auto input_md =
         dnnl::memory::desc({tensor_in.NumElements()}, OneDnnType<U>(),
                            dnnl::memory::format_tag::x);
@@ -557,10 +569,22 @@ class QuantizedFusedBatchNormOp
         dnnl::memory(input_md, engine, GetTensorBuffer<U>(&tensor_in));
     dnnl::memory scaled_input_mem =
         dnnl::memory(input_md, engine, GetTensorBuffer<U>(tensor_out));
+#ifdef ITEX_ONEDNN_3_0
+    float* output_scale_ptr =
+        output_scale_cache_.GetCachedPtr(context, &scale, 1);
+    dnnl::memory scale_mem(
+        {{1}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x},
+        engine, output_scale_ptr);
+#endif
     dnnl::reorder reorder_pd =
         dnnl::reorder(input_mem, scaled_input_mem, scale_attr);
     std::unordered_map<int, dnnl::memory> reorder_args = {
-        {DNNL_ARG_SRC, input_mem}, {DNNL_ARG_DST, scaled_input_mem}};
+        {DNNL_ARG_SRC, input_mem},
+        {DNNL_ARG_DST, scaled_input_mem},
+#ifdef ITEX_ONEDNN_3_0
+        {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, scale_mem},
+#endif
+    };
     reorder_pd.execute(stream, reorder_args);
   }
 
@@ -742,18 +766,26 @@ class FusedBatchNormGradOp : public OpKernel {
         }
       }
 
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
+          onednn_engine, propagation_fwd, src_md, src_md, epsilon_, flag, attr);
+      dnnl::batch_normalization_backward::primitive_desc bn_bwd_pd(
+          onednn_engine, propagation_bwd, diff_dst_md, diff_dst_md, src_md,
+          epsilon_, flag, bn_fwd_pd, attr);
+#else
       dnnl::batch_normalization_forward::desc bn_fwd_desc(
           propagation_fwd, src_md, epsilon_, flag);
       dnnl::batch_normalization_backward::desc bn_bwd_desc(
           propagation_bwd, diff_dst_md, src_md, epsilon_, flag);
 
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-
       dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
           bn_fwd_desc, attr, onednn_engine);
       dnnl::batch_normalization_backward::primitive_desc bn_bwd_pd(
           bn_bwd_desc, attr, onednn_engine, bn_fwd_pd);
+#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
@@ -767,19 +799,21 @@ class FusedBatchNormGradOp : public OpKernel {
                        GetTensorBuffer<T>(&scratchpad_tensor));
 
       dnnl::batch_normalization_backward bn_bwd_primitive(bn_bwd_pd);
-
+#ifndef ITEX_ONEDNN_3_0
       // OneDnn requests an empty shift tensor.
       Tensor shift_tensor;
       OP_REQUIRES_OK(
           context, context->allocate_temp(DataTypeToEnum<U>::v(),
                                           scale_tensor.shape(), &shift_tensor));
-
+#endif
       void* src_data = GetTensorBuffer<T>(&src_tensor);
       void* diff_dst_data = GetTensorBuffer<T>(&diff_dst_tensor);
       void* mean_data = GetTensorBuffer<U>(&saved_mean_tensor);
       void* variance_data = GetTensorBuffer<U>(&saved_variance_tensor);
       void* scale_data = GetTensorBuffer<U>(&scale_tensor);
+#ifndef ITEX_ONEDNN_3_0
       void* shift_data = GetTensorBuffer<U>(&shift_tensor);
+#endif
       void* diff_src_data = GetTensorBuffer<T>(diff_src_tensor);
       void* diff_src1_data = nullptr;
       if (has_side_input_) {
@@ -794,7 +828,9 @@ class FusedBatchNormGradOp : public OpKernel {
       auto src_mem =
           CreateDnnlMemory(bn_bwd_pd.src_desc(), onednn_engine, src_data);
       auto scale_mem = CreateDnnlMemory(scale_md, onednn_engine, scale_data);
+#ifndef ITEX_ONEDNN_3_0
       auto shift_mem = CreateDnnlMemory(shift_md, onednn_engine, shift_data);
+#endif
       auto mean_mem =
           CreateDnnlMemory(bn_bwd_pd.mean_desc(), onednn_engine, mean_data);
       auto variance_mem = CreateDnnlMemory(bn_bwd_pd.variance_desc(),
@@ -824,7 +860,11 @@ class FusedBatchNormGradOp : public OpKernel {
           {DNNL_ARG_DIFF_SRC, diff_src_mem},
           {DNNL_ARG_SCRATCHPAD, scratchpad_mem},
           {DNNL_ARG_SCALE, scale_mem},
+#ifndef ITEX_ONEDNN_3_0
+          // https://github.com/intel-innersource/libraries.performance.math.onednn/commit/dccfdc25f7504a620a1fc2dc9602eefa24258147#diff-12751859c2f7964388e0bb75f7db610b4cc9f3320c9aac6c7167312fb5c5fbccR302
+          // when calculate n_inputs, they remove use_shift()
           {DNNL_ARG_SHIFT, shift_mem},
+#endif
           {DNNL_ARG_DIFF_SCALE, diff_scale_mem},
           {DNNL_ARG_DIFF_SHIFT, diff_shift_mem}};
 

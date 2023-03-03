@@ -31,10 +31,12 @@ limitations under the License.
 
 namespace itex {
 
+#ifndef ITEX_ONEDNN_3_0
 using ConvBwdInputDesc = dnnl::convolution_backward_data::desc;
+using ConvBwdFilterDesc = dnnl::convolution_backward_weights::desc;
+#endif
 using ConvBwdInputPd = dnnl::convolution_backward_data::primitive_desc;
 using ConvBwdInputPrimitive = dnnl::convolution_backward_data;
-using ConvBwdFilterDesc = dnnl::convolution_backward_weights::desc;
 using ConvBwdFilterPd = dnnl::convolution_backward_weights::primitive_desc;
 using ConvBwdFilterPrimitive = dnnl::convolution_backward_weights;
 using dnnl::memory;
@@ -334,6 +336,8 @@ class ConvBackpropFilterOp
           memory::desc(diff_dst_dims, OneDnnType<T>(), format_tag_opt);
 
       // Create descriptor and primitive descriptor for convolution forward.
+
+#ifndef ITEX_ONEDNN_3_0
       ConvFwdDesc fwd_desc = ConvFwdDesc(
           prop_kind::forward, dnnl::algorithm::convolution_direct,
           fwd_src_md_opt, diff_filter_md_prefer, diff_dst_md_opt, stride_dims,
@@ -352,12 +356,14 @@ class ConvBackpropFilterOp
           ConvBwdFilterDesc(dnnl::algorithm::convolution_direct, fwd_src_md_opt,
                             diff_filter_md_prefer, diff_dst_md_opt, stride_dims,
                             dilation_dims, pad_left_dims, pad_right_dims);
+#endif
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(this->fp32_math_mode_);
       }
+#ifndef ITEX_ONEDNN_3_0
       if (bias_enabled) {
         bwd_filter_desc = ConvBwdFilterDesc(
             dnnl::algorithm::convolution_direct, fwd_src_md_opt,
@@ -368,6 +374,30 @@ class ConvBackpropFilterOp
       ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, attr, onednn_engine);
       ConvBwdFilterPd bwd_filter_pd =
           ConvBwdFilterPd(bwd_filter_desc, attr, onednn_engine, fwd_pd);
+#else
+      ConvFwdPd fwd_pd;
+      ConvBwdFilterPd bwd_filter_pd;
+      if (bias_enabled) {
+        fwd_pd = ConvFwdPd(onednn_engine, prop_kind::forward,
+                           dnnl::algorithm::convolution_direct, fwd_src_md_opt,
+                           diff_filter_md_prefer, diff_bias_md, diff_dst_md_opt,
+                           stride_dims, dilation_dims, pad_left_dims,
+                           pad_right_dims, attr);
+        bwd_filter_pd = ConvBwdFilterPd(
+            onednn_engine, dnnl::algorithm::convolution_direct, fwd_src_md_opt,
+            diff_filter_md_prefer, diff_bias_md, diff_dst_md_opt, stride_dims,
+            dilation_dims, pad_left_dims, pad_right_dims, fwd_pd, attr);
+      } else {
+        fwd_pd = ConvFwdPd(onednn_engine, prop_kind::forward,
+                           dnnl::algorithm::convolution_direct, fwd_src_md_opt,
+                           diff_filter_md_prefer, diff_dst_md_opt, stride_dims,
+                           dilation_dims, pad_left_dims, pad_right_dims, attr);
+        bwd_filter_pd = ConvBwdFilterPd(
+            onednn_engine, dnnl::algorithm::convolution_direct, fwd_src_md_opt,
+            diff_filter_md_prefer, diff_dst_md_opt, stride_dims, dilation_dims,
+            pad_left_dims, pad_right_dims, fwd_pd, attr);
+      }
+#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
@@ -605,6 +635,7 @@ class ConvBackpropInputOp
       auto diff_src_md_opt =
           memory::desc(diff_src_dims, OneDnnType<T>(), format_tag_opt);
 
+#ifndef ITEX_ONEDNN_3_0
       // Create descriptor and primitive descriptor for convolution forward.
       ConvFwdDesc fwd_desc = ConvFwdDesc(
           prop_kind::forward, dnnl::algorithm::convolution_direct,
@@ -616,16 +647,27 @@ class ConvBackpropInputOp
           ConvBwdInputDesc(dnnl::algorithm::convolution_direct, diff_src_md_opt,
                            filter_md_prefer, diff_dst_md_opt, stride_dims,
                            dilation_dims, pad_left_dims, pad_right_dims);
-
+#endif
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(this->fp32_math_mode_);
       }
-
+#ifdef ITEX_ONEDNN_3_0
+      ConvFwdPd fwd_pd =
+          ConvFwdPd(onednn_engine, prop_kind::forward,
+                    dnnl::algorithm::convolution_direct, diff_src_md_opt,
+                    filter_md_prefer, diff_dst_md_opt, stride_dims,
+                    dilation_dims, pad_left_dims, pad_right_dims, attr);
+      ConvBwdInputPd bwd_input_pd = ConvBwdInputPd(
+          onednn_engine, dnnl::algorithm::convolution_direct, diff_src_md_opt,
+          filter_md_prefer, diff_dst_md_opt, stride_dims, dilation_dims,
+          pad_left_dims, pad_right_dims, fwd_pd, attr);
+#else
       ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, attr, onednn_engine);
       ConvBwdInputPd bwd_input_pd =
           ConvBwdInputPd(bwd_input_desc, attr, onednn_engine, fwd_pd);
+#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size =

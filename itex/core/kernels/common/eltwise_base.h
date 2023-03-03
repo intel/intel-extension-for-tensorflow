@@ -71,15 +71,19 @@ class EltwiseBaseOp : public OpKernel {
                           memory::format_tag::undef);
       memory::dims src_dims = TFShapeToOneDnnDims(src_tensor.shape());
       src_md = CreatePlainMemDescWithFormatTag<T>(src_dims);
-
-      // Create an eltwise forward descriptor and primitive descriptor
-      eltwise_forward::desc fwd_desc(prop_kind::forward, alg_kind_, src_md,
-                                     alpha_, beta_);
-
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-      eltwise_forward::primitive_desc fwd_pd(fwd_desc, attr, onednn_engine);
 
+      // Create an eltwise forward descriptor and primitive descriptor
+#ifdef ITEX_ONEDNN_3_0
+      eltwise_forward::primitive_desc fwd_pd(onednn_engine, prop_kind::forward,
+                                             alg_kind_, src_md, src_md, alpha_,
+                                             beta_, attr);
+#else
+      eltwise_forward::desc fwd_desc(prop_kind::forward, alg_kind_, src_md,
+                                     alpha_, beta_);
+      eltwise_forward::primitive_desc fwd_pd(fwd_desc, attr, onednn_engine);
+#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
@@ -181,17 +185,25 @@ class EltwiseGradBaseOp : public OpKernel {
       diff_dst_md = src_md;
 
       // Create forward eltwise primitive based on src/diff_dst md
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      eltwise_forward::primitive_desc fwd_pd(
+          onednn_engine_, prop_kind::forward_training, alg_kind_, src_md,
+          src_md, alpha_, beta_);
+      eltwise_backward::primitive_desc bwd_pd(onednn_engine_, alg_kind_, src_md,
+                                              diff_dst_md, src_md, alpha_,
+                                              beta_, fwd_pd, attr);
+#else
       eltwise_forward::desc fwd_desc(prop_kind::forward_training, alg_kind_,
                                      src_md, alpha_, beta_);
       eltwise_forward::primitive_desc fwd_pd(fwd_desc, onednn_engine_);
       eltwise_backward::desc bwd_desc(alg_kind_, src_md, diff_dst_md, alpha_,
                                       beta_);
 
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       eltwise_backward::primitive_desc bwd_pd(bwd_desc, attr, onednn_engine_,
                                               fwd_pd);
-
+#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size = bwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,

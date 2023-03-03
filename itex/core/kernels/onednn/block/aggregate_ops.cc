@@ -240,12 +240,19 @@ class OneDnnAddNOp : public OpKernel {
       std::vector<float> coeff(num_inputs, 1.0);
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
       dnnl::primitive_attr attr;
+#ifdef ITEX_ONEDNN_3_0
+      auto sum_pd =
+          has_onednn_input
+              ? dnnl::sum::primitive_desc(onednn_engine, coeff, srcs_pd_blocked,
+                                          attr)
+              : dnnl::sum::primitive_desc(onednn_engine, coeff, srcs_pd, attr);
+#else
       auto sum_pd =
           has_onednn_input
               ? dnnl::sum::primitive_desc(coeff, srcs_pd_blocked, onednn_engine,
                                           attr)
               : dnnl::sum::primitive_desc(coeff, srcs_pd, onednn_engine, attr);
-
+#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size = sum_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,

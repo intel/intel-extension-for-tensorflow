@@ -83,8 +83,11 @@ class MaxPoolGradOp : public PoolingBackwardOpBase<T> {
       this->data_format_onednn_ = OneDnnTensorFormatToTag(tensor_format_onednn);
 
       dnnl::memory::dims filter_dims, strides, padding_left, padding_right;
-      this->PoolParamsToDims(&pool_params, &filter_dims, &strides,
-                             &padding_left, &padding_right, is_pool2d);
+      dnnl::memory::dims dilation_dims;
+
+      this->PoolParamsToDims(&pool_params, &filter_dims, &dilation_dims,
+                             &strides, &padding_left, &padding_right,
+                             is_pool2d);
       dnnl::memory::dims orig_input_dims_order = TFShapeToOneDnnDimsInNC(
           orig_input_tensor.shape(), this->data_format_tf_, is_pool2d);
       dnnl::memory::dims diff_dst_dims = TFShapeToOneDnnDimsInNC(
@@ -93,16 +96,24 @@ class MaxPoolGradOp : public PoolingBackwardOpBase<T> {
                                 this->data_format_onednn_);
       dnnl::memory::desc diff_dst_md(diff_dst_dims, OneDnnType<T>(),
                                      this->data_format_onednn_);
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::pooling_forward::primitive_desc pooling_fwd_pd(
+          onednn_engine, prop, dnnl::algorithm::pooling_max, src_md,
+          diff_dst_md, strides, filter_dims, dilation_dims, padding_left,
+          padding_right, attr);
+#else
       dnnl::pooling_backward::desc pooling_bwd_desc(
           dnnl::algorithm::pooling_max, src_md, diff_dst_md, strides,
           filter_dims, padding_left, padding_right);
       dnnl::pooling_forward::desc pooling_fwd_desc(
           prop, dnnl::algorithm::pooling_max, src_md, diff_dst_md, strides,
           filter_dims, padding_left, padding_right);
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+
       dnnl::pooling_forward::primitive_desc pooling_fwd_pd(pooling_fwd_desc,
                                                            attr, onednn_engine);
+#endif
       Tensor scratchpad_tensor_fwd;
       int64 scratchpad_size_fwd =
           pooling_fwd_pd.scratchpad_desc().get_size() / sizeof(T);
@@ -113,8 +124,15 @@ class MaxPoolGradOp : public PoolingBackwardOpBase<T> {
       auto scratchpad_mem_fwd =
           dnnl::memory(pooling_fwd_pd.scratchpad_desc(), onednn_engine,
                        GetTensorBuffer<T>(&scratchpad_tensor_fwd));
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::pooling_backward::primitive_desc pooling_bwd_pd(
+          onednn_engine, dnnl::algorithm::pooling_max, src_md, diff_dst_md,
+          strides, filter_dims, dilation_dims, padding_left, padding_right,
+          pooling_fwd_pd, attr);
+#else
       dnnl::pooling_backward::primitive_desc pooling_bwd_pd(
           pooling_bwd_desc, attr, onednn_engine, pooling_fwd_pd);
+#endif
       Tensor scratchpad_tensor_bwd;
       int64 scratchpad_size_bwd =
           pooling_bwd_pd.scratchpad_desc().get_size() / sizeof(T);

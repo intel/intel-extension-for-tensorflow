@@ -179,7 +179,11 @@ class OneDnnFusedBatchNormOp : public OpKernel {
       // Create fwd primitive.
       auto propagation = (is_training_ || is_batch_norm_ex)
                              ? dnnl::prop_kind::forward_training
+#ifdef ITEX_ONEDNN_3_0
+                             : dnnl::prop_kind::forward_inference;
+#else
                              : dnnl::prop_kind::forward_scoring;
+#endif
 
       auto flags = dnnl::normalization_flags::use_scale |
                    dnnl::normalization_flags::use_shift;
@@ -194,12 +198,17 @@ class OneDnnFusedBatchNormOp : public OpKernel {
         }
       }
 
-      dnnl::batch_normalization_forward::desc bn_fwd_desc(propagation, src_md,
-                                                          epsilon_, flags);
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
+          onednn_engine, propagation, src_md, src_md, epsilon_, flags, attr);
+#else
+      dnnl::batch_normalization_forward::desc bn_fwd_desc(propagation, src_md,
+                                                          epsilon_, flags);
       dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
           bn_fwd_desc, attr, onednn_engine);
+#endif
       dnnl::batch_normalization_forward bn_fwd_primitive(bn_fwd_pd);
 
       // Allocate output dst tensor.
@@ -717,18 +726,27 @@ class OneDnnFusedBatchNormGradOp : public OpKernel {
         }
       }
 
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
+          onednn_engine, propagation_fwd, src_md, src_md, epsilon_, flags,
+          attr);
+      dnnl::batch_normalization_backward::primitive_desc bn_bwd_pd(
+          onednn_engine, propagation_bwd, diff_dst_md_any, diff_dst_md_any,
+          src_md, epsilon_, flags, bn_fwd_pd, attr);
+#else
       dnnl::batch_normalization_forward::desc bn_fwd_desc(
           propagation_fwd, src_md, epsilon_, flags);
       dnnl::batch_normalization_backward::desc bn_bwd_desc(
           propagation_bwd, diff_dst_md_any, src_md, epsilon_, flags);
 
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-
       dnnl::batch_normalization_forward::primitive_desc bn_fwd_pd(
           bn_fwd_desc, attr, onednn_engine);
       dnnl::batch_normalization_backward::primitive_desc bn_bwd_pd(
           bn_bwd_desc, attr, onednn_engine, bn_fwd_pd);
+#endif
       dnnl::batch_normalization_backward bn_bwd_primitive(bn_bwd_pd);
 
       // Allocate diff_src tensor.
@@ -746,12 +764,13 @@ class OneDnnFusedBatchNormGradOp : public OpKernel {
                                      &diff_side_input_tensor, diff_src_tf_shape,
                                      diff_src_onednn_shape);
       }
-
+#ifndef ITEX_ONEDNN_3_0
       // OneDnn requests an empty shift tensor.
       Tensor shift_tensor;
       OP_REQUIRES_OK(
           context, context->allocate_temp(DataTypeToEnum<U>::v(),
                                           scale_tensor.shape(), &shift_tensor));
+#endif
 
       // Create onednn memory.
       void* src_data = GetTensorBuffer<T>(&src_tensor);
@@ -759,7 +778,9 @@ class OneDnnFusedBatchNormGradOp : public OpKernel {
       void* mean_data = GetTensorBuffer<U>(&saved_mean_tensor);
       void* variance_data = GetTensorBuffer<U>(&saved_variance_tensor);
       void* scale_data = GetTensorBuffer<U>(&scale_tensor);
+#ifndef ITEX_ONEDNN_3_0
       void* shift_data = GetTensorBuffer<U>(&shift_tensor);
+#endif
       void* diff_src_data = GetTensorBuffer<T>(diff_src_tensor);
       void* diff_src1_data = nullptr;
       if (has_side_input_) {
@@ -774,7 +795,9 @@ class OneDnnFusedBatchNormGradOp : public OpKernel {
 
       auto src_mem = CreateDnnlMemory(src_md, onednn_engine, src_data);
       auto scale_mem = CreateDnnlMemory(scale_md, onednn_engine, scale_data);
+#ifndef ITEX_ONEDNN_3_0
       auto shift_mem = CreateDnnlMemory(shift_md, onednn_engine, shift_data);
+#endif
       auto mean_mem =
           CreateDnnlMemory(bn_bwd_pd.mean_desc(), onednn_engine, mean_data);
       auto variance_mem = CreateDnnlMemory(bn_bwd_pd.variance_desc(),
@@ -841,7 +864,9 @@ class OneDnnFusedBatchNormGradOp : public OpKernel {
           {DNNL_ARG_DIFF_DST,
            is_diff_dst_reordered ? diff_dst_reorder_mem : diff_dst_mem},
           {DNNL_ARG_SCALE, scale_mem},
+#ifndef ITEX_ONEDNN_3_0
           {DNNL_ARG_SHIFT, shift_mem},
+#endif
           {DNNL_ARG_DIFF_SRC, diff_src_mem},
           {DNNL_ARG_DIFF_SCALE, diff_scale_mem},
           {DNNL_ARG_DIFF_SHIFT, diff_shift_mem}};

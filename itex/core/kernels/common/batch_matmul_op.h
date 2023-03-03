@@ -157,21 +157,21 @@ class BatchMatMulOp : public OpKernel {
           is_filter_const_ ? memory::desc(params->b_dims, OneDnnType<Trhs>(),
                                           memory::format_tag::any)
                            : wei_md;
-
-      // Create matmul forward primitive
-      auto fwd_desc = matmul::desc(src_md, wei_md_prefer, dst_md);
+      memory::desc bias_md;
       if (post_op_util_.HasBias()) {
-        // bias use same dims as dst
-        auto bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
-                                    params->bias_strides);
-        // create bias memory
         const Tensor& bias_tensor = ctx->input(kBiasIndex_);
+
+        // bias use same dims as dst
+        bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
+                               params->bias_strides);
+        // create bias memory
         bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_,
                                      GetTensorBuffer<Toutput>(&bias_tensor));
-        // Reassigin desc if it has bias.
-        fwd_desc = matmul::desc(src_md, wei_md_prefer, bias_md, dst_md);
       }
-      auto fwd_pd = GetPrimitiveDesc(ctx, fwd_desc);
+
+      // Create matmul forward primitive
+      auto fwd_pd =
+          GetPrimitiveDesc(ctx, src_md, wei_md_prefer, bias_md, dst_md);
       matmul_primitive_ = matmul(fwd_pd);
 
       // Create src memory, check if src needs to be reordered
@@ -241,6 +241,18 @@ class BatchMatMulOp : public OpKernel {
       if (post_op_util_.HasBias()) {
         fwd_primitive_args_.emplace(DNNL_ARG_BIAS, bias_mem_);
       }
+#ifdef ITEX_ONEDNN_3_0
+      if (post_op_util_.HasOutputScales()) {
+        float alpha = post_op_util_.GetOutputScale()[0];
+        float* output_scale_ptr =
+            output_scale_cache_.GetCachedPtr(ctx, &alpha, 1);
+        dnnl::memory scale_mem(
+            {{1}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x},
+            onednn_engine_, output_scale_ptr);
+        fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
+                                    scale_mem);
+      }
+#endif
       is_init_ = true;
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
@@ -316,7 +328,10 @@ class BatchMatMulOp : public OpKernel {
   }
 
   matmul::primitive_desc GetPrimitiveDesc(OpKernelContext* ctx,
-                                          const matmul::desc& fwd_desc) {
+                                          const memory::desc& src_desc,
+                                          const memory::desc& weights_desc,
+                                          const memory::desc& bias_desc,
+                                          const memory::desc& dst_desc) {
     dnnl::primitive_attr post_ops_attr;
     post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
     if (std::is_same<Tlhs, float>::value) {
@@ -363,7 +378,23 @@ class BatchMatMulOp : public OpKernel {
     }
 
     post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
-    return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
+#ifdef ITEX_ONEDNN_3_0
+    if (post_op_util_.HasBias()) {
+      return matmul::primitive_desc(onednn_engine_, src_desc, weights_desc,
+                                    bias_desc, dst_desc, post_ops_attr);
+    } else {
+      return matmul::primitive_desc(onednn_engine_, src_desc, weights_desc,
+                                    dst_desc, post_ops_attr);
+    }
+#else
+    if (post_op_util_.HasBias()) {
+      auto fwd_desc = matmul::desc(src_desc, weights_desc, bias_desc, dst_desc);
+      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
+    } else {
+      auto fwd_desc = matmul::desc(src_desc, weights_desc, dst_desc);
+      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
+    }
+#endif  // ITEX_ONEDNN_3_0
   }
 
  private:

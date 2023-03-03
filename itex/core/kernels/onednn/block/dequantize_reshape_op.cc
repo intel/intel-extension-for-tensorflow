@@ -126,9 +126,33 @@ class OneDnnDequantizeReshapeOp : public OpKernel {
         src_md = CreatePlainMemDescWithFormatTag<T>(src_dims);
         dst_md = CreatePlainMemDescWithFormatTag<float>(src_dims);
       }
-      dst_md.data.data_type = memory::convert_to_c(OneDnnType<float>());
       // Set the scale factor for quantize
       primitive_attr post_ops_attr;
+#ifdef ITEX_ONEDNN_3_0
+      float* scale_factor_ptr = output_scale_cache_.GetCachedPtr(
+          context, scale_factor.data(), num_slices);
+      int32* zero_point_ptr = zero_point_cache_.GetCachedPtr(
+          context, zero_points.data(), num_slices);
+      memory output_scales_mem(
+          {{num_slices}, memory::data_type::f32, memory::format_tag::x},
+          onednn_engine, reinterpret_cast<void*>(scale_factor_ptr));
+      memory zero_points_mem(
+          {{num_slices}, memory::data_type::s32, memory::format_tag::x},
+          onednn_engine, reinterpret_cast<void*>(zero_point_ptr));
+
+      if (num_slices == 1) {
+        post_ops_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+        if (mode_ == QuantizeMode::MIN_FIRST) {
+          post_ops_attr.set_zero_points_mask(DNNL_ARG_SRC, 0);
+        }
+      } else {
+        int mask = static_cast<int>(std::pow(2, axis_));
+        post_ops_attr.set_scales_mask(DNNL_ARG_SRC, mask);
+        if (mode_ == QuantizeMode::MIN_FIRST) {
+          post_ops_attr.set_zero_points_mask(DNNL_ARG_SRC, mask);
+        }
+      }
+#else
       if (num_slices == 1) {
         post_ops_attr.set_output_scales(0, scale_factor);
         if (mode_ == QuantizeMode::MIN_FIRST) {
@@ -141,6 +165,7 @@ class OneDnnDequantizeReshapeOp : public OpKernel {
           post_ops_attr.set_zero_points(DNNL_ARG_SRC, mask, zero_points);
         }
       }
+#endif
 
       // Create Reorder primitive
       auto fwd_pd = reorder::primitive_desc(
@@ -215,7 +240,14 @@ class OneDnnDequantizeReshapeOp : public OpKernel {
       // Execute Reorder primitive
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
       std::unordered_map<int, memory> fwd_primitive_args = {
-          {DNNL_ARG_SRC, src_mem}, {DNNL_ARG_DST, dst_mem}};
+          {DNNL_ARG_SRC, src_mem},
+          {DNNL_ARG_DST, dst_mem},
+#ifdef ITEX_ONEDNN_3_0
+          {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, output_scales_mem},
+          {DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC, zero_points_mem},
+#endif
+      };
+
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +

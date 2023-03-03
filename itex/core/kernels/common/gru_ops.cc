@@ -129,6 +129,9 @@ class OneDnnGRUForwardOp : public OpKernel {
       // Optional memory descriptors for recurrent data.
       auto dst_iter_md = memory::desc();
 
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifndef ITEX_ONEDNN_3_0
       // Create operation descriptor.
       typename GruType::desc* desc;
       auto augru_desc = augru_forward::desc(
@@ -146,9 +149,27 @@ class OneDnnGRUForwardOp : public OpKernel {
       } else {
         desc = reinterpret_cast<typename GruType::desc*>(&gru_desc);
       }
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       augru_pd = typename GruType::primitive_desc(*desc, attr, dnnl_engine);
+#else
+      dnnl::augru_forward::primitive_desc augru_pd_tmp(
+          dnnl_engine, prop_kind::forward_inference,
+          rnn_direction::unidirectional_left2right, src_layer_md, src_iter_md,
+          attention_md, augru_weights_layer_md, augru_weights_iter_md, bias_md,
+          dst_layer_md, dst_iter_md, attr);
+      dnnl::gru_forward::primitive_desc gru_pd_tmp(
+          dnnl_engine, prop_kind::forward_inference,
+          rnn_direction::unidirectional_left2right, src_layer_md, src_iter_md,
+          augru_weights_layer_md, augru_weights_iter_md, bias_md, dst_layer_md,
+          dst_iter_md, attr);
+
+      if (std::is_same<GruType, augru_forward>()) {
+        augru_pd =
+            *reinterpret_cast<typename GruType::primitive_desc*>(&augru_pd_tmp);
+      } else {
+        augru_pd =
+            *reinterpret_cast<typename GruType::primitive_desc*>(&gru_pd_tmp);
+      }
+#endif
     }
 
     //
@@ -388,8 +409,11 @@ class OneDnnGRUForwardOp : public OpKernel {
                                   memory::dim cell_size,
                                   memory::dim input_size) {
     if (augru_pd.get(true) == nullptr) return;
-
+#ifdef ITEX_ONEDNN_3_0
+    auto src_dims = augru_pd.src_layer_desc().get_dims();
+#else
     auto src_dims = augru_pd.src_layer_desc().dims();
+#endif
     if (src_dims[0] == TimeDim && src_dims[1] == batch_size &&
         src_dims[2] == cell_size)
       return;
@@ -611,7 +635,11 @@ class MklGRUForwardOp : public OneDnnGRUForwardOp<Device, T, GruType> {
             OneDnnType<T>(), memory::format_tag::abcd),
         dnnl_engine, GetTensorBuffer<T>(*h_n_tensor));
     auto h_out_desc = output_mem.get_desc();
+#ifdef ITEX_ONEDNN_3_0
+    auto src_dims = h_out_desc.get_dims();
+#else
     auto src_dims = h_out_desc.dims();
+#endif
     auto src_desc = memory::desc({1, src_dims[0], src_dims[1], src_dims[2]},
                                  OneDnnType<T>(), memory::format_tag::abcd);
     memory src_sub_mem =
