@@ -80,6 +80,8 @@ class BatchMatMulOp : public OpKernel {
 
     ITEX_CHECK_OK(
         ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false, &enable_cache_));
+
+    fp32_math_mode_ = GetFP32MathMode<Device>();
   }
 
   void Init(OpKernelContext* ctx) {
@@ -317,6 +319,9 @@ class BatchMatMulOp : public OpKernel {
                                           const matmul::desc& fwd_desc) {
     dnnl::primitive_attr post_ops_attr;
     post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+    if (std::is_same<Tlhs, float>::value) {
+      post_ops_attr.set_fpmath_mode(fp32_math_mode_);
+    }
 
     if (post_op_util_.HasOutputScales()) {
       // mul_value = INT8 scale
@@ -382,6 +387,8 @@ class BatchMatMulOp : public OpKernel {
   static const int kDstIndex_ = 0;
   // Hard code the max number of supported binary post op fusion.
   static const int kMaxBinaryNum_ = 2;
+
+  dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
 
  private:
   mutex mu_compute_;
