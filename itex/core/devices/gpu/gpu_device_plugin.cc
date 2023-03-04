@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
 
+#include <memory>
 #include <string>
 
 #include "itex/core/devices/gpu/gpu_pool_allocator.h"
@@ -56,7 +57,7 @@ void gpu_allocate(const SP_Device* device, uint64_t size, int64_t memory_space,
   ITEX_GPUDevice* device_handle =
       static_cast<ITEX_GPUDevice*>(device->device_handle);
   mem->struct_size = SP_DEVICE_MEMORY_BASE_STRUCT_SIZE;
-  BFCAllocator* alloc = nullptr;
+  std::shared_ptr<BFCAllocator> alloc;
   auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
   ITEX_CHECK(status == ITEX_GPU_SUCCESS)
       << "Failed to get device allocator, device handle: " << device_handle;
@@ -67,7 +68,7 @@ void gpu_allocate(const SP_Device* device, uint64_t size, int64_t memory_space,
 void gpu_deallocate(const SP_Device* device, SP_DeviceMemoryBase* mem) {
   ITEX_GPUDevice* device_handle =
       static_cast<ITEX_GPUDevice*>(device->device_handle);
-  BFCAllocator* alloc = nullptr;
+  std::shared_ptr<BFCAllocator> alloc;
   auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
   ITEX_CHECK(status == ITEX_GPU_SUCCESS)
       << "Failed to get device allocator, device handle: " << device_handle;

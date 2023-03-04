@@ -58,8 +58,10 @@ void* sycl_malloc_wrapper(size_t n, size_t alignment, const void* device,
   DeviceOrdinal device_ordinal;
   ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
   ITEX_GPUGetDevice(&device_handle, device_ordinal);
-  BFCAllocator* alloc = nullptr;
-  ITEX_GPUGetAllocator(device_handle, &alloc);
+  std::shared_ptr<BFCAllocator> alloc;
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
   return alloc->AllocateRaw(n);
 }
 
@@ -70,8 +72,10 @@ void sycl_free_wrapper(void* ptr, const void* device, const void* context,
   DeviceOrdinal device_ordinal;
   ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
   ITEX_GPUGetDevice(&device_handle, device_ordinal);
-  BFCAllocator* alloc = nullptr;
-  ITEX_GPUGetAllocator(device_handle, &alloc);
+  std::shared_ptr<BFCAllocator> alloc;
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
   alloc->DeallocateRaw(ptr);
 }
 

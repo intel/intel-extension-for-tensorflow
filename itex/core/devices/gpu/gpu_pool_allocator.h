@@ -17,6 +17,7 @@ limitations under the License.
 #define ITEX_CORE_DEVICES_GPU_GPU_POOL_ALLOCATOR_H_
 
 #include <map>
+#include <memory>
 
 #include "itex/core/devices/bfc_allocator.h"
 #include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
@@ -26,7 +27,7 @@ namespace itex {
 class AllocatorPool {
  public:
   static ITEX_GPUError_t getAllocator(ITEX_GPUDevice* device,
-                                      BFCAllocator** alloc) {
+                                      std::shared_ptr<BFCAllocator>* alloc) {
     auto allocs = AllocatorPool::GetAllocatorPool();
     for (const auto& [key, value] : allocs) {
       if (key == device) {
@@ -38,11 +39,13 @@ class AllocatorPool {
   }
 
  private:
-  static std::map<ITEX_GPUDevice*, BFCAllocator*>& GetAllocatorPool() {
+  static std::map<ITEX_GPUDevice*, std::shared_ptr<BFCAllocator>>&
+  GetAllocatorPool() {
     static std::once_flag init_alloc_flag;
     // TODO(itex): try impl without objects with static storage duration:
     // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
-    static auto* allocators = new std::map<ITEX_GPUDevice*, BFCAllocator*>;
+    static auto* allocators =
+        new std::map<ITEX_GPUDevice*, std::shared_ptr<BFCAllocator>>;
 
     std::call_once(init_alloc_flag, []() {
       int device_count = 0;
@@ -50,7 +53,7 @@ class AllocatorPool {
       ITEX_GPUDevice* device = nullptr;
       for (int i = 0; i < device_count; ++i) {
         ITEX_GPUGetDevice(&device, i);
-        allocators->insert({device, new BFCAllocator(device)});
+        allocators->insert({device, std::make_shared<BFCAllocator>(device)});
       }
     });
 
@@ -58,8 +61,8 @@ class AllocatorPool {
   }
 };  // class AllocatorPool
 
-inline ITEX_GPUError_t ITEX_GPUGetAllocator(ITEX_GPUDevice* device,
-                                            BFCAllocator** alloc) {
+inline ITEX_GPUError_t ITEX_GPUGetAllocator(
+    ITEX_GPUDevice* device, std::shared_ptr<BFCAllocator>* alloc) {
   return AllocatorPool::getAllocator(device, alloc);
 }
 
