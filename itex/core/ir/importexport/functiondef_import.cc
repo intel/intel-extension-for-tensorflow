@@ -108,7 +108,7 @@ class ValueMapManager {
         unsigned long long value;
         if (!llvm::getAsUnsignedInteger(output_name.drop_front(colon_sep + 1),
                                         10, value))
-          output_num = value;
+          output_num = static_cast<int>(value);
         output_name = output_name.take_front(colon_sep);
       }
     }
