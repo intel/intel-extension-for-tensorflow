@@ -146,7 +146,6 @@ void ResourceMgr::Clear() {
     mutex_lock l(&mu_);
     if (container_ == nullptr) return;
   }
-  delete container_;
   container_ = nullptr;
 }
 
@@ -182,11 +181,11 @@ string ResourceMgr::DebugString() const {
 Status ResourceMgr::DoCreate(TypeIndex type, const string& name,
                              ResourceBase* resource, bool owns_resource) {
   container_ = [&]() TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-    Container* ptr = container_;
-    if (ptr == nullptr) {
-      ptr = new Container;
+    if (container_ == nullptr) {
+      return std::make_unique<Container>();
+    } else {
+      return std::move(container_);
     }
-    return ptr;
   }();
 
   // NOTE: Separating out the construction of the map key and value so that the

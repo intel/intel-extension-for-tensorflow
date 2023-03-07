@@ -182,7 +182,7 @@ class ResourceMgr {
 
   mutable mutex mu_;
   const std::string container_name_;
-  Container* container_ = nullptr;
+  std::unique_ptr<Container> container_;
   int64_t step_id;
 
   template <typename T, bool use_dynamic_cast = false>
@@ -345,10 +345,7 @@ Status ResourceMgr::Create(const std::string& name, T* resource,
   mutex_lock l(&mu_);
   if (step_id != current_step_id) {
     // clear resources of last step
-    if (container_) {
-      delete container_;
-      container_ = nullptr;
-    }
+    container_ = std::make_unique<Container>();
     step_id = current_step_id;
   }
 
