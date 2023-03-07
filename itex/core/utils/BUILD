@@ -1,3 +1,4 @@
+load("//itex:itex.bzl", "if_jax", "if_not_jax")
 load(
     "//itex/core/utils:build_config.bzl",
     "tf_protobuf_deps",
@@ -56,16 +57,11 @@ cc_library(
 )
 
 cc_library(
-    name = "tf_buffer",
-    srcs = ["tf_buffer.cc"],
+    name = "ctstring",
     hdrs = [
-        "tf_buffer.h",
+        "ctstring.h",
+        "ctstring_internal.h",
     ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//itex/core/utils:common_utils",
-        "@local_config_tf//:tf_header_lib",
-    ] + tf_protobuf_deps(),
 )
 
 cc_library(
@@ -87,11 +83,10 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//itex/core/utils/gtl:gtl_libs",
+        "//itex/core/utils/tensor_bundle:byteswaparray",
         "//third_party/eigen3",
         "//itex/core/graph:config_util_hdr",
         "@double_conversion//:double-conversion",
-        "@local_config_tf//:protos_all",
-        "@local_config_tf//:tf_header_lib",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/strings",
@@ -99,7 +94,21 @@ cc_library(
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/container:inlined_vector",
         "@nsync//:nsync_cpp",
-    ] + select({
+        "@farmhash_archive//:farmhash",
+        "@com_googlesource_code_re2//:re2",
+    ] + if_not_jax([
+        "@local_config_tf//:tf_header_lib",
+        "@local_config_tf//:protos_all",
+        ":device_gpu_impl",
+    ]) + if_jax([
+        ":ctstring",
+        "//protos:tf_protos_all_cc",
+    ]),
+)
+
+cc_library(
+    name = "device_gpu_impl",
+    deps = select({
         "@local_config_dpcpp//dpcpp:using_dpcpp": [
             "//itex/core/devices/gpu:eigen_stream_device",
             "//itex/core/devices/gpu:gpu_device_impl",
@@ -128,8 +137,11 @@ cc_library(
     ],
     deps = [
         "@com_google_absl//absl/strings",
+    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
-    ],
+    ]) + if_jax([
+        ":ctstring",
+    ]),
 )
 
 cc_library(
@@ -139,8 +151,11 @@ cc_library(
     deps = [
         ":platform",
         ":tstring",
+    ] + if_not_jax([
         "@local_config_tf//:protos_all",
-    ],
+    ]) + if_jax([
+        "//protos:tf_protos_all_cc",
+    ]),
 )
 
 cc_library(
@@ -195,8 +210,11 @@ cc_library(
         ":types",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
+    ] + if_not_jax([
         "@local_config_tf//:protos_all",
-    ],
+    ]) + if_jax([
+        "//protos:tf_protos_all_cc",
+    ]),
 )
 
 cc_library(
@@ -226,9 +244,12 @@ cc_library(
         ":platform",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
-        "@local_config_tf//:protos_all",
+    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
-    ],
+        "@local_config_tf//:protos_all",
+    ]) + if_jax([
+        "//protos:tf_protos_all_cc",
+    ]),
 )
 
 cc_library(
@@ -248,9 +269,12 @@ cc_library(
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
         "@double_conversion//:double-conversion",
-        "@local_config_tf//:protos_all",
+    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
-    ],
+        "@local_config_tf//:protos_all",
+    ]) + if_jax([
+        "//protos:tf_protos_all_cc",
+    ]),
 )
 
 cc_library(
@@ -265,7 +289,28 @@ cc_library(
     deps = [
         ":platform",
         "@com_google_absl//absl/strings",
+    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
+    ]),
+)
+
+cc_library(
+    name = "byte_order",
+    hdrs = ["byte_order.h"],
+)
+
+cc_library(
+    name = "errors",
+    srcs = ["errors.cc"],
+    hdrs = ["errors.h"],
+    deps = [
+        ":logging",
+        ":platform",
+        ":status",
+        ":str_util",
+        ":strcat",
+        ":types",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -288,14 +333,32 @@ cc_library(
 )
 
 cc_library(
+    name = "statusor",
+    srcs = [
+        "statusor.cc",
+        "statusor_internals.h",
+    ],
+    hdrs = ["statusor.h"],
+    deps = [
+        ":errors",
+        ":logging",
+        ":status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "tf_version",
     hdrs = ["tf_version.h"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/strings",
+    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
-    ],
+    ]),
     alwayslink = True,
 )
 
@@ -317,8 +380,11 @@ cc_library(
         ":types",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
+    ] + if_not_jax([
         "@local_config_tf//:protos_all",
-    ],
+    ]) + if_jax([
+        "//protos:tf_protos_all_cc",
+    ]),
 )
 
 cc_library(

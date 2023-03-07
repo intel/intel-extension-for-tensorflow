@@ -19,7 +19,10 @@ def cc_proto(name, src, deps = []):
     native.genrule(
         name = "%s_cc" % name,
         outs = ["include/protos/%s.pb.cc" % name, "include/protos/%s.pb.h" % name],
-        cmd = "$(location @com_google_protobuf//:protoc) -I$(GENDIR)/external/local_config_tf/include/protos --cpp_out=$(GENDIR)/external/local_config_tf/include/protos $<",
+        cmd = "$(location @com_google_protobuf//:protoc) \
+                -I$(GENDIR)/external/local_config_tf/include/protos \
+                -I$(GENDIR)/external/com_google_protobuf/python/ \
+                --cpp_out=$(GENDIR)/external/local_config_tf/include/protos $<",
         srcs = ["include/protos/%s" % src],
         tools = ["@com_google_protobuf//:protoc"],
     )

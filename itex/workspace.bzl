@@ -1,4 +1,4 @@
-load("//third_party:repo.bzl", "tf_http_archive", "third_party_http_archive")
+load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
 load("//third_party/build_option:dpcpp_configure.bzl", "dpcpp_configure")
 load("//third_party/systemlibs:syslibs_configure.bzl", "syslibs_configure")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -7,6 +7,14 @@ load("//third_party/llvm_project:setup.bzl", "llvm_setup")
 load("//third_party/llvm_project:setup_13.bzl", "llvm_setup_13")
 load("//third_party:tf_runtime/workspace.bzl", tf_runtime = "repo")
 load("//third_party/stablehlo:workspace.bzl", stablehlo = "repo")
+load(
+    "//third_party/farmhash:workspace.bzl",
+    farmhash = "repo",
+)
+load(
+    "//third_party/absl:workspace.bzl",
+    absl = "repo",
+)
 
 def clean_dep(dep):
     return str(Label(dep))
@@ -30,6 +38,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     syslibs_configure(name = "local_config_syslibs")
     tf_runtime()
     stablehlo()
+    farmhash()
+    absl()
 
     http_archive(
         name = "bazel_toolchains",
@@ -70,19 +80,6 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         name = "oneTBB",
         tag = "v2021.5.0",
         remote = "https://github.com/oneapi-src/oneTBB/",
-    )
-
-    tf_http_archive(
-        name = "com_google_absl",
-        build_file = "//third_party/absl:com_google_absl.BUILD",
-        # TODO(itex): Remove the patch when https://github.com/abseil/abseil-cpp/issues/326 is resolved
-        patch_file = "//third_party/absl:com_google_absl_fix_mac_and_nvcc_build.patch",
-        sha256 = "35f22ef5cb286f09954b7cc4c85b5a3f6221c9d4df6b8c4a1e9d399555b366ee",
-        strip_prefix = "abseil-cpp-997aaf3a28308eba1b9156aa35ab7bca9688e9f6",
-        urls = [
-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/abseil/abseil-cpp/archive/997aaf3a28308eba1b9156aa35ab7bca9688e9f6.tar.gz",
-            "https://github.com/abseil/abseil-cpp/archive/997aaf3a28308eba1b9156aa35ab7bca9688e9f6.tar.gz",
-        ],
     )
 
     tf_http_archive(
@@ -145,6 +142,12 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
             "https://storage.googleapis.com/mirror.tensorflow.org/github.com/google/nsync/archive/1.22.0.tar.gz",
             "https://github.com/google/nsync/archive/1.22.0.tar.gz",
         ],
+    )
+
+    tf_http_archive(
+        name = "rules_python",
+        sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
+        urls = tf_mirror_urls("https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz"),
     )
 
     new_git_repository(

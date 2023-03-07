@@ -471,6 +471,10 @@ int64 MinLogLevelFromEnv();
 
 int64 MinVLogLevelFromEnv();
 
+// Emit "message" as a log message to the log for the specified
+// "severity" as if it came from a LOG call at "fname:line"
+void LogString(const char* fname, int line, int severity,
+               const std::string& message);
 }  // namespace internal
 
 // LogSink support adapted from //base/logging.h

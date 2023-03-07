@@ -204,6 +204,18 @@ template_rule(
     },
 )
 
+template_rule(
+    name = "summary_plugin",
+    src = "include/tensorflow/core/framework/summary.proto",
+    out = "include/protos/summary.proto",
+    substitutions = {
+        "package tensorflow;": "package itex;",
+        "tensorflow/core/framework/tensor.proto": "tensor.proto",
+        "import public \"tensorflow/tsl/protobuf/histogram.proto\";": "",
+        "HistogramProto histo = 5;": "",
+    },
+)
+
 cc_proto(
     name = "types",
     src = "types.proto",
@@ -335,7 +347,13 @@ cc_proto(
     src = "xplane.proto",
 )
 
-
+cc_proto(
+    name = "summary",
+    src = "summary.proto",
+    deps = [
+        ":tensor_proto",
+    ],
+)
 
 cc_library(
     name = "protos_all",
@@ -348,6 +366,7 @@ cc_library(
         ":kernel_def_proto",
         ":graph_debug_info_proto",
         ":tensor_proto",
+        ":summary_proto",
     ],
 )
 

@@ -14,6 +14,15 @@ def workspace():
         ],
     )
 
+    http_archive(
+        name = "rules_pkg",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.7.1/rules_pkg-0.7.1.tar.gz",
+            "https://github.com/bazelbuild/rules_pkg/releases/download/0.7.1/rules_pkg-0.7.1.tar.gz",
+        ],
+        sha256 = "451e08a4d78988c06fa3f9306ec813b836b1d076d0f055595444ba4ff22b867f",
+    )
+
     # Load the raw llvm-project.  llvm does not have build rules set up by default,
     # but provides a script for setting up build rules via overlays.
     llvm("llvm-raw")

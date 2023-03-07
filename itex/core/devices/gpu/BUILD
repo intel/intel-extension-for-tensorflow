@@ -33,18 +33,28 @@ cc_library(
     srcs = ["gpu_device_plugin.cc"],
     hdrs = [
         "gpu_device_plugin.h",
-        "gpu_pool_allocator.h",
     ],
     linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gpu_pool_allocator",
+        "@local_config_tf//:tf_header_lib",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "gpu_pool_allocator",
+    hdrs = [
+        "gpu_pool_allocator.h",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":itex_gpu_runtime_imp",
         "//itex/core/devices:bfc_allocator",
         "//itex/core/utils:logging",
         "//third_party/build_option/dpcpp:itex_gpu_header",
-        "@local_config_tf//:tf_header_lib",
     ],
-    alwayslink = True,
 )
 
 cc_library(
