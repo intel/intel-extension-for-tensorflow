@@ -130,6 +130,7 @@ function prepare_src() {
     mv -f ${ITEX_TMPDIR}/itex/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow
     cp -rf itex/python/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python
     mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/base_init.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__init__.py
+    mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/__main__.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__main__.py
     emit_version_info ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py
     chmod +x ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__init__.py
     rm -rf ${ITEX_TMPDIR}/itex

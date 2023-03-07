@@ -152,6 +152,7 @@ setup(
         ],
         _ext_lib_path: [
             '__init__.py',
+            '__main__.py',
             "third-party-programs/*",
         ],
     },
