@@ -125,6 +125,9 @@ itex_xpu_library(
 itex_xpu_library(
     name = "cast_op",
     srcs = ["cast_op.cc"],
+    hdrs = [
+        "//itex/core/kernels/common:cast_hdrs",
+    ],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
