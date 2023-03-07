@@ -275,8 +275,8 @@ class BiasGradOp : public OpKernel {
       // not.
       if (data_format_ == FORMAT_NCHW) {
         TensorShape three_dims_shape{batch, channel, height * width * depth};
+        TensorShape shuffled_shape{channel, batch, height * width * depth};
         const int64_t num_reduced = batch * height * width * depth;
-        TensorShape shuffled_shape{channel, num_reduced};
 
         Tensor backprop_reshaped;
         OP_REQUIRES(
