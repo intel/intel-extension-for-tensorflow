@@ -6,6 +6,7 @@ build:cpu --copt=-march=native
 build:cpu --cxxopt=-std=c++14
 build:cpu --host_cxxopt=-std=c++14
 build:cpu --define=device=cpu
+build:cpu --config=onednn_v3
 build:cpu -c opt
 # TODO(itex): Enable TBB by default once it's ready.
 # build:cpu --define=build_with_tbb=true
@@ -14,8 +15,9 @@ build:cpu -c opt
 build:gpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
 build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true
 build:gpu --define=device=gpu
+build:gpu --config=onednn_v3
 
-# This config build with oneDNN V3 API, which is not enabled by default
+# This config build with oneDNN V3 API, which is enabled by default
 build:onednn_v3 --copt=-DITEX_ONEDNN_3_0 --define=onednn_version=3
 
 # This config option is used for LLGA (OneDnnGraph) debugging
