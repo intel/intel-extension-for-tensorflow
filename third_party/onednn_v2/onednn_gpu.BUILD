@@ -5,7 +5,7 @@ load(
     "template_rule",
 )
 load(
-    "@intel_extension_for_tensorflow//third_party/onednn:onednn.bzl",
+    "@intel_extension_for_tensorflow//third_party/onednn_v2:onednn.bzl",
     "convert_cl_to_cpp",
     "convert_header_to_cpp",
     "gen_onednn_version",
@@ -103,11 +103,9 @@ filegroup(
         ],
         exclude = [
             "src/cpu/aarch64/**",
-            "src/cpu/rv64/**",
             "src/gpu/nvidia/*",
             "src/gpu/amd/*",
             "src/gpu/sycl/ref_binary.cpp",
-            "src/graph/**",
         ],
     ) + [
         ":dnnl_config_h",
@@ -120,13 +118,10 @@ filegroup(
 cc_library(
     name = "onednn_gpu",
     srcs = [":onednn_src"],
-    hdrs = glob(
-        [
-            "include/*",
-            "include/oneapi/dnnl/*",
-        ],
-        exclude = ["include/oneapi/dnnl/dnnl_graph*"],
-    ),
+    hdrs = glob([
+        "include/*",
+        "include/oneapi/dnnl/*",
+    ]),
     copts = [
         "-fexceptions",
         "-DDNNL_ENABLE_PRIMITIVE_CACHE",
@@ -148,73 +143,4 @@ cc_library(
     #nocopts = "-fno-exceptions",
     visibility = ["//visibility:public"],
     deps = ["@local_config_dpcpp//dpcpp:itex_gpu_headers"],
-)
-
-load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_graph_compiler", "if_llga_debug")
-
-_GRAPH_COPTS_GPU_LIST = [
-    "-Wall",
-    "-Wno-unknown-pragmas",
-    "-Wno-deprecated-declarations",
-    "-ffp-model=precise",
-    "-fno-reciprocal-math",
-    "-fvisibility-inlines-hidden",
-    "-Wno-sign-compare",
-    "-Wno-pass-failed",
-    "-Wno-tautological-compare",
-    "-fPIC",
-    "-fvisibility=hidden",
-    "-dpcpp_compile",
-    "-DDNNL_GRAPH_ENABLE_DUMP",
-] + if_llga_debug([
-    "-DDNNL_GRAPH_LAYOUT_DEBUG",
-])
-
-_GRAPH_SRCS_LIST = glob(
-    [
-        "src/graph/interface/*.cpp",
-        "src/graph/backend/*.cpp",
-        "src/graph/backend/dnnl/*.cpp",
-        "src/graph/backend/fake/*.cpp",
-        "src/graph/backend/dnnl/passes/*.cpp",
-        "src/graph/backend/dnnl/patterns/*.cpp",
-        "src/graph/backend/dnnl/kernels/*.cpp",
-        "src/graph/utils/*.cpp",
-        "src/graph/utils/pm/*.cpp",
-    ],
-)
-
-_GRAPH_HDRS_LIST = glob(
-    [
-        "include/oneapi/dnnl/*",
-        "src/graph/interface/*.hpp",
-        "src/graph/backend/*.hpp",
-        "src/graph/backend/dnnl/*.hpp",
-        "src/graph/backend/fake/*.hpp",
-        "src/graph/backend/dnnl/passes/*.hpp",
-        "src/graph/backend/dnnl/patterns/*.hpp",
-        "src/graph/backend/dnnl/kernels/*.hpp",
-        "src/graph/utils/*.hpp",
-        "src/graph/utils/pm/*.hpp",
-    ],
-)
-
-_GRAPH_INCLUDES_LIST = [
-    "include",
-    "src/graph",
-]
-
-_GRAPH_DEPS_LIST = [
-    ":onednn_gpu",
-]
-
-cc_library(
-    name = "onednn_graph_gpu",
-    srcs = _GRAPH_SRCS_LIST,
-    hdrs = _GRAPH_HDRS_LIST,
-    copts = _GRAPH_COPTS_GPU_LIST,
-    includes = _GRAPH_INCLUDES_LIST,
-    visibility = ["//visibility:public"],
-    deps = _GRAPH_DEPS_LIST,
-    alwayslink = True,
 )

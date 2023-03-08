@@ -5,7 +5,7 @@ load(
     "template_rule",
 )
 load(
-    "@intel_extension_for_tensorflow//third_party/onednn:onednn.bzl",
+    "@intel_extension_for_tensorflow//third_party/onednn_v2:onednn.bzl",
     "gen_onednn_version",
 )
 
@@ -108,7 +108,7 @@ template_rule(
     src = "include/oneapi/dnnl/dnnl_config.h.in",
     out = "include/oneapi/dnnl/dnnl_config.h",
     substitutions = select({
-        "@intel_extension_for_tensorflow//third_party/onednn:build_with_tbb": _DNNL_RUNTIME_TBB,
+        "@intel_extension_for_tensorflow//third_party/onednn_v2:build_with_tbb": _DNNL_RUNTIME_TBB,
         "//conditions:default": _DNNL_RUNTIME_OMP,
     }),
 )
@@ -143,18 +143,15 @@ _INCLUDES_LIST = [
     "src/cpu/x64/xbyak",
 ]
 
-_TEXTUAL_HDRS_LIST = glob(
-    [
-        "include/**/*",
-        "src/common/*.hpp",
-        "src/common/ittnotify/**/*.h",
-        "src/cpu/*.hpp",
-        "src/cpu/**/*.hpp",
-        "src/cpu/jit_utils/**/*.hpp",
-        "src/cpu/x64/xbyak/*.h",
-    ],
-    exclude = ["include/oneapi/dnnl/dnnl_graph*"],
-) + [
+_TEXTUAL_HDRS_LIST = glob([
+    "include/**/*",
+    "src/common/*.hpp",
+    "src/common/ittnotify/**/*.h",
+    "src/cpu/*.hpp",
+    "src/cpu/**/*.hpp",
+    "src/cpu/jit_utils/**/*.hpp",
+    "src/cpu/x64/xbyak/*.h",
+]) + [
     ":dnnl_config_h",
     ":onednn_version_generator",
 ]
@@ -172,7 +169,7 @@ cc_library(
     includes = _INCLUDES_LIST,
     textual_hdrs = _TEXTUAL_HDRS_LIST,
     visibility = ["//visibility:public"],
-    deps = ["@intel_extension_for_tensorflow//third_party/onednn:intel_binary_blob"],
+    deps = ["@intel_extension_for_tensorflow//third_party/onednn_v2:intel_binary_blob"],
 )
 
 cc_library(
@@ -197,9 +194,7 @@ cc_library(
         ],
         exclude = [
             "src/cpu/aarch64/**",
-            "src/cpu/rv64/**",
             "src/cpu/x64/gemm/**/*_kern_autogen.cpp",
-            "src/graph/**",
         ],
     ),
     copts = _COPTS_LIST,
@@ -210,70 +205,4 @@ cc_library(
     deps = [
         ":onednn_autogen",
     ],
-)
-
-load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_llga_debug")
-
-# TODO(itex): add graph compiler srcs, headers & check build option, once it is merged to oneDNN master.
-
-_GRAPH_COPTS_CPU_LIST = [
-    "-Wall",
-    "-Wno-unknown-pragmas",
-    "-fvisibility-inlines-hidden",
-    "-fPIC",
-    "-fvisibility=hidden",
-    "-Wno-sign-compare",
-    "-DBUILD_GRAPH",
-    "-DDNNL_ENABLE_GRAPH_DUMP",
-] + if_llga_debug([
-    "-DDNNL_GRAPH_LAYOUT_DEBUG",
-])
-
-_GRAPH_SRCS_LIST = glob(
-    [
-        "src/graph/interface/*.cpp",
-        "src/graph/backend/*.cpp",
-        "src/graph/backend/dnnl/*.cpp",
-        "src/graph/backend/fake/*.cpp",
-        "src/graph/backend/dnnl/passes/*.cpp",
-        "src/graph/backend/dnnl/patterns/*.cpp",
-        "src/graph/backend/dnnl/kernels/*.cpp",
-        "src/graph/utils/*.cpp",
-        "src/graph/utils/pm/*.cpp",
-    ],
-)
-
-_GRAPH_HDRS_LIST = glob(
-    [
-        "include/oneapi/dnnl/*",
-        "src/graph/interface/*.hpp",
-        "src/graph/backend/*.hpp",
-        "src/graph/backend/dnnl/*.hpp",
-        "src/graph/backend/fake/*.hpp",
-        "src/graph/backend/dnnl/passes/*.hpp",
-        "src/graph/backend/dnnl/patterns/*.hpp",
-        "src/graph/backend/dnnl/kernels/*.hpp",
-        "src/graph/utils/*.hpp",
-        "src/graph/utils/pm/*.hpp",
-    ],
-)
-
-_GRAPH_INCLUDES_LIST = [
-    "include",
-    "src/graph",
-]
-
-_GRAPH_DEPS_LIST = [
-    ":onednn_cpu",
-]
-
-cc_library(
-    name = "onednn_graph_cpu",
-    srcs = _GRAPH_SRCS_LIST,
-    hdrs = _GRAPH_HDRS_LIST,
-    copts = _GRAPH_COPTS_CPU_LIST,
-    includes = _GRAPH_INCLUDES_LIST,
-    visibility = ["//visibility:public"],
-    deps = _GRAPH_DEPS_LIST,
-    alwayslink = True,
 )

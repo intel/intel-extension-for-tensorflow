@@ -100,7 +100,7 @@ _INCLUDES_LIST = [
 ])
 
 _DEPS_LIST = [
-    "@onednn_cpu",
+    "@onednn_cpu_v2//:onednn_cpu",
 ] + if_graph_compiler(
     [
         "@llvm-project-13//llvm:Core",
@@ -119,7 +119,7 @@ cc_library(
     srcs = _SRCS_LIST,
     hdrs = _HDRS_LIST,
     # TODO(itex): find better way to include xbyak.h within onednn
-    copts = _COPTS_CPU_LIST + ["-I external/onednn_cpu/src/cpu/x64"],
+    copts = _COPTS_CPU_LIST + ["-I external/onednn_cpu_v2/src/cpu/x64"],
     includes = _INCLUDES_LIST,
     visibility = ["//visibility:public"],
     deps = _DEPS_LIST + if_graph_compiler([":onednn_graph_cpu_special"]),
@@ -133,7 +133,7 @@ cc_library(
     hdrs = _HDRS_LIST,
     copts = _COPTS_CPU_LIST + [
         "-fno-rtti",  # special build option for llvm_jit_resolver.cpp
-    ] + ["-I external/onednn_cpu/src/cpu/x64"],
+    ] + ["-I external/onednn_cpu_v2/src/cpu/x64"],
     includes = _INCLUDES_LIST,
     visibility = ["//visibility:public"],
     deps = _DEPS_LIST,
@@ -146,6 +146,6 @@ cc_library(
     copts = _COPTS_GPU_LIST,
     includes = _INCLUDES_LIST,
     visibility = ["//visibility:public"],
-    deps = ["@onednn_gpu"],
+    deps = ["@onednn_gpu_v2//:onednn_gpu"],
     alwayslink = True,
 )

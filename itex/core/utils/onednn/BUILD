@@ -1,5 +1,4 @@
-load("//third_party/onednn:build_defs.bzl", "onednn_deps")
-load("//third_party/onednn_graph:build_defs.bzl", "onednn_graph_deps")
+load("//third_party/onednn:build_defs.bzl", "onednn_deps", "onednn_graph_deps")
 
 cc_library(
     name = "onednn_util",
@@ -28,10 +27,12 @@ cc_library(
     ]),
     linkstatic = 1,
     visibility = ["//visibility:public"],
-    deps = [
+    deps = onednn_graph_deps() + [
         ":onednn_util",
         "//itex/core/utils:common_utils",
-    ] + onednn_deps() + onednn_graph_deps(),
+    ] + onednn_deps(),  #TODO3.0: LLGA and onednn use different branch.
+    # onednn now contains part of llga (same file name, different code...).
+    # use the same commit when avaliable.
 )
 
 cc_library(

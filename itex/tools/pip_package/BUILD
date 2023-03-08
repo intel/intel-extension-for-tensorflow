@@ -10,6 +10,7 @@ load(
 load(
     "@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl",
     "if_cpu_onednn",
+    "omp_deps",
 )
 load(
     "@local_config_dpcpp//dpcpp:build_defs.bzl",
@@ -67,7 +68,5 @@ py_binary(
 sh_binary(
     name = "build_pip_package",
     srcs = ["build_pip_package.sh"],
-    data = ["simple_console"] + COMMON_PIP_DEPS + if_cpu_onednn([
-        "//third_party/onednn:intel_binary_blob",
-    ]),
+    data = ["simple_console"] + COMMON_PIP_DEPS + omp_deps(),
 )

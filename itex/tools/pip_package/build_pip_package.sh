@@ -18,6 +18,8 @@
 
 onednn_gpu_path="bazel-bin/external/onednn_gpu/include/oneapi/dnnl/dnnl_version.h"
 onednn_cpu_path="bazel-bin/external/onednn_cpu/include/oneapi/dnnl/dnnl_version.h"
+onednn_gpu_v2_path="bazel-bin/external/onednn_gpu_v2/include/oneapi/dnnl/dnnl_version.h"
+onednn_cpu_v2_path="bazel-bin/external/onednn_cpu_v2/include/oneapi/dnnl/dnnl_version.h"
 itex_tmp_folder_name="itex.tmp"
 lib_tmp_folder_name="lib.tmp"
 
@@ -69,6 +71,10 @@ function emit_version_info() {
     onednn_path=${onednn_gpu_path}
   elif [ -f ${onednn_cpu_path} ]; then
     onednn_path=${onednn_cpu_path}
+  elif [ -f ${onednn_gpu_v2_path} ]; then
+    onednn_path=${onednn_gpu_v2_path}
+  elif [ -f ${onednn_cpu_v2_path} ]; then
+    onednn_path=${onednn_cpu_v2_path}
   else
     echo "Error: no oneDNN version files"
     exit -1

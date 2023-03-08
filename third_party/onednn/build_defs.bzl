@@ -12,6 +12,17 @@ def if_cpu_onednn(if_true, if_false = []):
         "//conditions:default": if_false,
     })
 
+def omp_deps():
+    """Returns llvm openmp runtime library
+
+    """
+
+    return select({
+        "//third_party/onednn:onednn_v3_and_cpu": ["//third_party/onednn:intel_binary_blob"],
+        "//third_party/onednn:onednn_v2_and_cpu": ["//third_party/onednn_v2:intel_binary_blob"],
+        "//conditions:default": [],
+    })
+
 def onednn_deps():
     """Shorthand for select() to pull in the correct set of oneDNN library deps.
 
@@ -20,8 +31,10 @@ def onednn_deps():
       inclusion in the deps attribute of rules.
     """
     return select({
-        str(Label("//third_party/build_option/dpcpp:build_with_dpcpp")): ["@onednn_gpu"],
-        "//conditions:default": ["@onednn_cpu"],
+        "//third_party/onednn:onednn_v3_and_gpu": ["@onednn_gpu//:onednn_gpu"],
+        "//third_party/onednn:onednn_v2_and_gpu": ["@onednn_gpu_v2//:onednn_gpu"],
+        "//third_party/onednn:onednn_v3_and_cpu": ["@onednn_cpu//:onednn_cpu"],
+        "//conditions:default": ["@onednn_cpu_v2//:onednn_cpu"],
     })
 
 def if_llga_debug(if_true, if_false = []):
