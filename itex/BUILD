@@ -26,7 +26,7 @@ itex_xpu_binary(
     visibility = ["//visibility:public"],
     deps = select({
         "@local_config_dpcpp//dpcpp:using_dpcpp": [
-            # "//itex/core/compiler/xla/pjrt:xpu_pjrt_client",
+            "//itex/core/compiler/xla/pjrt:xpu_pjrt_client",
             "@local_config_tf//:jax_internal",
         ],
         "//conditions:default": [],
