@@ -1371,6 +1371,21 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_slice_grad_op",
+    srcs = ["sparse_slice_grad_op.cc"],
+    hdrs = [
+        "sparse_slice_grad_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_slice_op",
     srcs = ["sparse_slice_op.cc"],
     hdrs = [
@@ -2053,6 +2068,7 @@ GPU_KERNELS = [
     ":softsign_op",
     ":spacetobatch_op",
     ":sparse_math_ops",
+    ":sparse_slice_grad_op",
     ":sparse_slice_op",
     ":sparse_tensor_dense_mat_mul_op",
     ":sparse_xent_op",

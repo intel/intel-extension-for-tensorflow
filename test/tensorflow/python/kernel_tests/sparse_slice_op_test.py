@@ -1,8 +1,23 @@
-
+# Copyright (c) 2023 Intel Corporation
+# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 
 """Tests for SparseSlice."""
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
+from tensorflow.python.ops import gradient_checker
 
 import numpy as np
 
@@ -249,6 +264,82 @@ class SparseSliceOpTest(test.TestCase):
       self.assertAllEqual(sparse_tensor2.indices, empty_inds)
       self.assertAllEqual(sparse_tensor2.values, [])
       self.assertAllEqual(sparse_tensor2.dense_shape, [2, 1])
+
+  @test_util.run_deprecated_v1
+  def testGradients(self):
+    sp_input = self._SparseTensor_4x6(val_dtype=np.float32)
+    start_and_size = [([0, 0], [4, 2]),
+                      ([0, 2], [5, 2]),
+                      ([0, 4], [5, 3])]
+
+    with self.session():
+      for start, size in start_and_size:
+        sp_output = sparse_ops.sparse_slice(sp_input, start, size)
+        nnz_in = len(self.evaluate(sp_input.values))
+        nnz_out = len(self.evaluate(sp_output.values))
+
+        err = gradient_checker.compute_gradient_error(
+            [sp_input.values], [(nnz_in,)], sp_output.values, (nnz_out,))
+        self.assertLess(err, 1e-3)
+
+  def testGradientsExplicit(self):
+    sp_input = self._SparseTensor_4x6()
+    start, size = [0, 0], [4, 1]
+    sp_output = sparse_ops.sparse_slice(sp_input, start, size)
+    input_grad_vals = sparse_ops.sparse_slice_grad(sp_output.values,
+                                                   sp_input.indices, start,
+                                                   sp_output.indices)
+    # pyformat: disable
+    self.assertAllEqual(input_grad_vals, [0, 0, 0, 0,
+                                          0, 0, 0,
+                                          20, 0, 0,
+                                          30, 0, 0, 0])
+    # pyformat: enable
+
+    start, size = [0, 1], [4, 1]
+    sp_output = sparse_ops.sparse_slice(sp_input, start, size)
+    input_grad_vals = sparse_ops.sparse_slice_grad(sp_output.values,
+                                                   sp_input.indices, start,
+                                                   sp_output.indices)
+    # pyformat: disable
+    self.assertAllEqual(input_grad_vals, [0, 0, 0, 0,
+                                          11, 0, 0,
+                                          0, 0, 0,
+                                          0, 0, 0, 0])
+    # pyformat: enable
+
+    start, size = [1, 3], [3, 1]
+    sp_output = sparse_ops.sparse_slice(sp_input, start, size)
+    input_grad_vals = sparse_ops.sparse_slice_grad(sp_output.values,
+                                                   sp_input.indices, start,
+                                                   sp_output.indices)
+    # pyformat: disable
+    self.assertAllEqual(input_grad_vals, [0, 0, 0, 0,
+                                          0, 13, 0,
+                                          0, 23, 0,
+                                          0, 0, 33, 0])
+    # pyformat: enable
+
+    # Test empty slice of non-empty input.
+    start, size = [2, 1], [2, 1]
+    sp_output = sparse_ops.sparse_slice(sp_input, start, size)
+    input_grad_vals = sparse_ops.sparse_slice_grad(sp_output.values,
+                                                   sp_input.indices, start,
+                                                   sp_output.indices)
+    # pyformat: disable
+    self.assertAllEqual(input_grad_vals, [0, 0, 0, 0,
+                                          0, 0, 0,
+                                          0, 0, 0,
+                                          0, 0, 0, 0])
+    # pyformat: enable
+
+    sp_input = self._SparseTensor_4x6_empty()
+    start, size = [0, 0], [4, 1]
+    sp_output = sparse_ops.sparse_slice(sp_input, start, size)
+    input_grad_vals = sparse_ops.sparse_slice_grad(sp_output.values,
+                                                   sp_input.indices, start,
+                                                   sp_output.indices)
+    self.assertAllEqual(input_grad_vals, [])
 
 
 if __name__ == '__main__':
