@@ -98,6 +98,7 @@ def call_compiler(argv, link = False, dpcpp = True):
   # TODO use bazel --jobs number here.
   link_flags.append('-fsycl-max-parallel-link-jobs=8')
   link_flags.append("-Wl,-no-as-needed")
+  link_flags.append("-Wl,--enable-new-dtags")
   link_flags.append("-Wl,-rpath=%{DPCPP_ROOT_DIR}/lib/")
   link_flags.append("-Wl,-rpath=%{DPCPP_ROOT_DIR}/compiler/lib/intel64_lin/")
   link_flags.append("-Wl,-rpath=%{TF_SHARED_LIBRARY_DIR}/python")
