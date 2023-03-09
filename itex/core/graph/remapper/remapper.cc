@@ -3516,11 +3516,9 @@ Status AddBatchNormNodes(RemapperContext* ctx, const FusedBatchNorm& matched) {
 
   NodeDef r;
   r.set_name(fused_node.name());
-  r.set_op("BiasAdd");
+  r.set_op("Add");
   r.set_device(fused_node.device());
   (*r.mutable_attr())["T"].set_type(eps_dtype);
-  auto* r_attr = r.mutable_attr();
-  SetAttrValue(x_format, &(*r_attr)["data_format"]);
   *r.add_input() = a_name;
   *r.add_input() = c_name;
   mutation->AddNode(std::move(r), &status);
