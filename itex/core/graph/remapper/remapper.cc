@@ -769,60 +769,83 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
     }
   }
 
-  // _Arg -> ReadVariableOp -> (Cast) ->BiasAdd
-  if (biasadd->NumRegularFanins() != 2) return false;
-  auto* readvariable = biasadd->GetRegularFanin(1).node_view();
-  if (IsCast(*readvariable->node())) {
-    readvariable = readvariable->GetRegularFanin(0).node_view();
-  }
-  if (!IsReadVariableOp(*readvariable->node())) return false;
-  const auto* arg_bias = readvariable->GetRegularFanin(0).node_view()->node();
   int bias_dim = 0;
   int weight_dim = 0;
-  if (IsArg(*arg_bias)) {
-    const AttrValue attr_bshape = arg_bias->attr().at("_handle_shapes");
-    if (attr_bshape.list().shape().empty()) return false;
-    const TensorShapeProto& bshape_proto = attr_bshape.list().shape(0);
-    if (bshape_proto.unknown_rank()) return false;
-    bias_dim = TensorShape(bshape_proto).dim_size(0);
-  } else if (IsVarHandle(*arg_bias)) {
-    const AttrValue attr_bshape = arg_bias->attr().at("shape");
-
-    const TensorShapeProto& bshape_proto = attr_bshape.shape();
-    if (bshape_proto.unknown_rank() ||
-        IsUnknown(bshape_proto.dim(bshape_proto.dim_size() - 1)))
-      return false;
-    bias_dim = TensorShape(bshape_proto).dim_size(0);
-  } else {
-    return false;
+  if (biasadd->NumRegularFanins() != 2) return false;
+  auto* readvariable = biasadd->GetRegularFanin(1).node_view();
+  // if pb is frozen
+  if (IsConstant(*readvariable->node())) {
+    const TensorProto& bias_val =
+        readvariable->node()->attr().at("value").tensor();
+    const TensorShape bias_shape(bias_val.tensor_shape());
+    bias_dim = bias_shape.num_elements();
   }
 
+  // _Arg -> ReadVariableOp -> (Cast) ->BiasAdd
+  if (bias_dim == 0) {
+    if (IsCast(*readvariable->node())) {
+      readvariable = readvariable->GetRegularFanin(0).node_view();
+    }
+    if (!IsReadVariableOp(*readvariable->node())) return false;
+    const auto* arg_bias = readvariable->GetRegularFanin(0).node_view()->node();
+
+    if (IsArg(*arg_bias)) {
+      const AttrValue attr_bshape = arg_bias->attr().at("_handle_shapes");
+      if (attr_bshape.list().shape().empty()) return false;
+      const TensorShapeProto& bshape_proto = attr_bshape.list().shape(0);
+      if (bshape_proto.unknown_rank()) return false;
+      bias_dim = TensorShape(bshape_proto).dim_size(0);
+    } else if (IsVarHandle(*arg_bias)) {
+      const AttrValue attr_bshape = arg_bias->attr().at("shape");
+
+      const TensorShapeProto& bshape_proto = attr_bshape.shape();
+      if (bshape_proto.unknown_rank() ||
+          IsUnknown(bshape_proto.dim(bshape_proto.dim_size() - 1)))
+        return false;
+      bias_dim = TensorShape(bshape_proto).dim_size(0);
+    } else {
+      return false;
+    }
+  }
   // Arg -> ReadVariableOp -> (Cast) ->MatMul -> reshape
   if (node_view->NumRegularFanins() != 2) return false;
   const auto* matmul = node_view->GetRegularFanin(0).node_view();
   if (!IsMatMul(*matmul->node())) return false;
   auto* readvariable2 = matmul->GetRegularFanin(1).node_view();
-  if (IsCast(*readvariable2->node())) {
-    readvariable2 = readvariable2->GetRegularFanin(0).node_view();
+
+  // if pb is frozen
+  if (IsConstant(*readvariable2->node())) {
+    const TensorProto& weight_val =
+        readvariable2->node()->attr().at("value").tensor();
+    const TensorShape weight_shape(weight_val.tensor_shape());
+    weight_dim = weight_shape.dim_size(1);
   }
-  if (!IsReadVariableOp(*readvariable2->node())) return false;
-  const auto* arg_weight =
-      readvariable2->GetRegularFanin(0).node_view()->node();
-  if (IsArg(*arg_weight)) {
-    const AttrValue attr_wshape = arg_weight->attr().at("_handle_shapes");
-    if (attr_wshape.list().shape().empty()) return false;
-    const TensorShapeProto& wshape_proto = attr_wshape.list().shape(0);
-    if (!Is2D(wshape_proto)) return false;
-    weight_dim = TensorShape(wshape_proto).dim_size(1);
-  } else if (IsVarHandle(*arg_weight)) {
-    const AttrValue attr_wshape = arg_weight->attr().at("shape");
-    const TensorShapeProto& wshape_proto = attr_wshape.shape();
-    if (!Is2D(wshape_proto)) return false;
-    if (IsUnknown(wshape_proto.dim(wshape_proto.dim_size() - 1))) return false;
-    weight_dim = TensorShape(wshape_proto).dim_size(1);
-  } else {
-    return false;
+
+  if (weight_dim == 0) {
+    if (IsCast(*readvariable2->node())) {
+      readvariable2 = readvariable2->GetRegularFanin(0).node_view();
+    }
+    if (!IsReadVariableOp(*readvariable2->node())) return false;
+    const auto* arg_weight =
+        readvariable2->GetRegularFanin(0).node_view()->node();
+    if (IsArg(*arg_weight)) {
+      const AttrValue attr_wshape = arg_weight->attr().at("_handle_shapes");
+      if (attr_wshape.list().shape().empty()) return false;
+      const TensorShapeProto& wshape_proto = attr_wshape.list().shape(0);
+      if (!Is2D(wshape_proto)) return false;
+      weight_dim = TensorShape(wshape_proto).dim_size(1);
+    } else if (IsVarHandle(*arg_weight)) {
+      const AttrValue attr_wshape = arg_weight->attr().at("shape");
+      const TensorShapeProto& wshape_proto = attr_wshape.shape();
+      if (!Is2D(wshape_proto)) return false;
+      if (IsUnknown(wshape_proto.dim(wshape_proto.dim_size() - 1)))
+        return false;
+      weight_dim = TensorShape(wshape_proto).dim_size(1);
+    } else {
+      return false;
+    }
   }
+
   if (bias_dim != weight_dim) return false;
 
   // For keras training, matmul will output to both reshape and shape (gradient)
