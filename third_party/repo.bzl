@@ -83,6 +83,15 @@ def _tf_http_archive(ctx):
              "put the correctly formatted mirror URL there anyway, because " +
              "someone will come along shortly thereafter and mirror the file.")
 
+    # For some reason, we need to "resolve" labels once before the
+    # download_and_extract otherwise it'll invalidate and re-download the
+    # archive each time.
+    # https://github.com/bazelbuild/bazel/issues/10515
+    patch_files = ctx.attr.patch_file
+    for patch_file in patch_files:
+        if patch_file:
+            ctx.path(Label(patch_file))
+
     urls = []
     for url in ctx.attr.urls:
         if "PWD" in url:
@@ -99,8 +108,11 @@ def _tf_http_archive(ctx):
         )
         if ctx.attr.delete:
             _apply_delete(ctx, ctx.attr.delete)
-        if ctx.attr.patch_file != None:
-            _apply_patch(ctx, ctx.attr.patch_file)
+        if patch_files:
+            for patch_file in patch_files:
+                patch_file = ctx.path(Label(patch_file)) if patch_file else None
+                if patch_file:
+                    ctx.patch(patch_file, strip = 1)
 
     if use_syslib and ctx.attr.system_build_file != None:
         # Use BUILD.bazel to avoid conflict with third party projects with
@@ -128,7 +140,7 @@ tf_http_archive = repository_rule(
         "strip_prefix": attr.string(),
         "type": attr.string(),
         "delete": attr.string_list(),
-        "patch_file": attr.label(),
+        "patch_file": attr.string_list(),
         "build_file": attr.label(),
         "system_build_file": attr.label(),
         "system_link_files": attr.string_dict(),

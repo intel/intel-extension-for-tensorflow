@@ -131,7 +131,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     tf_http_archive(
         name = "com_google_protobuf",
-        patch_file = clean_dep("//third_party/protobuf:protobuf.patch"),
+        patch_file = ["//third_party/protobuf:protobuf.patch"],
         #build_file = clean_dep("//third_party/systemlibs:protobuf.BUILD"),
         sha256 = "cfcba2df10feec52a84208693937c17a4b5df7775e1635c1e3baffc487b24c9b",
         strip_prefix = "protobuf-3.9.2",
@@ -208,7 +208,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     tf_http_archive(
         name = "eigen_archive",
         build_file = clean_dep("//third_party:eigen.BUILD"),
-        patch_file = clean_dep("//third_party/eigen3:intel_ext.patch"),
+        patch_file = ["//third_party/eigen3:intel_ext.patch"],
         sha256 = "a3c10a8c14f55e9f09f98b0a0ac6874c21bda91f65b7469d9b1f6925990e867b",
         strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
         urls = [
