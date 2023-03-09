@@ -136,7 +136,7 @@ StatusOr<std::unique_ptr<PjRtClient>> GetStreamExecutorXpuClient(
   devices = BuildLocalDevices(std::move(local_device_states));
   // }
   return std::unique_ptr<PjRtClient>(std::make_unique<StreamExecutorXpuClient>(
-      "tpu", xla_client, std::move(devices),
+      XpuName(), xla_client, std::move(devices),
       /*node_id=*/node_id, nullptr, nullptr,
       /*should_stage_host_to_device_transfers=*/true,
       /*gpu_run_options=*/std::move(gpu_run_options)));

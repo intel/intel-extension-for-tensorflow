@@ -131,7 +131,7 @@ PjRtPlatformId PjRtStreamExecutorDevice::platform_id() const {
   return client_->platform_id();
 }
 absl::string_view PjRtStreamExecutorDevice::platform_name() const {
-  return "sycl";
+  return client_->platform_name();
 }
 
 StatusOr<LocalDeviceState*> PjRtStreamExecutorDevice::GetLocalDeviceState()
