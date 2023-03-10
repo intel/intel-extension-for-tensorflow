@@ -407,6 +407,20 @@ struct KerasDenseLayerFwd {
   int shape_ = kMissingIndex;  // for training
 };
 
+struct MatmulReshapeBiasadd {
+  MatmulReshapeBiasadd() = default;
+  MatmulReshapeBiasadd(int matmul, int reshape, int bias, int activation)
+      : matmul_(matmul),
+        reshape_(reshape),
+        bias_(bias),
+        activation_(activation) {}
+
+  int matmul_ = kMissingIndex;
+  int reshape_ = kMissingIndex;
+  int bias_ = kMissingIndex;
+  int activation_ = kMissingIndex;
+};
+
 bool IsAddWithNoBroadcast(const RemapperContext& ctx, const NodeDef& node) {
   if (!IsAdd(node)) return false;
 
@@ -862,6 +876,74 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
   const KerasDenseLayerFwd pattern{matmul->node_index(),
                                    node_view->node_index(), bias_index,
                                    activation_index, shape_index};
+  *matched = pattern;
+  return true;
+}
+
+bool FindMatmulReshapeBiasadd(const RemapperContext& ctx, int node_index,
+                              MatmulReshapeBiasadd* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // Root of the pattern must be a Reshape.
+  // find reshape + biasadd + activation
+  int bias_index = kMissingIndex;
+  int activation_index = kMissingIndex;
+  const auto* reshape = node_view->node();
+  if (!reshape || !IsReshape(*reshape) || HasControlFaninOrFanout(*node_view) ||
+      IsInPreserveSet(ctx, node_view->node()))
+    return false;
+
+  if (node_view->NumRegularFanouts() != 1) return false;
+  const auto& reshape_fanout_0 = node_view->GetRegularFanouts()[0];
+  if (reshape_fanout_0.size() != 1) return false;
+
+  const auto* biasadd = reshape_fanout_0[0].node_view();
+  if (!IsBiasAdd(*biasadd->node()) || HasControlFaninOrFanout(*biasadd) ||
+      IsInPreserveSet(ctx, biasadd->node()))
+    return false;
+
+  bias_index = biasadd->node_index();
+  if (biasadd->NumRegularFanouts() == 1) {
+    const auto& biasadd_fanout_0 = biasadd->GetRegularFanouts()[0];
+    if (biasadd_fanout_0.size() == 1) {
+      const auto* gelu = biasadd_fanout_0[0].node_view();
+      if (IsSupportedActivation(*gelu->node()) &&
+          !HasControlFaninOrFanout(*gelu) &&
+          !IsInPreserveSet(ctx, gelu->node())) {
+        activation_index = gelu->node_index();
+      }
+    }
+  }
+
+  if (biasadd->NumRegularFanins() != 2) return false;
+  auto* constant_b = biasadd->GetRegularFanin(1).node_view();
+  if (!IsConstant(*constant_b->node())) return false;
+
+  // Qdq -> MatMul -> reshape
+  if (node_view->NumRegularFanins() != 2) return false;
+  auto* matmul = node_view->GetRegularFanin(0).node_view();
+  if (!IsMatMul(*matmul->node())) return false;
+  auto* dequantize = matmul->GetRegularFanin(1).node_view();
+  if (!IsDequantize(*dequantize->node())) return false;
+  int bias_dim = 0;
+  int weight_dim = 0;
+
+  std::vector<OpInfo_TensorProperties> props_bias;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+      biasadd->node()->name(), &props_bias));
+  if (props_bias.empty() || Rank(props_bias[1].shape()) < 1) return false;
+  bias_dim = props_bias[1].shape().dim(0).size();
+
+  std::vector<OpInfo_TensorProperties> props_weight;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+      matmul->node()->name(), &props_weight));
+  if (props_weight.empty() || Rank(props_weight[1].shape()) < 2) return false;
+  weight_dim = props_weight[1].shape().dim(1).size();
+
+  if (bias_dim != weight_dim) return false;
+
+  const MatmulReshapeBiasadd pattern{matmul->node_index(),
+                                     node_view->node_index(), bias_index,
+                                     activation_index};
   *matched = pattern;
   return true;
 }
@@ -2934,6 +3016,83 @@ Status AddKerasDenseLayerFwd(RemapperContext* ctx,
     (*invalidated_nodes)[matched.bias_] = true;
     (*invalidated_nodes)[matched.reshape_] = true;
     (*nodes_to_delete)[matched.matmul_] = true;
+
+    TF_ABORT_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+    return Status::OK();
+  }
+}
+
+Status AddMatmulReshapeBiasadd(RemapperContext* ctx,
+                               const MatmulReshapeBiasadd& matched,
+                               std::vector<bool>* invalidated_nodes,
+                               std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& reshape = graph->node(matched.reshape_);
+  const NodeDef& bias = graph->node(matched.bias_);
+
+  if (matched.activation_ != kMissingIndex) {
+    const NodeDef& activation = graph->node(matched.activation_);
+    NodeDef fused_node;
+    fused_node.set_op(kBiasAdd);
+    fused_node.set_device(bias.device());
+    fused_node.set_name(reshape.name());
+    fused_node.add_input(reshape.input(0));
+    fused_node.add_input(bias.input(1));
+    CopyAllAttrs(bias, &fused_node);
+
+    NodeDef new_activation;
+    new_activation.set_op(activation.op());
+    new_activation.set_device(activation.device());
+    new_activation.set_name(bias.name());
+    new_activation.add_input(bias.input(0));
+    CopyAllAttrs(activation, &new_activation);
+
+    NodeDef new_reshape;
+    new_reshape.set_op(kReshape);
+    new_reshape.set_device(reshape.device());
+    new_reshape.set_name(activation.name());
+    new_reshape.add_input(activation.input(0));
+    new_reshape.add_input(reshape.input(1));
+    CopyAllAttrs(reshape, &new_reshape);
+
+    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+    Status status;
+
+    mutation->AddNode(std::move(fused_node), &status);
+    mutation->AddNode(std::move(new_reshape), &status);
+    mutation->AddNode(std::move(new_activation), &status);
+    (*invalidated_nodes)[matched.bias_] = true;
+    (*invalidated_nodes)[matched.reshape_] = true;
+    (*invalidated_nodes)[matched.activation_] = true;
+
+    TF_ABORT_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+    return Status::OK();
+  } else {
+    NodeDef fused_node;
+    fused_node.set_op(kBiasAdd);
+    fused_node.set_name(reshape.name());
+    fused_node.set_device(bias.device());
+    fused_node.add_input(reshape.input(0));
+    fused_node.add_input(bias.input(1));
+    CopyAllAttrs(bias, &fused_node);
+
+    NodeDef new_reshape;
+    new_reshape.set_op(kReshape);
+    new_reshape.set_device(reshape.device());
+    new_reshape.set_name(bias.name());
+    new_reshape.add_input(bias.input(0));
+    new_reshape.add_input(reshape.input(1));
+    CopyAllAttrs(reshape, &new_reshape);
+
+    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+    Status status;
+
+    mutation->AddNode(std::move(fused_node), &status);
+    mutation->AddNode(std::move(new_reshape), &status);
+    (*invalidated_nodes)[matched.bias_] = true;
+    (*invalidated_nodes)[matched.reshape_] = true;
 
     TF_ABORT_IF_ERROR(status);
     TF_ABORT_IF_ERROR(mutation->Apply());
@@ -5084,6 +5243,13 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       if (FindDropout(ctx, i, &dropout)) {
         TF_ABORT_IF_ERROR(
             AddDropout(&ctx, dropout, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+      MatmulReshapeBiasadd matmul_reshape_biasadd;
+      if (FindMatmulReshapeBiasadd(ctx, i, &matmul_reshape_biasadd)) {
+        TF_ABORT_IF_ERROR(AddMatmulReshapeBiasadd(&ctx, matmul_reshape_biasadd,
+                                                  &invalidated_nodes,
+                                                  &nodes_to_delete));
         continue;
       }
     }
