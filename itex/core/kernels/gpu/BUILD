@@ -1371,6 +1371,25 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_fill_empty_rows_op",
+    srcs = ["sparse_fill_empty_rows_op.cc"],
+    hdrs = [
+        "sparse_fill_empty_rows_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/gpu:scan_ops",
+        "//itex/core/kernels/gpu:topk_op",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_slice_grad_op",
     srcs = ["sparse_slice_grad_op.cc"],
     hdrs = [
@@ -2067,6 +2086,7 @@ GPU_KERNELS = [
     ":softplus_op",
     ":softsign_op",
     ":spacetobatch_op",
+    ":sparse_fill_empty_rows_op",
     ":sparse_math_ops",
     ":sparse_slice_grad_op",
     ":sparse_slice_op",

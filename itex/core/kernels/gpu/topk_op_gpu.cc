@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2022 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 
@@ -516,7 +516,7 @@ void LaunchLargeKKernel(OpKernelContext* context, const T* input,
     const Eigen::DSizes<Eigen::DenseIndex, 2> slice_sizes{num_rows, num_topk};
     To32Bit(values).device(d) =
         To32Bit(values_tmp_pong.matrix<T>()).slice(slice_indices, slice_sizes);
-    To32Bit(indices).device(d) = To32Bit(indices_tmp_pong.matrix<int32>())
+    To32Bit(indices).device(d) = To32Bit(indices_tmp_pong.matrix<IndexT>())
                                      .slice(slice_indices, slice_sizes);
   }
 }
@@ -631,7 +631,13 @@ void TopKFunctor<GPUDevice, T, IndexT>::operator()(
   template void DispatchToFallBackRadixSort<T, int32>(                       \
       const gpuStream_t& stream, const T* key_array, T* key_src, T* key_dst, \
       int32* value_src, int32* value_dst, const int num_rows,                \
+      const int num_cols, const int max_group_size);                         \
+  template struct TopKFunctor<GPUDevice, T, int64>;                          \
+  template void DispatchToFallBackRadixSort<T, int64>(                       \
+      const gpuStream_t& stream, const T* key_array, T* key_src, T* key_dst, \
+      int64* value_src, int64* value_dst, const int num_rows,                \
       const int num_cols, const int max_group_size);
+
 TF_CALL_GPU_NUMBER_TYPES(INSTANTIATE_GPU);
 TF_CALL_INTEGRAL_TYPES(INSTANTIATE_GPU);
 #ifdef ITEX_ENABLE_DOUBLE

@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2022 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Copyright 2018 The TensorFlow Authors. All Rights Reserved.
 
@@ -436,11 +436,11 @@ void launchFullScanImpl(OpKernelContext* ctx, InputT* in, OutputT* out,
 template <typename InputT, typename OutputT, typename InitValueT,
           typename BinaryOp, typename InputFunctor = internal::Identity<InputT>,
           typename OutputFunctor = internal::Identity<InitValueT>>
-void launchFullScan(OpKernelContext* ctx, InputT* in, OutputT* out,
-                    InitValueT init, BinaryOp binary_op,
-                    const bool is_exclusive, const bool is_reverse, const int N,
-                    InputFunctor in_func = internal::Identity<InputT>(),
-                    OutputFunctor out_func = internal::Identity<InitValueT>()) {
+Status launchFullScan(
+    OpKernelContext* ctx, InputT* in, OutputT* out, InitValueT init,
+    BinaryOp binary_op, const bool is_exclusive, const bool is_reverse,
+    const int N, InputFunctor in_func = internal::Identity<InputT>(),
+    OutputFunctor out_func = internal::Identity<InitValueT>()) {
   if (is_exclusive) {
     if (is_reverse)
       internal::launchFullScanImpl<InputT, OutputT, InitValueT, BinaryOp, true,
@@ -460,6 +460,7 @@ void launchFullScan(OpKernelContext* ctx, InputT* in, OutputT* out,
                                    false, InputFunctor, OutputFunctor>(
           ctx, in, out, init, binary_op, N, in_func, out_func);
   }
+  return Status::OK();
 }
 
 }  // namespace functor
@@ -835,26 +836,20 @@ void optimizedOuterScanKernelFunc(OpKernelContext* ctx, InputT* in,
 
   auto& stream = (ctx->eigen_gpu_device()).stream();
   stream->submit([&](sycl::handler& cgh) {
-    sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                   sycl::access::target::local>
-        scratch(SubGroupSize * NumSubGroup, cgh);
-    sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                   sycl::access::target::local>
-        scratch_carry(SubGroupSize * k, cgh);
-    OptimizedOuterScan<
-        InputT, OutputT, InitValueT, BinaryOp,
-        sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                       sycl::access::target::local>,
-        GroupSize, SubGroupSize, IsExclusive, IsReverse, InputFunctor,
-        OutputFunctor>
+    sycl::local_accessor<InitValueT, 1> scratch(SubGroupSize * NumSubGroup,
+                                                cgh);
+    sycl::local_accessor<InitValueT, 1> scratch_carry(SubGroupSize * k, cgh);
+    OptimizedOuterScan<InputT, OutputT, InitValueT, BinaryOp,
+                       sycl::local_accessor<InitValueT, 1>, GroupSize,
+                       SubGroupSize, IsExclusive, IsReverse, InputFunctor,
+                       OutputFunctor>
         task(in, out, scratch, scratch_carry, init, binary_op, num_outer,
              num_scaned, num_inner, elems_per_work_item, k, in_func, out_func);
     cgh.parallel_for<OptimizedOuterScan<
         InputT, OutputT, InitValueT, BinaryOp,
-        sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                       sycl::access::target::local>,
-        GroupSize, SubGroupSize, IsExclusive, IsReverse, InputFunctor,
-        OutputFunctor>>(thread_range, task);
+        sycl::local_accessor<InitValueT, 1>, GroupSize, SubGroupSize,
+        IsExclusive, IsReverse, InputFunctor, OutputFunctor>>(thread_range,
+                                                              task);
   });
 }
 

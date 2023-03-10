@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2022 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -426,6 +426,14 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
         DataTypeToEnum<ValueT>::value, TensorShape({size}), &tmp_indices_in));
     ValueT* mutable_indices_in = tmp_indices_in.flat<ValueT>().data();
     indices_in = mutable_indices_in;
+  }
+
+  Tensor tmp_keys_out;
+  if (!keys_out) {
+    TF_RETURN_IF_ERROR(context->allocate_temp(
+        DataTypeToEnum<KeyT>::value, TensorShape({size}), &tmp_keys_out));
+    KeyT* mutable_keys_out = tmp_keys_out.flat<KeyT>().data();
+    keys_out = mutable_keys_out;
   }
 
   if (size <= KEYS_PER_ITEM * GROUP_SIZE) {

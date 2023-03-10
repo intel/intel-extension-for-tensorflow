@@ -51,10 +51,10 @@ template <typename T, typename TIndex>
 Status InputCumSum<T, TIndex>::Compute(
     OpKernelContext* context, typename TTypes<T>::ConstFlat input,
     typename TTypes<TIndex>::Vec input_cumsum, TIndex num_elems) {
-  launchFullScan<const T, TIndex, TIndex, sycl::plus<TIndex>,
-                 NonZero<T, TIndex>>(context, input.data(), input_cumsum.data(),
-                                     TIndex(0), sycl::plus<TIndex>(), false,
-                                     false, num_elems, NonZero<T, TIndex>());
+  TF_RETURN_IF_ERROR(launchFullScan<const T, TIndex, TIndex, sycl::plus<TIndex>,
+                                    NonZero<T, TIndex>>(
+      context, input.data(), input_cumsum.data(), TIndex(0),
+      sycl::plus<TIndex>(), false, false, num_elems, NonZero<T, TIndex>()));
   return Status::OK();
 }
 
