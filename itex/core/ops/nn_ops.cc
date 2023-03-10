@@ -4153,8 +4153,6 @@ void Register_ITEXFusedQuantizedConv2DWithDequantizeOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "min_freezed_output: float");
     TF_OpDefinitionBuilderAddInput(op_builder, "max_freezed_output: float");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: out_type");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "min_output: float");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "max_output: float");
 
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tinput: quantizedtype");
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tfilter: quantizedtype");
@@ -4195,8 +4193,6 @@ void Register_ITEXFusedQuantizedConv2DWithCastOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "min_freezed_output: float");
     TF_OpDefinitionBuilderAddInput(op_builder, "max_freezed_output: float");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: out_type");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "min_output: float");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "max_output: float");
 
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tinput: quantizedtype");
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tfilter: quantizedtype");

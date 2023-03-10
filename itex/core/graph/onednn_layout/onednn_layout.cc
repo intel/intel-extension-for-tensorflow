@@ -75,7 +75,6 @@ bool IsOneDnnLayoutPartialDependentOp(const string& op_name) {
   // plain(Eigen) layout output only
   static const std::unordered_set<string> PartialDependentOp = {
       "_OneDnnFusedDequantizeWithReshape",
-      "_OneDnnQuantizedConv2DWithDequantize",
       "_OneDnnQuantizedReshape",
       "_OneDnnQuantizedTranspose",
       "_OneDnnReshape",

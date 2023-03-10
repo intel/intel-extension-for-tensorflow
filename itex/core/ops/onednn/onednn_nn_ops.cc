@@ -2945,11 +2945,7 @@ void Register_OneDnnQuantizedConv2DWithDequantizeOp() {
     TF_OpDefinitionBuilderAddInput(op_builder,
                                    "max_freezed_output_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: out_type");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "min_output: float");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "max_output: float");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output_meta: uint8");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "min_output_meta:  uint8");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "max_output_meta:  uint8");
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tinput: quantizedtype");
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tfilter: quantizedtype");
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tbias: {float, qint32}");

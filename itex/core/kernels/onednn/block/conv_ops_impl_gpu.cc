@@ -794,11 +794,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, float, float, qint8,
                                           true, false>);
 REGISTER_KERNEL_BUILDER(
@@ -823,11 +819,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, float, float,
                                           qint8, true, false>);
 REGISTER_KERNEL_BUILDER(
@@ -852,11 +844,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, qint32, float,
                                           qint8, true, false>);
 
@@ -882,11 +870,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, qint32, float,
                                           qint8, true, false>);
 
@@ -912,11 +896,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, float, Eigen::half,
                                           qint8, true, false>);
 
@@ -942,11 +922,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, float, Eigen::half,
                                           qint8, true, false>);
 
@@ -972,11 +948,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, qint32, Eigen::half,
                                           qint8, true, false>);
 REGISTER_KERNEL_BUILDER(
@@ -1001,11 +973,7 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_filter_meta")
         .HostMemory("min_freezed_output_meta")
         .HostMemory("max_freezed_output_meta")
-        .HostMemory("min_output")
-        .HostMemory("max_output")
-        .HostMemory("output_meta")
-        .HostMemory("min_output_meta")
-        .HostMemory("max_output_meta"),
+        .HostMemory("output_meta"),
     OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, qint32,
                                           Eigen::half, qint8, true, false>);
 #endif

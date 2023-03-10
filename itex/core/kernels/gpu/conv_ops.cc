@@ -117,9 +117,7 @@ TF_CALL_double(REGISTER_GPU_CONV_DOUBLE);
                               .HostMemory("min_filter")                \
                               .HostMemory("max_filter")                \
                               .HostMemory("min_freezed_output")        \
-                              .HostMemory("max_freezed_output")        \
-                              .HostMemory("min_output")                \
-                              .HostMemory("max_output"),               \
+                              .HostMemory("max_freezed_output"),       \
                           NoImplementOp);                              \
   REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConv2DWithCast")         \
                               .Device(DEVICE_GPU)                      \
@@ -132,9 +130,7 @@ TF_CALL_double(REGISTER_GPU_CONV_DOUBLE);
                               .HostMemory("min_filter")                \
                               .HostMemory("max_filter")                \
                               .HostMemory("min_freezed_output")        \
-                              .HostMemory("max_freezed_output")        \
-                              .HostMemory("min_output")                \
-                              .HostMemory("max_output"),               \
+                              .HostMemory("max_freezed_output"),       \
                           NoImplementOp);                              \
   REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConv2DWithDequantize")   \
                               .Device(DEVICE_GPU)                      \
@@ -147,9 +143,7 @@ TF_CALL_double(REGISTER_GPU_CONV_DOUBLE);
                               .HostMemory("min_filter")                \
                               .HostMemory("max_filter")                \
                               .HostMemory("min_freezed_output")        \
-                              .HostMemory("max_freezed_output")        \
-                              .HostMemory("min_output")                \
-                              .HostMemory("max_output"),               \
+                              .HostMemory("max_freezed_output"),       \
                           NoImplementOp);                              \
   REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConv2DWithCast")         \
                               .Device(DEVICE_GPU)                      \
@@ -162,9 +156,7 @@ TF_CALL_double(REGISTER_GPU_CONV_DOUBLE);
                               .HostMemory("min_filter")                \
                               .HostMemory("max_filter")                \
                               .HostMemory("min_freezed_output")        \
-                              .HostMemory("max_freezed_output")        \
-                              .HostMemory("min_output")                \
-                              .HostMemory("max_output"),               \
+                              .HostMemory("max_freezed_output"),       \
                           NoImplementOp);
 TF_CALL_qint32(REGISTER_GPU_FUSED_QUANTIZEDCONV);
 TF_CALL_float(REGISTER_GPU_FUSED_QUANTIZEDCONV);
