@@ -409,8 +409,12 @@ struct SGVecColReductionKernel {
       vecT tmp;
       PacketLoad(in_data, offset, &tmp);
 
+      // TODO(itex): remove this in_func to PacketLoad, as there is two cast,
+      // may cause accuracy drop, especially for fp16/bf16
       for (int j = 0; j < VEC_SIZE; ++j) {
-        aggregate[j] = op(aggregate[j], tmp[j]);
+        InitValueT value =
+            static_cast<InitValueT>(in_func(static_cast<InT>(aggregate[j])));
+        aggregate[j] = op(value, tmp[j]);
       }
     }
     // each subgroup write result to slm
@@ -450,6 +454,9 @@ struct SGVecColReductionKernel {
                                  i * ColReductionPolicy::SUB_GROUP_SIZE][j]);
         }
       }
+
+      for (int j = 0; j < VEC_SIZE; ++j) tmp[j] = out_func(tmp[j]);
+
       int offset =
           x_group_id * extend_z * num_segments_y + y_group_id * extend_z +
           z_group_id * local_item_on_z * VEC_SIZE + slm_z_id * VEC_SIZE;
