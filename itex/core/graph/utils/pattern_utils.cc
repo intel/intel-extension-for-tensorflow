@@ -35,10 +35,24 @@ inline const bool IsCommutativeOp(const string& op) {
   return commutative_ops.contains(op);
 }
 
-// op1 is an op name in the pattern and it could be wildcard `*` or some
-// registered op in tensorflow. op2 is an op name in the computation graph and
-// is always one of the registered ops in tensorflow.
-inline bool IsSame(string op1, string op2) { return op1 == "*" || op1 == op2; }
+// `expected` are op names in the pattern and they could be wildcard `*` or
+// some registered op in tensorflow. `input` are real op names in the
+// computation graph.
+// Look further if any input is wildcard `*`.
+inline bool NeedSwap(string input_0, string expected_0, string input_1,
+                     string expected_1) {
+  // Do not swap if the original order can be matched.
+  // TODO(itex): Continue swapping even it's matched for further optimization.
+  if (input_0 == expected_0 && input_1 == expected_1) return false;
+
+  if (input_0 == expected_1 && input_1 == expected_0) return true;
+
+  if (expected_0 == "*" && input_0 == expected_1) return true;
+
+  if (expected_1 == "*" && input_1 == expected_0) return true;
+
+  return false;
+}
 
 inline bool HasUndeterminedSameTypeInputs(const OpTypePattern& pattern) {
   // Only support 1 undetermined same type of inputs
@@ -215,8 +229,10 @@ bool SubGraphMatcher<MatchingDirection::kFollowInputs>::DoesOpTypePatternMatch(
       if (IsCommutativeOp(op_name) && num_children == 2) {
         MutableNodeView* graph_child0_node_view =
             graph_view_->GetNode(graph_children[0].node_index());
-        if (!IsSame(pattern.children[0].op, graph_child0_node_view->GetOp()) &&
-            IsSame(pattern.children[1].op, graph_child0_node_view->GetOp()))
+        MutableNodeView* graph_child1_node_view =
+            graph_view_->GetNode(graph_children[1].node_index());
+        if (NeedSwap(graph_child0_node_view->GetOp(), pattern.children[0].op,
+                     graph_child1_node_view->GetOp(), pattern.children[1].op))
           std::swap(pattern_child_indices[0], pattern_child_indices[1]);
       }
 
