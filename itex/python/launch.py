@@ -198,30 +198,30 @@ class Launcher():
     if enable_tcmalloc:
       find_tc = self.add_lib_preload(lib_type="tcmalloc")
       if not find_tc:
-        logger.warning("Unable to find the {} library file lib{}.so"
+        logger.warning("Unable to find the %s library file lib%s.so"
                        " in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib"
                        " or /.local/lib/ or /usr/local/lib/ or"
                        " /usr/local/lib64/ or /usr/lib or /usr/lib64 or "
-                       "{}/.local/lib/ so the LD_PRELOAD environment variable"
+                       "%s/.local/lib/ so the LD_PRELOAD environment variable"
                        " will not be set. You can use "
                        "'conda install -c conda-forge gperftools' "
-                       "to install tcmalloc"
-                       .format("TCmalloc", "tcmalloc", expanduser("~")))
+                       "to install tcmalloc", "TCmalloc", "tcmalloc",
+                       expanduser("~"))
       else:
         logger.info("Use TCMalloc memory allocator")
 
     elif enable_jemalloc:
       find_je = self.add_lib_preload(lib_type="jemalloc")
       if not find_je:
-        logger.warning("Unable to find the {} library file lib{}.so"
+        logger.warning("Unable to find the %s library file lib%s.so"
                        " in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib"
                        " or /.local/lib/ or /usr/local/lib/ or"
                        " /usr/local/lib64/ or /usr/lib or /usr/lib64 or "
-                       "{}/.local/lib/ so the LD_PRELOAD environment variable"
+                       "%s/.local/lib/ so the LD_PRELOAD environment variable"
                        " will not be set. You can use "
                        "'conda install -c conda-forge jemalloc'"
-                       " to install jemalloc"
-                       .format("JeMalloc", "jemalloc", expanduser("~")))
+                       " to install jemalloc", "JeMalloc", "jemalloc",
+                       expanduser("~"))
       else:
         logger.info("Use JeMalloc memory allocator")
         self.set_env(
@@ -244,13 +244,13 @@ class Launcher():
                      " $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib"
                      " or /.local/lib/ or /usr/local/lib/ or "
                      "/usr/local/lib64/ or /usr/lib or /usr/lib64 or "
-                     "{}/.local/lib/ so the LD_PRELOAD environment "
+                     "%s/.local/lib/ so the LD_PRELOAD environment "
                      "variable will not be set. This may drop the performance."
-                     .format(expanduser("~")))
+                     , expanduser("~"))
 
   def logger_env(self, env_name=""):
     if env_name in os.environ:
-      logger.info("{}={}".format(env_name, os.environ[env_name]))
+      logger.info("%s=%s", env_name, os.environ[env_name])
 
   def set_env(self, env_name, env_value=None):
     if not env_value:
@@ -258,9 +258,9 @@ class Launcher():
     if env_name not in os.environ:
       os.environ[env_name] = env_value
     elif os.environ[env_name] != env_value:
-      logger.warning("{} in environment variable is {} "
-                     "while the value you set is {}"
-                     .format(env_name, os.environ[env_name], env_value))
+      logger.warning("%s in environment variable is %s "
+                     "while the value you set is %s", env_name,
+                     os.environ[env_name], env_value)
     self.logger_env(env_name)
 
   # set_kmp_affinity is used to control whether to set KMP_AFFINITY or not.
@@ -296,7 +296,7 @@ class Launcher():
       try:
         num = int(num_inter)
         assert num >= -1
-      except BaseException:
+      except ValueError:
         logger.error(
             "tf_num_interop_threads should be an integer >= -1, "
             "but input is %s.", 'num_inter')
@@ -308,7 +308,7 @@ class Launcher():
       try:
         num = int(num_intra)
         assert num >= 0
-      except BaseException:
+      except ValueError:
         logger.error(
             "tf_num_intraop_threads should be an integer >= 0, "
             "but input is %s.", 'num_intra')
@@ -344,10 +344,10 @@ class MultiInstanceLauncher(Launcher):
         sys.exit(-1)
       elif args.ninstances > 1 and args.ncore_per_instance \
            * args.ninstances < len(cores):
-        logger.warning("only first {} cores will be used, "
-                       "but you specify {} cores in core_list".format(
-                           args.ncore_per_instance * args.ninstances, \
-                           len(cores)))
+        logger.warning("only first %s cores will be used, "
+                       "but you specify %s cores in core_list",
+                       args.ncore_per_instance * args.ninstances, \
+                       len(cores))
       else:
         args.ninstances = len(cores) // args.ncore_per_instance
 
@@ -372,12 +372,11 @@ class MultiInstanceLauncher(Launcher):
         num_leftover_cores = ncore_per_node % args.ncore_per_instance
         if args.ncore_per_instance > ncore_per_node:
           # too many ncore_per_instance to skip cross-node cores
-          logger.warning("there are {} core(s) per socket, "
-                         "but you specify {} ncore_per_instance "
+          logger.warning("there are %s core(s) per socket, "
+                         "but you specify %s ncore_per_instance "
                          "and skip_cross_node_cores. "
                          "Please make sure --ncore_per_instance < core(s) "
-                         "per socket".format(
-                             ncore_per_node, args.ncore_per_instance))
+                         "per socket", ncore_per_node, args.ncore_per_instance)
           sys.exit(-1)
         elif num_leftover_cores == 0:
           # aren't any cross-node cores
@@ -385,6 +384,7 @@ class MultiInstanceLauncher(Launcher):
               '--skip_cross_node_cores is set, but there are no \
                cross-node cores.')
           args.ninstances = len(cores) // args.ncore_per_instance
+          return cores
         else:
           # skip cross-node cores
           if args.ninstances != -1:
@@ -402,6 +402,7 @@ class MultiInstanceLauncher(Launcher):
           assert len(cores) % args.ncore_per_instance == 0
           args.ninstances = len(cores) // args.ncore_per_instance
           return cores
+
       if not args.multi_instance and args.ninstances == - \
               1 and args.ncore_per_instance == -1:
         args.ninstances = 1
@@ -411,10 +412,10 @@ class MultiInstanceLauncher(Launcher):
         args.throughput_mode = True
       elif args.ncore_per_instance == -1 and args.ninstances != -1:
         if args.ninstances > len(cores):
-          logger.error("there are {} total cores but you specify \
-                        {} ninstances; "
-                       "please make sure ninstances <= total_cores)".format(
-                           len(cores), args.ninstances))
+          logger.error("there are %s total cores but you specify \
+                        %s ninstances; "
+                       "please make sure ninstances <= total_cores)",
+                       len(cores), args.ninstances)
           sys.exit(-1)
         else:
           args.ncore_per_instance = len(cores) // args.ninstances
@@ -452,8 +453,8 @@ class MultiInstanceLauncher(Launcher):
         args.ncore_per_instance = len(cores) // args.ninstances
 
     if args.ninstances > 1 and args.instance_idx != -1:
-      logger.info("assigning {} cores for instance {}".format(
-          args.ncore_per_instance, args.instance_idx))
+      logger.info("assigning %s cores for instance %s", args.ncore_per_instance,
+      args.instance_idx)
 
     if not args.disable_numactl:
       numactl_available = self.is_numactl_available()
@@ -744,7 +745,7 @@ def main():
   launcher = MultiInstanceLauncher()
   launcher.launch(args)
   for x in sorted(set(os.environ.keys()) - env_before):
-    logger.debug('{0}={1}'.format(x, os.environ[x]))
+    logger.debug('%s=%s', x, os.environ[x])
 
 
 if __name__ == "__main__":
