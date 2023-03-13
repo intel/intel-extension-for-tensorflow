@@ -35,7 +35,7 @@ class GELUTest(test_util.TensorFlowTestCase):
     with self.session(use_gpu=True) as sess:
       tf_gelu = tf.nn.gelu(x)
       tf_result = sess.run(tf_gelu, feed_dict={x:x_arr})
-      itex.itex_experimental_api_opt()
+      itex.experimental_ops_override()
       itex_gelu = tf.nn.gelu(x)
       itex_result = sess.run(itex_gelu, feed_dict={x:x_arr})
       self.assertAllClose(itex_result, tf_result, rtol=1e-2, atol=1e-2)

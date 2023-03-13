@@ -335,7 +335,7 @@ def _can_use_onednn_layer_norm(self, ndims):
 
   return can_use_onednn_layer_norm
 
-def itex_experimental_api_opt():
+def experimental_ops_override():
   '''
   using itex api in some tf and keras functions.
   '''
@@ -522,18 +522,18 @@ def itex_experimental_api_opt():
     tf.keras.layers.LayerNormalization.call = itex_layer_norm_call
     tf.keras.layers.LayerNormalization.build = itex_layer_norm_build
     tf.nn.gelu = gelu
-    logger.info("itex experimental api optimization enabled.")
+    logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
-    logger.error("Cannot do optimization for itex experimental api.")
+    logger.error("Cannot override itex ops.")
   try:
     import keras # pylint: disable=import-outside-toplevel
     keras.layers.core.dense.Dense.call = itex_dense_layer_call
     keras.layers.LayerNormalization.call = itex_layer_norm_call
     keras.layers.LayerNormalization.build = itex_layer_norm_build
   except BaseException: # pylint: disable=broad-except
-    logger.warning("itex experimental api optimization: Keras is not installed.") # pylint: disable=line-too-long
+    logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long
   try:
     import tensorflow_addons as tfa
     tfa.layers.InstanceNormalization.call = itex_instance_norm_call
   except BaseException: # pylint: disable=broad-except
-    logger.warning("itex experimental api optimization: tensorflow_addons is not installed.") # pylint: disable=line-too-long
+    logger.warning("itex experimental ops override: tensorflow_addons is not installed.") # pylint: disable=line-too-long

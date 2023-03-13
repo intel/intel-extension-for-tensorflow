@@ -76,7 +76,7 @@ class LayerNormalizationTest(test_util.TensorFlowTestCase):
         res_tf += self._testForwardPass((2, 2, 2, 2), (1, 3))
         res_tf += self._testForwardPass((2, 2, 2, 2), (2, 3))
         res_tf += self._testForwardPass((2, 3, 4, 5), (3,))
-        itex.itex_experimental_api_opt()
+        itex.experimental_ops_override()
         res_itex += self._testForwardPass((4, 3), (0,))
         res_itex += self._testForwardPass((3, 4), (1,))
         res_itex += self._testForwardPass((4, 3, 2), (0,))

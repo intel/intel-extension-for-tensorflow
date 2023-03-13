@@ -68,7 +68,7 @@ class InstanceNormTest(test_lib.TestCase):
 
     # Activate keras layer optimization.
     # Enable ITEX InstanceNorm call function.
-    itex.itex_experimental_api_opt()
+    itex.experimental_ops_override()
 
     opt_outputs = []
     opt_dx = []

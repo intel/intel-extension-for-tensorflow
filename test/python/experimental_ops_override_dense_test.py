@@ -33,7 +33,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         run_options = config_pb2.RunOptions(output_partition_graphs=True)
         metadata = config_pb2.RunMetadata()
         tf_result = [[[0.,1.0434492,1.3701142,0.24190968]], [[0.,4.2524147,1.6927314,0.32540703]]]
-        itex.itex_experimental_api_opt()
+        itex.experimental_ops_override()
         with self.session(use_gpu=True) as sess:
             tf.compat.v1.keras.backend.set_session(sess)
             inputs = tf.keras.Input(shape=(1,3,))
