@@ -138,17 +138,17 @@ python infer_fp32_vs_amp.py gpu fp16
 
 Run with CPU and BF16 data type:
 ```
-infer_fp32_vs_amp.sh cpu bf16
+./infer_fp32_vs_amp.sh cpu bf16
 ```
 
 Run with GPU and BF16 data type:
 ```
-infer_fp32_vs_amp.sh gpu bf16
+./infer_fp32_vs_amp.sh gpu bf16
 ```
 
 Run with GPU and FP16 data type:
 ```
-infer_fp32_vs_amp.sh gpu fp16
+./infer_fp32_vs_amp.sh gpu fp16
 ```
 
 ### Result

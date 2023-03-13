@@ -51,7 +51,7 @@ def set_itex_amp(amp_target):
 
     itex.set_config(config)
 
-    print("Set itex for AMP (auto_mixed_precision, {}_FP32) with backend {}".format(amp_target, backend))
+    print("Set itex for AMP (auto_mixed_precision, {}_FP32) with backend {}".format(amp_target, device))
 
 
 def main(device, amp):
