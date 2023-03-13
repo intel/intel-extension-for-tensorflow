@@ -5245,6 +5245,19 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
             AddDropout(&ctx, dropout, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
+
+      // Remap Gelu subgraph
+      std::map<string, int> matched_nodes_map;
+      std::set<int> remove_node_indices;
+      bool is_gelu_approximate = false;
+      if (FindGelu(&ctx, i, &matched_nodes_map, &remove_node_indices,
+                   &is_gelu_approximate)) {
+        TF_ABORT_IF_ERROR(AddGelu(&ctx, &matched_nodes_map,
+                                  &remove_node_indices, &invalidated_nodes,
+                                  &nodes_to_delete, is_gelu_approximate));
+        continue;
+      }
+
       MatmulReshapeBiasadd matmul_reshape_biasadd;
       if (FindMatmulReshapeBiasadd(ctx, i, &matmul_reshape_biasadd)) {
         TF_ABORT_IF_ERROR(AddMatmulReshapeBiasadd(&ctx, matmul_reshape_biasadd,
@@ -5303,18 +5316,6 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
         TF_ABORT_IF_ERROR(
             AddFusedContractionNode(&ctx, contract_with_bias_and_add,
                                     &invalidated_nodes, &nodes_to_delete));
-        continue;
-      }
-
-      // Remap Gelu subgraph
-      std::map<string, int> matched_nodes_map;
-      std::set<int> remove_node_indices;
-      bool is_gelu_approximate = false;
-      if (FindGelu(&ctx, i, &matched_nodes_map, &remove_node_indices,
-                   &is_gelu_approximate)) {
-        TF_ABORT_IF_ERROR(AddGelu(&ctx, &matched_nodes_map,
-                                  &remove_node_indices, &invalidated_nodes,
-                                  &nodes_to_delete, is_gelu_approximate));
         continue;
       }
 
