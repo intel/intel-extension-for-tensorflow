@@ -16,6 +16,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":tfg_passes_builder",
+        "//itex/core/experimental/XPUAutoShard:xpuautoshard",
         "//itex/core/graph:optimizer_config",
         "//itex/core/graph/utils:graph_properties",
         "//itex/core/graph/utils:graph_view",

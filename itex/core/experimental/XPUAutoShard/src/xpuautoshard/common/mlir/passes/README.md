@@ -1,0 +1,1 @@
+This folder contains optimization passes for HS IR.
