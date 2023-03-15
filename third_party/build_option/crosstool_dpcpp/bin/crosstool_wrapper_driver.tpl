@@ -115,8 +115,8 @@ def call_compiler(argv, link = False, dpcpp = True):
 
 # oneMKL config
   if '%{ONEAPI_MKL_PATH}':
-    compile_flags.append('-DMKL_ILP64')
-    compile_flags.append('-isystem %{ONEAPI_MKL_PATH}/include')
+    common_flags.append('-DMKL_ILP64')
+    common_flags.append('-isystem %{ONEAPI_MKL_PATH}/include')
     link_flags.append("-L%{ONEAPI_MKL_PATH}/lib/intel64")
     link_flags.append("-lmkl_sycl")
     link_flags.append("-lmkl_intel_ilp64")

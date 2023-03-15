@@ -249,7 +249,7 @@ def _tf_pip_impl(repository_ctx):
             "",
             jax_shared_library_name,
             [jax_shared_library_path],
-            ["lib_xla_extension.so"],
+            [jax_shared_library_name],
         )
     _tpl(repository_ctx, "BUILD", {
         "%{TF_HEADER_GENRULE}": tf_header_rule,
