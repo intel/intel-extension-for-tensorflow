@@ -19,6 +19,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import tensorflow as tf
 from intel_extension_for_tensorflow.python.test_func import test
 
 from tensorflow.python.eager import backprop
@@ -280,7 +281,7 @@ class GradientDescentOptimizerTest(test.TestCase):
         optimizer.apply_gradients([(grad, self.v)])
         return self.v.read_value()
 
-      compiled_step = function.defun(step)
+      compiled_step = tf.function(step)
 
       self.assertEqual(float(step()), -1.0)
       self.assertEqual(float(compiled_step()), -1.0)

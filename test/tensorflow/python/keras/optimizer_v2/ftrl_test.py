@@ -22,7 +22,10 @@ import numpy as np
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from keras.optimizers.optimizer_v2 import ftrl
+try:
+  from keras.optimizers.optimizer_v2 import ftrl
+except ImportError:
+  from keras.optimizers.legacy import ftrl
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import variables

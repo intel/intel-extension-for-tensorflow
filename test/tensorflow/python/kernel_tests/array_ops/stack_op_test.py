@@ -85,7 +85,7 @@ class StackOpTest(test.TestCase):
       return y
 
     with self.assertRaisesRegex(errors.InvalidArgumentError,
-                                r"0th dimension of value .* is less than"):
+                                r"0th dimension of value .* (is less than|must be greater than)"):
       f()
 
   def testSimpleParallelGPU(self):
