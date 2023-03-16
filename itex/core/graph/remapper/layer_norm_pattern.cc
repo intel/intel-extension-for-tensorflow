@@ -342,8 +342,8 @@ class LayerNormFusionDistilBase : public Fusion {
   MatchedProperties CheckIsLayerNorm(RemapperContext* ctx,
                                      int node_index) const {
     auto& graph_view = ctx->graph_view;
-    MatchedProperties ret =
-        FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
+    MatchedProperties ret = FillProperties(
+        &graph_view, graph_view.GetNode(node_index), pattern_, true);
 
     bool is_ok =
         !ret.Empty() &&
