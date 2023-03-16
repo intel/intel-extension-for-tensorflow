@@ -36,6 +36,7 @@ inline bool GetValueAttrFromConstInputNode(
   if (!predicate(*node.node())) {
     return false;
   }
+
   const auto& regular_fanin = node.GetRegularFanin(index);
   auto* regular_fanin_node = regular_fanin.node_view();
   if (!IsConstant(*regular_fanin_node->node())) {
@@ -85,130 +86,111 @@ inline bool IsCancellableConstPermTransposeNodePair(
 // From: Transpose[NCHWD->NDHWC] -> X -> Transpose[NDHWC->NCHWD]
 // To:   newX[NCHWD]
 inline Status EraseCancellableNodesAroundContraction(
-    TransposeContext* context) {
-  ITEX_VLOG(3) << "Start to run EraseCancellableNodesAroundContraction pass";
-  utils::MutableGraphView* graph_view = context->graph_view.get();
-  utils::Mutation* mutation = graph_view->GetMutationBuilder();
+    utils::MutableNodeView* transpose_after, utils::Mutation* mutation,
+    absl::flat_hash_set<utils::MutableNodeView*>* cancelled_nodes) {
+  // Transpose node after Contraction.
+  if (!IsTranspose(*transpose_after->node())) return Status::OK();
 
-  absl::flat_hash_set<utils::MutableNodeView*> cancelled_transposes;
-
-  const int num_nodes = graph_view->NumNodes();
-  for (int i = 0; i < num_nodes; ++i) {
-    // Transpose node after Contraction.
-    auto* transpose_after = graph_view->GetNode(i);
-    if (!IsTranspose(*transpose_after->node())) continue;
-
-    NodeDef* transpose_after_def = transpose_after->node();
-    if (!NodeIsOnGpu(transpose_after_def)) {
-      continue;
+  const auto valid_transpose_perm =
+      [&](const utils::MutableNodeView& transpose) -> bool {
+    auto* const_nodeview = transpose.GetRegularFanin(1).node_view();
+    NodeDef* const_nodedef = const_nodeview->node();
+    Tensor shape_tensor;
+    std::vector<int32_t> shape_value;
+    if (!IsConstant(*const_nodedef)) {
+      return false;
     }
+    TensorProto tensor_proto = const_nodedef->attr().at("value").tensor();
+    DataType dtype = tensor_proto.dtype();
 
-    if (context->nodes_to_preserve.count(transpose_after_def->name()) > 0)
-      continue;
-
-    // This transpose was already cancelled in previous loop iteration.
-    if (cancelled_transposes.contains(transpose_after)) continue;
-
-    const auto valid_transpose_perm =
-        [&](const utils::MutableNodeView& transpose) -> bool {
-      auto* const_nodeview = transpose.GetRegularFanin(1).node_view();
-      NodeDef* const_nodedef = const_nodeview->node();
-      Tensor shape_tensor;
-      std::vector<int32_t> shape_value;
-      if (!IsConstant(*const_nodedef)) {
-        return false;
-      }
-      TensorProto tensor_proto = const_nodedef->attr().at("value").tensor();
-      DataType dtype = tensor_proto.dtype();
-
-      if (!shape_tensor.FromProto(tensor_proto)) {
-        return false;
-      }
-      for (int i = 0; i < shape_tensor.NumElements(); ++i) {
-        auto temp = (dtype == DT_INT32) ? shape_tensor.flat<int32_t>()(i)
-                                        : shape_tensor.flat<int64_t>()(i);
-        shape_value.push_back(static_cast<int32_t>(temp));
-      }
-      int32_t perm_dim_1 = 0;
-      perm_dim_1 = shape_value[1];
-      return perm_dim_1 == 4 ? true : false;
-    };
-    if (!valid_transpose_perm(*transpose_after)) {
-      continue;
+    if (!shape_tensor.FromProto(tensor_proto)) {
+      return false;
     }
-
-    // Contraction node.
-    const auto& transpose_after_fanin = transpose_after->GetRegularFanin(0);
-    auto* contraction_view = transpose_after_fanin.node_view();
-    if (!IsConv3D(*contraction_view->node())) continue;
-    if (!HaveSameDataType(transpose_after->node(), contraction_view->node()) ||
-        !HasAtMostOneFanoutAtPort0(*contraction_view))
-      return Status(TF_INVALID_ARGUMENT, "Invalid Value");
-
-    // Transpose node before Contraction.
-    const auto& contraction_fanin_0 = contraction_view->GetRegularFanin(0);
-    auto* transpose_before = contraction_fanin_0.node_view();
-    if (!IsTranspose(*transpose_before->node())) continue;
-    // Transpose before output used once by the Pad node.
-    if (transpose_before->NumRegularFanouts() != 1) continue;
-
-    // Transposes are cancellable.
-    if (!IsCancellableConstPermTransposeNodePair(*transpose_after,
-                                                 *transpose_before))
-      continue;
-
-    // Pad output might be used multiple times by different Transpose nodes. If
-    // they all have identical permutation, we can cancel all of them.
-    std::vector<utils::MutableNodeView*> contraction_fanout_transposes;
-    contraction_fanout_transposes.emplace_back(transpose_after);
-
-    string old_data_format;
-    std::vector<int64> dilations;
-    std::vector<int64> strides;
-    TF_ABORT_IF_ERROR(GetNodeAttr(*contraction_view->node(), "data_format",
-                                  &old_data_format));
-    TF_ABORT_IF_ERROR(
-        GetNodeAttr(*contraction_view->node(), "dilations", &dilations));
-    TF_ABORT_IF_ERROR(
-        GetNodeAttr(*contraction_view->node(), "strides", &strides));
-
-    string new_data_format;
-    if ("NDHWC" == old_data_format) {
-      new_data_format = "NCDHW";
-    } else {
-      return Status(TF_INVALID_ARGUMENT, "Unsupported data format");
+    for (int i = 0; i < shape_tensor.NumElements(); ++i) {
+      auto temp = (dtype == DT_INT32) ? shape_tensor.flat<int32_t>()(i)
+                                      : shape_tensor.flat<int64_t>()(i);
+      shape_value.push_back(static_cast<int32_t>(temp));
     }
-    std::swap(strides[1], strides[4]);
-    std::swap(dilations[1], dilations[4]);
+    int32_t perm_dim_1 = 0;
+    perm_dim_1 = shape_value[1];
+    return perm_dim_1 == 4 ? true : false;
+  };
 
-    ITEX_VLOG(3) << "Cancel Transpose nodes around Conv:"
-                 << " transpose_before=" << transpose_before->node()->name()
-                 << " Conv=" << contraction_view->node()->name()
-                 << " transpose_after=" << transpose_after->node()->name();
-
-    NodeDef* contraction_node = contraction_view->node();
-    auto* contraction_attr = contraction_node->mutable_attr();
-    SetAttrValue(new_data_format, &(*contraction_attr)["data_format"]);
-    SetAttrValue(strides, &(*contraction_attr)["strides"]);
-    SetAttrValue(dilations, &(*contraction_attr)["dilations"]);
-    // Transform Transpose nodes into Identity nodes.
-    const auto transpose_to_identity =
-        [&cancelled_transposes,
-         &mutation](utils::MutableNodeView* transpose) -> void {
-      mutation->UpdateNodeOp(transpose, "Identity");
-      mutation->RemoveNodeAttr(transpose, "Tperm");
-      mutation->RemoveRegularFanin(transpose, 1);
-      cancelled_transposes.insert(transpose);
-    };
-
-    transpose_to_identity(transpose_before);
-
-    absl::c_for_each(contraction_fanout_transposes, transpose_to_identity);
+  if (!valid_transpose_perm(*transpose_after)) {
+    return Status::OK();
   }
+
+  // Contraction node.
+  const auto& transpose_after_fanin = transpose_after->GetRegularFanin(0);
+  auto* contraction_view = transpose_after_fanin.node_view();
+  if (!IsConv3D(*contraction_view->node())) return Status::OK();
+  if (!HaveSameDataType(transpose_after->node(), contraction_view->node()) ||
+      !HasAtMostOneFanoutAtPort0(*contraction_view))
+    return Status(TF_INVALID_ARGUMENT, "Invalid Value");
+
+  // Transpose node before Contraction.
+  const auto& contraction_fanin_0 = contraction_view->GetRegularFanin(0);
+  auto* transpose_before = contraction_fanin_0.node_view();
+  if (!IsTranspose(*transpose_before->node())) return Status::OK();
+  // Transpose before output used once by the Pad node.
+  if (transpose_before->NumRegularFanouts() != 1) return Status::OK();
+
+  // Transposes are cancellable.
+  if (!IsCancellableConstPermTransposeNodePair(*transpose_after,
+                                               *transpose_before))
+    return Status::OK();
+
+  // Pad output might be used multiple times by different Transpose nodes. If
+  // they all have identical permutation, we can cancel all of them.
+  std::vector<utils::MutableNodeView*> contraction_fanout_transposes;
+  contraction_fanout_transposes.emplace_back(transpose_after);
+
+  string old_data_format;
+  std::vector<int64> dilations;
+  std::vector<int64> strides;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_view->node(), "data_format", &old_data_format));
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_view->node(), "dilations", &dilations));
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_view->node(), "strides", &strides));
+
+  string new_data_format;
+  if ("NDHWC" == old_data_format) {
+    new_data_format = "NCDHW";
+  } else {
+    return Status(TF_INVALID_ARGUMENT, "Unsupported data format");
+  }
+  std::swap(strides[1], strides[4]);
+  std::swap(dilations[1], dilations[4]);
+
+  ITEX_VLOG(3) << "Cancel Transpose nodes around Conv:"
+               << " transpose_before=" << transpose_before->node()->name()
+               << " Conv=" << contraction_view->node()->name()
+               << " transpose_after=" << transpose_after->node()->name();
+
+  NodeDef* contraction_node = contraction_view->node();
+  auto* contraction_attr = contraction_node->mutable_attr();
+  SetAttrValue(new_data_format, &(*contraction_attr)["data_format"]);
+  SetAttrValue(strides, &(*contraction_attr)["strides"]);
+  SetAttrValue(dilations, &(*contraction_attr)["dilations"]);
+  // Transform Transpose nodes into Identity nodes.
+  const auto transpose_to_identity =
+      [&cancelled_nodes, &mutation](utils::MutableNodeView* transpose) -> void {
+    mutation->UpdateNodeOp(transpose, "Identity");
+    mutation->RemoveNodeAttr(transpose, "Tperm");
+    mutation->RemoveRegularFanin(transpose, 1);
+    cancelled_nodes->insert(transpose);
+  };
+
+  transpose_to_identity(transpose_before);
+
+  absl::c_for_each(contraction_fanout_transposes, transpose_to_identity);
+
   return mutation->Apply();
 }
 
-inline Status EraseCancellableIdenityNodes(TransposeContext* context) {
+inline Status EraseCancellableIdenityNodes(GenericLayoutContext* context) {
   ITEX_VLOG(3) << "Start to run EraseCancellableIdenityNodes pass.";
   utils::MutableGraphView* graph_view = context->graph_view.get();
   utils::Mutation* mutation = graph_view->GetMutationBuilder();
@@ -244,10 +226,10 @@ inline Status EraseCancellableIdenityNodes(TransposeContext* context) {
   return mutation->Apply();
 }
 
-Status TransposeContext::InitializeTransposeContext(bool assume_valid_feeds,
-                                                    const GrapplerItem& item,
-                                                    const GraphDef& graph_def,
-                                                    TransposeContext* context) {
+Status GenericLayoutContext::InitializeContext(bool assume_valid_feeds,
+                                               const GrapplerItem& item,
+                                               const GraphDef& graph_def,
+                                               GenericLayoutContext* context) {
   // DCHECK(context != nullptr);
   context->graph = graph_def;
   context->graph_properties = std::make_unique<GraphProperties>(item);
@@ -257,11 +239,10 @@ Status TransposeContext::InitializeTransposeContext(bool assume_valid_feeds,
   context->graph_view =
       std::make_unique<utils::MutableGraphView>(&context->graph, &status);
   TF_RETURN_IF_ERROR(status);
-  context->num_nodes = context->graph.node_size();
   const auto& nodes_to_preserve = item.NodesToPreserve();
   context->nodes_to_preserve = absl::flat_hash_set<string>(
       nodes_to_preserve.begin(), nodes_to_preserve.end());
-  ITEX_VLOG(2) << "TransposeContext is initialized.";
+  ITEX_VLOG(2) << "GenericLayoutContext is initialized.";
   return OkStatus();
 }
 
@@ -269,18 +250,35 @@ Status GenericLayoutOptimizer::Optimize(const char* device_name,
                                         const GrapplerItem& item,
                                         const GraphDef& graph_def,
                                         GraphDef* optimized_graph) {
-  TransposeContext trans_context;
+  GenericLayoutContext context;
   // needs to be checked
-  const bool is_aggressive = false;
-  TF_RETURN_IF_ERROR(TransposeContext::InitializeTransposeContext(
-      /*assume_valid_feeds=*/is_aggressive, item, graph_def, &trans_context));
+  TF_RETURN_IF_ERROR(GenericLayoutContext::InitializeContext(
+      /*assume_valid_feeds=*/false, item, graph_def, &context));
 
-  TF_RETURN_IF_ERROR(EraseCancellableNodesAroundContraction(&trans_context));
+  ITEX_VLOG(3) << "Start to run GenericLayoutOptimizer pass";
+  utils::MutableGraphView* graph_view = context.graph_view.get();
+  utils::Mutation* mutation = graph_view->GetMutationBuilder();
+  absl::flat_hash_set<utils::MutableNodeView*> cancelled_nodes;
+
+  const int num_nodes = graph_view->NumNodes();
+  for (int i = 0; i < num_nodes; ++i) {
+    utils::MutableNodeView* node_view = graph_view->GetNode(i);
+    NodeDef* node_def = node_view->node();
+
+    if (!NodeIsOnDevice(device_name, node_def)) continue;
+
+    if (context.nodes_to_preserve.count(node_def->name()) > 0) continue;
+
+    // This node was already cancelled in previous loop iteration.
+    if (cancelled_nodes.contains(node_view)) continue;
+
+    TF_ABORT_IF_ERROR(EraseCancellableNodesAroundContraction(
+        node_view, mutation, &cancelled_nodes));
+  }
+
   // TF_RETURN_IF_ERROR(EraseCancellableIdenityNodes(&trans_context));
-  TF_RETURN_IF_ERROR(
-      trans_context.graph_view->SortTopologically(/*ignore_cycles=*/false, {}));
 
-  *optimized_graph = trans_context.graph;
+  *optimized_graph = context.graph;
   return OkStatus();
 }
 

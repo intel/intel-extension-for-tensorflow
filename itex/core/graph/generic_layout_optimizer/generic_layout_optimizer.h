@@ -35,38 +35,32 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
-// TransposeContext owns all data members. Must initialize GraphProperties,
+// GenericLayoutContext owns all data members. Must initialize GraphProperties,
 // FrameView, GraphDef and MutableGraphView with the same graph. NodeDef
 // pointers in FrameView, GraphDef and MutableGraphView must point to nodes in
 // the same GraphDef instance.
-struct TransposeContext {
-  // Initializes TransposeContext with given GrapplerItem. Because initializing
-  // FrameMap and GraphProperties may return error, we initialize
-  // TransposeContext outside constructor.
-  static Status InitializeTransposeContext(bool assume_valid_feeds,
-                                           const GrapplerItem& item,
-                                           const GraphDef& graph_def,
-                                           TransposeContext* context);
+struct GenericLayoutContext {
+  // Initializes GenericLayoutContext with given GrapplerItem. Because
+  // initializing FrameMap and GraphProperties may return error, we initialize
+  // GenericLayoutContext outside constructor.
+  static Status InitializeContext(bool assume_valid_feeds,
+                                  const GrapplerItem& item,
+                                  const GraphDef& graph_def,
+                                  GenericLayoutContext* context);
 
-  static Status InitializeTransposeContext(const GrapplerItem& item,
-                                           const GraphDef& graph_def,
-                                           TransposeContext* context) {
-    return InitializeTransposeContext(false, item, graph_def, context);
+  static Status InitializeContext(const GrapplerItem& item,
+                                  const GraphDef& graph_def,
+                                  GenericLayoutContext* context) {
+    return InitializeContext(false, item, graph_def, context);
   }
 
   GraphDef graph;
-  // Number of nodes in the original graph. As new nodes are appended to the end
-  // of the graph, all new nodes should have a node index greater than or equal
-  // to this.
-  int num_nodes;
   absl::flat_hash_set<string> nodes_to_preserve;
   std::unique_ptr<GraphProperties> graph_properties;
   std::unique_ptr<utils::MutableGraphView> graph_view;
-
-  string enforced_layout;
 };
 
-// Optimize the data layout for convolutional models.
+// Optimize the data layout.
 class GenericLayoutOptimizer {
  public:
   GenericLayoutOptimizer() {}
