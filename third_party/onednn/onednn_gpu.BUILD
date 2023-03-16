@@ -165,7 +165,7 @@ _GRAPH_COPTS_GPU_LIST = [
     "-fPIC",
     "-fvisibility=hidden",
     "-dpcpp_compile",
-    "-DDNNL_GRAPH_ENABLE_DUMP",
+    "-DDNNL_ENABLE_GRAPH_DUMP",
 ] + if_llga_debug([
     "-DDNNL_GRAPH_LAYOUT_DEBUG",
 ])
