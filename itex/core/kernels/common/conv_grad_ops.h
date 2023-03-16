@@ -494,6 +494,7 @@ class ConvBackpropFilterOp
       // Create convolution backward filter primitive and add it to the net.
       primitive bwd_filter_primitive = ConvBwdFilterPrimitive(bwd_filter_pd);
       bwd_filter_primitive.execute(onednn_stream, bwd_filter_primitive_args);
+      primitive fwd_primitive = dnnl::convolution_forward(fwd_pd);
 
       if (is_diff_filter_reordered) {
         ReorderMemory(*context, &diff_filter_mem_reordered, &diff_filter_mem,
@@ -751,6 +752,7 @@ class ConvBackpropInputOp
       // Create convolution backward input primitive and add it to the net.
       primitive bwd_input_primitive = ConvBwdInputPrimitive(bwd_input_pd);
       bwd_input_primitive.execute(onednn_stream, bwd_input_primitive_args);
+      primitive fwd_primitive = dnnl::convolution_forward(fwd_pd);
 
       // reorder back if needed
       if (data_layout != format_tag_opt) {
