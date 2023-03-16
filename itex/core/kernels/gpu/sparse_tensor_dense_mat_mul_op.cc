@@ -114,16 +114,14 @@ class SparseTensorDenseMatMulOp : public OpKernel {
   bool adjoint_a_ = false;
   bool adjoint_b_ = false;
 
-  template <bool IsBf16Half = std::is_same<T, Eigen::bfloat16>::value ||
-                              std::is_same<T, Eigen::half>::value>
-  typename std::enable_if<!IsBf16Half>::type CallSparseTensorDenseMatMulFunctor(
-      OpKernelContext* ctx, const Tensor& a_values, const Tensor& a_indices,
-      const Tensor& b, Tensor* out) {
+  void CallSparseTensorDenseMatMulFunctor(OpKernelContext* ctx,
+                                          const Tensor& a_values,
+                                          const Tensor& a_indices,
+                                          const Tensor& b, Tensor* out) {
 #define MAYBE_ADJOINT(ADJ_A, ADJ_B)                                            \
   if (adjoint_a_ == ADJ_A && adjoint_b_ == ADJ_B) {                            \
     Status functor_status = functor::SparseTensorDenseMatMulFunctor<           \
-        T, Tindices, ADJ_A, ADJ_B>::Compute(ctx->eigen_device<Device>(),       \
-                                            out->matrix<T>(),                  \
+        T, Tindices, ADJ_A, ADJ_B>::Compute(ctx, out->matrix<T>(),             \
                                             a_indices.matrix<Tindices>(),      \
                                             a_values.vec<T>(), b.matrix<T>()); \
     OP_REQUIRES_OK(ctx, functor_status);                                       \
@@ -135,53 +133,6 @@ class SparseTensorDenseMatMulOp : public OpKernel {
     MAYBE_ADJOINT(true, true)
 
 #undef MAYBE_ADJOINT
-  }
-
-  // SYCL does not support atomic operations for bf16 and half currently,
-  // workaround: use float as intermediate type
-  template <bool IsBf16Half = std::is_same<T, Eigen::bfloat16>::value ||
-                              std::is_same<T, Eigen::half>::value>
-  typename std::enable_if<IsBf16Half>::type CallSparseTensorDenseMatMulFunctor(
-      OpKernelContext* ctx, const Tensor& a_values, const Tensor& a_indices,
-      const Tensor& b, Tensor* out) {
-    Tensor a_values_tmp;
-    OP_REQUIRES_OK(ctx, ctx->allocate_temp(DataTypeToEnum<float>::v(),
-                                           a_values.shape(), &a_values_tmp));
-    Tensor b_tmp;
-    OP_REQUIRES_OK(
-        ctx, ctx->allocate_temp(DataTypeToEnum<float>::v(), b.shape(), &b_tmp));
-    Tensor out_float;
-    OP_REQUIRES_OK(ctx, ctx->allocate_temp(DataTypeToEnum<float>::v(),
-                                           b.shape(), &out_float));
-
-    auto d = ctx->eigen_device<Device>();
-    a_values_tmp.vec<float>().device(d) =
-        a_values.vec<T>().template cast<float>();
-    b_tmp.matrix<float>().device(d) = b.matrix<T>().template cast<float>();
-    out_float.matrix<float>().device(d) =
-        out->matrix<T>().template cast<float>();
-
-    const Tensor& a_values_float = a_values_tmp;
-    const Tensor& b_float = b_tmp;
-#define MAYBE_ADJOINT(ADJ_A, ADJ_B)                                           \
-  if (adjoint_a_ == ADJ_A && adjoint_b_ == ADJ_B) {                           \
-    Status functor_status = functor::SparseTensorDenseMatMulFunctor<          \
-        float, Tindices, ADJ_A, ADJ_B>::Compute(ctx->eigen_device<Device>(),  \
-                                                out_float.matrix<float>(),    \
-                                                a_indices.matrix<Tindices>(), \
-                                                a_values_float.vec<float>(),  \
-                                                b_float.matrix<float>());     \
-    OP_REQUIRES_OK(ctx, functor_status);                                      \
-  }
-
-    MAYBE_ADJOINT(false, false)
-    MAYBE_ADJOINT(false, true)
-    MAYBE_ADJOINT(true, false)
-    MAYBE_ADJOINT(true, true)
-
-#undef MAYBE_ADJOINT
-
-    out->matrix<T>().device(d) = out_float.matrix<float>().template cast<T>();
   }
 };
 
@@ -197,12 +148,12 @@ constexpr auto GLOBAL_SPACE = sycl::access::address_space::global_space;
 // stable?
 constexpr int ElemSize = 4;
 
-template <typename T, typename Tindices, bool ADJ_A, bool ADJ_B>
+template <typename T, typename Tsum, typename Tindices, bool ADJ_A, bool ADJ_B>
 struct SparseTensorDenseMatmulKernel {
   SparseTensorDenseMatmulKernel(int num_work_items, int out_cols, int out_rows,
                                 int b_cols, int n, int total_size,
                                 Tindices* a_idx_ptr, const T* b_ptr,
-                                T* a_val_ptr, T* out_ptr)
+                                T* a_val_ptr, Tsum* out_ptr)
       : num_work_items(num_work_items),
         out_cols(out_cols),
         out_rows(out_rows),
@@ -236,18 +187,18 @@ struct SparseTensorDenseMatmulKernel {
       // if a_row is out of range, skip
       if (FastBoundsCheck(i, out_rows)) {
         int out_idx = i * out_cols + j;
-        auto atm = sycl::atomic_ref<T, sycl::memory_order::relaxed,
+        auto atm = sycl::atomic_ref<Tsum, sycl::memory_order::relaxed,
                                     sycl::memory_scope::device, GLOBAL_SPACE>(
             out_ptr[out_idx]);
         // if a_row is in range, but a_col is out of range, set output
         // as NaN
         if (!FastBoundsCheck(k, n)) {
-          atm.fetch_add(std::numeric_limits<T>::quiet_NaN());
+          atm.fetch_add(std::numeric_limits<Tsum>::quiet_NaN());
         } else {
           const T a_val = a_val_ptr[a_ix];
           const int b_idx = ADJ_B ? (j * b_cols + k) : (k * b_cols + j);
           const T b_val = b_ptr[b_idx];
-          atm.fetch_add(a_val * b_val);
+          atm.fetch_add(static_cast<Tsum>(a_val * b_val));
         }
       }
       if ((++id) >= total_size) {
@@ -271,21 +222,39 @@ struct SparseTensorDenseMatmulKernel {
   Tindices* a_idx_ptr;
   const T* b_ptr;
   T* a_val_ptr;
-  T* out_ptr;
+  Tsum* out_ptr;
 };
 
 template <typename T, typename Tindices, bool ADJ_A, bool ADJ_B>
 Status SparseTensorDenseMatMulFunctor<T, Tindices, ADJ_A, ADJ_B>::Compute(
-    const GPUDevice& d, typename TTypes<T>::Matrix out,
+    OpKernelContext* ctx, typename TTypes<T>::Matrix out,
     typename TTypes<Tindices>::ConstMatrix a_indices,
     typename TTypes<T>::ConstVec a_values, typename TTypes<T>::ConstMatrix b) {
-  out.device(d) = out.constant(T(0));
   const int nnz = a_values.size();
   const int b_rows = b.dimension(0);
   const int b_cols = b.dimension(1);
   const int out_rows = out.dimension(0);
   const int out_cols = out.dimension(1);
   const int n = (ADJ_B) ? b_cols : b_rows;
+
+  const GPUDevice& d = ctx->eigen_device<GPUDevice>();
+  using Tsum = typename SumType<T>::type;
+  Tsum* maybe_temp_out_data = nullptr;
+  Tensor temp_out_t;
+  bool sum_type_is_different = !std::is_same<T, Tsum>::value;
+  if (sum_type_is_different) {
+    TF_RETURN_IF_ERROR(ctx->allocate_temp(
+        DataTypeToEnum<Tsum>::value,
+        TensorShape({out.dimension(0), out.dimension(1)}), &temp_out_t));
+    auto temp_out = temp_out_t.matrix<Tsum>();
+    maybe_temp_out_data = temp_out.data();
+    temp_out.device(d) = temp_out.constant(Tsum(0));
+  } else {
+    // Note: The reinterpret cast is only required to avoid a compilation
+    // error; it is only used if Tsum == T.
+    maybe_temp_out_data = reinterpret_cast<Tsum*>(out.data());
+    out.device(d) = out.constant(T(0));
+  }
 
   auto* stream = d.stream();
   // TODO(itex): why small work-group size is better?
@@ -296,16 +265,21 @@ Status SparseTensorDenseMatMulFunctor<T, Tindices, ADJ_A, ADJ_B>::Compute(
     auto a_idx_ptr = const_cast<Tindices*>(a_indices.data());
     auto a_val_ptr = const_cast<T*>(a_values.data());
     const T* b_ptr = b.data();
-    T* out_ptr = out.data();
-    SparseTensorDenseMatmulKernel<T, Tindices, ADJ_A, ADJ_B> task(
+    Tsum* maybe_temp_out_ptr = maybe_temp_out_data;
+    SparseTensorDenseMatmulKernel<T, Tsum, Tindices, ADJ_A, ADJ_B> task(
         num_work_items, out_cols, out_rows, b_cols, n, total_size, a_idx_ptr,
-        b_ptr, a_val_ptr, out_ptr);
-    cgh.parallel_for<SparseTensorDenseMatmulKernel<T, Tindices, ADJ_A, ADJ_B>>(
+        b_ptr, a_val_ptr, maybe_temp_out_ptr);
+    cgh.parallel_for<
+        SparseTensorDenseMatmulKernel<T, Tsum, Tindices, ADJ_A, ADJ_B>>(
         sycl::nd_range<1>(
             sycl::range<1>(DivUp(num_work_items, wg_size) * wg_size),
             sycl::range<1>(wg_size)),
         task);
   });
+
+  if (sum_type_is_different) {
+    out.device(d) = temp_out_t.matrix<Tsum>().template cast<T>();
+  }
 
   return Status::OK();
 }

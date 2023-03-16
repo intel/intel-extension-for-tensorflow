@@ -32,7 +32,7 @@ namespace functor {
 template <typename T, typename Tindices, bool ADJ_A, bool ADJ_B>
 struct SparseTensorDenseMatMulFunctor {
   static EIGEN_ALWAYS_INLINE Status Compute(
-      const GPUDevice& d, typename TTypes<T>::Matrix out,
+      OpKernelContext* ctx, typename TTypes<T>::Matrix out,
       typename TTypes<Tindices>::ConstMatrix a_indices,
       typename TTypes<T>::ConstVec a_values, typename TTypes<T>::ConstMatrix b);
 };
@@ -69,6 +69,21 @@ class MaybeAdjoint<MATRIX, true> {
 
  private:
   const MATRIX m_;
+};
+
+template <typename T>
+struct SumType {
+  using type = T;
+};
+
+template <>
+struct SumType<Eigen::half> {
+  using type = float;  // Use fp32 accumulator for fp16 input values
+};
+
+template <>
+struct SumType<Eigen::bfloat16> {
+  using type = float;  // Use fp32 accumulator for bf16 input values
 };
 
 }  // namespace functor
