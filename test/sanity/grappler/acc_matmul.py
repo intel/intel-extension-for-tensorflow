@@ -190,7 +190,7 @@ class AccMatmulTest(test_lib.TestCase):
       existing_pattern = False
       for node in graph.node:
         if node.op == '_ITEXFusedAccMatMulWithSum':
-          if ((not node.attr['is_bf16_math_mode'].b) and node.attr['inplace_sum'].b and
+          if ((not node.attr['is_bf16_math_mode'].b) and
               node.attr['T'].type == dtypes.bfloat16._type_enum and
               node.attr['Tout'].type == dtypes.float32._type_enum and
               node.attr['Tpost'].type == dtypes.float32._type_enum):
@@ -269,7 +269,7 @@ class AccMatmulTest(test_lib.TestCase):
       existing_pattern = False
       for node in graph.node:
         if node.op == '_ITEXFusedAccMatMulWithSum':
-          if ((not node.attr['is_bf16_math_mode'].b) and node.attr['inplace_sum'].b and
+          if ((not node.attr['is_bf16_math_mode'].b) and
               node.attr['T'].type == dtypes.bfloat16._type_enum and
               node.attr['Tout'].type == dtypes.float32._type_enum and
               node.attr['Tpost'].type == dtypes.float32._type_enum):
@@ -422,7 +422,7 @@ class AccMatmulTest(test_lib.TestCase):
       existing_pattern = False
       for node in graph.node:
         if node.op == '_ITEXFusedAccMatMulWithSum':
-          if (node.attr['is_bf16_math_mode'].b and node.attr['inplace_sum'].b and
+          if (node.attr['is_bf16_math_mode'].b and
               node.attr['T'].type == dtypes.float32._type_enum and
               node.attr['Tout'].type == dtypes.float32._type_enum and
               node.attr['Tpost'].type == dtypes.float32._type_enum):
@@ -505,7 +505,7 @@ class AccMatmulTest(test_lib.TestCase):
       existing_pattern = False
       for node in graph.node:
         if node.op == '_ITEXFusedAccMatMulWithSum':
-          if (node.attr['is_bf16_math_mode'].b and node.attr['inplace_sum'].b and
+          if (node.attr['is_bf16_math_mode'].b and
               node.attr['T'].type == dtypes.float32._type_enum and
               node.attr['Tout'].type == dtypes.float32._type_enum and
               node.attr['Tpost'].type == dtypes.float32._type_enum):

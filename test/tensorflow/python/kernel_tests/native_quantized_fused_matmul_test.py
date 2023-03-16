@@ -36,11 +36,6 @@ from tensorflow.python.ops import nn_ops
 
 import tensorflow as tf
 
-os.environ["ITEX_ENABLE_ONEDNN_LAYOUT_OPT"] = "0"
-os.environ["ITEX_NATIVE_FORMAT"] = "1"
-
-# TODO(itex): Turn on this UT, once onednn fix gpu accuracy issue
-
 class QuantizedFusedMatMul(test.TestCase):
 
   def __init__(self, method_name="runTest"):
@@ -161,7 +156,10 @@ class QuantizedFusedMatMul(test.TestCase):
 
       z_f32 = constant_op.constant([[ 0.92, 1.43, 1.84,-1.01],
                                     [-1.83,-1.39,-0.50, 0.32]])
-      
+
+      # To avoid inplace const Tensor, since legacy INT8 op doesn't have ability to check inplace
+      z_f32 = tf.math.add(z_f32, z_f32)
+
       bias_f32 = constant_op.constant([-1.42, 2.05, -1.00, 0.94], dtype=dtypes.float32)
 
       if api_mode == "V1":

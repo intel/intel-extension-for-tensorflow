@@ -293,7 +293,8 @@ void DetectUnvisitedNode(MemoryOptContext* ctx,
     const auto* tgt_node_def = tgt_node_view->node();
 
     // Const and fetch nodes should not be forwarded.
-    if (IsInPreserveSet(ctx, tgt_node_def)) continue;
+    if (IsInPreserveSet(ctx, tgt_node_def) || IsAnyConst(*tgt_node_def))
+      continue;
 
     // Current node and target node must be on the same device.
     if (!IsOnSameDevice(node_view, tgt_node_view)) continue;
