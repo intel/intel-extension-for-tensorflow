@@ -392,7 +392,7 @@ class ItexLSTM(LSTMV1):
 
   def get_config(self):
     """A dummy docstring."""
-    config = {
+    derive_config = {
         'units':
             self.units,
         'activation':
@@ -429,7 +429,7 @@ class ItexLSTM(LSTMV1):
             self.recurrent_dropout
     }
     base_config = super(ItexLSTM, self).get_config()
-    return dict(list(base_config.items()) + list(config.items()))
+    return dict(list(base_config.items()) + list(derive_config.items()))
 
 def standard_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
                   go_backwards, time_major, unroll, zero_output_for_mask):

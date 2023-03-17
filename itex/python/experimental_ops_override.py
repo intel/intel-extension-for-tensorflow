@@ -34,6 +34,7 @@ from tensorflow.python.util import compat
 
 from intel_extension_for_tensorflow.python.ops.layer_norm import _layer_norm
 from intel_extension_for_tensorflow.python.ops.activations import gelu
+from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM
 
 format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=format_str)
@@ -517,11 +518,20 @@ def experimental_ops_override():
 
     return outputs
 
+
+  try:
+    import tensorflow_addons as tfa
+    tfa.layers.InstanceNormalization.call = itex_instance_norm_call
+  except BaseException: # pylint: disable=broad-except
+    logger.warning("itex experimental ops override: tensorflow_addons is not installed.") # pylint: disable=line-too-long
   try:
     tf.keras.layers.Dense.call = itex_dense_layer_call
     tf.keras.layers.LayerNormalization.call = itex_layer_norm_call
     tf.keras.layers.LayerNormalization.build = itex_layer_norm_build
     tf.nn.gelu = gelu
+    tf.keras.layers.LSTM = ItexLSTM
+    from tensorflow.python import keras
+    keras.layers.LSTM = ItexLSTM
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
     logger.error("Cannot override itex ops.")
@@ -530,10 +540,7 @@ def experimental_ops_override():
     keras.layers.core.dense.Dense.call = itex_dense_layer_call
     keras.layers.LayerNormalization.call = itex_layer_norm_call
     keras.layers.LayerNormalization.build = itex_layer_norm_build
+    keras.layers.LSTM = ItexLSTM
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long
-  try:
-    import tensorflow_addons as tfa
-    tfa.layers.InstanceNormalization.call = itex_instance_norm_call
-  except BaseException: # pylint: disable=broad-except
-    logger.warning("itex experimental ops override: tensorflow_addons is not installed.") # pylint: disable=line-too-long
+
