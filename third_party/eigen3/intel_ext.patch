@@ -10417,7 +10417,7 @@ index d4532b72c..0fe7fb2d2 100644
    TensorEvaluator<ThenArgType, Device> m_thenImpl;
    TensorEvaluator<ElseArgType, Device> m_elseImpl;
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
-index c52fb77dc..18788d3fa 100644
+index c52fb77dc..23509ddac 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 @@ -76,8 +76,13 @@ struct ExpressionHasTensorBroadcastingOp<
@@ -10482,7 +10482,7 @@ index c52fb77dc..18788d3fa 100644
  
        auto eval_block = [&device, &evaluator, &tiling](IndexType firstBlockIdx,
                                                         IndexType lastBlockIdx) {
-@@ -615,6 +631,86 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
+@@ -615,6 +631,108 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
  }
  
  #endif  // EIGEN_GPUCC
@@ -10495,6 +10495,7 @@ index c52fb77dc..18788d3fa 100644
 +  typedef typename Evaluator::Scalar Scalar;
 +  Evaluator evaluator;
 +  const Index range;
++  const bool is_small_shape;
 +#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +  static const bool vectorized = Eigen::PacketType<Scalar, GpuDevice>::vectorized;
 +#else
@@ -10502,15 +10503,17 @@ index c52fb77dc..18788d3fa 100644
 +#endif
 +  template <typename Scratch>
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ExecExprFunctorKernel(
-+      const Scratch, Evaluator evaluator_, const Index range_)
-+      : evaluator(evaluator_), range(range_) {}
++      const Scratch, Evaluator evaluator_, const Index range_,
++      const bool is_small_shape_) :
++          evaluator(evaluator_), range(range_),
++          is_small_shape(is_small_shape_) {}
 +
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void operator()(
 +      sycl::nd_item<1> itemID) const {
-+    compute(itemID);
++      compute(itemID);
 +  }
 +  template <bool is_vec = Evaluator::PacketAccess & vectorized>
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<!is_vec>::type
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<!is_vec>::type 
 +  compute(const sycl::nd_item<1>& itemID) const {
 +    Index gId = static_cast<Index>(itemID.get_global_linear_id());
 +    Index total_threads = itemID.get_global_range(0);
@@ -10521,19 +10524,28 @@ index c52fb77dc..18788d3fa 100644
 +  template <bool is_vec = Evaluator::PacketAccess & vectorized>
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<is_vec>::type
 +  compute(const sycl::nd_item<1>& itemID) const {
-+    const Index vectorizedRange =
-+        (range / Evaluator::PacketSize) * Evaluator::PacketSize;
-+    Index gId = static_cast<Index>(itemID.get_global_linear_id());
-+    Index total_threads = itemID.get_global_range(0);
-+    const Index step = Evaluator::PacketSize * itemID.get_global_range(0);
-+    const Index start = Evaluator::PacketSize * gId;
-+    for (Index i = start; i < vectorizedRange; i += step) {
-+      evaluator.evalPacket(i);
-+    }
-+    gId += vectorizedRange;
-+    for (Index i = gId; i < range; i += total_threads) {
-+      evaluator.evalScalar(i);
-+    }
++      if (!is_small_shape) {
++          const Index vectorizedRange =
++              (range / Evaluator::PacketSize) * Evaluator::PacketSize;
++          Index gId = static_cast<Index>(itemID.get_global_linear_id());
++          Index total_threads = itemID.get_global_range(0);
++          const Index step = Evaluator::PacketSize * itemID.get_global_range(0);
++          const Index start = Evaluator::PacketSize * gId;
++
++          for (Index i = start; i < vectorizedRange; i += step) {
++            evaluator.evalPacket(i);
++          }
++          gId += vectorizedRange;
++          for (Index i = gId; i < range; i += total_threads) {
++            evaluator.evalScalar(i);
++          }
++      } else {
++            Index gId = static_cast<Index>(itemID.get_global_linear_id());
++            Index total_threads = itemID.get_global_range(0);
++            for (Index i = gId; i < range; i += total_threads) {
++              evaluator.evalScalar(i);
++            }
++      }
 +  }
 +};
 +
@@ -10545,11 +10557,21 @@ index c52fb77dc..18788d3fa 100644
 +  Evaluator evaluator(expr, dev);
 +  const bool needs_assign = evaluator.evalSubExprsIfNeeded(NULL);
 +  if (needs_assign) {
++    auto sycl_dev = dev.stream()->get_device();
++    const int hardware_vectorize_threshold =
++        sycl_dev.get_info<sycl::ext::intel::info::device::gpu_eu_count>() *
++        sycl_dev.get_info<sycl::ext::intel::info::device::gpu_hw_threads_per_eu>() *
++        sycl_dev.get_info<sycl::ext::intel::info::device::gpu_eu_simd_width>();
++    
 +    Index range, GRange, tileSize;
 +    Index total_size = ::Eigen::internal::array_prod(evaluator.dimensions());
 +    total_size = (total_size == 0) ? 1 : total_size;
++
++    bool is_small_shape = hardware_vectorize_threshold >= total_size;
 +    const int PacketSize = evaluator.PacketSize;
-+    Index vectorizable_threads = static_cast<Index>(total_size / PacketSize);
++    Index vectorizable_threads = is_small_shape ? 
++        total_size : static_cast<Index>(total_size / PacketSize);
++
 +    dev.parallel_for_setup(vectorizable_threads, tileSize, range, GRange);
 +    range = total_size;
 +
@@ -10559,7 +10581,7 @@ index c52fb77dc..18788d3fa 100644
 +        evaluator,
 +        sycl::nd_range<1>(sycl::range<1>(GRange),
 +                              sycl::range<1>(tileSize)),
-+        Index(1), range);
++        Index(1), range, is_small_shape);
 +  }
 +  evaluator.cleanup();
 +}
@@ -10569,7 +10591,7 @@ index c52fb77dc..18788d3fa 100644
  #endif  // EIGEN_USE_GPU
  
  // SYCL Executor policy
-@@ -624,19 +720,19 @@ template <typename Evaluator>
+@@ -624,19 +742,19 @@ template <typename Evaluator>
  struct ExecExprFunctorKernel {
    typedef typename Evaluator::Index Index;
    Evaluator evaluator;
@@ -10593,7 +10615,7 @@ index c52fb77dc..18788d3fa 100644
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
      Index total_threads = itemID.get_global_range(0);
  
-@@ -646,7 +742,7 @@ struct ExecExprFunctorKernel {
+@@ -646,7 +764,7 @@ struct ExecExprFunctorKernel {
    }
    template <bool is_vec = Evaluator::PacketAccess>
    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<is_vec>::type
@@ -10602,7 +10624,7 @@ index c52fb77dc..18788d3fa 100644
      const Index vectorizedRange =
          (range / Evaluator::PacketSize) * Evaluator::PacketSize;
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
-@@ -686,8 +782,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
+@@ -686,8 +804,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
            typename Evaluator::CoeffReturnType,
            ExecExprFunctorKernel<Evaluator> >(
            evaluator,
