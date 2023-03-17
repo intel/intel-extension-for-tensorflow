@@ -18,7 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""ITEX optimization for keras layers."""
+"""ITEX optimization for some TensorFlow API."""
 import builtins
 import logging
 import types
@@ -361,32 +361,32 @@ def experimental_ops_override():
     param_shape = [input_shape[dim] for dim in self.axis]
     self._use_layernorm = _can_use_onednn_layer_norm(self, len(input_shape))
     if self.scale:
-        self.gamma = self.add_weight(
-            name="gamma",
-            shape=param_shape,
-            dtype=self._param_dtype if self._use_layernorm else None,
-            initializer=self.gamma_initializer,
-            regularizer=self.gamma_regularizer,
-            constraint=self.gamma_constraint,
-            trainable=True,
-            experimental_autocast=False,
-        )
+      self.gamma = self.add_weight(
+          name="gamma",
+          shape=param_shape,
+          dtype=self._param_dtype if self._use_layernorm else None,
+          initializer=self.gamma_initializer,
+          regularizer=self.gamma_regularizer,
+          constraint=self.gamma_constraint,
+          trainable=True,
+          experimental_autocast=False,
+      )
     else:
-        self.gamma = None
+      self.gamma = None
 
     if self.center:
-        self.beta = self.add_weight(
-            name="beta",
-            shape=param_shape,
-            dtype=self._param_dtype if self._use_layernorm else None,
-            initializer=self.beta_initializer,
-            regularizer=self.beta_regularizer,
-            constraint=self.beta_constraint,
-            trainable=True,
-            experimental_autocast=False,
-        )
+      self.beta = self.add_weight(
+          name="beta",
+          shape=param_shape,
+          dtype=self._param_dtype if self._use_layernorm else None,
+          initializer=self.beta_initializer,
+          regularizer=self.beta_regularizer,
+          constraint=self.beta_constraint,
+          trainable=True,
+          experimental_autocast=False,
+      )
     else:
-        self.beta = None
+      self.beta = None
 
     self.built = True
 
@@ -470,9 +470,9 @@ def experimental_ops_override():
 
     if axis != 1:
       # Because itex_layer_norm computes mean and variance across the last axis,
-      # But the InstanceNorm in tensorflow_addons pkg computes them on axes 
-      # except for the first and the specified axis, So for convenience transpose 
-      # the specified axis to the axis at subscript 1 position, and collapse subsequent 
+      # But the InstanceNorm in tensorflow_addons pkg computes them on axes
+      # except for the first and the specified axis, So for convenience transpose
+      # the specified axis to the axis at subscript 1 position, and collapse subsequent
       # axes as the last axis.
       perm_shape = list(range(0, ndims))
       perm_shape.pop(axis)
