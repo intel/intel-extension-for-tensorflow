@@ -19,7 +19,6 @@
 from tensorflow.python.framework import ops as _ops
 
 from intel_extension_for_tensorflow.python.test_func import test as _test
-from intel_extension_for_tensorflow.python.test_func.test import *
 
 
 # TODO(akshayka): Do away with this file.

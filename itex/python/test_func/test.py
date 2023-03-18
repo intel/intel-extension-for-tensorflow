@@ -26,6 +26,7 @@ import sys
 # pylint: disable=g-bad-import-order
 import intel_extension_for_tensorflow.python.test_func.test_util as _test_util
 from tensorflow.python.platform import googletest as _googletest
+from tensorflow.python.util.tf_export import tf_export
 
 # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python.test_func.test_util import assert_equal_graph_def
@@ -34,12 +35,7 @@ from intel_extension_for_tensorflow.python.test_func.test_util import TensorFlow
 from intel_extension_for_tensorflow.python.test_func.test_util import gpu_device_name
 from intel_extension_for_tensorflow.python.test_func.test_util import is_gpu_available
 
-from tensorflow.python.ops.gradient_checker import compute_gradient_error
-from tensorflow.python.ops.gradient_checker import compute_gradient
-# pylint: enable=unused-import,g-bad-import-order
 
-
-from tensorflow.python.util.tf_export import tf_export
 if sys.version_info.major == 2:
   import mock                # pylint: disable=g-import-not-at-top,unused-import
 else:
@@ -148,7 +144,7 @@ def disable_with_predicate(pred, skip_message):
       if pred():
         self.skipTest(skip_message)
       else:
-        return func(self, *args, **kwargs)
+        func(self, *args, **kwargs)
 
     return wrapper_disable_with_predicate
 
