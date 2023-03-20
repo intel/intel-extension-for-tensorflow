@@ -129,13 +129,20 @@ class AutoMixedPrecisionLists {
     // IsTensorListReaderOp or IsTensorListWriterOp may need to be modified
     // LINT.IfChange
     constexpr const char* tensor_list_ops[] = {
-        "TensorListConcat",     "TensorListConcatLists",
-        "TensorListConcatV2",   "TensorListGather",
-        "TensorListGetItem",    "TensorListPopBack",
-        "TensorListPushBack",   "TensorListPushBackBatch",
-        "TensorListFromTensor", "TensorListScatter",
-        "TensorListScatterV2",  "TensorListScatterIntoExistingList",
-        "TensorListSetItem",    "TensorListSplit",
+        "TensorListConcat",
+        "TensorListConcatLists",
+        "TensorListConcatV2",
+        "TensorListFromTensor",
+        "TensorListGather",
+        "TensorListGetItem",
+        "TensorListPopBack",
+        "TensorListPushBack",
+        "TensorListPushBackBatch",
+        "TensorListScatter",
+        "TensorListScatterIntoExistingList",
+        "TensorListScatterV2",
+        "TensorListSetItem",
+        "TensorListSplit",
         "TensorListStack"};
     // LINT.ThenChange(//tensorflow/core/grappler/optimizers/auto_mixed_precision.cc)
     for (auto op : tensor_list_ops) {
@@ -146,6 +153,8 @@ class AutoMixedPrecisionLists {
   // such as _FusedApplyAdam or _FusedApplyMomentum.
   // The default Allow list of FP16 and BF16.
   gtl::FlatSet<string> allow_list_ops = gtl::FlatSet<string>{
+      "BatchMatMul",
+      "BatchMatMulV2",
       "Conv2D",
       "Conv2DBackpropFilter",
       "Conv2DBackpropInput",
@@ -158,15 +167,17 @@ class AutoMixedPrecisionLists {
       "DepthwiseConv2dNativeBackpropFilter",
       "DepthwiseConv2dNativeBackpropInput",
       "MatMul",
-      "BatchMatMul",
-      "BatchMatMulV2",
-      /*Below ops are fusion ops.*/
+      // TODO(hfang): The following ops is from Intel-TF DIEN ops.
+      // Should be remove in future.
+      "MklAUGRU",
+      "MklGRU",
+      // Below ops are fusion ops.
       "_ITEXConv2DBackpropFilterWithBias",
       "_ITEXConv2DBackpropInputWithSlice",
       "_ITEXConv3DBackpropFilterWithBias",
       "_ITEXConv3DBackpropInputV2WithSlice",
-      "_ITEXForwardGRU",
       "_ITEXForwardAUGRU",
+      "_ITEXForwardGRU",
       "_ITEXFusedBatchMatMulV2",
       "_ITEXFusedConv2D",
       "_ITEXFusedConv2DWithSum",
@@ -179,10 +190,6 @@ class AutoMixedPrecisionLists {
       "_ITEXPadWithConv3D",
       "_ITEXPadWithFusedConv2D",
       "_ITEXPadWithFusedConv3D",
-      // TODO(hfang): The following ops is from Intel-TF DIEN ops.
-      // Should be remove in future.
-      "MklGRU",
-      "MklAUGRU",
   };
 
   // The default Infer list of FP16 and BF16.
@@ -197,7 +204,6 @@ class AutoMixedPrecisionLists {
       "BiasAdd",
       "BiasAddGrad",
       "BiasAddV1",
-      "_ITEXFusedBinary",
       "Elu",
       "EluGrad",
       "Erf",
@@ -207,18 +213,12 @@ class AutoMixedPrecisionLists {
       "FusedBatchNormGradV2",
       "FusedBatchNormV3",
       "FusedBatchNormGradV3",
-      "_FusedBatchNormEx",
       "Gelu",
       "GeluGrad",
       "Inv",
-      "_ITEXFusedBatchNormGradEx",
-      "_ITEXFusedInstanceNorm",
       "ITEXGelu",
       "ITEXGeluGrad"
-      "_ITEXInstanceNorm",
       "ITEXLayerNorm",
-      "_ITEXMish",
-      "_ITEXSwish",
       "LayerNorm",
       "LeakyRelu",
       "LeakyReluGrad",
@@ -233,7 +233,6 @@ class AutoMixedPrecisionLists {
       "SeluGrad",
       "Sigmoid",
       "SigmoidGrad",
-      "SwishGrad",
       "Softmax",
       "Softplus",
       "SoftplusGrad",
@@ -241,8 +240,16 @@ class AutoMixedPrecisionLists {
       "SoftsignGrad",
       "Sqrt",
       "Sub",
+      "SwishGrad",
       "Tanh",
       "TanhGrad",
+      "_FusedBatchNormEx",
+      "_ITEXFusedBatchNormGradEx",
+      "_ITEXFusedBinary",
+      "_ITEXFusedInstanceNorm",
+      "_ITEXInstanceNorm",
+      "_ITEXMish",
+      "_ITEXSwish",
   };
 
   // The default Deny list of FP16 and BF16.
@@ -274,8 +281,8 @@ class AutoMixedPrecisionLists {
       "DepthToSpace",
       "DynamicPartition",
       "DynamicStitch",
-      "Enter",
       "EnsureShape",
+      "Enter",
       "Equal",
       "Exit",
       "ExpandDims",
