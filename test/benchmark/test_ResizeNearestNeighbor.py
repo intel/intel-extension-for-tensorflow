@@ -29,21 +29,21 @@ except ImportError:
 
 ITERATION = 5
 
-class ResizeNearestNeighborGradTest(test.TestCase):
-    def _test_impl(self, in_size, original_size, dtype):
-        grad = np.random.normal(size=in_size)
-        grad = constant_op.constant(grad, dtype=dtype)
-        original_shape = constant_op.constant(original_size, dtype=dtypes.int32)
+class ResizeNearestNeighborTest(test.TestCase):
+    def _test_impl(self, in_size, out_size, dtype):
+        input_tensor = np.random.normal(size=in_size)
+        input_tensor = constant_op.constant(input_tensor, dtype=dtype)
+        output_shape =  constant_op.constant(out_size, dtype=dtypes.int32)
         flush_cache()
-        gen_image_ops.resize_nearest_neighbor_grad(grad, original_shape)
+        gen_image_ops.resize_nearest_neighbor(input_tensor, output_shape)
 
     @add_profiling
     @multi_run(ITERATION)
-    def testResizeNearestNeighborGrad(self):
-        cases = [[[512,32,32,3], [64,64]],
-                 [[256,64,64,3], [256,256]],
-                 [[32,128,128,3], [512,512]],
-                 [[64,9,9,91], [38,38]]]
+    def testResizeNearestNeighbor(self):
+        cases = [[[512,64,64,3], [32,32]],
+                 [[256,256,256,3], [64,64]],
+                 [[32,512,512,3], [128,128]],
+                 [[64,38,38,91], [9,9]]]
         for dtype in FLOAT_COMPUTE_TYPE:
             for in_size in cases:
                 self._test_impl(in_size[0], in_size[1], dtype)

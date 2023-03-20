@@ -645,74 +645,8 @@ TF_CALL_double(DECLARE_GPU_SPEC);
 #undef DECLARE_GPU_SPEC
 
 template <typename T, bool half_pixel_centers, bool align_corners>
-struct ResizeNearestNeighborGrad<
-    GPUDevice, T, half_pixel_centers, align_corners,
-    typename std::enable_if<std::is_same<T, Eigen::bfloat16>::value ||
-                            std::is_same<T, Eigen::half>::value>::type> {
-  bool operator()(OpKernelContext* ctx, const GPUDevice& d,
-                  typename TTypes<T, 4>::ConstTensor input,
-                  const float height_scale, const float width_scale,
-                  typename TTypes<T, 4>::Tensor output) {
-    const int batch_size = input.dimension(0);
-    const int64 in_height = input.dimension(1);
-    const int64 in_width = input.dimension(2);
-    const int channels = input.dimension(3);
-
-    const int64 out_height = output.dimension(1);
-    const int64 out_width = output.dimension(2);
-
-    const int input_size = batch_size * channels * in_height * in_width;
-    if (input_size == 0) return true;
-
-#define EigenFastDivisor(divisor, num)                     \
-  Eigen::internal::TensorIntDivisor<int> divisor;          \
-  if (num != 0) {                                          \
-    divisor = Eigen::internal::TensorIntDivisor<int>(num); \
-  }
-
-    EigenFastDivisor(channels_fast_divisor, channels);
-    EigenFastDivisor(in_width_fast_divisor, in_width);
-    EigenFastDivisor(in_height_fast_divisor, in_height);
-#undef EigenFastDivisor
-
-    // SYCL does not support atomic operations for bf16 and half data type
-    Tensor input_fp32, output_fp32;
-    TF_ABORT_IF_ERROR(ctx->allocate_temp(
-        DataTypeToEnum<float>::v(),
-        TensorShape({batch_size, in_height, in_width, channels}), &input_fp32));
-    input_fp32.tensor<float, 4>().device(d) = input.template cast<float>();
-    TF_ABORT_IF_ERROR(ctx->allocate_temp(
-        DataTypeToEnum<float>::v(),
-        TensorShape({batch_size, out_height, out_width, channels}),
-        &output_fp32));
-    output_fp32.tensor<float, 4>().device(d) =
-        output_fp32.tensor<float, 4>().constant(0.0f);
-    if (half_pixel_centers) {
-      auto status = ResizeNearestNeighborGradNHWCKernel<float>(
-          d, input_size, static_cast<float*>(input_fp32.data()), in_height,
-          in_width, channels, out_height, out_width, channels_fast_divisor,
-          in_height_fast_divisor, in_width_fast_divisor, height_scale,
-          width_scale, static_cast<float*>(output_fp32.data()));
-    } else {
-      auto status =
-          LegacyResizeNearestNeighborGradNHWCKernel<float, align_corners>(
-              d, input_size, static_cast<float*>(input_fp32.data()), in_height,
-              in_width, channels, out_height, out_width, channels_fast_divisor,
-              in_height_fast_divisor, in_width_fast_divisor, height_scale,
-              width_scale, static_cast<float*>(output_fp32.data()));
-    }
-
-    output.device(d) = output_fp32.tensor<float, 4>().template cast<T>();
-
-    return true;
-  }
-};
-
-template <typename T, bool half_pixel_centers, bool align_corners>
-struct ResizeNearestNeighborGrad<
-    GPUDevice, T, half_pixel_centers, align_corners,
-    typename std::enable_if<!std::is_same<T, Eigen::bfloat16>::value &&
-                            !std::is_same<T, Eigen::half>::value>::type> {
+struct ResizeNearestNeighborGrad<GPUDevice, T, half_pixel_centers,
+                                 align_corners> {
   bool operator()(OpKernelContext* ctx, const GPUDevice& d,
                   typename TTypes<T, 4>::ConstTensor input,
                   const float height_scale, const float width_scale,
@@ -740,6 +674,16 @@ struct ResizeNearestNeighborGrad<
     EigenFastDivisor(in_width_fast_divisor, in_width);
     EigenFastDivisor(in_height_fast_divisor, in_height);
 #undef EigenFastDivisor
+
+    // SYCL does not support atomic operations for bf16 and half data type.
+    // We use bf16/half atomic operation implemented by  32bit datatype
+    // atomicCAS, so tensor buffer must be 4 bytes aligned and tensor buffer
+    // size must be 4N bytes. These conditions should have been made sure by
+    // itex_gpu_runtime and itex's BFC allocator.
+    if constexpr (std::is_same_v<T, Eigen::half> ||
+                  std::is_same_v<T, Eigen::bfloat16>) {
+      assert(reinterpret_cast<std::uintptr_t>(output.data()) % 4 == 0);
+    }
 
     if (half_pixel_centers) {
       auto status = ResizeNearestNeighborGradNHWCKernel<T>(
