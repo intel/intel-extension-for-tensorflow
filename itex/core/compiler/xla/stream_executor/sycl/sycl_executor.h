@@ -278,7 +278,7 @@ class GpuExecutor : public internal::StreamExecutorInterface {
   // void* GpuContextHack() override;
 
   // GpuContext* gpu_context();
-  GpuDeviceHandle gpu_device() { return device_; }
+  GpuDeviceHandle gpu_device() { return device_ordinal_; }
   // Provide a type-erased way of attaching arbitrary XLA specific state to the
   // GpuExecutor. XLA based execution will use this method to attach per-stream
   // executor XLA specific objects (like the Infeed and Outfeed managers) to the

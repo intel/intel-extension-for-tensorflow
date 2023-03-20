@@ -99,6 +99,7 @@ GpuExecutor::~GpuExecutor() {
 port::Status GpuExecutor::Init(int device_ordinal,
                                DeviceOptions device_options) {
   device_ordinal_ = device_ordinal;
+  device_ = device_ordinal;
   ITEX_GPUDevice* device_handle;
   ITEX_GPUGetDevice(&device_handle, device_ordinal);
   sycl_device_ = *device_handle;
@@ -448,7 +449,7 @@ port::Status GpuExecutor::Launch(Stream* stream, const ThreadDim& thread_dims,
 DeviceMemoryBase GpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
   ITEX_CHECK_EQ(memory_space, 0);
   ITEX_GPUDevice* device_handle;
-  ITEX_GPUGetDevice(&device_handle, device_);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal_);
   std::shared_ptr<itex::BFCAllocator> alloc;
   auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
   ITEX_CHECK(status == ITEX_GPU_SUCCESS)
@@ -465,7 +466,7 @@ void* GpuExecutor::GetSubBuffer(DeviceMemoryBase* mem, uint64_t offset_bytes,
 
 void GpuExecutor::Deallocate(DeviceMemoryBase* mem) {
   ITEX_GPUDevice* device_handle;
-  ITEX_GPUGetDevice(&device_handle, device_);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal_);
   std::shared_ptr<itex::BFCAllocator> alloc;
   auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
   ITEX_CHECK(status == ITEX_GPU_SUCCESS)
@@ -481,7 +482,7 @@ bool GpuExecutor::HostMemoryUnregister(void* location) { return false; }
 
 bool GpuExecutor::SynchronizeAllActivity() {
   ITEX_GPUDevice* device_handle;
-  ITEX_GPUGetDevice(&device_handle, device_);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal_);
   ITEX_GPUCtxSynchronize(device_handle);
   return true;
 }
@@ -489,7 +490,7 @@ bool GpuExecutor::SynchronizeAllActivity() {
 port::Status GpuExecutor::SynchronousMemZero(DeviceMemoryBase* location,
                                              uint64_t size) {
   ITEX_GPUDevice* device_handle;
-  ITEX_GPUGetDevice(&device_handle, device_);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal_);
   if (reinterpret_cast<uintptr_t>(location->opaque()) % 4 == 0 &&
       size % 4 == 0) {
     ITEX_GPUMemsetD32(location->opaque(), 0x0, size / 4, device_handle);
@@ -501,7 +502,7 @@ port::Status GpuExecutor::SynchronousMemZero(DeviceMemoryBase* location,
 port::Status GpuExecutor::SynchronousMemSet(DeviceMemoryBase* location,
                                             int value, uint64_t size) {
   ITEX_GPUDevice* device_handle;
-  ITEX_GPUGetDevice(&device_handle, device_);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal_);
   ITEX_GPUMemsetD8(location->opaque(), value, size, device_handle);
   return port::Status::OK();
 }
@@ -510,7 +511,7 @@ port::Status GpuExecutor::SynchronousMemcpy(DeviceMemoryBase* gpu_dst,
                                             const void* host_src,
                                             uint64_t size) {
   ITEX_GPUDevice* device_handle;
-  ITEX_GPUGetDevice(&device_handle, device_);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal_);
   ITEX_GPUMemcpyHtoD(gpu_dst->opaque(), host_src, size, device_handle);
   return port::Status::OK();
 }

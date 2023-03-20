@@ -346,22 +346,12 @@ void permute_dpcpp(ITEX_GPUStream* stream, int tensor_size,
   auto num_workgroup = (tensor_size + group_size - 1) / group_size;
 
   if (reduction_size == 2) {
-    // buf: (0,0), (0,1), (1,0), (1,1)
-    std::vector<const void*> send_buf(4, nullptr);
-    std::vector<void*> recv_buf(4, nullptr);
-    if (participants[0].send_id)
-      send_buf[*participants[0].send_id] = participants[0].send;
-    if (participants[1].send_id)
-      send_buf[*participants[1].send_id + 2] = participants[1].send;
-    if (participants[0].recv_id)
-      recv_buf[*participants[0].recv_id * 2] = participants[0].recv;
-    if (participants[1].recv_id)
-      recv_buf[*participants[1].recv_id * 2 + 1] = participants[1].recv;
+    for (int i = 0; i < 2; i++)
+      if (participants[i].send_id)
+        stream->memcpy(participants[i].recv,
+                       (const void*)participants[*participants[i].send_id].send,
+                       tensor_size * sizeof(T));
 
-    for (int i = 0; i < 4; i++) {
-      if (send_buf[i] && recv_buf[i])
-        stream->memcpy(recv_buf[i], send_buf[i], tensor_size * sizeof(T));
-    }
   } else {
     ITEX_LOG(FATAL) << "Reduction size " << reduction_size
                     << " is not supported in AllReduce.";
@@ -370,18 +360,20 @@ void permute_dpcpp(ITEX_GPUStream* stream, int tensor_size,
 
 template <class T>
 void stream_wait_streamlist(ITEX_GPUStream* stream, const std::vector<T>& p) {
+  std::vector<ITEX_GPUEvent> event_list;
   for (int i = 1; i < p.size(); i++) {
     ITEX_GPUEvent event = p[i].stream->ext_oneapi_submit_barrier();
-    const std::vector<ITEX_GPUEvent> event_list{event};
-    stream->ext_oneapi_submit_barrier(event_list);
+    event_list.push_back(event);
   }
+  stream->ext_oneapi_submit_barrier(event_list);
 }
 
 template <class T>
 void streamlist_wait_stream(ITEX_GPUStream* stream, const std::vector<T>& p) {
+  ITEX_GPUEvent event = stream->ext_oneapi_submit_barrier();
+
+  const std::vector<ITEX_GPUEvent> event_list{event};
   for (int i = 1; i < p.size(); i++) {
-    ITEX_GPUEvent event = stream->ext_oneapi_submit_barrier();
-    const std::vector<ITEX_GPUEvent> event_list{event};
     p[i].stream->ext_oneapi_submit_barrier(event_list);
   }
 }

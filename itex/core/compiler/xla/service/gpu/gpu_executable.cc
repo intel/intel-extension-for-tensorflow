@@ -41,12 +41,12 @@ limitations under the License.
 #include "itex/core/compiler/xla/shape_tree.h"
 #include "itex/core/compiler/xla/shape_util.h"
 #include "itex/core/compiler/xla/status_macros.h"
+#include "itex/core/compiler/xla/stream_executor/sycl/sycl_stream.h"
 #include "itex/core/compiler/xla/util.h"
 #include "itex/core/utils/env.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gtl/map_util.h"
 #include "itex/core/utils/logging.h"
-
 namespace itex_xla {
 namespace gpu {
 
@@ -179,8 +179,8 @@ Status ExecuteThunks(const std::string& module_name,
   se::Stream* main_stream = run_options->stream();
   se::StreamExecutor* executor = main_stream->parent();
 
-  // StatusOr<StreamPool::Ptr> async_comms_stream =
-  //     run_options->BorrowStream(executor->device_ordinal());
+  StatusOr<StreamPool::Ptr> async_comms_stream =
+      run_options->BorrowStream(executor->device_ordinal());
 
   // TODO(ITEX): how to enable multi-stream?
   // Stream 0 indicates `main_stream` and substreams start from stream 1.
@@ -214,7 +214,6 @@ Status ExecuteThunks(const std::string& module_name,
     // se::Stream* stream =
     //     (stream_no == 0 ? main_stream : sub_streams[stream_no - 1].get());
     se::Stream* stream = main_stream;
-
     for (const Thunk* dependency : thunk_schedule.DependsOn(thunk.get())) {
       stream->ThenWaitFor(FindOrDie(thunk_to_finish_event, dependency).get());
     }
@@ -222,14 +221,15 @@ Status ExecuteThunks(const std::string& module_name,
     ITEX_VLOG(2) << "Executing the thunk for " << thunk->profile_annotation()
                  << " on stream " << stream_no;
 
-    // TF_RET_CHECK(async_comms_stream.ok() || !NeedsAsyncCommsStream(*thunk))
-    //     << "`run_options` must have a stream borrower for async thunks.";
+    TF_RET_CHECK(async_comms_stream.ok() || !NeedsAsyncCommsStream(*thunk))
+        << "`run_options` must have a stream borrower for async thunks.";
 
-    // Thunk::ExecuteParams thunk_params{
-    //     *run_options, buffer_allocations, stream,
-    //     async_comms_stream.ok() ? async_comms_stream->get() : nullptr};
-    Thunk::ExecuteParams thunk_params{*run_options, buffer_allocations, stream,
-                                      nullptr};
+    Thunk::ExecuteParams thunk_params{
+        *run_options, buffer_allocations, stream,
+        async_comms_stream.ok() ? async_comms_stream->get() : nullptr};
+    // Thunk::ExecuteParams thunk_params{*run_options, buffer_allocations,
+    // stream,
+    //                                  nullptr};
     TF_RETURN_IF_ERROR(thunk->ExecuteOnStream(thunk_params));
     if (thunk_schedule.Depended(thunk.get())) {
       // auto finish_event =
