@@ -620,11 +620,8 @@ void LaunchColReduction(
        ((extend_z / VEC_SIZE) % ColReductionPolicy::MAX_LOCAL_ITEM_ON_Z == 0));
   bool use_vectorization_pass = reach_minimum_occpu && reach_vec_alignment;
 
-  if (use_vectorization_pass) {
-    SGVecColReduction<InputT, OutputT, InitValueT, Op, InputFunctor,
-                      OutputFunctor>(ctx, in_data, out_data, extend_x, extend_y,
-                                     extend_z, init_val, op, in_func, out_func);
-  } else if (elems_per_item < 4 && extend_y < 64) {
+  if (elems_per_item < 4 && extend_y <= 64 &&
+      (extend_x * extend_z >= hardware_reside_work_item)) {
     const int out_size = extend_x * extend_z;
     int GroupSize = std::min(512, max_group_size);
     int num_wg = (out_size + GroupSize - 1) / GroupSize;
@@ -639,6 +636,10 @@ void LaunchColReduction(
                                           InputFunctor, OutputFunctor, Op>>(
           range, task);
     });
+  } else if (use_vectorization_pass) {
+    SGVecColReduction<InputT, OutputT, InitValueT, Op, InputFunctor,
+                      OutputFunctor>(ctx, in_data, out_data, extend_x, extend_y,
+                                     extend_z, init_val, op, in_func, out_func);
   } else {
     TreeColReduction<InputT, OutputT, InitValueT, Op, InputFunctor,
                      OutputFunctor>(ctx, in_data, out_data, extend_x, extend_y,
