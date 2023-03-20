@@ -111,7 +111,7 @@ def itex_dense_layer_call(self, inputs):
       of integers and None values, or None, representing the inferred
       static shape of the free dimensions
       """
-      if a.get_shape().is_fully_defined() and isinstance(axes, (list, tuple)):
+      if a.get_shape().is_fully_defined() and isinstance(axes, (list, tuple)): # pylint: disable=no-else-return
         shape_a = a.get_shape().as_list()
         axes = [i if i >= 0 else i + len(shape_a) for i in axes]
         free = [i for i in builtins.range(len(shape_a)) if i not in axes]
@@ -167,7 +167,7 @@ def itex_dense_layer_call(self, inputs):
       if isinstance(axes, compat.integral_types):
         if axes < 0:
           raise ValueError(f"`axes` must be at least 0. Received: {axes}.")
-        if a_shape.ndims is not None:
+        if a_shape.ndims is not None: # pylint: disable=no-else-return
           if axes > a_shape.ndims:
             raise ValueError(f"`axes` must not be larger than the number of "
                              f"dimensions of tensor {a}.  Received {axes}, vs "
@@ -196,7 +196,7 @@ def itex_dense_layer_call(self, inputs):
         axes = ops.convert_to_tensor(axes, name="axes", dtype=dtypes.int32)
         return axes[0], axes[1]
 
-    with ops.name_scope(name, "Tensordot", [a, b, axes]) as name:
+    with ops.name_scope(name, "Tensordot", [a, b, axes]) as name: # pylint: disable=redefined-argument-from-local
       a = ops.convert_to_tensor(a, name="a")
       b = ops.convert_to_tensor(b, name="b")
       a_axes, b_axes = _tensordot_axes(a, axes)
@@ -207,9 +207,9 @@ def itex_dense_layer_call(self, inputs):
     if self.use_bias:
       ab_matmul = tf.nn.bias_add(ab_matmul, self.bias)
 
-    with ops.name_scope(name, "Tensordot", [a, b, axes]) as name:
+    with ops.name_scope(name, "Tensordot", [a, b, axes]) as name: # pylint: disable=redefined-argument-from-local
       if isinstance(a_free_dims, list) and isinstance(b_free_dims, list):
-        if (ab_matmul.get_shape().is_fully_defined() and
+        if (ab_matmul.get_shape().is_fully_defined() and # pylint: disable=no-else-return
                 ab_matmul.get_shape().as_list() == a_free_dims + b_free_dims):
           return ab_matmul
         else:
@@ -224,8 +224,8 @@ def itex_dense_layer_call(self, inputs):
           product.set_shape(a_free_dims_static + b_free_dims_static)
         return product
 
-  if inputs.dtype.base_dtype != self._compute_dtype_object.base_dtype:
-    inputs = tf.cast(inputs, dtype=self._compute_dtype_object)
+  if inputs.dtype.base_dtype != self._compute_dtype_object.base_dtype: # pylint: disable=protected-access
+    inputs = tf.cast(inputs, dtype=self._compute_dtype_object) # pylint: disable=protected-access
 
   is_ragged = isinstance(inputs, tf.RaggedTensor)
   if is_ragged:
@@ -341,7 +341,7 @@ def experimental_ops_override():
   using itex api in some tf and keras functions.
   '''
   try:
-    from keras.utils import tf_utils
+    from keras.utils import tf_utils # pylint: disable=import-outside-toplevel
     from pkg_resources import packaging # pylint: disable=import-outside-toplevel
     version = packaging.version.parse
     if version(tf.__version__) < version("2.9.0"):
@@ -350,21 +350,21 @@ def experimental_ops_override():
   except BaseException: # pylint: disable=broad-except
     return
   def itex_layer_norm_build(self, input_shape):
-    self._param_dtype = None
+    self._param_dtype = None # pylint: disable=protected-access
     # Raise parameters of fp16 layer tch norm to fp32
-    if self.dtype == dtypes.float16 or self.dtype == dtypes.bfloat16: # pylint: disable=no-else-return
-      self._param_dtype = dtypes.float32
+    if self.dtype == dtypes.float16 or self.dtype == dtypes.bfloat16: # pylint: disable=no-else-return,consider-using-in
+      self._param_dtype = dtypes.float32 # pylint: disable=protected-access
     else:
-      self._param_dtype =  self.dtype or dtypes.float32
+      self._param_dtype =  self.dtype or dtypes.float32 # pylint: disable=protected-access
     self.axis = tf_utils.validate_axis(self.axis, input_shape)
     input_shape = tf.TensorShape(input_shape)
     param_shape = [input_shape[dim] for dim in self.axis]
-    self._use_layernorm = _can_use_onednn_layer_norm(self, len(input_shape))
+    self._use_layernorm = _can_use_onednn_layer_norm(self, len(input_shape)) # pylint: disable=protected-access
     if self.scale:
       self.gamma = self.add_weight(
           name="gamma",
           shape=param_shape,
-          dtype=self._param_dtype if self._use_layernorm else None,
+          dtype=self._param_dtype if self._use_layernorm else None, # pylint: disable=protected-access
           initializer=self.gamma_initializer,
           regularizer=self.gamma_regularizer,
           constraint=self.gamma_constraint,
@@ -378,7 +378,7 @@ def experimental_ops_override():
       self.beta = self.add_weight(
           name="beta",
           shape=param_shape,
-          dtype=self._param_dtype if self._use_layernorm else None,
+          dtype=self._param_dtype if self._use_layernorm else None, # pylint: disable=protected-access
           initializer=self.beta_initializer,
           regularizer=self.beta_regularizer,
           constraint=self.beta_constraint,
@@ -392,7 +392,7 @@ def experimental_ops_override():
 
   def itex_layer_norm_call(self, inputs):
     if not self._use_layernorm: # pylint: disable=protected-access
-      return tf_ln_call(self, inputs)
+      return tf_ln_call(self, inputs) # pylint: disable=not-callable
     # Compute the axes along which to reduce the mean / variance
     input_shape = inputs.shape
     ndims = len(input_shape)
@@ -408,9 +408,9 @@ def experimental_ops_override():
         return array_ops.reshape(v, broadcast_shape)
       return v
 
-    beta = self.beta if self.beta is not None else self._beta_const
-    gamma = self.gamma if self.gamma is not None else self._gamma_const
-    if self._is_one_axis_len:
+    beta = self.beta if self.beta is not None else self._beta_const # pylint: disable=protected-access
+    gamma = self.gamma if self.gamma is not None else self._gamma_const # pylint: disable=protected-access
+    if self._is_one_axis_len: # pylint: disable=protected-access
       outputs, _, _ = _layer_norm(
         inputs,
         scale=gamma,
@@ -520,7 +520,7 @@ def experimental_ops_override():
 
 
   try:
-    import tensorflow_addons as tfa
+    import tensorflow_addons as tfa # pylint: disable=import-outside-toplevel
     tfa.layers.InstanceNormalization.call = itex_instance_norm_call
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: tensorflow_addons is not installed.") # pylint: disable=line-too-long
@@ -530,7 +530,7 @@ def experimental_ops_override():
     tf.keras.layers.LayerNormalization.build = itex_layer_norm_build
     tf.nn.gelu = gelu
     tf.keras.layers.LSTM = ItexLSTM
-    from tensorflow.python import keras
+    from tensorflow.python import keras # pylint: disable=import-outside-toplevel
     keras.layers.LSTM = ItexLSTM
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
@@ -543,4 +543,3 @@ def experimental_ops_override():
     keras.layers.LSTM = ItexLSTM
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long
-
