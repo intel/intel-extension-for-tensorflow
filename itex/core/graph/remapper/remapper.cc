@@ -380,6 +380,19 @@ struct AddV2WithSoftmax {
   int softmaxIndex_ = kMissingIndex;
 };
 
+struct GroupConv2DBlock {
+  GroupConv2DBlock() = default;
+  GroupConv2DBlock(int inputSplitIndex, std::vector<int> convIndexs,
+                   int concatIndex)
+      : inputSplitIndex_(inputSplitIndex),
+        convIndexs_(convIndexs),
+        concatIndex_(concatIndex) {}
+
+  int inputSplitIndex_ = kMissingIndex;
+  std::vector<int> convIndexs_;
+  int concatIndex_ = kMissingIndex;
+};
+
 struct PadConvFwdBwd {
   int input_bn = kMissingIndex;
   int input_pad_val = kMissingIndex;
@@ -2835,6 +2848,154 @@ bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
   return true;
 }
 
+// @brief: Replace Aggregated residual transformations with Grouped Conv
+// @pattern:
+/*
+          Split
+            |
+  /    /    |   \    \
+Conv Conv  ... Conv Conv    ---->    GroupedConv
+  \    \    |   /    /
+            |
+        ConcatV2
+*/
+// @reference https://arxiv.org/pdf/1611.05431.pdf
+bool FindResNeXtGroupConv2DBlock(const RemapperContext& ctx, int node_index,
+                                 GroupConv2DBlock* matched) {
+  auto* concat_node_view = ctx.graph_view.GetNode(node_index);
+  auto* concat_node_def = concat_node_view->node();
+  if (!IsConcat(*concat_node_def)) return false;
+  if (!HasDataType(concat_node_def, DT_FLOAT) &&
+      !HasDataType(concat_node_def, DT_BFLOAT16) &&
+      !(HasDataType(concat_node_def, DT_HALF)))
+    return false;
+
+  int64 N;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*concat_node_view->node(), "N", &N));
+  const auto getAxis = [&](const utils::MutableNodeView& concat,
+                           int64 index) -> int32_t {
+    auto* const_node_view = concat.GetRegularFanin(index).node_view();
+    NodeDef* const_node_def = const_node_view->node();
+    Tensor axis_tensor;
+    int32_t axis_value = 0;
+    if (!IsConstant(*const_node_def)) {
+      return axis_value;
+    }
+    TensorProto tensor_proto = const_node_def->attr().at("value").tensor();
+    if (!axis_tensor.FromProto(tensor_proto)) {
+      return axis_value;
+    }
+    axis_value = axis_tensor.flat<int32_t>()(0);
+    return axis_value;
+  };
+  int32_t concat_axis = getAxis(*concat_node_view, N);
+  auto& concat_fanin_0 = concat_node_view->GetRegularFanin(0);
+
+  // Do simple pre-check for Conv & Split first.
+  auto* conv0_node_view = concat_fanin_0.node_view();
+  NodeDef* conv0_node = conv0_node_view->node();
+  if (!IsConv2D(*conv0_node)) {
+    return false;
+  }
+
+  std::string data_format_0;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*conv0_node, "data_format", &data_format_0));
+  const auto& conv_fanin_0 = conv0_node_view->GetRegularFanin(0);
+  auto* split0_node_view = conv_fanin_0.node_view();
+  auto* split0_node_def = split0_node_view->node();
+  int split0_index = split0_node_view->node_index();
+  int64 num_split;
+  if (!IsSplit(*split0_node_def)) {
+    return false;
+  }
+  TF_ABORT_IF_ERROR(GetNodeAttr(*split0_node_def, "num_split", &num_split));
+  int32 split_axis = getAxis(*split0_node_view, 0);
+
+  if (num_split != N || split_axis != concat_axis) {
+    return false;
+  }
+
+  if (HasControlFaninOrFanout(*split0_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*split0_node_view) ||
+      IsInPreserveSet(ctx, split0_node_def))
+    return false;
+
+  if (data_format_0 == "NCHW") {
+    if (split_axis != 1) return false;
+  } else if (data_format_0 == "NHWC") {
+    bool wrong_nhwc_axis = (split_axis != -1 && split_axis != 3);
+    if (wrong_nhwc_axis) return false;
+  } else {
+    ITEX_CHECK(false) << "Unsupported format in GroupConv fusion";
+  }
+
+  const auto getWeightShape =
+      [&](const utils::MutableNodeView& conv) -> TensorShape {
+    // conv filter
+    auto* const_node_view = conv.GetRegularFanin(1).node_view();
+    NodeDef* const_node_def = const_node_view->node();
+    Tensor shape_tensor;
+    if (!IsConstant(*const_node_def)) {
+      return shape_tensor.shape();
+    }
+    TensorProto tensor_proto = const_node_def->attr().at("value").tensor();
+    if (!shape_tensor.FromProto(tensor_proto)) {
+      return shape_tensor.shape();
+    }
+    return shape_tensor.shape();
+  };
+  TensorShape first_conv_shape = getWeightShape(*conv0_node_view);
+
+  if (!TensorShapeUtils::IsVector(first_conv_shape) ||
+      !first_conv_shape.IsValid()) {
+    return false;
+  }
+  // Finished simple check, process N * Conv.
+  std::vector<int> conv_indexs;
+  for (int i = 0; i < N; i++) {
+    const auto& concat_fanin = concat_node_view->GetRegularFanin(i);
+    auto* conv_node_view = concat_fanin.node_view();
+    NodeDef* conv_node_def = conv_node_view->node();
+    string data_format;
+
+    if (!IsConv2D(*conv_node_def)) {
+      return false;
+    }
+
+    TF_ABORT_IF_ERROR(GetNodeAttr(*conv_node_def, "data_format", &data_format));
+    if (data_format != data_format_0) {
+      return false;
+    }
+
+    conv_indexs.push_back(conv_node_view->node_index());
+
+    if (HasControlFaninOrFanout(*conv_node_view) ||
+        IsInPreserveSet(ctx, conv_node_def)) {
+      return false;
+    }
+
+    TensorShape conv_shape = getWeightShape(*conv_node_view);
+    if (first_conv_shape != conv_shape) {
+      return false;
+    }
+    const auto& conv_fanin_0 = conv_node_view->GetRegularFanin(0);
+    const auto* split_node_view = conv_fanin_0.node_view();
+    const auto* split_node_def = split_node_view->node();
+    if (!IsSplit(*split_node_def)) {
+      return false;
+    }
+    int splitx_index = split_node_view->node_index();
+    if (splitx_index != split0_index) {
+      return false;
+    }
+  }
+
+  const GroupConv2DBlock pattern{split0_node_view->node_index(), conv_indexs,
+                                 concat_node_view->node_index()};
+  *matched = pattern;
+  return true;
+}
+
 void CopyFusedBatchNormAttributes(const NodeDef& fused_batch_norm,
                                   NodeDef* fused_batch_norm_ex) {
   ITEX_DCHECK(IsFusedBatchNorm(fused_batch_norm) ||
@@ -2925,6 +3086,81 @@ Status AddFusedContractionNode(RemapperContext* ctx,
   (*invalidated_nodes)[matched.bias_add] = true;
   (*nodes_to_delete)[matched.contraction] = true;
 
+  return Status::OK();
+}
+
+Status AddGroupConv2DNode(RemapperContext* ctx, const GroupConv2DBlock& matched,
+                          std::vector<bool>* invalidated_nodes,
+                          std::vector<bool>* nodes_to_delete) {
+  ITEX_DCHECK(IsDeviceCompatible(*ctx, matched))
+      << "Unsupported fusion pattern";
+
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& input_split = graph->node(matched.inputSplitIndex_);
+  const NodeDef& first_conv = graph->node(matched.convIndexs_[0]);
+  const NodeDef& gconv_concat = graph->node(matched.concatIndex_);
+  ITEX_VLOG(2) << "Fuse " << input_split.name() << " with Concat: "
+               << " concat=" << gconv_concat.name();
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  int32 axis_value = -1;
+  DataType axis_dtype = DT_INT32;
+  Tensor axis_value_tensor(axis_dtype, TensorShape());
+  axis_value_tensor.scalar<int32>()() = axis_value;
+  const std::string axis_name =
+      AddPrefixToNodeName("weights/axis", first_conv.name());
+
+  NodeDef concat_axis;
+  concat_axis.set_name(axis_name);
+  concat_axis.set_op(kConst);
+  concat_axis.set_device(gconv_concat.device());
+
+  AttrValue attr_type;
+  attr_type.set_type(axis_dtype);
+  concat_axis.mutable_attr()->insert({"dtype", attr_type});
+
+  AttrValue attr_tensor;
+  TensorProto* t = attr_tensor.mutable_tensor();
+  axis_value_tensor.AsProtoTensorContent(t);
+  concat_axis.mutable_attr()->insert({"value", attr_tensor});
+  mutation->AddNode(std::move(concat_axis), &status);
+  TF_RETURN_IF_ERROR(status);
+
+  NodeDef gconv_weight_concat;
+  const string gconv_weight_concat_name =
+      AddPrefixToNodeName("weights", first_conv.name());
+  gconv_weight_concat.set_name(gconv_weight_concat_name);
+  gconv_weight_concat.set_device(gconv_concat.device());
+
+  for (int i = 0; i < matched.convIndexs_.size(); i++) {
+    gconv_weight_concat.add_input(graph->node(matched.convIndexs_[i]).input(1));
+  }
+  gconv_weight_concat.add_input(axis_name);
+
+  gconv_weight_concat.set_op(kConcatV2);
+  CopyAllAttrs(gconv_concat, &gconv_weight_concat);
+  mutation->AddNode(std::move(gconv_weight_concat), &status);
+  TF_RETURN_IF_ERROR(status);
+
+  NodeDef fused_op;
+  fused_op.set_name(gconv_concat.name());
+  fused_op.set_device(gconv_concat.device());
+  fused_op.add_input(input_split.input(1));      // 0: input
+  fused_op.add_input(gconv_weight_concat_name);  // 1: filter
+  fused_op.set_op(kConv2D);
+
+  CopyAllAttrs(first_conv, &fused_op);
+  mutation->AddNode(std::move(fused_op), &status);
+
+  (*invalidated_nodes)[matched.concatIndex_] = true;
+  (*nodes_to_delete)[matched.inputSplitIndex_] = true;
+  for (int i = 0; i < matched.convIndexs_.size(); i++) {
+    (*nodes_to_delete)[(matched.convIndexs_[i])] = true;
+  }
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
   return Status::OK();
 }
 
@@ -5296,6 +5532,13 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
         TF_ABORT_IF_ERROR(
             AddFusedContractionNode(&ctx, contract_with_bias_and_activation_add,
                                     &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      GroupConv2DBlock group_conv;
+      if (FindResNeXtGroupConv2DBlock(ctx, i, &group_conv)) {
+        TF_ABORT_IF_ERROR(AddGroupConv2DNode(
+            &ctx, group_conv, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
 

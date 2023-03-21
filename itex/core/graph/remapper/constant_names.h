@@ -37,6 +37,7 @@ constexpr char kBinaryMul[] = "BinaryMul";
 constexpr char kCast[] = "Cast";
 constexpr char kConcatV2[] = "ConcatV2";
 constexpr char kConst[] = "Const";
+constexpr char kConv2D[] = "Conv2D";
 constexpr char kConv2DBackpropFilter[] = "Conv2DBackpropFilter";
 constexpr char kConv3D[] = "Conv3D";
 constexpr char kConv3DBackpropFilter[] = "Conv3DBackpropFilter";
