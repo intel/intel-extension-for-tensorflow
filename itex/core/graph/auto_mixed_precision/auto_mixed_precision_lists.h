@@ -190,6 +190,8 @@ class AutoMixedPrecisionLists {
       "_ITEXPadWithConv3D",
       "_ITEXPadWithFusedConv2D",
       "_ITEXPadWithFusedConv3D",
+      /*Below ops have more attrs compared to original TF ops.*/
+      "_ITEXConv3D",
   };
 
   // The default Infer list of FP16 and BF16.
