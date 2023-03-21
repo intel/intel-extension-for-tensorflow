@@ -103,11 +103,11 @@ void* BFCAllocator::AllocateRaw(size_t num_bytes) {
 }
 
 void BFCAllocator::DeallocateRaw(void* ptr) {
-  ITEX_VLOG(1) << "Deallocate " << ptr;
   if (ptr == nullptr) {
     ITEX_VLOG(1) << "tried to deallocate nullptr";
     return;
   }
+  ITEX_VLOG(2) << "Deallocate " << ptr;
   mutex_lock l(&lock_);
 
   // Find the chunk from the ptr.
@@ -334,7 +334,7 @@ BFCAllocator::ChunkHandle BFCAllocator::TryToCoalesce(ChunkHandle h) {
   // If the next chunk is free, merge it into c and delete it.
   if (c->next != kInvalidChunkHandle && !ChunkFromHandle(c->next)->in_use()) {
     Chunk* n = ChunkFromHandle(c->next);
-    ITEX_VLOG(1) << "Merging c->next " << n->ptr << " with c " << c->ptr;
+    ITEX_VLOG(2) << "Merging c->next " << n->ptr << " with c " << c->ptr;
     RemoveFreeChunkFromBin(c->next);
     Merge(h, c->next);
   }
@@ -342,7 +342,7 @@ BFCAllocator::ChunkHandle BFCAllocator::TryToCoalesce(ChunkHandle h) {
   // If the previous chunk is free, merge c into it and delete c.
   if (c->prev != kInvalidChunkHandle && !ChunkFromHandle(c->prev)->in_use()) {
     Chunk* n = ChunkFromHandle(c->prev);
-    ITEX_VLOG(1) << "Merging c " << c->ptr << " into c->prev " << n->ptr;
+    ITEX_VLOG(2) << "Merging c " << c->ptr << " into c->prev " << n->ptr;
     coalesced_chunk = c->prev;
     RemoveFreeChunkFromBin(c->prev);
     Merge(c->prev, h);
