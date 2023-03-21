@@ -77,15 +77,6 @@ struct FusedAddN {
   int addN = kMissingIndex;
 };
 
-// FusedBatchNorm that can be replaced with a cheaper set of primitives.
-struct FusedBatchNorm {
-  FusedBatchNorm() = default;
-  explicit FusedBatchNorm(int fused_batch_norm)
-      : fused_batch_norm(fused_batch_norm) {}
-
-  int fused_batch_norm = kMissingIndex;
-};
-
 // Bf16FusedMatmulGrad + Castfp32 pattern. will substitute with
 // _ITEXFusedAccMatMulGrad.
 struct Bf16ContractionGradWithCastFp32 {
@@ -991,50 +982,6 @@ bool FindFusedAddN(const RemapperContext& ctx, int node_index,
   return true;
 }
 
-bool FindFusedBatchNorm(const RemapperContext& ctx, int node_index,
-                        FusedBatchNorm* matched) {
-  const auto* node_view = ctx.graph_view.GetNode(node_index);
-  const auto* node_def = node_view->node();
-  if (!IsFusedBatchNorm(*node_def)) return false;
-  if (GetDataTypeFromAttr(*node_def, "T") != DT_FLOAT) return false;
-
-  // Check that the node is in inference mode.
-  bool is_training = true;
-  if (!TryGetNodeAttr(*node_def, kIsTraining, &is_training)) return false;
-  if (is_training) return false;
-
-  std::vector<OpInfo_TensorProperties> props;
-  TF_ABORT_IF_ERROR(
-      ctx.graph_properties.GetInputProperties(node_def->name(), &props));
-
-  // a. Scaling factor can be const folded:
-  //      scaling_factor = (variance + epsilon).rsqrt() * scale
-  bool const_scaling_factor =
-      props.size() == 5 &&     // [x, scale, offset, mean, variance]
-      props[1].has_value() &&  // scale
-      props[4].has_value();    // variance aka estimated variance
-
-  // b. Or input can be const folded into some other expression.
-  auto const_inputs = std::count_if(
-      props.begin(), props.end(),
-      [](const OpInfo::TensorProperties& props) { return props.has_value(); });
-
-  // TODO(bsteiner): use the cost model to compare the cost of fused batch
-  // norm against that of the optimized form.
-  bool can_remap = const_scaling_factor || const_inputs >= 4;
-  if (!can_remap) return false;
-
-  // The optimized version only generates the first output.
-  if (node_view->GetRegularFanouts().size() > 1) {
-    return false;
-  }
-
-  // We found a fused batch norm node that can be replaced with primitive ops.
-  matched->fused_batch_norm = node_index;
-
-  return true;
-}
-
 bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
                              ContractionWithBiasAdd* matched,
                              bool check_device_compatible = true) {
@@ -1511,11 +1458,7 @@ bool FindFusedBatchNormEx(const RemapperContext& ctx, int node_index,
   const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
   const auto* relu_fanin_0_node_view = regular_fanin_0.node_view();
   const auto* relu_fanin_0_node_def = relu_fanin_0_node_view->node();
-  FusedBatchNorm fused_batch_norm;
-  if (FindFusedBatchNorm(ctx, regular_fanin_0.node_index(),
-                         &fused_batch_norm)) {
-    return false;
-  }
+
   // Input to a Relu can be a FusedBatchNorm.
   if (valid_batch_norm(*relu_fanin_0_node_view)) {
     matched->activation = node_index;
@@ -3743,207 +3686,6 @@ Status AddFusedContractionNode(RemapperContext* ctx,
   return Status::OK();
 }
 
-Status AddBatchNormNodes(RemapperContext* ctx, const FusedBatchNorm& matched) {
-  const GraphDef* graph = ctx->graph_view.graph();
-  const NodeDef& fused_node = graph->node(matched.fused_batch_norm);
-  ITEX_VLOG(2) << "Optimizing fused batch norm node "
-               << SummarizeNodeDef(fused_node);
-
-  const string& x = fused_node.input(0);
-  string scale = fused_node.input(1);
-  string offset = fused_node.input(2);
-  string mean = fused_node.input(3);
-  string variance = fused_node.input(4);
-
-  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
-  Status status;
-
-  string x_format = fused_node.attr().at(kDataFormat).s();
-  if (x_format == "NCHW" || x_format == "NCDHW") {
-    // Need to reshape the last 4 inputs
-    NodeDef new_shape;
-    const string new_shape_name =
-        AddPrefixToNodeName(x_format + "Shape", fused_node.name());
-    new_shape.set_name(new_shape_name);
-    new_shape.set_op("Const");
-    new_shape.set_device(fused_node.device());
-    *new_shape.add_input() = AsControlDependency(scale);
-    (*new_shape.mutable_attr())["dtype"].set_type(DT_INT32);
-    if (x_format == "NCHW") {
-      Tensor t(DT_INT32, {4});
-      t.flat<int32>()(0) = 1;
-      t.flat<int32>()(1) = -1;
-      t.flat<int32>()(2) = 1;
-      t.flat<int32>()(3) = 1;
-      t.AsProtoTensorContent(
-          (*new_shape.mutable_attr())["value"].mutable_tensor());
-    } else {
-      Tensor t(DT_INT32, {5});
-      t.flat<int32>()(0) = 1;
-      t.flat<int32>()(1) = -1;
-      t.flat<int32>()(2) = 1;
-      t.flat<int32>()(3) = 1;
-      t.flat<int32>()(4) = 1;
-      t.AsProtoTensorContent(
-          (*new_shape.mutable_attr())["value"].mutable_tensor());
-    }
-    mutation->AddNode(std::move(new_shape), &status);
-    TF_RETURN_IF_ERROR(status);
-
-    NodeDef reshaped_scale;
-    reshaped_scale.set_name(
-        AddPrefixToNodeName(x_format + "ShapedScale", fused_node.name()));
-    reshaped_scale.set_op("Reshape");
-    reshaped_scale.set_device(fused_node.device());
-    *reshaped_scale.add_input() = scale;
-    *reshaped_scale.add_input() = new_shape_name;
-    (*reshaped_scale.mutable_attr())["T"] = fused_node.attr().at("T");
-    (*reshaped_scale.mutable_attr())["Tshape"].set_type(DT_INT32);
-    scale = reshaped_scale.name();
-    mutation->AddNode(std::move(reshaped_scale), &status);
-    TF_RETURN_IF_ERROR(status);
-
-    NodeDef reshaped_offset;
-    reshaped_offset.set_name(
-        AddPrefixToNodeName(x_format + "ShapedOffset", fused_node.name()));
-    reshaped_offset.set_op("Reshape");
-    reshaped_offset.set_device(fused_node.device());
-    *reshaped_offset.add_input() = offset;
-    *reshaped_offset.add_input() = new_shape_name;
-    (*reshaped_offset.mutable_attr())["T"] = fused_node.attr().at("T");
-    (*reshaped_offset.mutable_attr())["Tshape"].set_type(DT_INT32);
-    offset = reshaped_offset.name();
-    mutation->AddNode(std::move(reshaped_offset), &status);
-    TF_RETURN_IF_ERROR(status);
-
-    NodeDef reshaped_mean;
-    reshaped_mean.set_name(
-        AddPrefixToNodeName(x_format + "ShapedMean", fused_node.name()));
-    reshaped_mean.set_op("Reshape");
-    reshaped_mean.set_device(fused_node.device());
-    *reshaped_mean.add_input() = mean;
-    *reshaped_mean.add_input() = new_shape_name;
-    (*reshaped_mean.mutable_attr())["T"] = fused_node.attr().at("T");
-    (*reshaped_mean.mutable_attr())["Tshape"].set_type(DT_INT32);
-    mean = reshaped_mean.name();
-    mutation->AddNode(std::move(reshaped_mean), &status);
-    TF_RETURN_IF_ERROR(status);
-
-    NodeDef reshaped_variance;
-    reshaped_variance.set_name(
-        AddPrefixToNodeName(x_format + "ShapedVariance", fused_node.name()));
-    reshaped_variance.set_op("Reshape");
-    reshaped_variance.set_device(fused_node.device());
-    *reshaped_variance.add_input() = variance;
-    *reshaped_variance.add_input() = new_shape_name;
-    (*reshaped_variance.mutable_attr())["T"] = fused_node.attr().at("T");
-    (*reshaped_variance.mutable_attr())["Tshape"].set_type(DT_INT32);
-    variance = reshaped_variance.name();
-    mutation->AddNode(std::move(reshaped_variance), &status);
-    TF_RETURN_IF_ERROR(status);
-  }
-
-  float epsilon = 0.0f;
-  if (fused_node.attr().count("epsilon")) {
-    epsilon = fused_node.attr().at("epsilon").f();
-  }
-  DataType eps_dtype = fused_node.attr().at("T").type();
-  Tensor eps_value_tensor(eps_dtype, TensorShape());
-  eps_value_tensor.scalar<float>()() = epsilon;
-  NodeDef variance_epsilon;
-  const string variance_epsilon_name =
-      AddPrefixToNodeName("Const", fused_node.name());
-  variance_epsilon.set_name(variance_epsilon_name);
-  variance_epsilon.set_op("Const");
-  AttrValue attr_type;
-  attr_type.set_type(eps_dtype);
-  variance_epsilon.mutable_attr()->insert({"dtype", attr_type});
-  AttrValue attr_tensor;
-  TensorProto* t = attr_tensor.mutable_tensor();
-  eps_value_tensor.AsProtoTensorContent(t);
-  variance_epsilon.mutable_attr()->insert({"value", attr_tensor});
-  variance_epsilon.set_device(fused_node.device());
-  mutation->AddNode(std::move(variance_epsilon), &status);
-  TF_RETURN_IF_ERROR(status);
-
-  NodeDef variance_plus_epsilon;
-  const string variance_plus_epsilon_name =
-      AddPrefixToNodeName("VarPlusEpsilon", fused_node.name());
-  variance_plus_epsilon.set_name(variance_plus_epsilon_name);
-  variance_plus_epsilon.set_op("Add");
-  (*variance_plus_epsilon.mutable_attr())["T"].set_type(eps_dtype);
-  variance_plus_epsilon.set_device(fused_node.device());
-  *variance_plus_epsilon.add_input() = variance;
-  *variance_plus_epsilon.add_input() = variance_epsilon_name;
-  mutation->AddNode(std::move(variance_plus_epsilon), &status);
-  TF_RETURN_IF_ERROR(status);
-
-  NodeDef inv;
-  const string inv_name = AddPrefixToNodeName("Inv", fused_node.name());
-  inv.set_name(inv_name);
-  inv.set_op("Rsqrt");
-  inv.set_device(fused_node.device());
-  (*inv.mutable_attr())["T"].set_type(eps_dtype);
-  *inv.add_input() = variance_plus_epsilon_name;
-  mutation->AddNode(std::move(inv), &status);
-  TF_RETURN_IF_ERROR(status);
-
-  NodeDef scaled;
-  const string scaled_name = AddPrefixToNodeName("Scaled", fused_node.name());
-  scaled.set_name(scaled_name);
-  scaled.set_op("Mul");
-  scaled.set_device(fused_node.device());
-  (*scaled.mutable_attr())["T"].set_type(eps_dtype);
-  *scaled.add_input() = inv_name;
-  *scaled.add_input() = scale;
-  mutation->AddNode(std::move(scaled), &status);
-  TF_RETURN_IF_ERROR(status);
-
-  NodeDef a;
-  const string a_name = AddPrefixToNodeName("Mul", fused_node.name());
-  a.set_name(a_name);
-  a.set_op("Mul");
-  a.set_device(fused_node.device());
-  (*a.mutable_attr())["T"].set_type(eps_dtype);
-  *a.add_input() = x;
-  *a.add_input() = scaled_name;
-  mutation->AddNode(std::move(a), &status);
-  TF_RETURN_IF_ERROR(status);
-
-  NodeDef b;
-  const string b_name = AddPrefixToNodeName("Mul2", fused_node.name());
-  b.set_name(b_name);
-  b.set_op("Mul");
-  b.set_device(fused_node.device());
-  (*b.mutable_attr())["T"].set_type(eps_dtype);
-  *b.add_input() = mean;
-  *b.add_input() = scaled_name;
-  mutation->AddNode(std::move(b), &status);
-  TF_RETURN_IF_ERROR(status);
-
-  NodeDef c;
-  const string c_name = AddPrefixToNodeName("Offset", fused_node.name());
-  c.set_name(c_name);
-  c.set_op("Sub");
-  c.set_device(fused_node.device());
-  (*c.mutable_attr())["T"].set_type(eps_dtype);
-  *c.add_input() = offset;
-  *c.add_input() = b_name;
-  mutation->AddNode(std::move(c), &status);
-  TF_RETURN_IF_ERROR(status);
-
-  NodeDef r;
-  r.set_name(fused_node.name());
-  r.set_op("Add");
-  r.set_device(fused_node.device());
-  (*r.mutable_attr())["T"].set_type(eps_dtype);
-  *r.add_input() = a_name;
-  *r.add_input() = c_name;
-  mutation->AddNode(std::move(r), &status);
-  TF_RETURN_IF_ERROR(status);
-  return mutation->Apply();
-}
-
 Status AddFusedBatchNormExNode(RemapperContext* ctx,
                                const FusedBatchNormEx& matched,
                                std::vector<bool>* invalidated_nodes,
@@ -5513,15 +5255,6 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       if (FindKerasDenseLayerFwd(ctx, i, &keras_dense_layer_fwd)) {
         TF_ABORT_IF_ERROR(AddKerasDenseLayerFwd(
             &ctx, keras_dense_layer_fwd, &invalidated_nodes, &nodes_to_delete));
-        continue;
-      }
-
-      // During inference, most of the inputs to FusedBatchNorm are constant,
-      // and we can therefore replace the op with a much cheaper set of
-      // primitives.
-      FusedBatchNorm fused_batch_norm;
-      if (FindFusedBatchNorm(ctx, i, &fused_batch_norm)) {
-        TF_RETURN_IF_ERROR(AddBatchNormNodes(&ctx, fused_batch_norm));
         continue;
       }
 
