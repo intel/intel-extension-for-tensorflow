@@ -218,7 +218,7 @@ class ShardDesc {
       DeviceId device_id,
       const std::vector<int64_t>& ordered_split_dims = std::vector<int64_t>(),
       const std::vector<SplitSpec>& split_specs = std::vector<SplitSpec>(),
-      double ratio = 1.0f)
+      float ratio = 1.0f)
       : num_(num),
         rank_(rank),
         shape_(shape),
