@@ -10,6 +10,7 @@ import fnmatch
 import os
 import sys
 
+from datetime import date
 from setuptools import setup
 from setuptools.command.install import install as InstallCommandBase
 from setuptools.dist import Distribution
@@ -33,6 +34,12 @@ if sys.byteorder == 'little':
   REQUIRED_PACKAGES.append('grpcio >= 1.8.6')
 
 project_name = 'intel_extension_for_tensorflow_lib'
+DEV_VERSION_SUFFIX = ""
+if "--weekly_build" in sys.argv:
+        today_number = date.today().strftime("%Y%m%d")
+        DEV_VERSION_SUFFIX = ".dev" + today_number
+        sys.argv.remove("--weekly_build")
+        project_name = "itex_lib_weekly"
 if '--project_name' in sys.argv:
   project_name_idx = sys.argv.index('--project_name')
   project_name = sys.argv[project_name_idx + 1] + "_lib"
@@ -121,7 +128,7 @@ class InstallCommand(InstallCommandBase):
 
 setup(
     name=project_name,
-    version=_VERSION.replace('-', ''),
+    version=_VERSION.replace('-', '') + DEV_VERSION_SUFFIX,
     description='Intel® Extension for Tensorflow* library',
     long_description=long_description,
     long_description_content_type='text/markdown',

@@ -170,6 +170,7 @@ function build_wheel() {
   TMPDIR="$1"
   DEST="$2"
   PKG_NAME_FLAG="$3"
+  WEEKLY_BUILD_FLAG="$4"
 
   # Before we leave the top-level directory, make sure we know how to
   # call python.
@@ -180,7 +181,7 @@ function build_wheel() {
   pushd ${TMPDIR}/${lib_tmp_folder_name} > /dev/null
   rm -f MANIFEST
   echo $(date) : "=== Building Intel® Extension for Tensorflow* library wheel"
-  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} >/dev/null
+  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${WEEKLY_BUILD_FLAG}>/dev/null
   mkdir -p ${DEST}
   cp dist/* ${DEST}
   popd > /dev/null
@@ -189,7 +190,7 @@ function build_wheel() {
   pushd ${TMPDIR}/${itex_tmp_folder_name} > /dev/null
   rm -f MANIFEST
   echo $(date) : "=== Building Intel® Extension for Tensorflow* wheel"
-  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} >/dev/null
+  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${WEEKLY_BUILD_FLAG}>/dev/null
   mkdir -p ${DEST}
   cp dist/* ${DEST}
   popd > /dev/null
@@ -217,6 +218,7 @@ function main() {
   SRCDIR=""
   DSTDIR=""
   CLEANSRC=1
+  WEEKLY_BUILD_FLAG=""
   while true; do
     if [[ "$1" == "--help" ]]; then
       usage
@@ -231,6 +233,8 @@ function main() {
       shift
       SRCDIR="$(real_path $1)"
       CLEANSRC=0
+    elif [[ "$1" == "--weekly" ]]; then
+      WEEKLY_BUILD_FLAG="--weekly_build"
     elif [[ "$1" == "--dst" ]]; then
       shift
       DSTDIR="$(real_path $1)"
@@ -265,9 +269,8 @@ function main() {
   if [[ -n ${PROJECT_NAME} ]]; then
     PKG_NAME_FLAG="--project_name ${PROJECT_NAME}"
   fi
-  
 
-  build_wheel "$SRCDIR" "$DSTDIR" "$PKG_NAME_FLAG"
+  build_wheel "$SRCDIR" "$DSTDIR" "$PKG_NAME_FLAG" "$WEEKLY_BUILD_FLAG"
 
   if [[ $CLEANSRC -ne 0 ]]; then
     rm -rf "${TMPDIR}"
