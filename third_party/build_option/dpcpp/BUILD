@@ -12,6 +12,9 @@ cc_library(
     name = "itex_gpu_header",
     srcs = ["runtime/itex_gpu_runtime.h"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 cc_library(

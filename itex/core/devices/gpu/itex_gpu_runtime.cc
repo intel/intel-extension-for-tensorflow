@@ -25,23 +25,6 @@ limitations under the License.
 
 namespace {
 
-inline bool IsMultipleStreamEnabled() {
-  static bool is_multiple_stream_enabled = false;
-  static const char* env = std::getenv("ITEX_ENABLE_MULTIPLE_STREAM");
-  if (env == nullptr) {
-    return is_multiple_stream_enabled;
-  }
-
-  std::string str_value = absl::AsciiStrToLower(env);
-  if (str_value == "0" || str_value == "false") {
-    is_multiple_stream_enabled = false;
-  } else if (str_value == "1" || str_value == "true") {
-    is_multiple_stream_enabled = true;
-  }
-
-  return is_multiple_stream_enabled;
-}
-
 inline bool RunOnLevelZero() {
   char* sycl_device_filter = getenv("SYCL_DEVICE_FILTER");
   // Current default backend platform is Level-Zero

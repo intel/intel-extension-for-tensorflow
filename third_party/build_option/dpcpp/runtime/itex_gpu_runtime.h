@@ -16,7 +16,10 @@ limitations under the License.
 #ifndef THIRD_PARTY_BUILD_OPTION_DPCPP_RUNTIME_ITEX_GPU_RUNTIME_H_
 #define THIRD_PARTY_BUILD_OPTION_DPCPP_RUNTIME_ITEX_GPU_RUNTIME_H_
 
+#include <string>
 #include <vector>
+
+#include "absl/strings/ascii.h"
 
 #if __has_include(<sycl/sycl.hpp>)
 #include <sycl/sycl.hpp>
@@ -41,6 +44,23 @@ typedef int DeviceOrdinal;
 using ITEX_GPUDevice = sycl::device;
 using ITEX_GPUStream = sycl::queue;
 using ITEX_GPUEvent = sycl::event;
+
+inline bool IsMultipleStreamEnabled() {
+  bool is_multiple_stream_enabled = false;
+  const char* env = std::getenv("ITEX_ENABLE_MULTIPLE_STREAM");
+  if (env == nullptr) {
+    return is_multiple_stream_enabled;
+  }
+
+  std::string str_value = absl::AsciiStrToLower(env);
+  if (str_value == "0" || str_value == "false") {
+    is_multiple_stream_enabled = false;
+  } else if (str_value == "1" || str_value == "true") {
+    is_multiple_stream_enabled = true;
+  }
+
+  return is_multiple_stream_enabled;
+}
 
 const char* ITEX_GPUGetErrorName(ITEX_GPUError_t error);
 
