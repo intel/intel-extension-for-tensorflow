@@ -51,8 +51,10 @@ def copy_func(f, name=None):
   fn.__dict__.update(f.__dict__)
   return fn
 
-def itex_dense_layer_call(self, inputs):
+def itex_dense_layer_call(self, inputs, training=None):
   r"""ITEX optimized dense layer"""
+  if training is None:
+    training = tf.keras.backend.learning_phase() # scalar integer tensor or Python integer
   def tensordot(a, b, axes, name=None):
     r"""Tensor contraction of a and b along specified axes and outer product.
     Tensordot (also known as tensor contraction) sums the product of elements
@@ -294,11 +296,18 @@ def itex_dense_layer_call(self, inputs):
       outputs = original_inputs.with_flat_values(outputs)
   # Broadcast kernel to inputs.
   else:
-    outputs = tensordot(inputs, self.kernel, [[rank - 1], [0]])
-    # TODO(itex): We cannot do softmax/sigmoid before reshape in tensordot.
-    # It will affect loss functions with logits. We should use BMM instead.
-    if self.activation is not None:
-      outputs = self.activation(outputs)
+    if training == True:
+      outputs = tensordot(inputs, self.kernel, [[rank - 1], [0]])
+      # TODO(itex): We cannot do softmax/sigmoid before reshape in tensordot.
+      # It will affect loss functions with logits. We should use BMM instead.
+      if self.activation is not None:
+        outputs = self.activation(outputs)
+    else:
+      outputs = tf.raw_ops.BatchMatMulV2(x=inputs, y=self.kernel)
+      if self.use_bias:
+        outputs = tf.nn.bias_add(outputs, self.bias)
+      if self.activation is not None:
+        outputs = self.activation(outputs)
     # Reshape the output back to the original ndim of the input.
     if not tf.executing_eagerly():
       shape = inputs.shape.as_list()

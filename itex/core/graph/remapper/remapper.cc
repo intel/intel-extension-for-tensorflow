@@ -1404,7 +1404,8 @@ bool FindContractionWithBiasAndActivationAdd(
   const auto* contraction_def =
       ctx.graph_view.GetNode(base.contraction)->node();
   if (IsLeakyRelu(*node_def) &&
-      (IsMatMul(*contraction_def) || IsAccMatMul(*contraction_def)))
+      (IsMatMul(*contraction_def) || IsAccMatMul(*contraction_def) ||
+       IsAnyBatchMatMul(*contraction_def)))
     return false;
 
   // We successfully found a Conv2D+BiasAdd+AddN+activation pattern.
@@ -3451,6 +3452,8 @@ Status AddFusedContractionNode(RemapperContext* ctx,
     contraction_node.set_op(kFusedConv3D);
   } else if (IsAccMatMul(contraction)) {
     contraction_node.set_op(kFusedAccMatMulWithSum);
+  } else if (IsAnyBatchMatMul(contraction)) {
+    contraction_node.set_op(kFusedBatchMatMul);
   } else {
     ITEX_CHECK(false);
   }
@@ -3559,6 +3562,8 @@ Status AddFusedContractionNode(
     fused_node.set_op(kFusedMatMulWithSum);
   else if (IsAccMatMul(contraction))
     fused_node.set_op(kFusedAccMatMulWithSum);
+  else if (IsAccMatMul(contraction))
+    fused_node.set_op(kFusedBatchMatMul);
   else
     ITEX_CHECK(false);
 
@@ -3614,6 +3619,8 @@ Status AddFusedContractionNode(
     fused_node.set_op(kFusedMatMulWithSum);
   else if (IsAccMatMul(contraction))
     fused_node.set_op(kFusedAccMatMulWithSum);
+  else if (IsAccMatMul(contraction))
+    fused_node.set_op(kFusedBatchMatMul);
   else
     ITEX_CHECK(false);
 

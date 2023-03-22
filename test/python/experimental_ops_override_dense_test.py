@@ -48,9 +48,9 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
             graph = metadata.partition_graphs[0]
             found_fused_op = False
             for node in graph.node:
-                if ('FusedMatMul' in node.op):
+                if ('FusedBatchMatMul' in node.op):
                     fused_ops = node.attr['fused_ops'].list.s
-                    found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'BiasAdd'
+                    found_fused_op = len(fused_ops) == 2 and fused_ops[0] == b'BiasAdd' and fused_ops[1] == b'Relu'
                     break
             self.assertTrue(found_fused_op, "this pattern has fusion issue!!")
             self.assertAllClose(tf_result, itex_result)
