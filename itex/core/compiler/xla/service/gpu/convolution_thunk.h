@@ -58,7 +58,7 @@ class ConvolutionThunk : public Thunk {
   absl::Mutex mu_;
   absl::flat_hash_map<const se::Stream*, std::unique_ptr<OneDnnConvPrimitive>>
       onednn_primitives_;
-  OneDnnConvPrimitive& GetOrCreateOneDnnConvPrimitive(
+  OneDnnConvPrimitive GetOrCreateOneDnnConvPrimitive(
       se::Stream*, const std::vector<se::DeviceMemoryBase>& operand_se_buffers,
       const se::DeviceMemoryBase& result_buffer, const ExecuteParams& params);
 };

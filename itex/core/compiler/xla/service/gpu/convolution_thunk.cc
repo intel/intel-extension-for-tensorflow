@@ -66,7 +66,7 @@ int64_t GetVectCSize(FilterLayout layout) {
 }
 
 Status CreateOneDnnPrimitive(
-    OneDnnConvPrimitive& onednn_primitive,  // NOLINT
+    OneDnnConvPrimitive* onednn_primitive,  // NOLINT
     const GpuConvDescriptor& conv_descriptor,
     absl::Span<const se::DeviceMemoryBase> operand_buffers,
     se::DeviceMemoryBase result_buffer, const Thunk::ExecuteParams& params) {
@@ -74,10 +74,10 @@ Status CreateOneDnnPrimitive(
   auto& buffer_allocations = *params.buffer_allocations;
   se::ScratchAllocator scratch_allocator(buffer_allocations.device_ordinal(),
                                          buffer_allocations.memory_allocator());
-  onednn_primitive.engine = dnnl::sycl_interop::make_engine(
+  onednn_primitive->engine = dnnl::sycl_interop::make_engine(
       dpcpp_stream->get_device(), dpcpp_stream->get_context());
-  onednn_primitive.stream =
-      dnnl::sycl_interop::make_stream(onednn_primitive.engine, *dpcpp_stream);
+  onednn_primitive->stream =
+      dnnl::sycl_interop::make_stream(onednn_primitive->engine, *dpcpp_stream);
   DataLayout input_dl;
   FilterLayout filter_dl;
   DataLayout output_dl;
@@ -389,12 +389,12 @@ Status CreateOneDnnPrimitive(
       filter_md_prefer =
           dnnl::memory::desc({filter_dims}, data_type, weight_fmt);
 
-    onednn_primitive.src_memory = dnnl::sycl_interop::make_memory(
-        src_md, onednn_primitive.engine, kind, input_data);
-    onednn_primitive.filter_memory = dnnl::sycl_interop::make_memory(
-        filter_md, onednn_primitive.engine, kind, filter_data);
-    onednn_primitive.dst_memory = dnnl::sycl_interop::make_memory(
-        dst_md, onednn_primitive.engine, kind, output_data);
+    onednn_primitive->src_memory = dnnl::sycl_interop::make_memory(
+        src_md, onednn_primitive->engine, kind, input_data);
+    onednn_primitive->filter_memory = dnnl::sycl_interop::make_memory(
+        filter_md, onednn_primitive->engine, kind, filter_data);
+    onednn_primitive->dst_memory = dnnl::sycl_interop::make_memory(
+        dst_md, onednn_primitive->engine, kind, output_data);
 
 #ifndef ITEX_ONEDNN_3_0
     ConvFwdDesc fwd_desc = ConvFwdDesc(
@@ -408,10 +408,10 @@ Status CreateOneDnnPrimitive(
                              dnnl::algorithm::convolution_direct, src_md,
                              filter_md_prefer, bias_md, dst_md, stride_dims,
                              dilation_dims, padding_dims_l, padding_dims_r);
-      onednn_primitive.bias_memory = dnnl::sycl_interop::make_memory(
-          bias_md, onednn_primitive.engine, kind, bias_data);
-      onednn_primitive.fwd_primitives_args.insert(
-          {DNNL_ARG_BIAS, onednn_primitive.bias_memory});
+      onednn_primitive->bias_memory = dnnl::sycl_interop::make_memory(
+          bias_md, onednn_primitive->engine, kind, bias_data);
+      onednn_primitive->fwd_primitives_args.insert(
+          {DNNL_ARG_BIAS, onednn_primitive->bias_memory});
     }
 #endif
 
@@ -440,11 +440,11 @@ Status CreateOneDnnPrimitive(
       auto bias_post_md =
           dnnl::memory::desc(bias_dims, data_type, dnnl::memory::format_tag::x);
       po.append_binary(dnnl::algorithm::binary_add, bias_post_md);
-      onednn_primitive.bias_memory = dnnl::sycl_interop::make_memory(
-          bias_post_md, onednn_primitive.engine, kind, bias_data);
-      onednn_primitive.fwd_primitives_args.insert(
+      onednn_primitive->bias_memory = dnnl::sycl_interop::make_memory(
+          bias_post_md, onednn_primitive->engine, kind, bias_data);
+      onednn_primitive->fwd_primitives_args.insert(
           {DNNL_ARG_ATTR_MULTIPLE_POST_OP(po.len() - 1) | DNNL_ARG_SRC_1,
-           onednn_primitive.bias_memory});
+           onednn_primitive->bias_memory});
     }
     if (conv_descriptor.kind == CudnnConvKind::kForwardActivation) {
       switch (conv_descriptor.activation) {
@@ -495,76 +495,76 @@ Status CreateOneDnnPrimitive(
         conv_descriptor.kind == CudnnConvKind::kForwardActivation) {
 #ifdef ITEX_ONEDNN_3_0
       ConvFwdPd fwd_pd =
-          ConvFwdPd(onednn_primitive.engine, dnnl::prop_kind::forward,
+          ConvFwdPd(onednn_primitive->engine, dnnl::prop_kind::forward,
                     dnnl::algorithm::convolution_direct, src_md,
                     filter_md_prefer, dst_md, stride_dims, dilation_dims,
                     padding_dims_l, padding_dims_r, post_ops_attr);
       if (bias_data != nullptr && conv_result_scale_one) {
         auto bias_md = dnnl::memory::desc(bias_dims, data_type,
                                           dnnl::memory::format_tag::x);
-        fwd_pd = ConvFwdPd(onednn_primitive.engine, dnnl::prop_kind::forward,
+        fwd_pd = ConvFwdPd(onednn_primitive->engine, dnnl::prop_kind::forward,
                            dnnl::algorithm::convolution_direct, src_md,
                            filter_md_prefer, bias_md, dst_md, stride_dims,
                            dilation_dims, padding_dims_l, padding_dims_r,
                            post_ops_attr);
-        onednn_primitive.bias_memory = dnnl::sycl_interop::make_memory(
-            bias_md, onednn_primitive.engine, kind, bias_data);
-        onednn_primitive.fwd_primitives_args.insert(
-            {DNNL_ARG_BIAS, onednn_primitive.bias_memory});
+        onednn_primitive->bias_memory = dnnl::sycl_interop::make_memory(
+            bias_md, onednn_primitive->engine, kind, bias_data);
+        onednn_primitive->fwd_primitives_args.insert(
+            {DNNL_ARG_BIAS, onednn_primitive->bias_memory});
       }
 #else
       ConvFwdPd fwd_pd =
-          ConvFwdPd(fwd_desc, post_ops_attr, onednn_primitive.engine);
+          ConvFwdPd(fwd_desc, post_ops_attr, onednn_primitive->engine);
 #endif
 
-      onednn_primitive.fwd_primitive = dnnl::convolution_forward(fwd_pd);
+      onednn_primitive->fwd_primitive = dnnl::convolution_forward(fwd_pd);
       size_t scratchpad_size = fwd_pd.scratchpad_desc().get_size();
       void* workspace;
       TF_RETURN_IF_ERROR(se::AllocateWorkspace(&workspace, &scratch_allocator,
                                                scratchpad_size));
-      onednn_primitive.scratchpad_memory = dnnl::memory(
-          fwd_pd.scratchpad_desc(), onednn_primitive.engine, workspace);
+      onednn_primitive->scratchpad_memory = dnnl::memory(
+          fwd_pd.scratchpad_desc(), onednn_primitive->engine, workspace);
 
       bool is_filter_reordered = (filter_md != fwd_pd.weights_desc());
       if (is_filter_reordered) {
-        onednn_primitive.has_reorder = true;
+        onednn_primitive->has_reorder = true;
         size_t reorder_filter_data_size = fwd_pd.weights_desc().get_size();
         void* reorder_filter;
         TF_RETURN_IF_ERROR(se::AllocateWorkspace(
             &reorder_filter, &scratch_allocator, reorder_filter_data_size));
 
-        onednn_primitive.internal_filter_memory = dnnl::memory(
-            fwd_pd.weights_desc(), onednn_primitive.engine, reorder_filter);
-        onednn_primitive.filter_reorder_primitive =
-            dnnl::reorder(onednn_primitive.filter_memory,
-                          onednn_primitive.internal_filter_memory);
-        onednn_primitive.reorder_args = {
-            {DNNL_ARG_SRC, onednn_primitive.filter_memory},
-            {DNNL_ARG_DST, onednn_primitive.internal_filter_memory}};
+        onednn_primitive->internal_filter_memory = dnnl::memory(
+            fwd_pd.weights_desc(), onednn_primitive->engine, reorder_filter);
+        onednn_primitive->filter_reorder_primitive =
+            dnnl::reorder(onednn_primitive->filter_memory,
+                          onednn_primitive->internal_filter_memory);
+        onednn_primitive->reorder_args = {
+            {DNNL_ARG_SRC, onednn_primitive->filter_memory},
+            {DNNL_ARG_DST, onednn_primitive->internal_filter_memory}};
 
-        onednn_primitive.fwd_primitives_args.insert(
-            {DNNL_ARG_WEIGHTS, onednn_primitive.internal_filter_memory});
+        onednn_primitive->fwd_primitives_args.insert(
+            {DNNL_ARG_WEIGHTS, onednn_primitive->internal_filter_memory});
       } else {
-        onednn_primitive.has_reorder = false;
-        onednn_primitive.fwd_primitives_args.insert(
-            {DNNL_ARG_WEIGHTS, onednn_primitive.filter_memory});
+        onednn_primitive->has_reorder = false;
+        onednn_primitive->fwd_primitives_args.insert(
+            {DNNL_ARG_WEIGHTS, onednn_primitive->filter_memory});
       }
-      onednn_primitive.fwd_primitives_args.insert(
-          {DNNL_ARG_SRC, onednn_primitive.src_memory});
-      onednn_primitive.fwd_primitives_args.insert(
-          {DNNL_ARG_DST, onednn_primitive.dst_memory});
-      onednn_primitive.fwd_primitives_args.insert(
-          {DNNL_ARG_SCRATCHPAD, onednn_primitive.scratchpad_memory});
+      onednn_primitive->fwd_primitives_args.insert(
+          {DNNL_ARG_SRC, onednn_primitive->src_memory});
+      onednn_primitive->fwd_primitives_args.insert(
+          {DNNL_ARG_DST, onednn_primitive->dst_memory});
+      onednn_primitive->fwd_primitives_args.insert(
+          {DNNL_ARG_SCRATCHPAD, onednn_primitive->scratchpad_memory});
 
     } else if (conv_descriptor.kind == CudnnConvKind::kBackwardInput) {
       // TODO(ITEX): handle post_ops_attr.
 #ifdef ITEX_ONEDNN_3_0
       ConvFwdPd fwd_pd = ConvFwdPd(
-          onednn_primitive.engine, dnnl::prop_kind::forward,
+          onednn_primitive->engine, dnnl::prop_kind::forward,
           dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
           stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
 #else
-      ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, onednn_primitive.engine);
+      ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, onednn_primitive->engine);
       ConvBwdInputDesc bwd_input_desc = ConvBwdInputDesc(
           dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
           stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
@@ -574,20 +574,20 @@ Status CreateOneDnnPrimitive(
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 #ifdef ITEX_ONEDNN_3_0
       ConvBwdInputPd bwd_input_pd = ConvBwdInputPd(
-          onednn_primitive.engine, dnnl::algorithm::convolution_direct, src_md,
+          onednn_primitive->engine, dnnl::algorithm::convolution_direct, src_md,
           filter_md_prefer, dst_md, stride_dims, dilation_dims, padding_dims_l,
           padding_dims_r, fwd_pd, attr);
 #else
-      ConvBwdInputPd bwd_input_pd =
-          ConvBwdInputPd(bwd_input_desc, attr, onednn_primitive.engine, fwd_pd);
+      ConvBwdInputPd bwd_input_pd = ConvBwdInputPd(
+          bwd_input_desc, attr, onednn_primitive->engine, fwd_pd);
 #endif
 
       size_t scratchpad_size = bwd_input_pd.scratchpad_desc().get_size();
       void* workspace;
       TF_RETURN_IF_ERROR(se::AllocateWorkspace(&workspace, &scratch_allocator,
                                                scratchpad_size));
-      onednn_primitive.scratchpad_memory = dnnl::memory(
-          bwd_input_pd.scratchpad_desc(), onednn_primitive.engine, workspace);
+      onednn_primitive->scratchpad_memory = dnnl::memory(
+          bwd_input_pd.scratchpad_desc(), onednn_primitive->engine, workspace);
 
       bool is_filter_reordered = (filter_md != bwd_input_pd.weights_desc());
       if (is_filter_reordered) {
@@ -597,43 +597,43 @@ Status CreateOneDnnPrimitive(
         TF_RETURN_IF_ERROR(se::AllocateWorkspace(
             &reorder_filter, &scratch_allocator, reorder_filter_data_size));
 
-        onednn_primitive.internal_filter_memory =
-            dnnl::memory(bwd_input_pd.weights_desc(), onednn_primitive.engine,
+        onednn_primitive->internal_filter_memory =
+            dnnl::memory(bwd_input_pd.weights_desc(), onednn_primitive->engine,
                          reorder_filter);
-        onednn_primitive.filter_reorder_primitive =
-            dnnl::reorder(onednn_primitive.filter_memory,
-                          onednn_primitive.internal_filter_memory);
-        onednn_primitive.reorder_args = {
-            {DNNL_ARG_SRC, onednn_primitive.filter_memory},
-            {DNNL_ARG_DST, onednn_primitive.internal_filter_memory}};
-        onednn_primitive.bwd_input_primitive_args.insert(
-            {DNNL_ARG_WEIGHTS, onednn_primitive.internal_filter_memory});
-        onednn_primitive.has_reorder = true;
+        onednn_primitive->filter_reorder_primitive =
+            dnnl::reorder(onednn_primitive->filter_memory,
+                          onednn_primitive->internal_filter_memory);
+        onednn_primitive->reorder_args = {
+            {DNNL_ARG_SRC, onednn_primitive->filter_memory},
+            {DNNL_ARG_DST, onednn_primitive->internal_filter_memory}};
+        onednn_primitive->bwd_input_primitive_args.insert(
+            {DNNL_ARG_WEIGHTS, onednn_primitive->internal_filter_memory});
+        onednn_primitive->has_reorder = true;
       } else {
-        onednn_primitive.bwd_input_primitive_args.insert(
-            {DNNL_ARG_WEIGHTS, onednn_primitive.filter_memory});
-        onednn_primitive.has_reorder = false;
+        onednn_primitive->bwd_input_primitive_args.insert(
+            {DNNL_ARG_WEIGHTS, onednn_primitive->filter_memory});
+        onednn_primitive->has_reorder = false;
       }
 
-      onednn_primitive.bwd_input_primitive_args.insert(
-          {DNNL_ARG_DIFF_DST, onednn_primitive.dst_memory});
-      onednn_primitive.bwd_input_primitive_args.insert(
-          {DNNL_ARG_DIFF_SRC, onednn_primitive.src_memory});
-      onednn_primitive.bwd_input_primitive_args.insert(
-          {DNNL_ARG_SCRATCHPAD, onednn_primitive.scratchpad_memory});
+      onednn_primitive->bwd_input_primitive_args.insert(
+          {DNNL_ARG_DIFF_DST, onednn_primitive->dst_memory});
+      onednn_primitive->bwd_input_primitive_args.insert(
+          {DNNL_ARG_DIFF_SRC, onednn_primitive->src_memory});
+      onednn_primitive->bwd_input_primitive_args.insert(
+          {DNNL_ARG_SCRATCHPAD, onednn_primitive->scratchpad_memory});
 
-      onednn_primitive.bwd_input_primitive =
+      onednn_primitive->bwd_input_primitive =
           dnnl::convolution_backward_data(bwd_input_pd);
 
     } else if (conv_descriptor.kind == CudnnConvKind::kBackwardFilter) {
       // TODO(ITEX): handle post_ops_attr.
 #ifdef ITEX_ONEDNN_3_0
       ConvFwdPd fwd_pd = ConvFwdPd(
-          onednn_primitive.engine, dnnl::prop_kind::forward,
+          onednn_primitive->engine, dnnl::prop_kind::forward,
           dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
           stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
 #else
-      ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, onednn_primitive.engine);
+      ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, onednn_primitive->engine);
       ConvBwdFilterDesc bwd_filter_desc = ConvBwdFilterDesc(
           dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
           stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
@@ -643,57 +643,57 @@ Status CreateOneDnnPrimitive(
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 #ifdef ITEX_ONEDNN_3_0
       ConvBwdFilterPd bwd_filter_pd = ConvBwdFilterPd(
-          onednn_primitive.engine, dnnl::algorithm::convolution_direct, src_md,
+          onednn_primitive->engine, dnnl::algorithm::convolution_direct, src_md,
           filter_md_prefer, dst_md, stride_dims, dilation_dims, padding_dims_l,
           padding_dims_r, fwd_pd, attr);
 #else
       ConvBwdFilterPd bwd_filter_pd = ConvBwdFilterPd(
-          bwd_filter_desc, attr, onednn_primitive.engine, fwd_pd);
+          bwd_filter_desc, attr, onednn_primitive->engine, fwd_pd);
 #endif
 
       size_t scratchpad_size = bwd_filter_pd.scratchpad_desc().get_size();
       void* workspace;
       TF_RETURN_IF_ERROR(se::AllocateWorkspace(&workspace, &scratch_allocator,
                                                scratchpad_size));
-      onednn_primitive.scratchpad_memory = dnnl::memory(
-          bwd_filter_pd.scratchpad_desc(), onednn_primitive.engine, workspace);
+      onednn_primitive->scratchpad_memory = dnnl::memory(
+          bwd_filter_pd.scratchpad_desc(), onednn_primitive->engine, workspace);
 
       bool is_filter_reordered =
           (filter_md != bwd_filter_pd.diff_weights_desc());
       if (is_filter_reordered) {
-        onednn_primitive.has_reorder = true;
+        onednn_primitive->has_reorder = true;
         size_t reorder_filter_data_size =
             bwd_filter_pd.diff_weights_desc().get_size();
         void* prefer_filter;
         TF_RETURN_IF_ERROR(se::AllocateWorkspace(
             &prefer_filter, &scratch_allocator, reorder_filter_data_size));
 
-        onednn_primitive.internal_filter_memory =
+        onednn_primitive->internal_filter_memory =
             dnnl::memory(bwd_filter_pd.diff_weights_desc(),
-                         onednn_primitive.engine, prefer_filter);
-        onednn_primitive.filter_reorder_primitive =
-            dnnl::reorder(onednn_primitive.internal_filter_memory,
-                          onednn_primitive.filter_memory);
-        onednn_primitive.reorder_args = {
-            {DNNL_ARG_SRC, onednn_primitive.internal_filter_memory},
-            {DNNL_ARG_DST, onednn_primitive.filter_memory}};
+                         onednn_primitive->engine, prefer_filter);
+        onednn_primitive->filter_reorder_primitive =
+            dnnl::reorder(onednn_primitive->internal_filter_memory,
+                          onednn_primitive->filter_memory);
+        onednn_primitive->reorder_args = {
+            {DNNL_ARG_SRC, onednn_primitive->internal_filter_memory},
+            {DNNL_ARG_DST, onednn_primitive->filter_memory}};
 
-        onednn_primitive.bwd_filter_primitive_args.insert(
-            {DNNL_ARG_DIFF_WEIGHTS, onednn_primitive.internal_filter_memory});
+        onednn_primitive->bwd_filter_primitive_args.insert(
+            {DNNL_ARG_DIFF_WEIGHTS, onednn_primitive->internal_filter_memory});
       } else {
-        onednn_primitive.has_reorder = false;
-        onednn_primitive.bwd_filter_primitive_args.insert(
-            {DNNL_ARG_DIFF_WEIGHTS, onednn_primitive.filter_memory});
+        onednn_primitive->has_reorder = false;
+        onednn_primitive->bwd_filter_primitive_args.insert(
+            {DNNL_ARG_DIFF_WEIGHTS, onednn_primitive->filter_memory});
       }
 
-      onednn_primitive.bwd_filter_primitive_args.insert(
-          {DNNL_ARG_SRC, onednn_primitive.src_memory});
-      onednn_primitive.bwd_filter_primitive_args.insert(
-          {DNNL_ARG_DIFF_DST, onednn_primitive.dst_memory});
-      onednn_primitive.bwd_filter_primitive_args.insert(
-          {DNNL_ARG_SCRATCHPAD, onednn_primitive.scratchpad_memory});
+      onednn_primitive->bwd_filter_primitive_args.insert(
+          {DNNL_ARG_SRC, onednn_primitive->src_memory});
+      onednn_primitive->bwd_filter_primitive_args.insert(
+          {DNNL_ARG_DIFF_DST, onednn_primitive->dst_memory});
+      onednn_primitive->bwd_filter_primitive_args.insert(
+          {DNNL_ARG_SCRATCHPAD, onednn_primitive->scratchpad_memory});
 
-      onednn_primitive.bwd_filter_primitive =
+      onednn_primitive->bwd_filter_primitive =
           ConvBwdFilterPrimitive(bwd_filter_pd);
 
     } else {
@@ -708,21 +708,15 @@ Status CreateOneDnnPrimitive(
   }
 }  // NOLINT
 
-OneDnnConvPrimitive& ConvolutionThunk::GetOrCreateOneDnnConvPrimitive(
+OneDnnConvPrimitive ConvolutionThunk::GetOrCreateOneDnnConvPrimitive(
     se::Stream* stream,
     const std::vector<se::DeviceMemoryBase>& operand_se_buffers,
     const se::DeviceMemoryBase& result_buffer, const ExecuteParams& params) {
-  absl::MutexLock lock(&mu_);
-  auto it = onednn_primitives_.find(stream);
-  if (it == onednn_primitives_.end()) {
-    it = onednn_primitives_
-             .insert({stream, std::make_unique<OneDnnConvPrimitive>()})
-             .first;
-    TF_ABORT_IF_ERROR(CreateOneDnnPrimitive(*it->second, descriptor_,
-                                            absl::MakeSpan(operand_se_buffers),
-                                            result_buffer, params));
-  }
-  return *it->second;
+  OneDnnConvPrimitive primitive;
+  CreateOneDnnPrimitive(&primitive, descriptor_,
+                        absl::MakeSpan(operand_se_buffers), result_buffer,
+                        params);
+  return primitive;
 }
 
 ConvolutionThunk::ConvolutionThunk(
@@ -750,7 +744,7 @@ Status ConvolutionThunk::ExecuteOnStream(const ExecuteParams& params) {
       buffer_allocations.GetDeviceAddress(scratch_buffer_);
 
   auto stream = params.stream;
-  auto& conv_primitive = GetOrCreateOneDnnConvPrimitive(
+  auto conv_primitive = GetOrCreateOneDnnConvPrimitive(
       stream, operand_se_buffers, result_buffer, params);
 
   TF_RETURN_IF_ERROR(RunGpuConv(conv_primitive, descriptor_,

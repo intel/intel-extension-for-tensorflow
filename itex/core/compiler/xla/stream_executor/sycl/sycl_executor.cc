@@ -132,8 +132,20 @@ port::Status LoadLevelzero(const sycl::context& sycl_context,
                                  (const uint8_t*)spir,
                                  nullptr,
                                  nullptr};
-  L0_SAFE_CALL(
-      zeModuleCreate(ze_context, ze_device, &moduleDesc, ze_module, nullptr));
+
+  ze_module_build_log_handle_t buildlog;
+  ze_result_t status =
+      zeModuleCreate(ze_context, ze_device, &moduleDesc, ze_module, &buildlog);
+  if (status != 0) {
+    size_t szLog = 0;
+    zeModuleBuildLogGetString(buildlog, &szLog, nullptr);
+
+    std::unique_ptr<char> PLogs(new char[szLog]);
+    zeModuleBuildLogGetString(buildlog, &szLog, PLogs.get());
+    std::string PLog(PLogs.get());
+    ITEX_LOG(FATAL) << "L0 error " << status << ": " << PLog;
+  }
+
   return port::Status::OK();
 }
 
