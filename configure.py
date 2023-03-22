@@ -296,20 +296,21 @@ def setup_python(environ_cp):
     python_paths = environ_cp.get('PYTHONPATH').split(':')
     if python_lib_path in python_paths:
       write_action_env_to_bazelrc('PYTHONPATH', environ_cp.get('PYTHONPATH'))
-  # check tensorflw >=2.10.0
+  # check tensorflw version
   # not check tensorflow-estimator version
   package_list= subprocess.Popen(os.path.sep.join(checked_python_bin_path.split(os.path.sep)[:-1]) + os.path.sep + "pip" + " list | grep \"^tensorflow \"", shell=True, stdout=subprocess.PIPE).stdout.read().decode()
   tensorflow_list = package_list.splitlines()
   for line in tensorflow_list:
     if line.startswith("tensorflow  "):
         name, version = line.split()
+        version = version.split("rc")[0]
         current_tensorflow_version = convert_version_to_int(version)
-        min_tf_version = convert_version_to_int("2.10.0")
+        min_tf_version = convert_version_to_int("2.12.0")
         if current_tensorflow_version < min_tf_version:
-          print('Make sure you installed tensorflow version >= 2.10.0')
+          print('Make sure you installed tensorflow version >= 2.12.0')
           sys.exit(1)
     else:
-         print('Make sure you installed tensorflow version >= 2.10.0')
+         print('Make sure you installed tensorflow version >= 2.12.0')
          sys.exit(1)
   # Write tools/python_bin_path.sh
   try:

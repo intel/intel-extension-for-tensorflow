@@ -197,7 +197,7 @@ template_rule(
 
 template_rule(
     name = "xplane_plugin",
-    src = "include/tensorflow/core/profiler/protobuf/xplane.proto",
+    src = "include/tensorflow/tsl/profiler/protobuf/xplane.proto",
     out = "include/protos/xplane.proto",
     substitutions = {
         "package tensorflow.profiler;": "package itex;",

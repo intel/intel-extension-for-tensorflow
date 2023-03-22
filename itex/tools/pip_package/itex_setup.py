@@ -63,7 +63,7 @@ if '--project_name' in sys.argv:
   sys.argv.remove('--project_name')
   sys.argv.pop(project_name_idx)
 REQUIRED_PACKAGES.append('wheel')
-REQUIRED_PACKAGES.append('tensorflow>=2.10')
+REQUIRED_PACKAGES.append('tensorflow==2.12.0rc1')
 REQUIRED_PACKAGES.append('numpy<1.24')
 CONSOLE_SCRIPTS = []
 
