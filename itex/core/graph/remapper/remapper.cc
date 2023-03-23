@@ -425,6 +425,19 @@ struct MatmulReshapeBiasadd {
   int activation_ = kMissingIndex;
 };
 
+struct StridedSliceGrad {
+  StridedSliceGrad() = default;
+  StridedSliceGrad(int stridedslicegrad, int dy)
+      : stridedslicegrad_(stridedslicegrad), dy_(dy) {}
+
+  int stridedslicegrad_ = kMissingIndex;
+  int dy_ = kMissingIndex;
+  absl::InlinedVector<int64_t, 4> dims;
+  absl::InlinedVector<int64_t, 4> begin;
+  absl::InlinedVector<int64_t, 4> end;
+  absl::InlinedVector<int64_t, 4> shrinks;
+};
+
 bool IsAddWithNoBroadcast(const RemapperContext& ctx, const NodeDef& node) {
   if (!IsAdd(node)) return false;
 
@@ -2792,6 +2805,166 @@ bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
   return true;
 }
 
+template <typename T>
+bool InitStridedSliceGradData(Tensor* input_shape_tensor, Tensor* begin_tensor,
+                              Tensor* end_tensor, Tensor* strides_tensor,
+                              StridedSliceGrad* matched) {
+  const T* const input_shape_flat = input_shape_tensor->vec<T>().data();
+  const T* const begin_flat = begin_tensor->vec<T>().data();
+  const T* const end_flat = end_tensor->vec<T>().data();
+  const T* const strides_flat = strides_tensor->vec<T>().data();
+  if (input_shape_flat == nullptr || begin_flat == nullptr ||
+      end_flat == nullptr || strides_flat == nullptr)
+    return false;
+  int num_dims = input_shape_tensor->NumElements();
+  matched->dims.resize(num_dims);
+  matched->begin.resize(num_dims);
+  matched->end.resize(num_dims);
+  for (int i = 0; i < num_dims; i++) {
+    if (strides_flat[i] != 1) return false;
+    if (input_shape_flat[i] < 0) return false;
+    matched->dims[i] = input_shape_flat[i];
+    matched->begin[i] = begin_flat[i];
+    matched->end[i] = end_flat[i];
+  }
+  return true;
+}
+
+// When strides are equal to one the StridedSlice acts as a Slice and
+// StridedSliceGrad acts as a Pad. In this circumstances we remap
+// StridedSliceGrad to Pad.
+bool FindStridedSliceGrad(const RemapperContext& ctx, int node_index,
+                          StridedSliceGrad* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  if (!IsStridedSliceGrad(*node_def) || HasControlFanin(*node_view))
+    return false;
+
+  if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
+      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+    return false;
+
+  if (node_view->NumRegularFanins() != 5) return false;
+
+  const auto& regular_fanin_4 = node_view->GetRegularFanin(4);
+  matched->dy_ = regular_fanin_4.node_index();
+
+  int32 begin_mask, end_mask;
+  int32 ellipsis_mask, new_axis_mask, shrink_axis_mask;
+
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "begin_mask", &begin_mask));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "end_mask", &end_mask));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "ellipsis_mask", &ellipsis_mask));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "new_axis_mask", &new_axis_mask));
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*node_def, "shrink_axis_mask", &shrink_axis_mask));
+
+  // We do not consider the ellipsis axis and new axis case.
+  if (ellipsis_mask != 0 || new_axis_mask != 0) return false;
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* input_shape_node_view = regular_fanin_0.node_view();
+  const auto* input_shape_node_def = input_shape_node_view->node();
+
+  const auto& regular_fanin_1 = node_view->GetRegularFanin(1);
+  const auto* begin_node_view = regular_fanin_1.node_view();
+  const auto* begin_node_def = begin_node_view->node();
+
+  const auto& regular_fanin_2 = node_view->GetRegularFanin(2);
+  const auto* end_node_view = regular_fanin_2.node_view();
+  const auto* end_node_def = end_node_view->node();
+
+  const auto& regular_fanin_3 = node_view->GetRegularFanin(3);
+  const auto* strides_node_view = regular_fanin_3.node_view();
+  const auto* strides_node_def = strides_node_view->node();
+
+  if (!(IsConstant(*input_shape_node_def) && IsConstant(*begin_node_def) &&
+        IsConstant(*end_node_def) && IsConstant(*strides_node_def)))
+    return false;
+
+  Tensor input_shape_tensor, begin_tensor, end_tensor, strides_tensor;
+  if (!input_shape_tensor.FromProto(
+          input_shape_node_def->attr().at("value").tensor()))
+    return false;
+  if (!begin_tensor.FromProto(begin_node_def->attr().at("value").tensor()))
+    return false;
+  if (!end_tensor.FromProto(end_node_def->attr().at("value").tensor()))
+    return false;
+  if (!strides_tensor.FromProto(strides_node_def->attr().at("value").tensor()))
+    return false;
+
+  auto shape_is_wrong = [](Tensor lt, Tensor rt) {
+    return !(TensorShapeUtils::IsVector(lt.shape()) &&
+             lt.NumElements() == rt.NumElements());
+  };
+  if (!(TensorShapeUtils::IsVector(strides_tensor.shape()) &&
+        strides_tensor.NumElements() < 32 /* using 32 bit masks */))
+    return false;
+  if (shape_is_wrong(input_shape_tensor, strides_tensor) ||
+      shape_is_wrong(begin_tensor, strides_tensor) ||
+      shape_is_wrong(end_tensor, strides_tensor)) {
+    return false;
+  }
+  bool init_stats = true;
+  if (input_shape_tensor.dtype() == DT_INT32) {
+    init_stats =
+        InitStridedSliceGradData<int32>(&input_shape_tensor, &begin_tensor,
+                                        &end_tensor, &strides_tensor, matched);
+  } else if (input_shape_tensor.dtype() == DT_INT64) {
+    init_stats = InitStridedSliceGradData<int64_t>(&input_shape_tensor,
+                                                   &begin_tensor, &end_tensor,
+                                                   &strides_tensor, matched);
+  } else {
+    return false;
+  }
+  if (!init_stats) return false;
+
+  int num_dims = input_shape_tensor.NumElements();
+  bool is_identity = true;
+  for (int i = 0; i < num_dims; ++i) {
+    int64_t& dim_i = matched->dims[i];
+    int64_t& begin_i = matched->begin[i];
+    int64_t& end_i = matched->end[i];
+
+    bool shrink_i = (shrink_axis_mask & (1 << i));
+    bool begin_masked = (begin_mask & (1 << i));
+    bool end_masked = (end_mask & (1 << i));
+    int64_t begin_fwd = begin_i < 0 ? dim_i + begin_i : begin_i;
+    int64_t end_fwd = end_i < 0 ? dim_i + end_i : end_i;
+
+    if (shrink_i) {
+      // When the slice index for some dim is just a number, this dim will be
+      // shrinked. For example, Tensor[2, 1:4, :], the first dim of this tensor
+      // will be squeezed. Dims to be shrinked will be specified in the
+      // shrink_mask. In this case the end_i is invalid.
+      matched->shrinks.push_back(i);
+      begin_i = begin_fwd;
+      end_i = begin_i + 1;
+      if (begin_fwd < 0 || begin_fwd >= dim_i) {
+        return false;
+      }
+    } else {
+      if (begin_masked) {
+        begin_i = 0;
+      } else {
+        begin_i = begin_fwd < 0 ? 0 : begin_fwd > dim_i ? dim_i : begin_fwd;
+      }
+      if (end_masked) {
+        end_i = dim_i;
+      } else {
+        end_i = end_fwd < 0 ? 0 : end_fwd > dim_i ? dim_i : end_fwd;
+      }
+    }
+    if (begin_i >= end_i) return false;
+    is_identity &= (begin_i == 0 && end_i == dim_i);
+  }
+  if (is_identity) return false;
+
+  matched->stridedslicegrad_ = node_index;
+  return true;
+}
+
 // @brief: Replace Aggregated residual transformations with Grouped Conv
 // @pattern:
 /*
@@ -5127,6 +5300,105 @@ Status AddDropout(RemapperContext* ctx, const Dropout& matched,
   return Status::OK();
 }
 
+Status AddStridedSliceGrad(RemapperContext* ctx,
+                           const StridedSliceGrad& matched,
+                           std::vector<bool>* invalidated_nodes,
+                           std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& stridedslicegrad = graph->node(matched.stridedslicegrad_);
+  const NodeDef& dy = graph->node(matched.dy_);
+  DataType shape_type;
+  TF_ABORT_IF_ERROR(GetNodeAttr(stridedslicegrad, "Index", &shape_type));
+
+  ITEX_VLOG(2) << "Remap " << stridedslicegrad.op() << " to "
+               << " Pad and Reshape.";
+
+  string pad_fanin = stridedslicegrad.input(4);
+  int dims = matched.dims.size();
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  if (!matched.shrinks.empty()) {
+    // If some dims are shrunk, we should reshape first to get dims of size one
+    // back.
+    NodeDef reshape;
+    string reshape_name = stridedslicegrad.name() + "/reshape";
+    reshape.set_name(reshape_name);
+    reshape.set_op(kReshape);
+    reshape.set_device(stridedslicegrad.device());
+
+    NodeDef shape;
+    string shape_name = reshape.name() + "/shape";
+    shape.set_name(shape_name);
+    shape.set_op(kConst);
+    shape.set_device(stridedslicegrad.device());
+    shape.add_input(AsControlDependency(dy.name()));
+    auto* shape_attr = shape.mutable_attr();
+    SetAttrValue(shape_type, &(*shape_attr)["dtype"]);
+    Tensor dim_t(shape_type, {dims});
+    for (int i = 0; i < dims; i++) {
+      if (shape_type == DT_INT32) {
+        dim_t.flat<int32>()(i) = matched.end[i] - matched.begin[i];
+      } else {
+        dim_t.flat<int64_t>()(i) = matched.end[i] - matched.begin[i];
+      }
+    }
+    dim_t.AsProtoTensorContent((*shape_attr)["value"].mutable_tensor());
+    mutation->AddNode(std::move(shape), &status);
+    TF_ABORT_IF_ERROR(status);
+
+    reshape.add_input(stridedslicegrad.input(4));
+    reshape.add_input(shape_name);
+    auto* reshape_attr = reshape.mutable_attr();
+    SetAttrValue(stridedslicegrad.attr().at("T"), &(*reshape_attr)["T"]);
+    SetAttrValue(shape_type, &(*reshape_attr)["Tshape"]);
+    mutation->AddNode(std::move(reshape), &status);
+    TF_ABORT_IF_ERROR(status);
+    // The input of Pad should be changed to the Reshape which is just inserted.
+    pad_fanin = reshape_name;
+  }
+  NodeDef pad;
+  pad.set_op(kPad);
+  pad.set_name(stridedslicegrad.name());
+  pad.set_device(stridedslicegrad.device());
+
+  NodeDef paddings;
+  string paddings_name = pad.name() + "/paddings";
+  paddings.set_name(paddings_name);
+  paddings.set_op(kConst);
+  paddings.set_device(stridedslicegrad.device());
+  paddings.add_input(AsControlDependency(dy.name()));
+  auto* paddings_attr = paddings.mutable_attr();
+  SetAttrValue(shape_type, &(*paddings_attr)["dtype"]);
+  Tensor dim_t(shape_type, {dims, 2});
+  for (int i = 0; i < dims; i++) {
+    if (shape_type == DT_INT32) {
+      auto dim_m = dim_t.matrix<int32>();
+      dim_m(i, 0) = matched.begin[i];
+      dim_m(i, 1) = matched.dims[i] - matched.end[i];
+    } else {
+      auto dim_m = dim_t.matrix<int64_t>();
+      dim_m(i, 0) = matched.begin[i];
+      dim_m(i, 1) = matched.dims[i] - matched.end[i];
+    }
+  }
+  dim_t.AsProtoTensorContent((*paddings_attr)["value"].mutable_tensor());
+  mutation->AddNode(std::move(paddings), &status);
+  TF_ABORT_IF_ERROR(status);
+
+  pad.add_input(pad_fanin);
+  pad.add_input(paddings_name);
+  auto* pad_attr = pad.mutable_attr();
+  SetAttrValue(stridedslicegrad.attr().at("T"), &(*pad_attr)["T"]);
+  SetAttrValue(shape_type, &(*pad_attr)["Tpaddings"]);
+  mutation->AddNode(std::move(pad), &status);
+  TF_ABORT_IF_ERROR(status);
+
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  (*invalidated_nodes)[matched.stridedslicegrad_] = true;
+  return Status::OK();
+}
+
 }  // namespace
 
 // `is_full` is true by default. It will be set as false if this pass runs
@@ -5517,6 +5789,13 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       if (level != default_level && FindFusedBinary(ctx, i, &seq_binary)) {
         TF_ABORT_IF_ERROR(AddFusedBinaryNode(
             &ctx, seq_binary, &invalidated_nodes, &nodes_to_delete));
+      }
+
+      // Remap StridedSliceGrad to Pad when the stride of it is 1.
+      StridedSliceGrad strided_slice_grad;
+      if (FindStridedSliceGrad(ctx, i, &strided_slice_grad)) {
+        TF_ABORT_IF_ERROR(AddStridedSliceGrad(
+            &ctx, strided_slice_grad, &invalidated_nodes, &nodes_to_delete));
       }
     } else {
       // Only run in llga mode
