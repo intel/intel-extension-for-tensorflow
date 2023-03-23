@@ -36,6 +36,7 @@ class LayerNormFusionBase : public Fusion {
     auto* processed_input_node =
         graph_view.GetNode(properties.map.at("processed_input"))->node();
     auto* scale_node = graph_view.GetNode(properties.map.at("gamma"))->node();
+    auto* beta_node = graph_view.GetNode(properties.map.at("beta"))->node();
     auto* output_node = graph_view.GetNode(properties.map.at("output"))->node();
 
     // TODO(yifeng): Remove this workaround when custom pattern is not needed.
@@ -51,7 +52,7 @@ class LayerNormFusionBase : public Fusion {
     fused_node.set_device(output_node->device());
     fused_node.add_input(processed_input_node->input(0));
     fused_node.add_input(scale_node->name());
-    fused_node.add_input(output_node->input(0));
+    fused_node.add_input(beta_node->name());
 
     auto* attr = fused_node.mutable_attr();
     auto& src_attr = output_node->attr();
