@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Experimental: Intel® Arc™ A-Series GPU Software Installation &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <title>Experimental: Intel® Arc™ A-Series GPU Software Installation &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -37,11 +37,11 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../community/releases.html">Releases</a></li>
@@ -103,8 +103,8 @@
 <ul>
 <li><p>Linux Runtime Libraries: Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a> (installation instructions below)</p></li>
 <li><p>Intel® oneAPI Base Toolkit 2023.0 (installation instructions below)</p></li>
-<li><p>TensorFlow 2.11.0 or 2.10.0</p></li>
-<li><p>Python 3.7-3.10</p></li>
+<li><p>TensorFlow 2.12.0</p></li>
+<li><p>Python 3.8-3.11</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
 </ul>
 </li>
@@ -120,8 +120,8 @@
 </ul>
 </li>
 <li><p>Intel® oneAPI Base Toolkit 2023.0 (installation instructions below)</p></li>
-<li><p>TensorFlow 2.11.0 or 2.10.0</p></li>
-<li><p>Python 3.7-3.10</p></li>
+<li><p>TensorFlow 2.12.0</p></li>
+<li><p>Python 3.8-3.11</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
 </ul>
 </div>
@@ -256,7 +256,7 @@ sudo apt-get update
 <div class="section" id="install-tensorflow">
 <h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this headline">¶</a></h4>
 <p>The Python development and virtual environment setup recommendation by TensorFlow is to isolate package installation from the system.</p>
-<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be &gt;= 2.10.0.</p>
+<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.12.0.</p>
 <ul class="simple">
 <li></li>
 </ul>
@@ -268,7 +268,7 @@ sudo apt-get update
 </pre></div>
 </div>
 <p>To install in virtual environment, you can run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install <span class="s1">&#39;tensorflow&gt;=2.10.0&#39;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install <span class="s1">&#39;tensorflow==2.12.0&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -276,7 +276,7 @@ sudo apt-get update
 <div class="section" id="system-environment-install">
 <h5>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this headline">¶</a></h5>
 <p>If want to system install in $HOME, please append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install --user <span class="s1">&#39;tensorflow&gt;=2.10.0&#39;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install --user <span class="s1">&#39;tensorflow==2.12.0&#39;</span>
 </pre></div>
 </div>
 <p>And the following system environment install for Intel® Extension for TensorFlow* will use the same practice.</p>
@@ -287,6 +287,10 @@ sudo apt-get update
 <h3>3. Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h3>
 <p>To install a GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install --upgrade intel-extension-for-tensorflow<span class="o">[</span>gpu<span class="o">]</span>
+</pre></div>
+</div>
+<p>Check the environment for GPU:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
 </pre></div>
 </div>
 </div>
@@ -302,12 +306,11 @@ sudo apt-get update
 <p>If you prefer to have access to full Intel® oneAPI you need to install at least the following:</p>
 <ul class="simple">
 <li><p>Intel® oneAPI DPC++ Compiler</p></li>
-<li><p>Intel® oneAPI Threading Building Blocks (oneTBB)</p></li>
 <li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
 </ul>
 <p>Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18852/l_BaseKit_p_2022.3.0.8767_offline.sh
-<span class="c1"># 4 components are necessary: DPC++/C++ Compiler, DPC++ Libiary, Threading Building Blocks and oneMKL</span>
+<span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL</span>
 $ sudo sh ./l_BaseKit_p_2022.3.0.8767_offline.sh
 </pre></div>
 </div>

@@ -72,9 +72,10 @@
   </thead>
   <tbody>
       <tr>
-          <td colspan="4" align="center"><a href="design/extension_design.md">Extension design</a></td>
-		  <td colspan="4" align="center"><a href="design/directory_structure.md">Directory structure</a></td>
-		  <td colspan="4" align="center"><a href="design/optimization/README.md">Optimizations design</a></td>
+          <td colspan="3" align="center"><a href="design/extension_design.md">Extension design</a></td>
+	  <td colspan="3" align="center"><a href="design/directory_structure.md">Directory structure</a></td>
+	  <td colspan="3" align="center"><a href="design/optimization/README.md">Optimizations design</a></td>
+          <td colspan="3" align="center"><a href="design/how_to_write_custom_op.md">Custom Op</a></td>
       </tr>
   </tbody>
 </table>

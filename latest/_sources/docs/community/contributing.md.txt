@@ -12,7 +12,7 @@ We welcome community contributions to Intel® Extension for TensorFlow*. Before 
     - Search for your issue in the [issue list](https://github.com/intel/intel-extension-for-tensorflow/issues).
     - Pick an issue and comment that you'd like to work on the bug-fix or feature.
 
-* For bug-fix, please submit a Pull Request to project [github](https://github.com/intel/intel-extension-for-tensorflow/issues).
+* For bug-fix, please submit a Pull Request to project [github](https://github.com/intel/intel-extension-for-tensorflow/pulls).
 
   Ensure that you can build the product and run all the examples with your patch.
   Submit a [pull request](https://github.com/intel/intel-extension-for-tensorflow/pulls).

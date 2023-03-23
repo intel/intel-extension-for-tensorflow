@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel GPU Software Installation &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Intel GPU Software Installation &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -39,7 +39,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="installation_guide.html">Installation Guide</a><ul class="current">
@@ -61,6 +61,7 @@
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#install-intel-extension-for-tensorflow">Install Intel® Extension for TensorFlow*</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#check-the-environment-for-gpu">Check the Environment for GPU</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#verify-the-installation">Verify the Installation</a></li>
 </ul>
 </li>
@@ -74,7 +75,7 @@
 <li class="toctree-l2"><a class="reference internal" href="experimental/install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -134,8 +135,8 @@
 </ul>
 </li>
 <li><p>Intel® oneAPI Base Toolkit 2023.0</p></li>
-<li><p>TensorFlow 2.11.0 or 2.10.0</p></li>
-<li><p>Python 3.7-3.10</p></li>
+<li><p>TensorFlow 2.12.0</p></li>
+<li><p>Python 3.8-3.11</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
 </ul>
 </div>
@@ -195,12 +196,11 @@ $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-
 <p>Need to install components of Intel® oneAPI Base Toolkit:</p>
 <ul class="simple">
 <li><p>Intel® oneAPI DPC++ Compiler</p></li>
-<li><p>Intel® oneAPI Threading Building Blocks (oneTBB)</p></li>
 <li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
 <li><p>Intel® oneAPI Collective Communications Library (oneCCL), required by Intel® Optimization for Horovod* only</p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/19079/l_BaseKit_p_2023.0.0.25537_offline.sh
-<span class="c1"># 4 components are necessary: DPC++/C++ Compiler, DPC++ Libiary, oneTBB and oneMKL</span>
+<span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL</span>
 <span class="c1"># if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too(Intel® oneAPI MPI Library will be installed automatically as its dependency)</span>
 $ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 </pre></div>
@@ -209,7 +209,7 @@ $ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 </div>
 <div class="section" id="setup-environment-variables">
 <h3>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># DPC++ Compiler/oneMKL/oneTBB</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># DPC++ Compiler/oneMKL/tbb</span>
 <span class="nb">source</span> /path to basekit/intel/oneapi/compiler/latest/env/vars.sh
 <span class="nb">source</span> /path to basekit/intel/oneapi/mkl/latest/env/vars.sh
 <span class="nb">source</span> /path to basekit/intel/oneapi/tbb/latest/env/vars.sh
@@ -227,7 +227,7 @@ $ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 <div class="section" id="install-tensorflow">
 <h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this headline">¶</a></h3>
 <p>The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.</p>
-<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.11.0 or 2.10.0.</p>
+<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.12.0.</p>
 <div class="section" id="virtual-environment-install">
 <h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this headline">¶</a></h4>
 <p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
@@ -236,14 +236,14 @@ $ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 </pre></div>
 </div>
 <p>To install in virtual environment, you can run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.11.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.12.0
 </pre></div>
 </div>
 </div>
 <div class="section" id="system-environment-install">
 <h4>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this headline">¶</a></h4>
 <p>If want to system install in $HOME, please append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install --user <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.11.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install --user <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.12.0
 </pre></div>
 </div>
 <p>And the following system environment install for Intel® Extension for TensorFlow* will use the same practice.</p>
@@ -254,6 +254,12 @@ $ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 <p>To install a GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install --upgrade intel-extension-for-tensorflow<span class="o">[</span>gpu<span class="o">]</span>
 </pre></div>
+</div>
+<div class="section" id="check-the-environment-for-gpu">
+<h4>Check the Environment for GPU<a class="headerlink" href="#check-the-environment-for-gpu" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+</pre></div>
+</div>
 </div>
 <div class="section" id="verify-the-installation">
 <h4>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this headline">¶</a></h4>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python APIs &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Python APIs &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -39,7 +39,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
@@ -66,6 +66,8 @@
 <li class="toctree-l5"><a class="reference internal" href="#itex-graphoptions">itex.GraphOptions</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-automixedprecisionoptions">itex.AutoMixedPrecisionOptions</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-debugoptions">itex.DebugOptions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-set-config">itex.set_config</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-get-config">itex.get_config</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#itex-operators">itex operators</a></li>
@@ -82,7 +84,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -131,6 +133,8 @@
 <li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.GraphOptions</em></a>: ProtocolMessage for graph configuration optimization options.</p></li>
 <li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.AutoMixedPrecisionOptions</em></a>: ProtocolMessage for auto mixed precision optimization options.</p></li>
 <li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.DebugOptions</em></a>: ProtocolMessage for debug options.</p></li>
+<li><p><a class="reference external" href="#set-itex-config"><em>itex.set_config</em></a>: Public API for setting ConfigProto.</p></li>
+<li><p><a class="reference external" href="#set-itex-config"><em>itex.get_config</em></a>: Public API for getting ConfigProto.</p></li>
 <li><p><a class="reference external" href="#itex-ops"><em>itex.ops</em></a>: Public API for extended XPU operations.</p></li>
 <li><p><a class="reference external" href="#itex-version"><em>itex.version</em></a>: Public API for Intel® Extension for TensorFlow* and components version information.</p></li>
 </ul>
@@ -186,10 +190,9 @@
 <div class="section" id="itex-set-backend">
 <h3>itex.set_backend<a class="headerlink" href="#itex-set-backend" title="Permalink to this headline">¶</a></h3>
 <p>Intel® Extension for TensorFlow* provides multiple types of backends with different optimization options to execute. Only one backend is allowed in the whole process, and this can only be configured once before XPU device initialization.</p>
-<p>Set <code class="docutils literal notranslate"><span class="pre">CPU</span></code>/<code class="docutils literal notranslate"><span class="pre">GPU</span></code> with <code class="docutils literal notranslate"><span class="pre">config</span></code> as specific XPU backend type for execution.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">CPU</span></code>/<code class="docutils literal notranslate"><span class="pre">GPU</span></code> as specific XPU backend type for execution.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span> <span class="p">(</span>
-  <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;GPU&#39;</span><span class="p">,</span>
-  <span class="n">config</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">()</span>
+  <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;GPU&#39;</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -205,10 +208,6 @@
 <td><code>backend</code></td>
 <td>The backend type to set. The default value is <code>CPU</code>.<br>  <br> * If <code>GPU</code>, the XPU backend type is set as <code>GPU</code> and all ops will be executed on concrete GPU backend.<br> * If <code>CPU</code>, the XPU backend type is set as <code>CPU</code> and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by <code>pip install intel-extension-for-tensorflow[cpu]</code>, it's invalid to set XPU backend type as <code>GPU</code>.</td>
 </tr>
-<tr>
-<td><code>config</code></td>
-<td>The backend config to set. Refer to <a href="#itex-config-protocol">itex.ConfigProto</a> for details.</td>
-</tr>
 </tbody>
 </table><table border="1" class="docutils">
 <thead>
@@ -218,10 +217,6 @@
 </tr>
 </thead>
 <tbody>
-<tr>
-<td><code>ValueError</code></td>
-<td>If argument validation fails, or the backend type cannot be changed.</td>
-</tr>
 <tr>
 <td><code>RuntimeWarning</code></td>
 <td>This API is called after XPU device initialization or called more than one time.</td>
@@ -233,11 +228,9 @@
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 
-<span class="n">backend_cfg</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">gpu_options</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">GPUOptions</span><span class="p">(</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span><span class="p">))</span>
-
 <span class="c1"># Only allow this setting once in backend device initialization</span>
-<span class="c1"># All operators will be executed in `GPU` backend with the option setting.</span>
-<span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s1">&#39;GPU&#39;</span><span class="p">,</span> <span class="n">backend_cfg</span><span class="p">)</span>
+<span class="c1"># All operators will be executed in `GPU` backend.</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s1">&#39;GPU&#39;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">add_func</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span>
@@ -251,13 +244,7 @@
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 
-<span class="c1">#Only allow setting once in backend device initialization</span>
-<span class="c1">#All operators will be executed in `GPU` backend with two options setting.</span>
-<span class="n">backend_cfg</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">()</span>
-<span class="n">backend_cfg</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">OFF</span>
-<span class="n">backend_cfg</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">layout_opt</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span>
-
-<span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s1">&#39;GPU&#39;</span><span class="p">,</span> <span class="n">backend_cfg</span><span class="p">)</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s1">&#39;GPU&#39;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">add_func</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span>
@@ -399,8 +386,8 @@
 <span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 
 <span class="n">graph_opts</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span><span class="p">)</span>
-<span class="n">backend_cfg</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">graph_options</span><span class="o">=</span><span class="n">graph_opts</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">backend_cfg</span><span class="p">)</span>
+<span class="n">config</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">graph_options</span><span class="o">=</span><span class="n">graph_opts</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Then the log will output the information like below.</p>
@@ -414,12 +401,12 @@
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 
-<span class="n">backend_cfg</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">()</span>
+<span class="n">config</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">()</span>
 
-<span class="n">backend_cfg</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span>
-<span class="n">backend_cfg</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">layout_opt</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">OFF</span>
+<span class="n">config</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span>
+<span class="n">config</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">layout_opt</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">OFF</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">backend_cfg</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Then the log will output the information like below.</p>
@@ -459,6 +446,64 @@
 </tr>
 </tbody>
 </table></div>
+<div class="section" id="itex-set-config">
+<h3>itex.set_config<a class="headerlink" href="#itex-set-config" title="Permalink to this headline">¶</a></h3>
+<p>Set Config Protocol. Note that the protocol is a global value, so this API is not thread safe.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>| Args                   |                                     Description                         |
+| ———————–| ————————————————————————|
+| <code class="docutils literal notranslate"><span class="pre">config</span></code>      | <a class="reference external" href="(#ITEX-config-protocol)">ConfigProto</a> object|</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Raises</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ValueError</code></td>
+<td>If argument validation fails.</td>
+</tr>
+</tbody>
+</table></div>
+<div class="section" id="itex-get-config">
+<h3>itex.get_config<a class="headerlink" href="#itex-get-config" title="Permalink to this headline">¶</a></h3>
+<p>Get Config Protocol.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+</pre></div>
+</div>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Raises</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Returns</code></td>
+<td>Return the current config.</td>
+</tr>
+</tbody>
+</table><p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+
+<span class="n">graph_opts</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span><span class="p">)</span>
+<span class="n">config</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">graph_options</span><span class="o">=</span><span class="n">graph_opts</span><span class="p">)</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">get_config</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Then the log will output the information like below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">graph_options</span> <span class="p">{</span>
+  <span class="n">onednn_graph</span><span class="p">:</span> <span class="n">ON</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
 </div>
 <div class="section" id="itex-operators">
 <h2>itex operators<a class="headerlink" href="#itex-operators" title="Permalink to this headline">¶</a></h2>

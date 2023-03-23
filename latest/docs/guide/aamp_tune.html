@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tune Advanced Auto Mixed Precision &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Tune Advanced Auto Mixed Precision &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -37,11 +37,11 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -338,7 +338,7 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
 <tbody>
 <tr>
 <td>Basic (Default configuration)</td>
-<td><code>import intel_extension_for_tensorflow as itex</code><br><br><code>auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()</code><br><code>auto_mixed_precision_options.data_type = itex.BFLOAT16 #itex.FLOAT16</code><br><br><code>graph_options = itex.GraphOptions()</code><br><code>graph_options.auto_mixed_precision_options=auto_mixed_precision_options</code><br><code>graph_options.auto_mixed_precision = itex.ON</code><br><br><code>config = itex.ConfigProto(graph_options=graph_options)</code><br><code>itex.set_backend("gpu", config)</code></td>
+<td><code>import intel_extension_for_tensorflow as itex</code><br><br><code>auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()</code><br><code>auto_mixed_precision_options.data_type = itex.BFLOAT16 #itex.FLOAT16</code><br><br><code>graph_options = itex.GraphOptions()</code><br><code>graph_options.auto_mixed_precision_options=auto_mixed_precision_options</code><br><code>graph_options.auto_mixed_precision = itex.ON</code><br><br><code>config = itex.ConfigProto(graph_options=graph_options)</code><br><code>itex.set_config(config)</code></td>
 <td><code>export ITEX_AUTO_MIXED_PRECISION=1</code><br><code>export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16" #"FLOAT16"</code><br></td>
 </tr>
 </tbody>

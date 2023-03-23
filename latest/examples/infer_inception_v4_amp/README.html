@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -37,11 +37,11 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
@@ -160,8 +160,7 @@
 <span class="n">graph_options</span><span class="o">.</span><span class="n">auto_mixed_precision</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ON</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">)</span>
-<span class="c1">#itex.set_backend(&quot;cpu&quot;, config)</span>
-<span class="n">itex</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For FP16, modify one line above:</p>
@@ -219,15 +218,15 @@
 <div class="section" id="environment-variable-configuration">
 <h3>Environment Variable Configuration<a class="headerlink" href="#environment-variable-configuration" title="Permalink to this headline">¶</a></h3>
 <p>Run with CPU and BF16 data type:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">sh</span> <span class="n">cpu</span> <span class="n">bf16</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">sh</span> <span class="n">cpu</span> <span class="n">bf16</span>
 </pre></div>
 </div>
 <p>Run with GPU and BF16 data type:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">sh</span> <span class="n">gpu</span> <span class="n">bf16</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">sh</span> <span class="n">gpu</span> <span class="n">bf16</span>
 </pre></div>
 </div>
 <p>Run with GPU and FP16 data type:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">sh</span> <span class="n">gpu</span> <span class="n">fp16</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">sh</span> <span class="n">gpu</span> <span class="n">fp16</span>
 </pre></div>
 </div>
 </div>

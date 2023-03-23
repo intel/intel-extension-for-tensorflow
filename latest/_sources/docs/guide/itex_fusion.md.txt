@@ -53,3 +53,11 @@ The new kernels are implemented（`AccMatMul` and `FusedAccMatMul(WithSum)`）as
 - `Tout`: Output data type ∈ {`float32`}.
 - `Tpost`: Post op data type ∈ {`bfloat16`, `float32`}.
 - `is_bf16_math_mode`: A boolean to indicate whether to use oneDNN `BF16` math mode in the case of `FP32` input, `FP32` output.
+
+## Generic layout optimizer
+
+As the channels_first format is currently not supported by stock TensorFlow on CPU, so it inserts transpose nodes before and after the Conv3D/MaxPool3D nodes. However, this problem does not exist in GPU device. In order to avoid unnecessary layout transformation when running on a GPU device, Intel® Extension for TensorFlow\* adds a separate layout optimizer to handle such a special case.
+
+| Pattern | Fused operator | Conv data format (before optimization)  | Conv data format (after optimization)| 
+| --      | --        | -- | -- | 
+| `Transpose + Conv3D + Transpose` | `Conv3D` | `NDHWC` | `NCDHW` |

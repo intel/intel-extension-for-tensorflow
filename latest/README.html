@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Intel® Extension for TensorFlow* &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -37,11 +37,11 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/community/releases.html">Releases</a></li>
@@ -139,7 +139,7 @@
 <td>TensorFlow</td>
 <td>Y</td>
 <td>Y</td>
-<td><a href="https://www.tensorflow.org/install">Install TensorFlow 2.11.0 or 2.10.0</a></td>
+<td><a href="https://www.tensorflow.org/install">Install TensorFlow 2.12.0</a></td>
 </tr>
 </tbody>
 </table></div>
@@ -164,15 +164,19 @@
 </table></div>
 <div class="section" id="install-for-gpu">
 <h3>Install for GPU<a class="headerlink" href="#install-for-gpu" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.11.0</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12.0</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Environment check instructions for GPU:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
 </pre></div>
 </div>
 <p>Please refer to <a class="reference internal" href="docs/install/install_for_gpu.html"><span class="doc">GPU installation</span></a> for details.</p>
 </div>
 <div class="section" id="install-for-cpu-experimental">
 <h3>Install for CPU [Experimental]<a class="headerlink" href="#install-for-cpu-experimental" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.11.0</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12.0</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span>
 </pre></div>
 </div>

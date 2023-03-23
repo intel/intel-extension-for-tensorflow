@@ -13,6 +13,8 @@ Intel® Extension for TensorFlow* provides flexible Python APIs to configure set
 * [*itex.GraphOptions*](#ITEX-config-protocol): ProtocolMessage for graph configuration optimization options.
 * [*itex.AutoMixedPrecisionOptions*](#ITEX-config-protocol): ProtocolMessage for auto mixed precision optimization options.
 * [*itex.DebugOptions*](#ITEX-config-protocol): ProtocolMessage for debug options.
+* [*itex.set_config*](#set-itex-config): Public API for setting ConfigProto.
+* [*itex.get_config*](#set-itex-config): Public API for getting ConfigProto.
 * [*itex.ops*](#itex-ops): Public API for extended XPU operations.
 * [*itex.version*](#itex-version): Public API for Intel® Extension for TensorFlow* and components version information.
 
@@ -37,23 +39,20 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 ### itex.set_backend
 Intel® Extension for TensorFlow* provides multiple types of backends with different optimization options to execute. Only one backend is allowed in the whole process, and this can only be configured once before XPU device initialization.
 
-Set `CPU`/`GPU` with `config` as specific XPU backend type for execution.
+Set `CPU`/`GPU` as specific XPU backend type for execution.
 
 ```
 itex.set_backend (
-  backend='GPU',
-  config=itex.ConfigProto()
+  backend='GPU'
 )
 ```
 
 | Args                   |                                     Description                         |
 | -----------------------| ------------------------------------------------------------------------|
 | `backend`      | The backend type to set. The default value is `CPU`.<br>  <br> * If `GPU`, the XPU backend type is set as `GPU` and all ops will be executed on concrete GPU backend.<br> * If `CPU`, the XPU backend type is set as `CPU` and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, it's invalid to set XPU backend type as `GPU`.|
-| `config`| The backend config to set. Refer to [itex.ConfigProto](#itex-config-protocol) for details.|
 
 | Raises                   |                                     Description                         |
 | -----------------------| ------------------------------------------------------------------------|
-| `ValueError`      | If argument validation fails, or the backend type cannot be changed.|
 | `RuntimeWarning`      | This API is called after XPU device initialization or called more than one time.|
 
 
@@ -66,11 +65,9 @@ I. Set the specific XPU backend type and config for `tf.device("/xpu:0")`.
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
-backend_cfg=itex.ConfigProto(gpu_options=itex.GPUOptions(onednn_graph=itex.ON))
-
 # Only allow this setting once in backend device initialization
-# All operators will be executed in `GPU` backend with the option setting.
-itex.set_backend('GPU', backend_cfg)
+# All operators will be executed in `GPU` backend.
+itex.set_backend('GPU')
 
 def add_func(x, y):
     return x+y
@@ -86,13 +83,7 @@ II. Set the specific XPU backend type and config for a device not explicitly spe
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
-#Only allow setting once in backend device initialization
-#All operators will be executed in `GPU` backend with two options setting.
-backend_cfg=itex.ConfigProto()
-backend_cfg.graph_options.onednn_graph=itex.OFF
-backend_cfg.graph_options.layout_opt=itex.ON
-
-itex.set_backend('GPU', backend_cfg)
+itex.set_backend('GPU')
 
 def add_func(x, y):
     return x+y
@@ -170,8 +161,8 @@ import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
 graph_opts=itex.GraphOptions(onednn_graph=itex.ON)
-backend_cfg=itex.ConfigProto(graph_options=graph_opts)
-print(backend_cfg)
+config=itex.ConfigProto(graph_options=graph_opts)
+print(config)
 ```
 Then the log will output the information like below.
 ```python
@@ -186,12 +177,12 @@ II. Setting the options after creating the config protocol object
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
-backend_cfg=itex.ConfigProto()
+config=itex.ConfigProto()
 
-backend_cfg.graph_options.onednn_graph=itex.ON
-backend_cfg.graph_options.layout_opt=itex.OFF
+config.graph_options.onednn_graph=itex.ON
+config.graph_options.layout_opt=itex.OFF
 
-print(backend_cfg)
+print(config)
 ```
 Then the log will output the information like below.
 ```
@@ -215,6 +206,49 @@ ProtocolMessage for debug options.
 | ------------------------------- | ------------------------------------ | ------------------------------------------------------------ |
 | `auto_mixed_precision_log_path` | `ITEX_AUTO_MIXED_PRECISION_LOG_PATH` | Save auto mixed precision "pre-optimization" and "post-optimization" graph to log path. |
 | `xpu_force_sync` | `ITEX_SYNC_EXEC` | Run the graph with sync mode. The default value is `OFF`. If `ON`, the whole model will be run with sync mode, which will hurt performance. |
+
+### itex.set_config
+Set Config Protocol. Note that the protocol is a global value, so this API is not thread safe.
+
+```
+itex.set_config(config)
+```
+| Args                   |                                     Description                         |
+| -----------------------| ------------------------------------------------------------------------|
+| `config`      | [ConfigProto]((#ITEX-config-protocol)) object|
+
+| Raises                   |                                     Description                         |
+| -----------------------| ------------------------------------------------------------------------|
+| `ValueError`      | If argument validation fails.|
+
+
+### itex\.get_config
+Get Config Protocol.
+
+```
+itex.get_config()
+```
+
+| Raises                   |                                     Description                         |
+| -----------------------| ------------------------------------------------------------------------|
+| `Returns`      | Return the current config.|
+
+Example:
+
+```python
+import intel_extension_for_tensorflow as itex
+
+graph_opts=itex.GraphOptions(onednn_graph=itex.ON)
+config=itex.ConfigProto(graph_options=graph_opts)
+itex.set_config(config)
+print(itex.get_config())
+```
+Then the log will output the information like below:
+```
+graph_options {
+  onednn_graph: ON
+}
+```
 
 ## itex operators
 

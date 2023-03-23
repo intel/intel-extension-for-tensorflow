@@ -34,7 +34,7 @@ CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/li
 
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git
-$ git checkout origin/r2.10 -b r2.10
+$ git checkout origin/r2.12 -b r2.12
 $ cd tensorflow
 ```
 

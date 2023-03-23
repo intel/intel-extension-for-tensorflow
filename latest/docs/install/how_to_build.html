@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Build from Source Code &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Build from Source Code &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -39,7 +39,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="installation_guide.html">Installation Guide</a><ul class="current">
@@ -76,7 +76,7 @@
 <li class="toctree-l2"><a class="reference internal" href="experimental/install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -125,7 +125,7 @@
 </div>
 <div class="section" id="python">
 <h3>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h3>
-<p>Python 3.7-3.10</p>
+<p>Python 3.8-3.11</p>
 </div>
 <div class="section" id="intel-gpu-driver">
 <h3>Intel GPU Driver<a class="headerlink" href="#intel-gpu-driver" title="Permalink to this headline">¶</a></h3>
@@ -135,7 +135,7 @@
 </div>
 <div class="section" id="tensorflow">
 <h3>TensorFlow<a class="headerlink" href="#tensorflow" title="Permalink to this headline">¶</a></h3>
-<p>Install TensorFlow 2.11 or 2.10, and refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a>.</p>
+<p>Install TensorFlow 2.12, and refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a>.</p>
 <p>Check TensorFlow version:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import tensorflow as tf;print(tf.__version__)&quot;</span>
 </pre></div>
@@ -147,10 +147,10 @@
 </div>
 <div class="section" id="install-bazel">
 <h3>Install Bazel<a class="headerlink" href="#install-bazel" title="Permalink to this headline">¶</a></h3>
-<p>To build Intel® Extension for TensorFlow*, install Bazel 4.2.1 or later ones. Refer to <a class="reference external" href="https://docs.bazel.build/versions/main/install-ubuntu.html">install Bazel</a>.</p>
+<p>To build Intel® Extension for TensorFlow*, install Bazel 5.3.0 or later ones. Refer to <a class="reference external" href="https://docs.bazel.build/versions/main/install-ubuntu.html">install Bazel</a>.</p>
 <p>Here are the recommended commands:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ wget https://github.com/bazelbuild/bazel/releases/download/4.2.1/bazel-4.2.1-installer-linux-x86_64.sh
-$ bash bazel-4.2.1-installer-linux-x86_64.sh --user
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ wget https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
+$ bash bazel-5.3.0-installer-linux-x86_64.sh --user
 </pre></div>
 </div>
 <p>Check Bazel:</p>
@@ -182,7 +182,7 @@ $ <span class="nb">cd</span> intel-extension-for-tensorflow
 <ul class="simple">
 <li><p>For GPU</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 4.2.1 installed.
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 5.3.0 installed.
 Python binary path: /path/to/python
 
 Found possible Python library paths:
@@ -211,7 +211,7 @@ Configuration finished
 <ul class="simple">
 <li><p>For CPU</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 4.2.1 installed.
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 5.3.0 installed.
 Python binary path: /path/to/python
 
 Found possible Python library paths:

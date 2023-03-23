@@ -76,8 +76,7 @@ graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precis
 graph_options.auto_mixed_precision = itex.ON
 
 config = itex.ConfigProto(graph_options=graph_options)
-#itex.set_backend("cpu", config)
-itex.set_backend("gpu", config)
+itex.set_config(config)
 ```
 
 For FP16, modify one line above:
@@ -139,17 +138,17 @@ python infer_fp32_vs_amp.py gpu fp16
 
 Run with CPU and BF16 data type:
 ```
-infer_fp32_vs_amp.sh cpu bf16
+./infer_fp32_vs_amp.sh cpu bf16
 ```
 
 Run with GPU and BF16 data type:
 ```
-infer_fp32_vs_amp.sh gpu bf16
+./infer_fp32_vs_amp.sh gpu bf16
 ```
 
 Run with GPU and FP16 data type:
 ```
-infer_fp32_vs_amp.sh gpu fp16
+./infer_fp32_vs_amp.sh gpu fp16
 ```
 
 ### Result

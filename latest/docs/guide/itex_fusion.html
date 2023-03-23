@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Graph fusion &mdash; Intel® Extension for TensorFlow* v1.1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Graph fusion &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -39,7 +39,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
@@ -50,6 +50,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#implementation-details">Implementation Details</a></li>
 </ul>
 </li>
+<li class="toctree-l4"><a class="reference internal" href="#generic-layout-optimizer">Generic layout optimizer</a></li>
 </ul>
 </li>
 </ul>
@@ -62,7 +63,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/__examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -255,6 +256,27 @@ The new kernels are implemented（<code class="docutils literal notranslate"><sp
 </ul>
 </div>
 </div>
+<div class="section" id="generic-layout-optimizer">
+<h2>Generic layout optimizer<a class="headerlink" href="#generic-layout-optimizer" title="Permalink to this headline">¶</a></h2>
+<p>As the channels_first format is currently not supported by stock TensorFlow on CPU, so it inserts transpose nodes before and after the Conv3D/MaxPool3D nodes. However, this problem does not exist in GPU device. In order to avoid unnecessary layout transformation when running on a GPU device, Intel® Extension for TensorFlow* adds a separate layout optimizer to handle such a special case.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Fused operator</th>
+<th>Conv data format (before optimization)</th>
+<th>Conv data format (after optimization)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Transpose + Conv3D + Transpose</code></td>
+<td><code>Conv3D</code></td>
+<td><code>NDHWC</code></td>
+<td><code>NCDHW</code></td>
+</tr>
+</tbody>
+</table></div>
 </div>
 
 
