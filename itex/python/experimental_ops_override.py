@@ -522,8 +522,12 @@ def experimental_ops_override():
       gamma = array_ops.reshape(self.gamma, broadcast_shape)
       outputs = outputs * math_ops.cast(gamma, outputs.dtype)
     if self.beta is not None:
-      beta = array_ops.reshape(self.beta, broadcast_shape)
-      outputs = outputs + math_ops.cast(beta, outputs.dtype)
+      if axis == ndims - 1:
+        # Use biasadd to avoid Sum in bwd process to improve perf.
+        outputs = tf.nn.bias_add(outputs, math_ops.cast(self.beta, outputs.dtype))
+      else:
+        beta = array_ops.reshape(self.beta, broadcast_shape)
+        outputs = outputs + math_ops.cast(beta, outputs.dtype)
 
     return outputs
 
