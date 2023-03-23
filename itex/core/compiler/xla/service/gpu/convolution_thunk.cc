@@ -382,7 +382,7 @@ Status CreateOneDnnPrimitive(
         dnnl::memory::desc({dst_dims}, data_type, dst_fmt);
 
     bool flag = false;
-    itex::ReadBoolFromEnvVar("ONEDNN_PLAIN_WEIGHT", true, &flag);
+    itex::ReadBoolFromEnvVar("ONEDNN_PLAIN_WEIGHT", false, &flag);
     dnnl::memory::desc filter_md_prefer = dnnl::memory::desc(
         {filter_dims}, data_type, dnnl::memory::format_tag::any);
     if (flag)
