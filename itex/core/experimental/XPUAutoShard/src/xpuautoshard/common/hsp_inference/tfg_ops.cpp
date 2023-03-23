@@ -1265,9 +1265,9 @@ DEFINE_AND_REGISTER_HSP_INFERENCE(ConvBackwardData, "tfg.Conv2DBackpropInput");
 DEFINE_AND_REGISTER_HSP_INFERENCE(ConvBackwardWeight,
                                   "tfg.Conv2DBackpropFilter");
 DEFINE_AND_REGISTER_HSP_INFERENCE(BatchNorm, "tfg.FusedBatchNormV3")
-+ "tfg._FusedBatchNormEx" + "tfg.LayerNorm";
++ "tfg._FusedBatchNormEx" + "tfg.ITEXLayerNorm";
 DEFINE_AND_REGISTER_HSP_INFERENCE(BatchNormGrad, "tfg.FusedBatchNormGradV3")
-+ "tfg.LayerNormGrad";
++ "tfg.ITEXLayerNormGrad";
 DEFINE_AND_REGISTER_HSP_INFERENCE(BiasAdd, "tfg.BiasAdd");
 DEFINE_AND_REGISTER_HSP_INFERENCE(BiasAddGrad, "tfg.BiasAddGrad");
 DEFINE_AND_REGISTER_HSP_INFERENCE(MatMul, "tfg.MatMul")
@@ -1283,22 +1283,22 @@ DEFINE_AND_REGISTER_HSP_INFERENCE(SoftmaxCrossEntropy,
 
 DEFINE_AND_REGISTER_HSP_INFERENCE(Unary, "tfg.Neg")
 + "tfg.Relu" +
-    "tfg.Gelu" + "tfg.Identity" + "tfg.Reciprocal" + "tfg.Sqrt" + "tfg.Rsqrt" +
-    "tfg.Abs" + "tfg.ZerosLike" + "tfg.Exp" + "tfg.Log" + "tfg.Square" +
-    "tfg.Erf" + "tfg.Tanh" + "tfg.Sigmoid" + "tfg.IsFinite" + "tfg.LogicalNot" +
-    "tfg.Cos" + "tfg.Acos" + "tfg.Cosh" + "tfg.Acosh" + "tfg.Angle" +
-    "tfg.Asin" + "tfg.Asinh" + "tfg.Atan" + "tfg.Atan2" + "tfg.Atanh" +
-    "tfg.Ceil" + "tfg.Conj" + "tfg.Floor" + "tfg.IsNan" + "tfg.Log1p" +
-    "tfg.Round" + "tfg.Sign" + "tfg.Sin" + "tfg.Relu6" +
+    "tfg.ITEXGelu" + "tfg.Identity" + "tfg.Reciprocal" + "tfg.Sqrt" +
+    "tfg.Rsqrt" + "tfg.Abs" + "tfg.ZerosLike" + "tfg.Exp" + "tfg.Log" +
+    "tfg.Square" + "tfg.Erf" + "tfg.Tanh" + "tfg.Sigmoid" + "tfg.IsFinite" +
+    "tfg.LogicalNot" + "tfg.Cos" + "tfg.Acos" + "tfg.Cosh" + "tfg.Acosh" +
+    "tfg.Angle" + "tfg.Asin" + "tfg.Asinh" + "tfg.Atan" + "tfg.Atan2" +
+    "tfg.Atanh" + "tfg.Ceil" + "tfg.Conj" + "tfg.Floor" + "tfg.IsNan" +
+    "tfg.Log1p" + "tfg.Round" + "tfg.Sign" + "tfg.Sin" + "tfg.Relu6" +
     "tfg.Dequantize";  // consider elementwise 3, 1
 
 DEFINE_AND_REGISTER_HSP_INFERENCE(Binary, "tfg.SigmoidGrad")
 // don't support broadcasting
 + "tfg.DivNoNan" +
-    "tfg.Div" + "tfg.Mod" + "tfg.RealDiv" + "tfg.ReluGrad" + "tfg.GeluGrad" +
-    "tfg.AddV2" + "tfg.Add" + "tfg.Equal" + "tfg.TanhGrad" + "tfg.RsqrtGrad" +
-    "tfg.SqrtGrad" + "tfg.Pow" + "tfg.BitwiseAnd" + "tfg.BitwiseOr" +
-    "tfg.BitwiseXor" + "tfg.LeftShift" +
+    "tfg.Div" + "tfg.Mod" + "tfg.RealDiv" + "tfg.ReluGrad" +
+    "tfg.ITEXGeluGrad" + "tfg.AddV2" + "tfg.Add" + "tfg.Equal" +
+    "tfg.TanhGrad" + "tfg.RsqrtGrad" + "tfg.SqrtGrad" + "tfg.Pow" +
+    "tfg.BitwiseAnd" + "tfg.BitwiseOr" + "tfg.BitwiseXor" + "tfg.LeftShift" +
     "tfg.RightShift"
     // support broadcasting
     + "tfg.Greater" + "tfg.GreaterEqual" + "tfg.SquaredDifference" +

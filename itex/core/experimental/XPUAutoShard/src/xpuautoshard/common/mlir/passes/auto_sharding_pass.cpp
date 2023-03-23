@@ -18,6 +18,7 @@ limitations under the License.
 #include "itex/core/utils/logging.h"
 #include "xpuautoshard/common/mlir/dialect.h"
 #include "xpuautoshard/common/mlir/passes/pass_utils.h"
+#include "xpuautoshard/tensorflow/macro.h"
 
 namespace mlir {
 namespace hs {
@@ -72,9 +73,9 @@ void AutoShardingPass::runOnOperation() {
           if (!all_inited) {
             llvm::outs() << op << "\n";
           }
-          assert(all_inited &&
-                 "Expect all sharding properties are initialized after "
-                 "auto-sharding pass");
+          TF_ASSERT(all_inited,
+                    "Expect all sharding properties are initialized after "
+                    "auto-sharding pass");
         }
       }
     }

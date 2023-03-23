@@ -902,6 +902,13 @@ void HStoTFGConversion::lowerUnshardOp(UnshardOp* unshard_op,
           concat->addAttribute("Tidx", TypeAttr::get(builder.getI32Type()));
           concat->addAttribute("N", builder.getI32IntegerAttr(num_splits));
         });
+    // In order to ensure that the name of the output node remains unchanged.
+    // Swap `tfg.ConcatV2` node name and original output node name.
+    auto concat_name = concat_op->getAttr(kMlirNameAttr);
+    auto operand = sharded_operand[0].getDefiningOp();
+    auto operand_name = operand->getAttr(kMlirNameAttr);
+    concat_op->setAttr(kMlirNameAttr, operand_name);
+    operand->setAttr(kMlirNameAttr, concat_name);
     unshard_op->getResult().replaceAllUsesWith(concat_op->getResult(0));
   }
 }
@@ -1735,7 +1742,6 @@ void checkGraphCycle(mlir::tfg::GraphOp* graph_op) {
       }
     }
   }
-  llvm::outs() << "auto shard cycle check over\n";
 }
 
 void HStoTFGConversion::runOnOperation() {

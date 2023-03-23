@@ -12,6 +12,8 @@ limitations under the License.
 
 #include "itex/core/graph/xpu_optimizer.h"
 
+#include <string>
+
 #include "itex/core/graph/auto_mixed_precision/auto_mixed_precision.h"
 #include "itex/core/graph/generic_layout_optimizer/generic_layout_optimizer.h"
 #include "itex/core/graph/memory_opt_pass/memory_opt_pass.h"
@@ -24,6 +26,10 @@ limitations under the License.
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/op_kernel.h"
 #include "tensorflow/c/experimental/grappler/grappler.h"
+
+#ifndef INTEL_CPU_ONLY
+#include "itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.h"
+#endif  // INTEL_CPU_ONLY
 
 namespace itex {
 namespace graph {
@@ -71,14 +77,46 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
   GraphDef optimized_graph_def = graph_def;
   auto config = GetOptimizerConfigFlags();
 
-  if (config.enable_sharding) {
-    optimized_graph_def.Swap(&graph_def);
-    // TODO(itex): enable the pass when the PR is merged.
-    // SET_STATUS_IF_ERROR(tf_status,
-    //                     mlir::tfg::RunMlirImportExport(graph_def,
-    //                     &optimized_graph_def));
-    optimized_graph_def = graph_def;
+  bool have_matmul_or_conv = false;
+  for (auto node : graph_def.node()) {
+    if (node.op().find("MatMul") != std::string::npos ||
+        node.op().find("Conv") != std::string::npos) {
+      have_matmul_or_conv = true;
+    }
   }
+
+#ifndef INTEL_CPU_ONLY
+  // TF runs plugin optimizer twice, we only run AutoShard in 1st pass.
+  bool sharded = false;
+  for (int i = 0; i < graph_def.node_size(); i++) {
+    const auto& node = graph_def.node(i);
+    if (node.name().find("XPURemapper-Replica") != std::string::npos) {
+      sharded = true;
+      break;
+    }
+    if (node.name().find("AutoShard") != std::string::npos) {
+      sharded = true;
+      break;
+    }
+  }
+
+  if (!sharded) {
+    if (config.enable_sharding) {
+      optimized_graph_def.Swap(&graph_def);
+
+      if (ITEX_VLOG_IS_ON(4)) {
+        DumpGraphDefToFile("itex_optimizer_before_sharding", graph_def, "./");
+      }
+      SET_STATUS_IF_ERROR(tf_status, mlir::tfg::RunAutoShard(
+                                         item, graph_def, &optimized_graph_def,
+                                         have_matmul_or_conv));
+      if (ITEX_VLOG_IS_ON(4)) {
+        DumpGraphDefToFile("itex_optimizer_after_sharding", optimized_graph_def,
+                           "./");
+      }
+    }
+  }
+#endif  // INTEL_CPU_ONLY
 
   optimized_graph_def.Swap(&graph_def);
   GenericLayoutOptimizer generic_layout_opt;

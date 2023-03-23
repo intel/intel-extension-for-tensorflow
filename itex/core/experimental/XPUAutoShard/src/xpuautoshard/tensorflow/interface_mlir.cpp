@@ -37,12 +37,6 @@ void AddPreprocessTFGPasses(PassManager* pm, GraphProperties* graph_prop) {
   // TODO(itex): Add passes to preprocess TFG IR with inlining
   // and shape propagation etc.
   OpPassManager& nestedModulePM = pm->nest<mlir::tfg::GraphOp>();
-  // shape inference
-  Status status = graph_prop->InferStatically(true);
-  if (!status.ok()) {
-    ITEX_LOG(WARNING) << "Error infer GraphProperties from GrapplerItem"
-                      << status;
-  }
   nestedModulePM.addPass(
       std::make_unique<mlir::tfg::TypeInference>(graph_prop));
 }

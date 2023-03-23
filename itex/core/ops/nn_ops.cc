@@ -2966,7 +2966,7 @@ void Register_ITEXLayerNormOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "data_format: { 'NHWC', 'NCHW'} = 'NHWC' ");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unchanged_shape_fn);
+                                                    &layer_norm_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ITEXLayerNorm op registration failed: ";
@@ -2994,8 +2994,8 @@ void Register_ITEXLayerNormGradOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "data_format: { 'NHWC', 'NCHW'} = 'NHWC' ");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(
+        op_builder, &itex_layer_norm_grad_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ITEXLayerNormGrad op registration failed: ";

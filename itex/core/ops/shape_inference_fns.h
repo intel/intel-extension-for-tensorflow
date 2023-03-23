@@ -28,6 +28,8 @@ void rnn_forward_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status);
 
 void layer_norm_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status);
 void layer_norm_grad_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status);
+void itex_layer_norm_grad_shape_fn(TF_ShapeInferenceContext* ctx,
+                                   TF_Status* status);
 
 void apply_adam_with_weight_decay_shape_fn(TF_ShapeInferenceContext* ctx,
                                            TF_Status* status);

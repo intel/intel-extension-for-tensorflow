@@ -101,6 +101,22 @@ void layer_norm_grad_shape_fn(TF_ShapeInferenceContext* ctx,
   TF_DeleteShapeHandle(handle);
 }
 
+void itex_layer_norm_grad_shape_fn(TF_ShapeInferenceContext* ctx,
+                                   TF_Status* status) {
+  TF_SetStatus(status, TF_OK, "");
+  TF_ShapeHandle* handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 0, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 0, handle, status);
+  TF_DeleteShapeHandle(handle);
+  handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 2, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 1, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 2, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 3, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 4, handle, status);
+  TF_DeleteShapeHandle(handle);
+}
+
 void apply_adam_with_weight_decay_shape_fn(TF_ShapeInferenceContext* ctx,
                                            TF_Status* status) {
   TF_SetStatus(status, TF_OK, "");

@@ -24,6 +24,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include "itex/core/utils/logging.h"
 #include "xpuautoshard/common/analytic_cost_model.h"
 #include "xpuautoshard/common/device_info.h"
 #include "xpuautoshard/common/hsp_inference/hsp_inference.h"
@@ -466,7 +467,7 @@ bool HeuristicsInitializer::trySingleSplitOnlyForShardOp(Operation* root_op,
           }
           if (!shard_op.getHsp().isInitialized()) {
             auto hsps = annot_->getResultHsps(shard_op.getOperation());
-            assert(hsps[0]->splitSingleOnly());
+            ITEX_CHECK(hsps[0]->splitSingleOnly());
             changed = true;
           }
         }

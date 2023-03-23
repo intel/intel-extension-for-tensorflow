@@ -18,6 +18,7 @@ limitations under the License.
 #include <algorithm>
 #include <memory>
 
+#include "itex/core/utils/logging.h"
 #include "xpuautoshard/common/hsp_exception.h"
 
 namespace as {
@@ -176,7 +177,7 @@ bool inferWithAllInputsSingleSplitOnly(
   if (all_single_split_only && same_device_set) {
     for (auto& output_prop : output_props) {
       if (!output_prop->isInitialized()) {
-        assert(output_prop->splitSingleOnly());
+        ITEX_CHECK(output_prop->splitSingleOnly());
         changed = true;
       }
     }
@@ -248,7 +249,7 @@ bool trySplitSingleOnly(ShardingPropertyRef prop, int64_t dim) {
       }
     } else {
       if (!prop->isSplitAt(dim)) {
-        assert(prop->splitSingleAt(dim));
+        ITEX_CHECK(prop->splitSingleAt(dim));
         changed = true;
       }
     }

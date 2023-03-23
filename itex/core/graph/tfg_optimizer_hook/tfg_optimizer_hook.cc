@@ -20,11 +20,17 @@ limitations under the License.
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
+#include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
+#include "itex/core/graph/config_util.h"
 #include "itex/core/graph/tfg_optimizer_hook/tfg_passes_builder.h"
+#include "itex/core/graph/utils/graph_properties.h"
+#include "itex/core/graph/utils/graph_view.h"
 #include "itex/core/graph/utils/grappler_item.h"
+#include "itex/core/graph/utils/utils.h"
 #include "itex/core/ir/dialect.h"
 #include "itex/core/ir/importexport/graphdef_export.h"
 #include "itex/core/ir/importexport/graphdef_import.h"
@@ -47,10 +53,47 @@ limitations under the License.
 #include "mlir/Transforms/LocationSnapshot.h"  // from @llvm-project
 #include "protos/graph_debug_info.pb.h"
 #include "protos/versions.pb.h"
+#include "xpuautoshard/common/mlir/dialect.h"
+#include "xpuautoshard/tensorflow/interface_mlir.h"
 
 using itex::GraphDef;
 using itex::Status;
 using itex::errors::InvalidArgument;
+
+namespace itex {
+namespace graph {
+
+struct AutoShardContext {
+  explicit AutoShardContext(const GrapplerItem& item, GraphDef* g_def,
+                            Status* status)
+      : nodes_to_preserve(item.NodesToPreserve()),
+        graph_view(g_def, status),
+        graph_properties(item),
+        inferred_graph_properties(false) {}
+
+  std::unordered_set<string> nodes_to_preserve;
+  utils::MutableGraphView graph_view;
+  GraphProperties graph_properties;
+  bool inferred_graph_properties;
+
+  GraphProperties& GetGraphProperties() {
+    if (!inferred_graph_properties) {
+      Status s = graph_properties.InferStatically(
+          /*assume_valid_feeds=*/true,
+          /*aggressive_shape_inference=*/false,
+          /*include_input_tensor_values=*/true,
+          /*include_output_tensor_values=*/true);
+
+      // TODO(itex) Is there any case that InferStatically will return an
+      // unsuccessful state?
+      TF_ABORT_IF_ERROR(s);
+      inferred_graph_properties = true;
+    }
+    return graph_properties;
+  }
+};
+}  // namespace graph
+}  // namespace itex
 
 namespace mlir {
 class PassManager;
@@ -124,20 +167,39 @@ void DumpToFileInDirOrStdout(const std::string& file_name,
   outputFile->keep();
 }
 
-Status RunAutoShard(const GraphDef& graph_def, GraphDef* optimized_graph,
-                    itex::graph::GraphProperties* graph_prop) {
+Status RunAutoShard(const itex::graph::GrapplerItem& item,
+                    const GraphDef& graph_def, GraphDef* optimized_graph,
+                    bool have_matmul_or_conv) {
+  // Use shape inference feature.
+  Status status;
+  GraphDef multable_graph_def = graph_def;
+  auto ctx = itex::graph::AutoShardContext(item, &multable_graph_def, &status);
+  // Infer statically first and only once.
+  ctx.GetGraphProperties();
+
+  // It is assumed here that the GraphDef containing MatMul or Conv OP is
+  // the main part of the model, which can be converted to MLIR normally,
+  // and then AutoShard can be performed.
+  // On the contrary, the GraphDef that does not contain MatMul or Conv OP
+  // is not what we need to pay attention to, and it may not be converted into
+  // MLIR normally, and then AutoShard cannot be performed, so it will return
+  // directly.
+  if (have_matmul_or_conv == false) {
+    *optimized_graph = multable_graph_def;
+    return Status::OK();
+  }
+
   TFGPassPipelineBuilder builder = DefaultGrapplerPipeline;
   unsigned num_tfg_threads = 0;
   std::unique_ptr<Impl> impl =
       std::make_unique<Impl>(std::move(builder), num_tfg_threads);
-  ITEX_VLOG(5) << "TFG Before Graph: \n" << graph_def.DebugString();
+  ITEX_VLOG(5) << "TFG Before Graph: \n" << multable_graph_def.DebugString();
 
-  // TODO(itex): load dialect if needed.
-  // impl->GetContext()->getOrLoadDialect<mlir::hs::HSDialect>();
+  impl->GetContext()->getOrLoadDialect<mlir::hs::HSDialect>();
   // Import the GraphDef to TFG.
   itex::GraphDebugInfo debug_info;
-  auto error_or_module =
-      mlir::tfg::ImportGraphDef(impl->GetContext(), debug_info, graph_def);
+  auto error_or_module = mlir::tfg::ImportGraphDef(
+      impl->GetContext(), debug_info, multable_graph_def);
   if (!error_or_module.ok()) {
     auto status = error_or_module.status();
     itex::errors::AppendToMessage(
@@ -151,12 +213,85 @@ Status RunAutoShard(const GraphDef& graph_def, GraphDef* optimized_graph,
   // Run the pipeline on the graph.
   if (failed(impl->RunPipeline(*module_ref)))
     return InvalidArgument("MLIR Graph Optimizer failed");
+  auto module = module_ref.get();
+  {
+    itex::int64 itex_num_cpus = 0;
+    itex::int64 itex_num_gpus = 0;
+    itex::int64 itex_cpu_bs = -1;
+    itex::int64 itex_gpu_bs = -1;
+    itex::int64 itex_cpu_steps = 1;
+    itex::int64 itex_gpu_steps = 1;
 
-  // TODO(itex): Add autoshard integration when it is ready.
+    ITEX_CHECK_OK(
+        itex::ReadInt64FromEnvVar("ITEX_XPU_NUM_CPUS", 0, &itex_num_cpus));
+    ITEX_CHECK_OK(
+        itex::ReadInt64FromEnvVar("ITEX_XPU_NUM_GPUS", 0, &itex_num_gpus));
+    ITEX_CHECK_OK(
+        itex::ReadInt64FromEnvVar("ITEX_XPU_CPU_BS", -1, &itex_cpu_bs));
+    ITEX_CHECK_OK(
+        itex::ReadInt64FromEnvVar("ITEX_XPU_GPU_BS", -1, &itex_gpu_bs));
+    ITEX_CHECK_OK(
+        itex::ReadInt64FromEnvVar("ITEX_XPU_CPU_STEPS", 1, &itex_cpu_steps));
+    ITEX_CHECK_OK(
+        itex::ReadInt64FromEnvVar("ITEX_XPU_GPU_STEPS", 1, &itex_gpu_steps));
+
+    auto configs = itex::itex_get_config().graph_options().sharding_config();
+    if (configs.auto_mode())
+      ITEX_LOG(WARNING) << "auto_mode is not supported in sharding_config";
+    for (auto cfg : configs.devices()) {
+      if (absl::AsciiStrToLower(cfg.device_type().c_str()) == "GPU") {
+        itex_num_gpus = cfg.device_num();
+        itex_gpu_bs = cfg.batch_size();
+        itex_gpu_steps = cfg.stage_num();
+      } else if (absl::AsciiStrToLower(cfg.device_type().c_str()) == "CPU") {
+        itex_num_cpus = cfg.device_num();
+        itex_cpu_bs = cfg.batch_size();
+        itex_cpu_steps = cfg.stage_num();
+      } else {
+        ITEX_LOG(WARNING) << "Only CPU and GPU is supported in ShardingConfig";
+      }
+    }
+
+    ITEX_VLOG(1) << "AutoShard pass, itex_num_cpus: " << itex_num_cpus;
+    ITEX_VLOG(1) << "AutoShard pass, itex_num_gpus: " << itex_num_gpus;
+    ITEX_VLOG(1) << "AutoShard pass, itex_cpu_bs: " << itex_cpu_bs;
+    ITEX_VLOG(1) << "AutoShard pass, itex_gpu_bs: " << itex_gpu_bs;
+    ITEX_VLOG(1) << "AutoShard pass, itex_cpu_steps: " << itex_cpu_steps;
+    ITEX_VLOG(1) << "AutoShard pass, itex_gpu_steps: " << itex_gpu_steps;
+
+    float gpu_score = itex_gpu_bs * itex_gpu_steps;
+    float cpu_score = itex_cpu_bs * itex_cpu_steps;
+
+    as::DeviceInfo device_info(/*add_cpu_host=*/false);
+    for (int i = 0; i < itex_num_gpus; i++) {
+      as::Device gpu(i + 1, "XPU:" + std::to_string(i), gpu_score);
+      gpu.setNumStages(itex_gpu_steps);
+      device_info.addDevice(gpu);
+    }
+    for (int i = 0; i < itex_num_cpus; i++) {
+      as::Device cpu(i + itex_num_gpus + 1, "CPU:" + std::to_string(i),
+                     cpu_score);
+      cpu.setNumStages(itex_cpu_steps);
+      device_info.addDevice(cpu);
+    }
+
+    bool model_prune = false;
+    ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("MODEL_PRUNE", false, &model_prune));
+    as::ShardingConfig config;
+    config.setStrategyKind(as::StrategyKind::HEURISTIC);
+    config.setUseMultiStageJoin(true);
+    config.getHeuristicsConfig().setMultiStageEnabled((itex_gpu_steps != 1) ||
+                                                      (itex_cpu_steps != 1));
+    config.setNeedDeadNodePrune(model_prune);
+    as::tensorflow::auto_sharding_pass_mlir(impl->GetContext(), &module, config,
+                                            device_info,
+                                            &(ctx.graph_properties));
+    ITEX_LOG(INFO) << "Run AutoShard pass successfully";
+  }
 
   // Export the TFG module to GraphDef.
   GraphDef graphdef;
-  *graphdef.mutable_library() = graph_def.library();
+  *graphdef.mutable_library() = multable_graph_def.library();
   TF_RETURN_WITH_CONTEXT_IF_ERROR(
       mlir::tfg::ConvertToGraphDef(*module_ref, &graphdef),
       "when exporting MLIR module to GraphDef in GrapplerHook");

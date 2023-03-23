@@ -380,8 +380,7 @@ bool checkGraphShapeInferenceException(mlir::tfg::GraphOp* graph_op) {
   // implemented.
   // But there are some OP collections whose shapes cannot be deduced by
   // tensorflow, but they do not affect autoshard, so they are not abnormal.
-  std::set<std::string> exclude_ops = {"tfg.FusedBatchNormV3",
-                                       "tfg.LayerNormGrad", "tfg.LayerNorm"};
+  std::set<std::string> exclude_ops = {"tfg.FusedBatchNormV3"};
   for (Block& block : graph_op->getRegion().getBlocks()) {
     for (Operation& op : block.getOperations()) {
       // Skip some special OPs.

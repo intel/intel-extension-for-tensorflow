@@ -1632,6 +1632,7 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
   TF_ABORT_IF_ERROR(
       ctx.graph_properties.GetInputProperties(addv2_node_def->name(), &props));
 
+  if (props.size() < 2) return false;
   const TensorShapeProto& left_shape = props[0].shape();
   const TensorShapeProto& right_shape = props[1].shape();
 
@@ -2380,6 +2381,7 @@ bool FindRandomWithComparisonAndCast(const RemapperContext& ctx, int node_index,
   TF_ABORT_IF_ERROR(
       ctx.graph_properties.GetInputProperties(node_def->name(), &props));
 
+  if (props.size() != 2) return false;
   const auto HasRandom = [&](int direction) -> bool {
     const auto& regular_fanin = node_view->GetRegularFanin(direction);
     const auto* random = regular_fanin.node_view();
@@ -2721,6 +2723,7 @@ bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
     TF_ABORT_IF_ERROR(
         ctx.graph_properties.GetInputProperties(select_ref->name(), &props));
 
+    if (props.size() < 3) return false;
     // Make sure the condition and t has same shape.
     bool same_input =
         ShapesSymbolicallyEqual(props[0].shape(), props[1].shape());

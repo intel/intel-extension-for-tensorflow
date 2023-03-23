@@ -53,6 +53,7 @@ def HSDialect : Dialect {
     }
   }];
   
+  let useDefaultAttributePrinterParser = 1;
   let cppNamespace = "::mlir::hs";
 }
 
