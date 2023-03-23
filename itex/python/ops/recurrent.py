@@ -590,7 +590,7 @@ def gpu_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
         rnn_mode='lstm',
         var_seq_length=True,
         is_training=training)
-    # TODO: below reshape operation is added as tensorflow shape inference c api bug, maybe remove this once rebase tensorflow>=2.10.0
+    # TODO: below reshape operation is added as tensorflow shape inference c api bug, maybe remove this once rebase tensorflow==2.12.0
     outputs = array_ops.reshape(outputs,
                                 [array_ops.shape(inputs)[0], \
                                 array_ops.shape(inputs)[1], \
@@ -622,7 +622,7 @@ def gpu_lstm(cell, inputs, mask, training, initial_state, sequence_lengths,
         sequence_lengths=0,
         rnn_mode='lstm',
         is_training=training)
-    # TODO: below reshape operation is added as tensorflow shape inference c api bug, maybe remove this once rebase tensorflow>=2.10.0
+    # TODO: below reshape operation is added as tensorflow shape inference c api bug, maybe remove this once rebase tensorflow==2.12.0
     outputs = array_ops.reshape(outputs,
                                 [array_ops.shape(inputs)[0], \
                                 array_ops.shape(inputs)[1], \

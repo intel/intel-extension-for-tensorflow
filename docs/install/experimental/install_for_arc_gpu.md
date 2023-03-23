@@ -25,8 +25,8 @@ Hardware Platforms with Experimental Only Support:
 - For Ubuntu Linux 22.04 within WSL2:
     - Linux Runtime Libraries: Intel® Arc™ GPU Drivers [540](https://dgpu-docs.intel.com/releases/stable_540_20221205.html) (installation instructions below)
     - Intel® oneAPI Base Toolkit 2023.0 (installation instructions below)
-    - TensorFlow 2.11.0 or 2.10.0
-    - Python 3.7-3.10
+    - TensorFlow 2.12.0
+    - Python 3.8-3.11
     - pip 19.0 or later (requires manylinux2014 support)
 
 ### Native Linux Running Directly on Hardware
@@ -36,8 +36,8 @@ Hardware Platforms with Experimental Only Support:
     - Intel® Arc™ GPU Drivers [540](https://dgpu-docs.intel.com/releases/stable_540_20221205.html)
 - Intel® oneAPI Base Toolkit 2023.0 (installation instructions below)
 
-- TensorFlow 2.11.0 or 2.10.0
-- Python 3.7-3.10
+- TensorFlow 2.12.0
+- Python 3.8-3.11
 - pip 19.0 or later (requires manylinux2014 support)
 
 ## Step-By-Step Instructions
@@ -140,7 +140,7 @@ The following steps can be used to install the TensorFlow framework and other ne
 
 The Python development and virtual environment setup recommendation by TensorFlow is to isolate package installation from the system.
 
-The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be >= 2.10.0.
+The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.12.0.
 
 * ##### Virtual environment install 
 
@@ -153,14 +153,14 @@ The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version
 
     To install in virtual environment, you can run 
     ```bash
-    (tf)$ pip install 'tensorflow>=2.10.0'
+    (tf)$ pip install 'tensorflow==2.12.0'
     ```
 
 * ##### System environment install 
 
     If want to system install in $HOME, please append `--user` to the commands.
     ```bash
-    $ pip install --user 'tensorflow>=2.10.0'
+    $ pip install --user 'tensorflow==2.12.0'
     ```
     And the following system environment install for Intel® Extension for TensorFlow* will use the same practice. 
 

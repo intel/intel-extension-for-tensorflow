@@ -95,7 +95,7 @@ If you have no such CPU support Intel® Deep Learning Boost or Intel® Advanced 
 
 ## Running Environment
 
-1. Install Python 3.7~3.10 supported by Intel® Extension for Tensorflow*.
+1. Install Python 3.8~3.11 supported by Intel® Extension for Tensorflow*.
 
 2. Create the running environment **env_itex**.
 

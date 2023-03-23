@@ -63,7 +63,7 @@ if '--project_name' in sys.argv:
   sys.argv.remove('--project_name')
   sys.argv.pop(project_name_idx)
 REQUIRED_PACKAGES.append('wheel')
-REQUIRED_PACKAGES.append('tensorflow==2.12.0rc1')
+REQUIRED_PACKAGES.append('tensorflow>=2.12')
 REQUIRED_PACKAGES.append('numpy<1.24')
 CONSOLE_SCRIPTS = []
 
@@ -128,7 +128,7 @@ setup(
     exclude_package_data={
         'intel_extension_for_tensorflow': ['tools']
     },
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     zip_safe=False,
     distclass=BinaryDistribution,
     extras_require={
@@ -142,10 +142,10 @@ setup(
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',

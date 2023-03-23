@@ -32,10 +32,10 @@ Activate the environment by the following commands.
 ```
 conda activate itex
 ```
-Install stock tensorflow 2.11.0 and Intel® Extension for TensorFlow* GPU wheels.
+Install stock tensorflow 2.12.0 and Intel® Extension for TensorFlow* GPU wheels.
 ```
 pip install --upgrade pip
-pip install tensorflow==2.11.0
+pip install tensorflow==2.12.0
 pip install intel-extension-for-tensorflow[gpu]
 ```
 Check the environment for GPU:

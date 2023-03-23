@@ -39,7 +39,7 @@ Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_
 |-|-|-|-|
 |Intel GPU driver||Y|[Install Intel GPU driver](docs/install/install_for_gpu.md#install-gpu-drivers)|
 |Intel® oneAPI Base Toolkit||Y|[Install Intel® oneAPI Base Toolkit](docs/install/install_for_gpu.md#install-oneapi-base-toolkit-packages)|
-|TensorFlow|Y|Y|[Install TensorFlow 2.11.0 or 2.10.0](https://www.tensorflow.org/install)|
+|TensorFlow|Y|Y|[Install TensorFlow 2.12.0](https://www.tensorflow.org/install)|
 
 ### Installation Channel:
 Intel® Extension for TensorFlow* can be installed through the following channels:
@@ -50,7 +50,7 @@ Intel® Extension for TensorFlow* can be installed through the following channel
 
 ### Install for GPU
 ```
-pip install tensorflow==2.11.0
+pip install tensorflow==2.12.0
 pip install --upgrade intel-extension-for-tensorflow[gpu]
 ```
 
@@ -64,7 +64,7 @@ Please refer to [GPU installation](docs/install/install_for_gpu.md) for details.
 
 ### Install for CPU [Experimental]
 ```
-pip install tensorflow==2.11.0
+pip install tensorflow==2.12.0
 pip install --upgrade intel-extension-for-tensorflow[cpu]
 ```
 

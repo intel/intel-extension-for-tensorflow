@@ -13,7 +13,7 @@ Verified Hardware Platforms:
 
 ### Python
 
-Python 3.7-3.10
+Python 3.8-3.11
 
 ### Intel GPU Driver
 
@@ -26,7 +26,7 @@ Note: Please make sure to [install developer run-time packages](https://dgpu-doc
 
 ### TensorFlow
 
-Install TensorFlow 2.11 or 2.10, and refer to [Install TensorFlow](https://www.tensorflow.org/install).
+Install TensorFlow 2.12, and refer to [Install TensorFlow](https://www.tensorflow.org/install).
 
 Check TensorFlow version:
 ```
