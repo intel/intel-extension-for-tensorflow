@@ -5,7 +5,7 @@ Welcome to Intel ® Extension for TensorFlow* documentation!
    :hidden:
    :maxdepth: 2
 
-   __get_started.md
+   get_started.md
    docs/guide/infrastructure.md
    docs/guide/features.rst
    docs/install/installation_guide.rst
