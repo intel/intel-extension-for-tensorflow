@@ -313,12 +313,14 @@ StatusOr<llvm::Value*> GpuElementalIrEmitter::EmitTanh(PrimitiveType prim_type,
                 value->getType(), "tanh");
 }
 
-StatusOr<llvm::Value*> GpuElementalIrEmitter::EmitComplexAbs(
-    PrimitiveType prim_type, llvm::Value* value) {
-  return EmitDeviceMathCall(TargetDeviceFunctionID::kHypot,
-                            {EmitExtractReal(value), EmitExtractImag(value)},
-                            {prim_type, prim_type}, prim_type);
-}
+// TODO(itex): hypot has accuracy issue on PVC. Fallback to default
+// implementation.
+// StatusOr<llvm::Value*> GpuElementalIrEmitter::EmitComplexAbs(
+//     PrimitiveType prim_type, llvm::Value* value) {
+//   return EmitDeviceMathCall(TargetDeviceFunctionID::kHypot,
+//                             {EmitExtractReal(value), EmitExtractImag(value)},
+//                             {prim_type, prim_type}, prim_type);
+// }
 
 llvm::Value* GpuElementalIrEmitter::EmitThreadId() {
   llvm::Value* block_id = IntCast(

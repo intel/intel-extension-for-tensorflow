@@ -93,8 +93,8 @@ class GpuElementalIrEmitter : public ElementalIrEmitter {
   StatusOr<llvm::Value*> EmitTanh(PrimitiveType prim_type,
                                   llvm::Value* value) override;
 
-  StatusOr<llvm::Value*> EmitComplexAbs(PrimitiveType prim_type,
-                                        llvm::Value* value) override;
+  // StatusOr<llvm::Value*> EmitComplexAbs(PrimitiveType prim_type,
+  //                                       llvm::Value* value) override;
 
   StatusOr<std::vector<llvm::Value*>> EmitThreadLocalCall(
       const HloComputation& callee, absl::Span<llvm::Value* const> parameters,
