@@ -23,14 +23,14 @@ limitations under the License.
 
 namespace itex {
 
-#define REGISTER_RANDOM_KERNEL(TYPE)      \
-  REGISTER_KERNEL_BUILDER(                \
-      Name("_ITEXRandomUniform")          \
-          .Device(DEVICE_CPU)             \
-          .TypeConstraint<int32>("T")     \
-          .TypeConstraint<TYPE>("dtype"), \
-      PCGRandomOp<CPUDevice,              \
-                  random::UniformDistribution<random::PCGRandom, TYPE>>);
+#define REGISTER_RANDOM_KERNEL(TYPE)                         \
+  REGISTER_KERNEL_BUILDER(                                   \
+      Name("_ITEXRandomUniform")                             \
+          .Device(DEVICE_CPU)                                \
+          .TypeConstraint<int32>("T")                        \
+          .TypeConstraint<TYPE>("dtype"),                    \
+      PhiloxRandomOp<CPUDevice, random::UniformDistribution< \
+                                    random::PhiloxRandom, TYPE>>);
 
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_RANDOM_KERNEL);
 #undef REGISTER_RANDOM_KERNEL
