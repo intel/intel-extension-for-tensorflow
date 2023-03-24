@@ -19,7 +19,14 @@ For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [I
 - Python 3.7-3.10
 - pip 19.0 or later (requires manylinux2014 support)
 
-  
+
+## Compatibility Table
+
+| Intel ® Extension for TensorFlow*  | Stock Tensorflow | OS  | oneAPI toolkit | Driver |
+| ------- | ----------- | ----- | ------- | ------- |
+| v1.1.0  | 2.10 & 2.11 | Ubuntu 22.04 & RHEL 8.6 & SLES 15SP3 & SLES 15SP4 | 2023.0 | 540 |
+| v1.0.0  | 2.10        | Ubuntu 20.04 & RHEL 8.5 | 2022.3  | 419.4 |
+
 ## Install GPU Drivers
 
 |Release|OS|Intel GPU|Install Intel GPU Driver|
