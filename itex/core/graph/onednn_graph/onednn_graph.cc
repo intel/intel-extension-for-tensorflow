@@ -2272,6 +2272,24 @@ Status FuseFwPartitionWithLLGA(
     return Status::OK();
   }
 
+  bool find_all_binary = true;
+  for (size_t l_index = 0; l_index < nodes_no; l_index++) {
+    auto node_index = p.get_ops()[l_index];
+    const auto* f_node_view = ctx->graph_view.GetNode(node_index);
+    const auto* f_node_def = f_node_view->node();
+
+    if (!IsAnyBinary(*f_node_def)) {
+      find_all_binary = false;
+      break;
+    }
+  }
+
+  if (find_all_binary) {
+    ITEX_VLOG(2) << "oneDNN Graph partition doesn't contain non-binary op, "
+                    "won't rewrite this partition to ";
+    return Status::OK();
+  }
+
   if (nodes_no == 0) return Status::OK();
   ITEX_VLOG(2) << "NUMBER OF OPS IN PARTITION " << p.get_ops_num();
   for (size_t l_index = 0; l_index < nodes_no; l_index++) {
