@@ -222,28 +222,31 @@ Status RunAutoShard(const itex::graph::GrapplerItem& item,
     itex::int64 itex_cpu_steps = 1;
     itex::int64 itex_gpu_steps = 1;
 
-    ITEX_CHECK_OK(
-        itex::ReadInt64FromEnvVar("ITEX_XPU_NUM_CPUS", 0, &itex_num_cpus));
-    ITEX_CHECK_OK(
-        itex::ReadInt64FromEnvVar("ITEX_XPU_NUM_GPUS", 0, &itex_num_gpus));
-    ITEX_CHECK_OK(
-        itex::ReadInt64FromEnvVar("ITEX_XPU_CPU_BS", -1, &itex_cpu_bs));
-    ITEX_CHECK_OK(
-        itex::ReadInt64FromEnvVar("ITEX_XPU_GPU_BS", -1, &itex_gpu_bs));
-    ITEX_CHECK_OK(
-        itex::ReadInt64FromEnvVar("ITEX_XPU_CPU_STEPS", 1, &itex_cpu_steps));
-    ITEX_CHECK_OK(
-        itex::ReadInt64FromEnvVar("ITEX_XPU_GPU_STEPS", 1, &itex_gpu_steps));
-
     auto configs = itex::itex_get_config().graph_options().sharding_config();
     if (configs.auto_mode())
       ITEX_LOG(WARNING) << "auto_mode is not supported in sharding_config";
+
+    if (configs.devices().size() == 0) {
+      ITEX_CHECK_OK(itex::ReadInt64FromEnvVar("ITEX_SHARDING_CPU_DEVICE_NUM", 0,
+                                              &itex_num_cpus));
+      ITEX_CHECK_OK(itex::ReadInt64FromEnvVar("ITEX_SHARDING_GPU_DEVICE_NUM", 0,
+                                              &itex_num_gpus));
+      ITEX_CHECK_OK(
+          itex::ReadInt64FromEnvVar("ITEX_SHARDING_CPU_BS", -1, &itex_cpu_bs));
+      ITEX_CHECK_OK(
+          itex::ReadInt64FromEnvVar("ITEX_SHARDING_GPU_BS", -1, &itex_gpu_bs));
+      ITEX_CHECK_OK(itex::ReadInt64FromEnvVar("ITEX_SHARDING_CPU_STAGE_NUM", 1,
+                                              &itex_cpu_steps));
+      ITEX_CHECK_OK(itex::ReadInt64FromEnvVar("ITEX_SHARDING_GPU_STAGE_NUM", 1,
+                                              &itex_gpu_steps));
+    }
+
     for (auto cfg : configs.devices()) {
-      if (absl::AsciiStrToLower(cfg.device_type().c_str()) == "GPU") {
+      if (absl::AsciiStrToLower(cfg.device_type().c_str()) == "gpu") {
         itex_num_gpus = cfg.device_num();
         itex_gpu_bs = cfg.batch_size();
         itex_gpu_steps = cfg.stage_num();
-      } else if (absl::AsciiStrToLower(cfg.device_type().c_str()) == "CPU") {
+      } else if (absl::AsciiStrToLower(cfg.device_type().c_str()) == "cpu") {
         itex_num_cpus = cfg.device_num();
         itex_cpu_bs = cfg.batch_size();
         itex_cpu_steps = cfg.stage_num();
