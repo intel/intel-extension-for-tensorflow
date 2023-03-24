@@ -906,7 +906,9 @@ void LaunchColReduction(OpKernelContext* context, InputT* in_data,
 
 template <typename T>
 struct MaxTupleReducer {
-  static Tuple<T> init() { return Tuple<T>(std::numeric_limits<T>::min(), 0); }
+  static Tuple<T> init() {
+    return Tuple<T>(std::numeric_limits<T>::lowest(), 0);
+  }
 
   Tuple<T> operator()(const Tuple<T>& x, const Tuple<T>& y) const {
     if (x.value > y.value) {
@@ -928,7 +930,7 @@ struct MaxTupleReducer {
 template <>
 struct MaxTupleReducer<Eigen::half> {
   static Tuple<float> init() {
-    return Tuple<float>(std::numeric_limits<float>::min(), 0);
+    return Tuple<float>(std::numeric_limits<float>::lowest(), 0);
   }
 
   Tuple<float> operator()(const Tuple<float>& x, const Tuple<float>& y) const {
@@ -951,7 +953,7 @@ struct MaxTupleReducer<Eigen::half> {
 template <>
 struct MaxTupleReducer<Eigen::bfloat16> {
   static Tuple<float> init() {
-    return Tuple<float>(std::numeric_limits<float>::min(), 0);
+    return Tuple<float>(std::numeric_limits<float>::lowest(), 0);
   }
 
   Tuple<float> operator()(const Tuple<float>& x, const Tuple<float>& y) const {
