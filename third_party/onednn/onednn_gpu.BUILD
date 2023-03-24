@@ -106,7 +106,7 @@ filegroup(
             "src/cpu/rv64/**",
             "src/gpu/nvidia/*",
             "src/gpu/amd/*",
-            "src/gpu/sycl/ref_binary.cpp",
+            "src/gpu/sycl/ref*",
             "src/graph/**",
         ],
     ) + [
