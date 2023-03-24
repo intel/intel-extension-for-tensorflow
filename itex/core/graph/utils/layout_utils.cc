@@ -50,14 +50,6 @@ bool RewriteForGPU(const utils::MutableNodeView& node_view) {
   return NodeIsOnGpu(node_def) ? true : false;
 }
 
-bool RewriteFusedBatchNormV3(const utils::MutableNodeView& node_view) {
-  const NodeDef& node_def = *(node_view.node());
-  string data_format;
-  ITEX_CHECK_OK(GetNodeAttr(node_def, "data_format", &data_format));
-
-  return true;
-}
-
 bool RewriteLayerNorm(const utils::MutableNodeView& node_view) {
   const NodeDef& node_def = *(node_view.node());
   string data_format;
@@ -75,8 +67,6 @@ bool RewriteLayerNormGrad(const utils::MutableNodeView& node_view) {
 }
 
 bool RewriteFusedBatchNormEx(const utils::MutableNodeView& node_view) {
-  if (!RewriteFusedBatchNormV3(node_view)) return false;
-
   const NodeDef& node_def = *(node_view.node());
   int num_side_inputs;
   ITEX_CHECK_OK(GetNodeAttr(node_def, "num_side_inputs", &num_side_inputs));
@@ -90,14 +80,7 @@ bool RewriteFusedBatchNormEx(const utils::MutableNodeView& node_view) {
   return true;
 }
 
-bool RewriteFusedBatchNormGradV3(const utils::MutableNodeView& node_view) {
-  if (!RewriteFusedBatchNormV3(node_view)) return false;
-  if (!RewriteBackwardDataType(node_view)) return false;
-  return true;
-}
-
 bool RewriteFusedBatchNormExGrad(const utils::MutableNodeView& node_view) {
-  if (!RewriteFusedBatchNormV3(node_view)) return false;
   if (!RewriteBackwardDataType(node_view)) return false;
 
   const NodeDef& node_def = *(node_view.node());
@@ -187,14 +170,16 @@ bool RewritePool(const utils::MutableNodeView& node_view) {
 }
 
 bool RewriteMaxPoolGrad(const utils::MutableNodeView& node_view) {
-  // Input1 of MaxPoolGrad should be _OneDnnMaxPool or MaxPool which can be
-  // rewrite
+  // Input1 of MaxPoolGrad should be _OneDnnMaxPool or _ITEXMaxPool
   const auto& regular_fanin_1 = node_view.GetRegularFanin(1);
   const auto* maxpool_node_view = regular_fanin_1.node_view();
-  if (!IsAnyMaxPool(*maxpool_node_view->node())) return false;
-  if (!RewritePool(*maxpool_node_view)) return false;
+  string op_name = maxpool_node_view->node()->op();
+  if (!(op_name.substr(0, 7) == "_OneDnn" || op_name.substr(0, 5) == "_ITEX"))
+    return false;
+  if (op_name.find("MaxPool") == std::string::npos) return false;
 
-  // Output0 of _OneDnnMaxPool/MaxPool should be MaxPoolGrad.
+  // Output0 of _OneDnnMaxPool/_ITEXMaxPool should be a tensor referenced by
+  // MaxPoolGrad.
   for (auto fanout : maxpool_node_view->GetRegularFanout(0)) {
     if (fanout.node_view()->node_index() == node_view.node_index()) return true;
   }

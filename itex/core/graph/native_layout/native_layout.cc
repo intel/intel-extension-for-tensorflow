@@ -74,7 +74,7 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"FusedBatchNormGradV2", "_ITEXFusedBatchNormGradV2", CopyAttrsAll,
        RewriteBackwardDataType},
       {"FusedBatchNormGradV3", "_ITEXFusedBatchNormGradV3", CopyAttrsAll,
-       RewriteFusedBatchNormGradV3},
+       RewriteBackwardDataType},
       {"FusedBatchNormV2", "_ITEXFusedBatchNormV2", CopyAttrsAll,
        AlwaysRewrite},
       {"FusedBatchNormV3", "_ITEXFusedBatchNormV3", CopyAttrsAll,
@@ -423,7 +423,7 @@ Status RunNativeLayout(const char* device_name, const GrapplerItem& item,
 
   ITEX_VLOG(1) << "NativeLayoutPass: Start to rewrite nodes.";
 
-  for (int node_index = num_nodes - 1; node_index >= 0; --node_index) {
+  for (int node_index = 0; node_index < num_nodes; ++node_index) {
     const auto* node_view = ctx.graph_view.GetNode(node_index);
     const auto* node_def = node_view->node();
 

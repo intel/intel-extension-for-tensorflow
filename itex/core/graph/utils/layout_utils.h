@@ -50,9 +50,6 @@ bool RewriteBackwardDataType(const utils::MutableNodeView& node_view);
 // Only rewrite GPU nodes.
 bool RewriteForGPU(const utils::MutableNodeView& node_view);
 
-// FusedBatchNormV3 is rewritten when input is 4D tensor
-bool RewriteFusedBatchNormV3(const utils::MutableNodeView& node_view);
-
 bool RewriteLayerNorm(const utils::MutableNodeView& node_view);
 
 bool RewriteLayerNormGrad(const utils::MutableNodeView& node_view);
@@ -60,9 +57,6 @@ bool RewriteLayerNormGrad(const utils::MutableNodeView& node_view);
 // FusedBatchNormEx is rewritten when input is 4D tensor and only one ReLU
 // side_input
 bool RewriteFusedBatchNormEx(const utils::MutableNodeView& node_view);
-
-// FusedBatchNormV3 is rewritten when input is 4D tensor
-bool RewriteFusedBatchNormGradV3(const utils::MutableNodeView& node_view);
 
 // FusedBatchNormExGrad is rewritten when input is 4D tensor and only one
 // ReluGrad side_input
