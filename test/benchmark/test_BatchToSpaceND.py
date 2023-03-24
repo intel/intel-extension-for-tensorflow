@@ -29,24 +29,27 @@ except ImportError:
 ITERATION = 5
 
 class BatchToSpacdNDTest(test.TestCase):
-  def _test_impl(self, input_size, block_size, crop_size, dtype):
+  def _test_impl(self, input_size, block, crop, dtype):
     input_array = np.random.normal(size=input_size)
     input_tensor = constant_op.constant(input_array, dtype=dtype)
-    block_array = np.ones(block_size)
-    block_tensor = constant_op.constant(block_array, dtype=dtypes.int32)
-    crop_array = np.array([[1, input_size[ind+1]-1]
-                            for ind in range(0, crop_size[0])])
-    crop_tensor = constant_op.constant(crop_array, dtype=dtypes.int32)
     flush_cache()
-    _ = array_ops.batch_to_space_nd(input_tensor, block_tensor,
-                                    crop_tensor)
+    _ = array_ops.batch_to_space_nd(input_tensor, block, crop)
 
   @add_profiling
   @multi_run(ITERATION)
   def testBatchToSpaceND(self):
     for dtype in FLOAT_COMPUTE_TYPE:
-      self._test_impl([64,252,1,128], [2], [2,2], dtype)
-      self._test_impl([64,1007,1,128], [2], [2,2], dtype)
+      self._test_impl([64,1007,1,128], [2,1], [[0,0],[0,0]], dtype)
+      self._test_impl([64,237,1,256], [2,1], [[1,0],[0,0]], dtype)
+      self._test_impl([64,59,1,256], [2,1], [[0,0],[0,0]], dtype)
+      self._test_impl([64,15,1,128], [2,1], [[1,0],[0,0]], dtype)
+      self._test_impl([64,15,1,64], [2,1], [[1,0],[0,0]], dtype)
+      self._test_impl([64,16,1,128], [2,1], [[2,1],[0,0]], dtype)
+      self._test_impl([64,18,1,128], [2,1], [[4,3],[0,0]], dtype)
+      self._test_impl([64,18,1,256], [2,1], [[4,3],[0,0]], dtype)
+      self._test_impl([64,90,1,256], [2,1], [[31,31],[0,0]], dtype)
+      self._test_impl([64,252,1,128], [2,1], [[1,0],[0,0]], dtype)
+      self._test_impl([64,1022,1,128], [2,1], [[0,0],[0,0]], dtype)
 
 if __name__ == '__main__':
   test.main()

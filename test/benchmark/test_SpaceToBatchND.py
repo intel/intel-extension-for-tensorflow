@@ -31,21 +31,27 @@ except ImportError:
 ITERATION = 5
 
 class SpaceToBatchNDTest(test.TestCase):
-    def _test_impl(self, size, dtype):
+    def _test_impl(self, size, block_shape, paddings, dtype):
         in_array = np.random.normal(size=size)
         in_array = constant_op.constant(in_array, dtype=dtype)
-        block_shape = [2,2]
-        paddings = constant_op.constant(0, shape=[2, 2], dtype=dtypes.int32)
         flush_cache()
         out_gpu = tf.raw_ops.SpaceToBatchND(input=in_array, block_shape=block_shape, paddings=paddings, name=None)
+    
     @add_profiling
     @multi_run(ITERATION)
     def testSpaceToBatchND(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            # test tailed_no_tailed_size
-            for in_size in broadcast_binary_size_x:
-                self._test_impl(in_size, dtype)
-            self._test_impl([16,128,170,128], dtype)
+            self._test_impl([32,2044,1,64], [2,1], [[0,0],[0,0]],dtype)
+            self._test_impl([32,503,1,128], [2,1], [[1,0],[0,0]],dtype)
+            self._test_impl([32,118,1,256], [2,1], [[31,31],[0,0]],dtype)
+            self._test_impl([32,29,1,256], [2,1], [[4,3],[0,0]],dtype)
+            self._test_impl([32,29,1,128], [2,1], [[4,3],[0,0]],dtype)
+            self._test_impl([32,29,1,128], [2,1], [[2,1],[0,0]],dtype)
+            self._test_impl([32,29,1,64], [2,1], [[1,0],[0,0]],dtype)
+            self._test_impl([32,29,1,128], [2,1], [[1,0],[0,0]],dtype)
+            self._test_impl([32,118,1,256], [2,1], [[0,0],[0,0]],dtype)
+            self._test_impl([32,473,1,256], [2,1], [[1,0],[0,0]],dtype)
+            self._test_impl([32,2014,1,256], [2,1], [[0,0],[0,0]],dtype)
 
 if __name__ == '__main__':
     test.main()
