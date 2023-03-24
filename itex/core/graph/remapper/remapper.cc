@@ -2984,7 +2984,7 @@ bool FindResNeXtGroupConv2DBlock(const RemapperContext& ctx, int node_index,
                                  GroupConv2DBlock* matched) {
   auto* concat_node_view = ctx.graph_view.GetNode(node_index);
   auto* concat_node_def = concat_node_view->node();
-  if (!IsConcat(*concat_node_def)) return false;
+  if (!IsConcatV2(*concat_node_def)) return false;
   if (!HasDataType(concat_node_def, DT_FLOAT) &&
       !HasDataType(concat_node_def, DT_BFLOAT16) &&
       !(HasDataType(concat_node_def, DT_HALF)))

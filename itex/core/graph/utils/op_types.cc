@@ -190,6 +190,8 @@ bool IsConcat(const NodeDef& node) {
   return node.op() == "Concat" || node.op() == "ConcatV2";
 }
 
+bool IsConcatV2(const NodeDef& node) { return node.op() == "ConcatV2"; }
+
 bool IsConcatOffset(const NodeDef& node) { return node.op() == "ConcatOffset"; }
 
 bool IsConstant(const NodeDef& node) { return node.op() == "Const"; }
