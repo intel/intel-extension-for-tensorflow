@@ -22,6 +22,7 @@ limitations under the License.
 
 #include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/utils/bounds_check.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/types.h"
@@ -144,21 +145,24 @@ inline Tidx DivUp(Tidx a, Tidx b) {
 }
 
 constexpr auto GLOBAL_SPACE = sycl::access::address_space::global_space;
-// TODO(itex): ElemSize is sensitive to inputs, how to make performance more
-// stable?
-constexpr int ElemSize = 4;
 
-template <typename T, typename Tsum, typename Tindices, bool ADJ_A, bool ADJ_B>
+template <typename T, typename Tsum, typename Tindices, bool ADJ_A, bool ADJ_B,
+          int ElemSize = 1, bool IsColDivisible = false>
 struct SparseTensorDenseMatmulKernel {
-  SparseTensorDenseMatmulKernel(int num_work_items, int out_cols, int out_rows,
-                                int b_cols, int n, int total_size,
-                                Tindices* a_idx_ptr, const T* b_ptr,
-                                T* a_val_ptr, Tsum* out_ptr)
-      : num_work_items(num_work_items),
-        out_cols(out_cols),
+  using VecOrScalar = typename std::conditional<
+      !IsColDivisible, AlignedVector<T, 1>,
+      typename BaseTypeVectorize<T, ElemSize>::type>::type;
+  using Tscalar = typename std::conditional<
+      !IsColDivisible, T,
+      typename BaseTypeVectorize<T, ElemSize>::scalar>::type;
+  SparseTensorDenseMatmulKernel(int out_cols, int out_rows, int b_cols, int n,
+                                int nnz, int total_size, Tindices* a_idx_ptr,
+                                const T* b_ptr, T* a_val_ptr, Tsum* out_ptr)
+      : out_cols(out_cols),
         out_rows(out_rows),
         b_cols(b_cols),
         n(n),
+        nnz(nnz),
         total_size(total_size),
         a_idx_ptr(a_idx_ptr),
         b_ptr(b_ptr),
@@ -166,64 +170,131 @@ struct SparseTensorDenseMatmulKernel {
         out_ptr(out_ptr) {}
   void operator()(sycl::nd_item<1> item) const {
     auto id = item.get_global_linear_id();
-    if (id >= num_work_items) return;
-    id = ElemSize * id;
+    id = id * ElemSize;
+    if (id >= total_size) return;
 
     // out_{i,j} = \sum{a_{i,k} * b_{k,j}}
     int i, k;
-    bool load_a = true;
     int a_ix = id / out_cols;
     int j = id % out_cols;
+
+    // If ADJ_B is true, elements size will always be 1, so it is safe.
+    // And we has checked if out_cols is divisible by elements size,
+    // and treat different situations differently to ensure the
+    // correctness of the results:
+    //  1. If divisible, we load vec.
+    //  2. If not divisible, we load data one by one, and update a_ix and j.
 #pragma unroll
-    for (int elem = 0; elem < ElemSize; ++elem) {
-      if (load_a) {
-        sycl::vec<Tindices, 2> tmp;
-        tmp.load(a_ix, sycl::multi_ptr<Tindices, GLOBAL_SPACE>(a_idx_ptr));
-        i = tmp.x();
-        k = tmp.y();
-        if (ADJ_A) std::swap(i, k);
-        load_a = false;
-      }
+    for (int elem = 0; elem < ElemSize;
+         elem += !IsColDivisible ? 1 : ElemSize) {
+      sycl::vec<Tindices, 2> tmp;
+      tmp.load(a_ix, sycl::multi_ptr<Tindices, GLOBAL_SPACE>(a_idx_ptr));
+      i = tmp.x();
+      k = tmp.y();
+      if (ADJ_A) std::swap(i, k);
       // if a_row is out of range, skip
       if (FastBoundsCheck(i, out_rows)) {
         int out_idx = i * out_cols + j;
-        auto atm = sycl::atomic_ref<Tsum, sycl::memory_order::relaxed,
-                                    sycl::memory_scope::device, GLOBAL_SPACE>(
-            out_ptr[out_idx]);
         // if a_row is in range, but a_col is out of range, set output
         // as NaN
         if (!FastBoundsCheck(k, n)) {
-          atm.fetch_add(std::numeric_limits<Tsum>::quiet_NaN());
+#pragma unroll
+          for (int pos = 0; pos < ElemSize;
+               pos += !IsColDivisible ? ElemSize : 1) {
+            ItexAtomicAdd(out_ptr + out_idx + pos,
+                          std::numeric_limits<Tsum>::quiet_NaN());
+          }
         } else {
-          const T a_val = a_val_ptr[a_ix];
+          const Tscalar a_val =
+              *reinterpret_cast<const Tscalar*>(a_val_ptr + a_ix);
           const int b_idx = ADJ_B ? (j * b_cols + k) : (k * b_cols + j);
-          const T b_val = b_ptr[b_idx];
-          atm.fetch_add(static_cast<Tsum>(a_val * b_val));
+          auto b_vals_or_scalar =
+              *(reinterpret_cast<const VecOrScalar*>(b_ptr + b_idx));
+#pragma unroll
+          for (int pos = 0; pos < ElemSize;
+               pos += !IsColDivisible ? ElemSize : 1) {
+            Tscalar b_val = b_vals_or_scalar[pos];
+            ItexAtomicAdd(out_ptr + out_idx + pos,
+                          static_cast<Tsum>(a_val * b_val));
+          }
         }
       }
-      if ((++id) >= total_size) {
-        return;
-      }
-      if ((++j) >= out_cols) {
-        j = 0;
-        load_a = true;
-        a_ix = a_ix + 1;
+      // If out col is not divisible by elements size, we should update
+      // a_ix if j is greater than out cols.
+      if (!IsColDivisible) {
+        if ((++j) >= out_cols) {
+          j = 0;
+          if ((++a_ix) >= nnz) {
+            return;
+          }
+        }
       }
     }
   }
 
  private:
-  int num_work_items;
   int out_cols;
   int out_rows;
   int b_cols;
   int n;
+  int nnz;
   int total_size;
   Tindices* a_idx_ptr;
   const T* b_ptr;
   T* a_val_ptr;
   Tsum* out_ptr;
 };
+
+template <typename Tindices, typename T, bool ADJ_A, bool ADJ_B, int ElemSize,
+          bool IsColDivisible>
+void LaunchSpdmTuned(const gpuStream_t& stream,
+                     SpdmLaunchParams<Tindices, T>& param) {  // NOLINT
+  using Tsum = typename SumType<T>::type;
+  stream->submit([&](sycl::handler& cgh) {
+    SparseTensorDenseMatmulKernel<T, Tsum, Tindices, ADJ_A, ADJ_B, ElemSize,
+                                  IsColDivisible>
+        task(param.out_cols_, param.out_rows_, param.b_cols_, param.n_,
+             param.nnz_, param.total_size_, param.a_idx_ptr_, param.b_ptr_,
+             param.a_val_ptr_, param.out_ptr_);
+    cgh.parallel_for<SparseTensorDenseMatmulKernel<
+        T, Tsum, Tindices, ADJ_A, ADJ_B, ElemSize, IsColDivisible>>(
+        sycl::nd_range<1>(
+            sycl::range<1>(
+                DivUp(DivUp(param.total_size_, ElemSize), param.wg_size_) *
+                param.wg_size_),
+            sycl::range<1>(param.wg_size_)),
+        task);
+  });
+}
+
+#define REGISTER_SPDM_TUNED_LAUNCHER(TIND, T, HPC, ADJA, ADJB, COLS, SIZE)     \
+  void spdm_tuned_##TIND##_##T##_##HPC##_##ADJA##_##ADJB##_##COLS##_##SIZE(    \
+      const gpuStream_t& stream, SpdmLaunchParams<TIND, T>& launch_params) {   \
+    if (launch_params.out_cols_ % SIZE == 0) {                                 \
+      LaunchSpdmTuned<TIND, T, ADJA, ADJB, SIZE, true>(stream, launch_params); \
+    } else {                                                                   \
+      LaunchSpdmTuned<TIND, T, ADJA, ADJB, SIZE, false>(stream,                \
+                                                        launch_params);        \
+    }                                                                          \
+  }                                                                            \
+  TF_ATTRIBUTE_UNUSED static SpdmTunedRegistrar<TIND, T, HPC, ADJA, ADJB,      \
+                                                COLS>                          \
+      reg_tuned_##TIND##_##T##_##HPC##_##ADJA##_##ADJB##_##COLS##_##SIZE(      \
+          spdm_tuned_##TIND##_##T##_##HPC##_##ADJA##_##ADJB##_##COLS##_##SIZE);
+
+#define REGISTER_PARTIALLY_SPDM_TUNED_LAUNCHER(HPC, T, COLS, ELEMSIZE)       \
+  REGISTER_SPDM_TUNED_LAUNCHER(int64, T, HPC, true, false, COLS, ELEMSIZE);  \
+  REGISTER_SPDM_TUNED_LAUNCHER(int64, T, HPC, false, false, COLS, ELEMSIZE); \
+  REGISTER_SPDM_TUNED_LAUNCHER(int32, T, HPC, true, false, COLS, ELEMSIZE);  \
+  REGISTER_SPDM_TUNED_LAUNCHER(int32, T, HPC, false, false, COLS, ELEMSIZE);
+
+REGISTER_PARTIALLY_SPDM_TUNED_LAUNCHER(true, float, 2048, 2);  // NOLINT
+REGISTER_PARTIALLY_SPDM_TUNED_LAUNCHER(true, bf16, 2048, 2);   // NOLINT
+REGISTER_PARTIALLY_SPDM_TUNED_LAUNCHER(true, half, 2048, 2);   // NOLINT
+// If not HPC platform, 4 is a better configuration for elements size.
+REGISTER_PARTIALLY_SPDM_TUNED_LAUNCHER(false, float, 2048, 4);  // NOLINT
+REGISTER_PARTIALLY_SPDM_TUNED_LAUNCHER(false, bf16, 2048, 4);   // NOLINT
+REGISTER_PARTIALLY_SPDM_TUNED_LAUNCHER(false, half, 2048, 4);   // NOLINT
 
 template <typename T, typename Tindices, bool ADJ_A, bool ADJ_B>
 Status SparseTensorDenseMatMulFunctor<T, Tindices, ADJ_A, ADJ_B>::Compute(
@@ -236,6 +307,7 @@ Status SparseTensorDenseMatMulFunctor<T, Tindices, ADJ_A, ADJ_B>::Compute(
   const int out_rows = out.dimension(0);
   const int out_cols = out.dimension(1);
   const int n = (ADJ_B) ? b_cols : b_rows;
+  int total_size = out_cols * nnz;
 
   const GPUDevice& d = ctx->eigen_device<GPUDevice>();
   using Tsum = typename SumType<T>::type;
@@ -258,24 +330,41 @@ Status SparseTensorDenseMatMulFunctor<T, Tindices, ADJ_A, ADJ_B>::Compute(
 
   auto* stream = d.stream();
   // TODO(itex): why small work-group size is better?
-  const int wg_size = 256;
-  const int total_size = out_cols * nnz;
-  const int num_work_items = DivUp(total_size, ElemSize);
-  stream->submit([&](sycl::handler& cgh) {
-    auto a_idx_ptr = const_cast<Tindices*>(a_indices.data());
-    auto a_val_ptr = const_cast<T*>(a_values.data());
-    const T* b_ptr = b.data();
-    Tsum* maybe_temp_out_ptr = maybe_temp_out_data;
-    SparseTensorDenseMatmulKernel<T, Tsum, Tindices, ADJ_A, ADJ_B> task(
-        num_work_items, out_cols, out_rows, b_cols, n, total_size, a_idx_ptr,
-        b_ptr, a_val_ptr, maybe_temp_out_ptr);
-    cgh.parallel_for<
-        SparseTensorDenseMatmulKernel<T, Tsum, Tindices, ADJ_A, ADJ_B>>(
-        sycl::nd_range<1>(
-            sycl::range<1>(DivUp(num_work_items, wg_size) * wg_size),
-            sycl::range<1>(wg_size)),
-        task);
-  });
+  SpdmLaunchParams param(256,  // workgroup size
+                         out_cols, out_rows, b_cols, n, nnz, total_size,
+                         const_cast<Tindices*>(a_indices.data()),
+                         const_cast<T*>(a_values.data()), b.data(),
+                         maybe_temp_out_data);
+  bool launch_tuned_kernel = false;
+  if constexpr (!std::is_same<double, T>::value) {
+    auto device = stream->get_device();
+    int64 key = get_spdm_tuned_key(IsXeHPC(&device), ADJ_A, ADJ_B, out_cols);
+    auto& tuned_funcs = get_spdm_tuned_funcs<Tindices, T>();
+    // choose the closest key
+    auto iterator = tuned_funcs.lower_bound(key);
+    if (iterator != tuned_funcs.end() &&
+        matched_spdm_tuned_key(key, iterator->first)) {
+      iterator->second(d.stream(), param);
+      launch_tuned_kernel = true;
+    }
+  }
+
+  if (!launch_tuned_kernel) {
+    auto* stream = d.stream();
+    stream->submit([&](sycl::handler& cgh) {
+      SparseTensorDenseMatmulKernel<T, Tsum, Tindices, ADJ_A, ADJ_B> task(
+          param.out_cols_, param.out_rows_, param.b_cols_, param.n_, param.nnz_,
+          param.total_size_, param.a_idx_ptr_, param.b_ptr_, param.a_val_ptr_,
+          param.out_ptr_);
+      cgh.parallel_for<
+          SparseTensorDenseMatmulKernel<T, Tsum, Tindices, ADJ_A, ADJ_B>>(
+          sycl::nd_range<1>(
+              sycl::range<1>(DivUp(param.total_size_, param.wg_size_) *
+                             param.wg_size_),
+              sycl::range<1>(param.wg_size_)),
+          task);
+    });
+  }
 
   if (sum_type_is_different) {
     out.device(d) = temp_out_t.matrix<Tsum>().template cast<T>();

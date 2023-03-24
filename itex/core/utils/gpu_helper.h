@@ -283,16 +283,16 @@ class alignas(alignof(T) * N) AlignedVector {
 template <typename T, int vec_size>
 struct BaseTypeVectorize {
   typedef AlignedVector<T, vec_size> type;
-  typedef T Scalar;
+  typedef T scalar;
 };
 
 template <int vec_size>
 struct BaseTypeVectorize<Eigen::half, vec_size> {
   typedef typename Eigen::internal::conditional<
-      (vec_size >= 4), sycl::vec<sycl::half, vec_size>,
+      (vec_size >= 2), sycl::vec<sycl::half, vec_size>,
       AlignedVector<Eigen::half, vec_size>>::type type;
-  typedef typename Eigen::internal::conditional<(vec_size >= 4), sycl::half,
-                                                Eigen::half>::type Scalar;
+  typedef typename Eigen::internal::conditional<(vec_size >= 2), sycl::half,
+                                                Eigen::half>::type scalar;
 };
 
 // Returns the maximum power-of-two alignment (in units of elements, not bytes)

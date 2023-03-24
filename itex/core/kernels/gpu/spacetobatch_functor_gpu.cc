@@ -113,7 +113,7 @@ struct S2B {
 template <typename T, int NUM_BLOCK_DIMS, int VEC_SIZE, bool B2S>
 struct VectorizedS2B {
   using Tvec = typename BaseTypeVectorize<T, VEC_SIZE>::type;
-  using Tscalar = typename BaseTypeVectorize<T, VEC_SIZE>::Scalar;
+  using Tscalar = typename BaseTypeVectorize<T, VEC_SIZE>::scalar;
   VectorizedS2B(const int32 nthreads, T* space_tensor_ptr,
                 S2BParameters<NUM_BLOCK_DIMS> args, T* batch_tensor_ptr)
       : nthreads_(nthreads),

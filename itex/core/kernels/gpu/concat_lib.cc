@@ -240,7 +240,7 @@ void ConcatVariable(OpKernelContext* c, const size_t& total_rows,
 template <typename T, typename IntType, int vec_size>
 struct InlinedConcatFixedKernel {
   using Tvec = typename BaseTypeVectorize<T, vec_size>::type;
-  using Tscalar = typename BaseTypeVectorize<T, vec_size>::Scalar;
+  using Tscalar = typename BaseTypeVectorize<T, vec_size>::scalar;
   using FastDivisor = Eigen::internal::TensorIntDivisor<IntType>;
   InlinedConcatFixedKernel(size_t num_work_items, size_t total_cols,
                            IntType per_concat_elements, IntType col_size,
