@@ -288,10 +288,10 @@ class OneDnnEltwiseGradBaseOp : public OpKernel {
         diff_dst_md = diff_dst_onednn_shape.GetOneDnnLayout();
       }
 
-#ifdef INTEL_CPU_ONLY
       // Temporarily fix ReluGrad for CPU
       // If one of the input is in BLOCK format, reorder the other one as BLOCK
       // Otherwise the primitive will run into the reference path.
+      // Also for GPU, GPU would crash.
       // TODO(itex): Remove this fix once the issue is solved by OneDNN
       memory::desc _src_md({}, memory::data_type::undef,
                            memory::format_tag::undef);
@@ -306,7 +306,6 @@ class OneDnnEltwiseGradBaseOp : public OpKernel {
                  diff_dst_onednn_shape.IsOneDnnTensor()) {
         _src_md = _diff_dst_md;
       }
-#endif  // INTEL_CPU_ONLY
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
