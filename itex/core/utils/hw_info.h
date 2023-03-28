@@ -18,8 +18,9 @@ limitations under the License.
 #include "itex/core/utils/macros.h"
 #ifndef INTEL_CPU_ONLY
 #include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+TF_EXPORT extern const int32_t XeHPC_id;
 TF_EXPORT extern const char* const XeHPC_name;
-TF_EXPORT extern const char* const XeHPC_name_448;
+TF_EXPORT extern const char* const XeHPC_name_new;
 
 bool IsXeHPC(sycl::device* device_ptr = nullptr);
 
