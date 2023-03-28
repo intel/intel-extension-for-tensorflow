@@ -18,8 +18,9 @@ limitations under the License.
 #include <string>
 
 #ifndef INTEL_CPU_ONLY
-const char* const XeHPC_name = "0x0bd5";
-const char* const XeHPC_name_448 = "0x0bd6";
+const int32_t XeHPC_id = 0xbd0;
+const char* const XeHPC_name = "0x0bd";
+const char* const XeHPC_name_new = "Data Center GPU Max";
 
 bool IsXeHPC(sycl::device* device_ptr) {
   if (device_ptr == nullptr) {
@@ -28,20 +29,35 @@ bool IsXeHPC(sycl::device* device_ptr) {
       auto device_list = platform.get_devices();
       for (const auto& device : device_list) {
         if (device.is_gpu()) {
-          std::string name = device.get_info<sycl::info::device::name>();
-          if (name.find(XeHPC_name) != std::string::npos ||
-              name.find(XeHPC_name_448) != std::string::npos) {
+#if defined(SYCL_EXT_INTEL_DEVICE_INFO) && (SYCL_EXT_INTEL_DEVICE_INFO >= 5)
+          auto id =
+              device.get_info<sycl::ext::intel::info::device::device_id>();
+          if ((id & 0xff0) == XeHPC_id) {
             return true;
           }
+#else
+          std::string name = device.get_info<sycl::info::device::name>();
+          if (name.find(XeHPC_name) != std::string::npos ||
+              name.find(XeHPC_name_new) != std::string::npos) {
+            return true;
+          }
+#endif
         }
       }
     }
   } else {
-    std::string name = device_ptr->get_info<sycl::info::device::name>();
-    if (name.find(XeHPC_name) != std::string::npos ||
-        name.find(XeHPC_name_448) != std::string::npos) {
+#if defined(SYCL_EXT_INTEL_DEVICE_INFO) && (SYCL_EXT_INTEL_DEVICE_INFO >= 5)
+    auto id = device_ptr->get_info<sycl::ext::intel::info::device::device_id>();
+    if ((id & 0xff0) == XeHPC_id) {
       return true;
     }
+#else
+    std::string name = device_ptr->get_info<sycl::info::device::name>();
+    if (name.find(XeHPC_name) != std::string::npos ||
+        name.find(XeHPC_name_new) != std::string::npos) {
+      return true;
+    }
+#endif
   }
   return false;
 }
