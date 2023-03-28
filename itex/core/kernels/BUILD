@@ -9,6 +9,7 @@ itex_xpu_library(
         ":libitex_common",
         "//itex/core/devices:device_backend_util_hdr",
         "//itex/core/kernels/common:no_ops",
+        "@local_config_python//:python_headers",
         "@local_config_tf//:tf_header_lib",
     ] + select({
         "@local_config_dpcpp//dpcpp:using_dpcpp": [
