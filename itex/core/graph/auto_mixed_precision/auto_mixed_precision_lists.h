@@ -252,6 +252,7 @@ class AutoMixedPrecisionLists {
       "_ITEXInstanceNorm",
       "_ITEXMish",
       "_ITEXSwish",
+      "_MklLayerNorm",
   };
 
   // The default Deny list of FP16 and BF16.
@@ -432,11 +433,19 @@ class AutoMixedPrecisionListsCPU : public AutoMixedPrecisionLists {
   }
 
   gtl::FlatSet<string> InferList() override {
+    auto add_ops = gtl::FlatSet<string>{"Sum"};
+    for (auto op : add_ops) {
+      allow_list_ops.insert(op);
+    }
     UpdateList("INFERLIST", &infer_list_ops);
     return infer_list_ops;
   }
 
   gtl::FlatSet<string> DenyList() override {
+    auto remove_ops = gtl::FlatSet<string>{"Sum"};
+    for (auto op : remove_ops) {
+      allow_list_ops.insert(op);
+    }
     UpdateList("DENYLIST", &deny_list_ops);
     return deny_list_ops;
   }
