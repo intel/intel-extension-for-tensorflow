@@ -15,6 +15,7 @@ limitations under the License.
 
 #include <string>
 
+#include "Python.h"
 #include "itex/core/devices/device_backend_util.h"
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/kernels/common.h"
@@ -52,4 +53,11 @@ void TF_InitKernel() {
   // Register generic CPU kernels.
   RegisterCPUKernels(itex::DEVICE_CPU);
 #endif
+  bool ops_override = false;
+  ITEX_CHECK_OK(
+      itex::ReadBoolFromEnvVar("ITEX_OPS_OVERRIDE", false, &ops_override));
+  if (ops_override) {
+    PyRun_SimpleString("import intel_extension_for_tensorflow as itex;\n");
+    PyRun_SimpleString("itex.experimental_ops_override();\n");
+  }
 }
