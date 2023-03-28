@@ -30,7 +30,7 @@ typedef Eigen::ThreadPoolDevice CPUDevice;
 template <typename Device, typename T>
 class FusedRandomOp : public OpKernel {
  public:
-  typedef random::UniformDistribution<random::PCGRandom, T> Uniform;
+  typedef random::UniformDistribution<random::PhiloxRandom, T> Uniform;
   explicit FusedRandomOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
     OP_REQUIRES_OK(ctx, generator_.Init(ctx));
     OP_REQUIRES_OK(ctx, ctx->GetAttr("direction", &direction_));
@@ -69,17 +69,17 @@ class FusedRandomOp : public OpKernel {
     OP_REQUIRES(ctx, dims == 0,
                 errors::InvalidArgument("Only support compare dim is 0 "));
     // TODO(yifeng): To support binary operations other than GreaterEqual.
-    functor::FillPCGRandom<CPUDevice, Uniform>()(
+    functor::FillPhiloxRandom<CPUDevice, Uniform>()(
         ctx, ctx->eigen_device<CPUDevice>(),
         // Multiplier 256 is the same as in FillRandomTask; do not change it
         // just here.
         generator_.ReserveRandomOutputs(output_flat.size(), 256),
-        output_flat.data(), output_flat.size(), Uniform(),
+        output_flat.data(), output_flat.size(), Uniform(), nullptr, nullptr,
         compare.flat<T>().data());
   }
 
  private:
-  GuardedPCGRandom generator_;
+  GuardedPhiloxRandom generator_;
   int direction_ = 0;
   std::vector<string> fused_ops_;
 };
