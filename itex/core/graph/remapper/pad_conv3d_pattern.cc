@@ -39,7 +39,7 @@ namespace graph {
 class PadConv3d : public Fusion {
  public:
   PadConv3d() : Fusion() {
-    is_partial = true;
+    is_partial_ = true;
     using utils::NodeStatus;
     using utils::OpTypePattern;
 

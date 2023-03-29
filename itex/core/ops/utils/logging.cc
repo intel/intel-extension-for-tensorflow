@@ -34,6 +34,9 @@ namespace internal {
 namespace {
 
 int ParseInteger(const char* str, size_t size) {
+  // Ideally we would use env_var / safe_strto64, but it is
+  // hard to use here without pulling in a lot of dependencies,
+  // so we use std:istringstream instead
   string integer_str(str, size);
   int level = 0;
   level = std::stoi(integer_str);
@@ -48,9 +51,11 @@ int64 LogLevelStrToInt(const char* tf_env_var_val) {
   return ParseInteger(tf_env_var_val, strlen(tf_env_var_val));
 }
 
+// Using StringPiece breaks Windows build.
 struct StringData {
   struct Hasher {
     size_t operator()(const StringData& sdata) const {
+      // For dependency reasons, we cannot use hash.h here. Use DBJHash instead.
       size_t hash = 5381;
       const char* data = sdata.data;
       for (const char* top = data + sdata.size; data < top; ++data) {
@@ -80,8 +85,13 @@ VmoduleMap* VmodulesMapFromEnv() {
   //    "foo=1,bar=2,baz=3"
   const char* env = getenv("TF_CPP_VMODULE");
   if (env == nullptr) {
+    // If there is no TF_CPP_VMODULE configuration (most common case), return
+    // nullptr so that the ShouldVlogModule() API can fast bail out of it.
     return nullptr;
   }
+  // The memory returned by getenv() can be invalidated by following getenv() or
+  // setenv() calls. And since we keep references to it in the VmoduleMap in
+  // form of StringData objects, make a copy of it.
   const char* env_data = strdup(env);
   ITEX_CHECK(env_data != nullptr);
   char* original_addr = const_cast<char*>(env_data);
@@ -92,6 +102,9 @@ VmoduleMap* VmodulesMapFromEnv() {
       break;
     }
     const char* after_eq = eq + 1;
+
+    // Comma either points at the next comma delimiter, or at a null terminator.
+    // We check that the integer we parse ends at this delimiter.
     const char* comma = strchr(after_eq, ',');
     const char* new_env_data;
     if (comma == nullptr) {
@@ -124,6 +137,12 @@ bool EmitThreadIdFromEnv() {
 }  // namespace
 
 int64 MinLogLevelFromEnv() {
+  // We don't want to print logs during fuzzing as that would slow fuzzing down
+  // by almost 2x. So, if we are in fuzzing mode (not just running a test), we
+  // return a value so that nothing is actually printed. Since ITEX_LOG uses >=
+  // (see ~LogMessage in this file) to see if log messages need to be printed,
+  // the value we're interested on to disable printing is the maximum severity.
+  // See also http://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
   return itex::NUM_SEVERITIES;
 #else
@@ -137,6 +156,12 @@ int64 MinIssueLogLevel() {
 }
 
 int64 MinVLogLevelFromEnv() {
+  // We don't want to print logs during fuzzing as that would slow fuzzing down
+  // by almost 2x. So, if we are in fuzzing mode (not just running a test), we
+  // return a value so that nothing is actually printed. Since ITEX_VLOG uses <=
+  // (see ITEX_VLOG_IS_ON in logging.h) to see if log messages need to be
+  // printed, the value we're interested on to disable printing is 0. See also
+  // http://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
   return 0;
 #else
@@ -162,7 +187,10 @@ LogMessage& LogMessage::AtLocation(const char* fname, int line) {
 
 LogMessage::~LogMessage() {
   // Read the min log level once during the first call to logging.
-  static int64 min_log_level = MinLogLevelFromEnv();
+  // TODO(itex): Temporarily ignore TF min log limitation, will fix later
+  //             after figured out where the limiation is.
+  // static int64 min_log_level = MinLogLevelFromEnv();
+  static int64 min_log_level = itex::INFO;
   if (severity_ >= min_log_level) {
     GenerateLogMessage();
   }
@@ -181,7 +209,7 @@ void LogMessage::GenerateLogMessage() {
   char tid_buffer[tid_buffer_size] = "";
   if (log_thread_id) {
     ITEX_CHECK(snprintf(tid_buffer, sizeof(tid_buffer), " %7u",
-                        absl::base_internal::GetTID() >= 0))
+                        absl::base_internal::GetTID()) >= 0)
         << "Encoding error occurs";
   }
   // TODO(jeff,sanjay): Replace this with something that logs through the env.
