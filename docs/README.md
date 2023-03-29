@@ -47,10 +47,11 @@
 		<td colspan="3" align="center"><a href="guide/itex_ops.md">Operator optimization</a></td>
     </tr>
     <tr>
-        <td colspan="3" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
-        <td colspan="3" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
-		<td colspan="3" align="center"><a href="guide/launch.md">CPU launcher</a></td>
-        <td colspan="3" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
+        <td colspan="2.4" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
+        <td colspan="2.4" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
+		<td colspan="2.4" align="center"><a href="guide/launch.md">CPU launcher</a></td>
+        <td colspan="2.4" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
+	<td colspan="2.4" align="center"><a href="guide/XPUAutoShard.md">XPUAutoShard</a></td>
     </tr>
   </tbody>
   <thead>
@@ -107,3 +108,7 @@
 * INT8 quantization
 
   Intel® Extension for TensorFlow* co-works with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) to provide compatible TensorFlow INT8 quantization solution support with equivalent user experience.
+
+* XPUAutoShard on GPU [Experimental]
+
+  Intel® Extension for TensorFlow\* provides XPUAutoShard feature to automatically shard the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage.
