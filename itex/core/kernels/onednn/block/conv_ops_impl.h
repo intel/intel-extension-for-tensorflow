@@ -875,6 +875,9 @@ class OneDnnQuantizedConvOp
         return static_cast<Tbias*>(
             const_cast<Tbias*>(bias_tensor.flat<Tbias>().data()));
       }
+      if (is_bias_const_ && !bias_cache_manager.IsEmpty()) {
+        return static_cast<Tbias*>(bias_cache_manager.GetCache(context));
+      }
       Tensor scaled_bias;
       TF_ABORT_IF_ERROR(context->allocate_temp(
           DataTypeToEnum<float>::v(), bias_tensor.shape(), &scaled_bias));
