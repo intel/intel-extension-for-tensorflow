@@ -64,6 +64,17 @@ $ bazel build --jobs 96 --config=opt //tensorflow:libtensorflow_cc.so
 $ ls ./bazel-bin/tensorflow/libtensorflow_cc.so
 ```
 
+libtensorflow_cc.so location: `<Path to tensorflow>/bazel-bin/tensorflow/libtensorflow_cc.so`
+
+3. Build Tensorflow header files
+
+```bash
+$ bazel build --config=opt tensorflow:install_headers
+$ ls ./bazel-bin/tensorflow/include
+```
+
+Tensorflow header file location: `<Path to tensorflow>/bazel-bin/tensorflow/include`
+
 ## Integrate the CC library
 
 ### Linker
@@ -71,8 +82,8 @@ $ ls ./bazel-bin/tensorflow/libtensorflow_cc.so
 If you place the Intel® Extension for TensorFlow* CC library to a non-system directory, such as ~/mydir, then configure the linker environmental variables:
 
 ```bash
-$ export LIBRARY_PATH=$LIBRARY_PATH:~/mydir/lib
-$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/mydir/lib
+$ export LIBRARY_PATH=$LIBRARY_PATH:~/mydir/
+$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/mydir/
 ```
 
 ### Load
@@ -170,8 +181,8 @@ int main() {
 
 Place a `Makefile` file in the same directory of `example.cc` with the following contents:
 
-- Replace `<TF_INCLUDE_PATH>` with local tensorflow include path.
-- Replace `<TFCC_PATH>` with local tensorflow_cc path, the path of libtensorflow_cc.so.
+- Replace `<TF_INCLUDE_PATH>` with local tensorflow include path: `<Path to tensorflow>/bazel-bin/tensorflow/include/`
+- Replace `<TFCC_PATH>` with local tensorflow_cc path: `<Path to tensorflow>/bazel-bin/tensorflow/`
 
 ```Makefile
 // Makefile
