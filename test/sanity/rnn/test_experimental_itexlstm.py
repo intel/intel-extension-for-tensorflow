@@ -17,6 +17,7 @@
 import numpy as np
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
+from tensorflow.python.framework import config
 from tensorflow.python.framework import test_util
 from tensorflow.python.platform import test
 
@@ -25,6 +26,8 @@ itex.experimental_ops_override()
 class LSTMTest(test_util.TensorFlowTestCase):          
 
     def test(self):
+        if not config.list_logical_devices('XPU'):
+            self.skipTest("Test requires XPU")
         assert(tf.keras.layers.LSTM == itex.ops.ItexLSTM)
         
         from tensorflow.python import keras
