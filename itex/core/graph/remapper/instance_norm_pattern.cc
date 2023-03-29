@@ -37,9 +37,9 @@ class InstanceNormFusion : public Fusion {
     bool onednn_graph_compiler_backend_flag =
         GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
     if (onednn_graph_all_type_flag && onednn_graph_compiler_backend_flag) {
-      is_partial = false;
+      is_partial_ = false;
     } else {
-      is_partial = true;
+      is_partial_ = true;
     }
     using utils::NodeStatus;
     using utils::OpTypePattern;

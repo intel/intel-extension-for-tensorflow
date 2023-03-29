@@ -55,7 +55,7 @@ class PadWithConvBackpropFilterFusion : public Fusion {
   MatchedProperties Check(RemapperContext* ctx,
                           const int node_index) const override {
     MatchedProperties ret;
-    if (ctx->remap_level == 0) {
+    if (ctx->remap_level == RemapperLevel::BASIC) {
       // Only work in second remapper iteration.
       return ret;
     }

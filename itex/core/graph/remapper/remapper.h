@@ -35,9 +35,15 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
+/* Indicate remapper fusion level:
+ *   BASIC: Basic core op fusion without any variant
+ *   ADVANCED: Advanced contracion fusion
+ */
+enum RemapperLevel : int { BASIC = 0, ADVANCED };
+
 struct RemapperContext {
   explicit RemapperContext(const GrapplerItem& item, GraphDef* g_def,
-                           Status* status, int level)
+                           Status* status, RemapperLevel level)
       : nodes_to_preserve(item.NodesToPreserve()),
         graph_view(g_def, status),
         graph_properties(item),
@@ -48,7 +54,7 @@ struct RemapperContext {
   utils::MutableGraphView graph_view;
   GraphProperties graph_properties;
   bool inferred_graph_properties;
-  int remap_level = 0;
+  RemapperLevel remap_level;
 
   GraphProperties& GetGraphProperties() {
     if (!inferred_graph_properties) {
@@ -131,11 +137,12 @@ void RemoveAllRegularFanin(RemapperContext* ctx, int node_idx);
 // before oneDNN Graph, that means only a few necessary fusions
 // (InstanceNorm/LayerNorm) will be enabled to keep the original graph as
 // complete as possible for oneDNN graph.
-// `level` means the order of current remapper pass. Simple fusions without any
-// variant  will be checked under level 0 only.
+// `level` is to indicate current remapper fusion level. Simple fusions without
+// any variant will be checked under BASIC(0) level only.
 Status RunRemapper(const char* device_name, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
-                   bool is_full = true, int level = 0);
+                   bool is_full = true,
+                   RemapperLevel level = RemapperLevel::BASIC);
 
 }  // namespace graph
 }  // namespace itex

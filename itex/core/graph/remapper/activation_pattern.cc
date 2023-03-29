@@ -22,9 +22,36 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
-class SigmoidWithMulFusion : public Fusion {
+class ActivationFusionBase : public Fusion {
  public:
-  SigmoidWithMulFusion() : Fusion() {
+  ActivationFusionBase() : Fusion() { is_partial_ = true; }
+
+  ~ActivationFusionBase() {}
+
+  MatchedProperties Check(RemapperContext* ctx,
+                          const int node_index) const override {
+    MatchedProperties ret;
+    if (ctx->remap_level != RemapperLevel::BASIC) {
+      // Only work in first remapper iteration.
+      return ret;
+    }
+
+    auto& graph_view = ctx->graph_view;
+    auto* node_def = graph_view.GetNode(node_index)->node();
+    if (!HasDataType(node_def, DT_FLOAT) &&
+        !HasDataType(node_def, DT_BFLOAT16) &&
+        !(NodeIsOnGpu(node_def) && HasDataType(node_def, DT_HALF)))
+      return ret;
+
+    ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
+
+    return ret;
+  }
+};
+
+class SigmoidWithMulFusion : public ActivationFusionBase {
+ public:
+  SigmoidWithMulFusion() : ActivationFusionBase() {
     using utils::NodeStatus;
     using utils::OpTypePattern;
     OpTypePattern input = {kAny, "input", NodeStatus::kRemain};
@@ -40,21 +67,6 @@ class SigmoidWithMulFusion : public Fusion {
   ~SigmoidWithMulFusion() {}
 
   std::string Name() override { return "sigmoid-with-mul"; }
-
-  MatchedProperties Check(RemapperContext* ctx,
-                          const int node_index) const override {
-    MatchedProperties ret;
-    auto& graph_view = ctx->graph_view;
-    auto* mul_node_def = graph_view.GetNode(node_index)->node();
-    if (!HasDataType(mul_node_def, DT_FLOAT) &&
-        !HasDataType(mul_node_def, DT_BFLOAT16) &&
-        !(NodeIsOnGpu(mul_node_def) && HasDataType(mul_node_def, DT_HALF)))
-      return ret;
-
-    ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
-
-    return ret;
-  }
 
   Status Update(RemapperContext* ctx,
                 const MatchedProperties& properties) const override {
@@ -93,9 +105,9 @@ REGISTER_FUSION(SigmoidWithMulFusion)
     const*  input   swish.attr.at("alpha") = const.val
 */
 // *) const must be a scalar with float datatype.
-class SigmoidAlphaWithMulFusion : public Fusion {
+class SigmoidAlphaWithMulFusion : public ActivationFusionBase {
  public:
-  SigmoidAlphaWithMulFusion() : Fusion() {
+  SigmoidAlphaWithMulFusion() : ActivationFusionBase() {
     using utils::NodeStatus;
     using utils::OpTypePattern;
     OpTypePattern input = {kAny, "input", NodeStatus::kRemain};
@@ -118,14 +130,8 @@ class SigmoidAlphaWithMulFusion : public Fusion {
 
   MatchedProperties Check(RemapperContext* ctx,
                           const int node_index) const override {
-    MatchedProperties ret;
+    MatchedProperties ret = ActivationFusionBase::Check(ctx, node_index);
     auto& graph_view = ctx->graph_view;
-    auto* mul_node_def = graph_view.GetNode(node_index)->node();
-    if (!HasDataType(mul_node_def, DT_FLOAT) &&
-        !HasDataType(mul_node_def, DT_BFLOAT16) &&
-        !(NodeIsOnGpu(mul_node_def) && HasDataType(mul_node_def, DT_HALF)))
-      return ret;
-    ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
 
     if (!ret.Empty()) {
       const NodeDef* constant = graph_view.GetNode(ret.map.at("const"))->node();
@@ -199,9 +205,9 @@ REGISTER_FUSION(SigmoidAlphaWithMulFusion)
       Output
 
 */
-class MishFusion : public Fusion {
+class MishFusion : public ActivationFusionBase {
  public:
-  MishFusion() : Fusion() {
+  MishFusion() : ActivationFusionBase() {
     using utils::NodeStatus;
     using utils::OpTypePattern;
     OpTypePattern input = {kAny, "input", NodeStatus::kRemain};
@@ -218,20 +224,6 @@ class MishFusion : public Fusion {
   ~MishFusion() {}
 
   std::string Name() override { return "Mish"; }
-
-  MatchedProperties Check(RemapperContext* ctx,
-                          const int node_index) const override {
-    MatchedProperties ret;
-    auto& graph_view = ctx->graph_view;
-    auto* mul_node_def = graph_view.GetNode(node_index)->node();
-    if (!HasDataType(mul_node_def, DT_FLOAT) &&
-        !HasDataType(mul_node_def, DT_BFLOAT16) &&
-        !(NodeIsOnGpu(mul_node_def) && HasDataType(mul_node_def, DT_HALF)))
-      return ret;
-
-    ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
-    return ret;
-  }
 
   Status Update(RemapperContext* ctx,
                 const MatchedProperties& properties) const override {

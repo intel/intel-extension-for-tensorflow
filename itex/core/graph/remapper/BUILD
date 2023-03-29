@@ -5,7 +5,6 @@ cc_library(
         "batch_matmul_pattern.cc",
         "cast_fused_matmul_cast_pattern.cc",
         "cast_matmul_cast_pattern.cc",
-        "contraction_mish_pattern.cc",
         "conv_backprop_input_pattern.cc",
         "fusion.cc",
         "gru_pattern.cc",

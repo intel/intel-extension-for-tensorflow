@@ -125,13 +125,19 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
                                                   &optimized_graph_def));
 
   if (config.enable_remapper) {
-    // We don't want full scope remapper here if oneDNN graph is enabled.
-    for (int i = 0; i < config.remapper_run_pass; ++i) {
+    if (config.enable_onednn_graph) {
+      // We don't want full scope remapper here if oneDNN graph is enabled.
       optimized_graph_def.Swap(&graph_def);
-      SET_STATUS_IF_ERROR(
-          tf_status,
-          RunRemapper(device_name, item, graph_def, &optimized_graph_def,
-                      !config.enable_onednn_graph, i));
+      SET_STATUS_IF_ERROR(tf_status, RunRemapper(device_name, item, graph_def,
+                                                 &optimized_graph_def, false));
+    } else {
+      // Run remapper twice for full scope fusions if oneDNN graph is disabled.
+      for (int i = 0; i < config.remapper_run_pass; ++i) {
+        optimized_graph_def.Swap(&graph_def);
+        SET_STATUS_IF_ERROR(tf_status, RunRemapper(device_name, item, graph_def,
+                                                   &optimized_graph_def, true,
+                                                   RemapperLevel(i)));
+      }
     }
   }
 
@@ -144,11 +150,10 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
     // before Const op. So run remapper Const + Cast fusion will remove
     // these overhead.
     // We don't want ITEX remapper pass change graph before LLGA pass
-    if (config.enable_remapper) {
+    if (config.enable_remapper && !config.enable_onednn_graph) {
       optimized_graph_def.Swap(&graph_def);
       SET_STATUS_IF_ERROR(tf_status, RunRemapper(device_name, item, graph_def,
-                                                 &optimized_graph_def,
-                                                 !config.enable_onednn_graph));
+                                                 &optimized_graph_def));
     }
   }
 
@@ -162,9 +167,9 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
     if (config.enable_remapper) {
       for (int i = 0; i < config.remapper_run_pass; ++i) {
         optimized_graph_def.Swap(&graph_def);
-        SET_STATUS_IF_ERROR(tf_status,
-                            RunRemapper(device_name, item, graph_def,
-                                        &optimized_graph_def, true, i));
+        SET_STATUS_IF_ERROR(tf_status, RunRemapper(device_name, item, graph_def,
+                                                   &optimized_graph_def, true,
+                                                   RemapperLevel(i)));
       }
     }
   }

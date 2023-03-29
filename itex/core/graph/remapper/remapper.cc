@@ -5408,12 +5408,14 @@ Status AddStridedSliceGrad(RemapperContext* ctx,
 // before oneDNN Graph, that means only a few necessary fusions
 // (InstanceNorm/LayerNorm) will be enabled to keep the original graph as
 // complete as possible for oneDNN graph.
-// `level` means the order of current remapper pass. Simple fusions without any
-// variant  will be checked under level 0 only.
+// `level` is to indicate current remapper fusion level. Simple fusions without
+// any variant will be checked under BASIC(0) level only.
 Status RunRemapper(const char* device_name, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
-                   bool is_full, int level) {
-  const int default_level = 0;
+                   bool is_full, RemapperLevel level) {
+  // `level` must be `BASIC` if in partial remapper.
+  ITEX_CHECK(is_full || level == RemapperLevel::BASIC);
+
   Status status;
   GraphDef multable_graph_def = graph_def;
   RemapperContext ctx(item, &multable_graph_def, &status, level);
@@ -5510,11 +5512,21 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       std::map<string, int> matched_nodes_map;
       std::set<int> remove_node_indices;
       bool is_gelu_approximate = false;
-      if (FindGelu(&ctx, i, &matched_nodes_map, &remove_node_indices,
+      if (level == RemapperLevel::BASIC &&
+          FindGelu(&ctx, i, &matched_nodes_map, &remove_node_indices,
                    &is_gelu_approximate)) {
         TF_ABORT_IF_ERROR(AddGelu(&ctx, &matched_nodes_map,
                                   &remove_node_indices, &invalidated_nodes,
                                   &nodes_to_delete, is_gelu_approximate));
+        continue;
+      }
+
+      // Remap Mul+Max into the LeakyRelu.
+      MulWithMaximum mul_with_maximum;
+      if (level == RemapperLevel::BASIC &&
+          FindMulWithMaximum(ctx, i, &mul_with_maximum)) {
+        TF_ABORT_IF_ERROR(AddMulWithMaximumNode(
+            &ctx, mul_with_maximum, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
 
@@ -5650,7 +5662,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Mul + AddN + TrainingOp into the _FusedTrainingOp.
       FusedTrainingOp fused_training_op;
-      if (level == default_level &&
+      if (level == RemapperLevel::BASIC &&
           FindFusedTrainingOp(ctx, i, &fused_training_op)) {
         TF_ABORT_IF_ERROR(AddFusedTrainingNode(
             &ctx, fused_training_op, &invalidated_nodes, &nodes_to_delete));
@@ -5667,7 +5679,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // delete dequantize node if it finds dequantize_with_shape pattern
       DequantizeWithShape dequantize_with_shape;
-      if (level == default_level &&
+      if (level == RemapperLevel::BASIC &&
           FindDequantizeWithShape(ctx, i, &dequantize_with_shape)) {
         TF_ABORT_IF_ERROR(AddFusedDequantizeWithShape(
             &ctx, dequantize_with_shape, &invalidated_nodes, &nodes_to_delete));
@@ -5676,7 +5688,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // delete dequantize node if it finds dequantize_with_reshape pattern
       DequantizeWithReshape dequantize_with_reshape;
-      if (is_layout_opt && level == default_level &&
+      if (is_layout_opt && level == RemapperLevel::BASIC &&
           FindDequantizeWithReshape(ctx, i, &dequantize_with_reshape)) {
         TF_ABORT_IF_ERROR(AddFusedDequantizeWithReshape(
             &ctx, dequantize_with_reshape, &invalidated_nodes,
@@ -5714,14 +5726,14 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap L2loss+AddN into the _FusedAddN
       FusedAddN fused_addn;
-      if (level == default_level && FindFusedAddN(ctx, i, &fused_addn)) {
+      if (level == RemapperLevel::BASIC && FindFusedAddN(ctx, i, &fused_addn)) {
         TF_ABORT_IF_ERROR(AddFusedAddN(&ctx, fused_addn, &invalidated_nodes,
                                        &nodes_to_delete));
         continue;
       }
 
       AddV2WithSoftmax fused_addv2_with_softmax;
-      if (level == default_level &&
+      if (level == RemapperLevel::BASIC &&
           FindAddV2WithSoftmax(ctx, i, &fused_addv2_with_softmax)) {
         TF_ABORT_IF_ERROR(
             AddFusedAddV2WithSoftmaxNode(&ctx, fused_addv2_with_softmax,
@@ -5739,7 +5751,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Random Comparison+Cast into the RandomWithComparisonAndCast.
       RandomWithComparisonAndCast random_with_compare_and_cast;
-      if (level == default_level &&
+      if (level == RemapperLevel::BASIC &&
           FindRandomWithComparisonAndCast(ctx, i,
                                           &random_with_compare_and_cast)) {
         TF_ABORT_IF_ERROR(AddRandomWithComparisonAndCastNode(
@@ -5760,26 +5772,18 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Comparison+Cast into the ComparisonWithCast.
       ComparisonWithCast comparison_with_cast;
-      if (level == default_level &&
+      if (level == RemapperLevel::BASIC &&
           FindComparisonWithCast(ctx, i, &comparison_with_cast)) {
         TF_ABORT_IF_ERROR(AddComparisonWithCastNode(
             &ctx, comparison_with_cast, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
 
-      // Remap Mul+Max into the LeakyRelu.
-      MulWithMaximum mul_with_maximum;
-      if (level == default_level &&
-          FindMulWithMaximum(ctx, i, &mul_with_maximum)) {
-        TF_ABORT_IF_ERROR(AddMulWithMaximumNode(
-            &ctx, mul_with_maximum, &invalidated_nodes, &nodes_to_delete));
-        continue;
-      }
-
       // Remap Const+Cast into the Const. this fusion aims to reduce the number
       // of Cast which were produced by auto mixed precision.
       ConstWithCast const_with_cast;
-      if (FindConstWithCast(ctx, i, &const_with_cast)) {
+      if (level == RemapperLevel::BASIC &&
+          FindConstWithCast(ctx, i, &const_with_cast)) {
         TF_ABORT_IF_ERROR(AddConstWithCastNode(
             &ctx, const_with_cast, &invalidated_nodes, &nodes_to_delete));
         continue;
@@ -5789,7 +5793,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       // Disable it in 1st remapper since it may break other high priority
       // fusions.
       FusedBinary seq_binary;
-      if (level != default_level && FindFusedBinary(ctx, i, &seq_binary)) {
+      if (level != RemapperLevel::BASIC &&
+          FindFusedBinary(ctx, i, &seq_binary)) {
         TF_ABORT_IF_ERROR(AddFusedBinaryNode(
             &ctx, seq_binary, &invalidated_nodes, &nodes_to_delete));
       }

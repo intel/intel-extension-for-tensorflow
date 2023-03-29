@@ -26,7 +26,7 @@ namespace graph {
 
 class LayerNormFusionBase : public Fusion {
  public:
-  LayerNormFusionBase() : Fusion() { is_partial = true; }
+  LayerNormFusionBase() : Fusion() { is_partial_ = true; }
 
   ~LayerNormFusionBase() {}
 
@@ -256,7 +256,7 @@ class LayerNormFusionTransformerLT : public LayerNormFusionBase {
 // except switching 2 inputs in some binary ops.
 class LayerNormFusionDistilBase : public Fusion {
  public:
-  LayerNormFusionDistilBase() : Fusion() { is_partial = true; }
+  LayerNormFusionDistilBase() : Fusion() { is_partial_ = true; }
 
   ~LayerNormFusionDistilBase() {}
 
@@ -507,7 +507,6 @@ class LayerNormFusionDistil1 : public LayerNormFusionDistilBase {
 class LayerNormFusionDistil2 : public LayerNormFusionDistilBase {
  public:
   LayerNormFusionDistil2() : LayerNormFusionDistilBase() {
-    is_partial = true;
     using utils::NodeStatus;
     using utils::OpTypePattern;
     OpTypePattern input = {kAny, "input", NodeStatus::kRemain};
