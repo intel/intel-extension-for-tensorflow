@@ -27,6 +27,7 @@ import tensorflow as tf
 
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import config
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.ops import math_ops
@@ -542,9 +543,12 @@ def experimental_ops_override():
     tf.keras.layers.LayerNormalization.call = itex_layer_norm_call
     tf.keras.layers.LayerNormalization.build = itex_layer_norm_build
     tf.nn.gelu = gelu
-    tf.keras.layers.LSTM = ItexLSTM
-    from tensorflow.python import keras # pylint: disable=import-outside-toplevel
-    keras.layers.LSTM = ItexLSTM
+    if config.list_logical_devices('XPU'):
+      # TODO(itex): Complement the complete implementation of CPU, and When
+      # CPU of XPU is launched, this workaround may be re-edit.
+      tf.keras.layers.LSTM = ItexLSTM
+      from tensorflow.python import keras # pylint: disable=import-outside-toplevel
+      keras.layers.LSTM = ItexLSTM
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
     logger.error("Cannot override itex ops.")
@@ -553,6 +557,7 @@ def experimental_ops_override():
     keras.layers.core.dense.Dense.call = itex_dense_layer_call
     keras.layers.LayerNormalization.call = itex_layer_norm_call
     keras.layers.LayerNormalization.build = itex_layer_norm_build
-    keras.layers.LSTM = ItexLSTM
+    if config.list_logical_devices('XPU'):
+      keras.layers.LSTM = ItexLSTM
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long
