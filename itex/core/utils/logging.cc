@@ -204,7 +204,10 @@ LogMessage& LogMessage::AtLocation(const char* fname, int line) {
 
 LogMessage::~LogMessage() {
   // Read the min log level once during the first call to logging.
-  static int64 min_log_level = MinLogLevelFromEnv();
+  // TODO(itex): Temporarily ignore TF min log limitation, will fix later
+  //             after figured out where the limiation is.
+  // static int64 min_log_level = MinLogLevelFromEnv();
+  static int64 min_log_level = itex::INFO;
   if (severity_ >= min_log_level) {
     GenerateLogMessage();
   }
