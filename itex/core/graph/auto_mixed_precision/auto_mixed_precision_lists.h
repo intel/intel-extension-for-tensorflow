@@ -219,7 +219,7 @@ class AutoMixedPrecisionLists {
       "GeluGrad",
       "Inv",
       "ITEXGelu",
-      "ITEXGeluGrad"
+      "ITEXGeluGrad",
       "ITEXLayerNorm",
       "LayerNorm",
       "LeakyRelu",
