@@ -433,9 +433,9 @@ class AutoMixedPrecisionListsCPU : public AutoMixedPrecisionLists {
   }
 
   gtl::FlatSet<string> InferList() override {
-    auto add_ops = gtl::FlatSet<string>{"Sum"};
+    auto add_ops = gtl::FlatSet<string>{"Sum", "Square"};
     for (auto op : add_ops) {
-      allow_list_ops.insert(op);
+      infer_list_ops.insert(op);
     }
     UpdateList("INFERLIST", &infer_list_ops);
     return infer_list_ops;
@@ -444,7 +444,7 @@ class AutoMixedPrecisionListsCPU : public AutoMixedPrecisionLists {
   gtl::FlatSet<string> DenyList() override {
     auto remove_ops = gtl::FlatSet<string>{"Sum"};
     for (auto op : remove_ops) {
-      allow_list_ops.insert(op);
+      deny_list_ops.erase(op);
     }
     UpdateList("DENYLIST", &deny_list_ops);
     return deny_list_ops;
