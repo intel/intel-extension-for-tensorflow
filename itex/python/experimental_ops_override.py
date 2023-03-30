@@ -34,7 +34,7 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.util import compat
 
 from intel_extension_for_tensorflow.python.ops.layer_norm import _layer_norm
-from intel_extension_for_tensorflow.python.ops.activations import gelu
+from intel_extension_for_tensorflow.python.ops.activations import gelu as itex_gelu
 from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM
 
 format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -542,7 +542,10 @@ def experimental_ops_override():
     tf.keras.layers.Dense.call = itex_dense_layer_call
     tf.keras.layers.LayerNormalization.call = itex_layer_norm_call
     tf.keras.layers.LayerNormalization.build = itex_layer_norm_build
-    tf.nn.gelu = gelu
+    
+    from tensorflow.nn import gelu # pylint: disable=import-outside-toplevel
+    gelu = itex_gelu
+    tf.nn.gelu = itex_gelu
     if config.list_logical_devices('XPU'):
       # TODO(itex): Complement the complete implementation of CPU, and When
       # CPU of XPU is launched, this workaround may be re-edit.
