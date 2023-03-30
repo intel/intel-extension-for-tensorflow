@@ -521,8 +521,8 @@ struct SubGroupRowReduction {
         extend_y_(extend_y),
         init_(init),
         op_(op) {}
-
-  void operator()(sycl::nd_item<1> item) const {
+  [[intel::reqd_sub_group_size(32)]] void operator()(
+      sycl::nd_item<1> item) const {
     auto group_id = item.get_group(0);
     auto sg = item.get_sub_group();
     auto group_size = item.get_local_range(0);
@@ -549,7 +549,7 @@ struct SubGroupRowReduction {
 
     sycl::group_barrier(sg, sycl::memory_scope::sub_group);
 
-    if (lane_id == 0) {
+    if (lane_id == 0 && x_index < extend_x_) {
       for (int i = 1; i < sub_group_size; i++) {
         local_data_[local_start] =
             op_(local_data_[local_start], local_data_[local_start + i]);
@@ -599,22 +599,19 @@ void LaunchRowReduction(OpKernelContext* context, InputT* in_data,
     int num_wg = DivUp(extend_x, static_cast<int>(group_size));
     sycl::nd_range<1> range(num_wg * group_size, group_size);
 
-    auto event = stream->submit([&](sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       SimpleReduction task(in_unqualified, out_data, extend_x, extend_y, init,
                            op);
       cgh.parallel_for<SimpleReduction>(range, task);
     });
   } else if (extend_y <= 1024) {
-    int max_sub_group_size =
-        (stream->get_device())
-            .template get_info<sycl::info::device::sub_group_sizes>()
-            .back();
+    constexpr int max_sub_group_size = 32;
     int num_sub_groups_in_group = group_size / max_sub_group_size;
     int num_wg = DivUp(extend_x, num_sub_groups_in_group);
 
     sycl::range<1> local(group_size);
     sycl::range<1> global(num_wg * group_size);
-    auto event = stream->submit([&](sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       __slm__<InitValueT> local_data(group_size, cgh);
       SubGroupReduction task(in_unqualified, local_data, out_data, extend_x,
                              extend_y, init, op);
@@ -624,8 +621,7 @@ void LaunchRowReduction(OpKernelContext* context, InputT* in_data,
   } else {
     sycl::range<1> local(group_size);
     sycl::range<1> global(extend_x * local[0]);
-    auto event = stream->submit([&](sycl::handler &
-                                    cgh) [[intel::reqd_sub_group_size(32)]] {
+    stream->submit([&](sycl::handler& cgh) {
       __slm__<InitValueT> local_data(group_size, cgh);
       GroupReduction task(in_unqualified, local_data, out_data, extend_x,
                           extend_y, init, op);
