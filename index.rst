@@ -9,7 +9,7 @@ Welcome to Intel ® Extension for TensorFlow* documentation!
    docs/guide/infrastructure.md
    docs/guide/features.rst
    docs/install/installation_guide.rst
-   examples/__examples.md
+   examples/examples.md
    docs/guide/practice_guide.md
    docs/guide/FAQ.md
    docs/community/releases.md
