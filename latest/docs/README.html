@@ -37,11 +37,11 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../__get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples/__examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="community/releases.html">Releases</a></li>
@@ -122,10 +122,11 @@
 		<td colspan="3" align="center"><a href="guide/itex_ops.md">Operator optimization</a></td>
     </tr>
     <tr>
-        <td colspan="3" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
-        <td colspan="3" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
-		<td colspan="3" align="center"><a href="guide/launch.md">CPU launcher</a></td>
-        <td colspan="3" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
+        <td colspan="2.4" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
+        <td colspan="2.4" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
+		<td colspan="2.4" align="center"><a href="guide/launch.md">CPU launcher</a></td>
+        <td colspan="2.4" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
+	<td colspan="2.4" align="center"><a href="guide/XPUAutoShard.md">XPUAutoShard</a></td>
     </tr>
   </tbody>
   <thead>
@@ -175,6 +176,9 @@ Intel® Extension for TensorFlow* also provides simple frontend Python APIs and 
 </li>
 <li><p>INT8 quantization</p>
 <p>Intel® Extension for TensorFlow* co-works with <a class="reference external" href="https://github.com/intel/neural-compressor">Intel® Neural Compressor</a> to provide compatible TensorFlow INT8 quantization solution support with equivalent user experience.</p>
+</li>
+<li><p>XPUAutoShard on GPU [Experimental]</p>
+<p>Intel® Extension for TensorFlow* provides XPUAutoShard feature to automatically shard the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage.</p>
 </li>
 </ul>
 </div>

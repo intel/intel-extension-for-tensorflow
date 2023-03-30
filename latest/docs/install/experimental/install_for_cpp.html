@@ -16,7 +16,7 @@
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Examples" href="../../../examples/__examples.html" />
+    <link rel="next" title="Examples" href="../../../examples/examples.html" />
     <link rel="prev" title="Build from Source Code" href="../how_to_build.html" /> 
 </head>
 
@@ -39,7 +39,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../../__get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/features.html">Features</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../installation_guide.html">Installation Guide</a><ul class="current">
@@ -69,7 +69,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/__examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../community/releases.html">Releases</a></li>
@@ -165,14 +165,23 @@ $ bazel build --jobs <span class="m">96</span> --config<span class="o">=</span>o
 $ ls ./bazel-bin/tensorflow/libtensorflow_cc.so
 </pre></div>
 </div>
+<p>libtensorflow_cc.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/libtensorflow_cc.so</span></code></p>
+<ol class="simple">
+<li><p>Build Tensorflow header files</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build --config<span class="o">=</span>opt tensorflow:install_headers
+$ ls ./bazel-bin/tensorflow/include
+</pre></div>
+</div>
+<p>Tensorflow header file location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/include</span></code></p>
 </div>
 <div class="section" id="integrate-the-cc-library">
 <h2>Integrate the CC library<a class="headerlink" href="#integrate-the-cc-library" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="linker">
 <h3>Linker<a class="headerlink" href="#linker" title="Permalink to this headline">¶</a></h3>
 <p>If you place the Intel® Extension for TensorFlow* CC library to a non-system directory, such as ~/mydir, then configure the linker environmental variables:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LIBRARY_PATH</span>:~/mydir/lib
-$ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:~/mydir/lib
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LIBRARY_PATH</span>:~/mydir/
+$ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:~/mydir/
 </pre></div>
 </div>
 </div>
@@ -269,8 +278,8 @@ To support Intel® Extension for TensorFlow* cc library, we need to modify the o
 <h3>Build and run<a class="headerlink" href="#build-and-run" title="Permalink to this headline">¶</a></h3>
 <p>Place a <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> file in the same directory of <code class="docutils literal notranslate"><span class="pre">example.cc</span></code> with the following contents:</p>
 <ul class="simple">
-<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TF_INCLUDE_PATH&gt;</span></code> with local tensorflow include path.</p></li>
-<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TFCC_PATH&gt;</span></code> with local tensorflow_cc path, the path of libtensorflow_cc.so.</p></li>
+<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TF_INCLUDE_PATH&gt;</span></code> with local tensorflow include path: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/include/</span></code></p></li>
+<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TFCC_PATH&gt;</span></code> with local tensorflow_cc path: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/</span></code></p></li>
 </ul>
 <div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span>// Makefile
 target = example_test
@@ -307,7 +316,7 @@ $ ./example_test
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../how_to_build.html" class="btn btn-neutral float-left" title="Build from Source Code" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../../../examples/__examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../../../examples/examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

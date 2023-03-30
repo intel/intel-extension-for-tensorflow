@@ -39,7 +39,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
@@ -65,6 +65,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#itex-gpuoptions">itex.GPUOptions</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-graphoptions">itex.GraphOptions</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-automixedprecisionoptions">itex.AutoMixedPrecisionOptions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-shardingconfig">itex.ShardingConfig</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-debugoptions">itex.DebugOptions</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-set-config">itex.set_config</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-get-config">itex.get_config</a></li>
@@ -81,10 +82,11 @@
 <li class="toctree-l2"><a class="reference internal" href="features.html#gpu-profiler">GPU Profiler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/__examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -126,16 +128,17 @@
 <div class="section" id="prerequisite-import-intel-extension-for-tensorflow-as-itex">
 <h3>Prerequisite: <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">intel_extension_for_tensorflow</span> <span class="pre">as</span> <span class="pre">itex</span></code><a class="headerlink" href="#prerequisite-import-intel-extension-for-tensorflow-as-itex" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><a class="reference external" href="#set-itex-backend"><em>itex.set_backend</em></a>: Public API for setting backend type and options.</p></li>
-<li><p><a class="reference external" href="#set-itex-backend"><em>itex.get_backend</em></a>: Public API for getting backend type.</p></li>
-<li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.ConfigProto</em></a>: ProtocolMessage for XPU configuration under different types of backends and optimization options.</p></li>
-<li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.GPUOptions</em></a>: ProtocolMessage for GPU configuration optimization options.</p></li>
-<li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.GraphOptions</em></a>: ProtocolMessage for graph configuration optimization options.</p></li>
-<li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.AutoMixedPrecisionOptions</em></a>: ProtocolMessage for auto mixed precision optimization options.</p></li>
-<li><p><a class="reference external" href="#ITEX-config-protocol"><em>itex.DebugOptions</em></a>: ProtocolMessage for debug options.</p></li>
-<li><p><a class="reference external" href="#set-itex-config"><em>itex.set_config</em></a>: Public API for setting ConfigProto.</p></li>
-<li><p><a class="reference external" href="#set-itex-config"><em>itex.get_config</em></a>: Public API for getting ConfigProto.</p></li>
-<li><p><a class="reference external" href="#itex-ops"><em>itex.ops</em></a>: Public API for extended XPU operations.</p></li>
+<li><p><a class="reference external" href="#itexset_backend"><em>itex.set_backend</em></a>: Public API for setting backend type and options.</p></li>
+<li><p><a class="reference external" href="#itexget_backend"><em>itex.get_backend</em></a>: Public API for getting backend type.</p></li>
+<li><p><a class="reference external" href="#itexconfigproto"><em>itex.ConfigProto</em></a>: ProtocolMessage for XPU configuration under different types of backends and optimization options.</p></li>
+<li><p><a class="reference external" href="#itexgpuoptions"><em>itex.GPUOptions</em></a>: ProtocolMessage for GPU configuration optimization options.</p></li>
+<li><p><a class="reference external" href="#itexgraphoptions"><em>itex.GraphOptions</em></a>: ProtocolMessage for graph configuration optimization options.</p></li>
+<li><p><a class="reference external" href="#itexautomixedprecisionoptions"><em>itex.AutoMixedPrecisionOptions</em></a>: ProtocolMessage for auto mixed precision optimization options.</p></li>
+<li><p><a class="reference external" href="#itexshardingconfig"><em>itex.ShardingConfig</em></a>: ProtocolMessage for XPUAutoShard optimization options.</p></li>
+<li><p><a class="reference external" href="#itexdebugoptions"><em>itex.DebugOptions</em></a>: ProtocolMessage for debug options.</p></li>
+<li><p><a class="reference external" href="#itexset_config"><em>itex.set_config</em></a>: Public API for setting ConfigProto.</p></li>
+<li><p><a class="reference external" href="#itexget_config"><em>itex.get_config</em></a>: Public API for getting ConfigProto.</p></li>
+<li><p><a class="reference external" href="#itex-operators"><em>itex.ops</em></a>: Public API for extended XPU operations.</p></li>
 <li><p><a class="reference external" href="#itex-version"><em>itex.version</em></a>: Public API for Intel® Extension for TensorFlow* and components version information.</p></li>
 </ul>
 </div>
@@ -172,9 +175,9 @@
 </tr>
 <tr>
 <td><code>itex.ConfigProto</code></td>
-<td><code>OFF</code><br><code>ON</code><br><code>ON</code><br/><code>OFF</code><br/></td>
-<td><code>ITEX_ONEDNN_GRAPH</code> <br><code>ITEX_LAYOUT_OPT</code><br><code>ITEX_REMAPPER</code><br><code>ITEX_AUTO_MIXED_PRECISION</code></td>
-<td><code>0</code><br><code>1</code>*<br><code>1</code><br/><code>0</code><br/></td>
+<td><code>OFF</code><br><code>ON</code><br><code>ON</code><br/><code>OFF</code><br/><code>OFF</code><br/></td>
+<td><code>ITEX_ONEDNN_GRAPH</code> <br><code>ITEX_LAYOUT_OPT</code><br><code>ITEX_REMAPPER</code><br><code>ITEX_AUTO_MIXED_PRECISION</code><br><code>ITEX_SHARDING</code></td>
+<td><code>0</code><br><code>1</code>*<br><code>1</code><br/><code>0</code><br/><code>0</code><br/></td>
 <td>Set configuration options for specific backend type (<code>CPU</code>/<code>GPU</code>) and graph optimization. <br/> *<code>ITEX_LAYOUT_OPT</code> default <code>ON</code> in Intel GPU (except Intel® Data Center GPU Max Series) and default <code>OFF</code> in Intel CPU by hardware attributes</td>
 </tr>
 </tbody>
@@ -378,6 +381,10 @@
 <td><code>auto_mixed_precision</code></td>
 <td>Toggle auto_mixed_precision <br/><br/>Override the environment variable <code>ITEX_AUTO_MIXED_PRECISION</code>. Set if mixed precision is enabled to benefit from using both 16-bit and 32-bit floating-point types to accelerate modes.<br/>Enable or disable the  auto mixed precision. The default value is <code>OFF</code>.<br/>  <br/> * If <code>ON</code>, will enable auto mixed precision optimization.<br/> * If <code>OFF</code>, will disable auto mixed precision optimization.</td>
 </tr>
+<tr>
+<td><code>sharding</code></td>
+<td>Toggle sharding <br/><br/>Currently only supports Intel GPUs with multi-tiles. Override the environment variable <code>ITEX_SHARDING</code>. Set if XPUAutoShard is enabled to benefit from sharding input data/graph to maximize hardware usage.<br/>Enable or disable the XPUAutoShard. The default value is <code>OFF</code>.<br/>  <br/> * If <code>ON</code>, will enable XPUAutoShard optimization.<br/> * If <code>OFF</code>, will disable XPUAutoShard optimization.</td>
+</tr>
 </tbody>
 </table><p>Examples:</p>
 <p>I. Setting the options while creating the config protocol object</p>
@@ -421,6 +428,11 @@
 <h3>itex.AutoMixedPrecisionOptions<a class="headerlink" href="#itex-automixedprecisionoptions" title="Permalink to this headline">¶</a></h3>
 <p>ProtocolMessage for auto mixed precision optimization options.</p>
 <p>Refer to <a class="reference internal" href="advanced_auto_mixed_precision.html"><span class="doc">Advanced Auto Mixed Precision</span></a>.</p>
+</div>
+<div class="section" id="itex-shardingconfig">
+<h3>itex.ShardingConfig<a class="headerlink" href="#itex-shardingconfig" title="Permalink to this headline">¶</a></h3>
+<p>ProtocolMessage for XPUAutoShard optimization options. Currently only supports Intel GPUs with multi-tiles.</p>
+<p>Refer to <a class="reference internal" href="XPUAutoShard.html"><span class="doc">XPUAutoShard on GPU</span></a>.</p>
 </div>
 <div class="section" id="itex-debugoptions">
 <h3>itex.DebugOptions<a class="headerlink" href="#itex-debugoptions" title="Permalink to this headline">¶</a></h3>

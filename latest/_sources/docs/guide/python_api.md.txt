@@ -6,16 +6,17 @@ Intel® Extension for TensorFlow* provides flexible Python APIs to configure set
 
 ##### Prerequisite: `import intel_extension_for_tensorflow as itex`
 
-* [*itex.set_backend*](#set-itex-backend): Public API for setting backend type and options.
-* [*itex.get_backend*](#set-itex-backend): Public API for getting backend type.
-* [*itex.ConfigProto*](#ITEX-config-protocol): ProtocolMessage for XPU configuration under different types of backends and optimization options.
-* [*itex.GPUOptions*](#ITEX-config-protocol): ProtocolMessage for GPU configuration optimization options.
-* [*itex.GraphOptions*](#ITEX-config-protocol): ProtocolMessage for graph configuration optimization options.
-* [*itex.AutoMixedPrecisionOptions*](#ITEX-config-protocol): ProtocolMessage for auto mixed precision optimization options.
-* [*itex.DebugOptions*](#ITEX-config-protocol): ProtocolMessage for debug options.
-* [*itex.set_config*](#set-itex-config): Public API for setting ConfigProto.
-* [*itex.get_config*](#set-itex-config): Public API for getting ConfigProto.
-* [*itex.ops*](#itex-ops): Public API for extended XPU operations.
+* [*itex.set_backend*](#itexset_backend): Public API for setting backend type and options.
+* [*itex.get_backend*](#itexget_backend): Public API for getting backend type.
+* [*itex.ConfigProto*](#itexconfigproto): ProtocolMessage for XPU configuration under different types of backends and optimization options.
+* [*itex.GPUOptions*](#itexgpuoptions): ProtocolMessage for GPU configuration optimization options.
+* [*itex.GraphOptions*](#itexgraphoptions): ProtocolMessage for graph configuration optimization options.
+* [*itex.AutoMixedPrecisionOptions*](#itexautomixedprecisionoptions): ProtocolMessage for auto mixed precision optimization options.
+* [*itex.ShardingConfig*](#itexshardingconfig): ProtocolMessage for XPUAutoShard optimization options.
+* [*itex.DebugOptions*](#itexdebugoptions): ProtocolMessage for debug options.
+* [*itex.set_config*](#itexset_config): Public API for setting ConfigProto.
+* [*itex.get_config*](#itexget_config): Public API for getting ConfigProto.
+* [*itex.ops*](#itex-operators): Public API for extended XPU operations.
 * [*itex.version*](#itex-version): Public API for Intel® Extension for TensorFlow* and components version information.
 
 ## Python APIs and Environment Variable Names
@@ -28,7 +29,7 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 | ------------------ | ------------------ | ------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------ |
 | `itex.set_backend` |`GPU`or`CPU` |`ITEX_XPU_BACKEND`                                           | `GPU`or`CPU`                                        | set `CPU`/`GPU` as specific `XPU` backend with optimization options for execution.  |
 | `itex.get_backend` |`N/A`| `N/A`                                                        | `N/A`                                        | Get the string of current XPU backend. For example `CPU`, `GPU` or `AUTO`. |
-| `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION` | `0`<br>`1`*<br>`1`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Intel® Data Center GPU Max Series) and default `OFF` in Intel CPU by hardware attributes|
+| `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION`<br>`ITEX_SHARDING` | `0`<br>`1`*<br>`1`<br/>`0`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Intel® Data Center GPU Max Series) and default `OFF` in Intel CPU by hardware attributes|
 
 **Notes:**
 1. The priority for setting values is as follows: Python APIs > Environment Variables > Default value.
@@ -151,6 +152,7 @@ Then the log will output `GPU`.
 | `layout_opt ` |Toggle layout_opt <br><br>Override the environment variable `ITEX_LAYOUT_OPT`. Set if oneDNN layout optimization is enabled to benefit from oneDNN block format.<br> Enable or disable the oneDNN layout. The default value is `OFF`.<br>  <br> * If `ON`, will enable oneDNN layout optimization.<br> * If `OFF`, will disable oneDNN layout optimization.|
 | `remapper` |Toggle remapper <br/><br/>Override the environment variable `ITEX_REMAPPER`. Set if remapper optimization is enabled to benefit from sub-graph fusion.<br/> Enable or disable the remapper. The default value is `ON`.<br/>  <br/> * If `ON`, will enable remapper optimization.<br/> * If `OFF`, will disable remapper optimization.|
 | `auto_mixed_precision` |Toggle auto_mixed_precision <br/><br/>Override the environment variable `ITEX_AUTO_MIXED_PRECISION`. Set if mixed precision is enabled to benefit from using both 16-bit and 32-bit floating-point types to accelerate modes.<br/>Enable or disable the  auto mixed precision. The default value is `OFF`.<br/>  <br/> * If `ON`, will enable auto mixed precision optimization.<br/> * If `OFF`, will disable auto mixed precision optimization.|
+| `sharding` |Toggle sharding <br/><br/>Currently only supports Intel GPUs with multi-tiles. Override the environment variable `ITEX_SHARDING`. Set if XPUAutoShard is enabled to benefit from sharding input data/graph to maximize hardware usage.<br/>Enable or disable the XPUAutoShard. The default value is `OFF`.<br/>  <br/> * If `ON`, will enable XPUAutoShard optimization.<br/> * If `OFF`, will disable XPUAutoShard optimization.|
 
 Examples:
 
@@ -197,6 +199,12 @@ graph_options {
 ProtocolMessage for auto mixed precision optimization options.
 
 Refer to [Advanced Auto Mixed Precision](advanced_auto_mixed_precision.md).
+
+### itex.ShardingConfig
+
+ProtocolMessage for XPUAutoShard optimization options. Currently only supports Intel GPUs with multi-tiles.
+
+Refer to [XPUAutoShard on GPU](XPUAutoShard.md).
 
 ### itex.DebugOptions
 

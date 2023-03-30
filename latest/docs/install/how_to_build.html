@@ -39,7 +39,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../__get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="installation_guide.html">Installation Guide</a><ul class="current">
@@ -49,34 +49,40 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Build from Source Code</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#prepare">Prepare</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#hardware-requirement">Hardware Requirement</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#python">Python</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#intel-gpu-driver">Intel GPU Driver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#python-running-environment">Python Running Environment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#intel-gpu-driver-optional-gpu-only">Intel GPU Driver (Optional, GPU only)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#tensorflow">TensorFlow</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#install-oneapi-base-toolkit">Install oneAPI Base Toolkit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#install-bazel">Install Bazel</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#download-the-intel-extension-for-tensorflow-source-code">Download the Intel® Extension for TensorFlow* source code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#download-the-intel-extension-for-tensorflow-source-code">Download the Intel® Extension for TensorFlow* Source Code</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#configure-the-build">Configure the build</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#sample-configuration-session">Sample configuration session</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#configuration-options-explanation">Configuration options explanation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configure">Configure</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#choose-to-build-with-gpu-support">Choose to Build with GPU Support.</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#specify-the-location-of-compiler-dpc">Specify the Location of Compiler (DPC++).</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#specify-the-ahead-of-time-aot-compilation-platforms">Specify the Ahead of Time (AOT) Compilation Platforms.</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#choose-to-build-with-onemkl-support">Choose to Build with oneMKL Support.</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#build-the-pip-package">Build the pip package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#gpu-support">GPU support</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#cpu-only-experimental">CPU only (experimental)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#build-the-package">Build the package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#install-the-package">Install the package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#installation-package-directory">Installation package directory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-the-pip-package">Build the Pip Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#build-source-code">Build Source Code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-the-pip-package">Create the Pip Package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#install-the-package">Install the Package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installation-package-directory">Installation Package Directory</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#uninstall">Uninstall</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#addtional">Addtional</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#configure-example">Configure Example</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="experimental/install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/__examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -112,42 +118,80 @@
              
   <div class="section" id="build-from-source-code">
 <h1>Build from Source Code<a class="headerlink" href="#build-from-source-code" title="Permalink to this headline">¶</a></h1>
-<p>This guide shows how to build an Intel® Extension for TensorFlow* PyPI package from source and install it in Ubuntu 20.04 (64-bit).</p>
+<p>This guide shows how to build an Intel® Extension for TensorFlow* PyPI package from source and install it in Ubuntu 22.04 (64-bit).</p>
+<p>When will you need to build from source code?</p>
+<ol class="simple">
+<li><p>You want to get the latest feature in development branch.</p></li>
+<li><p>You want to develop feature or contribute on Intel® Extension for TensorFlow*.</p></li>
+<li><p>Verify your code update.</p></li>
+</ol>
 <div class="section" id="prepare">
 <h2>Prepare<a class="headerlink" href="#prepare" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="hardware-requirement">
 <h3>Hardware Requirement<a class="headerlink" href="#hardware-requirement" title="Permalink to this headline">¶</a></h3>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/docs/discrete-gpus/data-center-gpu/flex-series/overview.html">Intel® Data Center GPU Flex Series 170</a></p></li>
+<li><p>Intel® CPU (Xeon, Core)</p></li>
+<li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/docs/discrete-gpus/data-center-gpu/flex-series/overview.html">Intel® Data Center GPU Flex Series</a></p></li>
 <li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/docs/processors/max-series/overview.html">Intel® Data Center GPU Max Series</a></p></li>
+<li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/details/discrete-gpus/arc.html">Intel® Arc™ Graphics</a> (experimental)</p></li>
 </ul>
 </div>
-<div class="section" id="python">
-<h3>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h3>
-<p>Python 3.8-3.11</p>
+<div class="section" id="python-running-environment">
+<h3>Python Running Environment<a class="headerlink" href="#python-running-environment" title="Permalink to this headline">¶</a></h3>
+<ol class="simple">
+<li><p>Conda</p></li>
+</ol>
+<p>Please install <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">conda</a>.</p>
+<ol class="simple">
+<li><p>Create Virtual Running Environment</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">itex_build</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
+<span class="n">conda</span> <span class="n">activate</span> <span class="n">itex_build</span>
+</pre></div>
 </div>
-<div class="section" id="intel-gpu-driver">
-<h3>Intel GPU Driver<a class="headerlink" href="#intel-gpu-driver" title="Permalink to this headline">¶</a></h3>
-<p>An Intel GPU driver is needed to build with GPU support and <strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong>.</p>
+<p>Note, support Python 3.8-3.11.</p>
+</div>
+<div class="section" id="intel-gpu-driver-optional-gpu-only">
+<h3>Intel GPU Driver (Optional, GPU only)<a class="headerlink" href="#intel-gpu-driver-optional-gpu-only" title="Permalink to this headline">¶</a></h3>
+<p>Please install the Intel GPU Driver in the building server, which is needed to build with GPU support and <strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong>.</p>
 <p>Refer to <a class="reference internal" href="install_for_gpu.html"><span class="doc">Install Intel GPU driver</span></a>.</p>
-<p>Note: Please make sure to <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-focal-dc.html#optional-install-developer-packages">install developer run-time packages</a> before building Intel® Extension for TensorFlow*.</p>
+<p>Note:</p>
+<ol class="simple">
+<li><p>Please make sure to <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages">install developer run-time packages</a> before building Intel® Extension for TensorFlow*.</p></li>
+<li><p><strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong></p></li>
+</ol>
+<p>AOT is option of compiling, which reduces the initialization time of GPU kernels at startup time, by creating the binary code for specified hardware platform directly during compiling. AOT will make the installation package be with bigger size.</p>
+<p>Without AOT, Intel® Extension for TensorFlow* will be translated to binary code for local hardware platform during startup. That will prolong startup time to several minutes or more.</p>
+<p>For more info, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Use AOT for Integrated Graphics (Intel GPU)</a>.</p>
 </div>
 <div class="section" id="tensorflow">
 <h3>TensorFlow<a class="headerlink" href="#tensorflow" title="Permalink to this headline">¶</a></h3>
 <p>Install TensorFlow 2.12, and refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12</span>
+</pre></div>
+</div>
 <p>Check TensorFlow version:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import tensorflow as tf;print(tf.__version__)&quot;</span>
 </pre></div>
 </div>
+<p>For detail, refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a></p>
 </div>
 <div class="section" id="install-oneapi-base-toolkit">
 <h3>Install oneAPI Base Toolkit<a class="headerlink" href="#install-oneapi-base-toolkit" title="Permalink to this headline">¶</a></h3>
+<p>We recommend to install oneAPI by ‘sudo or root’ to folder <strong>/opt/intel/oneapi</strong>.</p>
+<p>Following commands are based on the folder <strong>/opt/intel/oneapi</strong>. If you install it in other folder, please change the oneAPI path as yours.</p>
 <p>Refer to <a class="reference external" href="install_for_gpu.html#install-oneapi-base-toolkit-packages">Install oneAPI Base Toolkit Packages</a></p>
+<p>It provides compiler and libraried used by Intel® Extension for TensorFlow*.</p>
+<p>Enable oneAPI componets:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">compiler</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">source</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">mkl</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="install-bazel">
 <h3>Install Bazel<a class="headerlink" href="#install-bazel" title="Permalink to this headline">¶</a></h3>
-<p>To build Intel® Extension for TensorFlow*, install Bazel 5.3.0 or later ones. Refer to <a class="reference external" href="https://docs.bazel.build/versions/main/install-ubuntu.html">install Bazel</a>.</p>
+<p>To build Intel® Extension for TensorFlow*, install Bazel 5.3.0. Refer to <a class="reference external" href="https://docs.bazel.build/versions/main/install-ubuntu.html">install Bazel</a>.</p>
 <p>Here are the recommended commands:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ wget https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
 $ bash bazel-5.3.0-installer-linux-x86_64.sh --user
@@ -159,123 +203,92 @@ $ bash bazel-5.3.0-installer-linux-x86_64.sh --user
 </div>
 </div>
 <div class="section" id="download-the-intel-extension-for-tensorflow-source-code">
-<h3>Download the Intel® Extension for TensorFlow* source code<a class="headerlink" href="#download-the-intel-extension-for-tensorflow-source-code" title="Permalink to this headline">¶</a></h3>
+<h3>Download the Intel® Extension for TensorFlow* Source Code<a class="headerlink" href="#download-the-intel-extension-for-tensorflow-source-code" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/intel/intel-extension-for-tensorflow.git intel-extension-for-tensorflow
 $ <span class="nb">cd</span> intel-extension-for-tensorflow
 </pre></div>
 </div>
-<p>Change to release branch (Optional):</p>
-<p>The repo defaults to the <code class="docutils literal notranslate"><span class="pre">master</span></code> development branch. You can also check out a release branch to build:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git checkout branch_name
+<p>Change to special release/tag (Optional):</p>
+<p>The repo defaults to the <code class="docutils literal notranslate"><span class="pre">master</span></code> development branch. You can also check out a release branch or tag to build:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git checkout branch_name/tag_name
 </pre></div>
 </div>
 </div>
 </div>
-<div class="section" id="configure-the-build">
-<h2>Configure the build<a class="headerlink" href="#configure-the-build" title="Permalink to this headline">¶</a></h2>
-<p>Configure your system build by running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> command at the root of your Intel® Extension for TensorFlow* source tree.  This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).</p>
+<div class="section" id="configure">
+<h2>Configure<a class="headerlink" href="#configure" title="Permalink to this headline">¶</a></h2>
+<p>Configure the system build by running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> command at the root of your Intel® Extension for TensorFlow* source tree.  This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">configure</span>
 </pre></div>
 </div>
-<div class="section" id="sample-configuration-session">
-<h3>Sample configuration session<a class="headerlink" href="#sample-configuration-session" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>For GPU</p></li>
-</ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 5.3.0 installed.
-Python binary path: /path/to/python
-
-Found possible Python library paths:
-[&#39;/path/to/python/site-packages&#39;]
-
-Do you wish to build Intel® Extension for TensorFlow* with GPU support? [Y/n]:
-GPU support will be enabled for Intel® Extension for TensorFlow*.
-
-Please specify the location where DPC++ is installed. [Default is /opt/intel/oneapi/compiler/latest/linux/]: /path/to/DPC++
-
-
-Please specify the Ahead of Time(AOT) compilation platforms, separate with &quot;,&quot; for multi-targets. [Default is ]: ats-m150
-
-
-Do you wish to build Intel® Extension for TensorFlow* with MKL support? [y/N]: y
-MKL support will be enabled for Intel® Extension for TensorFlow*.
-
-Please specify the MKL toolkit folder. [Default is /opt/intel/oneapi/mkl/latest]: /path/to/oneMKL
-
-
-Preconfigured Bazel build configs. You can use any of the below by adding &quot;--config=&lt;&gt;&quot; to your build command. See .bazelrc for more details.
-        --config=gpu            # Build Intel® Extension for TensorFlow* with GPU support.
-Configuration finished
-</pre></div>
+<div class="section" id="choose-to-build-with-gpu-support">
+<h3>Choose to Build with GPU Support.<a class="headerlink" href="#choose-to-build-with-gpu-support" title="Permalink to this headline">¶</a></h3>
+<p>‘Y’ for GPU support; ‘n’ for CPU only.</p>
 </div>
-<ul class="simple">
-<li><p>For CPU</p></li>
-</ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 5.3.0 installed.
-Python binary path: /path/to/python
-
-Found possible Python library paths:
-[&#39;/path/to/python/site-packages&#39;]
-
-Do you wish to build Intel® Extension for TensorFlow* with GPU support? [Y/n]: N
-No GPU support will be enabled for Intel® Extension for TensorFlow*.
-
-Only CPU support is available for Intel® Extension for TensorFlow*.
-Preconfigured Bazel build configs. You can use any of the below by adding &quot;--config=&lt;&gt;&quot; to your build command. See .bazelrc for more details.
-        --config=cpu            # Build Intel® Extension for TensorFlow* with CPU support.
-Configuration finished
-</pre></div>
+<div class="section" id="specify-the-location-of-compiler-dpc">
+<h3>Specify the Location of Compiler (DPC++).<a class="headerlink" href="#specify-the-location-of-compiler-dpc" title="Permalink to this headline">¶</a></h3>
+<p>Default is <strong>/opt/intel/oneapi/compiler/latest/linux/</strong>, that is the default installed path. Click <strong>enter</strong> to confirm default location.</p>
+<p>If it’s wrong, please confirm the compiler (DPC++) installed path and fill the correct path.</p>
 </div>
-</div>
-<div class="section" id="configuration-options-explanation">
-<h3>Configuration options explanation<a class="headerlink" href="#configuration-options-explanation" title="Permalink to this headline">¶</a></h3>
-<p><strong>GPU support</strong></p>
-<p>Set “build Intel® Extension for TensorFlow* with GPU support” to <code class="docutils literal notranslate"><span class="pre">Y</span></code> if you want to build with Intel GPU support. Set to <code class="docutils literal notranslate"><span class="pre">N</span></code> if build for CPU only. Default is <code class="docutils literal notranslate"><span class="pre">Y</span></code>.</p>
-<p><strong>Location of DPC++</strong></p>
-<p>The path to DPC++ compiler. Default is <code class="docutils literal notranslate"><span class="pre">/opt/intel/oneapi/compiler/latest/linux/</span></code>.</p>
-<p><strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong></p>
-<p>An optional option benefits from the initialization time of GPU kernels at runtime, but increases the binary size on the other hand, which requires GPU driver to be ready on building machine.</p>
-<p>Reference for AOT compilation platforms:</p>
+<div class="section" id="specify-the-ahead-of-time-aot-compilation-platforms">
+<h3>Specify the Ahead of Time (AOT) Compilation Platforms.<a class="headerlink" href="#specify-the-ahead-of-time-aot-compilation-platforms" title="Permalink to this headline">¶</a></h3>
+<p>Default is ‘’, that means no AOT.</p>
+<p>Fill the one or more device type strings of special hardware platforms, like ‘ats-m150,acm-g11’.</p>
+<p>Here is the list of GPUs verified:</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
-<th>GPU card</th>
-<th>AOT target</th>
-<th>Comments</th>
+<th>GPU</th>
+<th>device type</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Intel® Data Center GPU Flex Series 170</td>
-<td><code>ats-m150</code></td>
-<td>The Intel® Data Center GPU Flex Series (formerly code-named Arctic Sound-M) with high-power, 150W adapter.</td>
+<td>ats-m150</td>
 </tr>
 <tr>
 <td>Intel® Data Center GPU Max Series</td>
-<td><code>pvc</code></td>
-<td>Intel® Data Center GPU Max Series (formerly code-named Ponte Vecchio).</td>
+<td>pvc</td>
+</tr>
+<tr>
+<td>Intel® Arc™ A730M</td>
+<td>acm-g10</td>
+</tr>
+<tr>
+<td>Intel® Arc™ A380</td>
+<td>acm-g11</td>
 </tr>
 </tbody>
-</table><p>For more GPU platforms, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Use AOT for Integrated Graphics (Intel GPU)</a>.</p>
+</table><p>To learn how to get the device type, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Use AOT for Integrated Graphics (Intel GPU)</a> or create an <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">issue</a> to ask support.</p>
+</div>
+<div class="section" id="choose-to-build-with-onemkl-support">
+<h3>Choose to Build with oneMKL Support.<a class="headerlink" href="#choose-to-build-with-onemkl-support" title="Permalink to this headline">¶</a></h3>
+<p>Recommend to choose ‘y’.</p>
+<p>Default is <strong>/opt/intel/oneapi/mkl/latest</strong>, that is the default installed path. Click <strong>enter</strong> to confirm default location.</p>
+<p>If it’s wrong, please confirm the oneMKL installed path and fill the correct path.</p>
+</div>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>Please refer to <a class="reference external" href="#configure-example">Configure Example</a>.</p>
 </div>
 </div>
 <div class="section" id="build-the-pip-package">
-<h2>Build the pip package<a class="headerlink" href="#build-the-pip-package" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="gpu-support">
-<h3>GPU support<a class="headerlink" href="#gpu-support" title="Permalink to this headline">¶</a></h3>
+<h2>Build the Pip Package<a class="headerlink" href="#build-the-pip-package" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="build-source-code">
+<h3>Build Source Code<a class="headerlink" href="#build-source-code" title="Permalink to this headline">¶</a></h3>
+<p>For GPU:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build -c opt --config<span class="o">=</span>gpu  //itex/tools/pip_package:build_pip_package
 </pre></div>
 </div>
-</div>
-<div class="section" id="cpu-only-experimental">
-<h3>CPU only (experimental)<a class="headerlink" href="#cpu-only-experimental" title="Permalink to this headline">¶</a></h3>
+<p>For CPU only (experimental):</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build -c opt --config<span class="o">=</span>cpu  //itex/tools/pip_package:build_pip_package
 </pre></div>
 </div>
 </div>
-<div class="section" id="build-the-package">
-<h3>Build the package<a class="headerlink" href="#build-the-package" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel-bin/itex/tools/pip_package/build_pip_package ~/
+<div class="section" id="create-the-pip-package">
+<h3>Create the Pip Package<a class="headerlink" href="#create-the-pip-package" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel-bin/itex/tools/pip_package/build_pip_package ./
 </pre></div>
 </div>
 <p>It will generate two wheels:</p>
@@ -299,25 +312,25 @@ Configuration finished
 </thead>
 <tbody>
 <tr>
-<td>1.0.0</td>
-<td>1.0.0.0</td>
-<td>1.0.0.1</td>
+<td>1.x.0</td>
+<td>1.x.0.0</td>
+<td>1.x.0.1</td>
 </tr>
 </tbody>
 </table></div>
 <div class="section" id="install-the-package">
-<h3>Install the package<a class="headerlink" href="#install-the-package" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install ~/intel_extension_for_tensorflow*.whl
+<h3>Install the Package<a class="headerlink" href="#install-the-package" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install ./intel_extension_for_tensorflow*.whl
 </pre></div>
 </div>
 <p>or</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install ~/intel_extension_for_tensorflow-*.whl
-$ pip install ~/intel_extension_for_tensorflow_lib-*.whl
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install ./intel_extension_for_tensorflow-*.whl
+$ pip install ./intel_extension_for_tensorflow_lib-*.whl
 </pre></div>
 </div>
 </div>
 <div class="section" id="installation-package-directory">
-<h3>Installation package directory<a class="headerlink" href="#installation-package-directory" title="Permalink to this headline">¶</a></h3>
+<h3>Installation Package Directory<a class="headerlink" href="#installation-package-directory" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>located at <code class="docutils literal notranslate"><span class="pre">path/to/site-packages/</span></code></p></li>
 </ul>
@@ -339,6 +352,59 @@ $ pip install ~/intel_extension_for_tensorflow_lib-*.whl
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip uninstall intel_extension_for_tensorflow_lib
 $ pip uninstall intel_extension_for_tensorflow
 </pre></div>
+</div>
+</div>
+<div class="section" id="addtional">
+<h2>Addtional<a class="headerlink" href="#addtional" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="configure-example">
+<h3>Configure Example<a class="headerlink" href="#configure-example" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>For GPU</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 5.3.0 installed.
+Python binary path: /path/to/envs/itex_build/bin/python
+
+Found possible Python library paths:
+[&#39;/path/to/envs/itex_build/lib/python3.9/site-packages&#39;]
+
+Do you wish to build Intel® Extension for TensorFlow* with GPU support? [Y/n]:y
+GPU support will be enabled for Intel® Extension for TensorFlow*.
+
+Please specify the location where DPC++ is installed. [Default is /opt/intel/oneapi/compiler/latest/linux/]: /path/to/DPC++
+
+
+Please specify the Ahead of Time(AOT) compilation platforms, separate with &quot;,&quot; for multi-targets. [Default is ]: ats-m150
+
+
+Do you wish to build Intel® Extension for TensorFlow* with MKL support? [y/N]:y
+MKL support will be enabled for Intel® Extension for TensorFlow*.
+
+Please specify the MKL toolkit folder. [Default is /opt/intel/oneapi/mkl/latest]: /path/to/oneMKL
+
+
+Preconfigured Bazel build configs. You can use any of the below by adding &quot;--config=&lt;&gt;&quot; to your build command. See .bazelrc for more details.
+        --config=gpu            # Build Intel® Extension for TensorFlow* with GPU support.
+Configuration finished
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>For CPU</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>You have bazel 5.3.0 installed.
+Python binary path: /path/to/envs/itex_build/bin/python
+
+Found possible Python library paths:
+[&#39;/path/to/envs/itex_build/lib/python3.9/site-packages&#39;]
+
+Do you wish to build Intel® Extension for TensorFlow* with GPU support? [Y/n]: n
+No GPU support will be enabled for Intel® Extension for TensorFlow*.
+
+Only CPU support is available for Intel® Extension for TensorFlow*.
+Preconfigured Bazel build configs. You can use any of the below by adding &quot;--config=&lt;&gt;&quot; to your build command. See .bazelrc for more details.
+        --config=cpu            # Build Intel® Extension for TensorFlow* with CPU support.
+Configuration finished
+</pre></div>
+</div>
 </div>
 </div>
 </div>
