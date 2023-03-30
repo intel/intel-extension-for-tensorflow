@@ -40,5 +40,8 @@ class GELUTest(test_util.TensorFlowTestCase):
       itex_result = sess.run(itex_gelu, feed_dict={x:x_arr})
       self.assertAllClose(itex_result, tf_result, rtol=1e-2, atol=1e-2)
 
+    from tensorflow.nn import gelu # pylint: disable=import-outside-toplevel
+    assert gelu == itex.ops.gelu
+
 if __name__ == "__main__":
   test.main()
