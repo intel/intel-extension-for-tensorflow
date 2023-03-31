@@ -375,8 +375,7 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
 
   gtl::FlatSet<string> AllowList() override {
     // Add ops supported only by GPU devices.
-    auto add_list_ops =
-        gtl::FlatSet<string>{"_ITEXFusedAddV2WithSoftmax"};
+    auto add_list_ops = gtl::FlatSet<string>{"_ITEXFusedAddV2WithSoftmax"};
     for (auto op : add_list_ops) {
       allow_list_ops.insert(op);
     }
