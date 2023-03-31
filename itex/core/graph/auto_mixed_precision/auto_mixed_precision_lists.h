@@ -166,6 +166,7 @@ class AutoMixedPrecisionLists {
       "DepthwiseConv2dNative",
       "DepthwiseConv2dNativeBackpropFilter",
       "DepthwiseConv2dNativeBackpropInput",
+      "Einsum",
       "MatMul",
       // TODO(hfang): The following ops is from Intel-TF DIEN ops.
       // Should be remove in future.
@@ -375,7 +376,7 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
   gtl::FlatSet<string> AllowList() override {
     // Add ops supported only by GPU devices.
     auto add_list_ops =
-        gtl::FlatSet<string>{"Einsum", "_ITEXFusedAddV2WithSoftmax"};
+        gtl::FlatSet<string>{"_ITEXFusedAddV2WithSoftmax"};
     for (auto op : add_list_ops) {
       allow_list_ops.insert(op);
     }
