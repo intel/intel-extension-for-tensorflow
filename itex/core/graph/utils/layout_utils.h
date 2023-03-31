@@ -36,6 +36,12 @@ bool IsDataTypeExemptOp(const string& op_name);
 
 bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def);
 
+bool IsOneDnnLayoutPartialDependentOp(const string& op_name);
+
+bool IsOneDnnLayoutDependentOp(const string& op_name);
+
+bool IsPlainLayoutOp(const string& op_name);
+
 //////////////////////////////////////////////////////////////////////////
 // Rewrite functions
 //////////////////////////////////////////////////////////////////////////
@@ -90,6 +96,12 @@ bool RewriteQuantize(const utils::MutableNodeView& node_view);
 bool RewriteResize(const utils::MutableNodeView& node_view);
 
 bool RewriteNativeCast(const utils::MutableNodeView& node_view);
+
+bool RewriteWithBlockInput(const utils::MutableNodeView& node_view);
+
+bool RewriteBinary(const utils::MutableNodeView& node_view);
+
+bool RewriteCast(const utils::MutableNodeView& node_view);
 
 // Only rewrite for s8 datatype which TF proper doesn't support
 bool RewriteQuantizeReshape(const utils::MutableNodeView& node_view);

@@ -54,95 +54,6 @@ int OpDefOutputPorts(const NodeDef* node_def) {
   return num_output;
 }
 
-// Check whether opname with type T is registered as oneDNN operator
-// that can accept input tensors in oneDNN layout.
-//
-// @input: name of the op
-// @return: true if opname is registered as OneDNN-layout dependent op;
-// false otherwise
-
-/////////////////////////////////////////////////////////////////////
-//  OneDnnLayoutDependentOp:        Input:  Data Tensor + Meta Tensor
-//                                  Output: Data Tensor + Meta Tensor
-//  OneDnnLayoutPartialDependentOp  Input:  Data Tensor + Meta Tensor
-//                                  Output: Data Tensor
-//  PlainLayoutOp                   Input:  Data Tensor
-//                                  Output: Data Tensor
-////////////////////////////////////////////////////////////////////
-
-bool IsOneDnnLayoutPartialDependentOp(const string& op_name) {
-  // PartialDependent op means that op can have OneDnn layout input, but
-  // plain(Eigen) layout output only
-  static const std::unordered_set<string> PartialDependentOp = {
-      "_OneDnnFusedDequantizeWithReshape",
-      "_OneDnnQuantizedReshape",
-      "_OneDnnQuantizedTranspose",
-      "_OneDnnReshape",
-      "_OneDnnShape",
-      "_OneDnnToTf",
-      "_OneDnnTranspose"};
-  return PartialDependentOp.find(op_name) != PartialDependentOp.end();
-}
-
-// Dependent op means that op can have both OneDnn layout input and output
-bool IsOneDnnLayoutDependentOp(const string& op_name) {
-  return op_name.substr(0, 7) == "_OneDnn" &&
-         !IsOneDnnLayoutPartialDependentOp(op_name);
-}
-
-// PlainLayout op means normal Eigen op. Input and output don't have meta
-// tensor.
-bool IsPlainLayoutOp(const string& op_name) {
-  return !(op_name.substr(0, 7) == "_OneDnn");
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Rewrite functions
-//////////////////////////////////////////////////////////////////////////
-
-// Rewrite when inputs have block layout ops.
-bool RewriteWithBlockInput(const utils::MutableNodeView& node_view) {
-  // Check whether inputs have block ops
-  int num_inputs = node_view.NumRegularFanins();
-  for (int i = 0; i < num_inputs; ++i) {
-    const NodeDef* input_node_def =
-        node_view.GetRegularFanin(i).node_view()->node();
-    string input_node_op = input_node_def->op();
-    if (IsOneDnnLayoutDependentOp(input_node_op)) return true;
-  }
-
-  return false;
-}
-
-// Rewrite rule for binary ops
-bool RewriteBinary(const utils::MutableNodeView& node_view) {
-  return RewriteForGPU(node_view) && RewriteWithBlockInput(node_view);
-}
-
-// Rewrite rule for Cast op:
-//   1. Only rewrite if data type can be optimized by oneDNN
-//   2. Only rewrite if predecessor is oneDNN op for layout propagation
-bool RewriteCast(const utils::MutableNodeView& node_view) {
-  const NodeDef& node_def = *(node_view.node());
-
-  // Do not rewrite on GPU
-  if (NodeIsOnGpu(&node_def)) return false;
-
-  DataType T;
-
-  ITEX_CHECK_OK(GetNodeAttr(node_def, "SrcT", &T));
-  if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
-    return false;
-
-  ITEX_CHECK_OK(GetNodeAttr(node_def, "DstT", &T));
-  if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
-    return false;
-
-  return RewriteWithBlockInput(node_view);
-}
-
 /// Maintain info about nodes to rewrite.
 /// Add related info here if new rule is supported.
 static const std::vector<RewriteInfo>* GetRewriteInfo() {
@@ -179,7 +90,12 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        "_OneDnnDepthwiseConv2dNativeBackpropInput", CopyAttrsAll,
        RewriteBackwardDataType},
       {"Dequantize", "_OneDnnDequantize", CopyAttrsAll, RewriteQuantize},
-      {"FusedBatchNorm", "_OneDnnFusedBatchNorm", CopyAttrsAll, AlwaysRewrite},
+      {"FusedBatchNorm", "_OneDnnFusedBatchNorm", CopyAttrsAll,
+       RewriteWithBlockInput},
+      {"FusedBatchNormV2", "_OneDnnFusedBatchNormV2", CopyAttrsAll,
+       RewriteWithBlockInput},
+      {"FusedBatchNormV3", "_OneDnnFusedBatchNormV3", CopyAttrsAll,
+       RewriteWithBlockInput},
       {"FusedBatchNormGrad", "_OneDnnFusedBatchNormGrad", CopyAttrsAll,
        RewriteBackwardDataType},
       {"FusedBatchNormGradV2", "_OneDnnFusedBatchNormGradV2", CopyAttrsAll,

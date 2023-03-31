@@ -22,6 +22,7 @@ limitations under the License.
 
 #include "google/protobuf/text_format.h"
 #include "itex/core/graph/utils/graph_properties.h"
+#include "itex/core/graph/utils/layout_utils.h"
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/attr_value_util.h"
@@ -46,10 +47,6 @@ const auto add_inplace_rule = gtl::FlatSet<string>{
 
 const auto onednngraph_inplace_rule =
     gtl::FlatSet<string>{"_OneDnnGraph", "OneDnnGraph"};
-
-bool IsOneDnnLayoutDependentOp(const string& op_name) {
-  return op_name.substr(0, 7) == "_OneDnn";
-}
 
 static constexpr int MAX_LLGA_SEARCH_NODES = 50;
 
