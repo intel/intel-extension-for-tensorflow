@@ -240,6 +240,7 @@ class OneDnnAddNOp : public OpKernel {
       std::vector<float> coeff(num_inputs, 1.0);
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
       dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 #ifdef ITEX_ONEDNN_3_0
       auto sum_pd =
           has_onednn_input
@@ -270,7 +271,7 @@ class OneDnnAddNOp : public OpKernel {
                                    output_tf_shape, output_onednn_shape);
 
       // Create Sum op, and submit for execution.
-      dnnl::sum sum_op(sum_pd);
+      sum_op_ = dnnl::sum(sum_pd);
       dnnl::memory dst_mem = CreateDnnlMemory(sum_pd.dst_desc(), onednn_engine,
                                               GetTensorBuffer<T>(dst_tensor));
       std::unordered_map<int, dnnl::memory> net_args = {
@@ -299,9 +300,10 @@ class OneDnnAddNOp : public OpKernel {
         net_args.insert({DNNL_ARG_MULTIPLE_SRC + src_idx,
                          is_src_reordered ? reorder_mem : src_mem});
       }
+      net_args.insert({DNNL_ARG_SCRATCHPAD, scratchpad_mem});
 
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
-      sum_op.execute(onednn_stream, net_args);
+      sum_op_.execute(onednn_stream, net_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
                          ", message: " + string(e.message) + ", in file " +
@@ -311,6 +313,12 @@ class OneDnnAddNOp : public OpKernel {
           errors::Aborted("Operation received an exception:", error_msg));
     }
   }
+
+ private:
+  // OneDNN sum primitive creates scale buffer and it crashes in some cases.
+  // This is a workaround to make sum primitive as a class member.
+  // https://github.com/oneapi-src/oneDNN/blob/rls-v3.1/src/gpu/ocl/many_inputs_sum.hpp#L93
+  dnnl::sum sum_op_;
 };
 
 #ifndef INTEL_CPU_ONLY
