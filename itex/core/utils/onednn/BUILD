@@ -43,8 +43,8 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core/utils:types",
         "//itex/core/utils:common_utils",
+        "//itex/core/utils:types",
         "//third_party/eigen3",
         "@eigen_archive//:eigen",
         "@local_config_tf//:protos_all",

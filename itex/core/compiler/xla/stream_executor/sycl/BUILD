@@ -122,8 +122,6 @@ cc_library(
         ":sycl_platform_id",
         ":sycl_stream",
         ":sycl_timer",
-        "@com_google_absl//absl/strings",
-        "//itex/core/devices/gpu:gpu_pool_allocator",
         "//itex/core/compiler/xla/stream_executor:event",
         "//itex/core/compiler/xla/stream_executor:stream_executor_internal",
         "//itex/core/compiler/xla/stream_executor:stream_executor_pimpl_header",
@@ -131,6 +129,8 @@ cc_library(
         "//itex/core/compiler/xla/stream_executor/lib",
         "//itex/core/compiler/xla/stream_executor/platform",
         "//itex/core/compiler/xla/stream_executor/platform:dso_loader",
+        "//itex/core/devices/gpu:gpu_pool_allocator",
+        "@com_google_absl//absl/strings",
     ] + [
         "@com_google_absl//absl/strings:str_format",
     ],

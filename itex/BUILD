@@ -14,9 +14,9 @@ itex_xpu_binary(
         ],
         "//conditions:default": [],
     }) + [
-        "@local_config_tf//:_pywrap_tensorflow_internal",
         "//itex/core:protos_all_cc",
         "//itex/core/kernels:libitex_common",
+        "@local_config_tf//:_pywrap_tensorflow_internal",
     ],
 )
 
@@ -67,8 +67,8 @@ cc_binary(
             "//itex/core/kernels:xpu_kernel",
         ],
     }) + [
-        "@local_config_tf//:_pywrap_tensorflow_internal",
         "//itex/core/kernels:libitex_common",
+        "@local_config_tf//:_pywrap_tensorflow_internal",
     ],
 )
 
@@ -107,9 +107,9 @@ itex_xpu_library(
     name = "core",
     visibility = ["//visibility:public"],
     deps = [
+        "//itex/core/utils:common_utils",
         "//itex/core/utils/lib/random:philox",
         "//itex/core/utils/lib/random:philox_random",
-        "//itex/core/utils:common_utils",
         "//itex/core/utils/onednn:onednn_layout_util",
         "//third_party/eigen3",
         "@local_config_tf//:tf_header_lib",
