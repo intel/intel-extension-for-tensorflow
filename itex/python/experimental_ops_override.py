@@ -357,6 +357,9 @@ def experimental_ops_override():
     if version(tf.__version__) < version("2.9.0"):
       return
     tf_ln_call = copy_func(tf.keras.layers.LayerNormalization.call)
+    tf_lstm_call = copy_func(tf.keras.layers.LSTM.call)
+    tf_lstm_build = copy_func(tf.keras.layers.LSTM.build)
+
   except BaseException: # pylint: disable=broad-except
     return
   def itex_layer_norm_build(self, input_shape):
@@ -532,7 +535,23 @@ def experimental_ops_override():
 
     return outputs
 
+  def itex_lstm_build(self, input_shape):
+    tf_lstm_build(self, input_shape)
+    self._could_use_itex_kernel = (
+        self.activation in (tf.keras.activations.tanh, tf.nn.tanh) and
+        self.recurrent_activation in (tf.keras.activations.sigmoid, tf.nn.sigmoid) and
+        self.use_bias)
+    if config.list_logical_devices('XPU'):
+      # Only show the message when there is GPU available, itex LSTM only support GPU currently
+      if self._could_use_itex_kernel:
+        logging.debug('Layer %s will use ITEX kernels when running on GPU.' % self.name)
+      else:
+        logging.warning('Layer %s will not use ITEX kernels since it '
+                        'doesn\'t meet the criteria. It will '
+                        'use a generic GPU kernel as fallback when running '
+                        'on GPU.' % self.name)
 
+  
   try:
     import tensorflow_addons as tfa # pylint: disable=import-outside-toplevel
     tfa.layers.InstanceNormalization.call = itex_instance_norm_call
@@ -549,9 +568,11 @@ def experimental_ops_override():
     if config.list_logical_devices('XPU'):
       # TODO(itex): Complement the complete implementation of CPU, and When
       # CPU of XPU is launched, this workaround may be re-edit.
-      tf.keras.layers.LSTM = ItexLSTM
+      tf.keras.layers.LSTM.call = ItexLSTM.call
+      tf.keras.layers.LSTM.build = itex_lstm_build
       from tensorflow.python import keras # pylint: disable=import-outside-toplevel
-      keras.layers.LSTM = ItexLSTM
+      keras.layers.LSTM.call = ItexLSTM.call
+      keras.layers.LSTM.build = itex_lstm_build
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
     logger.error("Cannot override itex ops.")
@@ -561,6 +582,7 @@ def experimental_ops_override():
     keras.layers.LayerNormalization.call = itex_layer_norm_call
     keras.layers.LayerNormalization.build = itex_layer_norm_build
     if config.list_logical_devices('XPU'):
-      keras.layers.LSTM = ItexLSTM
+      keras.layers.LSTM.call = ItexLSTM.call
+      keras.layers.LSTM.build = itex_lstm_build
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long

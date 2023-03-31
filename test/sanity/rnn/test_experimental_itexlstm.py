@@ -28,24 +28,19 @@ class LSTMTest(test_util.TensorFlowTestCase):
     def test(self):
         if not config.list_logical_devices('XPU'):
             self.skipTest("Test requires XPU")
-        assert(tf.keras.layers.LSTM == itex.ops.ItexLSTM)
-        
-        from tensorflow.python import keras
-        assert(keras.layers.LSTM == itex.ops.ItexLSTM)
-
-        import keras
-        assert(keras.layers.LSTM == itex.ops.ItexLSTM)
-        
-        batch_input_shape = (2, 2, 2)    
-        x_input = keras.layers.Input(batch_shape=batch_input_shape)
-        x_in = x_input
-        x_out = keras.layers.LSTM(20)(x_in, training=False)
-        model = keras.Model(inputs=x_input, outputs=x_out)
-        layers = model.layers
-        assert(layers[1].name == "itex_lstm")
-        x = np.random.random(batch_input_shape)
-        y = model.predict_on_batch(x)
-        print(y.shape)
+        from tensorflow.keras.layers import LSTM
+        with self.session(use_gpu=True) as sess:
+            tf.compat.v1.keras.backend.set_session(sess)
+            batch_input_shape = (2, 2, 2)
+            x_input = tf.keras.Input(shape=(2,2,))
+            x_out = LSTM(20)(x_input, training=False)
+            model = tf.keras.Model(inputs=x_input, outputs=x_out)
+            x = np.random.random(batch_input_shape)
+            y = model.predict(x)
+            assert LSTM.call == itex.ops.ItexLSTM.call
+            # TODO find a way to check runtime kernel is ItexRnn
+            # when input node is read variable
+            print(y.shape)
 
      
 
