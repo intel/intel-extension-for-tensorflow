@@ -111,9 +111,9 @@ filegroup(
         ],
     ) + [
         ":dnnl_config_h",
-        ":onednn_version_generator",
-        ":kernel_list_generator",
         ":header_generator",
+        ":kernel_list_generator",
+        ":onednn_version_generator",
     ],
 )
 
