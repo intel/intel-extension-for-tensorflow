@@ -53,7 +53,7 @@ namespace graph {
 // dumped by this process with the same name, suffixes with "_n.pbtxt", where
 // 'n' is a sequence number.
 string DumpGraphDefToFile(const string& name, GraphDef const& graph_def,
-                          const string& dirname);
+                          const string& dirname, bool is_output_binary = false);
 
 // Utilities for manipulating node name and input strings.
 

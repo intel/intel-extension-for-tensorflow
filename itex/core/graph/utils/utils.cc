@@ -100,6 +100,18 @@ Status WriteTextProtoToUniqueFile(const itex::protobuf::Message& proto,
   return Status::OK();
 }
 
+Status WriteBinaryProtoToUniqueFile(const itex::protobuf::Message& proto,
+                                    std::ofstream* output) {
+  if (!proto.SerializeToOstream(output)) {
+    return errors::Internal("Unable to dump graph to file.");
+  }
+
+  output->close();
+  if (!output->good()) return errors::Internal("Unable to close dump file.");
+
+  return Status::OK();
+}
+
 Status CreateWritableFile(const string& dirname, const string& name,
                           const string& suffix, string* filepath,
                           std::ofstream* output) {
@@ -152,17 +164,23 @@ NodeMapInternal<const GraphDef, const NodeDef>::GetNodeDefFromGraph(
 }  // namespace internal
 
 string DumpGraphDefToFile(const string& name, GraphDef const& graph_def,
-                          const string& dirname) {
+                          const string& dirname, bool is_output_binary) {
   string filepath;
   std::ofstream output;
-  Status status =
-      CreateWritableFile(dirname, name, ".pbtxt", &filepath, &output);
+
+  string ext = is_output_binary ? ".pb" : "*.pbtxt";
+  Status status = CreateWritableFile(dirname, name, ext, &filepath, &output);
 
   if (!status.ok()) {
     return StrCat("(failed to create writable file: ", status.ToString(), ")");
   }
 
-  status = WriteTextProtoToUniqueFile(graph_def, &output);
+  if (is_output_binary) {
+    status = WriteBinaryProtoToUniqueFile(graph_def, &output);
+  } else {
+    status = WriteTextProtoToUniqueFile(graph_def, &output);
+  }
+
   if (!status.ok()) {
     return StrCat("(failed to dump Graph to '", filepath,
                   "': ", status.ToString(), ")");
