@@ -1,5 +1,19 @@
 load("//itex:itex.bzl", "itex_xpu_library", "tf_copts")
 
+XPU_KERNEL_DEPS = [
+    "//itex/core/devices:device_backend_util_hdr",
+    "//itex/core/kernels/common:no_ops",
+    "@local_config_python//:python_headers",
+    "@local_config_tf//:tf_header_lib",
+] + select({
+    "@local_config_dpcpp//dpcpp:using_dpcpp": [
+        "//itex/core/kernels/gpu:gpu_kernel_impl",
+    ],
+    "//conditions:default": [
+        "//itex/core/kernels/cpu:cpu_kernel_impl",
+    ],
+})
+
 itex_xpu_library(
     name = "xpu_kernel",
     srcs = ["xpu_kernel.cc"],
@@ -7,18 +21,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         ":libitex_common",
-        "//itex/core/devices:device_backend_util_hdr",
-        "//itex/core/kernels/common:no_ops",
-        "@local_config_python//:python_headers",
-        "@local_config_tf//:tf_header_lib",
-    ] + select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": [
-            "//itex/core/kernels/gpu:gpu_kernel_impl",
-        ],
-        "//conditions:default": [
-            "//itex/core/kernels/cpu:cpu_kernel_impl",
-        ],
-    }),
+    ] + XPU_KERNEL_DEPS,
     alwayslink = True,
 )
 
@@ -29,17 +32,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         ":itex_common_cc",
-        "//itex/core/devices:device_backend_util_hdr",
-        "//itex/core/kernels/common:no_ops",
-        "@local_config_tf//:tf_header_lib",
-    ] + select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": [
-            "//itex/core/kernels/gpu:gpu_kernel_impl",
-        ],
-        "//conditions:default": [
-            "//itex/core/kernels/cpu:cpu_kernel_impl",
-        ],
-    }),
+    ] + XPU_KERNEL_DEPS,
     alwayslink = True,
 )
 
