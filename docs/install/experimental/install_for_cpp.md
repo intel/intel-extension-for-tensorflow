@@ -30,7 +30,7 @@ CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/li
 
 ## Build libtensorfow_cc.so
 
-1. Prepare TensorFlow* source code
+a. Prepare TensorFlow* source code
 
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git
@@ -56,7 +56,7 @@ index 19ee8000206..77d8c714729 100644
          "//tensorflow/c:kernels",
 ```
 
-2. Build libtensorflow_cc.so
+b. Build libtensorflow_cc.so
 
 ```bash
 $ ./configure
@@ -66,7 +66,7 @@ $ ls ./bazel-bin/tensorflow/libtensorflow_cc.so
 
 libtensorflow_cc.so location: `<Path to tensorflow>/bazel-bin/tensorflow/libtensorflow_cc.so`
 
-3. Build Tensorflow header files
+c. Build Tensorflow header files
 
 ```bash
 $ bazel build --config=opt tensorflow:install_headers
@@ -91,13 +91,13 @@ $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/mydir/
 TensorFlow* has C API: `TF_LoadPluggableDeviceLibrary` to support the pluggable device library.
 To support Intel® Extension for TensorFlow* cc library, we need to modify the orginal C++ code:
 
-1. Add the header file: `"tensorflow/c/c_api_experimental.h"`.
+a. Add the header file: `"tensorflow/c/c_api_experimental.h"`.
 
 ```C++
 #include "tensorflow/c/c_api_experimental.h"
 ```
 
-2. Load libitex_gpu_cc.so or libitex_cpu_cc.so by `TF_LoadPluggableDeviceLibrary`.
+b. Load libitex_gpu_cc.so or libitex_cpu_cc.so by `TF_LoadPluggableDeviceLibrary`.
 
 ```C++
 TF_Status* status = TF_NewStatus();
