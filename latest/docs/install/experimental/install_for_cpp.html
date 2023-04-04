@@ -133,9 +133,7 @@
 </div>
 <div class="section" id="build-libtensorfow-cc-so">
 <h2>Build libtensorfow_cc.so<a class="headerlink" href="#build-libtensorfow-cc-so" title="Permalink to this headline">¶</a></h2>
-<ol class="simple">
-<li><p>Prepare TensorFlow* source code</p></li>
-</ol>
+<p>a. Prepare TensorFlow* source code</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/tensorflow/tensorflow.git
 $ git checkout origin/r2.12 -b r2.12
 $ <span class="nb">cd</span> tensorflow
@@ -157,18 +155,14 @@ $ <span class="nb">cd</span> tensorflow
 <span class="w"> </span>        &quot;//tensorflow/c:kernels&quot;,<span class="w"></span>
 </pre></div>
 </div>
-<ol class="simple">
-<li><p>Build libtensorflow_cc.so</p></li>
-</ol>
+<p>b. Build libtensorflow_cc.so</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ./configure
 $ bazel build --jobs <span class="m">96</span> --config<span class="o">=</span>opt //tensorflow:libtensorflow_cc.so
 $ ls ./bazel-bin/tensorflow/libtensorflow_cc.so
 </pre></div>
 </div>
 <p>libtensorflow_cc.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/libtensorflow_cc.so</span></code></p>
-<ol class="simple">
-<li><p>Build Tensorflow header files</p></li>
-</ol>
+<p>c. Build Tensorflow header files</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build --config<span class="o">=</span>opt tensorflow:install_headers
 $ ls ./bazel-bin/tensorflow/include
 </pre></div>
@@ -189,15 +183,11 @@ $ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span cl
 <h3>Load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h3>
 <p>TensorFlow* has C API: <code class="docutils literal notranslate"><span class="pre">TF_LoadPluggableDeviceLibrary</span></code> to support the pluggable device library.
 To support Intel® Extension for TensorFlow* cc library, we need to modify the orginal C++ code:</p>
-<ol class="simple">
-<li><p>Add the header file: <code class="docutils literal notranslate"><span class="pre">&quot;tensorflow/c/c_api_experimental.h&quot;</span></code>.</p></li>
-</ol>
+<p>a. Add the header file: <code class="docutils literal notranslate"><span class="pre">&quot;tensorflow/c/c_api_experimental.h&quot;</span></code>.</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;tensorflow/c/c_api_experimental.h&quot;</span><span class="cp"></span>
 </pre></div>
 </div>
-<ol class="simple">
-<li><p>Load libitex_gpu_cc.so or libitex_cpu_cc.so by <code class="docutils literal notranslate"><span class="pre">TF_LoadPluggableDeviceLibrary</span></code>.</p></li>
-</ol>
+<p>b. Load libitex_gpu_cc.so or libitex_cpu_cc.so by <code class="docutils literal notranslate"><span class="pre">TF_LoadPluggableDeviceLibrary</span></code>.</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">TF_Status</span><span class="o">*</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TF_NewStatus</span><span class="p">();</span><span class="w"></span>
 <span class="n">TF_LoadPluggableDeviceLibrary</span><span class="p">(</span><span class="o">&lt;</span><span class="n">lib_path</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">);</span><span class="w"></span>
 </pre></div>
