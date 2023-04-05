@@ -140,7 +140,9 @@ AllGatherCombiner::AllGatherCombiner(int64_t combine_threshold_in_bytes,
     : combine_threshold_in_bytes_(combine_threshold_in_bytes),
       combine_threshold_count_(combine_threshold_count) {}
 
-StatusOr<bool> AllGatherCombiner::Run(HloModule* module) {
+StatusOr<bool> AllGatherCombiner::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_VLOG(1) << "Running AllGatherCombiner with threshold of "
                << combine_threshold_in_bytes_ << " bytes";
 
@@ -157,7 +159,8 @@ StatusOr<bool> AllGatherCombiner::Run(HloModule* module) {
   }
 
   bool changed = false;
-  for (HloComputation* computation : module->MakeNonfusionComputations()) {
+  for (HloComputation* computation :
+       module->MakeNonfusionComputations(execution_threads)) {
     TF_ASSIGN_OR_RETURN(auto domain_map, HloDomainMap::Create(computation, ""));
 
     auto key_fn = [&domain_map](const HloInstruction* instruction) {

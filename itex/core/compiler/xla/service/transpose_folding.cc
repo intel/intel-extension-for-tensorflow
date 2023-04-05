@@ -225,7 +225,9 @@ TransposeFolding::TransposeFolding(
     : transposable_gemm_operands_(std::move(transposable_gemm_operands)),
       transposable_conv_operands_(std::move(transposable_conv_operands)) {}
 
-StatusOr<bool> TransposeFolding::Run(HloModule* module) {
+StatusOr<bool> TransposeFolding::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   // Modifying the graph while traversing is dangerous, so we find all folding
   // opportunities before actually folding them.
   std::vector<std::pair<HloInstruction*, OperandIndices>> foldable_dots;
@@ -250,7 +252,7 @@ StatusOr<bool> TransposeFolding::Run(HloModule* module) {
     return Status::OK();
   });
 
-  for (auto* comp : module->MakeNonfusionComputations()) {
+  for (auto* comp : module->MakeNonfusionComputations(execution_threads)) {
     TF_RETURN_IF_ERROR(comp->Accept(&visit_fn));
   }
 

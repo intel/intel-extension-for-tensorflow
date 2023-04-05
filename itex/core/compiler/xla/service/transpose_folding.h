@@ -64,7 +64,10 @@ class TransposeFolding : public HloModulePass {
           AlwaysFoldTranspose);
   absl::string_view name() const override { return "transpose-folding"; }
 
-  StatusOr<bool> Run(HloModule* module) override;
+  using HloPassInterface::Run;
+  StatusOr<bool> Run(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
   TransposableGemmOperandsFn transposable_gemm_operands_;

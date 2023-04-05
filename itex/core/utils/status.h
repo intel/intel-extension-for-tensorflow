@@ -277,6 +277,8 @@ typedef std::function<void(const Status&)> StatusCallback;
 extern std::string* TfCheckOpHelperOutOfLine(const ::itex::Status& v,
                                              const char* msg);
 
+std::string error_name(TF_Code code);
+
 inline std::string* TfCheckOpHelper(::itex::Status v, const char* msg) {
   if (v.ok()) return nullptr;
   return TfCheckOpHelperOutOfLine(v, msg);

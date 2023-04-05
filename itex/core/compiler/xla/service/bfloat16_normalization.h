@@ -1,6 +1,4 @@
-/* Copyright (c) 2023 Intel Corporation
-
-Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2018 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,7 +35,10 @@ class BFloat16Normalization : public HloModulePass {
 
   // Run BF16 normalization on the given computation. Returns whether the
   // computation was changed.
-  StatusOr<bool> Run(HloModule* module) override;
+  using HloPassInterface::Run;
+  StatusOr<bool> Run(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
   const BFloat16Support* bfloat16_support_;
@@ -49,7 +50,8 @@ class BFloat16Normalization : public HloModulePass {
 // BFloat16Support, and does not change HLOs that have BF16 data if they do not
 // use mixed precision; it removes mixed precision even if the backend supports
 // it. This pass is used to make the HLO module valid for other HLO passes which
-// do not support mixed precision.
+// do not support mixed precision. Currently, this pass is only used by the
+// Despecializer, not by our normal compilation flow on TPU.
 class BFloat16MixedPrecisionRemoval : public HloModulePass {
  public:
   BFloat16MixedPrecisionRemoval() {}
@@ -62,9 +64,12 @@ class BFloat16MixedPrecisionRemoval : public HloModulePass {
 
   // Run mixed precision removal on the given computation. Returns whether the
   // computation was changed.
-  StatusOr<bool> Run(HloModule* module) override {
+  using HloPassInterface::Run;
+  StatusOr<bool> Run(HloModule* module,
+                     const absl::flat_hash_set<absl::string_view>&
+                         execution_threads) override {
     BFloat16Normalization normalization(&no_mixed_precision_support_);
-    return normalization.Run(module);
+    return normalization.Run(module, execution_threads);
   }
 
  private:

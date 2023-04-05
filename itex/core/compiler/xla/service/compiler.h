@@ -253,7 +253,8 @@ class Compiler {
   // The returned 'BufferAssignment' retains a pointer to the 'HloModule', so
   // the module must live at least as long as the buffer assignments.
   virtual StatusOr<std::unique_ptr<BufferAssignment>> AssignBuffers(
-      const HloModule* module) {
+      const HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) {
     return Unimplemented("This compiler does not support this method");
   }
 

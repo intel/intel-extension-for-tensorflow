@@ -2366,7 +2366,9 @@ class InstructionVerifier : public DfsHloVisitorWithDefault {
 
 }  // namespace
 
-StatusOr<bool> HloVerifier::Run(HloModule* module) {
+StatusOr<bool> HloVerifier::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   auto disabled = module->config().debug_options().xla_disable_hlo_passes();
   if (std::find(disabled.begin(), disabled.end(), name()) != disabled.end()) {
     return false;
@@ -2387,7 +2389,7 @@ StatusOr<bool> HloVerifier::Run(HloModule* module) {
         target_metadata_->GetVerifier();
     InstructionVerifier instruction_verifier(
         instruction_can_change_layout_func_);
-    for (auto* computation : module->computations()) {
+    for (auto* computation : module->computations(execution_threads)) {
       TF_RETURN_IF_ERROR(computation->Accept(shape_verifier.get()));
       TF_RETURN_IF_ERROR(computation->Accept(&instruction_verifier));
     }

@@ -33,11 +33,13 @@ limitations under the License.
 
 namespace itex_xla {
 
-StatusOr<bool> DynamicIndexSplitter::Run(HloModule* module) {
+StatusOr<bool> DynamicIndexSplitter::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   bool changed = false;
 
   std::vector<HloComputation*> computations =
-      module->MakeNonfusionComputations();
+      module->MakeNonfusionComputations(execution_threads);
   for (HloComputation* computation : computations) {
     for (HloInstruction* dynamic_op : computation->MakeInstructionPostOrder()) {
       switch (dynamic_op->opcode()) {

@@ -45,6 +45,9 @@ class CompilationStats {
   virtual void CompilationReport() = 0;
 
   virtual int GetPassesSize() = 0;
+
+  virtual void RecordPassError(absl::string_view pass_name,
+                               absl::string_view err) = 0;
 };
 
 }  // namespace itex_xla

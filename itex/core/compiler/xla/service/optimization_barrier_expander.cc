@@ -20,9 +20,12 @@ limitations under the License.
 #include <vector>
 namespace itex_xla {
 
-StatusOr<bool> OptimizationBarrierExpander::Run(HloModule* module) {
+StatusOr<bool> OptimizationBarrierExpander::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   std::vector<HloInstruction*> barriers;
-  for (HloComputation* computation : module->MakeNonfusionComputations()) {
+  for (HloComputation* computation :
+       module->MakeNonfusionComputations(execution_threads)) {
     bool modified = false;
     for (HloInstruction* inst : computation->instructions()) {
       if (inst->opcode() == HloOpcode::kOptimizationBarrier) {

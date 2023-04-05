@@ -44,7 +44,10 @@ class ShardingPropagation : public HloModulePass {
             allow_spmd_sharding_propagation_to_output),
         cse_prevention_only_(cse_prevention_only) {}
   absl::string_view name() const override { return "sharding-propagation"; }
-  StatusOr<bool> Run(HloModule* module) override;
+  using HloPassInterface::Run;
+  StatusOr<bool> Run(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
   // Function which can be used to apply a spatially partitioned sharding onto a
   // given domain. It will apply the sharding into the exit edges of the domain

@@ -368,8 +368,14 @@ Status AddCopiesForInPlaceOperation(const HloAliasAnalysis& alias_analysis,
 // each aliased parameter to resolve interference of aliased input and output
 // buffer. We later rely on RemoveUnnecessaryCopies to drop the unnecessary
 // ones.
-Status AddCopiesForAliasedInputOutputs(HloModule* module) {
+Status AddCopiesForAliasedInputOutputs(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   HloComputation* entry = module->entry_computation();
+  if (!HloInstruction::IsThreadIncluded(entry->execution_thread(),
+                                        execution_threads)) {
+    return OkStatus();
+  }
   HloInstruction* root = entry->root_instruction();
 
   ShapeTree<bool> output_indices_to_copy(root->shape());
@@ -1828,11 +1834,13 @@ Status CopyInsertion::AddCopiesForConditional(
 // Add kCopy instructions to the given module to guarantee there is no
 // live-range interference. Generally interference can only occur around kWhile
 // instructions which have update-in-place semantics.
-Status CopyInsertion::AddCopiesToResolveInterference(HloModule* module) {
+Status CopyInsertion::AddCopiesToResolveInterference(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   TF_ASSIGN_OR_RETURN(std::unique_ptr<HloAliasAnalysis> alias_analysis,
                       HloAliasAnalysis::Run(module, can_share_buffer_));
-
-  for (HloComputation* computation : module->MakeNonfusionComputations()) {
+  for (HloComputation* computation :
+       module->MakeNonfusionComputations(execution_threads)) {
     for (HloInstruction* instruction :
          computation->MakeInstructionPostOrder()) {
       if (instruction->opcode() == HloOpcode::kWhile) {
@@ -1859,17 +1867,22 @@ Status CopyInsertion::AddCopiesToResolveInterference(HloModule* module) {
     }
   }
 
-  TF_RETURN_IF_ERROR(AddCopiesForAliasedInputOutputs(module));
+  TF_RETURN_IF_ERROR(
+      AddCopiesForAliasedInputOutputs(module, execution_threads));
   return Status::OK();
 }
 
-Status CopyInsertion::AddSpecialCaseCopies(HloModule* module) {
+Status CopyInsertion::AddSpecialCaseCopies(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   std::unique_ptr<CallGraph> call_graph = CallGraph::Build(module);
-  return AddSpecialCaseCopies(*call_graph, module);
+  return AddSpecialCaseCopies(*call_graph, execution_threads, module);
 }
 
-Status CopyInsertion::AddSpecialCaseCopies(const CallGraph& call_graph,
-                                           HloModule* module) {
+Status CopyInsertion::AddSpecialCaseCopies(
+    const CallGraph& call_graph,
+    const absl::flat_hash_set<absl::string_view>& execution_threads,
+    HloModule* module) {
   TF_ASSIGN_OR_RETURN(std::unique_ptr<HloAliasAnalysis> alias_analysis,
                       HloAliasAnalysis::Run(module, can_share_buffer_));
 
@@ -1940,7 +1953,7 @@ Status CopyInsertion::AddSpecialCaseCopies(const CallGraph& call_graph,
   }
 
   // Identify copies which must be added at root instructions
-  for (HloComputation* computation : module->computations()) {
+  for (HloComputation* computation : module->computations(execution_threads)) {
     const CallGraphNode& node = call_graph.GetNode(computation);
     if (node.context() == CallContext::kEmbedded) {
       continue;
@@ -2022,9 +2035,11 @@ Status CopyInsertion::AddSpecialCaseCopies(const CallGraph& call_graph,
   return Status::OK();
 }
 
-static int64_t GetNumExistingCopies(const HloModule* module) {
+static int64_t GetNumExistingCopies(
+    const HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   int64_t num_existing_copies = 0;
-  for (HloComputation* computation : module->computations()) {
+  for (HloComputation* computation : module->computations(execution_threads)) {
     for (HloInstruction* instruction : computation->instructions()) {
       if (instruction->opcode() == HloOpcode::kCopy) {
         ++num_existing_copies;
@@ -2034,9 +2049,9 @@ static int64_t GetNumExistingCopies(const HloModule* module) {
   return num_existing_copies;
 }
 
-Status CopyInsertion::RemoveUnnecessaryCopies(HloOrdering* ordering,
-                                              HloModule* module,
-                                              bool check_live_range_ordering) {
+Status CopyInsertion::RemoveUnnecessaryCopies(
+    HloOrdering* ordering, HloModule* module, bool check_live_range_ordering,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_XLA_VLOG_LINES(4, module->ToString());
   TF_ASSIGN_OR_RETURN(std::unique_ptr<HloAliasAnalysis> alias_analysis,
                       HloAliasAnalysis::Run(module, can_share_buffer_));
@@ -2052,7 +2067,7 @@ Status CopyInsertion::RemoveUnnecessaryCopies(HloOrdering* ordering,
 
   std::unique_ptr<CallGraph> call_graph = CallGraph::Build(module);
 
-  int64_t num_existing_copies = GetNumExistingCopies(module);
+  int64_t num_existing_copies = GetNumExistingCopies(module, execution_threads);
   bool changed = true;
   int64_t num_iterations = -1;
   ITEX_VLOG(6) << "Copy Insertion analyzing module with instructino count = "
@@ -2063,7 +2078,8 @@ Status CopyInsertion::RemoveUnnecessaryCopies(HloOrdering* ordering,
     changed = false;
     ITEX_VLOG(2) << "Running fixpoint iteration " << num_iterations
                  << " of copy elision";
-    for (HloComputation* computation : module->computations()) {
+    for (HloComputation* computation :
+         module->computations(execution_threads)) {
       ITEX_VLOG(2) << "computation:" << computation->name() << "\n";
       for (HloInstruction* instruction : computation->instructions()) {
         ITEX_VLOG(2) << instruction->ToString() << "\n";
@@ -2099,7 +2115,9 @@ Status CopyInsertion::RemoveUnnecessaryCopies(HloOrdering* ordering,
   return Status::OK();
 }
 
-StatusOr<bool> CopyInsertion::Run(HloModule* module) {
+StatusOr<bool> CopyInsertion::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   // Copy insertion is performed in three steps:
   //
   // (1) Add copies conservatively to guarantee that there is no live-range
@@ -2130,7 +2148,8 @@ StatusOr<bool> CopyInsertion::Run(HloModule* module) {
         "Call graph must be flattened before copy insertion.");
   }
 
-  TF_RETURN_IF_ERROR(AddCopiesToResolveInterference(module));
+  TF_RETURN_IF_ERROR(
+      AddCopiesForAliasedInputOutputs(module, execution_threads));
 
   // Simplify the tuple structures introduced by the deep copies. This should be
   // done before removing copies (RemoveUnnecessaryCopies) because tuple
@@ -2145,21 +2164,23 @@ StatusOr<bool> CopyInsertion::Run(HloModule* module) {
       name(), "after adding copies to resolve interference", *module);
 
   DependencyHloOrdering ordering(module);
-  TF_RETURN_IF_ERROR(
-      RemoveUnnecessaryCopies(&ordering, module,
-                              /*check_live_range_ordering=*/true));
+  TF_RETURN_IF_ERROR(RemoveUnnecessaryCopies(&ordering, module,
+                                             /*check_live_range_ordering=*/true,
+                                             execution_threads));
   DumpHloModuleDuringPassIfEnabled(name(), "after removing unnecessary copies",
                                    *module);
-  TF_RETURN_IF_ERROR(AddSpecialCaseCopies(*call_graph, module));
+  TF_RETURN_IF_ERROR(
+      AddSpecialCaseCopies(*call_graph, execution_threads, module));
   DumpHloModuleDuringPassIfEnabled(name(), "after adding special-case copies",
                                    *module);
 
-  TF_RETURN_IF_ERROR(tuple_simplifier.Run(module).status());
-  TF_RETURN_IF_ERROR(dce.Run(module).status());
+  TF_RETURN_IF_ERROR(tuple_simplifier.Run(module, execution_threads).status());
+  TF_RETURN_IF_ERROR(dce.Run(module, execution_threads).status());
 
   if (ITEX_VLOG_IS_ON(1)) {
     int64_t num_total_copies = 0;
-    for (HloComputation* computation : module->computations()) {
+    for (HloComputation* computation :
+         module->computations(execution_threads)) {
       for (HloInstruction* instruction : computation->instructions()) {
         if (instruction->opcode() == HloOpcode::kCopy) {
           num_total_copies++;
@@ -2167,8 +2188,9 @@ StatusOr<bool> CopyInsertion::Run(HloModule* module) {
       }
     }
     ITEX_VLOG(1) << "Num copies before copy-insertion: "
-                 << GetNumExistingCopies(module);
-    ITEX_VLOG(1) << "Num copies after copy-insertion: " << num_total_copies;
+                 << GetNumExistingCopies(module, execution_threads);
+    ITEX_VLOG(1) << "Num copies after copy-insertion: "
+                 << GetNumExistingCopies(module, execution_threads);
   }
 
   return true;

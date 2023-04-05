@@ -430,7 +430,9 @@ StatusOr<bool> GpuConvPaddingLegalization::RunOnComputation(
   return changed;
 }
 
-StatusOr<bool> GpuConvPaddingLegalization::Run(HloModule* module) {
+StatusOr<bool> GpuConvPaddingLegalization::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   bool changed = false;
   for (HloComputation* computation : module->MakeNonfusionComputations()) {
     TF_ASSIGN_OR_RETURN(bool result, RunOnComputation(computation));

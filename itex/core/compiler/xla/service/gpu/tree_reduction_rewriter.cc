@@ -263,10 +263,12 @@ class ReductionRewriterVisitor : public DfsHloRewriteVisitor {
   }
 };
 
-StatusOr<bool> GpuTreeReductionRewriter::Run(HloModule* module) {
+StatusOr<bool> GpuTreeReductionRewriter::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_VLOG(5) << "Rewriter input: " << module->ToString();
-  TF_ASSIGN_OR_RETURN(bool changed,
-                      ReductionRewriterVisitor().RunOnModule(module));
+  TF_ASSIGN_OR_RETURN(bool changed, ReductionRewriterVisitor().RunOnModule(
+                                        module, execution_threads));
   ITEX_VLOG(5) << "Rewriter output: " << module->ToString();
   return changed;
 }

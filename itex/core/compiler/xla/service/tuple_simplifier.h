@@ -37,7 +37,10 @@ class TupleSimplifier : public HloModulePass {
 
   // Run tuple simplification on the given computation. Returns whether the
   // computation was changed.
-  StatusOr<bool> Run(HloModule* module) override;
+  using HloPassInterface::Run;
+  StatusOr<bool> Run(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
   // When set, this pipeline stage will perform optimization of all computations

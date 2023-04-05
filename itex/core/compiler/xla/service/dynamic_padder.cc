@@ -1,6 +1,4 @@
-/* Copyright (c) 2023 Intel Corporation
-
-Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,14 +16,14 @@ limitations under the License.
 
 #include <algorithm>
 #include <functional>
-#include <set>
+#include <optional>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/function_ref.h"
 #include "absl/strings/str_format.h"
-#include "absl/types/optional.h"
 #include "itex/core/compiler/xla/client/xla_builder.h"
 #include "itex/core/compiler/xla/comparison_util.h"
 #include "itex/core/compiler/xla/literal.h"
@@ -49,7 +47,6 @@ limitations under the License.
 #include "itex/core/compiler/xla/window_util.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gauge.h"
-#include "itex/core/utils/statusor.h"
 #include "protos/xla_data.pb.h"
 
 namespace itex_xla {
@@ -900,7 +897,7 @@ StatusOr<bool> RewriteReverse(
 HloInstruction* RewriteInputWithDynamicPadding(
     HloInstruction* conv, HloInstruction* input, HloInstruction* padding_value,
     absl::Span<HloInstruction*> padding_before, Window* input_window,
-    std::function<int64_t(int64_t)> window_dim_to_shape_dim) {
+    absl::FunctionRef<int64_t(int64_t)> window_dim_to_shape_dim) {
   HloInstruction* zero_s32 = conv->AddInstruction(
       HloInstruction::CreateConstant(LiteralUtil::Zero(S32)));
   // Padded shape represents the bounded shape after dynamic padding.
@@ -1177,7 +1174,7 @@ StatusOr<bool> RewriteDynamicReduceWindowSamePadding(
     HloInstruction* hlo,
     DynamicDimensionInference* dynamic_dimension_inference) {
   if (hlo->shape().IsTuple()) {
-    // TODO(ITEX) variadic reduce window is not yet supported here.
+    // TODO (b/73062247) variadic reduce window is not yet supported here.
     return Unimplemented("DynamicReduceWindowSamePadding not yet supported.");
   }
   HloInstruction* input = hlo->mutable_operand(0);
@@ -1501,16 +1498,38 @@ StatusOr<bool> RewriteDynamicBinaryOp(
                 static_shape, HloOpcode::kSelect, pred, broadcast, operand));
         return select;
       };
+
+      HloInstruction* one = binary->AddInstruction(
+          HloInstruction::CreateConstant(LiteralUtil::One(S32)));
+
       auto operand_0_needs_broadcast = binary->parent()->AddInstruction(
           HloInstruction::CreateCompare(ShapeUtil::MakeShape(PRED, {}), dim_0,
                                         dim_1, ComparisonDirection::kLt),
+          "lhs_less_than_rhs");
+      auto is_one = binary->parent()->AddInstruction(
+          HloInstruction::CreateCompare(ShapeUtil::MakeShape(PRED, {}), dim_0,
+                                        one, ComparisonDirection::kEq),
+          "lhs_is_one");
+      operand_0_needs_broadcast = binary->parent()->AddInstruction(
+          HloInstruction::CreateBinary(ShapeUtil::MakeShape(PRED, {}),
+                                       HloOpcode::kAnd, is_one,
+                                       operand_0_needs_broadcast),
           "lhs_needs_implicit_broadcast");
       operand_0 = rewrite_operand(operand_0_needs_broadcast, operand_0);
 
       auto operand_1_needs_broadcast = binary->parent()->AddInstruction(
           HloInstruction::CreateCompare(ShapeUtil::MakeShape(PRED, {}), dim_1,
                                         dim_0, ComparisonDirection::kLt),
-          "rhs_needs_implicit_broadcast");
+          "rhs_less_than_lhs");
+      is_one = binary->parent()->AddInstruction(
+          HloInstruction::CreateCompare(ShapeUtil::MakeShape(PRED, {}), dim_1,
+                                        one, ComparisonDirection::kEq),
+          "rhs_is_one");
+      operand_1_needs_broadcast = binary->parent()->AddInstruction(
+          HloInstruction::CreateBinary(ShapeUtil::MakeShape(PRED, {}),
+                                       HloOpcode::kAnd, is_one,
+                                       operand_1_needs_broadcast),
+          "lhs_needs_implicit_broadcast");
       operand_1 = rewrite_operand(operand_1_needs_broadcast, operand_1);
     }
   }
@@ -1830,23 +1849,59 @@ StatusOr<HloInstruction*> InsertPadToStaticOnInstruction(HloInstruction* inst) {
       HloInstruction::CreateTuple(static_tuple_elements));
 }
 
-Status InsertPadToStaticAfterModuleInputs(HloModule* module) {
+// Inserts PadToStatic for parameters and custom-calls which "materialize"
+// dynamic outputs given only static inputs.
+Status InsertPadToStaticAfterModuleInputs(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   std::vector<HloInstruction*> params;
   HloComputation* entry = module->entry_computation();
-  for (int64_t i = 0; i < entry->num_parameters(); ++i) {
-    HloInstruction* param =
-        module->entry_computation()->parameter_instruction(i);
-    auto users = param->users();
-    TF_ASSIGN_OR_RETURN(HloInstruction * static_param,
-                        InsertPadToStaticOnInstruction(param));
-    for (auto* user : users) {
-      TF_RETURN_IF_ERROR(param->ReplaceUseWith(user, static_param));
+  for (HloComputation* comp : module->MakeNonfusionComputationsSorted()) {
+    if (!HloInstruction::IsThreadIncluded(comp->execution_thread(),
+                                          execution_threads)) {
+      continue;
     }
-    if (param == entry->root_instruction()) {
-      module->entry_computation()->set_root_instruction(static_param);
+    for (HloInstruction* instr : comp->instructions()) {
+      auto should_do_pad_to_static =
+          [&execution_threads](HloInstruction* instr) {
+            for (auto user : instr->users()) {
+              if (user->opcode() == HloOpcode::kAsyncStart) {
+                if (HloInstruction::IsThreadIncluded(
+                        user->async_execution_thread(), execution_threads)) {
+                  return true;
+                }
+              } else {
+                return true;
+              }
+            }
+            // If there are users, they must be the bypassing cases. Don't to
+            // pad-to-static.
+            return instr->users().empty();
+          };
+
+      if (!instr->shape().is_static() &&
+          ((instr->opcode() == HloOpcode::kParameter && comp == entry) ||
+           instr->opcode() == HloOpcode::kCustomCall ||
+           instr->opcode() == HloOpcode::kAsyncDone) &&
+          should_do_pad_to_static(instr) &&
+          absl::c_all_of(instr->operands(), [&](HloInstruction* operand) {
+            return operand->shape().is_static();
+          })) {
+        ITEX_LOG(ERROR) << "Inserting PadToStatic for instruction: "
+                        << instr->ToString();
+        auto users = instr->users();
+        TF_ASSIGN_OR_RETURN(HloInstruction * instr_static,
+                            InsertPadToStaticOnInstruction(instr));
+        for (auto* user : users) {
+          TF_RETURN_IF_ERROR(instr->ReplaceUseWith(user, instr_static));
+        }
+        if (instr == entry->root_instruction()) {
+          module->entry_computation()->set_root_instruction(instr_static);
+        }
+      }
     }
   }
-  return Status::OK();
+  return OkStatus();
 }
 
 // Remove all dynamic shapes between pad-to-static and slice-to-dynamic.
@@ -1881,6 +1936,9 @@ class DynamicShapeRemovingVisitor : public DfsHloVisitorWithDefault {
 
   Status HandleParameter(HloInstruction* hlo) override;
 
+  Status HandleAsyncStart(HloInstruction* hlo) override;
+  Status HandleAsyncDone(HloInstruction* hlo) override;
+
   static Status Run(HloComputation* computation,
                     const DynamicPadderOptions::OpSupportsDynamismHandler&
                         op_supports_dynamism_handler,
@@ -1899,7 +1957,7 @@ class DynamicShapeRemovingVisitor : public DfsHloVisitorWithDefault {
         computation->set_root_instruction(new_root);
       }
     }
-    return Status::OK();
+    return OkStatus();
   }
 
  private:
@@ -2019,7 +2077,7 @@ Status DynamicShapeRemovingVisitor::DefaultAction(HloInstruction* hlo) {
   // rewritten it to support static shapes.
   if (!input_is_dynamic && op_support == OpDynamismSupport::kNoSupport) {
     hlo->mutable_shape()->clear_dynamic_dimensions();
-    return Status::OK();
+    return OkStatus();
   }
 
   // Op doesn't support dynamic tensor: For each operand rewrite dynamic input
@@ -2035,7 +2093,7 @@ Status DynamicShapeRemovingVisitor::DefaultAction(HloInstruction* hlo) {
     }
     // This op doesn't support dynamic lowering so the op has to be static.
     hlo->mutable_shape()->clear_dynamic_dimensions();
-    return Status::OK();
+    return OkStatus();
   }
 
   // If the op requires dynamic tensor and input is static -- construct a
@@ -2050,27 +2108,27 @@ Status DynamicShapeRemovingVisitor::DefaultAction(HloInstruction* hlo) {
         TF_RETURN_IF_ERROR(hlo->ReplaceOperandWith(i, dynamic_operand));
       }
     }
-    return Status::OK();
+    return OkStatus();
   }
 
-  return Status::OK();
+  return OkStatus();
 }
 
 Status DynamicShapeRemovingVisitor::HandleGetTupleElement(HloInstruction* hlo) {
   *hlo->mutable_shape() =
       hlo->operand(0)->shape().tuple_shapes(hlo->tuple_index());
-  return Status::OK();
+  return OkStatus();
 }
 
 Status DynamicShapeRemovingVisitor::HandleTuple(HloInstruction* hlo) {
   for (int64_t i = 0; i < hlo->operand_count(); ++i) {
     *hlo->mutable_shape()->mutable_tuple_shapes(i) = hlo->operand(i)->shape();
   }
-  return Status::OK();
+  return OkStatus();
 }
 
 Status DynamicShapeRemovingVisitor::HandleParameter(HloInstruction* hlo) {
-  return Status::OK();
+  return OkStatus();
 }
 
 Status DynamicShapeRemovingVisitor::HandleCustomCall(HloInstruction* hlo) {
@@ -2078,15 +2136,27 @@ Status DynamicShapeRemovingVisitor::HandleCustomCall(HloInstruction* hlo) {
       hlo->custom_call_target() == "PadToStatic") {
     // Those ops support are created to handle dynamic tensors so by their
     // nature they support dynamic lowering.
-    return Status::OK();
+    return OkStatus();
   }
 
   return DefaultAction(hlo);
 }
 
+Status DynamicShapeRemovingVisitor::HandleAsyncStart(HloInstruction* hlo) {
+  // async-start is handled specially in InsertPadToStaticAfterModuleInputs().
+  return OkStatus();
+}
+
+Status DynamicShapeRemovingVisitor::HandleAsyncDone(HloInstruction* hlo) {
+  // async-done is handled specially in InsertPadToStaticAfterModuleInputs().
+  return OkStatus();
+}
+
 }  // namespace
 
-StatusOr<bool> DynamicPadder::Run(HloModule* module) {
+StatusOr<bool> DynamicPadder::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   bool changed = false;
   ITEX_VLOG(2) << "Pre DynamicPadder HLO:";
   ITEX_XLA_VLOG_LINES(2, module->ToString());
@@ -2118,10 +2188,11 @@ StatusOr<bool> DynamicPadder::Run(HloModule* module) {
         ShapeUtil::UpdateDynamicDimension(parameter->mutable_shape(),
                                           dynamic_dimension.parameter_index,
                                           dynamic_dimension.dimension, false);
-        return Status::OK();
+        return OkStatus();
       }));
 
-  TF_RETURN_IF_ERROR(InsertPadToStaticAfterModuleInputs(module));
+  TF_RETURN_IF_ERROR(
+      InsertPadToStaticAfterModuleInputs(module, execution_threads));
   TF_ASSIGN_OR_RETURN(
       DynamicDimensionInference dynamic_dimension_inference,
       DynamicDimensionInference::Run(module, options_.custom_call_handler,
@@ -2129,7 +2200,7 @@ StatusOr<bool> DynamicPadder::Run(HloModule* module) {
                                      options_.assertion_generator));
 
   std::vector<HloComputation*> computations =
-      module->MakeComputationPostOrder();
+      module->MakeComputationPostOrder(execution_threads);
 
   for (HloComputation* computation : computations) {
     for (HloInstruction* inst : computation->MakeInstructionPostOrder()) {
@@ -2260,7 +2331,7 @@ StatusOr<bool> DynamicPadder::Run(HloModule* module) {
   // There are ops that only support dynamic lowering and ops that only support
   // static lowering, add dynamic<->static tensor conversion around the boundary
   // between those ops, as well as the root instruction.
-  computations = module->MakeComputationPostOrder();
+  computations = module->MakeComputationPostOrder(execution_threads);
   // Reverse postorder so that if caller doesn't support dynamic tensor (while,
   // etc), change their called computation to only take static tensors.
   for (auto it = computations.rbegin(); it != computations.rend(); ++it) {
@@ -2281,7 +2352,7 @@ StatusOr<bool> DynamicPadder::Run(HloModule* module) {
     module->set_is_dynamic(true);
   }
 
-  for (auto* computation : module->computations()) {
+  for (auto* computation : module->computations(execution_threads)) {
     for (auto instruction : computation->MakeInstructionPostOrder()) {
       TF_ASSIGN_OR_RETURN(
           bool c, ReplaceGetSize(instruction, &dynamic_dimension_inference));
@@ -2289,7 +2360,7 @@ StatusOr<bool> DynamicPadder::Run(HloModule* module) {
     }
   }
 
-  for (auto* computation : module->computations()) {
+  for (auto* computation : module->computations(execution_threads)) {
     for (auto instruction : computation->MakeInstructionPostOrder()) {
       TF_ASSIGN_OR_RETURN(bool c, ReplaceSetSize(instruction));
       changed |= c;
@@ -2300,7 +2371,7 @@ StatusOr<bool> DynamicPadder::Run(HloModule* module) {
   }
 
   HloDCE dce;
-  TF_ASSIGN_OR_RETURN(bool c, dce.Run(module));
+  TF_ASSIGN_OR_RETURN(bool c, dce.Run(module, execution_threads));
   changed |= c;
 
   ITEX_VLOG(2) << "Post DynamicPadder HLO:";

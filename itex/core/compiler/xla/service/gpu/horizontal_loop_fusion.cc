@@ -534,7 +534,9 @@ StatusOr<bool> GpuHorizontalLoopFusion::RunOnComputation(
   return horizontal_fusion_impl.Run();
 }
 
-StatusOr<bool> GpuHorizontalLoopFusion::Run(HloModule* module) {
+StatusOr<bool> GpuHorizontalLoopFusion::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   bool changed = false;
   ITEX_VLOG(2) << "Run horizontal fusion.";
 

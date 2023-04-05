@@ -610,7 +610,9 @@ static bool InstructionCallsChannelInstructions(
   return false;
 }
 
-StatusOr<bool> ConditionalSimplifier::Run(HloModule* module) {
+StatusOr<bool> ConditionalSimplifier::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_XLA_VLOG_LINES(
       3, "ConditionalSimplifier::Run(), before:\n" + module->ToString());
   bool changed = false;

@@ -1108,10 +1108,13 @@ void LayoutAssignment::SetupCopiedInstruction(const HloInstruction& instruction,
   copy->set_metadata(instruction.metadata());
 }
 
-Status LayoutAssignment::CheckLayouts(HloModule* module) {
+Status LayoutAssignment::CheckLayouts(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   TF_ASSIGN_OR_RETURN(auto points_to_analysis,
                       TuplePointsToAnalysis::Run(module));
-  for (auto* computation : module->MakeNonfusionComputations()) {
+  for (auto* computation :
+       module->MakeNonfusionComputations(execution_threads)) {
     for (auto* instruction : computation->instructions()) {
       // Verify every instruction has a layout and the layout is valid for the
       // shape.
@@ -2382,7 +2385,9 @@ Status LayoutAssignment::PropagateComputationLayouts(
   return Status::OK();
 }
 
-StatusOr<bool> LayoutAssignment::Run(HloModule* module) {
+StatusOr<bool> LayoutAssignment::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_VLOG(2) << "Running layout assignment on module " << module->name();
   TF_RETURN_IF_ERROR(Init(module));
   call_graph_ = CallGraph::Build(module);
@@ -2392,7 +2397,7 @@ StatusOr<bool> LayoutAssignment::Run(HloModule* module) {
   //
   // TODO(b/68493863): Remove this once we can call SetOperandLayout() on the
   // operand buffers that aliases with the output.
-  for (HloComputation* computation : module->computations()) {
+  for (HloComputation* computation : module->computations(execution_threads)) {
     for (HloInstruction* instruction :
          computation->MakeInstructionPostOrder()) {
       if (instruction->opcode() == HloOpcode::kSend) {
@@ -2402,7 +2407,7 @@ StatusOr<bool> LayoutAssignment::Run(HloModule* module) {
   }
 
   // Clone Conditional computations with multiple callsites.
-  for (HloComputation* computation : module->computations()) {
+  for (HloComputation* computation : module->computations(execution_threads)) {
     CallGraphNode& node = call_graph_->GetNode(computation);
     if (node.caller_callsites().size() == 1) {
       continue;
@@ -2454,7 +2459,8 @@ StatusOr<bool> LayoutAssignment::Run(HloModule* module) {
   TF_ASSIGN_OR_RETURN(auto points_to_analysis,
                       TuplePointsToAnalysis::Run(module));
   points_to_analysis_ = std::move(points_to_analysis);
-  auto computations_to_work = module->MakeNonfusionComputations();
+  auto computations_to_work =
+      module->MakeNonfusionComputations(execution_threads);
   // If the reverse_comptation_order_ flag is set, reverse the ordering of
   // traversing computations, to generate an alternative layout assignment.
   if (reverse_computation_order_ && !computations_to_work.empty()) {
@@ -2473,7 +2479,7 @@ StatusOr<bool> LayoutAssignment::Run(HloModule* module) {
                                 : LayoutConstraint::kDefaultPriority));
   for (int64_t i = 0; i < kNumberOfPropagationRounds; ++i) {
     ITEX_VLOG(1) << "Running " << (i == 0 ? "un" : "") << "constrained pass";
-    TF_RETURN_IF_ERROR(ClearPreviousPassSideEffects(module));
+    TF_RETURN_IF_ERROR(ClearPreviousPassSideEffects(module, execution_threads));
     for (auto* computation : computations_to_work) {
       LayoutConstraints* constraints =
           mutable_computation_constraints(computation);
@@ -2496,7 +2502,7 @@ StatusOr<bool> LayoutAssignment::Run(HloModule* module) {
 
   TF_RETURN_IF_ERROR(PropagateMemorySpace(module));
 
-  TF_RETURN_IF_ERROR(CheckLayouts(module));
+  TF_RETURN_IF_ERROR(CheckLayouts(module, execution_threads));
 
   // All layouts are reset then reassigned by this pass.
   return true;
@@ -2676,9 +2682,11 @@ Status LayoutAssignment::Init(HloModule* module) {
   return Status::OK();
 }
 
-Status LayoutAssignment::ClearPreviousPassSideEffects(HloModule* module) {
+Status LayoutAssignment::ClearPreviousPassSideEffects(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_VLOG(5) << "Clearing previous side effects";
-  for (HloComputation* computation : module->computations()) {
+  for (HloComputation* computation : module->computations(execution_threads)) {
     if (computation_layouts_.find(computation) != computation_layouts_.end()) {
       mutable_computation_constraints(computation)->ResetOperandConstraints();
     }
@@ -2687,7 +2695,7 @@ Status LayoutAssignment::ClearPreviousPassSideEffects(HloModule* module) {
   unconstrained_buffer_ids_.clear();
   buffer_constraints_.clear();
   buffer_sets_cache_.clear();
-  return Status::OK();
+  return OkStatus();
 }
 Status LayoutAssignment::AddCopyForOperand(HloInstruction* instruction,
                                            int64_t operand_number) {

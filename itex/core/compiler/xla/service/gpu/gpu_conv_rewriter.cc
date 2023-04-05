@@ -750,7 +750,9 @@ StatusOr<bool> RunOnComputation(HloComputation* computation) {
 }
 }  // namespace
 
-StatusOr<bool> GpuConvRewriter::Run(HloModule* module) {
+StatusOr<bool> GpuConvRewriter::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_XLA_VLOG_LINES(2,
                       "GpuConvRewriter::Run(), before:\n" + module->ToString());
   bool changed = false;

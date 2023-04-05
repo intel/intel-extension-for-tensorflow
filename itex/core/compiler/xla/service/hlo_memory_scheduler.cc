@@ -1,6 +1,4 @@
-/* Copyright (c) 2023 Intel Corporation
-
-Copyright 2016 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2016 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +18,6 @@ limitations under the License.
 #include <algorithm>
 #include <limits>
 #include <map>
-#include <memory>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -499,7 +496,7 @@ StatusOr<HloInstructionSequence> DFSMemoryScheduler(
   HloInstructionSequence sequence;
   FunctionVisitor visitor([&sequence](HloInstruction* hlo) {
     sequence.push_back(hlo);
-    return Status::OK();
+    return OkStatus();
   });
   visitor.ReserveVisitStates(computation->instruction_count());
   TF_RETURN_IF_ERROR(computation->AcceptWithOperandOrder(
@@ -535,10 +532,12 @@ ModuleSchedulerAlgorithm ComputationSchedulerToModuleScheduler(
              const TuplePointsToAnalysis& points_to_analysis,
              const HloAliasAnalysis& alias_analysis,
              const LogicalBuffer::SizeFunction& size_func,
+             const absl::flat_hash_set<absl::string_view>& execution_threads,
              int64_t* peak_memory) -> StatusOr<HloSchedule> {
     HloSchedule schedule(module);
     absl::flat_hash_map<const HloComputation*, int64_t> memory_by_computation;
-    for (auto* computation : module->MakeComputationPostOrder()) {
+    for (auto* computation :
+         module->MakeComputationPostOrder(execution_threads)) {
       if (!computation->IsFusionComputation()) {
         TF_ASSIGN_OR_RETURN(
             HloInstructionSequence computation_sequence,
@@ -667,7 +666,9 @@ StatusOr<HloInstructionSequence> DefaultMemoryScheduler(
 StatusOr<HloSchedule> DefaultModuleScheduler(
     const HloModule* module, const TuplePointsToAnalysis& points_to_analysis,
     const HloAliasAnalysis& alias_analysis,
-    const BufferValue::SizeFunction& size_function, int64_t* peak_memory) {
+    const BufferValue::SizeFunction& size_function,
+    const absl::flat_hash_set<absl::string_view>& execution_threads,
+    int64_t* peak_memory) {
   // We try a few schedulers and choose whichever returns a lower min-memory,
   // not accounting for fragmentation.
   // - List is a scheduler that uses greedy heuristics.
@@ -681,7 +682,7 @@ StatusOr<HloSchedule> DefaultModuleScheduler(
       HloSchedule list_sequence,
       ComputationSchedulerToModuleScheduler(ListMemoryScheduler, {})(
           module, points_to_analysis, alias_analysis, size_function,
-          &list_memory));
+          execution_threads, &list_memory));
 
   ITEX_VLOG(2) << "Min-memory list sequence: "
                << HumanReadableNumBytes(list_memory);
@@ -691,7 +692,7 @@ StatusOr<HloSchedule> DefaultModuleScheduler(
       HloSchedule dfs_sequence,
       ComputationSchedulerToModuleScheduler(DFSMemoryScheduler, {})(
           module, points_to_analysis, alias_analysis, size_function,
-          &dfs_memory));
+          execution_threads, &dfs_memory));
   ITEX_VLOG(2) << "Min-memory dfs sequence: "
                << HumanReadableNumBytes(dfs_memory);
 
@@ -700,7 +701,7 @@ StatusOr<HloSchedule> DefaultModuleScheduler(
       HloSchedule post_order_sequence,
       ComputationSchedulerToModuleScheduler(PostOrderMemoryScheduler, {})(
           module, points_to_analysis, alias_analysis, size_function,
-          &post_order_memory));
+          execution_threads, &post_order_memory));
   ITEX_VLOG(2) << "Min-memory post order sequence: "
                << HumanReadableNumBytes(post_order_memory);
 
@@ -726,7 +727,9 @@ StatusOr<HloSchedule> DefaultModuleScheduler(
 
 StatusOr<HloSchedule> ScheduleModule(
     const HloModule* module, const BufferValue::SizeFunction& size_function,
-    const ModuleSchedulerAlgorithm& algorithm, int64_t* peak_memory) {
+    const ModuleSchedulerAlgorithm& algorithm,
+    const absl::flat_hash_set<absl::string_view>& execution_threads,
+    int64_t* peak_memory) {
   TF_ASSIGN_OR_RETURN(std::unique_ptr<TuplePointsToAnalysis> points_to_analysis,
                       TuplePointsToAnalysis::Run(module));
   TF_ASSIGN_OR_RETURN(std::unique_ptr<HloAliasAnalysis> alias_analysis,
@@ -737,7 +740,7 @@ StatusOr<HloSchedule> ScheduleModule(
       (algorithm ? algorithm
                  : DefaultModuleScheduler)(module, *points_to_analysis,
                                            *alias_analysis, size_function,
-                                           peak_memory));
+                                           execution_threads, peak_memory));
 
   TF_RETURN_IF_ERROR(schedule.Verify());
 
@@ -764,23 +767,29 @@ HloMemoryScheduler::HloMemoryScheduler(
     const ModuleSchedulerAlgorithm& algorithm)
     : size_function_(size_function), algorithm_(algorithm) {}
 
-StatusOr<bool> HloMemoryScheduler::Run(HloModule* module) {
-  TF_ASSIGN_OR_RETURN(HloSchedule schedule,
-                      ScheduleModule(module, size_function_, algorithm_));
+StatusOr<bool> HloMemoryScheduler::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
+  TF_ASSIGN_OR_RETURN(
+      HloSchedule schedule,
+      ScheduleModule(module, size_function_, algorithm_, execution_threads));
   TF_RETURN_IF_ERROR(module->set_schedule(std::move(schedule)));
   return true;
 }
 
-StatusOr<bool> HloTrivialScheduler::Run(HloModule* module) {
+StatusOr<bool> HloTrivialScheduler::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   HloSchedule schedule(module);
-  for (HloComputation* computation : module->MakeComputationPostOrder()) {
+  for (HloComputation* computation :
+       module->MakeComputationPostOrder(execution_threads)) {
     if (!computation->IsFusionComputation()) {
       HloInstructionSequence& computation_sequence =
           schedule.GetOrCreateSequence(computation);
       FunctionVisitor visitor(
           [&computation_sequence](HloInstruction* instruction) {
             computation_sequence.push_back(instruction);
-            return Status::OK();
+            return OkStatus();
           });
       visitor.ReserveVisitStates(computation->instruction_count());
       TF_RETURN_IF_ERROR(computation->Accept(&visitor));
@@ -790,7 +799,9 @@ StatusOr<bool> HloTrivialScheduler::Run(HloModule* module) {
   return true;
 }
 
-StatusOr<bool> HloDescheduler::Run(HloModule* module) {
+StatusOr<bool> HloDescheduler::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   bool changed = module->has_schedule();
   module->clear_schedule();
   return changed;

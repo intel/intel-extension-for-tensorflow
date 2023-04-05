@@ -141,7 +141,9 @@ class SubcomputationInsertionVisitor : public DfsHloVisitorWithDefault {
   return visitor.ConsumeInstructionMap();
 }
 
-StatusOr<bool> CallInliner::Run(HloModule* module) {
+StatusOr<bool> CallInliner::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   std::unique_ptr<CallGraph> call_graph = CallGraph::Build(module);
   // Because call graph nodes are visited in post-order (callees before callers)
   // we'll always inline kCalls into their callers in the appropriate order.

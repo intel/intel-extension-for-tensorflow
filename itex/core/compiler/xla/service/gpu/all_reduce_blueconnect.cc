@@ -268,7 +268,9 @@ StatusOr<bool> TryDecomposeAllReduce(HloAllReduceInstruction* all_reduce,
 
 }  // namespace
 
-StatusOr<bool> AllReduceBlueConnect::Run(HloModule* module) {
+StatusOr<bool> AllReduceBlueConnect::Run(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
   ITEX_VLOG(1) << "Running AllReduceBlueConnect";
 
   if (hlo_query::ContainsLayoutConstrainedAllReduce(*module)) {
@@ -285,7 +287,8 @@ StatusOr<bool> AllReduceBlueConnect::Run(HloModule* module) {
   }
 
   std::vector<HloAllReduceInstruction*> all_reduces;
-  for (HloComputation* computation : module->MakeNonfusionComputations()) {
+  for (HloComputation* computation :
+       module->MakeNonfusionComputations(execution_threads)) {
     for (HloInstruction* instruction : computation->instructions()) {
       if (instruction->opcode() == HloOpcode::kAllReduce) {
         all_reduces.push_back(Cast<HloAllReduceInstruction>(instruction));
