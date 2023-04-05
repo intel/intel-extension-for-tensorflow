@@ -300,10 +300,7 @@ GpuExecutable::ResolveConstantGlobals(se::Stream* stream) {
 
   absl::flat_hash_map<int64_t, se::DeviceMemoryBase> globals;
   se::ModuleHandle module_handle;
-  // The CUDA driver isn't able to load empty PTX. It's okay if we skip loading
-  // in this case; if the module isn't loaded, all symbol lookups will fail,
-  // just as they should for an empty module.
-  if (module_spec.cuda_ptx_in_memory()) {
+  if (module_spec.has_cuda_cubin_in_memory()) {
     TF_RETURN_IF_ERROR(executor->LoadModule(module_spec, &module_handle));
   }
 

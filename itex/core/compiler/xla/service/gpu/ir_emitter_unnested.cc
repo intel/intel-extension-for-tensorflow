@@ -595,11 +595,7 @@ Status IrEmitterUnnested::EmitConstant(mlir::Operation* op) {
   } else {
     TF_RETURN_IF_ERROR(
         CopyDenseElementsDataToXlaFormat(literal, &info.content));
-    // initializer = llvm::ConstantAggregateZero::get(global_type);
-    // TODO(ITEX): initialize global variable directly. NV initialize it
-    // externally, how to do it in SPIRV?
-    initializer = llvm::ConstantDataArray::get<uint8_t>(
-        ir_emitter_context_->llvm_module()->getContext(), info.content);
+    initializer = llvm::ConstantAggregateZero::get(global_type);
   }
 
   // These globals will be looked up by name by GpuExecutable so we need to
@@ -618,6 +614,30 @@ Status IrEmitterUnnested::EmitConstant(mlir::Operation* op) {
       /*AddressSpace=*/1,  // Hardcode to global addrspace
       /*isExternallyInitialized=*/false);
   global_for_const->setAlignment(llvm::Align(kConstantBufferAlignBytes));
+
+  // Add spirv.Decorations for global variable. See document about the
+  // annotation:
+  // https://github.com/intel/llvm/blob/sycl/sycl/doc/design/spirv-extensions/SPV_INTEL_global_variable_decorations.asciidoc
+  if (!should_emit_initializer) {
+    llvm::LLVMContext& context =
+        ir_emitter_context_->llvm_module()->getContext();
+    llvm::SmallVector<llvm::Metadata*, 4> MDs;
+    std::vector<llvm::Metadata*> OPs;
+
+    auto* KindMD = llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(context), /*IDecHostAccessINTEL*/ 6147));
+    OPs.push_back(KindMD);
+    auto* const AccModeMD =
+        llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(context), /*AccessMode*/ 2));
+    auto* const NameMD = llvm::MDString::get(context, global.getSymName());
+    OPs.push_back(AccModeMD);
+    OPs.push_back(NameMD);
+    MDs.push_back(llvm::MDNode::get(context, OPs));
+
+    llvm::MDNode* MDList = llvm::MDNode::get(context, MDs);
+    global_for_const->setMetadata("spirv.Decorations", MDList);
+  }
   ir_emitter_context_->llvm_module()->getGlobalList().push_back(
       global_for_const);
 
