@@ -130,7 +130,7 @@ Use either the Python API or the environment variables to enable Advanced AMP.
 
 |Python API|Environment Variable|
 |-|-|
-|`import intel_extension_for_tensorflow as itex`<br><br>`auto_mixed_precision_options = itex.AutoMixedPrecosionOptions()`<br>`auto_mixed_precision_options.data_type = itex.BFLOAT16`<br><br>`graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precision_options)`<br>`graph_options.auto_mixed_precision = itex.ON`<br><br>`config = itex.ConfigProto(graph_options=graph_options)`<br>`itex.set_config(config)`|`export ITEX_AUTO_MIXED_PRECISION=1`<br>`export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16"`<br>|
+|`import intel_extension_for_tensorflow as itex`<br><br>`auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()`<br>`auto_mixed_precision_options.data_type = itex.BFLOAT16`<br><br>`graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precision_options)`<br>`graph_options.auto_mixed_precision = itex.ON`<br><br>`config = itex.ConfigProto(graph_options=graph_options)`<br>`itex.set_config(config)`|`export ITEX_AUTO_MIXED_PRECISION=1`<br>`export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16"`<br>|
 
 #### Original Code
 
