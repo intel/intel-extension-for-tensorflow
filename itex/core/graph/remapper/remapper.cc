@@ -2507,7 +2507,7 @@ bool FindConstWithCast(const RemapperContext& ctx, int node_index,
   const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
   const auto* constant = regular_fanin_0.node_view();
   const auto* constant_node_def = constant->node();
-  if (!IsConstant(*constant_node_def) || HasControlFaninOrFanout(*constant))
+  if (!IsConstant(*constant_node_def) || HasControlFanout(*constant))
     return false;
 
   DataType constant_dtype = GetDataTypeFromAttr(*constant_node_def, "dtype");
@@ -5181,6 +5181,13 @@ Status AddConstWithCastNode(RemapperContext* ctx, const ConstWithCast& matched,
   cast_value.AsProtoTensorContent(t);
   new_const_op.mutable_attr()->insert({"dtype", attr_type});
   new_const_op.mutable_attr()->insert({"value", attr_tensor});
+
+  auto* const_node_view = ctx->graph_view.GetNode(matched.constant);
+  auto control_fanins = const_node_view->GetControllingFanins();
+  for (size_t i = 0; i < control_fanins.size(); ++i) {
+    auto fanin_name = control_fanins[i].node_view()->node()->name();
+    new_const_op.add_input(AsControlDependency(fanin_name));
+  }
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
