@@ -28,6 +28,9 @@ itex_xpu_library(
 itex_xpu_library(
     name = "xpu_kernel_cc",
     srcs = ["xpu_kernel.cc"],
+    copts = [
+        "-DCC_BUILD",
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
