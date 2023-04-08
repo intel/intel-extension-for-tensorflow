@@ -52,7 +52,9 @@ void TF_InitKernel() {
 #ifdef INTEL_CPU_ONLY
   // Register generic CPU kernels.
   RegisterCPUKernels(itex::DEVICE_CPU);
-#endif
+#endif  // INTEL_CPU_ONLY
+
+#ifndef CC_BUILD
   bool ops_override = false;
   ITEX_CHECK_OK(
       itex::ReadBoolFromEnvVar("ITEX_OPS_OVERRIDE", false, &ops_override));
@@ -60,4 +62,5 @@ void TF_InitKernel() {
     PyRun_SimpleString("import intel_extension_for_tensorflow as itex;\n");
     PyRun_SimpleString("itex.experimental_ops_override();\n");
   }
+#endif  // CC_BUILD
 }
