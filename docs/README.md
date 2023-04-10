@@ -44,14 +44,15 @@
         <td colspan="3" align="center"><a href="guide/environment_variables.md">Environment variables</a></td>
 		<td colspan="3" align="center"><a href="guide/python_api.md">Python API</a></td>
         <td colspan="3" align="center"><a href="guide/advanced_auto_mixed_precision.md">Advanced auto mixed precision</a></td>
-		<td colspan="3" align="center"><a href="guide/itex_ops.md">Operator optimization</a></td>
+        <td colspan="3" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
     </tr>
     <tr>
-        <td colspan="2.4" align="center"><a href="guide/itex_fusion.md">Graph optimization</a></td>
-        <td colspan="2.4" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
-		<td colspan="2.4" align="center"><a href="guide/launch.md">CPU launcher</a></td>
-        <td colspan="2.4" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
-	<td colspan="2.4" align="center"><a href="guide/XPUAutoShard.md">XPUAutoShard</a></td>
+    	<td colspan="2" align="center"><a href="guide/itex_ops.md">Custom operator</a></td>
+	<td colspan="2" align="center"><a href="guide/itex_ops_override.md">Operator override</a></td>
+	<td colspan="3" align="center"><a href="guide/INT8_quantization.md">INT8 quantization</a></td>
+	<td colspan="2" align="center"><a href="guide/XPUAutoShard.md">XPUAutoShard</a></td>
+        <td colspan="2" align="center"><a href="guide/how_to_enable_profiler.md">GPU profiler</a></td>
+	<td colspan="2" align="center"><a href="guide/launch.md">CPU launcher</a></td>
     </tr>
   </tbody>
   <thead>
