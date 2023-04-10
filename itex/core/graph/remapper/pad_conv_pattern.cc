@@ -22,7 +22,7 @@ limitations under the License.
 #include "itex/core/graph/utils/utils.h"
 
 /*
-Merge pad into conv3d as an attribute, remain quantize and dequantize.
+Merge pad into conv2d or conv3d as an attribute, remain quantize and dequantize.
 Before:                                    After:
                 input2  const
                    \     /
@@ -32,13 +32,13 @@ Before:                                    After:
                       |                                            |
     input1        dequantize                  input1          dequantize
           \      /                                  \         /
-           conv3d                                  padwithconv3d
+        conv2d|conv3d                       conv2dwithpad|conv3dwithpad
 */
 namespace itex {
 namespace graph {
-class PadConv3d : public Fusion {
+class PadConv : public Fusion {
  public:
-  PadConv3d() : Fusion() {
+  explicit PadConv(bool is_conv3d) : Fusion(), is_conv3d_(is_conv3d) {
     is_partial_ = true;
     using utils::NodeStatus;
     using utils::OpTypePattern;
@@ -51,7 +51,8 @@ class PadConv3d : public Fusion {
     OpTypePattern const_max = {kConst, "const_max", NodeStatus::kRemain};
     OpTypePattern quantize = {kQuantizeV2, "quantize", NodeStatus::kRemain};
     OpTypePattern dequantize = {kDequantize, "dequantize", NodeStatus::kRemain};
-    OpTypePattern conv3d = {kConv3D, "conv3d_output", NodeStatus::kReplace};
+    OpTypePattern conv = {is_conv3d_ ? kConv3D : kConv2D, "conv_output",
+                          NodeStatus::kReplace};
 
     pad.AddInput(input2);
     pad.AddInput(constv);
@@ -59,25 +60,32 @@ class PadConv3d : public Fusion {
     quantize.AddInput(const_min);
     quantize.AddInput(const_max);
     dequantize.AddNSameInput(quantize);
-    conv3d.AddInput(dequantize);
-    conv3d.AddInput(input1);
+    conv.AddInput(dequantize);
+    conv.AddInput(input1);
 
-    pattern_ = InternalPattern(std::move(conv3d));
+    pattern_ = InternalPattern(std::move(conv));
   }
 
-  ~PadConv3d() {}
-  std::string Name() override { return "pad-conv3d"; }
+  ~PadConv() {}
+  std::string Name() override {
+    return is_conv3d_ ? "pad-conv3d" : "pad-conv2d";
+  }
   MatchedProperties Check(RemapperContext* ctx,
                           const int node_index) const override {
     MatchedProperties ret;
     auto& graph_view = ctx->graph_view;
-    auto* conv3d_node_def = graph_view.GetNode(node_index)->node();
-    if (!IsConv3D(*conv3d_node_def)) return ret;
+    auto* conv_node_def = graph_view.GetNode(node_index)->node();
+
+    if (is_conv3d_) {
+      if (!IsConv3D(*conv_node_def)) return ret;
+    } else {
+      if (!IsConv2D(*conv_node_def)) return ret;
+    }
 
     ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
     if (ret.Empty()) return ret;
 
-    if (NodeIsOnGpu(conv3d_node_def)) return ret.ToEmpty();
+    if (NodeIsOnGpu(conv_node_def)) return ret.ToEmpty();
 
     return ret;
   }
@@ -89,18 +97,24 @@ class PadConv3d : public Fusion {
     auto* constv_node =
         ctx->graph_view.GetNode(properties.map.at("constv"))->node();
     auto* pad_node = ctx->graph_view.GetNode(properties.map.at("pad"))->node();
-    auto* conv3d_node =
-        ctx->graph_view.GetNode(properties.map.at("conv3d_output"))->node();
+    auto* conv_node =
+        ctx->graph_view.GetNode(properties.map.at("conv_output"))->node();
     NodeDef fused_node;
-    fused_node.set_op(kPadConv3d);
-    fused_node.set_name(conv3d_node->name());
-    fused_node.set_device(conv3d_node->device());
-    fused_node.add_input(conv3d_node->input(0));
-    fused_node.add_input(conv3d_node->input(1));
+    if (is_conv3d_) {
+      // Conv3D op doesn't have explicit padding attr
+      fused_node.set_op("_ITEXConv3D");
+    } else {
+      fused_node.set_op("Conv2D");
+    }
 
-    CopyAllAttrs(*conv3d_node, &fused_node);
+    fused_node.set_name(conv_node->name());
+    fused_node.set_device(conv_node->device());
+    fused_node.add_input(conv_node->input(0));
+    fused_node.add_input(conv_node->input(1));
 
-    // set pad as a new attribute of conv3d
+    CopyAllAttrs(*conv_node, &fused_node);
+
+    // set pad as a new attribute of conv2d|conv3d
     Tensor const_tensor;
     std::vector<int> pad_value;
     if (constv_node != nullptr && constv_node->op() == "Const" &&
@@ -129,8 +143,22 @@ class PadConv3d : public Fusion {
     TF_RETURN_IF_ERROR(mutation->Apply());
     return Status::OK();
   }
+
+ protected:
+  bool is_conv3d_;
+};
+
+class PadConv3d : public PadConv {
+ public:
+  PadConv3d() : PadConv(true) {}
+};
+
+class PadConv2d : public PadConv {
+ public:
+  PadConv2d() : PadConv(false) {}
 };
 
 REGISTER_FUSION(PadConv3d)
+REGISTER_FUSION(PadConv2d)
 }  // namespace graph
 }  // namespace itex
