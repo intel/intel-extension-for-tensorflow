@@ -53,3 +53,6 @@ Refer to [Python APIs and preserved environment variable Names](python_api.md#py
 ### Auto Mixed Precision Options
 
 Refer to [Advanced Auto Mixed Precision](advanced_auto_mixed_precision.md).
+
+### Customized Operators Experimental Override
+Refer to [Customized Operators Experimental Override](itex_ops_override.md).
