@@ -25,7 +25,7 @@ limitations under the License.
 #define ITEX_VERSION_MINOR @ITEX_VERSION_MINOR@
 
 /// Patch version
-#define ITEX_VERSION_PATCH @ITEX_VERSION_PATCH@
+#define ITEX_VERSION_PATCH "@ITEX_VERSION_PATCH@"
 
 /// Git commit hash
 #define ITEX_VERSION_HASH "@ITEX_VERSION_HASH@"
@@ -40,7 +40,7 @@ limitations under the License.
 typedef struct {
   int major;         ///< Major version
   int minor;         ///< Minor version
-  int patch;         ///< Patch version
+  const char* patch;         ///< Patch version
   const char* hash;  ///< Git hash of the sources (may be absent)
 } itex_version_t;
 
