@@ -317,7 +317,7 @@ For advanced users with more knowledge of model and TensorFlow, it is possible t
 </thead>
 <tbody>
 <tr>
-<td><code>import intel_extension_for_tensorflow as itex</code><br><br><code>auto_mixed_precision_options = itex.AutoMixedPrecosionOptions()</code><br><code>auto_mixed_precision_options.data_type = itex.BFLOAT16</code><br><br><code>graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precision_options)</code><br><code>graph_options.auto_mixed_precision = itex.ON</code><br><br><code>config = itex.ConfigProto(graph_options=graph_options)</code><br><code>itex.set_config(config)</code></td>
+<td><code>import intel_extension_for_tensorflow as itex</code><br><br><code>auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()</code><br><code>auto_mixed_precision_options.data_type = itex.BFLOAT16</code><br><br><code>graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precision_options)</code><br><code>graph_options.auto_mixed_precision = itex.ON</code><br><br><code>config = itex.ConfigProto(graph_options=graph_options)</code><br><code>itex.set_config(config)</code></td>
 <td><code>export ITEX_AUTO_MIXED_PRECISION=1</code><br><code>export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16"</code><br></td>
 </tr>
 </tbody>
