@@ -52,6 +52,7 @@ class ActivationFusionBase : public Fusion {
 class SigmoidWithMulFusion : public ActivationFusionBase {
  public:
   SigmoidWithMulFusion() : ActivationFusionBase() {
+    // TODO(itex): disable swish fusion in oneDNN Graph mode
     using utils::NodeStatus;
     using utils::OpTypePattern;
     OpTypePattern input = {kAny, "input", NodeStatus::kRemain};

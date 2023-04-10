@@ -1245,6 +1245,7 @@ Status TranslateEltwise(const OneDnnGraphContext* ctx, const int node_index,
       {"ITEXGeluGrad", kind::GELUBackprop},
 #endif
       {"LeakyRelu", kind::LeakyReLU},
+      {"_ITEXMish", kind::Mish},
       {"Sigmoid", kind::Sigmoid},
       {"Relu", kind::ReLU},
 #ifdef ITEX_ONEDNN_3_0
@@ -1831,6 +1832,7 @@ const TranslationMap& getTranslationMap() {
       {"ITEXGelu", TranslateEltwise},
       {"GeluGrad", TranslateEltwise},
       {"ITEXGeluGrad", TranslateEltwise},
+      {"_ITEXMish", TranslateEltwise},
       {"Reshape", TranslateReshape},
       {"Transpose", TranslateTranspose},
       {"Softmax", TranslateSoftmax},
