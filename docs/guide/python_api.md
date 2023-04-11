@@ -32,7 +32,7 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 
 **Notes:**
 1. The priority for setting values is as follows: Python APIs > Environment Variables > Default value.
-2. If GPU backend was installed by `pip install intel-extension-for-tensorflow[gpu]`, the default backend will be `GPU`. If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, the default backend is `CPU`.
+2. If GPU backend was installed by `pip install intel-extension-for-tensorflow[gpu]==1.2.0rc0`, the default backend will be `GPU`. If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]==1.2.0rc0`, the default backend is `CPU`.
 
 ## Set Intel® Extension for TensorFlow* Backend
 
@@ -49,7 +49,7 @@ itex.set_backend (
 
 | Args                   |                                     Description                         |
 | -----------------------| ------------------------------------------------------------------------|
-| `backend`      | The backend type to set. The default value is `CPU`.<br>  <br> * If `GPU`, the XPU backend type is set as `GPU` and all ops will be executed on concrete GPU backend.<br> * If `CPU`, the XPU backend type is set as `CPU` and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, it's invalid to set XPU backend type as `GPU`.|
+| `backend`      | The backend type to set. The default value is `CPU`.<br>  <br> * If `GPU`, the XPU backend type is set as `GPU` and all ops will be executed on concrete GPU backend.<br> * If `CPU`, the XPU backend type is set as `CPU` and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]==1.2.0rc0`, it's invalid to set XPU backend type as `GPU`.|
 
 | Raises                   |                                     Description                         |
 | -----------------------| ------------------------------------------------------------------------|
@@ -102,7 +102,7 @@ itex.get_backend ()
 | -----------------------| ------------------------------------------------------------------------|
 | `Returns`      | Return the current XPU backend type string.|
 
-The following example demonstrates setting the XPU backend type as `GPU` and checking its value on the machine, while GPU backend is installed by `pip install intel-extension-for-tensorflow[gpu]`.
+The following example demonstrates setting the XPU backend type as `GPU` and checking its value on the machine, while GPU backend is installed by `pip install intel-extension-for-tensorflow[gpu]==1.2.0rc0`.
 
 ```
 # TensorFlow and Intel® Extension for TensorFlow*

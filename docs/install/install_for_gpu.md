@@ -124,7 +124,7 @@ And the following system environment install for Intel® Extension for TensorFlo
 To install a GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
 
 ```bash
-(tf)$ pip install --upgrade intel-extension-for-tensorflow[gpu]
+(tf)$ pip install --upgrade intel-extension-for-tensorflow[gpu]==1.2.0rc0
 ```
 
 ##### Check the Environment for GPU

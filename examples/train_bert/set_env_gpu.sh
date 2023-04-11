@@ -23,4 +23,4 @@ source $ENV_NAME/bin/activate
 pip install --upgrade pip
 pip install notebook
 pip install tensorflow tensorflow_hub
-pip install --upgrade intel-extension-for-tensorflow[gpu]
+pip install --upgrade intel-extension-for-tensorflow[gpu]==1.2.0rc0

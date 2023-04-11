@@ -24,4 +24,4 @@ ${PYTHON} -m venv $ENV_NAME
 source $ENV_NAME/bin/activate
 pip install --upgrade pip
 pip install tensorflow tensorflow_hub
-pip install --upgrade intel-extension-for-tensorflow[cpu]
+pip install --upgrade intel-extension-for-tensorflow[cpu]==1.2.0rc0

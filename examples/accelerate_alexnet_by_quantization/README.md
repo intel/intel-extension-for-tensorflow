@@ -67,7 +67,7 @@ There are new requirements:
 Please install Intel® Extension for Tensorflow* in the running environment:
 
 ```
-python -m pip install --upgrade intel-extension-for-tensorflow[gpu]
+python -m pip install --upgrade intel-extension-for-tensorflow[gpu]==1.2.0rc0
 
 ```
 
