@@ -59,7 +59,9 @@ struct GroupReduceKernel {
 
   inline void ConsumRange(sycl::nd_item<1> item,
                           Int2Type<true> /*can_vec*/) const {
-    constexpr int VEC_LENGTH = sizeof(float) * 4 / sizeof(InputT);
+    constexpr int VEC_LENGTH =
+        std::min(static_cast<int>(sizeof(float) * 4 / sizeof(InputT)),
+                 FullReducePolicy::ITEMS_PER_THREAD);
     constexpr int WORDS = FullReducePolicy::ITEMS_PER_THREAD / VEC_LENGTH;
 
     auto lid = item.get_local_id(0);
