@@ -1331,14 +1331,11 @@ class OneDnnQuantizeV2WithQuantizedConv2DOp
         errors::InvalidArgument("Current implementation does not yet support "
                                 "strides in the batch and depth dimensions."));
     OP_REQUIRES_OK(context, context->GetAttr("padding", &padding_));
-    if (context->HasAttr("explicit_paddings")) {
-      OP_REQUIRES(
-          context, is_conv2d_,
-          errors::InvalidArgument("Only Conv2D has explicit_paddings attr"));
-      OP_REQUIRES_OK(context, context->GetAttr("explicit_paddings",
-                                               &this->explicit_paddings_));
-      ITEX_DCHECK_OK(CheckValidPadding(padding_, this->explicit_paddings_, 4,
-                                       data_format_));
+
+    // Code to deal with some legacy int8 pb
+    if (context->HasAttr("padding_list")) {
+      OP_REQUIRES_OK(
+          context, context->GetAttr("padding_list", &this->explicit_paddings_));
     }
 
     if (context->HasAttr("is_filter_const")) {
