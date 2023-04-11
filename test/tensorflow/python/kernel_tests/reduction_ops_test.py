@@ -669,6 +669,10 @@ class AllReductionTest(test.TestCase):
     self._compareAll(np_arr, [0, 2])
     self._compareAll(np_arr, [0, 1, 2])
 
+  def testAllLarge(self):
+    np_arr = (np.random.uniform(0, 1, 128 * 96) > 0.1).reshape([128, 96])
+    self._compareAll(np_arr, None)
+
   def testEmpty(self):
     self._compareAll([], [0])
 
