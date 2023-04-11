@@ -20,6 +20,8 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
+
 #if !ITEX_USE_CCL
 namespace itex_xla {
 namespace gpu {
@@ -70,7 +72,7 @@ struct Manager {
 template <typename T, typename Func, int size>
 struct AllReduceKernel;
 
-template <typename T, typename Func>
+template <typename T, typename Func, typename AccT = T>
 void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
                      std::vector<Participant>& participants,
                      int reduction_size) {
@@ -93,7 +95,8 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
           [=](cl::sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
-            out0_ptr[index] = Func()(in0_ptr[index], in1_ptr[index]);
+            out0_ptr[index] =
+                T(Func()(AccT(in0_ptr[index]), AccT(in1_ptr[index])));
             out1_ptr[index] = out0_ptr[index];
           });
     });
@@ -113,7 +116,8 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] =
-                Func()(Func()(in0_ptr[index], in1_ptr[index]), in2_ptr[index]);
+                T(Func()(Func()(AccT(in0_ptr[index]), AccT(in1_ptr[index])),
+                         AccT(in2_ptr[index])));
             out1_ptr[index] = out0_ptr[index];
             out2_ptr[index] = out0_ptr[index];
           });
@@ -135,9 +139,10 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
           [=](cl::sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
-            out0_ptr[index] = Func()(
-                Func()(Func()(in0_ptr[index], in1_ptr[index]), in2_ptr[index]),
-                in3_ptr[index]);
+            out0_ptr[index] = T(Func()(
+                Func()(Func()(AccT(in0_ptr[index]), AccT(in1_ptr[index])),
+                       AccT(in2_ptr[index])),
+                AccT(in3_ptr[index])));
             out1_ptr[index] = out0_ptr[index];
             out2_ptr[index] = out0_ptr[index];
             out3_ptr[index] = out0_ptr[index];
@@ -434,6 +439,10 @@ void itex_allreduce(const void* send_buffer, void* recv_buffer,
           allreduce_dpcpp<std::complex<double>,
                           sycl::plus<std::complex<double>>>(
               stream, element_count, p, comm->nranks);
+        else if (dtype == BF16)
+          allreduce_dpcpp<Eigen::bfloat16, sycl::plus<float>, float>(
+              stream, element_count, p, comm->nranks);
+
         else
           ITEX_LOG(FATAL) << "PrimitiveType "
                           << primitive_util::LowercasePrimitiveTypeName(dtype)
@@ -462,6 +471,10 @@ void itex_allreduce(const void* send_buffer, void* recv_buffer,
           allreduce_dpcpp<std::complex<double>,
                           sycl::multiplies<std::complex<double>>>(
               stream, element_count, p, comm->nranks);
+        else if (dtype == BF16)
+          allreduce_dpcpp<Eigen::bfloat16, sycl::multiplies<float>, float>(
+              stream, element_count, p, comm->nranks);
+
         else
           ITEX_LOG(FATAL) << "PrimitiveType "
                           << primitive_util::LowercasePrimitiveTypeName(dtype)
@@ -482,6 +495,10 @@ void itex_allreduce(const void* send_buffer, void* recv_buffer,
         else if (dtype == S64)
           allreduce_dpcpp<int64_t, sycl::minimum<int64_t>>(
               stream, element_count, p, comm->nranks);
+        else if (dtype == BF16)
+          allreduce_dpcpp<Eigen::bfloat16, sycl::minimum<float>, float>(
+              stream, element_count, p, comm->nranks);
+
         else
           ITEX_LOG(FATAL) << "PrimitiveType "
                           << primitive_util::LowercasePrimitiveTypeName(dtype)
@@ -502,6 +519,10 @@ void itex_allreduce(const void* send_buffer, void* recv_buffer,
         else if (dtype == S64)
           allreduce_dpcpp<int64_t, sycl::maximum<int64_t>>(
               stream, element_count, p, comm->nranks);
+        else if (dtype == BF16)
+          allreduce_dpcpp<Eigen::bfloat16, sycl::maximum<float>, float>(
+              stream, element_count, p, comm->nranks);
+
         else
           ITEX_LOG(FATAL) << "PrimitiveType "
                           << primitive_util::LowercasePrimitiveTypeName(dtype)
