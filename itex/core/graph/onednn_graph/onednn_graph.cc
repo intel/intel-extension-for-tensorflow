@@ -1442,22 +1442,16 @@ Status SetScaleAndZp(const OneDnnGraphContext* ctx,
 
   if (IsAnyMaxPool(*(input_node_view->node()))) {
     // Maxpool cases, to ensure input/output scale are the same
+    // In some situation, INC may not insert QDQ before MaxPool
     auto* dq_node_view = input_node_view->GetRegularFanin(0).node_view();
-    if (dq_node_view->node()->op() != "Dequantize") {
-      delete *onednn_graph_node;
-      *onednn_graph_node = nullptr;
-      return Status::OK();
+    if (dq_node_view->node()->op() == "Dequantize") {
+      auto* q_node_view = dq_node_view->GetRegularFanin(0).node_view();
+      if (q_node_view->node()->op() == "QuantizeV2") {
+        TF_ABORT_IF_ERROR(SetScaleAndZp(ctx, q_node_view, onednn_graph_node, T,
+                                        mode, axis, quan_mode));
+        return Status::OK();
+      }
     }
-    auto* q_node_view = dq_node_view->GetRegularFanin(0).node_view();
-    if (q_node_view->node()->op() != "QuantizeV2") {
-      delete *onednn_graph_node;
-      *onednn_graph_node = nullptr;
-      return Status::OK();
-    }
-
-    TF_ABORT_IF_ERROR(SetScaleAndZp(ctx, q_node_view, onednn_graph_node, T,
-                                    mode, axis, quan_mode));
-    return Status::OK();
   }
 
   (*onednn_graph_node)
