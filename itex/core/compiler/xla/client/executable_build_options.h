@@ -38,6 +38,7 @@ class DeviceMemoryAllocator;
 }  // namespace stream_executor
 
 namespace itex_xla {
+class HloModule;
 
 // Class containing options for building an LocalExecutable with
 // LocalClient::Compile.
@@ -180,6 +181,17 @@ class ExecutableBuildOptions {
 
   StatusOr<ExecutableBuildOptionsProto> ToProto() const;
 
+  using LayoutCanonicalizationCallback =
+      std::function<StatusOr<std::pair<std::vector<Shape>, Shape>>(
+          const HloModule& module)>;
+  void set_layout_canonicalization_callback(
+      LayoutCanonicalizationCallback callback) {
+    layout_canonicalization_callback_ = std::move(callback);
+  }
+  LayoutCanonicalizationCallback layout_canonicalization_callback() const {
+    return layout_canonicalization_callback_;
+  }
+
  private:
   int device_ordinal_ = -1;
   Shape result_layout_;
@@ -200,6 +212,7 @@ class ExecutableBuildOptions {
   absl::InlinedVector<bool, 1> allow_spmd_sharding_propagation_to_output_ = {
       false};
   itex::thread::ThreadPool* compile_thread_pool_ = nullptr;
+  LayoutCanonicalizationCallback layout_canonicalization_callback_;
 };
 
 StatusOr<ExecutableBuildOptions> ExecutableBuildOptionsFromProto(

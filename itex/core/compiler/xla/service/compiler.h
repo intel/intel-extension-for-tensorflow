@@ -229,6 +229,10 @@ class Compiler {
 
     // An optional thread pool for parallel compilation.
     itex::thread::ThreadPool* thread_pool = nullptr;
+
+    std::function<StatusOr<std::pair<std::vector<Shape>, Shape>>(
+        const HloModule& module)>
+        layout_canonicalization_callback = {};
   };
 
   virtual ~Compiler() {}

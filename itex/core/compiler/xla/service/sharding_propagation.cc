@@ -842,8 +842,19 @@ StatusOr<bool> ProcessShardingInstruction(
     const absl::flat_hash_set<absl::string_view>& execution_threads,
     bool replace_sharding_with_copy,
     absl::flat_hash_map<const HloInstruction*, std::vector<int64_t>>*
-        unspecified_dims) {
+        unspecified_dims,
+    std::vector<HloSharding>* saved_root_shardings) {
   bool changed = false;
+  HloInstruction* root_instr = module->entry_computation()->root_instruction();
+  if (saved_root_shardings != nullptr && root_instr->shape().IsTuple() &&
+      module->entry_computation()->root_instruction()->has_sharding()) {
+    saved_root_shardings->reserve(
+        root_instr->sharding().tuple_elements().size());
+    for (const HloSharding& sharding :
+         root_instr->sharding().tuple_elements()) {
+      saved_root_shardings->push_back(sharding);
+    }
+  }
 
   for (HloComputation* computation : module->computations(execution_threads)) {
     auto instructions = computation->MakeInstructionPostOrder();
@@ -2241,6 +2252,25 @@ bool ShardingPropagation::InferShardingFromOperands(
   return false;
 }  // NOLINT(readability/fn_size)
 
+Status ShardingPropagation::CanonicalizeLayouts(HloModule* module) {
+  if (!allow_spmd_sharding_propagation_to_output_) {
+    return OkStatus();
+  }
+  if (!module->layout_canonicalization_callback()) {
+    ITEX_LOG(INFO)
+        << "There is no registered layout_canonicalization_callback.";
+    return OkStatus();
+  }
+  TF_ASSIGN_OR_RETURN(auto layouts,
+                      module->layout_canonicalization_callback()(*module));
+  Shape& result_shape = layouts.second;
+  TF_RETURN_IF_ERROR(module->config()
+                         .mutable_entry_computation_layout()
+                         ->mutable_result_layout()
+                         ->CopyLayoutFromShape(result_shape));
+  return OkStatus();
+}
+
 StatusOr<bool> ShardingPropagation::Run(
     HloModule* module,
     const absl::flat_hash_set<absl::string_view>& execution_threads) {
@@ -2277,10 +2307,22 @@ StatusOr<bool> ShardingPropagation::Run(
                      : RemoveShardingMetadata(module, execution_threads);
   absl::flat_hash_map<const HloInstruction*, std::vector<int64_t>>
       unspecified_dims;
-  auto status_or_changed = ProcessShardingInstruction(
-      module, execution_threads, !cse_prevention_only_, &unspecified_dims);
-  if (!status_or_changed.ok()) return status_or_changed;
-  any_changed |= status_or_changed.ValueOrDie();
+  std::vector<HloSharding> saved_root_shardings;
+  TF_ASSIGN_OR_RETURN(
+      bool changed,
+      ProcessShardingInstruction(
+          module, execution_threads, !cse_prevention_only_, &unspecified_dims,
+          allow_spmd_sharding_propagation_to_output_ ? &saved_root_shardings
+                                                     : nullptr));
+  any_changed |= changed;
+  ITEX_CHECK(!module->entry_computation()->root_instruction()->has_sharding() ||
+             allow_spmd_sharding_propagation_to_output_vector_.size() == 1 ||
+             module->entry_computation()
+                     ->root_instruction()
+                     ->sharding()
+                     .tuple_elements()
+                     .size() ==
+                 allow_spmd_sharding_propagation_to_output_vector_.size());
 
   // Association of partitionable embedded computations with their parent
   // instruction.
@@ -2395,7 +2437,8 @@ StatusOr<bool> ShardingPropagation::Run(
   for (const HloComputation* computation :
        module->computations(execution_threads)) {
     for (const HloInstruction* inst : computation->instructions()) {
-      if (inst->has_sharding()) {
+      if (inst->has_sharding() &&
+          inst != module->entry_computation()->root_instruction()) {
         provided_shardings.insert(inst);
       }
     }
@@ -2582,6 +2625,21 @@ StatusOr<bool> ShardingPropagation::Run(
       }
     }
   }
+  HloInstruction* root_instruction =
+      module->entry_computation()->root_instruction();
+  if (saved_root_shardings.size() ==
+          allow_spmd_sharding_propagation_to_output_vector_.size() &&
+      root_instruction->has_sharding()) {
+    HloSharding root_sharding = root_instruction->sharding();
+    for (int i = 0; i < saved_root_shardings.size(); ++i) {
+      if (!allow_spmd_sharding_propagation_to_output_vector_[i]) {
+        root_sharding.tuple_elements()[i] = saved_root_shardings[i];
+      }
+    }
+    root_instruction->set_sharding(root_sharding);
+  }
+
+  TF_RETURN_IF_ERROR(CanonicalizeLayouts(module));
 
   ITEX_VLOG(1) << "Sharding propagation completed after " << iterations
                << " iterations";

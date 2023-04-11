@@ -513,6 +513,13 @@ StatusOr<HloSharding> HloSharding::GetTupleSharding(const Shape& shape) const {
   return Tuple(ShapeTree<HloSharding>(shape, *this));
 }
 
+HloSharding HloSharding::NormalizeTupleSharding(const Shape& shape) const {
+  if (shape.IsTuple() && !IsTuple()) {
+    return HloSharding::SingleTuple(shape, *this);
+  }
+  return *this;
+}
+
 absl::optional<int64_t> HloSharding::UniqueDevice() const {
   if (IsTuple()) {
     if (tuple_elements_.empty()) {
@@ -775,6 +782,14 @@ Shape HloSharding::TileShape(const Shape& shape, int64_t device) const {
     result_shape.set_dimensions(i, limit - offset);
   }
   return result_shape;
+}
+
+int64_t HloSharding::TotalNumTiles() const {
+  if (IsTileMaximal()) {
+    return 1;
+  }
+  ITEX_CHECK(!IsManual());
+  return Product(absl::Span<const int64_t>(tile_assignment_.dimensions()));
 }
 
 int64_t HloSharding::NumTiles() const {

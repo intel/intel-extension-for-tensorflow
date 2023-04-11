@@ -785,7 +785,8 @@ class XlaBuilder {
       XlaOp operand, const XlaComputation& computation,
       absl::Span<const ReplicaGroup> replica_groups = {},
       const absl::optional<ChannelHandle>& channel_id = absl::nullopt,
-      const absl::optional<Shape>& shape_with_layout = absl::nullopt);
+      const absl::optional<Shape>& shape_with_layout = absl::nullopt,
+      const absl::optional<bool> use_global_device_ids = std::nullopt);
 
   XlaOp ReduceScatter(
       XlaOp operand, const XlaComputation& computation,
@@ -1397,7 +1398,8 @@ class XlaBuilder {
   friend XlaOp AllReduce(XlaOp operand, const XlaComputation& computation,
                          absl::Span<const ReplicaGroup> replica_groups,
                          const absl::optional<ChannelHandle>& channel_id,
-                         const absl::optional<Shape>& shape_with_layout);
+                         const absl::optional<Shape>& shape_with_layout,
+                         const absl::optional<bool> use_global_device_ids);
   friend XlaOp ReduceScatter(XlaOp operand, const XlaComputation& computation,
                              int64_t scatter_dimension, int64_t shard_count,
                              absl::Span<const ReplicaGroup> replica_groups,
@@ -2382,10 +2384,12 @@ XlaOp AllGather(
 // - `shape_with_layout`: forces the layout of the AllReduce to the given
 // layout. This is used to guarantee the same layout for a group of AllReduce
 // ops compiled separately.
-XlaOp AllReduce(XlaOp operand, const XlaComputation& computation,
-                absl::Span<const ReplicaGroup> replica_groups = {},
-                const absl::optional<ChannelHandle>& channel_id = absl::nullopt,
-                const absl::optional<Shape>& shape_with_layout = absl::nullopt);
+XlaOp AllReduce(
+    XlaOp operand, const XlaComputation& computation,
+    absl::Span<const ReplicaGroup> replica_groups = {},
+    const absl::optional<ChannelHandle>& channel_id = absl::nullopt,
+    const absl::optional<Shape>& shape_with_layout = absl::nullopt,
+    const absl::optional<bool> use_global_device_ids = std::nullopt);
 
 XlaOp ReduceScatter(
     XlaOp operand, const XlaComputation& computation, int64_t scatter_dimension,

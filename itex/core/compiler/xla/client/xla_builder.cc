@@ -3027,7 +3027,8 @@ XlaOp XlaBuilder::CrossReplicaSum(
 XlaOp XlaBuilder::AllReduce(XlaOp operand, const XlaComputation& computation,
                             absl::Span<const ReplicaGroup> replica_groups,
                             const absl::optional<ChannelHandle>& channel_id,
-                            const absl::optional<Shape>& shape_with_layout) {
+                            const absl::optional<Shape>& shape_with_layout,
+                            const std::optional<bool> use_global_device_ids) {
   return ReportErrorOrReturn([&]() -> StatusOr<XlaOp> {
     HloInstructionProto instr;
     TF_ASSIGN_OR_RETURN(const Shape* operand_shape, GetShapePtr(operand));
@@ -3083,6 +3084,10 @@ XlaOp XlaBuilder::AllReduce(XlaOp operand, const XlaComputation& computation,
 
     if (channel_id.has_value()) {
       instr.set_channel_id(channel_id->handle());
+    }
+
+    if (use_global_device_ids.has_value()) {
+      instr.set_use_global_device_ids(*use_global_device_ids);
     }
 
     AddCalledComputation(computation, &instr);
@@ -4766,9 +4771,11 @@ XlaOp CrossReplicaSum(const XlaOp operand,
 XlaOp AllReduce(const XlaOp operand, const XlaComputation& computation,
                 absl::Span<const ReplicaGroup> replica_groups,
                 const absl::optional<ChannelHandle>& channel_id,
-                const absl::optional<Shape>& shape_with_layout) {
+                const absl::optional<Shape>& shape_with_layout,
+                const absl::optional<bool> use_global_device_ids) {
   return operand.builder()->AllReduce(operand, computation, replica_groups,
-                                      channel_id, shape_with_layout);
+                                      channel_id, shape_with_layout,
+                                      use_global_device_ids);
 }
 
 XlaOp ReduceScatter(const XlaOp operand, const XlaComputation& computation,

@@ -184,6 +184,12 @@ static std::vector<std::pair<int64_t, int64_t>> Convert_padding(
   return itex_xla::ConvertNx2Attribute(padding).ValueOrDie();
 }
 
+static absl::optional<bool> Convert_use_global_device_ids(
+    absl::optional<bool> use_global_device_ids) {
+  if (!use_global_device_ids) return {};
+  return *use_global_device_ids;
+}
+
 static std::vector<std::pair<int64_t, int64_t>> Convert_source_target_pairs(
     llvm::Optional<mlir::DenseIntElementsAttr> source_target_pairs) {
   return itex_xla::ConvertNx2Attribute(source_target_pairs).ValueOrDie();
@@ -759,10 +765,11 @@ LogicalResult ExportXlaOp(AllGatherOp op, OpLoweringContext ctx) {
   auto all_gather_dim = op.getAllGatherDim();
   int64_t shard_count = result_type.getDimSize(all_gather_dim) /
                         operand_type.getDimSize(all_gather_dim);
-  value_map[op] =
-      itex_xla::AllGather(operand, all_gather_dim, shard_count,
-                          Convert_replica_groups(op.getReplicaGroups()),
-                          Convert_channel_handle(op.getChannelHandle()));
+  value_map[op] = itex_xla::AllGather(
+      operand, all_gather_dim, shard_count,
+      Convert_replica_groups(op.getReplicaGroups()),
+      Convert_channel_handle(op.getChannelHandle()), absl::nullopt,
+      Convert_use_global_device_ids(op.getUseGlobalDeviceIds()));
   return success();
 }
 
@@ -780,7 +787,8 @@ LogicalResult ExportXlaOp(AllReduceOp op, OpLoweringContext ctx) {
 
   value_map[op] = itex_xla::AllReduce(
       operand, computation, Convert_replica_groups(op.getReplicaGroups()),
-      Convert_channel_handle(op.getChannelHandle()));
+      Convert_channel_handle(op.getChannelHandle()), absl::nullopt,
+      Convert_use_global_device_ids(op.getUseGlobalDeviceIds()));
   return success();
 }
 
@@ -832,10 +840,11 @@ LogicalResult ExportXlaOp(ReduceScatterOp op, OpLoweringContext ctx) {
     return failure();
   }
 
-  value_map[op] =
-      itex_xla::ReduceScatter(operand, computation, scatter_dim, shard_count,
-                              Convert_replica_groups(op.getReplicaGroups()),
-                              Convert_channel_handle(op.getChannelHandle()));
+  value_map[op] = itex_xla::ReduceScatter(
+      operand, computation, scatter_dim, shard_count,
+      Convert_replica_groups(op.getReplicaGroups()),
+      Convert_channel_handle(op.getChannelHandle()), absl::nullopt,
+      Convert_use_global_device_ids(op.getUseGlobalDeviceIds()));
   return success();
 }
 
