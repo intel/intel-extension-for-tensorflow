@@ -29,6 +29,7 @@ constexpr static bool enable_itex_onednn_graph_all_type = false;
 constexpr static bool enable_itex_onednn_graph_compiler_backend = false;
 constexpr static bool enable_itex_onednn_graph_dnnl_backend = true;
 constexpr static bool enable_itex_tf_constant_folding = true;
+constexpr static bool enable_itex_optimize_aggressive = false;
 constexpr static bool enable_itex_remapper = true;
 constexpr static bool enable_itex_auto_mixed_precision = false;
 constexpr static bool enable_itex_layout_opt = true;
@@ -41,6 +42,7 @@ typedef struct _OptimizerConfigFlags {
   bool enable_onednn_graph_compiler_backend;
   bool enable_onednn_graph_dnnl_backend;
   bool enable_tf_constant_folding;
+  bool enable_optimize_aggressive;
   bool enable_remapper;
   bool enable_auto_mixed_precision;
   // TODO(itex): To integrate DOC & GraphOptions

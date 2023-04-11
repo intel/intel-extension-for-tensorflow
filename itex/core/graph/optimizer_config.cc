@@ -48,6 +48,7 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   bool onednn_graph_compiler_backend_flag;
   bool onednn_graph_dnnl_backend_flag;
   bool tf_constant_folding_flag;
+  bool optimize_aggressive_flag;
   bool remapper_flag;
   bool auto_mixed_precision_flag;
   bool layout_opt_flag;
@@ -129,6 +130,10 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
                                          enable_itex_tf_constant_folding,
                                          &tf_constant_folding_flag));
 
+  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("_ITEX_OPTIMIZE_AGGRESSIVE",
+                                         enable_itex_optimize_aggressive,
+                                         &optimize_aggressive_flag));
+
   if (USER_IS_SET(auto_mixed_precision)) {
     auto_mixed_precision_flag = false;
     if (USER_IS_ON(auto_mixed_precision)) {
@@ -153,6 +158,7 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   opt_config_flags->enable_onednn_graph_dnnl_backend =
       onednn_graph_dnnl_backend_flag;
   opt_config_flags->enable_tf_constant_folding = tf_constant_folding_flag;
+  opt_config_flags->enable_optimize_aggressive = optimize_aggressive_flag;
   opt_config_flags->enable_remapper = remapper_flag;
   opt_config_flags->enable_auto_mixed_precision = auto_mixed_precision_flag;
   opt_config_flags->enable_layout_opt = layout_opt_flag;

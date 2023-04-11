@@ -2461,25 +2461,43 @@ Status FuseFwPartitionWithLLGA(
 
     if (IsAnyConst(*input_node_def)) {
       is_constant_input_edge.push_back(true);
-    } else {
-      if (IsEnter(*input_node_def)) {
-        // if input is enter, it can propogate const information
-        string enter_input_tensor_name = input_node_def->input(0);
-        TensorId enter_input_tensorid =
-            ParseTensorName(enter_input_tensor_name);
-        auto* enter_input_node_view =
-            ctx->graph_view.GetNode(enter_input_tensorid.node());
-        auto* enter_input_node_def = enter_input_node_view->node();
+    } else if (IsEnter(*input_node_def)) {
+      // if input is enter, it can propogate const information
+      string enter_input_tensor_name = input_node_def->input(0);
+      TensorId enter_input_tensorid = ParseTensorName(enter_input_tensor_name);
+      auto* enter_input_node_view =
+          ctx->graph_view.GetNode(enter_input_tensorid.node());
+      auto* enter_input_node_def = enter_input_node_view->node();
 
-        if (IsAnyConst(*enter_input_node_def)) {
+      if (IsAnyConst(*enter_input_node_def)) {
+        is_constant_input_edge.push_back(true);
+      } else {
+        is_constant_input_edge.push_back(false);
+      }
+    } else if (GetOptimizerConfigFlags().enable_optimize_aggressive) {
+      // Aggressive optimization
+      if (IsReadVariableOp(*input_node_def)) {
+        // if input is Readvariable, and the variable is const, it can be set
+        // constant property
+        string arg_tensor_name = input_node_def->input(0);
+        TensorId arg_tensorid = ParseTensorName(arg_tensor_name);
+        auto* arg_node_view = ctx->graph_view.GetNode(arg_tensorid.node());
+        auto* arg_node_def = arg_node_view->node();
+
+        // if _Arg doesn't have outputs, other than current ReadVariable, that
+        // means _Arg value cannot be modifid, then it can be regarded as Const.
+        // TODO(itex): we may relax restriction to no outputs are variable
+        // modification ops, such as AssignAddVariable
+        if (IsArg(*arg_node_def) && arg_node_view->NumRegularFanouts() == 1) {
           is_constant_input_edge.push_back(true);
         } else {
           is_constant_input_edge.push_back(false);
         }
-
       } else {
         is_constant_input_edge.push_back(false);
       }
+    } else {
+      is_constant_input_edge.push_back(false);
     }
 
     onednn_graph_node.add_input(tid->ToString());
