@@ -4,22 +4,8 @@ This guide introduces the overview of OpenXLA high level integration structure, 
 ## 1. Overview
 Intel® Extension for TensorFlow* adopts PJRT plugin interface to implement Intel GPU backend for OpenXLA experimental support, and takes JAX front end APIs as example. PJRT is a uniform device API in OpenXLA ecosystem. Refer to [OpenXLA PJRT Plugin RFC](https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md) for more details.
 
-```mermaid {align="center"}
-graph TD;
-    title[<u>OpenXLA high level integration structure</u>]
-    D-->title
-    style title fill:#FFF,stroke:#FFF
-    linkStyle 0 stroke:#FFF,stroke-width:0;
-    A(<font color=white> JAX example) --> B(<font color=white> jax/register_pjrt_plugin_factories);
-    A(<font color=white> JAX example) --> C(<font color=white> jaxlib/GetPjrtApi);
-    B(<font color=white> jax/register_pjrt_plugin_factories) --> D(<font color=white> libitex_xla_extension.so);
-    C(<font color=white> jaxlib/GetPjrtApi) --> D(<font color=white> libitex_xla_extension.so);
-    
-style A fill:#0D64C2
-style B fill:#0D64C2
-style C fill:#0D64C2
-style D fill:#0D64C2
-```
+ ![xla](images/xla.png)
+
 * [JAX](https://jax.readthedocs.io/en/latest/) provides a familiar NumPy-style API, includes composable function transformations for compilation, batching, automatic differentiation, and parallelization, and  the same code executes on multiple backends.
 * In JAX python package, [`jax/_src/lib/xla_bridge.py`](https://github.com/google/jax/blob/jaxlib-v0.4.4/jax/_src/lib/xla_bridge.py#L317-L320)
     ```c++
