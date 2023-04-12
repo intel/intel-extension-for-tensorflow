@@ -35,7 +35,7 @@ Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_
 
 ### Compatibility Table
 
-| Intel ® Extension for TensorFlow*  | Stock Tensorflow |
+| Intel ® Extension for TensorFlow*  | Stock TensorFlow |
 | ------- | ----------- |    
 | v1.2.0  | 2.12        |
 | v1.1.0  | 2.10 & 2.11 |

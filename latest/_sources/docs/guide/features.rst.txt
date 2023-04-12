@@ -99,9 +99,21 @@ XPUAutoShard on GPU [Experimental]
 Intel® Extension for TensorFlow\* provides XPUAutoShard feature to automatically shard the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage. 
 
 Please refer to `XPUAutoShard <XPUAutoShard.html>`_ for details.
-
 .. toctree::
    :hidden:
    :maxdepth: 1
 
    XPUAutoShard.md
+
+OpenXLA Support on GPU [Experimental]
+-----------------------------------------------------------
+Intel® Extension for TensorFlow\* adopts a uniform Device API PJRT(https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md) as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA experimental support.
+
+Please refer to `OpenXLA_Support_on_GPU <OpenXLA_Support_on_GPU.html>`_ for details.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   OpenXLA_Support_on_GPU.md

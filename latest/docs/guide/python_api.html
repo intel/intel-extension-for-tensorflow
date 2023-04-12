@@ -72,6 +72,7 @@
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#itex-operators">itex operators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-ops-override">itex ops override</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#itex-graph">itex graph</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#itex-version">itex version</a></li>
 </ul>
@@ -83,6 +84,7 @@
 <li class="toctree-l2"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
@@ -139,6 +141,7 @@
 <li><p><a class="reference external" href="#itexset_config"><em>itex.set_config</em></a>: Public API for setting ConfigProto.</p></li>
 <li><p><a class="reference external" href="#itexget_config"><em>itex.get_config</em></a>: Public API for getting ConfigProto.</p></li>
 <li><p><a class="reference external" href="#itex-operators"><em>itex.ops</em></a>: Public API for extended XPU operations.</p></li>
+<li><p><a class="reference external" href="#itex-ops-override"><em>itex.experimental_ops_override</em></a>: Public API for override TensorFlow operations with ITEX ones.</p></li>
 <li><p><a class="reference external" href="#itex-version"><em>itex.version</em></a>: Public API for Intel® Extension for TensorFlow* and components version information.</p></li>
 </ul>
 </div>
@@ -179,6 +182,13 @@
 <td><code>ITEX_ONEDNN_GRAPH</code> <br><code>ITEX_LAYOUT_OPT</code><br><code>ITEX_REMAPPER</code><br><code>ITEX_AUTO_MIXED_PRECISION</code><br><code>ITEX_SHARDING</code></td>
 <td><code>0</code><br><code>1</code>*<br><code>1</code><br/><code>0</code><br/><code>0</code><br/></td>
 <td>Set configuration options for specific backend type (<code>CPU</code>/<code>GPU</code>) and graph optimization. <br/> *<code>ITEX_LAYOUT_OPT</code> default <code>ON</code> in Intel GPU (except Intel® Data Center GPU Max Series) and default <code>OFF</code> in Intel CPU by hardware attributes</td>
+</tr>
+<tr>
+<td><code>itex.experimental_ops_override</code></td>
+<td><code>N/A</code></td>
+<td><code>ITEX_OPS_OVERRIDE</code></td>
+<td>0</td>
+<td>Set <code>1</code> to automatically override the operators with same name in TensorFlow by <code>itex.ops</code>. Users have to set <code>TF_NUM_INTEROP_THREADS=1</code> together avoid possible performance drop on CPU.</td>
 </tr>
 </tbody>
 </table><p><strong>Notes:</strong></p>
@@ -520,7 +530,20 @@
 <div class="section" id="itex-operators">
 <h2>itex operators<a class="headerlink" href="#itex-operators" title="Permalink to this headline">¶</a></h2>
 <p><strong>itex.ops: Public API for extended XPU ops(operations) for itex.ops namespace.</strong></p>
-<p>For details, refer to <a class="reference internal" href="itex_ops.html"><span class="doc">ITEX ops</span></a>.</p>
+<p>For details, refer to <a class="reference internal" href="itex_ops.html"><span class="doc">Customized Operators</span></a>.</p>
+</div>
+<div class="section" id="itex-ops-override">
+<h2>itex ops override<a class="headerlink" href="#itex-ops-override" title="Permalink to this headline">¶</a></h2>
+<p><strong>itex.experimental_ops_override: Public API to override TensorFlow specific operators with same name by Customized Operators in itex.ops namespace.</strong></p>
+<p>For details, refer to <a class="reference internal" href="itex_ops_override.html"><span class="doc">ITEX ops override</span></a>.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">experimental_ops_override</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">gelu</span> <span class="o">==</span> <span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">gelu</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then it will output the result “True”.</p>
 </div>
 <div class="section" id="itex-graph">
 <h2>itex graph<a class="headerlink" href="#itex-graph" title="Permalink to this headline">¶</a></h2>

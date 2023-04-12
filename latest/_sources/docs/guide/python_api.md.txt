@@ -17,6 +17,7 @@ Intel® Extension for TensorFlow* provides flexible Python APIs to configure set
 * [*itex.set_config*](#itexset_config): Public API for setting ConfigProto.
 * [*itex.get_config*](#itexget_config): Public API for getting ConfigProto.
 * [*itex.ops*](#itex-operators): Public API for extended XPU operations.
+* [*itex.experimental_ops_override*](#itex-ops-override): Public API for override TensorFlow operations with ITEX ones.
 * [*itex.version*](#itex-version): Public API for Intel® Extension for TensorFlow* and components version information.
 
 ## Python APIs and Environment Variable Names
@@ -30,6 +31,7 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 | `itex.set_backend` |`GPU`or`CPU` |`ITEX_XPU_BACKEND`                                           | `GPU`or`CPU`                                        | set `CPU`/`GPU` as specific `XPU` backend with optimization options for execution.  |
 | `itex.get_backend` |`N/A`| `N/A`                                                        | `N/A`                                        | Get the string of current XPU backend. For example `CPU`, `GPU` or `AUTO`. |
 | `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION`<br>`ITEX_SHARDING` | `0`<br>`1`*<br>`1`<br/>`0`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Intel® Data Center GPU Max Series) and default `OFF` in Intel CPU by hardware attributes|
+| `itex.experimental_ops_override` |`N/A` |`ITEX_OPS_OVERRIDE`                                           | 0                                        | Set `1` to automatically override the operators with same name in TensorFlow by `itex.ops`. Users have to set `TF_NUM_INTEROP_THREADS=1` together avoid possible performance drop on CPU. |
 
 **Notes:**
 1. The priority for setting values is as follows: Python APIs > Environment Variables > Default value.
@@ -262,8 +264,23 @@ graph_options {
 
 **itex.ops: Public API for extended XPU ops(operations) for itex.ops namespace.**
 
-For details, refer to [ITEX ops](itex_ops.md).
+For details, refer to [Customized Operators](itex_ops.md).
 
+## itex ops override
+
+**itex.experimental_ops_override: Public API to override TensorFlow specific operators with same name by Customized Operators in itex.ops namespace.**
+
+For details, refer to [ITEX ops override](itex_ops_override.md).
+
+Example:
+
+```python
+import intel_extension_for_tensorflow as itex
+import tensorflow as tf
+itex.experimental_ops_override()
+print(tf.nn.gelu == itex.ops.gelu)
+```
+Then it will output the result "True".
 
 ## itex graph
 

@@ -28,9 +28,38 @@ $ bazel build -c opt --config=cpu //itex:itex_cpu_cc
 
 CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/libitex_cpu_cc.so`
 
-## Build libtensorfow_cc.so
+## Prepare Tensorflow* CC library and header files
 
-1. Prepare TensorFlow* source code
+### Option 1: Extract from Tensorflow* python package (**Recommended**)
+
+a. Download Tensorflow* 2.12.0 python package
+
+```bash
+$ wget https://files.pythonhosted.org/packages/6b/6d/00ef55900312ba8c8aa9d64b13c74fb8cba0afa24cc4a2ce74796f530244/tensorflow-2.12.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+```
+
+b. Unzip Tensorflow* python package
+
+```bash
+$ unzip tensorflow-2.12.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -d tensorflow_2.12.0
+```
+
+c. Create symbolic link
+
+```bash
+$ cd ./tensorflow_2.12.0/tensorflow/
+$ ln -s libtensorflow_cc.so.2 libtensorflow_cc.so
+$ ln -s libtensorflow_framework.so.2 libtensorflow_framework.so
+```
+libtensorflow_cc.so location: `<Path to tensorflow_2.12.0>/tensorflow/libtensorflow_cc.so`
+
+libtensorflow_framework.so location: `<Path to tensorflow_2.12.0>/tensorflow/libtensorflow_framework.so`
+
+Tensorflow header file location: `<Path to tensorflow_2.12.0>/tensorflow/include`
+
+### Option 2: Build from TensorFlow* source code
+
+a. Prepare TensorFlow* source code
 
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git
@@ -38,25 +67,7 @@ $ git checkout origin/r2.12 -b r2.12
 $ cd tensorflow
 ```
 
-Apply patch as below to support **TF_LoadPluggableDeviceLibrary**, which is defined in "//tensorflow/c:c_api_experimental"
-[A feature request](https://github.com/tensorflow/tensorflow/issues/58533) has been reported to TensorFlow*. Once it is solved, this patch is no longer needed.
-
-```diff
-diff --git a/tensorflow/BUILD b/tensorflow/BUILD
-index 19ee8000206..77d8c714729 100644
---- a/tensorflow/BUILD
-+++ b/tensorflow/BUILD
-@@ -1187,6 +1187,7 @@ tf_cc_shared_library(
-     visibility = ["//visibility:public"],
-     win_def_file = ":tensorflow_filtered_def_file",
-     deps = [
-+        "//tensorflow/c:c_api_experimental",
-         "//tensorflow/c:c_api",
-         "//tensorflow/c:env",
-         "//tensorflow/c:kernels",
-```
-
-2. Build libtensorflow_cc.so
+b. Build libtensorflow_cc.so
 
 ```bash
 $ ./configure
@@ -66,7 +77,16 @@ $ ls ./bazel-bin/tensorflow/libtensorflow_cc.so
 
 libtensorflow_cc.so location: `<Path to tensorflow>/bazel-bin/tensorflow/libtensorflow_cc.so`
 
-3. Build Tensorflow header files
+c. Create symbolic link for libtensorflow_framework.so
+
+```bash
+$ cd ./bazel-bin/tensorflow/
+$ ln -s libtensorflow_framework.so.2 libtensorflow_framework.so
+```
+
+libtensorflow_framework.so location: `<Path to tensorflow>/bazel-bin/tensorflow/libtensorflow_framework.so`
+
+c. Build Tensorflow header files
 
 ```bash
 $ bazel build --config=opt tensorflow:install_headers
@@ -79,11 +99,11 @@ Tensorflow header file location: `<Path to tensorflow>/bazel-bin/tensorflow/incl
 
 ### Linker
 
-If you place the Intel® Extension for TensorFlow* CC library to a non-system directory, such as ~/mydir, then configure the linker environmental variables:
+Configure the linker environmental variables with Intel® Extension for TensorFlow* CC library (**libitex_gpu_cc.so** or **libitex_cpu_cc.so**) path:
 
 ```bash
-$ export LIBRARY_PATH=$LIBRARY_PATH:~/mydir/
-$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/mydir/
+$ export LIBRARY_PATH=$LIBRARY_PATH:<Path to intel-extension-for-tensorflow>/bazel-bin/itex/
+$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<Path to intel-extension-for-tensorflow>/bazel-bin/itex/
 ```
 
 ### Load
@@ -91,13 +111,13 @@ $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/mydir/
 TensorFlow* has C API: `TF_LoadPluggableDeviceLibrary` to support the pluggable device library.
 To support Intel® Extension for TensorFlow* cc library, we need to modify the orginal C++ code:
 
-1. Add the header file: `"tensorflow/c/c_api_experimental.h"`.
+a. Add the header file: `"tensorflow/c/c_api_experimental.h"`.
 
 ```C++
 #include "tensorflow/c/c_api_experimental.h"
 ```
 
-2. Load libitex_gpu_cc.so or libitex_cpu_cc.so by `TF_LoadPluggableDeviceLibrary`.
+b. Load libitex_gpu_cc.so or libitex_cpu_cc.so by `TF_LoadPluggableDeviceLibrary`.
 
 ```C++
 TF_Status* status = TF_NewStatus();
@@ -181,8 +201,8 @@ int main() {
 
 Place a `Makefile` file in the same directory of `example.cc` with the following contents:
 
-- Replace `<TF_INCLUDE_PATH>` with local tensorflow include path: `<Path to tensorflow>/bazel-bin/tensorflow/include/`
-- Replace `<TFCC_PATH>` with local tensorflow_cc path: `<Path to tensorflow>/bazel-bin/tensorflow/`
+- Replace `<TF_INCLUDE_PATH>` with local **Tensorflow\* header file path**. e.g.  `<Path to tensorflow_2.12.0>/tensorflow/include`
+- Replace `<TFCC_PATH>` with local **Tensorflow\* CC library path**. e.g. `<Path to tensorflow_2.12.0>/tensorflow/`
 
 ```Makefile
 // Makefile
@@ -192,7 +212,7 @@ TF_INCLUDE_PATH = <TF_INCLUDE_PATH>
 TFCC_PATH = <TFCC_PATH>
 include = -I $(TF_INCLUDE_PATH)
 lib = -L $(TFCC_PATH) -ltensorflow_framework -ltensorflow_cc
-flag = -Wl,-rpath=$(TFCC_PATH)
+flag = -Wl,-rpath=$(TFCC_PATH) -std=c++17
 source = ./example.cc
 $(target): $(source)
 	$(cc) $(source) -o $(target) $(include) $(lib) $(flag)
@@ -212,5 +232,7 @@ $ ./example_test
 **NOTE:** For GPU support, please setup oneapi environment variables before run.
 
 ```bash
-$ source /opt/intel/oneapi/setvars.sh
+$ source /opt/intel/oneapi/compiler/latest/env/vars.sh
+$ source /opt/intel/oneapi/mkl/latest/env/vars.sh
+$ source /opt/intel/oneapi/tbb/latest/env/vars.sh
 ```

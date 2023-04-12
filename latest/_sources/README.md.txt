@@ -33,6 +33,15 @@ This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
 
 Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_gpu.md#hardware-requirements) support and experimental [Intel CPU](docs/install/experimental/install_for_cpu.md#hardware-requirements) support.
 
+### Compatibility Table
+
+| Intel ® Extension for TensorFlow*  | Stock TensorFlow |
+| ------- | ----------- |    
+| v1.2.0  | 2.12        |
+| v1.1.0  | 2.10 & 2.11 |
+| v1.0.0  | 2.10        | 
+
+
 ### Software Requirement
 
 |Package|CPU|GPU|Installation|

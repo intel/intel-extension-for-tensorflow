@@ -55,7 +55,11 @@
 <li class="toctree-l4"><a class="reference internal" href="#cpu-only-experimental">CPU only (experimental)</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#build-libtensorfow-cc-so">Build libtensorfow_cc.so</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prepare-tensorflow-cc-library-and-header-files">Prepare Tensorflow* CC library and header files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#option-1-extract-from-tensorflow-python-package-recommended">Option 1: Extract from Tensorflow* python package (<strong>Recommended</strong>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#option-2-build-from-tensorflow-source-code">Option 2: Build from TensorFlow* source code</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#integrate-the-cc-library">Integrate the CC library</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#linker">Linker</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#load">Load</a><ul>
@@ -131,28 +135,34 @@
 <p>CC library location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">intel-extension-for-tensorflow&gt;/bazel-bin/itex/libitex_cpu_cc.so</span></code></p>
 </div>
 </div>
-<div class="section" id="build-libtensorfow-cc-so">
-<h2>Build libtensorfow_cc.so<a class="headerlink" href="#build-libtensorfow-cc-so" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="prepare-tensorflow-cc-library-and-header-files">
+<h2>Prepare Tensorflow* CC library and header files<a class="headerlink" href="#prepare-tensorflow-cc-library-and-header-files" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="option-1-extract-from-tensorflow-python-package-recommended">
+<h3>Option 1: Extract from Tensorflow* python package (<strong>Recommended</strong>)<a class="headerlink" href="#option-1-extract-from-tensorflow-python-package-recommended" title="Permalink to this headline">¶</a></h3>
+<p>a. Download Tensorflow* 2.12.0 python package</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://files.pythonhosted.org/packages/6b/6d/00ef55900312ba8c8aa9d64b13c74fb8cba0afa24cc4a2ce74796f530244/tensorflow-2.12.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+</pre></div>
+</div>
+<p>b. Unzip Tensorflow* python package</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ unzip tensorflow-2.12.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -d tensorflow_2.12.0
+</pre></div>
+</div>
+<p>c. Create symbolic link</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ./tensorflow_2.12.0/tensorflow/
+$ ln -s libtensorflow_cc.so.2 libtensorflow_cc.so
+$ ln -s libtensorflow_framework.so.2 libtensorflow_framework.so
+</pre></div>
+</div>
+<p>libtensorflow_cc.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.12.0&gt;/tensorflow/libtensorflow_cc.so</span></code></p>
+<p>libtensorflow_framework.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.12.0&gt;/tensorflow/libtensorflow_framework.so</span></code></p>
+<p>Tensorflow header file location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.12.0&gt;/tensorflow/include</span></code></p>
+</div>
+<div class="section" id="option-2-build-from-tensorflow-source-code">
+<h3>Option 2: Build from TensorFlow* source code<a class="headerlink" href="#option-2-build-from-tensorflow-source-code" title="Permalink to this headline">¶</a></h3>
 <p>a. Prepare TensorFlow* source code</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/tensorflow/tensorflow.git
 $ git checkout origin/r2.12 -b r2.12
 $ <span class="nb">cd</span> tensorflow
-</pre></div>
-</div>
-<p>Apply patch as below to support <strong>TF_LoadPluggableDeviceLibrary</strong>, which is defined in “//tensorflow/c:c_api_experimental”
-<a class="reference external" href="https://github.com/tensorflow/tensorflow/issues/58533">A feature request</a> has been reported to TensorFlow*. Once it is solved, this patch is no longer needed.</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/tensorflow/BUILD b/tensorflow/BUILD</span><span class="w"></span>
-<span class="gh">index 19ee8000206..77d8c714729 100644</span><span class="w"></span>
-<span class="gd">--- a/tensorflow/BUILD</span><span class="w"></span>
-<span class="gi">+++ b/tensorflow/BUILD</span><span class="w"></span>
-<span class="gu">@@ -1187,6 +1187,7 @@ tf_cc_shared_library(</span><span class="w"></span>
-<span class="w"> </span>    visibility = [&quot;//visibility:public&quot;],<span class="w"></span>
-<span class="w"> </span>    win_def_file = &quot;:tensorflow_filtered_def_file&quot;,<span class="w"></span>
-<span class="w"> </span>    deps = [<span class="w"></span>
-<span class="gi">+        &quot;//tensorflow/c:c_api_experimental&quot;,</span><span class="w"></span>
-<span class="w"> </span>        &quot;//tensorflow/c:c_api&quot;,<span class="w"></span>
-<span class="w"> </span>        &quot;//tensorflow/c:env&quot;,<span class="w"></span>
-<span class="w"> </span>        &quot;//tensorflow/c:kernels&quot;,<span class="w"></span>
 </pre></div>
 </div>
 <p>b. Build libtensorflow_cc.so</p>
@@ -162,6 +172,12 @@ $ ls ./bazel-bin/tensorflow/libtensorflow_cc.so
 </pre></div>
 </div>
 <p>libtensorflow_cc.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/libtensorflow_cc.so</span></code></p>
+<p>c. Create symbolic link for libtensorflow_framework.so</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ./bazel-bin/tensorflow/
+$ ln -s libtensorflow_framework.so.2 libtensorflow_framework.so
+</pre></div>
+</div>
+<p>libtensorflow_framework.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/libtensorflow_framework.so</span></code></p>
 <p>c. Build Tensorflow header files</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build --config<span class="o">=</span>opt tensorflow:install_headers
 $ ls ./bazel-bin/tensorflow/include
@@ -169,13 +185,14 @@ $ ls ./bazel-bin/tensorflow/include
 </div>
 <p>Tensorflow header file location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/include</span></code></p>
 </div>
+</div>
 <div class="section" id="integrate-the-cc-library">
 <h2>Integrate the CC library<a class="headerlink" href="#integrate-the-cc-library" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="linker">
 <h3>Linker<a class="headerlink" href="#linker" title="Permalink to this headline">¶</a></h3>
-<p>If you place the Intel® Extension for TensorFlow* CC library to a non-system directory, such as ~/mydir, then configure the linker environmental variables:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LIBRARY_PATH</span>:~/mydir/
-$ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:~/mydir/
+<p>Configure the linker environmental variables with Intel® Extension for TensorFlow* CC library (<strong>libitex_gpu_cc.so</strong> or <strong>libitex_cpu_cc.so</strong>) path:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LIBRARY_PATH</span>:&lt;Path to intel-extension-for-tensorflow&gt;/bazel-bin/itex/
+$ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:&lt;Path to intel-extension-for-tensorflow&gt;/bazel-bin/itex/
 </pre></div>
 </div>
 </div>
@@ -268,8 +285,8 @@ To support Intel® Extension for TensorFlow* cc library, we need to modify the o
 <h3>Build and run<a class="headerlink" href="#build-and-run" title="Permalink to this headline">¶</a></h3>
 <p>Place a <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> file in the same directory of <code class="docutils literal notranslate"><span class="pre">example.cc</span></code> with the following contents:</p>
 <ul class="simple">
-<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TF_INCLUDE_PATH&gt;</span></code> with local tensorflow include path: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/include/</span></code></p></li>
-<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TFCC_PATH&gt;</span></code> with local tensorflow_cc path: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow&gt;/bazel-bin/tensorflow/</span></code></p></li>
+<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TF_INCLUDE_PATH&gt;</span></code> with local <strong>Tensorflow* header file path</strong>. e.g.  <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.12.0&gt;/tensorflow/include</span></code></p></li>
+<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TFCC_PATH&gt;</span></code> with local <strong>Tensorflow* CC library path</strong>. e.g. <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.12.0&gt;/tensorflow/</span></code></p></li>
 </ul>
 <div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span>// Makefile
 target = example_test
@@ -278,7 +295,7 @@ TF_INCLUDE_PATH = &lt;TF_INCLUDE_PATH&gt;
 TFCC_PATH = &lt;TFCC_PATH&gt;
 include = -I $(TF_INCLUDE_PATH)
 lib = -L $(TFCC_PATH) -ltensorflow_framework -ltensorflow_cc
-flag = -Wl,-rpath=$(TFCC_PATH)
+flag = -Wl,-rpath=$(TFCC_PATH) -std=c++17
 source = ./example.cc
 $(target): $(source)
 	$(cc) $(source) -o $(target) $(include) $(lib) $(flag)
@@ -294,7 +311,9 @@ $ ./example_test
 </pre></div>
 </div>
 <p><strong>NOTE:</strong> For GPU support, please setup oneapi environment variables before run.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">source</span> /opt/intel/oneapi/setvars.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">source</span> /opt/intel/oneapi/compiler/latest/env/vars.sh
+$ <span class="nb">source</span> /opt/intel/oneapi/mkl/latest/env/vars.sh
+$ <span class="nb">source</span> /opt/intel/oneapi/tbb/latest/env/vars.sh
 </pre></div>
 </div>
 </div>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenXLA Support on GPU &mdash; Intel® Extension for TensorFlow* v1.0.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Installation Guide" href="../install/installation_guide.html" />
+    <link rel="prev" title="INT8 Quantization" href="INT8_quantization.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                <a href="../../../versions.html">latest ▼</a>
+                <p>Click link above to switch version</p>              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#graph-optimization">Graph Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#advanced-auto-mixed-precision-amp">Advanced Auto Mixed Precision (AMP)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#ease-of-use-python-api">Ease-of-use Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gpu-profiler">GPU Profiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">OpenXLA Support on GPU</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">1. Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#build-library-for-jax">2. Build Library for JAX</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-jax-example">3. Run JAX Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="features.html">Features</a> &raquo;</li>
+      <li>OpenXLA Support on GPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/OpenXLA_Support_on_GPU.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="openxla-support-on-gpu">
+<h1>OpenXLA Support on GPU<a class="headerlink" href="#openxla-support-on-gpu" title="Permalink to this headline">¶</a></h1>
+<p>This guide introduces the overview of OpenXLA high level integration structure, and demonstrates how to build Intel® Extension for TensorFlow* and run JAX example with OpenXLA.</p>
+<div class="section" id="overview">
+<h2>1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Intel® Extension for TensorFlow* adopts PJRT plugin interface to implement Intel GPU backend for OpenXLA experimental support, and takes JAX front end APIs as example. PJRT is a uniform device API in OpenXLA ecosystem. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">OpenXLA PJRT Plugin RFC</a> for more details.</p>
+<div class="highlight-mermaid {align=&quot;center&quot;} notranslate"><div class="highlight"><pre><span></span>graph TD;
+    title[&lt;u&gt;OpenXLA high level integration structure&lt;/u&gt;]
+    D--&gt;title
+    style title fill:#FFF,stroke:#FFF
+    linkStyle 0 stroke:#FFF,stroke-width:0;
+    A(&lt;font color=white&gt; JAX example) --&gt; B(&lt;font color=white&gt; jax/register_pjrt_plugin_factories);
+    A(&lt;font color=white&gt; JAX example) --&gt; C(&lt;font color=white&gt; jaxlib/GetPjrtApi);
+    B(&lt;font color=white&gt; jax/register_pjrt_plugin_factories) --&gt; D(&lt;font color=white&gt; libitex_xla_extension.so);
+    C(&lt;font color=white&gt; jaxlib/GetPjrtApi) --&gt; D(&lt;font color=white&gt; libitex_xla_extension.so);
+    
+style A fill:#0D64C2
+style B fill:#0D64C2
+style C fill:#0D64C2
+style D fill:#0D64C2
+</pre></div>
+</div>
+<ul>
+<li><p><a class="reference external" href="https://jax.readthedocs.io/en/latest/">JAX</a> provides a familiar NumPy-style API, includes composable function transformations for compilation, batching, automatic differentiation, and parallelization, and  the same code executes on multiple backends.</p></li>
+<li><p>In JAX python package, <a class="reference external" href="https://github.com/google/jax/blob/jaxlib-v0.4.4/jax/_src/lib/xla_bridge.py#L317-L320"><code class="docutils literal notranslate"><span class="pre">jax/_src/lib/xla_bridge.py</span></code></a></p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>register_pjrt_plugin_factories(os.getenv(&#39;PJRT_NAMES_AND_LIBRARY_PATHS&#39;, &#39;&#39;))
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">register_pjrt_plugin_factories</span></code> registers backend for PJRT plugins. For intel XPU  <code class="docutils literal notranslate"><span class="pre">PJRT_NAMES_AND_LIBRARY_PATHS</span></code> is set to be <code class="docutils literal notranslate"><span class="pre">'xpu:Your_itex_path/bazel-bin/itex/libitex_xla_extension.so'</span></code>,  <code class="docutils literal notranslate"><span class="pre">xpu</span></code> is the backend name and <code class="docutils literal notranslate"><span class="pre">libitex_xla_extension.so</span></code> is the PJRT plugin library.</p>
+</li>
+<li><p>In jaxlib python package <code class="docutils literal notranslate"><span class="pre">jaxlib/xla_extension.so</span></code>,<br />Jaxlib gets the lastest tensorflow code which calls the <a class="reference external" href="https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/c/pjrt_c_api.h">PJRT C API interface</a>. The backend needs to implement these API.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">libitex_xla_extension.so</span></code> implements <code class="docutils literal notranslate"><span class="pre">PJRT</span> <span class="pre">C</span> <span class="pre">API</span> <span class="pre">inferface</span></code> which can be got in <a class="reference external" href="https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/pjrt_api.cc#L82">GetPjrtApi</a>.</p></li>
+</ul>
+</div>
+<div class="section" id="build-library-for-jax">
+<h2>2. Build Library for JAX<a class="headerlink" href="#build-library-for-jax" title="Permalink to this headline">¶</a></h2>
+<p>There are some differences from   <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.md">source build procedure</a></p>
+<ul>
+<li><p>Make sure get Intel® Extension for TensorFlow* main branch code and python version &gt;=3.8.</p></li>
+<li><p>In TensorFlow installation steps, make sure to install jax and jaxlib at the same time.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span> $ pip install <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.12.0 <span class="nv">jax</span><span class="o">==</span><span class="m">0</span>.4.4 <span class="nv">jaxlib</span><span class="o">==</span><span class="m">0</span>.4.4
+</pre></div>
+</div>
+</li>
+<li><p>In “Configure the build” step, run ./configure, select yes for JAX support,</p>
+<blockquote>
+<div><p>=&gt; “Do you wish to build for JAX support? [y/N]: Y”</p>
+</div></blockquote>
+</li>
+<li><p>Build command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build --config<span class="o">=</span>jax -c opt //itex:libitex_xla_extension.so
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Then we can get the library with xla extension   <strong>./bazel-bin/itex/libitex_xla_extension.so</strong></p>
+</div>
+<div class="section" id="run-jax-example">
+<h2>3. Run JAX Example<a class="headerlink" href="#run-jax-example" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><strong>Set library path.</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">PJRT_NAMES_AND_LIBRARY_PATHS</span><span class="o">=</span><span class="s1">&#39;xpu:Your_itex_path/bazel-bin/itex/libitex_xla_extension.so&#39;</span>
+$ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:Your_Python_site-packages/jaxlib <span class="c1"># Some functions defined in xla_extension.so are needed by libitex_xla_extension.so</span>
+
+$ <span class="nb">export</span> <span class="nv">ONEDNN_VERBOSE</span><span class="o">=</span><span class="m">1</span> <span class="c1"># Optional variable setting. Enable onednn verbose to check if it runs on GPU.</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Run the below jax python code.</strong></p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">random</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">size</span> <span class="o">=</span> <span class="mi">3000</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Reference result:</strong></p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">oneDNN</span> <span class="n">v3</span><span class="mf">.1.0</span> <span class="p">(</span><span class="n">commit</span> <span class="n">xxxx</span><span class="p">)</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">cpu</span><span class="p">,</span><span class="n">runtime</span><span class="p">:</span><span class="n">DPC</span><span class="o">++</span><span class="p">,</span><span class="n">nthr</span><span class="p">:</span><span class="mi">1</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">cpu</span><span class="p">,</span><span class="n">isa</span><span class="p">:</span><span class="n">Intel</span> <span class="mi">64</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">gpu</span><span class="p">,</span><span class="n">runtime</span><span class="p">:</span><span class="n">DPC</span><span class="o">++</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">cpu</span><span class="p">,</span><span class="n">engine</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">backend</span><span class="p">:</span><span class="n">OpenCL</span><span class="p">,</span><span class="n">name</span><span class="p">:</span><span class="n">Intel</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="n">Xeon</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="n">Gold</span> <span class="mi">6346</span> <span class="n">CPU</span> <span class="o">@</span> <span class="mf">3.10</span><span class="n">GHz</span><span class="p">,</span><span class="n">driver_version</span><span class="p">:</span><span class="mf">2022.15.12</span><span class="p">,</span><span class="n">binary_kernels</span><span class="p">:</span><span class="n">disabled</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">gpu</span><span class="p">,</span><span class="n">engine</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">backend</span><span class="p">:</span><span class="n">Level</span> <span class="n">Zero</span><span class="p">,</span><span class="n">name</span><span class="p">:</span><span class="n">Intel</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="n">Data</span> <span class="n">Center</span> <span class="n">GPU</span> <span class="n">Flex</span> <span class="n">Series</span> <span class="mi">170</span> <span class="p">[</span><span class="mh">0x56c0</span><span class="p">],</span><span class="n">driver_version</span><span class="p">:</span><span class="mf">1.3.25018</span><span class="p">,</span><span class="n">binary_kernels</span><span class="p">:</span><span class="n">enabled</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">gpu</span><span class="p">,</span><span class="n">engine</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">backend</span><span class="p">:</span><span class="n">Level</span> <span class="n">Zero</span><span class="p">,</span><span class="n">name</span><span class="p">:</span><span class="n">Intel</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="n">Data</span> <span class="n">Center</span> <span class="n">GPU</span> <span class="n">Flex</span> <span class="n">Series</span> <span class="mi">170</span> <span class="p">[</span><span class="mh">0x56c0</span><span class="p">],</span><span class="n">driver_version</span><span class="p">:</span><span class="mf">1.3.25018</span><span class="p">,</span><span class="n">binary_kernels</span><span class="p">:</span><span class="n">enabled</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">experimental</span> <span class="n">features</span> <span class="n">are</span> <span class="n">enabled</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">use</span> <span class="n">batch_normalization</span> <span class="n">stats</span> <span class="n">one</span> <span class="k">pass</span> <span class="ow">is</span> <span class="n">enabled</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">experimental</span> <span class="n">functionality</span> <span class="k">for</span> <span class="n">sparse</span> <span class="n">domain</span> <span class="ow">is</span> <span class="n">enabled</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">prim_template</span><span class="p">:</span><span class="n">operation</span><span class="p">,</span><span class="n">engine</span><span class="p">,</span><span class="n">primitive</span><span class="p">,</span><span class="n">implementation</span><span class="p">,</span><span class="n">prop_kind</span><span class="p">,</span><span class="n">memory_descriptors</span><span class="p">,</span><span class="n">attributes</span><span class="p">,</span><span class="n">auxiliary</span><span class="p">,</span><span class="n">problem_desc</span><span class="p">,</span><span class="n">exec_time</span>
+<span class="n">onednn_verbose</span><span class="p">,</span><span class="n">exec</span><span class="p">,</span><span class="n">gpu</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="n">matmul</span><span class="p">,</span><span class="n">jit</span><span class="p">:</span><span class="n">gemm</span><span class="p">:</span><span class="nb">any</span><span class="p">,</span><span class="n">undef</span><span class="p">,</span><span class="n">src_f32</span><span class="p">::</span><span class="n">blocked</span><span class="p">:</span><span class="n">abc</span><span class="p">:</span><span class="n">f0</span> <span class="n">wei_f32</span><span class="p">::</span><span class="n">blocked</span><span class="p">:</span><span class="n">abc</span><span class="p">:</span><span class="n">f0</span> <span class="n">dst_f32</span><span class="p">::</span><span class="n">blocked</span><span class="p">:</span><span class="n">abc</span><span class="p">:</span><span class="n">f0</span><span class="p">,</span><span class="n">attr</span><span class="o">-</span><span class="n">scratchpad</span><span class="p">:</span><span class="n">user</span> <span class="p">,,</span><span class="mi">1</span><span class="n">x3000x3000</span><span class="p">:</span><span class="mi">1</span><span class="n">x3000x3000</span><span class="p">:</span><span class="mi">1</span><span class="n">x3000x3000</span><span class="p">,</span><span class="n">xxxxxxxx</span>
+<span class="p">[[</span><span class="mf">2938.1716</span>   <span class="mf">17.388428</span>  <span class="mf">36.508217</span>  <span class="o">...</span>   <span class="mf">32.315964</span>  <span class="mf">51.31904</span>    <span class="o">-</span><span class="mf">34.432026</span><span class="p">]</span>
+ <span class="p">[</span><span class="mf">17.388428</span>   <span class="mf">3031.179</span>   <span class="mf">41.194576</span>  <span class="o">...</span>   <span class="mf">47.248768</span>  <span class="mf">58.077858</span>   <span class="o">-</span><span class="mf">13.371612</span><span class="p">]</span>
+ <span class="p">[</span><span class="mf">36.508217</span>   <span class="mf">41.194576</span>  <span class="mf">3000.4697</span>  <span class="o">...</span>   <span class="mf">8.10901</span>    <span class="o">-</span><span class="mf">42.501842</span>  <span class="mf">26.495111</span><span class="p">]</span>
+ <span class="o">...</span>
+ <span class="p">[</span><span class="mf">32.315964</span>   <span class="mf">47.248768</span>  <span class="mf">8.10901</span>    <span class="o">...</span>   <span class="mf">2916.339</span>   <span class="mf">34.38107</span>    <span class="mf">39.404522</span><span class="p">]</span>
+ <span class="p">[</span><span class="mf">51.31904</span>    <span class="mf">58.077858</span>  <span class="o">-</span><span class="mf">42.501842</span> <span class="o">...</span>   <span class="mf">34.38107</span>   <span class="mf">3032.2844</span>   <span class="mf">63.69183</span> <span class="p">]</span>
+ <span class="p">[</span><span class="o">-</span><span class="mf">34.432026</span>  <span class="o">-</span><span class="mf">13.371612</span> <span class="mf">26.495111</span>  <span class="o">...</span>   <span class="mf">39.404522</span>  <span class="mf">63.69183</span>    <span class="mf">3033.4866</span>  <span class="p">]]</span>
+</pre></div>
+</div>
+<p>Check it runs on GPU but not CPU. For example, “onednn_verbose,exec,<strong>gpu</strong>:0,matmul, …” means “matmul” runs on GPU.</p>
+<p><strong>4. More JAX examples.</strong><br />Get examples from <a class="reference external" href="https://github.com/google/jax/tree/jaxlib-v0.4.4/examples">https://github.com/google/jax</a> to run.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/google/jax.git
+$ <span class="nb">cd</span> jax <span class="o">&amp;&amp;</span> git checkout jax-v0.4.4
+$ <span class="nb">export</span> <span class="nv">PJRT_NAMES_AND_LIBRARY_PATHS</span><span class="o">=</span><span class="s1">&#39;xpu:Your_itex_path/bazel-bin/itex/libitex_xla_extension.so&#39;</span>
+$ python -m examples.mnist_classifier
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="INT8_quantization.html" class="btn btn-neutral float-left" title="INT8 Quantization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../install/installation_guide.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
