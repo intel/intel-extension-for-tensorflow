@@ -31,7 +31,7 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 | `itex.set_backend` |`GPU`or`CPU` |`ITEX_XPU_BACKEND`                                           | `GPU`or`CPU`                                        | set `CPU`/`GPU` as specific `XPU` backend with optimization options for execution.  |
 | `itex.get_backend` |`N/A`| `N/A`                                                        | `N/A`                                        | Get the string of current XPU backend. For example `CPU`, `GPU` or `AUTO`. |
 | `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION`<br>`ITEX_SHARDING` | `0`<br>`1`*<br>`1`<br/>`0`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Intel® Data Center GPU Max Series) and default `OFF` in Intel CPU by hardware attributes|
-| `itex.experimental_ops_override` |`N/A` |`ITEX_OPS_OVERRIDE`                                           | 0                                        | Set `1` to automatically override the operators with same name in TensorFlow by `itex.ops`. Users have to set `TF_NUM_INTEROP_THREADS=1` together avoid possible performance drop on CPU. |
+| `itex.experimental_ops_override` |`N/A` |`N/A`                                           | OFF                                        | Call this function to automatically override the operators with same name in TensorFlow by `itex.ops`. |
 
 **Notes:**
 1. The priority for setting values is as follows: Python APIs > Environment Variables > Default value.
