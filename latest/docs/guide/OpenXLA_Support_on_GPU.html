@@ -102,22 +102,7 @@
 <div class="section" id="overview">
 <h2>1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>Intel® Extension for TensorFlow* adopts PJRT plugin interface to implement Intel GPU backend for OpenXLA experimental support, and takes JAX front end APIs as example. PJRT is a uniform device API in OpenXLA ecosystem. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">OpenXLA PJRT Plugin RFC</a> for more details.</p>
-<div class="highlight-mermaid {align=&quot;center&quot;} notranslate"><div class="highlight"><pre><span></span>graph TD;
-    title[&lt;u&gt;OpenXLA high level integration structure&lt;/u&gt;]
-    D--&gt;title
-    style title fill:#FFF,stroke:#FFF
-    linkStyle 0 stroke:#FFF,stroke-width:0;
-    A(&lt;font color=white&gt; JAX example) --&gt; B(&lt;font color=white&gt; jax/register_pjrt_plugin_factories);
-    A(&lt;font color=white&gt; JAX example) --&gt; C(&lt;font color=white&gt; jaxlib/GetPjrtApi);
-    B(&lt;font color=white&gt; jax/register_pjrt_plugin_factories) --&gt; D(&lt;font color=white&gt; libitex_xla_extension.so);
-    C(&lt;font color=white&gt; jaxlib/GetPjrtApi) --&gt; D(&lt;font color=white&gt; libitex_xla_extension.so);
-    
-style A fill:#0D64C2
-style B fill:#0D64C2
-style C fill:#0D64C2
-style D fill:#0D64C2
-</pre></div>
-</div>
+<p><img alt="xla" src="../../_images/xla.png" /></p>
 <ul>
 <li><p><a class="reference external" href="https://jax.readthedocs.io/en/latest/">JAX</a> provides a familiar NumPy-style API, includes composable function transformations for compilation, batching, automatic differentiation, and parallelization, and  the same code executes on multiple backends.</p></li>
 <li><p>In JAX python package, <a class="reference external" href="https://github.com/google/jax/blob/jaxlib-v0.4.4/jax/_src/lib/xla_bridge.py#L317-L320"><code class="docutils literal notranslate"><span class="pre">jax/_src/lib/xla_bridge.py</span></code></a></p>
