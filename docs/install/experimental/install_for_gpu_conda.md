@@ -36,7 +36,7 @@ Install stock tensorflow 2.12.0 and Intel® Extension for TensorFlow* GPU wheels
 ```
 pip install --upgrade pip
 pip install tensorflow==2.12.0
-pip install intel-extension-for-tensorflow[gpu]==1.2.0rc0
+pip install intel-extension-for-tensorflow[gpu]
 ```
 Check the environment for GPU:
 ```bash

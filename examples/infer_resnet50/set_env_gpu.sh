@@ -22,4 +22,4 @@ python -m venv $ENV_NAME
 source $ENV_NAME/bin/activate
 pip install --upgrade pip
 pip install tensorflow tensorflow_hub pillow
-pip install --upgrade intel-extension-for-tensorflow[gpu]==1.2.0rc0
+pip install --upgrade intel-extension-for-tensorflow[gpu]
