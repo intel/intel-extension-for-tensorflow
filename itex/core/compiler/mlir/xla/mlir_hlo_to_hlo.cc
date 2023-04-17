@@ -726,9 +726,11 @@ LogicalResult ExportXlaOp(CstrReshapableOp, OpLoweringContext) {
 }
 
 mlir::LogicalResult ExportXlaOp(mlir::mhlo::CopyOp op, OpLoweringContext ctx) {
-  if (op.getIsCrossProgramPrefetch())
+  // If it's the only thing in a function we assume it's part of an async copy
+  // op
+  if (op.getCrossProgramPrefetchIndex() && !SimplyReturnedOp(op))
     return op->emitOpError() << "synchronous CopyOp should not include "
-                                "is_cross_program_prefetch attribute.";
+                                "cross_program_prefetch_index attribute.";
   auto& value_map = *ctx.values;
   auto result = op.getResult();
   itex_xla::XlaOp xla_arg_0;
@@ -1069,6 +1071,17 @@ LogicalResult ExportXlaOp(CosineOp op, OpLoweringContext ctx) {
   if (failed(GetXlaOp(*op.getODSOperands(0).begin(), value_map, &arg, op)))
     return mlir::failure();
   auto xla_result = itex_xla::Cos(Unwrap(arg));
+  value_map[result] = xla_result;
+  return mlir::success();
+}
+
+LogicalResult ExportXlaOp(TanOp op, OpLoweringContext ctx) {
+  auto& value_map = *ctx.values;
+  auto result = op.getResult();
+  itex_xla::XlaOp arg;
+  if (failed(GetXlaOp(*op.getODSOperands(0).begin(), value_map, &arg, op)))
+    return mlir::failure();
+  auto xla_result = itex_xla::Tan(Unwrap(arg));
   value_map[result] = xla_result;
   return mlir::success();
 }

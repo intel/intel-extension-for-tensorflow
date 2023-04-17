@@ -21,8 +21,8 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/compiler/xla/status_macros.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/TargetParser/Triple.h"
 
 namespace itex_xla {
 

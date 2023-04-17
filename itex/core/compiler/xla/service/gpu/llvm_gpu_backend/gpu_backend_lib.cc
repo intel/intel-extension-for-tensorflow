@@ -63,7 +63,6 @@ limitations under the License.
 #include "llvm/PassRegistry.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
-#include "llvm/SYCLLowerIR/LowerWGLocalMemory.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/FormattedStream.h"
@@ -164,13 +163,6 @@ void AddOptimizationPasses(unsigned opt_level, unsigned size_level,
   builder.OptLevel = opt_level;
   builder.SizeLevel = size_level;
 
-  if (opt_level > 1) {
-    builder.Inliner = llvm::createFunctionInliningPass(inline_threshold);
-  } else {
-    // Only inline functions marked with "alwaysinline".
-    builder.Inliner = llvm::createAlwaysInlinerLegacyPass();
-  }
-
   // Disable loop unroll in LLVM
   builder.DisableUnrollLoops = 1;
   builder.LoopVectorize = 0;
@@ -232,7 +224,6 @@ void RunOptimizationPipeline(llvm::Module* module,
 
   llvm::OptimizationLevel Level = llvm::OptimizationLevel::O2;
   MPM = PB.buildPerModuleDefaultPipeline(Level);
-  MPM.addPass(llvm::SYCLLowerWGLocalMemoryPass());
   MPM.addPass(llvm::VerifierPass());
   MPM.run(*module, MAM);
 }

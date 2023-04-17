@@ -202,6 +202,9 @@ struct TargetDeviceFunction GetDeviceFunctionRoot(
     case TargetDeviceFunctionID::kSqrt: {
       return {"__nv_sqrt", "__ocml_sqrt", "_Z4sqrt"};
     }
+    case TargetDeviceFunctionID::kTan: {
+      return {"__nv_tan", "__ocml_tan", "_Z3tan"};
+    }
     case TargetDeviceFunctionID::kTanh: {
       return {"__nv_tanh", "__ocml_tanh", "_Z4tanh"};
     }

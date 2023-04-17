@@ -196,6 +196,7 @@ bool IsAlwaysDuplicable(const HloInstruction& instruction) {
     case HloOpcode::kSort:
     case HloOpcode::kSqrt:
     case HloOpcode::kCbrt:
+    case HloOpcode::kTan:
     case HloOpcode::kTanh:
     case HloOpcode::kTriangularSolve:
     case HloOpcode::kWhile:

@@ -27,10 +27,9 @@ def repo_13(name):
 def repo(name):
     """Imports LLVM."""
 
-    LLVM_COMMIT = "ac1ec9e2904a696e360b40572c3b3c29d67981ef"
-
-    # TF commit: 850f6f7e58deb4d947f2542842459b7a7021d2c0
-    LLVM_SHA256 = "3a7cd0be43916c6d860d08e46f084eae8035a248e87097725e95d4a966119d93"
+    # TF commit: 43e9d313548ded301fa54f25a4192d3bcb123330
+    LLVM_COMMIT = "37b7a60cd74b7a1754583b7eb63a6339158fd398"
+    LLVM_SHA256 = "c6c4486d4b5274358fa10af9d67262ed19504b78c94c2189113f44d1f7d55ebc"
 
     tf_http_archive(
         name = name,
@@ -44,6 +43,5 @@ def repo(name):
         patch_file = [
             "//third_party/llvm_project:spirv.patch",
             "//third_party/llvm_project:llvm_build.patch",
-            "//third_party/llvm_project:mlir.patch",
         ],
     )

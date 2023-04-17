@@ -28,7 +28,7 @@ limitations under the License.
 #include "itex/core/compiler/xla/service/source_map_util.h"
 #include "itex/core/compiler/xla/service/stream_pool.h"
 #include "itex/core/compiler/xla/status_macros.h"
-#include "llvm/ADT/Triple.h"
+#include "llvm/TargetParser/Triple.h"
 
 using itex_xla::source_map_util::InvalidParameterArgument;
 

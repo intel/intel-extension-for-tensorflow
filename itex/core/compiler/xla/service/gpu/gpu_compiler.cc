@@ -32,7 +32,6 @@ limitations under the License.
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/variant.h"
-#include "itex/core/compiler/mlir/hlo/transforms/itex_gpu_passes.h"
 #include "itex/core/compiler/mlir/utils/name_utils.h"
 #include "itex/core/compiler/mlir/xla/hlo_utils.h"
 #include "itex/core/compiler/mlir/xla/type_to_shape.h"
@@ -154,7 +153,6 @@ limitations under the License.
 #include "llvm/Transforms/Utils/SplitModule.h"
 #include "mhlo/IR/hlo_ops.h"
 #include "mhlo/transforms/passes.h"
-#include "mlir-hlo/Transforms/passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"         // from @llvm-project
 #include "mlir/Dialect/Func/IR/FuncOps.h"        // from @llvm-project
 #include "mlir/Dialect/GPU/Transforms/Passes.h"  // from @llvm-project
@@ -934,7 +932,7 @@ static Status CompileModuleToLlvmIrImpl(
           /*printAfterOnlyOnChange=*/true, /*printAfterOnlyOnFailure=*/false);
     }
 
-    pm.addPass(mlir::createGpuFusionRewritePass());
+    // pm.addPass(mlir::createGpuFusionRewritePass());
     if (failed(pm.run(mlir_module.get()))) {
       printf("!!! Failed to run gpu-fusion-rewrite pass\n");
       results->mlir_compiler_success = false;
@@ -1310,7 +1308,9 @@ static Status GetMlirAllocationInfo(mlir::func::FuncOp func,
   }
 
   for (int i = 0; i < func.getNumArguments(); i++) {
-    for (const mlir::NamedAttribute& attr : func.getArgAttrs(i)) {
+    llvm::ArrayRef<mlir::NamedAttribute> attrs =
+        mlir::function_interface_impl::getArgAttrs(func, i);
+    for (const mlir::NamedAttribute& attr : attrs) {
       TF_RET_CHECK(attr.getName() == "lmhlo.params" ||
                    attr.getName() == "lmhlo.param_shape_index" ||
                    attr.getName() == "lmhlo.constant_name" ||

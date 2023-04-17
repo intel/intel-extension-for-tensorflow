@@ -1110,6 +1110,7 @@ HloInstruction::CreateRngBitGenerator(const Shape& shape, HloInstruction* state,
     case HloOpcode::kSqrt:
     case HloOpcode::kCbrt:
     case HloOpcode::kTanh:
+    case HloOpcode::kTan:
       break;
     default:
       ITEX_LOG(FATAL) << "Invalid unary instruction opcode "
@@ -2104,6 +2105,7 @@ std::unique_ptr<HloInstruction> HloInstruction::CloneWithNewOperands(
     case HloOpcode::kSqrt:
     case HloOpcode::kCbrt:
     case HloOpcode::kTanh:
+    case HloOpcode::kTan:
       ITEX_CHECK_EQ(new_operands.size(), 1);
       clone = CreateUnary(shape, opcode_, new_operands[0]);
       break;
@@ -2558,6 +2560,7 @@ bool HloInstruction::IdenticalSlowPath(
     case HloOpcode::kStochasticConvert:
     case HloOpcode::kCbrt:
     case HloOpcode::kSubtract:
+    case HloOpcode::kTan:
     case HloOpcode::kTanh:
     case HloOpcode::kTuple:
       return true;
@@ -3034,6 +3037,7 @@ bool HloInstruction::IsOpElementwise(HloOpcode opcode) {
     case HloOpcode::kSin:
     case HloOpcode::kSqrt:
     case HloOpcode::kCbrt:
+    case HloOpcode::kTan:
     case HloOpcode::kTanh:
       return true;
 
@@ -3635,6 +3639,8 @@ Status HloInstruction::Visit(DfsHloVisitorBase<HloInstructionPtr>* visitor) {
       return visitor->HandleLog(this);
     case HloOpcode::kLog1p:
       return visitor->HandleLog1p(this);
+    case HloOpcode::kTan:
+      return visitor->HandleTan(this);
     case HloOpcode::kTanh:
       return visitor->HandleTanh(this);
     case HloOpcode::kCos:

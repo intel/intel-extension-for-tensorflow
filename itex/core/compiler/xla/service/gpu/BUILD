@@ -42,7 +42,6 @@ cc_library(
         ":triangular_solve_rewriter",
         ":variadic_op_splitter",
         "//itex/core/compiler/mlir:name_utils",
-        "//itex/core/compiler/mlir/hlo:itex_gpu_passes",
         "//itex/core/compiler/mlir/xla:hlo_utils",
         "//itex/core/compiler/mlir/xla:mhlo_to_lhlo_with_xla",
         "//itex/core/compiler/mlir/xla:type_to_shape",
@@ -307,6 +306,7 @@ cc_library(
         "@com_google_absl//absl/types:span",
         "@llvm-project//llvm:Core",
         "@llvm-project//llvm:Support",
+        "@llvm-project//llvm:TargetParser",
     ],
 )
 

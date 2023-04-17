@@ -235,8 +235,7 @@ Status IrEmitterNested::EmitConstants(const HloComputation& computation) {
         /*AddressSpace=*/1,  // hardcode to global addrspace
         /*isExternallyInitialized=*/false);
     global_for_const->setAlignment(llvm::Align(kConstantBufferAlignBytes));
-    ir_emitter_context_->llvm_module()->getGlobalList().push_back(
-        global_for_const);
+    ir_emitter_context_->llvm_module()->insertGlobalVariable(global_for_const);
 
     GpuExecutable::ConstantInfo info;
     info.symbol_name = global_name;

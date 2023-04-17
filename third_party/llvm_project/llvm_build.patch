@@ -10,23 +10,3 @@ index 2428b0cb7531..a7bf5e233c8b 100644
  ]
  
  enum_targets_gen(
-@@ -4653,3 +4653,19 @@ cc_binary(
-         ":Support",
-     ],
- )
-+
-+cc_library(
-+    name = "SYCLLowerIR",
-+    srcs = glob([
-+        "lib/SYCLLowerIR/*.cpp",
-+    ]),
-+    hdrs = glob(["include/llvm/SYCLLowerIR/*.h"]),
-+    copts = llvm_copts,
-+    deps = [
-+        ":Analysis",
-+        ":Core",
-+        ":Demangle",
-+        ":Support",
-+        ":TransformUtils",
-+    ],
-+)

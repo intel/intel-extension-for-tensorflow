@@ -262,10 +262,9 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     git_repository(
         name = "mlir-hlo",
-        commit = "1b862a645b61b954c3353bca3469e51f3f3b1ca7",
+        commit = "db5d7d565ddfebadcf002cf4337619ff873127fe",
         remote = "https://github.com/tensorflow/mlir-hlo/",
         verbose = True,
-        patches = ["//third_party/mlir_hlo:mlir_hlo.patch"],
         patch_args = ["-p1"],
         patch_cmds = [
             "git log -1 --format=%H > COMMIT",
@@ -274,7 +273,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     git_repository(
         name = "spir_headers",
-        commit = "93754d52d6cbbfd61f4e87571079e8a28e65f8ca",
+        commit = "29ba2493125effc581532518add689613cebfec7",
         remote = "https://github.com/KhronosGroup/SPIRV-Headers.git",
         verbose = True,
         patch_cmds = [
@@ -284,7 +283,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     new_git_repository(
         name = "llvm_spir",
-        commit = "a3b372cb2d0250fbd5e395c3d32613f1644dfeb5",
+        commit = "0ef30a3dfeec433b6d4de4e9cc2a6817032b93e3",
         remote = "https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git",
         build_file = "//third_party/llvm_spir:llvm_spir.BUILD",
         verbose = True,

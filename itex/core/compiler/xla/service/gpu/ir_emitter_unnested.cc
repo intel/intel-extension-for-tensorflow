@@ -120,11 +120,11 @@ limitations under the License.
 #include "mlir/Dialect/GPU/IR/GPUDialect.h"  // from @llvm-project
 #include "mlir/Dialect/Tensor/IR/Tensor.h"   // from @llvm-project
 #include "mlir/IR/Attributes.h"              // from @llvm-project
-#include "mlir/IR/BlockAndValueMapping.h"    // from @llvm-project
 #include "mlir/IR/Builders.h"                // from @llvm-project
 #include "mlir/IR/BuiltinAttributes.h"       // from @llvm-project
 #include "mlir/IR/BuiltinOps.h"              // from @llvm-project
 #include "mlir/IR/BuiltinTypes.h"            // from @llvm-project
+#include "mlir/IR/IRMapping.h"               // from @llvm-project
 #include "mlir/IR/Verifier.h"                // from @llvm-project
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "protos/xla_data.pb.h"
@@ -260,6 +260,7 @@ bool MayPreventVectorization(mlir::Operation* op) {
       case HloOpcode::kDot:
       case HloOpcode::kSin:
       case HloOpcode::kCos:
+      case HloOpcode::kTan:
       case HloOpcode::kPower:
       case HloOpcode::kAtan2:
         return true;
@@ -638,8 +639,7 @@ Status IrEmitterUnnested::EmitConstant(mlir::Operation* op) {
     llvm::MDNode* MDList = llvm::MDNode::get(context, MDs);
     global_for_const->setMetadata("spirv.Decorations", MDList);
   }
-  ir_emitter_context_->llvm_module()->getGlobalList().push_back(
-      global_for_const);
+  ir_emitter_context_->llvm_module()->insertGlobalVariable(global_for_const);
 
   info.symbol_name.assign(global.getSymName().begin(),
                           global.getSymName().end());
