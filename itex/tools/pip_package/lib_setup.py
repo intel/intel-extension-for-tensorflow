@@ -57,6 +57,10 @@ _plugin_path = 'tensorflow-plugins'
 filenames = os.listdir(_plugin_path)
 is_cpu = False
 is_gpu = False
+is_rc = "rc" in _VERSION
+if is_rc:
+  _VERSION_EXT = _VERSION.split("rc")[1]
+  _VERSION = _VERSION.split("rc")[0]
 for filename in filenames:
   if "cpu" in filename:
     is_cpu = True
@@ -72,6 +76,8 @@ else:
   raise Exception("There are no .so files in the folder of \
                    tensorflow-plugins, please check it.")
 
+if is_rc:
+  _VERSION = _VERSION + "rc" + _VERSION_EXT
 
 class BinaryDistribution(Distribution):
 
