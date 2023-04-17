@@ -2148,8 +2148,7 @@ StatusOr<bool> CopyInsertion::Run(
         "Call graph must be flattened before copy insertion.");
   }
 
-  TF_RETURN_IF_ERROR(
-      AddCopiesForAliasedInputOutputs(module, execution_threads));
+  TF_RETURN_IF_ERROR(AddCopiesToResolveInterference(module, execution_threads));
 
   // Simplify the tuple structures introduced by the deep copies. This should be
   // done before removing copies (RemoveUnnecessaryCopies) because tuple

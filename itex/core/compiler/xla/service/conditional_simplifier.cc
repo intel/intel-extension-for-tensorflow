@@ -621,7 +621,7 @@ StatusOr<bool> ConditionalSimplifier::Run(
   // we don't have to worry about mutating the lists of computations or
   // instructions as we iterate.
   std::vector<HloInstruction*> conditional_ops;
-  for (auto* comp : module->computations()) {
+  for (auto* comp : module->computations(execution_threads)) {
     for (auto* instr : comp->MakeInstructionPostOrder()) {
       if (instr->opcode() == HloOpcode::kConditional) {
         // Verifier wants a single send/recv with a given channel. This pass
