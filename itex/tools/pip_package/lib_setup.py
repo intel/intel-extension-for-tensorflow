@@ -108,8 +108,9 @@ if is_gpu:
 
 long_description = """# Intel® Extension for Tensorflow* library
 
-[![Python](https://img.shields.io/pypi/pyversions/tensorflow.svg?style=plastic)](https://pypi.org/project/intel-extension-for-tensorflow)
-[![version](https://img.shields.io/badge/release-1.0.0-green)](https://github.com/intel/intel-extension-for-tensorflow/releases)
+[![Python](https://img.shields.io/pypi/pyversions/intel_extension_for_tensorflow)](https://badge.fury.io/py/intel-extension-for-tensorflow)
+[![PyPI version](https://badge.fury.io/py/intel-extension-for-tensorflow.svg)](https://badge.fury.io/py/intel-extension-for-tensorflow)
+[![version](https://img.shields.io/github/v/release/intel/intel-extension-for-tensorflow?color=brightgreen)](https://github.com/intel/intel-extension-for-tensorflow/releases)
 
 Intel® Extension for Tensorflow* library is the support library for Intel® Extension for Tensorflow*(https://pypi.org/project/intel-extension-for-tensorflow/). While Intel® Extension for Tensorflow* itself is a pure Python package, Intel® Extension for Tensorflow* library contains the binary (C/C++) parts of the library, including Python bindings, Intel XPU(GPU, CPU, etc) devices support.
 
