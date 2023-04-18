@@ -48,16 +48,23 @@ Intel® Extension for TensorFlow* can be installed through the following channel
 |-|-|-|
 |[GPU](docs/install/install_for_gpu.md#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.md#install-via-pypi-wheel-in-bare-metal)  |[ GPU Container ](docs/install/install_for_gpu.md#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.md#install-via-docker-container)|[Build from source](docs/install/how_to_build.md)|
 
+
+### Compatibility Table
+
+| Intel ® Extension for TensorFlow*  | Stock TensorFlow |
+| ------- | ----------- |    
+| v1.1.0  | 2.10 & 2.11 |
+| v1.0.0  | 2.10        | 
+
+
 ### Install for GPU
 ```
-pip install tensorflow==2.11.0
 pip install intel-extension-for-tensorflow[gpu]==1.1.0
 ```
 Please refer to [GPU installation](docs/install/install_for_gpu.md) for details.
 
 ### Install for CPU [Experimental]
 ```
-pip install tensorflow==2.11.0
 pip install intel-extension-for-tensorflow[cpu]==1.1.0
 ```
 
