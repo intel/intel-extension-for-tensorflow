@@ -33,13 +33,7 @@ This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
 
 Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_gpu.html#hardware-requirements) support and experimental [Intel CPU](docs/install/experimental/install_for_cpu.html#hardware-requirements) support.
 
-### Compatibility Table
 
-| Intel ® Extension for TensorFlow*  | Stock TensorFlow |
-| ------- | ----------- |    
-| v1.2.0  | 2.12        |
-| v1.1.0  | 2.10 & 2.11 |
-| v1.0.0  | 2.10        | 
 
 
 ### Software Requirement
@@ -57,11 +51,17 @@ Intel® Extension for TensorFlow* can be installed from the following channels:
 |-|-|-|
 |[GPU](docs/install/install_for_gpu.html#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.html#install-via-pypi-wheel-in-bare-metal)  |[ GPU Container ](docs/install/install_for_gpu.html#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.html#install-via-docker-container)|[Build from source](docs/install/how_to_build.html)|
 
+### Compatibility Table
+
+| Intel ® Extension for TensorFlow*  | Stock TensorFlow |
+| ------- | ----------- |    
+| [latest build from source](docs/install/how_to_build.html)  | 2.12        |
+| v1.1.0  | 2.10 & 2.11 |
+| v1.0.0  | 2.10        | 
 
 ### Install for GPU
 
 ```
-pip install tensorflow==2.12.0
 pip install --upgrade intel-extension-for-tensorflow[gpu]
 ```
 
@@ -69,7 +69,6 @@ Please refer to [GPU installation](docs/install/install_for_gpu.md) for details.
 
 ### Install for CPU [Experimental]
 ```
-pip install tensorflow==2.12.0
 pip install --upgrade intel-extension-for-tensorflow[cpu]
 ```
 
