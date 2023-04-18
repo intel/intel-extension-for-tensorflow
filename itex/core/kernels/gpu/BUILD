@@ -1974,6 +1974,26 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "group_norm_ops",
+    srcs = [
+        "group_norm_op.cc",
+        "group_norm_op_gpu.cc",
+    ],
+    hdrs = [
+        "col_reduction_kernels.h",
+        "group_norm_op.h",
+        "group_norm_op_gpu.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "tensorarray_ops",
     srcs = [
         "concat_lib.cc",
@@ -2004,6 +2024,7 @@ GPU_KERNELS = [
     ":argmin_op",
     ":batchtospace_op",
     ":batch_norm_ops",
+    ":group_norm_ops",
     ":betainc_op",
     ":spacetodepth_op",
     ":bucketize_op",

@@ -54,6 +54,35 @@ tf.Tensor(
  [-0.99998  0.99998]], shape=(5, 2), dtype=float32)
 ```
 
+## `itex.ops.GroupNormalization`
+[Group normalization layer (Yuxin Wu, Kaiming He)](https://arxiv.org/abs/1803.08494).
+```python
+itex.ops.GroupNormalization(
+        groups=32,
+        axis=-1,
+        epsilon=1e-3,
+        center=True,
+        scale=True,
+        beta_initializer="zeros",
+        gamma_initializer="ones",
+        beta_regularizer=None,
+        gamma_regularizer=None,
+        beta_constraint=None,
+        gamma_constraint=None,
+        **kwargs
+)
+```
+Group Normalization divides the channels into groups and computes within each group the mean and variance for normalization. Empirically, its accuracy is more stable than batch norm in a wide range of small batch sizes, if learning rate is adjusted linearly with batch sizes. This python API `itex.ops.GroupNormalization` replaces [tf.keras.layers.GroupNormalization](https://www.tensorflow.org/api_docs/python/tf/keras/layers/GroupNormalization). Note, ITEX provide faster GPU implement for 4d input and axis=-1, others is same as original keras.
+
+For example:
+```sh
+>>> import tensorflow as tf
+>>> import intel_extension_for_tensorflow as itex
+>>> data = tf.random.normal((1, 8, 8, 32))
+>>> layer = itex.ops.GroupNormalization(axis=-1)
+>>> output = layer(data)
+```
+
 ## `itex.ops.gelu`
 Applies the Gaussian error linear unit (GELU) activation function.
 ```python

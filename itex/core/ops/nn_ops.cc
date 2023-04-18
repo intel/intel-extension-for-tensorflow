@@ -2948,6 +2948,28 @@ void Register_ITEXTransposeOp() {
   }
 }
 
+void Register_ITEXGroupNormOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ITEXGroupNorm");
+    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "scale: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "offset: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "y: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_groups: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_scale: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_center: bool = true");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unchanged_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ITEXGroupNorm op registration failed: ";
+  }
+}
+
 void Register_ITEXLayerNormOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

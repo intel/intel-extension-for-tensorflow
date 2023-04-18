@@ -24,6 +24,8 @@ struct ColReductionPolicy {
   inline void PacketStore(T* ptr, int offset, const sycl::vec<T, N>& array) { \
     *(reinterpret_cast<sycl::vec<T, N>*>(ptr + offset)) = array;              \
   }
+PACKET_DEF(float, 1)
+PACKET_DEF(float, 2)
 PACKET_DEF(float, 4)
 PACKET_DEF(float, 8)
 PACKET_DEF(double, 2)
@@ -37,23 +39,26 @@ PACKET_DEF(itex::int32, 4)
 PACKET_DEF(itex::int64, 2)
 #undef PACKET_DEF
 
-inline void PacketLoad(const sycl::half* ptr, int offset,
-                       sycl::vec<float, 8>* array) {
-  sycl::vec<sycl::half, 8> in_array =
-      *(reinterpret_cast<const sycl::vec<sycl::half, 8>*>(ptr + offset));
-
-#pragma unroll
-  for (int i = 0; i < 8; ++i) (*array)[i] = static_cast<float>(in_array[i]);
-}
-
-inline void PacketLoad(const Eigen::half* ptr, int offset,
-                       sycl::vec<float, 8>* array) {
-  sycl::vec<sycl::half, 8> in_array =
-      *(reinterpret_cast<const sycl::vec<sycl::half, 8>*>(ptr + offset));
-
-#pragma unroll
-  for (int i = 0; i < 8; ++i) (*array)[i] = static_cast<float>(in_array[i]);
-}
+#define PACKET_LOAD_HALF(N)                                                    \
+  inline void PacketLoad(const sycl::half* ptr, int offset,                    \
+                         sycl::vec<float, N>* array) {                         \
+    sycl::vec<sycl::half, N> in_array =                                        \
+        *(reinterpret_cast<const sycl::vec<sycl::half, N>*>(ptr + offset));    \
+                                                                               \
+    for (int i = 0; i < N; ++i) (*array)[i] = static_cast<float>(in_array[i]); \
+  }                                                                            \
+  inline void PacketLoad(const Eigen::half* ptr, int offset,                   \
+                         sycl::vec<float, N>* array) {                         \
+    sycl::vec<sycl::half, N> in_array =                                        \
+        *(reinterpret_cast<const sycl::vec<sycl::half, N>*>(ptr + offset));    \
+                                                                               \
+    for (int i = 0; i < N; ++i) (*array)[i] = static_cast<float>(in_array[i]); \
+  }
+PACKET_LOAD_HALF(8)
+PACKET_LOAD_HALF(4)
+PACKET_LOAD_HALF(2)
+PACKET_LOAD_HALF(1)
+#undef PACKET_LOAD_HALF
 
 #define PACKET_STORE_HALF(T, N)                                             \
   inline void PacketStore(T* ptr, int offset,                               \
@@ -62,22 +67,30 @@ inline void PacketLoad(const Eigen::half* ptr, int offset,
     for (int i = 0; i < N; ++i) tmp[i] = static_cast<sycl::half>(array[i]); \
     *(reinterpret_cast<sycl::vec<sycl::half, N>*>(ptr + offset)) = tmp;     \
   }
+PACKET_STORE_HALF(sycl::half, 1)
+PACKET_STORE_HALF(sycl::half, 2)
 PACKET_STORE_HALF(sycl::half, 4)
 PACKET_STORE_HALF(sycl::half, 8)
+PACKET_STORE_HALF(Eigen::half, 1)
+PACKET_STORE_HALF(Eigen::half, 2)
 PACKET_STORE_HALF(Eigen::half, 4)
 PACKET_STORE_HALF(Eigen::half, 8)
 #undef PACKET_STORE_HALF
 
-inline void PacketLoad(const Eigen::bfloat16* ptr, int offset,
-                       sycl::vec<float, 8>* array) {
-  sycl::vec<uint16_t, 8> in_array =
-      *(reinterpret_cast<const sycl::vec<uint16_t, 8>*>(ptr + offset));
-
-#pragma unroll
-  for (int i = 0; i < 8; ++i)
-    (*array)[i] = Eigen::bfloat16_impl::bfloat16_to_float(
-        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(in_array[i]));
-}
+#define PACKET_LOAD_BF16(N)                                               \
+  inline void PacketLoad(const Eigen::bfloat16* ptr, int offset,          \
+                         sycl::vec<float, N>* array) {                    \
+    sycl::vec<uint16_t, N> in_array =                                     \
+        *(reinterpret_cast<const sycl::vec<uint16_t, N>*>(ptr + offset)); \
+    for (int i = 0; i < N; ++i)                                           \
+      (*array)[i] = Eigen::bfloat16_impl::bfloat16_to_float(              \
+          Eigen::bfloat16_impl::raw_uint16_to_bfloat16(in_array[i]));     \
+  }
+PACKET_LOAD_BF16(8)
+PACKET_LOAD_BF16(4)
+PACKET_LOAD_BF16(2)
+PACKET_LOAD_BF16(1)
+#undef PACKET_LOAD_BF16
 
 #define PACKET_STORE_BF(N)                                                    \
   inline void PacketStore(Eigen::bfloat16* ptr, int offset,                   \
@@ -88,6 +101,8 @@ inline void PacketLoad(const Eigen::bfloat16* ptr, int offset,
           Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(array[i]).value; \
     *(reinterpret_cast<sycl::vec<uint16_t, N>*>(ptr + offset)) = tmp;         \
   }
+PACKET_STORE_BF(1)
+PACKET_STORE_BF(2)
 PACKET_STORE_BF(4)
 PACKET_STORE_BF(8)
 #undef PACKET_STORE_BF
