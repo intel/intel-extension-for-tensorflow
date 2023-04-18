@@ -720,5 +720,42 @@ void CopyAllAttrs(const NodeDef& orig_node, NodeDef* new_node) {
   }
 }
 
+string GetInputName(const NodeDef* input, const int out_slot) {
+  if (out_slot == 0)
+    return input->name();
+  else
+    return input->name() + ":" + std::to_string(out_slot);
+}
+
+static const std::vector<WorkSpaceInfo>* GetWorkspaceInfo() {
+  static std::vector<WorkSpaceInfo> wsinfo{
+      {"MaxPoolGrad", 1, 1}, {"MaxPool3DGrad", 1, 1}, {"MaxPoolGradV2", 1, 1}};
+  return &wsinfo;
+}
+
+NodeDef* AddWorkspace(const itex::graph::utils::MutableNodeView* ori_node_view,
+                      NodeDef* new_node_def) {
+  NodeDef* input_node_def = nullptr;
+  const std::vector<WorkSpaceInfo>* wsinfo = GetWorkspaceInfo();
+  for (auto it = wsinfo->cbegin(); it != wsinfo->cend(); ++it) {
+    // Add workspace edge between rewritten fwd node and rewritten bwd node.
+    if (ori_node_view->node()->op().compare(it->bwd_op) == 0) {
+      auto* fanin_node_def =
+          ori_node_view->GetRegularFanin(it->bwd_slot).node_view()->node();
+
+      // Add workspace directly, legality will be checked in
+      // `RewriteMaxPoolGrad()` later.
+      new_node_def->add_input(GetInputName(fanin_node_def, it->ws_fwd_slot));
+      input_node_def = fanin_node_def;
+      ITEX_VLOG(3) << "Workspace: Add workspace edge between ["
+                   << fanin_node_def->op() << "] and [" << new_node_def->op()
+                   << "], while rewriting [" << ori_node_view->node()->op()
+                   << "]";
+      break;
+    }
+  }
+  return input_node_def;
+}
+
 }  // namespace graph
 }  // namespace itex

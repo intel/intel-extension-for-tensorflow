@@ -149,6 +149,8 @@ void Register_ITEXMaxPool3DGradOp();
 void Register_ITEXMaxPool3DOp();
 void Register_ITEXMaxPoolGradOp();
 void Register_ITEXMaxPoolOp();
+void Register_ITEXMaxPoolGradV2Op();
+void Register_ITEXMaxPoolV2Op();
 void Register_ITEXMklLayerNormOp();
 void Register_ITEXPadWithConv2DBackpropFilterOp();
 void Register_ITEXPadWithConv2DBackpropFilterWithBiasOp();

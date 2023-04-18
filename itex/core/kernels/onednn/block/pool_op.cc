@@ -59,6 +59,11 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
     memory::dims dst_onednn_dims;
     this->GetOutputDims(pool_params, &dst_onednn_dims, &dst_tf_shape);
 
+    // int8 and fp16 only support inference
+    bool only_forward_inference = std::is_same<T, qint8>::value ||
+                                  std::is_same<T, quint8>::value ||
+                                  std::is_same<T, Eigen::half>::value;
+
     // Return with TF format if nothing to compute. Need to change the
     // shape from OneDNN NCHW/NCDHW to original TF format.
     if (src_tf_shape.num_elements() == 0) {
@@ -66,10 +71,6 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
       AllocateOutputSetOneDnnShape(context, kDstIndex, &dst_tensor,
                                    dst_tf_shape, dst_onednn_shape);
 
-      // int8 and fp16 only support inference
-      bool only_forward_inference = std::is_same<T, qint8>::value ||
-                                    std::is_same<T, quint8>::value ||
-                                    std::is_same<T, Eigen::half>::value;
       if (!only_forward_inference && alg == dnnl::algorithm::pooling_max) {
         // dst_ws_tensor is not really used, so using dst_onednn_shape
         AllocateOutputSetOneDnnShape(context, kDstWorkspaceIndex,
@@ -107,9 +108,7 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
 
       prop_kind pooling_prop_kind;
-      bool int8_forward_inference =
-          std::is_same<T, qint8>::value || std::is_same<T, quint8>::value;
-      if (int8_forward_inference || std::is_same<T, Eigen::half>::value)
+      if (only_forward_inference)
         pooling_prop_kind = prop_kind::forward_inference;
       else
         pooling_prop_kind = prop_kind::forward_training;
@@ -149,14 +148,6 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
       AllocateOutputSetOneDnnShape(context, kDstIndex, &dst_tensor,
                                    dst_tf_shape, dst_onednn_shape);
 
-      if (alg == dnnl::algorithm::pooling_max) {
-        dst_ws_onednn_shape.SetOneDnnTensor(false);
-        dst_ws_tf_shape.AddDim(fwd_pd.workspace_desc().get_size());
-        AllocateOutputSetOneDnnShape(context, kDstWorkspaceIndex,
-                                     &dst_ws_tensor, dst_ws_tf_shape,
-                                     dst_ws_onednn_shape);
-      }
-
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
 
       // Create src and dst memory.
@@ -166,26 +157,31 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
                                       GetTensorBuffer<T>(dst_tensor));
 
       // Execute primitive.
-      if (alg == dnnl::algorithm::pooling_max) {
-        auto ws_mem = CreateDnnlMemory(fwd_pd.workspace_desc(), onednn_engine,
-                                       GetTensorBuffer<uint8>(dst_ws_tensor));
+      std::unordered_map<int, memory> fwd_primitive_args = {
+          {DNNL_ARG_SRC, src_mem},
+          {DNNL_ARG_DST, dst_mem},
+          {DNNL_ARG_SCRATCHPAD, scratchpad_mem}};
 
-        std::unordered_map<int, memory> fwd_primitive_args = {
-            {DNNL_ARG_SRC, src_mem},
-            {DNNL_ARG_DST, dst_mem},
-            {DNNL_ARG_WORKSPACE, ws_mem},
-            {DNNL_ARG_SCRATCHPAD, scratchpad_mem}};
-        fwd_primitive.execute(onednn_stream, fwd_primitive_args);
-      } else if (alg == dnnl::algorithm::pooling_avg_exclude_padding) {
-        std::unordered_map<int, memory> fwd_primitive_args = {
-            {DNNL_ARG_SRC, src_mem},
-            {DNNL_ARG_DST, dst_mem},
-            {DNNL_ARG_SCRATCHPAD, scratchpad_mem}};
-        fwd_primitive.execute(onednn_stream, fwd_primitive_args);
-      } else {
+      if (alg != dnnl::algorithm::pooling_max &&
+          alg != dnnl::algorithm::pooling_avg_exclude_padding) {
         ITEX_LOG(FATAL) << "Unsupported pooling algorithm";
       }
 
+      if (alg == dnnl::algorithm::pooling_max && !only_forward_inference) {
+        dst_ws_onednn_shape.SetOneDnnTensor(false);
+        dst_ws_tf_shape.AddDim(fwd_pd.workspace_desc().get_size());
+        AllocateOutputSetOneDnnShape(context, kDstWorkspaceIndex,
+                                     &dst_ws_tensor, dst_ws_tf_shape,
+                                     dst_ws_onednn_shape);
+        dnnl::memory ws_mem;
+        ws_mem = CreateDnnlMemory(fwd_pd.workspace_desc(), onednn_engine,
+                                  GetTensorBuffer<Tws>(dst_ws_tensor));
+        fwd_primitive_args.insert({DNNL_ARG_WORKSPACE, ws_mem});
+      }
+      fwd_primitive.execute(onednn_stream, fwd_primitive_args);
+
+      bool int8_forward_inference =
+          std::is_same<T, qint8>::value || std::is_same<T, quint8>::value;
       if (int8_forward_inference) {
         // Pass min, max from input to output.
         const Tensor& min_input_t = context->input(1);
@@ -362,29 +358,24 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
 
       // Execute.
-      if (alg == dnnl::algorithm::pooling_max) {
-        const Tensor& workspace_tensor = context->input(kWorkspaceIndex);
-        dnnl::memory ws_mem =
-            CreateDnnlMemory(pooling_bwd_pd.workspace_desc(), onednn_engine,
-                             GetTensorBuffer<uint8>(&workspace_tensor));
-
-        std::unordered_map<int, memory> bwd_primitive_args = {
-            {{DNNL_ARG_DIFF_DST,
-              is_diff_dst_reordered ? diff_dst_reorder_mem : diff_dst_mem},
-             {DNNL_ARG_WORKSPACE, ws_mem},
-             {DNNL_ARG_DIFF_SRC, diff_src_mem},
-             {DNNL_ARG_SCRATCHPAD, scratchpad_mem}}};
-        bwd_primitive.execute(onednn_stream, bwd_primitive_args);
-      } else if (alg == dnnl::algorithm::pooling_avg_exclude_padding) {
-        std::unordered_map<int, memory> bwd_primitive_args = {
-            {{DNNL_ARG_DIFF_DST,
-              is_diff_dst_reordered ? diff_dst_reorder_mem : diff_dst_mem},
-             {DNNL_ARG_DIFF_SRC, diff_src_mem},
-             {DNNL_ARG_SCRATCHPAD, scratchpad_mem}}};
-        bwd_primitive.execute(onednn_stream, bwd_primitive_args);
-      } else {
+      if (alg != dnnl::algorithm::pooling_max &&
+          alg != dnnl::algorithm::pooling_avg_exclude_padding) {
         ITEX_LOG(FATAL) << "Unsupported pooling algorithm";
       }
+      std::unordered_map<int, memory> bwd_primitive_args = {
+          {{DNNL_ARG_DIFF_DST,
+            is_diff_dst_reordered ? diff_dst_reorder_mem : diff_dst_mem},
+           {DNNL_ARG_DIFF_SRC, diff_src_mem},
+           {DNNL_ARG_SCRATCHPAD, scratchpad_mem}}};
+      if (alg == dnnl::algorithm::pooling_max) {
+        const Tensor& workspace_tensor = context->input(kWorkspaceIndex);
+        dnnl::memory ws_mem;
+        ws_mem =
+            CreateDnnlMemory(pooling_bwd_pd.workspace_desc(), onednn_engine,
+                             GetTensorBuffer<Tws>(&workspace_tensor));
+        bwd_primitive_args.insert({DNNL_ARG_WORKSPACE, ws_mem});
+      }
+      bwd_primitive.execute(onednn_stream, bwd_primitive_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status:" + std::to_string(e.status) +
                          ", message: " + string(e.message) + ". in file " +

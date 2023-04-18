@@ -55,16 +55,6 @@ typedef struct {
   std::function<bool(const utils::MutableNodeView&)> rewrite_rule;
 } RewriteInfo;
 
-/// Structure to specify a forward op, a backward op, and the slot numbers
-/// in the forward and backward ops where we will add a workspace edge.
-typedef struct {
-  string bwd_op;    // Name of a backward op in the graph
-  int bwd_slot;     // Input slot in the backward op node where actual
-                    // input tensor resides
-  int ws_fwd_slot;  // Output slot in the forward op node where workspace
-                    // edge is added
-} WorkSpaceInfo;
-
 // Is OpDef::ArgDef a list type? It could be N * T or list(type).
 // Refer to opdef.proto for details of list type.
 inline bool ArgIsList(const OpDef::ArgDef& arg) {
@@ -74,8 +64,6 @@ inline bool ArgIsList(const OpDef::ArgDef& arg) {
 void GetDummyOneDnnTensorNode(const NodeDef& input, NodeDef* dummy);
 
 const RewriteInfo* CheckForNodeRewrite(const utils::MutableNodeView& node_view);
-
-string GetInputName(const NodeDef* input, int out_slot);
 
 Status RewriteNode(const char* device_name, OneDnnLayoutContext* ctx,
                    int node_index, const RewriteInfo* ri);

@@ -36,6 +36,14 @@ namespace itex {
 using dnnl::memory;
 using dnnl::prop_kind;
 
+// TODO(itex): If OneDnn unifies the data types of workspace on CPU and GPU,
+// the following parts can be deleted.
+#ifndef INTEL_CPU_ONLY
+typedef typename EnumToDataType<DT_UINT8>::Type Tws;
+#else
+typedef typename EnumToDataType<DT_INT32>::Type Tws;
+#endif
+
 struct OneDnnPoolParameters {
   int depth;
 
@@ -241,8 +249,7 @@ struct OneDnnPoolParameters {
 template <typename T>
 class PoolingOpBase : public OpKernel {
  public:
-  explicit PoolingOpBase(OpKernelConstruction* context)
-      : OpKernel(context), workspace_enabled_(false) {
+  explicit PoolingOpBase(OpKernelConstruction* context) : OpKernel(context) {
     string data_format;
     if (std::is_same<T, qint8>::value || std::is_same<T, quint8>::value) {
       // Current quantized pooling doesn't have data_format attribute.
@@ -293,13 +300,6 @@ class PoolingOpBase : public OpKernel {
     if (context->HasAttr("include_batch_in_index")) {
       OP_REQUIRES_OK(context, context->GetAttr("include_batch_in_index",
                                                &include_batch_in_index_));
-    }
-    // We may not get this attribute for this node if it does not go through
-    // graph rewrite pass. So we do not check for error while retrieving this
-    // attribute value.
-    if (context->HasAttr("workspace_enabled")) {
-      OP_REQUIRES_OK(context, context->GetAttr("workspace_enabled",
-                                               &this->workspace_enabled_));
     }
   }
 
@@ -449,7 +449,6 @@ class PoolingOpBase : public OpKernel {
   std::vector<int32> padding_list_;
   TensorFormat data_format_tf_;
   dnnl::memory::format_tag data_format_onednn_;
-  bool workspace_enabled_;
   bool include_batch_in_index_;
 };
 
@@ -504,11 +503,7 @@ template <typename Device, typename T, dnnl::algorithm algo>
 class PoolingOp : public PoolingForwardOpBase<T> {
  public:
   explicit PoolingOp(OpKernelConstruction* context)
-      : PoolingForwardOpBase<T>(context) {
-    // In Max Pooling, oneDNN does not allow passing workspace as nullptr.
-    // So we set workspace_enabled_ to true.
-    if (algo == dnnl::algorithm::pooling_max) this->workspace_enabled_ = true;
-  }
+      : PoolingForwardOpBase<T>(context) {}
 
   void Compute(OpKernelContext* context) override {
     try {
@@ -520,8 +515,8 @@ class PoolingOp : public PoolingForwardOpBase<T> {
       std::vector<int32> ksize = this->ksize_;
       std::vector<int32> stride = this->stride_;
 
-      // This code is actually for MaxPoolV2, where strides and sizes are input
-      // tensors not attributes
+      // This code is actually for MaxPoolV2/_ITEXMaxPoolV2, where strides and
+      // sizes are input tensors not attributes
       if (context->num_inputs() != 1 && !std::is_same<T, qint8>::value &&
           !std::is_same<T, quint8>::value) {
         const Tensor& tensor_ksize = context->input(1);
@@ -564,15 +559,29 @@ class PoolingOp : public PoolingForwardOpBase<T> {
                                this->padding_list_);
 
       Tensor* output_tensor = nullptr;
+      Tensor* ws_tensor = nullptr;
       dnnl::memory::dims dst_dims;
       TensorShape tf_output_shape;
       this->GetOutputDims(pool_params, this->data_format_tf_, &dst_dims,
                           &tf_output_shape);
 
+      // int8 and fp16 only support inference
+      bool only_forward_inference = std::is_same<T, qint8>::value ||
+                                    std::is_same<T, quint8>::value ||
+                                    std::is_same<T, Eigen::half>::value;
+      // GPU MaxPool doesn't have workspace, and it's num_outputs == 1.
+      bool workspace_enabled = (algo == dnnl::algorithm::pooling_max) &&
+                               (context->num_outputs() != 1) &&
+                               !only_forward_inference;
+
       // If input is an empty tensor, allocate an empty output tensor.
       if (input_tensor.NumElements() == 0) {
         this->AllocateEmptyOutputTensor(context, this->kOutputTensorIndexOutput,
                                         &pool_params, dst_dims, &output_tensor);
+        if (workspace_enabled) {
+          this->AllocateEmptyOutputTensor(context, 1, &pool_params, dst_dims,
+                                          &ws_tensor);
+        }
         return;
       }
       this->AllocateOutputTensor(context, &tf_output_shape, &output_tensor);
@@ -590,7 +599,12 @@ class PoolingOp : public PoolingForwardOpBase<T> {
       dnnl::memory::dims src_dims = TFShapeToOneDnnDimsInNC(
           input_tensor.shape(), this->data_format_tf_, is_pool2d);
 
-      dnnl::prop_kind pooling_prop_kind = dnnl::prop_kind::forward_inference;
+      dnnl::prop_kind pooling_prop_kind;
+      if (workspace_enabled)
+        pooling_prop_kind = prop_kind::forward_training;
+      else
+        pooling_prop_kind = prop_kind::forward_inference;
+
       dnnl::memory::desc src_md(src_dims, OneDnnType<T>(),
                                 this->data_format_onednn_);
       dnnl::memory::desc dst_md(dst_dims, OneDnnType<T>(),
@@ -626,15 +640,29 @@ class PoolingOp : public PoolingForwardOpBase<T> {
       T* dst_data = output_tensor->flat<T>().data();
 
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
+
+      // Create src and dst memory.
       auto src_mem =
           CreateDnnlMemory(fwd_pd.src_desc(), onednn_engine,
                            static_cast<void*>(const_cast<T*>(src_data)));
       auto dst_mem = CreateDnnlMemory(fwd_pd.dst_desc(), onednn_engine,
                                       static_cast<void*>(dst_data));
+
       std::unordered_map<int, dnnl::memory> net_args(
           {{DNNL_ARG_SRC, src_mem},
            {DNNL_ARG_DST, dst_mem},
            {DNNL_ARG_SCRATCHPAD, scratchpad_mem}});
+
+      if (workspace_enabled) {
+        TensorShape ws_tensor_shape;
+        ws_tensor_shape.AddDim(fwd_pd.workspace_desc().get_size());
+        OP_REQUIRES_OK(
+            context, context->allocate_output(1, ws_tensor_shape, &ws_tensor));
+        dnnl::memory ws_mem;
+        ws_mem = CreateDnnlMemory(fwd_pd.workspace_desc(), onednn_engine,
+                                  GetTensorBuffer<Tws>(ws_tensor));
+        net_args.insert({DNNL_ARG_WORKSPACE, ws_mem});
+      }
       fwd.execute(onednn_stream, net_args);
 
       bool int8_forward_inference =
@@ -714,8 +742,6 @@ class OneDnnPoolOpBase : public OpKernel {
         TFDataFormatToOneDnnDataFormat(this->data_format_tf_, this->is_2d_);
     this->data_format_onednn_ =
         OneDnnTensorFormatToTag(this->tensor_format_onednn_);
-
-    // TODO(itex): Support workspace for backward.
   }
   void Compute(OpKernelContext* context) override = 0;
 
@@ -723,8 +749,8 @@ class OneDnnPoolOpBase : public OpKernel {
   // Calculate output shape in OneDNN and TensorFlow order.
   // OneDNN uses NCHW(Pool2D) or NCDHW(Pool3D) for output order.
   // But TF output will be in NHWC/NCHW(Pool2D) or NDHWC/NCDHW(Pool3D) format
-  // depending on data format. Function expects output height and width to have
-  // already been int32 bounds-checked.
+  // depending on data format. Function expects output height and width to
+  // have already been int32 bounds-checked.
   void GetOutputDims(const OneDnnPoolParameters& pool_params,
                      memory::dims* dst_onednn_dims, TensorShape* dst_tf_shape) {
     if (this->is_2d_) {
@@ -745,8 +771,8 @@ class OneDnnPoolOpBase : public OpKernel {
     } else {
       memory::dims dst_tf_dims;
       // Determine Pooling2D (NHWC) or Pooling3D (NDHWC).
-      // Switch the 2nd dim and last dim to transform OneDnn order (NCHW/NCDHW)
-      // to TF order (NHWC/NDHWC).
+      // Switch the 2nd dim and last dim to transform OneDnn order
+      // (NCHW/NCDHW) to TF order (NHWC/NDHWC).
       if (this->is_2d_) {
         dst_tf_dims = {pool_params.tensor_in_batch,
                        static_cast<int>(pool_params.out_height),

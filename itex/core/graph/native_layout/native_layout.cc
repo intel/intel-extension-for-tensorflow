@@ -252,6 +252,12 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
 
 const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
+      {"MaxPool", "_ITEXMaxPool", CopyAttrsAll, RewritePool},
+      {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool},
+      {"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
+      {"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll, RewriteMaxPoolGrad},
+      {"MaxPoolV2", "_ITEXMaxPoolV2", CopyAttrsAll, AlwaysRewrite},
+      {"MaxPoolGradV2", "_ITEXMaxPoolGradV2", CopyAttrsAll, AlwaysRewrite},
       {"TensorArray", "_ITEXTensorArray", CopyAttrsForTensorArray,
        AlwaysRewrite},
       {"TensorArrayClose", "_ITEXTensorArrayClose", CopyAttrsForTensorArray,
@@ -379,6 +385,9 @@ Status RewriteNode(NativeFormatContext* ctx, const int node_index,
   new_node_def.set_device(node_def->device());
 
   ri->copy_attrs(node_view, &new_node_def);
+
+  // Add workspace inputs if needed.
+  AddWorkspace(node_view, &new_node_def);
 
   // TODO(yifeng): Remove this check after formal solution
   // for is_filter_const setting is done.

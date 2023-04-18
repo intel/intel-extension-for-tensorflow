@@ -318,12 +318,6 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
   return &rinfo;
 }  // namespace
 
-/// Maintain info about nodes to add workspace edge
-static const std::vector<WorkSpaceInfo>* GetWorkspaceInfo() {
-  static std::vector<WorkSpaceInfo> wsinfo{{"MaxPoolGrad", 1, 1},
-                                           {"MaxPool3DGrad", 1, 1}};
-  return &wsinfo;
-}
 }  // namespace
 
 void GetDummyOneDnnTensorNode(const NodeDef& input, NodeDef* dummy) {
@@ -392,13 +386,6 @@ void UpdateDummyOneDnnNode(utils::Mutation* mutation, const NodeDef& input,
   TF_ABORT_IF_ERROR(status);
 }
 
-string GetInputName(const NodeDef* input, const int out_slot) {
-  if (out_slot == 0)
-    return input->name();
-  else
-    return input->name() + ":" + std::to_string(out_slot);
-}
-
 // Rewrites input node to a new node specified by its matching rewrite info.
 //
 // Method first searches matching rewrite info for input node and then
@@ -417,18 +404,12 @@ Status RewriteNode(OneDnnLayoutContext* ctx, const int node_index,
     new_node_def.add_input(node_def->input(idx));
   }
 
+  new_node_def.set_name(node_def->name());
+  new_node_def.set_op(ri->new_name);
+  new_node_def.set_device(node_def->device());
+
   // Add workspace inputs if needed.
-  const NodeDef* ws_node_def = nullptr;
-  const std::vector<WorkSpaceInfo>* wsinfo = GetWorkspaceInfo();
-  for (auto it = wsinfo->cbegin(); it != wsinfo->cend(); ++it) {
-    if (node_def->op().compare(it->bwd_op) == 0) {
-      const auto* input_node_view =
-          node_view->GetRegularFanin(it->bwd_slot).node_view();
-      ws_node_def = input_node_view->node();
-      new_node_def.add_input(GetInputName(ws_node_def, it->ws_fwd_slot));
-      break;
-    }
-  }
+  NodeDef* ws_input_node_def = AddWorkspace(node_view, &new_node_def);
 
   // Let's now setup all OneDNN inputs to a new node.
   // Number of OneDNN inputs must be same as number of TF inputs.
@@ -454,13 +435,12 @@ Status RewriteNode(OneDnnLayoutContext* ctx, const int node_index,
   }
 
   // Set up ws meta tensor.
-  if (ws_node_def != nullptr) {
-    AddDummyOneDnnNode(mutation, *ws_node_def, &new_node_def);
+  if (ws_input_node_def != nullptr) {
+    AddDummyOneDnnNode(mutation, *ws_input_node_def, &new_node_def);
+    ITEX_VLOG(3) << "Workspace: Add workspace OneDnn meta tensor between ["
+                 << ws_input_node_def->op() << "] and [" << new_node_def.op()
+                 << "], while rewriting [" << node_def->op() << "]";
   }
-
-  new_node_def.set_name(node_def->name());
-  new_node_def.set_op(ri->new_name);
-  new_node_def.set_device(node_def->device());
 
   ri->copy_attrs(node_view, &new_node_def);
   SetConstFilterAttr(node_view, &new_node_def, ctx->nodes_to_preserve);

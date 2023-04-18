@@ -26,6 +26,25 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
+// Structure to specify a forward op, a backward op, and the slot numbers
+// in the forward and backward ops where we will add a workspace edge.
+typedef struct {
+  string bwd_op;  // Name of a backward op in the graph
+
+  int bwd_slot;     // Input slot in the backward op node where actual
+                    // Input tensor resides
+  int ws_fwd_slot;  // Output slot in the forward op node where workspace
+                    // edge is added
+} WorkSpaceInfo;
+
+string GetInputName(const NodeDef* input, int out_slot);
+
+// Check whether output_node in wsinfo, find input_node, add workspace edge
+// between input and output, return input_node.
+NodeDef* AddWorkspace(
+    const itex::graph::utils::MutableNodeView* ori_output_node_view,
+    NodeDef* new_output_node_def);
+
 //////////////////////////////////////////////////////////////////////////
 // DataType Check
 //////////////////////////////////////////////////////////////////////////
