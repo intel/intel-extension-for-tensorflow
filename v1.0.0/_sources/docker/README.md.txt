@@ -15,10 +15,23 @@ Refer to [Install for GPU](../docs/install/install_for_gpu.md) and [Install for 
 
 ## Binaries Preparation
 
-Download and copy Intel® Extension for TensorFlow* wheel into ./models/ binaries directory.
+Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory.
 
 ```
 mkdir ./models/binaries
+```
+
+To enable Intel® Extension for TensorFlow* with Intel® Data Center GPU Max Series, you need to download driver repository locally and copy them into ./models/gpu-driver-repo.
+
+```
+mkdir ./models/gpu-driver-repo
+```
+
+ To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), install oneCCL and copy the package into ./models/oneccl, then copy Horovod wheel into ./models/horovod as well.
+
+```
+mkdir ./models/oneccl
+mkdir ./models/horovod
 ```
 
 ## Usage of Docker Container
@@ -41,7 +54,7 @@ IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
 To build the docker container, enter into [docker](./) folder and run below commands:
 
 ```
-./build.sh [gpu/cpu-centos/cpu-ubuntu]
+./build.sh [gpu-flex/gpu-max/cpu-centos/cpu-ubuntu]
 ```
 ### III. Running container
 
@@ -50,6 +63,7 @@ Run following commands to start docker container. You can use `-v` option to mou
 ```
 IMAGE_NAME=intel-extension-for-tensorflow:gpu
 docker run -v <your-local-dir>:/workspace \
+           -v /dev/dri/by-path:/dev/dri/by-path \
            --device /dev/dri \
            --privileged \
            -e http_proxy=$http_proxy \

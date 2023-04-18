@@ -46,6 +46,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Intel GPU Software Installation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#hardware-requirements">Hardware Requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#software-requirements">Software Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compatibility-table">Compatibility Table</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-gpu-drivers">Install GPU Drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-via-docker-container">Install via Docker container</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#build-docker-container-from-dockerfile">Build Docker container from Dockerfile</a></li>
@@ -240,8 +241,8 @@ $ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 <h3>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># DPC++ Compiler/oneMKL/oneTBB</span>
 <span class="nb">source</span> /path to basekit/intel/oneapi/compiler/latest/env/vars.sh
-<span class="nb">source</span> /path to basekit/intel/oneapi/mkl/latest/env/vars.sh
-<span class="nb">source</span> /path to basekit/intel/oneapi/tbb/latest/env/vars.sh
+<span class="nb">source</span> /path to basekit/intel/oneapi/mkl/env/latest/vars.sh
+<span class="nb">source</span> /path to basekit/intel/oneapi/tbb/env/latest/vars.sh
 
 <span class="c1"># oneCCL (and Intel® oneAPI MPI Library as its dependency), required by Intel® Optimization for Horovod* only</span>
 <span class="nb">source</span> /path to basekit/intel/oneapi/mpi/latest/env/vars.sh
@@ -281,7 +282,7 @@ $ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
 <div class="section" id="install-intel-extension-for-tensorflow">
 <h3>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h3>
 <p>To install a GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install --upgrade intel-extension-for-tensorflow<span class="o">[</span>gpu<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install intel-extension-for-tensorflow<span class="o">[</span>gpu<span class="o">]==</span><span class="m">1</span>.1.0
 </pre></div>
 </div>
 <div class="section" id="verify-the-installation">

@@ -27,10 +27,9 @@
         <div class="wy-side-nav-search" >
             <a href="index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
           </a>
-          <div class="version">
-            <a href="../versions.html">v1.0.0 ▼</a>
-            <p>Click link above to switch version</p>
-          </div>
+              <div class="version">
+                <a href="../versions.html">v1.0.0 ▼</a>
+                <p>Click link above to switch version</p>              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -45,6 +44,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#hardware-requirement">Hardware Requirement</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#software-requirement">Software Requirement</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#installation-channel">Installation Channel:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compatibility-table">Compatibility Table</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-for-gpu">Install for GPU</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-for-cpu-experimental">Install for CPU [Experimental]</a></li>
 </ul>
@@ -176,18 +176,32 @@
 </tr>
 </tbody>
 </table></div>
+<div class="section" id="compatibility-table">
+<h3>Compatibility Table<a class="headerlink" href="#compatibility-table" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Intel ® Extension for TensorFlow*</th>
+<th>Stock TensorFlow</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1.0.0</td>
+<td>2.10</td>
+</tr>
+</tbody>
+</table></div>
 <div class="section" id="install-for-gpu">
 <h3>Install for GPU<a class="headerlink" href="#install-for-gpu" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.10.0</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span><span class="o">==</span><span class="mf">1.0.0</span>
 </pre></div>
 </div>
 <p>Please refer to <a class="reference internal" href="docs/install/install_for_gpu.html"><span class="doc">GPU installation</span></a> for details.</p>
 </div>
 <div class="section" id="install-for-cpu-experimental">
 <h3>Install for CPU [Experimental]<a class="headerlink" href="#install-for-cpu-experimental" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.10.0</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span><span class="o">==</span><span class="mf">1.0.0</span>
 </pre></div>
 </div>
 <p>Sanity check by:</p>

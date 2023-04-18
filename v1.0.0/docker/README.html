@@ -90,8 +90,17 @@
 </div>
 <div class="section" id="binaries-preparation">
 <h2>Binaries Preparation<a class="headerlink" href="#binaries-preparation" title="Permalink to this headline">¶</a></h2>
-<p>Download and copy Intel® Extension for TensorFlow* wheel into ./models/ binaries directory.</p>
+<p>Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
+</pre></div>
+</div>
+<p>To enable Intel® Extension for TensorFlow* with Intel® Data Center GPU Max Series, you need to download driver repository locally and copy them into ./models/gpu-driver-repo.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">gpu</span><span class="o">-</span><span class="n">driver</span><span class="o">-</span><span class="n">repo</span>
+</pre></div>
+</div>
+<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), install oneCCL and copy the package into ./models/oneccl, then copy Horovod wheel into ./models/horovod as well.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">oneccl</span>
+<span class="n">mkdir</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">horovod</span>
 </pre></div>
 </div>
 </div>
@@ -114,7 +123,7 @@
 <div class="section" id="ii-build-the-container">
 <h3>II. Build the container<a class="headerlink" href="#ii-build-the-container" title="Permalink to this headline">¶</a></h3>
 <p>To build the docker container, enter into <a class="reference external" href="docker/./">docker</a> folder and run below commands:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="p">[</span><span class="n">gpu</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">centos</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">ubuntu</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="p">[</span><span class="n">gpu</span><span class="o">-</span><span class="n">flex</span><span class="o">/</span><span class="n">gpu</span><span class="o">-</span><span class="nb">max</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">centos</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">ubuntu</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -123,6 +132,7 @@
 <p>Run following commands to start docker container. You can use <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using <code class="docutils literal notranslate"><span class="pre">--device</span> <span class="pre">/dev/dri</span></code> option and run the container:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:gpu
 docker run -v &lt;your-local-dir&gt;:/workspace \
+           -v /dev/dri/by-path:/dev/dri/by-path \
            --device /dev/dri \
            --privileged \
            -e http_proxy=$http_proxy \

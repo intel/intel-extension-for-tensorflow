@@ -175,6 +175,7 @@ void RegisterOps() {
   Register_ITEXGRUOp();
   Register_ITEXLayerNormOp();
   Register_ITEXLayerNormGradOp();
+  Register_ITEXGroupNormOp();
   Register_ITEXLeakyReluGradOp();
   Register_ITEXLeakyReluOp();
   Register_ITEXMatMul();
@@ -182,6 +183,8 @@ void RegisterOps() {
   Register_ITEXMaxPool3DOp();
   Register_ITEXMaxPoolGradOp();
   Register_ITEXMaxPoolOp();
+  Register_ITEXMaxPoolGradV2Op();
+  Register_ITEXMaxPoolV2Op();
   Register_ITEXMklLayerNormOp();
   Register_ITEXPadWithConv2DBackpropFilterOp();
   Register_ITEXPadWithConv2DBackpropFilterWithBiasOp();

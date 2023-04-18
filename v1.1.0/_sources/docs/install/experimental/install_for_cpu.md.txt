@@ -73,7 +73,7 @@ And the following system environment install for Intel® Extension for TensorFlo
 To install a CPU-only version in virtual environment, you can run
 
 ```bash
-(tf)$ pip install --upgrade intel-extension-for-tensorflow[cpu]
+(tf)$ pip install intel-extension-for-tensorflow[cpu]==1.1.0
 ```
 
 ##### Verify the Installation 

@@ -1967,7 +1967,6 @@ void Register_ITEXMaxPoolOp() {
         TF_NewOpDefinitionBuilder("_ITEXMaxPool");
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "T: {bfloat16, half, float} = DT_FLOAT");
     TF_OpDefinitionBuilderAddAttr(op_builder, "ksize: list(int) >= 4");
@@ -2011,6 +2010,53 @@ void Register_ITEXMaxPoolGradOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ITEXMaxPoolGrad op registration failed: ";
+  }
+}
+
+void Register_ITEXMaxPoolV2Op() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXMaxPoolV2");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "ksize: int32");
+    TF_OpDefinitionBuilderAddInput(op_builder, "strides: int32");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "T: {bfloat16, half, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
+    TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrString());
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXMaxPoolV2 op registration failed: ";
+  }
+}
+
+void Register_ITEXMaxPoolGradV2Op() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXMaxPoolGradV2");
+    TF_OpDefinitionBuilderAddInput(op_builder, "orig_input: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "orig_output: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "ksize: int32");
+    TF_OpDefinitionBuilderAddInput(op_builder, "strides: int32");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "T: {bfloat16, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
+    TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrString());
+
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ITEXMaxPoolGradV2 op registration failed: ";
   }
 }
 
@@ -2945,6 +2991,28 @@ void Register_ITEXTransposeOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_ITEXTranspose op registration failed: ";
+  }
+}
+
+void Register_ITEXGroupNormOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ITEXGroupNorm");
+    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "scale: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "offset: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "y: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_groups: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_scale: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_center: bool = true");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unchanged_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ITEXGroupNorm op registration failed: ";
   }
 }
 

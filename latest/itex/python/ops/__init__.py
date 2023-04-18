@@ -18,4 +18,5 @@ from intel_extension_for_tensorflow.python.ops.activations import gelu
 from intel_extension_for_tensorflow.python.ops import ops_grad as _ops_grad
 from intel_extension_for_tensorflow.python.ops.optimizers import AdamWithWeightDecayOptimizer
 from intel_extension_for_tensorflow.python.ops.layer_norm import LayerNormalization
+from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
 from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM

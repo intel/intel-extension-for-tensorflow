@@ -3,7 +3,7 @@
 ## Introduction
 Advanced Automatic Mixed Precision (Advanced AMP) uses lower-precision data types (such as float16 or bfloat16) to make model run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption in CPU and GPU.
 
-For detailed info, please refer to [Advanced Automatic Mixed Precision](../../docs/guide/advanced_auto_mixed_precision.md)
+For detailed info, please refer to [Advanced Automatic Mixed Precision](../../../docs/guide/advanced_auto_mixed_precision.md)
 
 This example shows the acceleration of inference by Advanced AMP on Intel CPU or GPU.
 

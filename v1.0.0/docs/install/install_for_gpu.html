@@ -49,21 +49,24 @@
 <li class="toctree-l3"><a class="reference internal" href="#install-gpu-drivers">Install GPU Drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-via-docker-container">Install via Docker container</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#build-docker-container-from-dockerfile">Build Docker container from Dockerfile</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#get-docker-container-from-dockerhub">Get docker container from dockerhub</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-docker-container-from-dockerhub-for-intel-data-center-gpu-flex-series">Get docker container from dockerhub(For Intel® Data Center GPU Flex Series)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-docker-container-from-harhor-for-intel-internal-evaluation-on-intel-data-center-gpu-max-series-only">Get docker container from harhor(For Intel internal evaluation on Intel® Data Center GPU Max Series only)</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#install-via-pypi-wheel-in-bare-metal">Install via PyPI wheel in bare metal</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#install-oneapi-base-toolkit-packages">Install oneAPI Base Toolkit Packages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#setup-environment-variables">Setup environment variables</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="#install-tensorflow">Install TensorFlow</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="#virtual-environment-install">Virtual environment install</a></li>
-<li class="toctree-l6"><a class="reference internal" href="#system-environment-install">System environment install</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setup-environment-variables">Setup environment variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#install-tensorflow">Install TensorFlow</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#virtual-environment-install">Virtual environment install</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#system-environment-install">System environment install</a></li>
 </ul>
 </li>
-<li class="toctree-l5"><a class="reference internal" href="#install-intel-extension-for-tensorflow">Install Intel® Extension for TensorFlow*</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="#verify-the-installation">Verify the Installation</a></li>
-</ul>
-</li>
+<li class="toctree-l4"><a class="reference internal" href="#install-intel-extension-for-tensorflow">Install Intel® Extension for TensorFlow*</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#verify-the-installation">Verify the Installation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setup-environment-for-distributed-training">Setup environment for distributed training</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#setup-intel-mpi">Setup Intel MPI</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setup-oneccl">Setup oneCCL</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#install-intel-optimization-for-horovod">Install Intel® Optimization for Horovod*</a></li>
 </ul>
 </li>
 </ul>
@@ -115,17 +118,17 @@
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Flex Series 170</p></li>
-<li><p><em>Experimental:</em> Intel® Arc™ A-Series</p></li>
+<li><p>Intel® Data Center GPU Max Series</p></li>
 </ul>
-<p>For experimental support of the Intel® Arc™ A-Series GPUs, please refer to <a class="reference internal" href="experimental/install_for_arc_gpu.html"><span class="doc">Intel® Arc™ A-Series GPU Software Installation</span></a> for details.</p>
 </div>
 <div class="section" id="software-requirements">
 <h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Ubuntu 20.04 (64-bit)</p></li>
+<li><p>Ubuntu 20.04 (64-bit) or SUSE Linux Enterprise Server 15 SP3</p></li>
 <li><p>Intel GPU Drivers</p>
 <ul>
-<li><p>Intel® Data Center GPU Flex Series <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html">419.40</a></p></li>
+<li><p>For Intel® Data Center GPU Flex Series 170: Intel® Data Center GPU Flex Series <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html">419.40</a></p></li>
+<li><p>For Intel® Data Center GPU Max Series: agama-ci-devel-pvc-prq-54</p></li>
 </ul>
 </li>
 <li><p>Intel® oneAPI Base Toolkit 2022.3</p></li>
@@ -152,6 +155,12 @@
 <td>Intel® Data Center GPU Flex Series</td>
 <td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-focal-dc.html">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_419_40_20220914.html">419.40</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd=22.28.23726.1+i419~u20.04</code></td>
 </tr>
+<tr>
+<td>v1.0.0</td>
+<td>SLES 15 SP3</td>
+<td>Intel® Data Center GPU Max Series</td>
+<td>Download intel GPU driver "agama-ci-devel-pvc-prq-54" for Intel® Data Center GPU Max Series from https://ubit-gfx.intel.com/build/15136536/artifacts, and install them.</td>
+</tr>
 </tbody>
 </table></div>
 <div class="section" id="install-via-docker-container">
@@ -161,12 +170,22 @@
 <h3>Build Docker container from Dockerfile<a class="headerlink" href="#build-docker-container-from-dockerfile" title="Permalink to this headline">¶</a></h3>
 <p>Run the following <a class="reference internal" href="../../docker/README.html"><span class="doc">Dockerfile build procedure</span></a> to build the pip based deployment container.</p>
 </div>
-<div class="section" id="get-docker-container-from-dockerhub">
-<h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="get-docker-container-from-dockerhub-for-intel-data-center-gpu-flex-series">
+<h3>Get docker container from dockerhub(For Intel® Data Center GPU Flex Series)<a class="headerlink" href="#get-docker-container-from-dockerhub-for-intel-data-center-gpu-flex-series" title="Permalink to this headline">¶</a></h3>
 <p>Pre-built docker images are available at <a class="reference external" href="https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags">DockerHub</a>.
 Please run the following command to pull the GPU Docker container image to your local machine.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:gpu
-$ docker run -it -p 8888:8888 --device /dev/dri intel/intel-extension-for-tensorflow:gpu
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:gpu
+$ docker run -it -p <span class="m">8888</span>:8888 --device /dev/dri intel/intel-extension-for-tensorflow:gpu
+</pre></div>
+</div>
+<p>Then go to your browser on http://localhost:8888/</p>
+</div>
+<div class="section" id="get-docker-container-from-harhor-for-intel-internal-evaluation-on-intel-data-center-gpu-max-series-only">
+<h3>Get docker container from harhor(For Intel internal evaluation on Intel® Data Center GPU Max Series only)<a class="headerlink" href="#get-docker-container-from-harhor-for-intel-internal-evaluation-on-intel-data-center-gpu-max-series-only" title="Permalink to this headline">¶</a></h3>
+<p>Pre-built docker images are available at <a class="reference external" href="https://ccr-registry.caas.intel.com/harbor/projects/519/repositories/gpu-max">Harbor</a> as well.
+Run the following command to pull the GPU Docker container image to your local machine.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker pull ccr-registry.caas.intel.com/intel-extension-for-tensorflow/gpu-max
+$ docker run -it -p <span class="m">8888</span>:8888 -v /dev/dri/by-path:/dev/dri/by-path --device /dev/dri ccr-registry.caas.intel.com/intel-extension-for-tensorflow/gpu-max
 </pre></div>
 </div>
 <p>Then go to your browser on http://localhost:8888/</p>
@@ -177,14 +196,7 @@ $ docker run -it -p 8888:8888 --device /dev/dri intel/intel-extension-for-tensor
 <div class="section" id="install-oneapi-base-toolkit-packages">
 <h3>Install oneAPI Base Toolkit Packages<a class="headerlink" href="#install-oneapi-base-toolkit-packages" title="Permalink to this headline">¶</a></h3>
 <p>Need to install components of Intel® oneAPI Base Toolkit:</p>
-<ul class="simple">
-<li><p>Intel® oneAPI DPC++ Compiler</p></li>
-<li><p>Intel® oneAPI Threading Building Blocks (oneTBB)</p></li>
-<li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
-</ul>
-<p>Download and install the verified DPC++ compiler and oneMKL in Ubuntu 20.04.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18852/l_BaseKit_p_2022.3.0.8767_offline.sh
-<span class="c1"># 4 components are necessary: DPC++/C++ Compiler, DPC++ Libiary, Threading Building Blocks and oneMKL</span>
 $ sudo sh ./l_BaseKit_p_2022.3.0.8767_offline.sh
 </pre></div>
 </div>
@@ -192,19 +204,18 @@ $ sudo sh ./l_BaseKit_p_2022.3.0.8767_offline.sh
 </div>
 <div class="section" id="setup-environment-variables">
 <h3>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> /opt/intel/oneapi/setvars.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> /opt/intel/oneapi/compiler/env/vars.sh
+<span class="nb">source</span> /opt/intel/oneapi/mkl/env/vars.sh
+<span class="nb">source</span> /opt/intel/oneapi/tbb/env/vars.sh
 </pre></div>
 </div>
-<p>A user may install more components than Intel® Extension for TensorFlow* needs, and if required, <code class="docutils literal notranslate"><span class="pre">setvars.sh</span></code> can be customized to point to a specific directory by using a <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-programming-guide/top/oneapi-development-environment-setup/use-the-setvars-script-with-linux-or-macos/use-a-config-file-for-setvars-sh-on-linux-or-macos.html">configuration file</a>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> /opt/intel/oneapi/setvars.sh --config<span class="o">=</span><span class="s2">&quot;full/path/to/your/config.txt&quot;</span>
-</pre></div>
 </div>
 <div class="section" id="install-tensorflow">
-<h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this headline">¶</a></h4>
+<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this headline">¶</a></h3>
 <p>The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.</p>
 <p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.10.0.</p>
 <div class="section" id="virtual-environment-install">
-<h5>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this headline">¶</a></h5>
+<h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this headline">¶</a></h4>
 <p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
 <p>On Linux, it is often necessary to first update pip to a version that supports manylinux2014 wheels.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install --upgrade pip
@@ -216,25 +227,68 @@ $ sudo sh ./l_BaseKit_p_2022.3.0.8767_offline.sh
 </div>
 </div>
 <div class="section" id="system-environment-install">
-<h5>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this headline">¶</a></h5>
+<h4>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this headline">¶</a></h4>
 <p>If want to system install in $HOME, please append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install --user <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.10.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install --user <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.10.0
 </pre></div>
 </div>
 <p>And the following system environment install for Intel® Extension for TensorFlow* will use the same practice.</p>
 </div>
 </div>
 <div class="section" id="install-intel-extension-for-tensorflow">
-<h4>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h4>
+<h3>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>for Intel® Data Center GPU Flex Series 170</p></li>
+</ul>
 <p>To install a GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install --upgrade intel-extension-for-tensorflow<span class="o">[</span>gpu<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install intel-extension-for-tensorflow<span class="o">[</span>gpu<span class="o">]==</span><span class="m">1</span>.0.0
 </pre></div>
+</div>
+<ul class="simple">
+<li><p>for Intel® Data Center GPU Max Series</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ pip install http://mlpc.intel.com/downloads/gpu-new/releases/PVC_NDA_2022ww45/ITEX/RC3/intel_extension_for_tensorflow-1.0.0-cp39-cp39-linux_x86_64.whl http://mlpc.intel.com/downloads/gpu-new/releases/PVC_NDA_2022ww45/ITEX/RC3/intel_extension_for_tensorflow_lib-1.0.0.1-cp39-cp39-linux_x86_64.whl
+</pre></div>
+</div>
 </div>
 <div class="section" id="verify-the-installation">
-<h5>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this headline">¶</a></h5>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
+<h3>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$ python -c <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="setup-environment-for-distributed-training">
+<h3>Setup environment for distributed training<a class="headerlink" href="#setup-environment-for-distributed-training" title="Permalink to this headline">¶</a></h3>
+<p>Distributed training on Intel® Data Center GPU Max Series devices depends on Intel MPI, oneCCL and Intel® Optimization for Horovod*.</p>
+<ul class="simple">
+<li><p>Intel MPI from Intel® oneAPI Base Toolkit</p></li>
+<li><p>oneCCL 2021.8-eng03 (For Argonne National Laboratory and Intel internal evaluation only)</p></li>
+<li><p>Intel® Optimization for Horovod* 0.22.1up3</p></li>
+</ul>
+<div class="section" id="setup-intel-mpi">
+<h4>Setup Intel MPI<a class="headerlink" href="#setup-intel-mpi" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">source</span> /opt/intel/oneapi/mpi/latest/env/vars.sh
+</pre></div>
+</div>
+</div>
+<div class="section" id="setup-oneccl">
+<h4>Setup oneCCL<a class="headerlink" href="#setup-oneccl" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget http://mlpc.intel.com/downloads/gpu-new/components/oneCCL/l_ccl_release__2021.8.0_ENG_ww45.20221101.100012.tgz
+$ tar -xvzf l_ccl_release__2021.8.0_ENG_ww45.20221101.100012.tgz
+$ <span class="nb">cd</span> l_ccl_release__2021.8.0_ENG_ww45.20221101.100012
+
+$ unzip -P accept package.zip
+$ sh install.sh -s -d <span class="nv">$PWD</span>/2021.8-eng03
+
+<span class="c1"># setup env vars</span>
+$ <span class="nb">source</span> <span class="o">{</span><span class="m">2021</span>.8-eng03 install_dir<span class="o">}</span>/2021.8-eng03/env/vars.sh
+</pre></div>
+</div>
+</div>
+<div class="section" id="install-intel-optimization-for-horovod">
+<h4>Install Intel® Optimization for Horovod*<a class="headerlink" href="#install-intel-optimization-for-horovod" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install http://mlpc.intel.com/downloads/gpu-new/releases/PVC_NDA_2022ww45/ITEX/RC3/intel_optimization_for_horovod-0.22.1up3-cp39-cp39-linux_x86_64.whl
+</pre></div>
 </div>
 </div>
 </div>
