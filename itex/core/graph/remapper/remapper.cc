@@ -1636,11 +1636,6 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
   const TensorShapeProto& left_shape = props[0].shape();
   const TensorShapeProto& right_shape = props[1].shape();
 
-  // veirfy broadcast case
-  if (right_shape.dim(1).size() != left_shape.dim(1).size() &&
-      right_shape.dim(1).size() != 1 && left_shape.dim(1).size() != 1)
-    return false;
-
   bool is_non_supported_shape =
       (left_shape.dim_size() != 4) ||
       (left_shape.dim_size() != right_shape.dim_size()) ||
@@ -1649,6 +1644,12 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
   if (is_non_supported_shape) {
     return false;
   }
+
+  // veirfy broadcast case
+  if (right_shape.dim(1).size() != left_shape.dim(1).size() &&
+      right_shape.dim(1).size() != 1 && left_shape.dim(1).size() != 1)
+    return false;
+
   if (left_shape.dim(0).size() > 0 &&
       right_shape.dim(0).size() != left_shape.dim(0).size())
     return false;
