@@ -173,9 +173,9 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
         AllocateOutputSetOneDnnShape(context, kDstWorkspaceIndex,
                                      &dst_ws_tensor, dst_ws_tf_shape,
                                      dst_ws_onednn_shape);
-        dnnl::memory ws_mem;
-        ws_mem = CreateDnnlMemory(fwd_pd.workspace_desc(), onednn_engine,
-                                  GetTensorBuffer<Tws>(dst_ws_tensor));
+        dnnl::memory ws_mem =
+            CreateDnnlMemory(fwd_pd.workspace_desc(), onednn_engine,
+                             GetTensorBuffer<uint8>(dst_ws_tensor));
         fwd_primitive_args.insert({DNNL_ARG_WORKSPACE, ws_mem});
       }
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
@@ -369,10 +369,9 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
            {DNNL_ARG_SCRATCHPAD, scratchpad_mem}}};
       if (alg == dnnl::algorithm::pooling_max) {
         const Tensor& workspace_tensor = context->input(kWorkspaceIndex);
-        dnnl::memory ws_mem;
-        ws_mem =
+        dnnl::memory ws_mem =
             CreateDnnlMemory(pooling_bwd_pd.workspace_desc(), onednn_engine,
-                             GetTensorBuffer<Tws>(&workspace_tensor));
+                             GetTensorBuffer<uint8>(&workspace_tensor));
         bwd_primitive_args.insert({DNNL_ARG_WORKSPACE, ws_mem});
       }
       bwd_primitive.execute(onednn_stream, bwd_primitive_args);

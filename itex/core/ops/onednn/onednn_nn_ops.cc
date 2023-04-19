@@ -248,6 +248,7 @@ void Register_OneDnnMaxPoolOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "input_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output_meta: uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "workspace_meta: uint8");
 
     TF_OpDefinitionBuilderAddAttr(op_builder,
@@ -276,6 +277,7 @@ void Register_OneDnnMaxPoolGradOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_output: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_input_meta: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_output_meta: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "grad_meta: uint8");
@@ -309,6 +311,7 @@ void Register_OneDnnMaxPool3DOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "input_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "workspace_meta: uint8");
 
@@ -339,6 +342,7 @@ void Register_OneDnnMaxPool3DGradOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_input: TInput");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_output: TInput");
     TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_input_meta: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_output_meta: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "grad_meta: uint8");

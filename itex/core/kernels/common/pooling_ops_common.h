@@ -36,14 +36,6 @@ namespace itex {
 using dnnl::memory;
 using dnnl::prop_kind;
 
-// TODO(itex): If OneDnn unifies the data types of workspace on CPU and GPU,
-// the following parts can be deleted.
-#ifndef INTEL_CPU_ONLY
-typedef typename EnumToDataType<DT_UINT8>::Type Tws;
-#else
-typedef typename EnumToDataType<DT_INT32>::Type Tws;
-#endif
-
 struct OneDnnPoolParameters {
   int depth;
 
@@ -655,12 +647,13 @@ class PoolingOp : public PoolingForwardOpBase<T> {
 
       if (workspace_enabled) {
         TensorShape ws_tensor_shape;
+        // Get workspace size in bytes.
         ws_tensor_shape.AddDim(fwd_pd.workspace_desc().get_size());
         OP_REQUIRES_OK(
             context, context->allocate_output(1, ws_tensor_shape, &ws_tensor));
-        dnnl::memory ws_mem;
-        ws_mem = CreateDnnlMemory(fwd_pd.workspace_desc(), onednn_engine,
-                                  GetTensorBuffer<Tws>(ws_tensor));
+        dnnl::memory ws_mem =
+            CreateDnnlMemory(fwd_pd.workspace_desc(), onednn_engine,
+                             GetTensorBuffer<uint8>(ws_tensor));
         net_args.insert({DNNL_ARG_WORKSPACE, ws_mem});
       }
       fwd.execute(onednn_stream, net_args);

@@ -177,7 +177,7 @@ class MaxPoolGradOp : public PoolingBackwardOpBase<T> {
             context->input(this->kInputTensorIndexWorkspace);
         ws_mem =
             CreateDnnlMemory(pooling_bwd_pd.workspace_desc(), onednn_engine,
-                             GetTensorBuffer<Tws>(&ws_tensor));
+                             GetTensorBuffer<uint8>(&ws_tensor));
       } else {
         /*Execute fwd primitive first to get workspace_data*/
         const Tensor& orig_output_tensor =
@@ -202,12 +202,10 @@ class MaxPoolGradOp : public PoolingBackwardOpBase<T> {
         size_t ws_size = ws_desc.get_size();
         ws_tensor_shape.AddDim(ws_size);
 
-        void* ws_data = nullptr;
-        OP_REQUIRES_OK(context,
-                       context->allocate_temp(DataTypeToEnum<Tws>::v(),
-                                              ws_tensor_shape, &ws_tensor));
-        ws_data = static_cast<void*>(ws_tensor.flat<Tws>().data());
-        ws_mem = CreateDnnlMemory(ws_desc, onednn_engine, ws_data);
+        OP_REQUIRES_OK(context, context->allocate_temp(
+                                    DT_UINT8, ws_tensor_shape, &ws_tensor));
+        ws_mem = CreateDnnlMemory(ws_desc, onednn_engine,
+                                  GetTensorBuffer<uint8>(&ws_tensor));
         fwd_net_args.insert({DNNL_ARG_WORKSPACE, ws_mem});
         fwd_net_args.insert({DNNL_ARG_SCRATCHPAD, scratchpad_mem_fwd});
         pooling_fwd_primitive.execute(onednn_stream, fwd_net_args);
