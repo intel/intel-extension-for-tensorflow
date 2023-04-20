@@ -148,6 +148,7 @@ Here is the list of GPUs verified:
 |GPU|device type|
 |-|-|
 |Intel® Data Center GPU Flex Series 170|ats-m150|
+|Intel® Data Center GPU Flex Series 140|ats-m75|
 |Intel® Data Center GPU Max Series|pvc|
 |Intel® Arc™ A730M|acm-g10|
 |Intel® Arc™ A380|acm-g11|
