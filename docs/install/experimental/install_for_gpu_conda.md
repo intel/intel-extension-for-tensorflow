@@ -1,6 +1,6 @@
 # Conda Environment Installation Instructions
 
-This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.1.0 and Intel® Optimization for Horovod* v0.4.0 deployment for distributed training on Conda environment.    
+This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.2.0 and Intel® Optimization for Horovod* v0.5.0 deployment for distributed training on Conda environment.    
 
 ## Preconditions
 Assume user has installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per [instructions](../install_for_gpu.md#install_oneapi_base_toolkit_packages) successfully. 
@@ -24,20 +24,29 @@ You may need to update your conda first, as at least conda 4.1.11 is required.
 ```
 conda update conda
 
-#Take Intel Python 2023.0 as an example to conda environment, but generic Python is also recommended.
-conda create -n itex -c intel intelpython3_full==2023.0.0 python=3.9
+#Take Intel Python 2023.1.0 as an example to conda environment, but generic Python is also recommended.
+conda create -n itex -c intel intelpython3_full==2023.1.0 python=3.9
 ```
 
 Activate the environment by the following commands.
 ```
 conda activate itex
 ```
-Install stock tensorflow 2.12.0 and Intel® Extension for TensorFlow* GPU wheels.
+Install stock Tensorflow 2.12.0 and Intel® Extension for TensorFlow* GPU wheels.
 ```
 pip install --upgrade pip
 pip install tensorflow==2.12.0
 pip install intel-extension-for-tensorflow[gpu]
 ```
+
+Set required environment variables:
+
+```
+# DPC++ compiler/oneMKL
+source /path/to/intel/oneapi/compiler/latest/env/vars.sh
+source /path/to/intel/oneapi/mkl/latest/env/vars.sh
+```
+
 Check the environment for GPU:
 ```bash
 bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
@@ -48,12 +57,15 @@ python3 -c "import intel_extension_for_tensorflow as itex; print(itex.version.GI
 ```
 Expected result:
 ```
-v1.1.0-d4f2f46e
+v1.2.0-8e0294ba
 ```
 
-In order to install Intel® Optimization for Horovod* v0.4.0 for distributed training, oneCCL need to be installed at first when you install oneAPI Basekit.
+In order to install Intel® Optimization for Horovod* v0.5.0 for distributed training, oneCCL need to be installed at first when you install oneAPI Basekit.
 
 ```
+source /path/to/intel/oneapi/mpi/latest/env/vars.sh
+source /path/to/intel/oneapi/ccl/latest/env/vars.sh
+
 pip install intel-optimization-for-horovod
 ```
 
