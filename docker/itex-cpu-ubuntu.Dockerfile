@@ -62,7 +62,7 @@ RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
 RUN  sed -i "/if util.abstract_sockets_supported:/d"  /usr/lib/python3.9/multiprocessing/connection.py && \
      sed -i  "/{next(_mmap_counter)}/d"  /usr/lib/python3.9/multiprocessing/connection.py
 
-ARG TF_VER="2.11"
+ARG TF_VER="2.12"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 

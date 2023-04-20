@@ -38,18 +38,18 @@ Run the following [Dockerfile build procedure](./../../docker/README.md) to buil
 #### Get docker container from dockerhub
 
 Pre-built docker images will be available at [DockerHub](https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags) around January 13. 
-Please run the following command to pull the Intel® Data Center GPU Flex Series Docker container image (`gpu-flex`) to your local machine.
+Please run the following command to pull Intel® Extension for TensorFlow* Docker container image (`gpu`) to your local machine.
 
 ```
-$ docker pull intel/intel-extension-for-tensorflow:gpu-flex
-$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu-flex
+$ docker pull intel/intel-extension-for-tensorflow:gpu
+$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu
 ```
 
-Or pull the Intel® Data Center GPU Max Series Docker container image (`gpu-max`) to your local machine by the following command.
+To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (`gpu-horovod`) to your local machine by the following command.
 
 ```
-$ docker pull intel/intel-extension-for-tensorflow:gpu-max
-$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu-max
+$ docker pull intel/intel-extension-for-tensorflow:gpu-horovod
+$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:gpu-horovod
 ```
 
 Then go to your browser on http://localhost:8888/

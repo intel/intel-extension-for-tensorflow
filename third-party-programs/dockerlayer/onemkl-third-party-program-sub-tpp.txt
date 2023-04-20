@@ -56,19 +56,19 @@ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PRO
 
 Modified BSD License
 
-Redistribution  and  use in  source and binary forms, with or without modification, are  permitted provided  that the following  conditions are met:
+RedistributionÂ  andÂ  use inÂ  source and binary forms, with or without modification, areÂ  permitted providedÂ  that the followingÂ  conditions are met:
 
-1. Redistributions  of  source  code  must retain the above copyright notice, this list of conditions and the following disclaimer.
+1. RedistributionsÂ  ofÂ  sourceÂ  codeÂ  must retain the above copyright notice, this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce  the above copyright notice, this list of conditions,  and the following disclaimer in the documentation and/or other materials provided with the distribution.
+2. Redistributions in binary form must reproduceÂ  the above copyright notice, this list of conditions,Â  and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
-3. The name of the  University,  the name of the  Laboratory,  or the names  of  its  contributors  may  not  be used to endorse or promote products  derived   from   this  software  without  specific  written permission.
+3. The name of theÂ  University,Â  the name of theÂ  Laboratory,Â  or the namesÂ  ofÂ  itsÂ  contributorsÂ  mayÂ  notÂ  be used to endorse or promote productsÂ  derivedÂ Â  fromÂ Â  thisÂ  softwareÂ  withoutÂ  specificÂ  written permission.
 
 -- Disclaimer:
 
-THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
-OR  CONTRIBUTORS  BE  LIABLE FOR ANY  DIRECT,  INDIRECT,  INCIDENTAL,
-SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES  (INCLUDING,  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THISÂ  SOFTWAREÂ  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,Â  INCLUDING,Â  BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
+ORÂ  CONTRIBUTORSÂ  BEÂ  LIABLE FOR ANYÂ  DIRECT,Â  INDIRECT,Â  INCIDENTAL,
+SPECIAL,Â  EXEMPLARY,Â  ORÂ  CONSEQUENTIAL DAMAGESÂ  (INCLUDING,Â  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA OR PROFITS; OR BUSINESS INTERRUPTION)Â  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,Â  STRICT LIABILITY,Â  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ----------------------------------------------------------------
@@ -86,7 +86,7 @@ notice, this list of conditions and the following disclaimer.
 
 3. The names of its contributors may not be used to endorse or promote products derived from this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.Â  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
 SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
@@ -116,11 +116,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Â Â Â  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+Â Â Â  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
-    * Neither the names of the copyright holders nor the names of the University of New South Wales and the University of Waikato and its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+Â Â Â  * Neither the names of the copyright holders nor the names of the University of New South Wales and the University of Waikato and its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -170,25 +170,25 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 -----------------------------------------------------------------------------
-¥½©`¥¹¥³©`¥ÉĞÎÊ½¤«¥Ğ¥¤¥Ê¥êĞÎÊ½¤«¡¢‰ä¸ü¤¹¤ë¤«¤·¤Ê¤¤¤«¤ò†–¤ï¤º¡¢ÒÔÏÂ¤ÎÌõ¼ş¤òœº¤¿
-¤¹ˆöºÏ¤ËÏŞ¤ê¡¢ÔÙîC²¼¤ª¤è¤ÓÊ¹ÓÃ¤¬ÔS¿É¤µ¤ì¤Ş¤¹¡£
+ã‚½ãƒ¼ã‚¹ã‚³ãƒ¼ãƒ‰å½¢å¼ã‹ãƒã‚¤ãƒŠãƒªå½¢å¼ã‹ã€å¤‰æ›´ã™ã‚‹ã‹ã—ãªã„ã‹ã‚’å•ã‚ãšã€ä»¥ä¸‹ã®æ¡ä»¶ã‚’æº€ãŸ
+ã™å ´åˆã«é™ã‚Šã€å†é ’å¸ƒãŠã‚ˆã³ä½¿ç”¨ãŒè¨±å¯ã•ã‚Œã¾ã™ã€‚
 
-¥½©`¥¹¥³©`¥É¤òÔÙîC²¼¤¹¤ëˆöºÏ¡¢ÉÏÓ›¤ÎÖø×÷˜Ø±íÊ¾¡¢±¾Ìõ¼şÒ»ÓE¡¢¤ª¤è¤ÓÏÂÓ›ÃâØŸÌõí—
-¤òº¬¤á¤ë¤³¤È¡£
-¥Ğ¥¤¥Ê¥êĞÎÊ½¤ÇÔÙîC²¼¤¹¤ëˆöºÏ¡¢îC²¼Îï¤Ë¸¶Êô¤Î¥É¥­¥å¥á¥ó¥ÈµÈ¤ÎÙYÁÏ¤Ë¡¢ÉÏÓ›¤ÎÖø×÷
-˜Ø±íÊ¾¡¢±¾Ìõ¼şÒ»ÓE¡¢¤ª¤è¤ÓÏÂÓ›ÃâØŸÌõí—¤òº¬¤á¤ë¤³¤È¡£
-•øÃæ¤Ë¤è¤ëÌØ„e¤ÎÔS¿É¤Ê¤·¤Ë¡¢±¾¥½¥Õ¥È¥¦¥§¥¢¤«¤éÅÉÉú¤·¤¿ÑuÆ·¤ÎĞû»¤Ş¤¿¤ÏØœ‰Ó´ÙßM
-¤Ë¡¢Öø×÷˜ØÕß¤ÎÃûÇ°¤Ş¤¿¤Ï¥³¥ó¥È¥ê¥Ó¥å©`¥¿©`¤ÎÃûÇ°¤òÊ¹ÓÃ¤·¤Æ¤Ï¤Ê¤é¤Ê¤¤¡£
-±¾¥½¥Õ¥È¥¦¥§¥¢¤Ï¡¢Öø×÷˜ØÕß¤ª¤è¤Ó¥³¥ó¥È¥ê¥Ó¥å©`¥¿©`¤Ë¤è¤Ã¤Æ¡¸¬F×´¤Î¤Ş¤Ş¡¹Ìá¹©¤µ
-¤ì¤Æ¤ª¤ê¡¢Ã÷Ê¾üaÊ¾¤ò†–¤ï¤º¡¢ÉÌ˜IµÄ¤ÊÊ¹ÓÃ¿ÉÄÜĞÔ¡¢¤ª¤è¤ÓÌØ¶¨¤ÎÄ¿µÄ¤ËŒ¤¹¤ëßmºÏĞÔ
-¤Ëév¤¹¤ë°µüa¤Î±£Ô^¤âº¬¤á¡¢¤Ş¤¿¤½¤ì¤ËÏŞ¶¨¤µ¤ì¤Ê¤¤¡¢¤¤¤«¤Ê¤ë±£Ô^¤â¤¢¤ê¤Ş¤»¤ó¡£
-Öø×÷˜ØÕß¤â¥³¥ó¥È¥ê¥Ó¥å©`¥¿©`¤â¡¢ÊÂÓÉ¤Î¤¤¤«¤ó¤ò†–¤ï¤º¡¢ “pº¦°kÉú¤ÎÔ­Òò¤¤¤«¤ó¤ò
-†–¤ï¤º¡¢¤«¤ÄØŸÈÎ¤Î¸ù’‡¤¬Æõ¼s¤Ç¤¢¤ë¤«…—¸ñØŸÈÎ¤Ç¤¢¤ë¤«£¨ß^Ê§¤½¤ÎËû¤Î£©²»·¨ĞĞé¤Ç
-¤¢¤ë¤«¤ò†–¤ï¤º¡¢¢¤Ë¤½¤Î¤è¤¦¤Ê“pº¦¤¬°kÉú¤¹¤ë¿ÉÄÜĞÔ¤òÖª¤é¤µ¤ì¤Æ¤¤¤¿¤È¤·¤Æ¤â¡¢
-±¾¥½¥Õ¥È¥¦¥§¥¢¤ÎÊ¹ÓÃ¤Ë¤è¤Ã¤Æ°kÉú¤·¤¿£¨´úÌæÆ·¤Ş¤¿¤Ï´úÓÃ¥µ©`¥Ó¥¹¤ÎÕ{ß_¡¢Ê¹ÓÃ¤Î
-†ÊÊ§¡¢¥Ç©`¥¿¤Î†ÊÊ§¡¢ÀûÒæ¤Î†ÊÊ§¡¢˜I„Õ¤ÎÖĞ¶Ï¤âº¬¤á¡¢¤Ş¤¿¤½¤ì¤ËÏŞ¶¨¤µ¤ì¤Ê¤¤£©Ö±½Ó
-“pº¦¡¢ég½Ó“pº¦¡¢Å¼°kµÄ¤Ê“pº¦¡¢ÌØ„e“pº¦¡¢‘ÍÁPµÄ“pº¦¡¢¤Ş¤¿¤Ï½Y¹û“pº¦¤Ë¤Ä¤¤¤Æ¡¢
-Ò»ÇĞØŸÈÎ¤òØ“¤ï¤Ê¤¤¤â¤Î¤È¤·¤Ş¤¹¡£
+ã‚½ãƒ¼ã‚¹ã‚³ãƒ¼ãƒ‰ã‚’å†é ’å¸ƒã™ã‚‹å ´åˆã€ä¸Šè¨˜ã®è‘—ä½œæ¨©è¡¨ç¤ºã€æœ¬æ¡ä»¶ä¸€è¦§ã€ãŠã‚ˆã³ä¸‹è¨˜å…è²¬æ¡é …
+ã‚’å«ã‚ã‚‹ã“ã¨ã€‚
+ãƒã‚¤ãƒŠãƒªå½¢å¼ã§å†é ’å¸ƒã™ã‚‹å ´åˆã€é ’å¸ƒç‰©ã«ä»˜å±ã®ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆç­‰ã®è³‡æ–™ã«ã€ä¸Šè¨˜ã®è‘—ä½œ
+æ¨©è¡¨ç¤ºã€æœ¬æ¡ä»¶ä¸€è¦§ã€ãŠã‚ˆã³ä¸‹è¨˜å…è²¬æ¡é …ã‚’å«ã‚ã‚‹ã“ã¨ã€‚
+æ›¸é¢ã«ã‚ˆã‚‹ç‰¹åˆ¥ã®è¨±å¯ãªã—ã«ã€æœ¬ã‚½ãƒ•ãƒˆã‚¦ã‚§ã‚¢ã‹ã‚‰æ´¾ç”Ÿã—ãŸè£½å“ã®å®£ä¼ã¾ãŸã¯è²©å£²ä¿ƒé€²
+ã«ã€è‘—ä½œæ¨©è€…ã®åå‰ã¾ãŸã¯ã‚³ãƒ³ãƒˆãƒªãƒ“ãƒ¥ãƒ¼ã‚¿ãƒ¼ã®åå‰ã‚’ä½¿ç”¨ã—ã¦ã¯ãªã‚‰ãªã„ã€‚
+æœ¬ã‚½ãƒ•ãƒˆã‚¦ã‚§ã‚¢ã¯ã€è‘—ä½œæ¨©è€…ãŠã‚ˆã³ã‚³ãƒ³ãƒˆãƒªãƒ“ãƒ¥ãƒ¼ã‚¿ãƒ¼ã«ã‚ˆã£ã¦ã€Œç¾çŠ¶ã®ã¾ã¾ã€æä¾›ã•
+ã‚Œã¦ãŠã‚Šã€æ˜ç¤ºé»™ç¤ºã‚’å•ã‚ãšã€å•†æ¥­çš„ãªä½¿ç”¨å¯èƒ½æ€§ã€ãŠã‚ˆã³ç‰¹å®šã®ç›®çš„ã«å¯¾ã™ã‚‹é©åˆæ€§
+ã«é–¢ã™ã‚‹æš—é»™ã®ä¿è¨¼ã‚‚å«ã‚ã€ã¾ãŸãã‚Œã«é™å®šã•ã‚Œãªã„ã€ã„ã‹ãªã‚‹ä¿è¨¼ã‚‚ã‚ã‚Šã¾ã›ã‚“ã€‚
+è‘—ä½œæ¨©è€…ã‚‚ã‚³ãƒ³ãƒˆãƒªãƒ“ãƒ¥ãƒ¼ã‚¿ãƒ¼ã‚‚ã€äº‹ç”±ã®ã„ã‹ã‚“ã‚’å•ã‚ãšã€ æå®³ç™ºç”Ÿã®åŸå› ã„ã‹ã‚“ã‚’
+å•ã‚ãšã€ã‹ã¤è²¬ä»»ã®æ ¹æ‹ ãŒå¥‘ç´„ã§ã‚ã‚‹ã‹å³æ ¼è²¬ä»»ã§ã‚ã‚‹ã‹ï¼ˆéå¤±ãã®ä»–ã®ï¼‰ä¸æ³•è¡Œç‚ºã§
+ã‚ã‚‹ã‹ã‚’å•ã‚ãšã€ä»®ã«ãã®ã‚ˆã†ãªæå®³ãŒç™ºç”Ÿã™ã‚‹å¯èƒ½æ€§ã‚’çŸ¥ã‚‰ã•ã‚Œã¦ã„ãŸã¨ã—ã¦ã‚‚ã€
+æœ¬ã‚½ãƒ•ãƒˆã‚¦ã‚§ã‚¢ã®ä½¿ç”¨ã«ã‚ˆã£ã¦ç™ºç”Ÿã—ãŸï¼ˆä»£æ›¿å“ã¾ãŸã¯ä»£ç”¨ã‚µãƒ¼ãƒ“ã‚¹ã®èª¿é”ã€ä½¿ç”¨ã®
+å–ªå¤±ã€ãƒ‡ãƒ¼ã‚¿ã®å–ªå¤±ã€åˆ©ç›Šã®å–ªå¤±ã€æ¥­å‹™ã®ä¸­æ–­ã‚‚å«ã‚ã€ã¾ãŸãã‚Œã«é™å®šã•ã‚Œãªã„ï¼‰ç›´æ¥
+æå®³ã€é–“æ¥æå®³ã€å¶ç™ºçš„ãªæå®³ã€ç‰¹åˆ¥æå®³ã€æ‡²ç½°çš„æå®³ã€ã¾ãŸã¯çµæœæå®³ã«ã¤ã„ã¦ã€
+ä¸€åˆ‡è²¬ä»»ã‚’è² ã‚ãªã„ã‚‚ã®ã¨ã—ã¾ã™ã€‚
 
 ----------------------------------------------------------------
 8. Intel(R) Instrumentation and Tracing Technology API: 
@@ -337,24 +337,24 @@ LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA OR PR
 
   --------------------------------------------------------------
 12. Intel(R) oneAPI Threading Building Blocks: 
-    Copyright 2005-2019 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2019 Intel Corporation.Â  All Rights Reserved.
 
    Intel(R) Integrated Performance Primitives Library
    Copyright 2020 Intel Corporation. All Rights Reserved.
 
    Intel(R) OpenMP* Runtime:
-   Copyright 1985-2019 Intel Corporation.  All Rights Reserved.
+   Copyright 1985-2019 Intel Corporation.Â  All Rights Reserved.
 
-   The source code contained or described herein and all  documents related to the source code    ("Material") are owned by Intel Corporation or its suppliers or licensors.  Title to the    Material remains with Intel Corporation or its suppliers and licensors.  The Material is    protected by worldwide copyright laws and treaty provisions.  No part of the Material may be     used, copied, reproduced, modified, published, uploaded, posted, transmitted, distributed, or    disclosed in any way without Intel's prior express written permission.
+   The source code contained or described herein and all  documents related to the source code    ("Material") are owned by Intel Corporation or its suppliers or licensors.Â  Title to the    Material remains with Intel Corporation or its suppliers and licensors.Â  The Material is    protected by worldwide copyright laws and treaty provisions.Â  No part of the Material may be     used, copied, reproduced, modified, published, uploaded, posted, transmitted, distributed, or    disclosed in any way without Intel's prior express written permission.
 
-   No license under any patent, copyright, trade secret or other intellectual property right is    granted to or conferred upon you by disclosure or delivery of the Materials, either    expressly, by implication, inducement, estoppel or otherwise.  Any license under such    intellectual property rights must be express and approved by Intel in writing.
+   No license under any patent, copyright, trade secret or other intellectual property right is    granted to or conferred upon you by disclosure or delivery of the Materials, either    expressly, by implication, inducement, estoppel or otherwise.Â  Any license under such    intellectual property rights must be express and approved by Intel in writing.
 
    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
+Â Â Â Â Â Â Â  U.S. Patent 5,812,852
+Â Â Â Â Â Â Â  U.S. Patent 6,792,599
+Â Â Â Â Â Â Â  U.S. Patent 7,069,556
+Â Â Â Â Â Â Â  U.S. Patent 7,328,433
+Â Â Â Â Â Â Â  U.S. Patent 7,500,242
 
   
 
@@ -364,17 +364,17 @@ LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA OR PR
 
 Copyright (c) 2018 Intel Corporation.
 
-Use and Redistribution.  You may use and redistribute the software (the ?Software?), without modification, provided the following conditions are met:
+Use and Redistribution.  You may use and redistribute the software (the Â“SoftwareÂ”), without modification, provided the following conditions are met:
 
 * Redistributions must reproduce the above copyright notice and the following terms of use in the Software and in the documentation and/or other materials provided with the distribution.
 * Neither the name of Intel nor the names of its suppliers may be used to endorse or promote products derived from this Software without specific prior written permission.
 * No reverse engineering, decompilation, or disassembly of this Software is permitted.
 
-Limited patent license.  Intel grants you a world-wide, royalty-free, non-exclusive license under patents it now or hereafter owns or controls to make, have made, use, import, offer to sell and sell (?Utilize?) this Software, but solely to the extent that any such patent is necessary to Utilize the Software alone. The patent license shall not apply to any combinations which include this software.  No hardware per se is licensed hereunder.
+Limited patent license.  Intel grants you a world-wide, royalty-free, non-exclusive license under patents it now or hereafter owns or controls to make, have made, use, import, offer to sell and sell (Â“UtilizeÂ”) this Software, but solely to the extent that any such patent is necessary to Utilize the Software alone. The patent license shall not apply to any combinations which include this software.  No hardware per se is licensed hereunder.
 
-Third party and other Intel programs.  ?Third Party Programs? are the files listed in the ?third-party-programs.txt? text file that is included with the Software and may include Intel programs under separate license terms. Third Party Programs, even if included with the distribution of the Materials, are governed by separate license terms and those license terms solely govern your use of those programs.  
+Third party and other Intel programs.  Â“Third Party ProgramsÂ” are the files listed in the Â“third-party-programs.txtÂ” text file that is included with the Software and may include Intel programs under separate license terms. Third Party Programs, even if included with the distribution of the Materials, are governed by separate license terms and those license terms solely govern your use of those programs.  
 
-DISCLAIMER.  THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT ARE DISCLAIMED. THIS SOFTWARE IS NOT INTENDED FOR USE IN SYSTEMS OR APPLICATIONS WHERE FAILURE OF THE SOFTWARE MAY CAUSE PERSONAL INJURY OR DEATH AND YOU AGREE THAT YOU ARE FULLY RESPONSIBLE FOR ANY CLAIMS, COSTS, DAMAGES, EXPENSES, AND ATTORNEYS? FEES ARISING OUT OF ANY SUCH USE, EVEN IF ANY CLAIM ALLEGES THAT INTEL WAS NEGLIGENT REGARDING THE DESIGN OR MANUFACTURE OF THE MATERIALS.
+DISCLAIMER.  THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT ARE DISCLAIMED. THIS SOFTWARE IS NOT INTENDED FOR USE IN SYSTEMS OR APPLICATIONS WHERE FAILURE OF THE SOFTWARE MAY CAUSE PERSONAL INJURY OR DEATH AND YOU AGREE THAT YOU ARE FULLY RESPONSIBLE FOR ANY CLAIMS, COSTS, DAMAGES, EXPENSES, AND ATTORNEYSÂ’ FEES ARISING OUT OF ANY SUCH USE, EVEN IF ANY CLAIM ALLEGES THAT INTEL WAS NEGLIGENT REGARDING THE DESIGN OR MANUFACTURE OF THE MATERIALS.
 
 LIMITATION OF LIABILITY. IN NO EVENT WILL INTEL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. YOU AGREE TO INDEMNIFY AND HOLD INTEL HARMLESS AGAINST ANY CLAIMS AND EXPENSES RESULTING FROM YOUR USE OR UNAUTHORIZED USE OF THE SOFTWARE.
 
@@ -382,7 +382,7 @@ No support.  Intel may make changes to the Software, at any time without notice,
 
 Termination. Intel may terminate your right to use the Software in the event of your breach of this Agreement and you fail to cure the breach within a reasonable period of time.
 
-Feedback.  Should you provide Intel with comments, modifications, corrections, enhancements or other input (?Feedback?) related to the Software Intel will be free to use, disclose, reproduce, license or otherwise distribute or exploit the Feedback in its sole discretion without any obligations or restrictions of any kind, including without limitation, intellectual property rights or licensing obligations.
+Feedback.  Should you provide Intel with comments, modifications, corrections, enhancements or other input (Â“FeedbackÂ”) related to the Software Intel will be free to use, disclose, reproduce, license or otherwise distribute or exploit the Feedback in its sole discretion without any obligations or restrictions of any kind, including without limitation, intellectual property rights or licensing obligations.
 
 Compliance with laws.  You agree to comply with all relevant laws and regulations governing your use, transfer, import or export (or prohibition thereof) of the Software.
 
@@ -414,10 +414,10 @@ add significant primary functionality to it in your programs;
 for any Distributable Code having a filename extension of .lib, distribute only the results of running such Distributable Code through a linker with your program;
 require distributors and external end users to agree to terms that protect it at least as much as this agreement; 
 display your valid copyright notice on your programs; and
-indemnify, defend, and hold harmless Microsoft from any claims, including attorneys? fees, related to the distribution or use of your programs.
+indemnify, defend, and hold harmless Microsoft from any claims, including attorneysÂ’ fees, related to the distribution or use of your programs.
 ii.	Distribution Restrictions. You may not
 alter any copyright, trademark or patent notice in the software;
-use Microsoft?s trademarks in your programs? names or in a way that suggests your programs come from or are endorsed by Microsoft;
+use MicrosoftÂ’s trademarks in your programsÂ’ names or in a way that suggests your programs come from or are endorsed by Microsoft;
 distribute software to run on a platform other than the Windows platform;
 include software in malicious, deceptive or unlawful programs; or
 modify or distribute the software so that any part of it becomes subject to an Excluded License. An Excluded License is one that requires, as a condition of use, modification or distribution, that
@@ -432,9 +432,9 @@ transfer the software or this agreement to any third party; or
 use the software for commercial software hosting services.
 3.	DOCUMENTATION. Any person that has valid access to your computer or internal network may copy and use the documentation for your internal, reference purposes.
 4.	EXPORT RESTRICTIONS. You must comply with all domestic and international export laws and regulations that apply to the software, which include restrictions on destinations, end users, and end use. For further information on export restrictions, visit http://aka.ms/exporting.
-5.	SUPPORT SERVICES. Microsoft is not obligated under this agreement to provide any support services for the software. Any support provided is ?as is?, ?with all faults?, and without warranty of any kind.
+5.	SUPPORT SERVICES. Microsoft is not obligated under this agreement to provide any support services for the software. Any support provided is Â“as isÂ”, Â“with all faultsÂ”, and without warranty of any kind.
 6.	UPDATES. The software may periodically check for updates, and download and install them for you. You may obtain updates only from Microsoft or authorized sources. Microsoft may need to update your system to provide you with updates. You agree to receive these automatic updates without any additional notice. Updates may not include or support all existing software features, services, or peripheral devices.
-7.	BINDING ARBITRATION AND CLASS ACTION WAIVER. This Section applies if you live in (or, if a business, your principal place of business is in) the United States.  If you and Microsoft have a dispute, you and Microsoft agree to try for 60 days to resolve it informally. If you and Microsoft can?t, you and Microsoft agree to binding individual arbitration before the American Arbitration Association under the Federal Arbitration Act (?FAA?), and not to sue in court in front of a judge or jury. Instead, a neutral arbitrator will decide. Class action lawsuits, class-wide arbitrations, private attorney-general actions, and any other proceeding where someone acts in a representative capacity are not allowed; nor is combining individual proceedings without the consent of all parties. The complete Arbitration Agreement contains more terms and is at http://aka.ms/arb-agreement-1. You and Microsoft agree to these terms.
+7.	BINDING ARBITRATION AND CLASS ACTION WAIVER. This Section applies if you live in (or, if a business, your principal place of business is in) the United States.  If you and Microsoft have a dispute, you and Microsoft agree to try for 60 days to resolve it informally. If you and Microsoft canÂ’t, you and Microsoft agree to binding individual arbitration before the American Arbitration Association under the Federal Arbitration Act (Â“FAAÂ”), and not to sue in court in front of a judge or jury. Instead, a neutral arbitrator will decide. Class action lawsuits, class-wide arbitrations, private attorney-general actions, and any other proceeding where someone acts in a representative capacity are not allowed; nor is combining individual proceedings without the consent of all parties. The complete Arbitration Agreement contains more terms and is at http://aka.ms/arb-agreement-1. You and Microsoft agree to these terms.
 8.	ENTIRE AGREEMENT. This agreement, and any other terms Microsoft may provide for supplements, updates, or third-party applications, is the entire agreement for the software.
 9.	APPLICABLE LAW AND PLACE TO RESOLVE DISPUTES. If you acquired the software in the United States or Canada, the laws of the state or province where you live (or, if a business, where your principal place of business is located) govern the interpretation of this agreement, claims for its breach, and all other claims (including consumer protection, unfair competition, and tort claims), regardless of conflict of laws principles, except that the FAA governs everything related to arbitration. If you acquired the software in any other country, its laws apply, except that the FAA governs everything related to arbitration. If U.S. federal jurisdiction exists, you and Microsoft consent to exclusive jurisdiction and venue in the federal court in King County, Washington for all disputes heard in court (excluding arbitration). If not, you and Microsoft consent to exclusive jurisdiction and venue in the Superior Court of King County, Washington for all disputes heard in court (excluding arbitration).
 10.	CONSUMER RIGHTS; REGIONAL VARIATIONS. This agreement describes certain legal rights. You may have other rights, including consumer rights, under the laws of your state or country. Separate and apart from your relationship with Microsoft, you may also have rights with respect to the party from which you acquired the software. This agreement does not change those other rights if the laws of your state or country do not permit it to do so. For example, if you acquired the software in one of the below regions, or mandatory country law applies, then the following provisions apply to you:
@@ -444,21 +444,21 @@ Germany and Austria.
 Warranty. The properly licensed software will perform substantially as described in any Microsoft materials that accompany the software. However, Microsoft gives no contractual guarantee in relation to the licensed software.
 Limitation of Liability. In case of intentional conduct, gross negligence, claims based on the Product Liability Act, as well as, in case of death or personal or physical injury, Microsoft is liable according to the statutory law.
 Subject to the foregoing clause ii., Microsoft will only be liable for slight negligence if Microsoft is in breach of such material contractual obligations, the fulfillment of which facilitate the due performance of this agreement, the breach of which would endanger the purpose of this agreement and the compliance with which a party may constantly trust in (so-called "cardinal obligations"). In other cases of slight negligence, Microsoft will not be liable for slight negligence.
-11.	DISCLAIMER OF WARRANTY. THE SOFTWARE IS LICENSED ?AS IS.? YOU BEAR THE RISK OF USING IT. MICROSOFT GIVES NO EXPRESS WARRANTIES, GUARANTEES, OR CONDITIONS. TO THE EXTENT PERMITTED UNDER APPLICABLE LAWS, MICROSOFT EXCLUDES ALL IMPLIED WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+11.	DISCLAIMER OF WARRANTY. THE SOFTWARE IS LICENSED Â“AS IS.Â” YOU BEAR THE RISK OF USING IT. MICROSOFT GIVES NO EXPRESS WARRANTIES, GUARANTEES, OR CONDITIONS. TO THE EXTENT PERMITTED UNDER APPLICABLE LAWS, MICROSOFT EXCLUDES ALL IMPLIED WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
 12.	LIMITATION ON AND EXCLUSION OF DAMAGES. IF YOU HAVE ANY BASIS FOR RECOVERING DAMAGES DESPITE THE PRECEDING DISCLAIMER OF WARRANTY, YOU CAN RECOVER FROM MICROSOFT AND ITS SUPPLIERS ONLY DIRECT DAMAGES UP TO U.S. $5.00. YOU CANNOT RECOVER ANY OTHER DAMAGES, INCLUDING CONSEQUENTIAL, LOST PROFITS, SPECIAL, INDIRECT, OR INCIDENTAL DAMAGES.
 This limitation applies to (a) anything related to the software, services, content (including code) on third party Internet sites, or third party applications; and (b) claims for breach of contract, warranty, guarantee, or condition; strict liability, negligence, or other tort; or any other claim; in each case to the extent permitted by applicable law.
 It also applies even if Microsoft knew or should have known about the possibility of the damages. The above limitation or exclusion may not apply to you because your state, province, or country may not allow the exclusion or limitation of incidental, consequential, or other damages.
 
 
 Please note: As this software is distributed in Canada, some of the clauses in this agreement are provided below in French.
-Remarque: Ce logiciel ¨¦tant distribu¨¦ au Canada, certaines des clauses dans ce contrat sont fournies ci-dessous en fran?ais.
-EXON¨¦RATION DE GARANTIE. Le logiciel vis¨¦ par une licence est offert ? tel quel ?. Toute utilisation de ce logiciel est ¨¤ votre seule risque et p¨¦ril. Microsoft n?accorde aucune autre garantie expresse. Vous pouvez b¨¦n¨¦ficier de droits additionnels en vertu du droit local sur la protection des consommateurs, que ce contrat ne peut modifier. La ou elles sont permises par le droit locale, les garanties implicites de qualit¨¦ marchande, d?ad¨¦quation ¨¤ un usage particulier et d?absence de contrefa?on sont exclues.
-LIMITATION DES DOMMAGES-INT¨¦R¨ºTS ET EXCLUSION DE RESPONSABILIT¨¦ POUR LES DOMMAGES. Vous pouvez obtenir de Microsoft et de ses fournisseurs une indemnisation en cas de dommages directs uniquement ¨¤ hauteur de 5,00 $ US. Vous ne pouvez pr¨¦tendre ¨¤ aucune indemnisation pour les autres dommages, y compris les dommages sp¨¦ciaux, indirects ou accessoires et pertes de b¨¦n¨¦fices.
+Remarque: Ce logiciel Ã©tant distribuÃ© au Canada, certaines des clauses dans ce contrat sont fournies ci-dessous en franÃ§ais.
+EXONÃ‰RATION DE GARANTIE. Le logiciel visÃ© par une licence est offert Â« tel quel Â». Toute utilisation de ce logiciel est Ã  votre seule risque et pÃ©ril. Microsoft nÂ’accorde aucune autre garantie expresse. Vous pouvez bÃ©nÃ©ficier de droits additionnels en vertu du droit local sur la protection des consommateurs, que ce contrat ne peut modifier. La ou elles sont permises par le droit locale, les garanties implicites de qualitÃ© marchande, dÂ’adÃ©quation Ã  un usage particulier et dÂ’absence de contrefaÃ§on sont exclues.
+LIMITATION DES DOMMAGES-INTÃ‰RÃŠTS ET EXCLUSION DE RESPONSABILITÃ‰ POUR LES DOMMAGES. Vous pouvez obtenir de Microsoft et de ses fournisseurs une indemnisation en cas de dommages directs uniquement Ã  hauteur de 5,00 $ US. Vous ne pouvez prÃ©tendre Ã  aucune indemnisation pour les autres dommages, y compris les dommages spÃ©ciaux, indirects ou accessoires et pertes de bÃ©nÃ©fices.
 Cette limitation concerne:
-?	tout ce qui est reli¨¦ au logiciel, aux services ou au contenu (y compris le code) figurant sur des sites Internet tiers ou dans des programmes tiers; et
-?	les r¨¦clamations au titre de violation de contrat ou de garantie, ou au titre de responsabilit¨¦ stricte, de n¨¦gligence ou d?une autre faute dans la limite autoris¨¦e par la loi en vigueur.
-Elle s?applique ¨¦galement, m¨ºme si Microsoft connaissait ou devrait conna?tre l?¨¦ventualit¨¦ d?un tel dommage. Si votre pays n?autorise pas l?exclusion ou la limitation de responsabilit¨¦ pour les dommages indirects, accessoires ou de quelque nature que ce soit, il se peut que la limitation ou l?exclusion ci-dessus ne s?appliquera pas ¨¤ votre ¨¦gard.
-EFFET JURIDIQUE. Le pr¨¦sent contrat d¨¦crit certains droits juridiques. Vous pourriez avoir d?autres droits pr¨¦vus par les lois de votre pays. Le pr¨¦sent contrat ne modifie pas les droits que vous conf¨¨rent les lois de votre pays si celles-ci ne le permettent pas.
+Â•	tout ce qui est reliÃ© au logiciel, aux services ou au contenu (y compris le code) figurant sur des sites Internet tiers ou dans des programmes tiers; et
+Â•	les rÃ©clamations au titre de violation de contrat ou de garantie, ou au titre de responsabilitÃ© stricte, de nÃ©gligence ou dÂ’une autre faute dans la limite autorisÃ©e par la loi en vigueur.
+Elle sÂ’applique Ã©galement, mÃªme si Microsoft connaissait ou devrait connaÃ®tre lÂ’Ã©ventualitÃ© dÂ’un tel dommage. Si votre pays nÂ’autorise pas lÂ’exclusion ou la limitation de responsabilitÃ© pour les dommages indirects, accessoires ou de quelque nature que ce soit, il se peut que la limitation ou lÂ’exclusion ci-dessus ne sÂ’appliquera pas Ã  votre Ã©gard.
+EFFET JURIDIQUE. Le prÃ©sent contrat dÃ©crit certains droits juridiques. Vous pourriez avoir dÂ’autres droits prÃ©vus par les lois de votre pays. Le prÃ©sent contrat ne modifie pas les droits que vous confÃ¨rent les lois de votre pays si celles-ci ne le permettent pas.
 
 *Other names and brands may be claimed as the property of others.
 
@@ -516,3 +516,8 @@ The following third party programs have their own third party program files. The
 5. List of third party for Intel(R) Integrated Performance Primitives Library is available in the third-party-programs-ipp.txt file.
 
 *Other names and brands may be claimed as the property of others.
+    
+
+
+
+
