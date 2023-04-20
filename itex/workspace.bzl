@@ -195,7 +195,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     new_git_repository(
         name = "onednn_gpu",
         # rls-v3.1
-        commit = "bf16cb089eef528d5eba16ccbd8aa1e1c1921f4b",
+        commit = "8e522c65b4b3840cf088bfacd2f307cdf3f5ac24",
         remote = "https://github.com/oneapi-src/oneDNN.git",
         build_file = clean_dep("//third_party/onednn:onednn_gpu.BUILD"),
         verbose = True,
