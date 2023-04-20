@@ -133,6 +133,64 @@ bool RewriteFusedBatchNormExGrad(const utils::MutableNodeView& node_view) {
   return true;
 }
 
+static const std::vector<string>* GetPotentialOneDnnOpList() {
+  static std::vector<string> onednn_op_list{
+      "Add",       "AddN",           "AvgPool", "Cast",         "Concat",
+      "Conv",      "FusedBatchNorm", "Gelu",    "InstanceNorm", "Identity",
+      "LayerNorm", "MatMul",         "Mish",    "Mul",          "MaxPool",
+      "Quantize",  "Relu",           "Reshape", "Resize",       "Slice",
+      "Sub",       "Swish",
+  };
+  return &onednn_op_list;
+}
+
+bool RewriteConv(const utils::MutableNodeView& node_view) {
+  for (int i = 0; i < node_view.NumRegularFanins(); ++i) {
+    const NodeDef* input_node_def =
+        node_view.GetRegularFanin(i).node_view()->node();
+    if (IsOneDnnLayoutDependentOp(input_node_def->op())) {
+      return true;
+    }
+  }
+
+  const std::vector<string>* potential_onednn_op = GetPotentialOneDnnOpList();
+  if (node_view.NumRegularFanouts() < 1) return false;
+  for (auto const& fanout : node_view.GetRegularFanouts()) {
+    if (fanout.size() < 1) continue;
+    for (auto const& fanout_i : fanout) {
+      auto const* fanout_node_view = fanout_i.node_view();
+      if (!fanout_node_view) continue;
+      auto const& crt_op_name = fanout_node_view->node()->op();
+      for (auto onednn_op : *potential_onednn_op) {
+        if (crt_op_name.find(onednn_op) != string::npos) {
+          if (onednn_op == "Conv" || onednn_op == "MatMal") {
+            return true;
+          } else {
+            if (fanout_node_view->NumRegularFanouts() < 1) continue;
+            for (auto const& next_op_output :
+                 fanout_node_view->GetRegularFanouts()) {
+              if (next_op_output.size() < 1) continue;
+              for (auto const& next_op_output_i : next_op_output) {
+                auto const* next_op_output_node_view =
+                    next_op_output_i.node_view();
+                if (!next_op_output_node_view) continue;
+                auto const& next_op_name =
+                    next_op_output_node_view->node()->op();
+                for (auto onednn_op : *potential_onednn_op) {
+                  if (next_op_name.find(onednn_op) != string::npos) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 bool RewriteFusedConv(const utils::MutableNodeView& node_view) {
   // OneDnn currently doesn't support all fusions that grappler fuses
   // together with Conv2D/Conv3D (ex. batchnorm). We rewrite
@@ -143,7 +201,7 @@ bool RewriteFusedConv(const utils::MutableNodeView& node_view) {
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "fused_ops", &fused_ops));
 
-  return post_op_util.AddOps(fused_ops);
+  return post_op_util.AddOps(fused_ops) && RewriteConv(node_view);
 }
 
 bool RewriteMatMul(const utils::MutableNodeView& node_view) {

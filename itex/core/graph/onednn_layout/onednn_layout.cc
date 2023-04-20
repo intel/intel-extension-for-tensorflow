@@ -71,12 +71,12 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
       {"Cast", "_OneDnnCast", CopyAttrsCast, RewriteCast},
       {"Concat", "_OneDnnConcat", CopyAttrsAll, RewriteWithBlockInput},
       {"ConcatV2", "_OneDnnConcatV2", CopyAttrsAll, RewriteWithBlockInput},
-      {"Conv2D", "_OneDnnConv2D", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"Conv2D", "_OneDnnConv2D", CopyAttrsAllCheckConstFilter, RewriteConv},
       {"Conv2DBackpropFilter", "_OneDnnConv2DBackpropFilter", CopyAttrsAll,
        RewriteConv2DBackprop},
       {"Conv2DBackpropInput", "_OneDnnConv2DBackpropInput", CopyAttrsAll,
        RewriteConv2DBackprop},
-      {"Conv3D", "_OneDnnConv3D", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"Conv3D", "_OneDnnConv3D", CopyAttrsAllCheckConstFilter, RewriteConv},
       {"Conv3DBackpropFilterV2", "_OneDnnConv3DBackpropFilterV2", CopyAttrsAll,
        RewriteBackwardDataType},
       {"Conv3DBackpropInputV2", "_OneDnnConv3DBackpropInputV2", CopyAttrsAll,
@@ -190,9 +190,9 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        RewriteWithBlockInput},
       {"_ITEXMish", "_OneDnnMish", CopyAttrsAll, RewriteWithBlockInput},
       {"_ITEXPadWithConv2D", "_OneDnnPadWithConv2D",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+       CopyAttrsAllCheckConstFilter, RewriteConv},
       {"_ITEXPadWithConv3D", "_OneDnnPadWithConv3D",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+       CopyAttrsAllCheckConstFilter, RewriteConv},
       {"_ITEXPadWithFusedConv2D", "_OneDnnPadWithFusedConv2D",
        CopyAttrsAllCheckConstFilter, RewriteFusedConv},
       {"_ITEXPadWithFusedConv3D", "_OneDnnPadWithFusedConv3D",
@@ -316,7 +316,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
   };
 
   return &rinfo;
-}  // namespace
+}  // GetRewriteInfo
 
 }  // namespace
 
@@ -856,7 +856,6 @@ Status RunOneDnnLayout(const char* device_name, const GrapplerItem& item,
     if ((ri = CheckForNodeRewrite(*node_view)) != nullptr) {
       string node_name = node_def->name();
       string op_name = node_def->op();
-
       ITEX_VLOG(1) << "OneDnnLayoutPass: Scheduled node " << node_name
                    << " with OP " << op_name << " for rewrite using"
                    << " layout optimization.";

@@ -72,6 +72,9 @@ bool AlwaysRewrite(const utils::MutableNodeView& node_view);
 // Backward only supports FP32, BF16
 bool RewriteBackwardDataType(const utils::MutableNodeView& node_view);
 
+// Conv op is rewritten only if there are OneDnn ops in its input or output.
+bool RewriteConv(const utils::MutableNodeView& node_view);
+
 // Only rewrite GPU nodes.
 bool RewriteForGPU(const utils::MutableNodeView& node_view);
 
