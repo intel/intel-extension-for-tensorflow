@@ -13,47 +13,174 @@
 # limitations under the License.
 # ==============================================================================
 
-ubuntu_version_list=(20.04 22.04)
-redhat_version_list=(8.5)
+declare -A ubuntu_version_list
+ubuntu_version_list[1.0.0]="20.04"
+ubuntu_version_list[1.1.0]="20.04 22.04"
+ubuntu_version_list[1.2.0]="20.04 22.04"
 
-min_python_version=7
-max_python_version=10
+declare -A redhat_version_list
+redhat_version_list[1.0.0]="8.5"
+redhat_version_list[1.1.0]="8.6"
+redhat_version_list[1.2.0]="8.6"
 
-min_tensorflow_version=10
+declare -A sles_version_list
+sles_version_list[1.1.0]="15.3 15.4"
+sles_version_list[1.2.0]="15.3 15.4"
+
+declare -A min_python_version
+min_python_version[1.0.0]=7
+min_python_version[1.1.0]=7
+min_python_version[1.2.0]=8
+
+declare -A max_python_version
+max_python_version[1.0.0]=10
+max_python_version[1.1.0]=10
+max_python_version[1.2.0]=11
+
+declare -A min_tensorflow_version
+min_tensorflow_version[1.0.0]=10
+min_tensorflow_version[1.1.0]=10
+min_tensorflow_version[1.2.0]=12
 
 driver_list_for_ubuntu=(
   "intel-level-zero-gpu"
   "intel-opencl-icd"
   "level-zero"
-  "level-zero-dev"
-  "libdrm-common"
-  "libdrm2"
-  "libdrm-amdgpu1"
-  "libdrm-intel1"
-  "libdrm-nouveau2"
-  "libdrm-dev"
   "libigc1"
   "libigdfcl1"
   "libigdgmm12"
 )
 
 driver_list_for_rhel=(
-  "hwdata"
   "intel-igc-core"
   "intel-igc-opencl"
   "intel-gmmlib"
   "intel-opencl"
   "level-zero"
   "level-zero-devel"
-  "libdrm"
-  "libpciaccess"
-  "libpkgconf"
-  "pkgconf"
-  "pkgconf-m4"
-  "pkgconf-pkg-config"
+)
+
+driver_list_for_sles=(
+  "intel-level-zero-gpu"
+  "intel-opencl"
+  "level-zero"
+  "libigc1"
+  "libigdfcl1"
+  "libigdgmm12"
 )
 
 oneapi_list=(compiler mkl ccl)
+
+# ITEX v1.0.0 GPU Driver Version
+itex_1_0_driver_version_ubuntu=(
+  "1.3.23726.1+i419"
+  "22.28.23726.1+i419"
+  "1.8.1+i419"
+  "1.0.11485+i419"
+  "1.0.11485+i419"
+  "22.1.7+i419"
+)
+
+itex_1_0_driver_version_rhel=(
+  "1.0.11485-i419.el8"
+  "1.0.11485-i419.el8"
+  "22.1.7-i419.el8"
+  "22.28.23726.1-i419.el8"
+  "1.8.1-i755.el8"
+  "1.8.1-i755.el8"
+)
+
+# ITEX v1.1.0 GPU Driver Version
+itex_1_1_driver_version_ubuntu=(
+  "1.3.24595.35+i538"
+  "22.43.24595.35+i538"
+  "1.8.8+i524"
+  "1.0.12504.6+i537"
+  "1.0.12504.6+i537"
+  "22.3.1+i529"
+)
+
+itex_1_1_driver_version_rhel=(
+  "1.0.12504.6-i537.el8"
+  "1.0.12504.6-i537.el8"
+  "22.3.1-i529.el8"
+  "22.43.24595.35-i538.el8"
+  "1.8.8-i524.el8"
+  "1.8.8-i524.el8"
+)
+
+itex_1_1_driver_version_sles=(
+  "1.3.24595.35-i538"
+  "22.43.24595.35-i538"
+  "1.8.8-i524"
+  "1.0.12504.6-i537"
+  "1.0.12504.6-i537"
+  "22.3.1-i529"
+)
+
+# ITEX v1.2.0 GPU Driver Version
+itex_1_2_driver_version_ubuntu=(
+  "1.3.25593.18-601"
+  "23.05.25593.18-601"
+  "1.9.4+i589"
+  "1.0.13230.8-600"
+  "1.0.13230.8-600"
+  "22.3.5-601"
+)
+
+itex_1_2_driver_version_rhel=(
+  "1.0.13230.8-i600.el8"
+  "1.0.13230.8-i600.el8"
+  "22.3.5-i601.el8" 
+  "23.05.25593.18-i601.el8"
+  "1.9.4-i589.el8"
+  "1.9.4-i589.el8"
+)
+
+itex_1_2_driver_version_sles=(
+  "1.3.25593.18-i601"
+  "23.05.25593.18-i601"
+  "1.9.4-i589"
+  "1.0.13230.8-i600"
+  "1.0.13230.8-i600"
+  "22.3.5-i601"
+)
+
+declare -A driver_version_ubuntu
+driver_version_ubuntu[1.0.0]=${itex_1_0_driver_version_ubuntu[@]}
+driver_version_ubuntu[1.1.0]=${itex_1_1_driver_version_ubuntu[@]}
+driver_version_ubuntu[1.2.0]=${itex_1_2_driver_version_ubuntu[@]}
+
+declare -A driver_version_rhel
+driver_version_rhel[1.0.0]=${itex_1_0_driver_version_rhel[@]}
+driver_version_rhel[1.1.0]=${itex_1_1_driver_version_rhel[@]}
+driver_version_rhel[1.2.0]=${itex_1_2_driver_version_rhel[@]}
+
+declare -A driver_version_sles
+driver_version_sles[1.1.0]=${itex_1_1_driver_version_sles[@]}
+driver_version_sles[1.2.0]=${itex_1_2_driver_version_sles[@]}
+
+itex_1_0_oneapi_version=(
+  "2022.2.0-8734"
+  "2022.2.0-8748"
+)
+
+itex_1_1_oneapi_version=(
+  "2023.0.0-25370"
+  "2023.0.0-25398"
+  "2021.8.0-25371"
+)
+
+itex_1_2_oneapi_version=(
+  "2023.1.0-46305"
+  "2023.1.0-46342"
+  "2021.9.0-43543"
+)
+
+declare -A oneapi_version
+oneapi_version[1.0.0]=${itex_1_0_oneapi_version[@]}
+oneapi_version[1.1.0]=${itex_1_1_oneapi_version[@]}
+oneapi_version[1.2.0]=${itex_1_2_oneapi_version[@]}
 
 tf_require_list=(
   "absl-py"
@@ -113,6 +240,10 @@ Mandatory arguments to long options are mandatory for short options too.
 EOM
 }
 
+info() {
+  echo -e "\033[33m $1. \033[0m"
+}
+
 die() {
   echo -e "\033[31m $1. \033[0m"
   echo ""
@@ -146,48 +277,65 @@ check_os() {
 
   case "${os_name}" in
       ubuntu)
-        if [[ "${ubuntu_version_list[*]}"  =~ "${os_version}" ]]; then
-          echo -e "\033[33m OS ${os_name}:${os_version} is Supported. \033[0m"
-          echo ""
+        if [[ "${ubuntu_version_list[$itex_version]}"  =~ "${os_version}" ]]; then
+          info "OS ${os_name}:${os_version} is Supported"
         else
           die "Intel GPU Driver Does Not Support OS ${os_name}:${os_version} yet" " Check OS Failed"
         fi
         ;;
       rhel)
-        if [[ "${redhat_version_list[*]}"  =~ "${os_version}" ]]; then
-          echo -e "\033[33m OS ${os_name}:${os_version} is Supported. \033[0m"
-          echo ""
+        if [[ "${redhat_version_list[$itex_version]}"  =~ "${os_version}" ]]; then
+          info "OS ${os_name}:${os_version} is Supported"
         else
           die "Intel GPU Driver Does Not Support OS ${os_name}:${os_version} yet" " Check OS Failed"
         fi
         ;;
-      sles|centos)
-        die "Intel GPU Driver Does Not Support OS ${os_name}:${os_version} yet" " Check OS Failed"
+      sles)
+        if [[ "${sles_version_list[$itex_version]}"  =~ "${os_version}" ]]; then
+          info "OS ${os_name}:${os_version} is Supported"
+        else
+          die "Intel GPU Driver Does Not Support OS ${os_name}:${os_version} yet" " Check OS Failed"
+        fi
         ;;
       *)
         die "Unknow OS ${os_name}" " Check OS Failed"
         ;;
   esac
+
+  echo ""
   echo -e "====================== \033[32m Check OS Passed \033[0m ======================="
   echo ""
 }
 
-installed_status() {
+installed_status_driver() {
   case "${os_name}" in
     ubuntu)
+      driver_list=(${driver_version_ubuntu[$itex_version]// / })
       status=$(dpkg -s $1 2>/dev/null |grep Status|awk -F ':' '{print $2}'|grep "install ok installed"|sed 's/^\s*//g')
-      version=$(dpkg -s $1 2>/dev/null |grep Version|awk -F ':' '{print $2}'|sed 's/^\s*//g')
+      version=$(dpkg -s $1 2>/dev/null |grep Version|awk -F ':|~' '{print $2}'|sed 's/^\s*//g')
       ;;
     rhel)
+      driver_list=(${driver_version_rhel[$itex_version]// / })
       status=$(yum info installed $1 2>/dev/null|grep Name|awk -F ':' '{print $2}')
       version=$(yum info installed $1 2>/dev/null|grep Version|awk -F ':' '{print $2}'|sed 's/^\s*//g')
+      ;;
+    sles)
+      driver_list=(${driver_version_sles[$itex_version]// / })
+      status=$(zypper se --installed-only |grep $1)
+      version=$(rpm -qa --info $1 2>/dev/null|grep Version|awk -F ':' '{print $2}'|sed 's/^\s*//g')
+      ;;
+    *)
+      echo -e "=============== \033[31m Check Intel GPU Driver Failed \033[0m ================"
+      ;;
   esac
-
-  if [[ ! -z ${status} ]]; then
-    echo -e "\033[33m Intel(R) graphics runtime $1-${version} is installed. \033[0m"
-  else
+  if [[ -z $status ]]; then
     echo -e "\033[31m Intel(R) graphics runtime $1 is not installed! \033[0m"
+  elif [[ ! "${driver_list[@]}" =~ "$version" ]]; then
+    info "Intel(R) graphics runtime $1-${version} is installed, but is not recommended ${driver_list[$2]}"
+  else
+    info "Intel(R) graphics runtime $1-${version} is installed"
   fi
+
 }
 
 check_intel_gpu_driver() {
@@ -195,21 +343,54 @@ check_intel_gpu_driver() {
   echo -e "=================== \033[33m Check Intel GPU Driver \033[0m ==================="
   echo ""
 
-  if [[ "${os_name}" = "ubuntu" ]]; then
-    for driver in ${driver_list_for_ubuntu[@]}
-    do
-      installed_status ${driver}
-    done
-  elif [[ "${os_name}" = "rhel" ]]; then
-    for driver in ${driver_list_for_rhel[@]}
-    do
-      installed_status ${driver}
-    done
-  else
-    echo -e "=============== \033[31m Check Intel GPU Driver Failed \033[0m ================"
-  fi
+  case "${os_name}" in
+    ubuntu)
+      driver_list=${driver_list_for_ubuntu[@]}
+      ;;
+    rhel)
+      driver_list=${driver_list_for_rhel[@]}
+      ;;
+    sles)
+      driver_list=${driver_list_for_sles[@]}
+      ;;
+    *)
+      echo -e "=============== \033[31m Check Intel GPU Driver Failed \033[0m ================"
+      ;;
+  esac
+  i=0
+  for driver in ${driver_list[@]}
+  do
+    installed_status_driver ${driver} $((i++))
+  done
   echo ""
   echo -e "=============== \033[32m Check Intel GPU Driver Finshed \033[0m ================"
+  echo ""
+}
+
+check_device_availability() {
+  echo ""
+  echo -e "========================== \033[33m Check Devices Availability \033[0m =========================="
+  echo ""
+  device_list=$(python -c "import tensorflow as tf;print(tf.config.list_physical_devices())")
+  if [[ ! ${device_list[@]} =~ "XPU" ]]; then
+    os_glib_path=(`find /usr/lib /usr/local/lib /usr/lib64 -name libstdc++.so.6.*`)
+    glib_path=(${os_glib_path[@]})
+    if [[ ! -z ${CONDA_PREFIX} ]]; then
+      conda_glib_path=`find ${CONDA_PREFIX} ${CONDA_PREFIX_1}/lib -name libstdc++.so.6.*`
+      glib_path=(${os_glib_path[@]} ${conda_glib_path[*]})
+    fi
+
+    info "You have multiple libstdc++.so.6, make sure you are using the correct one"
+    for path in ${glib_path[@]};
+    do
+      info "    $path"
+    done
+    echo ""
+
+    die "Enable OCL_ICD_ENABLE_TRACE=1 OCL_ICD_DEBUG=2 to obtain detail information when using ITEX" "Check Devices Availability Failed"
+  fi
+  echo ""
+  echo -e "====================== \033[32m Check Devices Availability Passed \033[0m ======================="
   echo ""
 }
 
@@ -218,11 +399,10 @@ installed_status_oneapi() {
   if [ $? -eq 0 ]; then
     echo -e "\033[33m $2 is installed. \033[0m"
   else
-    echo -e "\033[31m Can't find $1, $2 is uninstalled or unset relevant environment viriables, such as $3. \033[0m"
+    echo -e "\033[31m Can't find $1, $2 is uninstalled supported version $4 or unset relevant environment viriables, such as $3. \033[0m"
     IS_FAILED=1
   fi
 }
-
 
 check_intel_oneapi() {
   echo ""
@@ -230,19 +410,20 @@ check_intel_oneapi() {
   echo ""
 
   LOAD_LIBS=/tmp/loadlibs
-  LD_DEBUG=libs ${python_bin_path} -c "import tensorflow"  2>>${LOAD_LIBS}
+  LD_DEBUG=libs ${python_bin_path} -c "import intel_extension_for_tensorflow"  2>>${LOAD_LIBS}
+  current_oneapi_list=(${oneapi_version[$itex_version]// / })
   for oneapi in ${oneapi_list[@]}
   do
     case "${oneapi}" in
         compiler)
-          installed_status_oneapi "libsycl.so" "Intel(R) OneAPI DPC++/C++ Compiler" "CMPLR_ROOT"
+          installed_status_oneapi "libsycl.so" "Intel(R) OneAPI DPC++/C++ Compiler" "CMPLR_ROOT" ${current_oneapi_list[0]}
           ;;
         mkl)
-          installed_status_oneapi "libmkl_sycl.so" "Intel(R) OneAPI Math Kernel Library" "MKLROOT"
+          installed_status_oneapi "libmkl_sycl.so" "Intel(R) OneAPI Math Kernel Library" "MKLROOT" ${current_oneapi_list[1]}
           ;;
         ccl)
           if [[ ${IS_DETAIL} -eq 1 ]]; then
-            installed_status_oneapi "libccl.so" "Intel(R) OneAPI Collective Communications Library" "CCL_ROOT"
+            installed_status_oneapi "libccl.so" "Intel(R) OneAPI Collective Communications Library" "CCL_ROOT" ${current_oneapi_list[2]}
           fi
           ;;
         esac
@@ -256,6 +437,8 @@ check_intel_oneapi() {
     echo ""
     echo -e "================= \033[32m Check Intel OneApi Passed \033[0m =================="
     echo ""
+
+    check_device_availability
   fi
 }
 
@@ -264,31 +447,30 @@ check_python() {
   echo -e "======================== \033[33m Check Python \033[0m ========================"
   echo ""
 
-  python_bin_path=$(which python || which python3 2>/dev/null)
-  if [[ ${python_bin_path} = "" ]]; then
-    die "Python is not installed" "Check Python Failed"
+  python_bin_path=$(which python 2>/dev/null|| which python3 2>/dev/null || die "Python is not installed" "Check Python Failed")
+
+  itex_version=$(pip show intel_extension_for_tensorflow|grep Version|awk '{print $2}')
+  itex_lib_version=$(pip show intel_extension_for_tensorflow_lib|grep Version|awk '{print $2}')
+
+  if [ -z ${itex_version} ]; then
+    die "Please install Intel(R) Extension for TensorFlow* first." "Check Failed"
   fi
 
-  v1=$(python --version|awk -F '[ .]' '{print $2}')
-  v2=$(python --version|awk -F '[ .]' '{print $3}')
+  v1=$(${python_bin_path} --version|awk -F '[ .]' '{print $2}')
+  v2=$(${python_bin_path} --version|awk -F '[ .]' '{print $3}')
   echo -e "\033[33m python$v1.$v2 is installed. \033[0m"
 
   if [[ $v1 -le 2 ]]; then
-    echo -e "\033[31m Python2 is not supported, please install python3 ! \033[0m"
-    echo -e "==================== \033[31m Check Python Failed \033[0m ====================="
-    echo ""
-  elif [[ $v2 -lt ${min_python_version} ]]; then
-    echo -e "\033[31m Your python version is too low, please upgrade to 3.${min_python_version} or higher! \033[0m"
-    echo -e "==================== \033[31m Check Python Failed \033[0m ====================="
-    echo ""
-  elif [[ $v2 -gt ${max_python_version} ]]; then
-    echo -e "\033[31m Your python version is too high, please downgrade to 3.${max_python_version} or lower! \033[0m"
-    echo -e "==================== \033[31m Check Python Failed \033[0m ====================="
-    echo ""
-  else
-    echo -e "==================== \033[32m Check Python Passed \033[0m ====================="
-    echo ""
+    die "Python2 is not supported, please install python3!" "Check Python Failed"
+  elif [[ $v2 -lt ${min_python_version[$itex_version]} ]]; then
+    die "Your python version is too low, please upgrade to 3.${min_python_version[$itex_version]} or higher!" "Check Python Failed"
+  elif [[ $v2 -gt ${max_python_version[$itex_version]} ]]; then
+    die "Your python version is too high, please downgrade to 3.${max_python_version[$itex_version]} or lower!" "Check Python Failed"
   fi
+
+  echo ""
+  echo -e "==================== \033[32m Check Python Passed \033[0m ====================="
+  echo ""
 }
 
 check_tensorflow() {
@@ -298,19 +480,17 @@ check_tensorflow() {
 
   v1=$(pip show tensorflow 2>/dev/null|grep Version|awk -F '[ :.]' '{print $3}')
   v2=$(pip show tensorflow 2>/dev/null|grep Version|awk -F '[ :.]' '{print $4}')
+  echo -e "\033[33m tensorflow${v1}.${v2} is installed. \033[0m"
+
   if [[ ${v2} = "" ]]; then
-    echo -e "\033[31m tensorflow is not installed! \033[0m"
-    echo -e "================== \033[31m Check Tensorflow Failed \033[0m ==================="
-    echo ""
-  elif [[ ${v2} -ge ${min_tensorflow_version} ]]; then
-    echo -e "\033[33m tensorflow${v1}.${v2} is installed. \033[0m"
-    echo ""
-    echo -e "================== \033[32m Check Tensorflow Passed \033[0m ==================="
-    echo ""
-  else
-    die "tensorflow${v1}.${v2} is not supported" "Check Tensorflow Failed"
+    die "Tensorflow is not installed!" "Check Tensorflow Failed"
+  elif [[ ${v2} -lt ${min_tensorflow_version[$itex_version]} ]]; then
+    die "Your Tensorflow version is too low, please upgrade to ${min_tensorflow_version[$itex_version]}!" "Check Tensorflow Failed"
   fi
 
+  echo ""
+  echo -e "================== \033[32m Check Tensorflow Passed \033[0m ==================="
+  echo ""
 }
 
 check_python_lib() {
@@ -342,6 +522,7 @@ check_python_lib() {
     fi
   done
 
+  echo ""
   echo -e "================== \033[32m Check Python Libraries Passed \033[0m ==================="
   echo ""
 }
@@ -363,11 +544,15 @@ main() {
 
 EOM
 
-  check_os
-  check_intel_gpu_driver
   check_python
+  check_os
   check_tensorflow
-  check_intel_oneapi
+
+  if [ ${itex_lib_version: -1} -eq 1 ]; then
+    check_intel_gpu_driver
+    check_intel_oneapi
+  fi
+
   if [ ${IS_DETAIL} -eq 1 ]; then
     check_python_lib
   fi
