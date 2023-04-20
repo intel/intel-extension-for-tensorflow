@@ -17,8 +17,6 @@ ARG UBUNTU_VERSION
 
 FROM ubuntu:${UBUNTU_VERSION}
 
-ENV LANG=C.UTF-8
-
 ARG DEBIAN_FRONTEND=noninteractive
 
 HEALTHCHECK NONE
@@ -49,14 +47,12 @@ RUN echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] http
 ARG ICD_VER
 ARG LEVEL_ZERO_GPU_VER
 ARG LEVEL_ZERO_VER
-ARG LEVEL_ZERO_DEV_VER
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --fix-missing \
     intel-opencl-icd=${ICD_VER} \
     intel-level-zero-gpu=${LEVEL_ZERO_GPU_VER} \
-    level-zero=${LEVEL_ZERO_VER} \
-    level-zero-dev=${LEVEL_ZERO_DEV_VER} && \
+    level-zero=${LEVEL_ZERO_VER} && \
     apt-get clean && \
     rm -rf  /var/lib/apt/lists/*
 
@@ -67,13 +63,11 @@ RUN no_proxy=$no_proxy wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-P
 
 ARG DPCPP_VER
 ARG MKL_VER
-ARG CCL_VER
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --fix-missing \
     intel-oneapi-runtime-dpcpp-cpp=${DPCPP_VER} \
-    intel-oneapi-runtime-mkl=${MKL_VER} \
-    intel-oneapi-runtime-ccl=${CCL_VER} && \
+    intel-oneapi-runtime-mkl=${MKL_VER} && \
     apt-get clean && \
     rm -rf  /var/lib/apt/lists/*
 
@@ -96,16 +90,9 @@ RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python3
 
-ARG TF_VER="2.11"
+ARG TF_VER="2.12"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
-
-ARG HOROVOD_WHL
-
-COPY models/horovod/${HOROVOD_WHL} /tmp/horovod_whls/
-
-RUN pip install /tmp/horovod_whls/* && \
-    rm -rf /tmp/horovod_whls
 
 ARG TF_PLUGIN_WHEEL
 
@@ -123,4 +110,3 @@ ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/maste
 ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/onemkl-third-party-program.txt /licenses/
 ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-program-of-intel-extension-for-tensorflow.txt /licenses/
 ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-programs-of-intel-tensorflow.txt /licenses/
-ADD https://raw.githubusercontent.com/oneapi-src/oneCCL/master/third-party-programs.txt /licenses/
