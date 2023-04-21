@@ -227,7 +227,7 @@ struct ColReductionKernel {
       }
       scratch[local_id] = aggregate;
     }
-    item.barrier(cl::sycl::access::fence_space::local_space);
+    item.barrier(sycl::access::fence_space::local_space);
 
     int end = tile_y;
     int stride = (end + 2 - 1) / 2;
@@ -238,7 +238,7 @@ struct ColReductionKernel {
       }
       end = stride;
       stride = (end + 2 - 1) / 2;
-      item.barrier(cl::sycl::access::fence_space::local_space);
+      item.barrier(sycl::access::fence_space::local_space);
     }
 
     if (is_valid && local_y_id == 0) {

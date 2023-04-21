@@ -71,8 +71,8 @@ struct GroupRowReduction {
   static constexpr int WORDS = ITEMS_PER_THREAD / VEC_LENGTH;
 
   // valid_items < TILES_SIZE
-  inline void ConsumRange(cl::sycl::nd_item<1> item, int offset,
-                          int valid_items, Int2Type<false> /*is_full_tile*/,
+  inline void ConsumRange(sycl::nd_item<1> item, int offset, int valid_items,
+                          Int2Type<false> /*is_full_tile*/,
                           InitValueT* aggregate) const {
     auto lid = item.get_local_linear_id();
     auto g = item.get_group();
@@ -89,7 +89,7 @@ struct GroupRowReduction {
     *aggregate = op(*aggregate, updated_thread_aggregate);
   }
 
-  inline void ConsumRange(cl::sycl::nd_item<1> item, int offset,
+  inline void ConsumRange(sycl::nd_item<1> item, int offset,
                           int /*valid_items*/, Int2Type<true> /*is_full_tile*/,
                           InitValueT* aggregate) const {
     auto lid = item.get_local_linear_id();
@@ -115,7 +115,7 @@ struct GroupRowReduction {
     }
 
     InitValueT updated_thread_aggregate =
-        cl::sycl::reduce_over_group(g, thread_aggregate, op);
+        sycl::reduce_over_group(g, thread_aggregate, op);
     *aggregate = op(*aggregate, updated_thread_aggregate);
   }
 
@@ -176,7 +176,7 @@ struct GroupRowReduction<Eigen::bfloat16, OutputT, InitValueT, InputFunctor,
   static constexpr int VEC_LENGTH = 4 * sizeof(float) / sizeof(InputT);
   static constexpr int WORDS = ITEMS_PER_THREAD / VEC_LENGTH;
 
-  inline void ConsumRange(cl::sycl::nd_item<1> item, int offset,
+  inline void ConsumRange(sycl::nd_item<1> item, int offset,
                           int /*valid_items*/, Int2Type<true> /*is_full_tile*/,
                           InitValueT* aggregate) const {
     auto lid = item.get_local_linear_id();
@@ -203,13 +203,13 @@ struct GroupRowReduction<Eigen::bfloat16, OutputT, InitValueT, InputFunctor,
     }
 
     InitValueT updated_thread_aggregate =
-        cl::sycl::reduce_over_group(g, thread_aggregate, op);
+        sycl::reduce_over_group(g, thread_aggregate, op);
     *aggregate = op(*aggregate, updated_thread_aggregate);
   }
 
   // valid_items < TILES_SIZE
-  inline void ConsumRange(cl::sycl::nd_item<1> item, int offset,
-                          int valid_items, Int2Type<false> /*is_full_tile*/,
+  inline void ConsumRange(sycl::nd_item<1> item, int offset, int valid_items,
+                          Int2Type<false> /*is_full_tile*/,
                           InitValueT* aggregate) const {
     auto lid = item.get_local_id(0);
     auto g = item.get_group();

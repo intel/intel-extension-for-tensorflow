@@ -169,13 +169,12 @@ SE_EventStatus gpu_get_event_status(const SP_Device* device, SP_Event event) {
   if (IsMultipleStreamEnabled()) {
     ITEX_GPUEvent event_handle = static_cast<SP_Event_st*>(event)->event_handle;
     auto event_status =
-        event_handle
-            .get_info<cl::sycl::info::event::command_execution_status>();
+        event_handle.get_info<sycl::info::event::command_execution_status>();
     switch (event_status) {
-      case cl::sycl::info::event_command_status::submitted:
-      case cl::sycl::info::event_command_status::running:
+      case sycl::info::event_command_status::submitted:
+      case sycl::info::event_command_status::running:
         return SE_EVENT_PENDING;
-      case cl::sycl::info::event_command_status::complete:
+      case sycl::info::event_command_status::complete:
         return SE_EVENT_COMPLETE;
       default:
         return SE_EVENT_UNKNOWN;

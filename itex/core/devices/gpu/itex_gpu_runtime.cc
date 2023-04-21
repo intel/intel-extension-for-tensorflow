@@ -120,7 +120,7 @@ class DevicePool {
       for (const auto& platform : platform_list) {
         auto platform_name = platform.get_info<sycl::info::platform::name>();
         bool is_level_zero =
-            platform_name.find("Level-Zero") != std::string::npos;
+            (platform.get_backend() == sycl::backend::ext_oneapi_level_zero);
         // Add device in these two scenarios:
         // true == true means need Level-Zero and the backend platform is
         // Level-Zero.
@@ -174,7 +174,6 @@ class DevicePool {
                         << "To check runtime environment on your host, "
                         << "please run itex/tools/env_check.sh.";
       }
-      assert((num_device > 0));
     });
 
     return devices;

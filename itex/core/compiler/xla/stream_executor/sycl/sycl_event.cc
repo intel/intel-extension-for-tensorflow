@@ -52,13 +52,13 @@ GpuEventHandle GpuEvent::gpu_event() { return gpu_event_; }
 
 Event::Status GpuEvent::PollForStatus() {
   auto event_status =
-      gpu_event_->get_info<cl::sycl::info::event::command_execution_status>();
+      gpu_event_->get_info<sycl::info::event::command_execution_status>();
 
   switch (event_status) {
-    case cl::sycl::info::event_command_status::submitted:
-    case cl::sycl::info::event_command_status::running:
+    case sycl::info::event_command_status::submitted:
+    case sycl::info::event_command_status::running:
       return Event::Status::kPending;
-    case cl::sycl::info::event_command_status::complete:
+    case sycl::info::event_command_status::complete:
       return Event::Status::kComplete;
     default:
       return Event::Status::kUnknown;

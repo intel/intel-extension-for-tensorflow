@@ -79,20 +79,20 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
   auto group_size =
       (*stream)
           .get_device()
-          .template get_info<cl::sycl::info::device::max_work_group_size>();
+          .template get_info<sycl::info::device::max_work_group_size>();
   auto num_workgroup = (tensor_size + group_size - 1) / group_size;
 
   if (reduction_size == 2) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto in0_ptr = static_cast<const T*>(participants[0].send);
       auto in1_ptr = static_cast<const T*>(participants[1].send);
       auto out0_ptr = static_cast<T*>(participants[0].recv);
       auto out1_ptr = static_cast<T*>(participants[1].recv);
 
       cgh.parallel_for<AllReduceKernel<T, Func, 2>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] =
@@ -101,7 +101,7 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
           });
     });
   } else if (reduction_size == 3) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto in0_ptr = static_cast<const T*>(participants[0].send);
       auto in1_ptr = static_cast<const T*>(participants[1].send);
       auto in2_ptr = static_cast<const T*>(participants[2].send);
@@ -110,9 +110,9 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
       auto out2_ptr = static_cast<T*>(participants[2].recv);
 
       cgh.parallel_for<AllReduceKernel<T, Func, 3>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] =
@@ -123,7 +123,7 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
           });
     });
   } else if (reduction_size == 4) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto in0_ptr = static_cast<const T*>(participants[0].send);
       auto in1_ptr = static_cast<const T*>(participants[1].send);
       auto in2_ptr = static_cast<const T*>(participants[2].send);
@@ -134,9 +134,9 @@ void allreduce_dpcpp(ITEX_GPUStream* stream, int tensor_size,
       auto out3_ptr = static_cast<T*>(participants[3].recv);
 
       cgh.parallel_for<AllReduceKernel<T, Func, 4>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] = T(Func()(
@@ -164,20 +164,20 @@ void allgather_dpcpp(ITEX_GPUStream* stream, int tensor_size,
   auto group_size =
       (*stream)
           .get_device()
-          .template get_info<cl::sycl::info::device::max_work_group_size>();
+          .template get_info<sycl::info::device::max_work_group_size>();
   auto num_workgroup = (tensor_size + group_size - 1) / group_size;
 
   if (reduction_size == 2) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto in0_ptr = static_cast<const T*>(participants[0].send);
       auto in1_ptr = static_cast<const T*>(participants[1].send);
       auto out0_ptr = static_cast<T*>(participants[0].recv);
       auto out1_ptr = static_cast<T*>(participants[1].recv);
 
       cgh.parallel_for<AllGatherKernel<T, 2>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] = in0_ptr[index];
@@ -202,14 +202,14 @@ void alltoall_dpcpp(ITEX_GPUStream* stream, int tensor_size,
   auto group_size =
       (*stream)
           .get_device()
-          .template get_info<cl::sycl::info::device::max_work_group_size>();
+          .template get_info<sycl::info::device::max_work_group_size>();
   auto num_workgroup = (tensor_size + group_size - 1) / group_size;
 
   // Process: send vec -> rev vec
   // P0: (s0, s1) -> (s0, s2)
   // p1: (s2, s3) -> (s1, s3)
   if (reduction_size == 2) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto s0_ptr = static_cast<const T*>(participants[0].send[0]);
       auto s1_ptr = static_cast<const T*>(participants[0].send[1]);
       auto s2_ptr = static_cast<const T*>(participants[1].send[0]);
@@ -220,9 +220,9 @@ void alltoall_dpcpp(ITEX_GPUStream* stream, int tensor_size,
       auto r3_ptr = static_cast<T*>(participants[1].recv[1]);
 
       cgh.parallel_for<AllToAllKernel<T, 2>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             r0_ptr[index] = s0_ptr[index];
@@ -247,21 +247,21 @@ void reducescatter_dpcpp(ITEX_GPUStream* stream, int tensor_size,
   auto group_size =
       (*stream)
           .get_device()
-          .template get_info<cl::sycl::info::device::max_work_group_size>();
+          .template get_info<sycl::info::device::max_work_group_size>();
   // tensor_size: output tensor size
   auto num_workgroup = (tensor_size + group_size - 1) / group_size;
 
   if (reduction_size == 2) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto in0_ptr = static_cast<const T*>(participants[0].send);
       auto in1_ptr = static_cast<const T*>(participants[1].send);
       auto out0_ptr = static_cast<T*>(participants[0].recv);
       auto out1_ptr = static_cast<T*>(participants[1].recv);
 
       cgh.parallel_for<ReduceScatterKernel<T, Func, 2>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] = Func()(in0_ptr[index], in1_ptr[index]);
@@ -270,7 +270,7 @@ void reducescatter_dpcpp(ITEX_GPUStream* stream, int tensor_size,
           });
     });
   } else if (reduction_size == 3) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto in0_ptr = static_cast<const T*>(participants[0].send);
       auto in1_ptr = static_cast<const T*>(participants[1].send);
       auto in2_ptr = static_cast<const T*>(participants[2].send);
@@ -279,9 +279,9 @@ void reducescatter_dpcpp(ITEX_GPUStream* stream, int tensor_size,
       auto out2_ptr = static_cast<T*>(participants[2].recv);
 
       cgh.parallel_for<ReduceScatterKernel<T, Func, 3>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] =
@@ -295,7 +295,7 @@ void reducescatter_dpcpp(ITEX_GPUStream* stream, int tensor_size,
           });
     });
   } else if (reduction_size == 4) {
-    stream->submit([&](cl::sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       auto in0_ptr = static_cast<const T*>(participants[0].send);
       auto in1_ptr = static_cast<const T*>(participants[1].send);
       auto in2_ptr = static_cast<const T*>(participants[2].send);
@@ -306,9 +306,9 @@ void reducescatter_dpcpp(ITEX_GPUStream* stream, int tensor_size,
       auto out3_ptr = static_cast<T*>(participants[3].recv);
 
       cgh.parallel_for<ReduceScatterKernel<T, Func, 4>>(
-          cl::sycl::nd_range<1>(cl::sycl::range<1>(group_size * num_workgroup),
-                                cl::sycl::range<1>(group_size)),
-          [=](cl::sycl::nd_item<1> item) {
+          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                            sycl::range<1>(group_size)),
+          [=](sycl::nd_item<1> item) {
             const int index = item.get_global_linear_id();
             if (index >= tensor_size) return;
             out0_ptr[index] = Func()(
@@ -347,7 +347,7 @@ void permute_dpcpp(ITEX_GPUStream* stream, int tensor_size,
   auto group_size =
       (*stream)
           .get_device()
-          .template get_info<cl::sycl::info::device::max_work_group_size>();
+          .template get_info<sycl::info::device::max_work_group_size>();
   auto num_workgroup = (tensor_size + group_size - 1) / group_size;
 
   if (reduction_size == 2) {
