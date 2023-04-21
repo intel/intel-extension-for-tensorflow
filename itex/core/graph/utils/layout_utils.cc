@@ -266,12 +266,11 @@ bool RewritePool(const utils::MutableNodeView& node_view) {
       GetTensorDim(ksize, data_format, 'C') != 1 ||
       GetTensorDim(strides, data_format, 'C') != 1)
     return false;
-
-#ifndef INTEL_CPU_ONLY
-  return RewriteWithBlockInput(node_view);
-#else
   return true;
-#endif  // INTEL_CPU_ONLY
+}
+
+bool RewriteOneDnnPool(const utils::MutableNodeView& node_view) {
+  return RewritePool(node_view) && RewriteWithBlockInput(node_view);
 }
 
 bool RewriteMaxPoolGrad(const utils::MutableNodeView& node_view) {

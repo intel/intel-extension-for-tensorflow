@@ -107,6 +107,7 @@ bool RewriteConv2DBackprop(const utils::MutableNodeView& node_view);
 //   1) Padding type is not `EXPLICIT`.
 //   2) Not perform pooling on depth(C) or batch(N).
 bool RewritePool(const utils::MutableNodeView& node_view);
+bool RewriteOneDnnPool(const utils::MutableNodeView& node_view);
 
 // Rewrite only if there is _OneDnnMaxpool
 // Only MaxPoolGrad requires the input from MaxPool. AvgPool doesn't have such
