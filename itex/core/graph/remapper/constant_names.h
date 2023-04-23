@@ -117,6 +117,16 @@ constexpr char kPadWithConv2D[] = "_ITEXPadWithConv2D";
 constexpr char kPadWithConv3D[] = "_ITEXPadWithConv3D";
 constexpr char kPadWithFusedConv2D[] = "_ITEXPadWithFusedConv2D";
 constexpr char kPadWithFusedConv3D[] = "_ITEXPadWithFusedConv3D";
+constexpr char kPadWithConv2DBackpropFilter[] =
+    "_ITEXPadWithConv2DBackpropFilter";
+constexpr char kPadWithConv3DBackpropFilter[] =
+    "_ITEXPadWithConv3DBackpropFilter";
+constexpr char kPadWithConv3DBackpropFilterV2[] =
+    "_ITEXPadWithConv3DBackpropFilterV2";
+constexpr char kPadWithFusedConv2DBackpropFilter[] =
+    "_ITEXPadWithConv2DBackpropFilterWithBias";
+constexpr char kPadWithFusedConv3DBackpropFilter[] =
+    "_ITEXPadWithConv3DBackpropFilterWithBias";
 constexpr char kQuantizeV2WithQuantizedConv2D[] =
     "_ITEXQuantizeV2WithQuantizedConv2D";
 constexpr char kFusedQuantizedConv2DWithDequantize[] =

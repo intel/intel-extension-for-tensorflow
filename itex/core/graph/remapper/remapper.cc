@@ -67,6 +67,24 @@ void RemoveAllRegularFanin(RemapperContext* ctx, int node_idx) {
 
 namespace {
 
+// Forward controled fanouts of old nodes to a new fused node
+void ForwardControledFanouts(RemapperContext* ctx, utils::Mutation* mutation,
+                             std::vector<int> old_node_indexes_,
+                             std::string fused_node_name) {
+  std::string& from_name_after_fusion = fused_node_name;
+  for (size_t i = 0; i < old_node_indexes_.size(); ++i) {
+    auto* old_node_view = ctx->graph_view.GetNode(old_node_indexes_[i]);
+    std::string from_name = old_node_view->node()->name();
+    if (from_name == from_name_after_fusion) continue;
+    const auto& controlled_fanouts = old_node_view->GetControlledFanouts();
+    for (size_t j = 0; j < controlled_fanouts.size(); ++j) {
+      auto* cur_fanout_view = controlled_fanouts[j].node_view();
+      mutation->RemoveControllingFanin(cur_fanout_view, from_name);
+      mutation->AddControllingFanin(cur_fanout_view, from_name_after_fusion);
+    }
+  }
+}
+
 // Fuse l2loss + addN
 struct FusedAddN {
   FusedAddN() = default;
@@ -309,6 +327,15 @@ struct PadWithContraction {
   PadWithContraction(int pad, int contraction)
       : pad(pad), contraction(contraction) {}
 
+  int pad = kMissingIndex;
+  int contraction = kMissingIndex;
+};
+
+struct PadWithContractionFwdBwd {
+  PadWithContractionFwdBwd() = default;
+  PadWithContractionFwdBwd(int contraction_bwd, int pad, int contraction)
+      : contraction_bwd(contraction_bwd), pad(pad), contraction(contraction) {}
+  int contraction_bwd = kMissingIndex;
   int pad = kMissingIndex;
   int contraction = kMissingIndex;
 };
@@ -1839,8 +1866,8 @@ bool FindPadWithContraction(const RemapperContext& ctx, int node_index,
                             bool check_device_compatible = true) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   // Root of the pattern must be a Conv or FusedConv.
-  // TODO(itex): Forward controls for patterns with control dependencies.
-  if (HasControlFaninOrFanout(*node_view)) return false;
+  // TODO(itex): Forward controls for patterns with control in dependencies.
+  if (HasControlFanin(*node_view)) return false;
 
   // Root node must be Conv2D/_FusedITEXConv2D.
   const auto* node_def = node_view->node();
@@ -1877,7 +1904,7 @@ bool FindPadWithContraction(const RemapperContext& ctx, int node_index,
   }
 
   if (!HaveSameDataType(node_def, pad_node_def) ||
-      HasControlFaninOrFanout(*pad_node_view) ||
+      HasControlFanin(*pad_node_view) ||
       !HasAtMostOneFanoutAtPort0(*pad_node_view) ||
       IsInPreserveSet(ctx, pad_node_def))
     return false;
@@ -4021,6 +4048,167 @@ Status AddFusedBatchNormGradExNode(RemapperContext* ctx,
   return Status::OK();
 }
 
+bool FindPadWithContractionFwdBwd(const RemapperContext& ctx, int node_index,
+                                  PadWithContractionFwdBwd* matched,
+                                  bool check_device_compatible = true) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // TODO(itex): Forward controls for patterns with control in dependencies.
+  if (HasControlFanin(*node_view)) return false;
+
+  const auto* node_def = node_view->node();
+  bool is_ok = IsConv2D(*node_def) || node_def->op() == kFusedConv2D ||
+               IsConv3D(*node_def) || node_def->op() == kFusedConv3D;
+  if (!is_ok) {
+    return false;
+  }
+  // Input to the contraction must be Pad.
+  if (node_view->NumRegularFanins() < 1) return false;
+
+  // Only fuse contraction with `VALID` padding.
+  // TODO(itex): Support more padding type in future.
+  string padding_str;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "padding", &padding_str));
+  if (padding_str != "VALID") return false;
+
+  // If contraction has been fused, only fuse it with Pad when only has Bias.
+  if (node_def->op() == kFusedConv2D || node_def->op() == kFusedConv3D) {
+    int num_args;
+    TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "num_args", &num_args));
+    if (num_args != 1) return false;
+  }
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* pad_node_view = regular_fanin_0.node_view();
+  const auto* pad_node_def = pad_node_view->node();
+
+  // Only Pad is allowed, PadV2 will be prevented.
+  if (pad_node_def->op() != "Pad") return false;
+
+  // Only fuse contraction with INT32 padding.
+  // TODO(itex): support INT64 padding in future.
+  if (!HasDataType(pad_node_def, DT_INT32, "Tpaddings")) return false;
+
+  const auto& pad_fanouts = pad_node_view->GetRegularFanout(0);
+  if (pad_fanouts.size() != 2) return false;
+
+  int conv_bwd_index = -1;
+  for (size_t i = 0; i < pad_fanouts.size(); ++i) {
+    int cur_idx = pad_fanouts[i].node_view()->node_index();
+    if (cur_idx != node_view->node_index()) conv_bwd_index = cur_idx;
+  }
+  if (conv_bwd_index == -1) return false;
+
+  const auto* node_bwd_view = ctx.graph_view.GetNode(conv_bwd_index);
+  // TODO(itex): Forward controls for patterns with control in dependencies.
+  if (HasControlFanin(*node_bwd_view)) return false;
+
+  const auto* node_bwd_def = node_bwd_view->node();
+
+  is_ok =
+      (node_bwd_def->op() == kConv2DBackpropFilter && IsConv2D(*node_def)) ||
+      (node_def->op() == kFusedConv2D &&
+       node_bwd_def->op() == kConv2DBackpropFilterWithBias) ||
+      (node_bwd_def->op() == kConv3DBackpropFilter && IsConv3D(*node_def)) ||
+      (node_bwd_def->op() == kConv3DBackpropFilterV2 && IsConv3D(*node_def)) ||
+      (node_bwd_def->op() == kConv3DBackpropFilterWithBias &&
+       node_def->op() == kFusedConv3D);
+
+  if (!is_ok) {
+    return false;
+  }
+
+  if (!HaveSameDataType(node_def, pad_node_def) ||
+      !HaveSameDataType(node_bwd_def, pad_node_def) ||
+      HasControlFanin(*pad_node_view) || IsInPreserveSet(ctx, pad_node_def))
+    return false;
+
+  // Check that data type and data format are supported on assigned device.
+  const PadWithContractionFwdBwd pattern{
+      conv_bwd_index, pad_node_view->node_index(), node_index};
+  if (check_device_compatible && !IsDeviceCompatible(ctx, pattern))
+    return false;
+
+  *matched = pattern;
+  return true;
+}
+
+Status AddPadWithContractionFwdBwd(RemapperContext* ctx,
+                                   const PadWithContractionFwdBwd& matched,
+                                   std::vector<bool>* invalidated_nodes,
+                                   std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& pad = graph->node(matched.pad);
+  const NodeDef& contraction = graph->node(matched.contraction);
+  const NodeDef& contraction_bwd = graph->node(matched.contraction_bwd);
+
+  NodeDef pad_with_conv;
+  pad_with_conv.set_name(contraction.name());
+  pad_with_conv.set_device(contraction.device());
+  pad_with_conv.add_input(pad.input(0));          // 0: input
+  pad_with_conv.add_input(contraction.input(1));  // 1: filter
+  // Add bias input if contraction is _ITEXFusedConv2D.
+  if (IsConv2D(contraction)) {
+    pad_with_conv.set_op(kPadWithConv2D);
+  } else if (IsConv3D(contraction)) {
+    pad_with_conv.set_op(kPadWithConv3D);
+  } else if (contraction.op() == kFusedConv2D) {
+    pad_with_conv.set_op(kPadWithFusedConv2D);
+    pad_with_conv.add_input(contraction.input(2));  // 2: bias
+  } else {
+    pad_with_conv.set_op(kPadWithFusedConv3D);
+    pad_with_conv.add_input(contraction.input(2));  // 2: bias
+  }
+  pad_with_conv.add_input(pad.input(1));  // Last: pad
+
+  CopyAllAttrs(contraction, &pad_with_conv);
+  DataType paddings_type;
+  TF_ABORT_IF_ERROR(GetNodeAttr(pad, "Tpaddings", &paddings_type));
+  AddNodeAttr("Tpaddings", paddings_type, &pad_with_conv);
+
+  // For bwd fused node
+  NodeDef pad_with_conv_bwd;
+  pad_with_conv_bwd.set_name(contraction_bwd.name());
+  pad_with_conv_bwd.set_device(contraction_bwd.device());
+  pad_with_conv_bwd.add_input(pad.input(0));              // 0: input
+  pad_with_conv_bwd.add_input(contraction_bwd.input(1));  // 1: size
+  pad_with_conv_bwd.add_input(contraction_bwd.input(2));  // 2: grad
+
+  if (contraction_bwd.op() == kConv2DBackpropFilter) {
+    pad_with_conv_bwd.set_op(kPadWithConv2DBackpropFilter);
+  } else if (contraction_bwd.op() == kConv3DBackpropFilter) {
+    pad_with_conv_bwd.set_op(kPadWithConv3DBackpropFilter);
+  } else if (contraction_bwd.op() == kConv2DBackpropFilterWithBias) {
+    pad_with_conv_bwd.set_op(kPadWithFusedConv2DBackpropFilter);
+  } else if (contraction_bwd.op() == kConv3DBackpropFilterWithBias) {
+    pad_with_conv_bwd.set_op(kPadWithFusedConv3DBackpropFilter);
+  } else {
+    pad_with_conv_bwd.set_op(kPadWithConv3DBackpropFilterV2);
+  }
+
+  pad_with_conv_bwd.add_input(pad.input(1));  // Last: pad
+
+  CopyAllAttrs(contraction_bwd, &pad_with_conv_bwd);
+  AddNodeAttr("Tpaddings", paddings_type, &pad_with_conv_bwd);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(pad_with_conv_bwd), &status);
+  TF_ABORT_IF_ERROR(status);
+
+  ForwardControledFanouts(ctx, mutation, {matched.pad, matched.contraction},
+                          contraction.name());
+  mutation->AddNode(std::move(pad_with_conv), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.contraction_bwd] = true;
+  (*invalidated_nodes)[matched.contraction] = true;
+  (*nodes_to_delete)[matched.pad] = true;
+
+  return Status::OK();
+}
+
 // Pad + Contraction.
 Status AddPadWithContractionNode(RemapperContext* ctx,
                                  const PadWithContraction& matched,
@@ -4056,6 +4244,10 @@ Status AddPadWithContractionNode(RemapperContext* ctx,
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
+
+  ForwardControledFanouts(ctx, mutation, {matched.pad, matched.contraction},
+                          contraction.name());
+
   mutation->AddNode(std::move(pad_with_conv), &status);
   TF_ABORT_IF_ERROR(status);
   TF_ABORT_IF_ERROR(mutation->Apply());
@@ -5656,6 +5848,14 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
       if (FindFusedBatchNormGradEx(ctx, i, &fused_batch_norm_grad_ex)) {
         TF_ABORT_IF_ERROR(
             AddFusedBatchNormGradExNode(&ctx, fused_batch_norm_grad_ex,
+                                        &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      PadWithContractionFwdBwd pad_with_contract_fwd_bwd;
+      if (FindPadWithContractionFwdBwd(ctx, i, &pad_with_contract_fwd_bwd)) {
+        TF_ABORT_IF_ERROR(
+            AddPadWithContractionFwdBwd(&ctx, pad_with_contract_fwd_bwd,
                                         &invalidated_nodes, &nodes_to_delete));
         continue;
       }
