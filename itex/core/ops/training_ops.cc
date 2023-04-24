@@ -21,11 +21,11 @@ limitations under the License.
 #include "tensorflow/c/ops.h"
 #include "tensorflow/c/tf_status.h"
 
-void Register_FusedApplyMomentumOp() {
+void Register_ITEXFusedApplyMomentumOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedApplyMomentum");
+        TF_NewOpDefinitionBuilder("_ITEXFusedApplyMomentum");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: Ref(T)");
     TF_OpDefinitionBuilderAddInput(op_builder, "accum: Ref(T)");
@@ -46,15 +46,15 @@ void Register_FusedApplyMomentumOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedApplyMomentum op registration failed: ";
+        << "_ITEXFusedApplyMomentum op registration failed: ";
   }
 }
 
-void Register_FusedResourceApplyMomentumOp() {
+void Register_ITEXFusedResourceApplyMomentumOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedResourceApplyMomentum");
+        TF_NewOpDefinitionBuilder("_ITEXFusedResourceApplyMomentum");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: resource");
     TF_OpDefinitionBuilderAddInput(op_builder, "accum: resource");
@@ -74,15 +74,15 @@ void Register_FusedResourceApplyMomentumOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedResourceApplyMomentum op registration failed: ";
+        << "_ITEXFusedResourceApplyMomentum op registration failed: ";
   }
 }
 
-void Register_FusedApplyAdamOp() {
+void Register_ITEXFusedApplyAdamOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedApplyAdam");
+        TF_NewOpDefinitionBuilder("_ITEXFusedApplyAdam");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: Ref(T)");
     TF_OpDefinitionBuilderAddInput(op_builder, "m: Ref(T)");
@@ -108,15 +108,15 @@ void Register_FusedApplyAdamOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedApplyAdam op registration failed: ";
+        << "_ITEXFusedApplyAdam op registration failed: ";
   }
 }
 
-void Register_FusedResourceApplyAdamOp() {
+void Register_ITEXFusedResourceApplyAdamOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedResourceApplyAdam");
+        TF_NewOpDefinitionBuilder("_ITEXFusedResourceApplyAdam");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: resource");
     TF_OpDefinitionBuilderAddInput(op_builder, "m: resource");
@@ -141,15 +141,15 @@ void Register_FusedResourceApplyAdamOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedResourceApplyAdam op registration failed: ";
+        << "_ITEXFusedResourceApplyAdam op registration failed: ";
   }
 }
 
-void Register_ApplyAdamWithWeightDecayOp() {
+void Register_ITEXApplyAdamWithWeightDecayOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("ApplyAdamWithWeightDecay");
+        TF_NewOpDefinitionBuilder("ITEXApplyAdamWithWeightDecay");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: Ref(T)");
     TF_OpDefinitionBuilderAddInput(op_builder, "m: Ref(T)");
@@ -171,15 +171,15 @@ void Register_ApplyAdamWithWeightDecayOp() {
         op_builder, &apply_adam_with_weight_decay_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "ApplyAdamWithWeightDecay op registration failed: ";
+        << "ITEXApplyAdamWithWeightDecay op registration failed: ";
   }
 }
 
-void Register_ResourceApplyAdamWithWeightDecayOp() {
+void Register_ITEXResourceApplyAdamWithWeightDecayOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("ResourceApplyAdamWithWeightDecay");
+        TF_NewOpDefinitionBuilder("ITEXResourceApplyAdamWithWeightDecay");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: resource");
     TF_OpDefinitionBuilderAddInput(op_builder, "m: resource");
@@ -200,15 +200,15 @@ void Register_ResourceApplyAdamWithWeightDecayOp() {
                                                     &empty_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "ResourceApplyAdamWithWeightDecay op registration failed: ";
+        << "ITEXResourceApplyAdamWithWeightDecay op registration failed: ";
   }
 }
 
-void Register_FusedApplyAdamWithWeightDecayOp() {
+void Register_ITEXFusedApplyAdamWithWeightDecayOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedApplyAdamWithWeightDecay");
+        TF_NewOpDefinitionBuilder("_ITEXFusedApplyAdamWithWeightDecay");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: Ref(T)");
     TF_OpDefinitionBuilderAddInput(op_builder, "m: Ref(T)");
@@ -235,15 +235,15 @@ void Register_FusedApplyAdamWithWeightDecayOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedApplyAdamWithWeightDecay op registration failed: ";
+        << "_ITEXFusedApplyAdamWithWeightDecay op registration failed: ";
   }
 }
 
-void Register_FusedResourceApplyAdamWithWeightDecayOp() {
+void Register_ITEXFusedResourceApplyAdamWithWeightDecayOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedResourceApplyAdamWithWeightDecay");
+        TF_NewOpDefinitionBuilder("_ITEXFusedResourceApplyAdamWithWeightDecay");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "var: resource");
     TF_OpDefinitionBuilderAddInput(op_builder, "m: resource");
@@ -269,7 +269,8 @@ void Register_FusedResourceApplyAdamWithWeightDecayOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedResourceApplyAdamWithWeightDecay op registration failed: ";
+        << "_ITEXFusedResourceApplyAdamWithWeightDecay op registration "
+           "failed: ";
   }
 }
 

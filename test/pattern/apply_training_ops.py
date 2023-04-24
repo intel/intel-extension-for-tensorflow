@@ -82,7 +82,7 @@ class trainingOpsTest(test.TestCase):
             
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_FusedApplyAdam'):
+                if node.op in ('_ITEXFusedApplyAdam'):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'Mul'
                     break
@@ -122,7 +122,7 @@ class trainingOpsTest(test.TestCase):
             
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_FusedApplyMomentum'):
+                if node.op in ('_ITEXFusedApplyMomentum'):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 2 and fused_ops[0] == b'Mul' and fused_ops[1] == b'AddN'
                     break
@@ -154,7 +154,7 @@ class trainingOpsTest(test.TestCase):
         weight_decay_rate = np.array(0.02, dtype=var.dtype)
         
         grad = tf.multiply(grad, 2)
-        apply_adam_with_weight_decay = load_ops_library.apply_adam_with_weight_decay(
+        apply_adam_with_weight_decay = load_ops_library.itex_apply_adam_with_weight_decay(
                 var_t,
                 m_t,
                 v_t,
@@ -177,7 +177,7 @@ class trainingOpsTest(test.TestCase):
             graph = metadata.partition_graphs[0]
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_FusedApplyAdamWithWeightDecay'):
+                if node.op in ('_ITEXFusedApplyAdamWithWeightDecay'):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'Mul'
                     break

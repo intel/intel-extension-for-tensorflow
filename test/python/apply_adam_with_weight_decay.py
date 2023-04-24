@@ -57,7 +57,7 @@ class ApplyAdamWithWeightDecay(test.TestCase):
         weight_decay_rate = np.array(0.02, dtype=var.dtype)
 
         
-        apply_adam_with_weight_decay = load_ops_library.apply_adam_with_weight_decay(
+        apply_adam_with_weight_decay = load_ops_library.itex_apply_adam_with_weight_decay(
                 var_t,
                 m_t,
                 v_t,

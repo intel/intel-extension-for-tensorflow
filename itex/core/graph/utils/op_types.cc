@@ -100,7 +100,7 @@ bool IsAnyOneDnnGraph(const NodeDef& node) {
 bool IsApplyAdam(const NodeDef& node) { return node.op() == "ApplyAdam"; }
 
 bool IsApplyAdamWithWeightDecay(const NodeDef& node) {
-  return node.op() == "ApplyAdamWithWeightDecay";
+  return node.op() == "ITEXApplyAdamWithWeightDecay";
 }
 
 bool IsL2Loss(const NodeDef& node) { return node.op() == "L2Loss"; }
@@ -578,7 +578,7 @@ bool IsResourceApplyAdam(const NodeDef& node) {
 }
 
 bool IsResourceApplyAdamWithWeightDecay(const NodeDef& node) {
-  return node.op() == "ResourceApplyAdamWithWeightDecay";
+  return node.op() == "ITEXResourceApplyAdamWithWeightDecay";
 }
 
 bool IsResourceApplyMomentum(const NodeDef& node) {

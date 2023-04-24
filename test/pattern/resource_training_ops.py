@@ -85,7 +85,7 @@ class resourceTraingingOpsTest(test.TestCase):
             
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_FusedResourceApplyAdam'):
+                if node.op in ('_ITEXFusedResourceApplyAdam'):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'Mul'
                     break
@@ -123,7 +123,7 @@ class resourceTraingingOpsTest(test.TestCase):
             
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_FusedResourceApplyMomentum'):
+                if node.op in ('_ITEXFusedResourceApplyMomentum'):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 2 and fused_ops[0] == b'Mul' and fused_ops[1] == b'AddN'
                     break
@@ -156,7 +156,7 @@ class resourceTraingingOpsTest(test.TestCase):
         weight_decay_rate = np.array(0.02, dtype=var.dtype)
         
         grad = tf.multiply(grad, 2)
-        apply_adam_with_weight_decay = load_ops_library.resource_apply_adam_with_weight_decay(
+        apply_adam_with_weight_decay = load_ops_library.itex_resource_apply_adam_with_weight_decay(
                 var_t.handle,
                 m_t.handle,
                 v_t.handle,
@@ -177,7 +177,7 @@ class resourceTraingingOpsTest(test.TestCase):
             graph = metadata.partition_graphs[0]
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_FusedResourceApplyAdamWithWeightDecay'):
+                if node.op in ('_ITEXFusedResourceApplyAdamWithWeightDecay'):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 1 and fused_ops[0] == b'Mul'
                     break

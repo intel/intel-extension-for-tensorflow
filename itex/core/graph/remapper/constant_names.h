@@ -88,11 +88,11 @@ constexpr char kDequantizeReshape[] = "_ITEXFusedDequantizeWithReshape";
 constexpr char kFusedAccMatMul[] = "_ITEXFusedAccMatMul";
 constexpr char kFusedAccMatMulGrad[] = "_ITEXFusedAccMatMulGrad";
 constexpr char kFusedAccMatMulWithSum[] = "_ITEXFusedAccMatMulWithSum";
-constexpr char kFusedApplyAdam[] = "_FusedApplyAdam";
+constexpr char kFusedApplyAdam[] = "_ITEXFusedApplyAdam";
 constexpr char kFusedApplyAdamWithWeightDecay[] =
-    "_FusedApplyAdamWithWeightDecay";
+    "_ITEXFusedApplyAdamWithWeightDecay";
 constexpr char kFusedAddN[] = "_FusedAddN";
-constexpr char kFusedApplyMomentum[] = "_FusedApplyMomentum";
+constexpr char kFusedApplyMomentum[] = "_ITEXFusedApplyMomentum";
 constexpr char kFusedBatchMatMul[] = "_ITEXFusedBatchMatMulV2";
 constexpr char kFusedBatchNormEx[] = "_FusedBatchNormEx";
 constexpr char kFusedBatchNormGradEx[] = "_ITEXFusedBatchNormGradEx";
@@ -107,10 +107,11 @@ constexpr char kFusedMatMulWithSum[] = "_ITEXFusedMatMulWithSum";
 constexpr char kFusedMatMulGrad[] = "_ITEXFusedMatMulGrad";
 constexpr char kFusedInstanceNorm[] = "_ITEXFusedInstanceNorm";
 constexpr char kFusedRandom[] = "_ITEXFusedRandom";
-constexpr char kFusedResourceApplyAdam[] = "_FusedResourceApplyAdam";
+constexpr char kFusedResourceApplyAdam[] = "_ITEXFusedResourceApplyAdam";
 constexpr char kFusedResourceApplyAdamWithWeightDecay[] =
-    "_FusedResourceApplyAdamWithWeightDecay";
-constexpr char kFusedResourceApplyMomentum[] = "_FusedResourceApplyMomentum";
+    "_ITEXFusedResourceApplyAdamWithWeightDecay";
+constexpr char kFusedResourceApplyMomentum[] =
+    "_ITEXFusedResourceApplyMomentum";
 constexpr char kInstanceNorm[] = "_ITEXInstanceNorm";
 constexpr char kLayerNorm[] = "ITEXLayerNorm";
 constexpr char kPadWithConv2D[] = "_ITEXPadWithConv2D";

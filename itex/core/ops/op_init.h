@@ -21,14 +21,14 @@ void Register_ITEXQuantizeV2Op();
 void Register_ITEXQuantizedMatMulWithBiasAndDequantizeOp();
 
 // Training kernels
-void Register_ApplyAdamWithWeightDecayOp();
-void Register_FusedApplyAdamOp();
-void Register_FusedApplyAdamWithWeightDecayOp();
-void Register_FusedApplyMomentumOp();
-void Register_FusedResourceApplyAdamOp();
-void Register_FusedResourceApplyAdamWithWeightDecayOp();
-void Register_FusedResourceApplyMomentumOp();
-void Register_ResourceApplyAdamWithWeightDecayOp();
+void Register_ITEXApplyAdamWithWeightDecayOp();
+void Register_ITEXFusedApplyAdamOp();
+void Register_ITEXFusedApplyAdamWithWeightDecayOp();
+void Register_ITEXFusedApplyMomentumOp();
+void Register_ITEXFusedResourceApplyAdamOp();
+void Register_ITEXFusedResourceApplyAdamWithWeightDecayOp();
+void Register_ITEXFusedResourceApplyMomentumOp();
+void Register_ITEXResourceApplyAdamWithWeightDecayOp();
 
 // Unupstreamed ops. These ops are only available in spr-base branch, not in
 // TF master.

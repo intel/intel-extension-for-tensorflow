@@ -131,7 +131,7 @@ struct ApplyAdam {
 };
 
 template <typename Device, typename T>
-struct ApplyAdamWithWeightDecay {
+struct ITEXApplyAdamWithWeightDecay {
   void operator()(const Device& d, typename TTypes<T>::Flat var,
                   typename TTypes<T>::Flat m, typename TTypes<T>::Flat v,
                   typename TTypes<T>::ConstScalar beta1_power,

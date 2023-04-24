@@ -479,15 +479,16 @@ class FusedApplyMomentumOp<GPUDevice, T> : public OpKernel {
                               .HostMemory("accum")                     \
                               .TypeConstraint<T>("T"),                 \
                           ApplyMomentumOp<GPUDevice, T>);
-#define REGISTER_FUSED_ITEX_GPU_KERNELS(T)                                   \
-  REGISTER_KERNEL_BUILDER(                                                   \
-      Name("_FusedApplyMomentum").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
-      FusedApplyMomentumOp<GPUDevice, T>);                                   \
-  REGISTER_KERNEL_BUILDER(Name("_FusedResourceApplyMomentum")                \
-                              .Device(DEVICE_GPU)                            \
-                              .HostMemory("var")                             \
-                              .HostMemory("accum")                           \
-                              .TypeConstraint<T>("T"),                       \
+#define REGISTER_FUSED_ITEX_GPU_KERNELS(T)                        \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedApplyMomentum")         \
+                              .Device(DEVICE_GPU)                 \
+                              .TypeConstraint<T>("T"),            \
+                          FusedApplyMomentumOp<GPUDevice, T>);    \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedResourceApplyMomentum") \
+                              .Device(DEVICE_GPU)                 \
+                              .HostMemory("var")                  \
+                              .HostMemory("accum")                \
+                              .TypeConstraint<T>("T"),            \
                           FusedApplyMomentumOp<GPUDevice, T>);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU_KERNELS);

@@ -120,7 +120,7 @@ class AdamWithWeightDecayOptimizer(optimizer.Optimizer): # pylint: disable=missi
     beta_1_power, beta_2_power = self._get_beta_accumulators()
     param_name = self._get_variable_name(var.name)
     if self._do_use_weight_decay(param_name): # pylint: disable=no-else-return
-      return load_ops_library.apply_adam_with_weight_decay(
+      return load_ops_library.itex_apply_adam_with_weight_decay(
           var,
           m,
           v,
@@ -154,7 +154,7 @@ class AdamWithWeightDecayOptimizer(optimizer.Optimizer): # pylint: disable=missi
     beta_1_power, beta_2_power = self._get_beta_accumulators()
     param_name = self._get_variable_name(var.name)
     if self._do_use_weight_decay(param_name): # pylint: disable=no-else-return
-      return load_ops_library.resource_apply_adam_with_weight_decay(
+      return load_ops_library.itex_resource_apply_adam_with_weight_decay(
           var.handle,
           m.handle,
           v.handle,
