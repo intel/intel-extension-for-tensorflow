@@ -2048,7 +2048,7 @@ void Register_ITEXMaxPoolGradV2Op() {
     TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "ksize: int32");
     TF_OpDefinitionBuilderAddInput(op_builder, "strides: int32");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "T: {bfloat16, float} = DT_FLOAT");

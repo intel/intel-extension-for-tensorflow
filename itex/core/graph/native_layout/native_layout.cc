@@ -257,7 +257,7 @@ const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
       {"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPoolV2", "_ITEXMaxPoolV2", CopyAttrsAll, AlwaysRewrite},
-      {"MaxPoolGradV2", "_ITEXMaxPoolGradV2", CopyAttrsAll, AlwaysRewrite},
+      {"MaxPoolGradV2", "_ITEXMaxPoolGradV2", CopyAttrsAll, RewriteMaxPoolGrad},
       {"TensorArray", "_ITEXTensorArray", CopyAttrsForTensorArray,
        AlwaysRewrite},
       {"TensorArrayClose", "_ITEXTensorArrayClose", CopyAttrsForTensorArray,
