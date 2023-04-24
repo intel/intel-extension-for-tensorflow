@@ -992,6 +992,22 @@ bool FindMatmulReshapeBiasadd(const RemapperContext& ctx, int node_index,
   return true;
 }
 
+bool FindAddV2(const RemapperContext& ctx, int node_index, int* matched_index) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // Root of the pattern must be a AddN.
+  const auto* addN = node_view->node();
+  if (IsInPreserveSet(ctx, addN)) return false;
+  if (!addN || !IsAddN(*addN)) return false;
+
+  int num = addN->attr().at("N").i();
+  if (num != 2) return false;
+  if (!HasDataType(addN, DT_FLOAT) || !HasDataType(addN, DT_HALF) ||
+      !HasDataType(addN, DT_BFLOAT16))
+    return false;  // AddN may have dtype DT_VARIANT
+  *matched_index = node_index;
+  return true;
+}
+
 bool FindFusedAddN(const RemapperContext& ctx, int node_index,
                    FusedAddN* matched) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
@@ -3491,6 +3507,39 @@ Status AddMatmulReshapeBiasadd(RemapperContext* ctx,
   }
 }
 
+Status ReplaceAddN(RemapperContext* ctx, const int& matched_index,
+                   std::vector<bool>* invalidated_nodes,
+                   std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& addN = graph->node(matched_index);
+
+  ITEX_DCHECK(IsAddN(addN));
+
+  NodeDef addv2;
+  addv2.set_op(kAddV2);
+  addv2.set_name(addN.name());
+  addv2.set_device(addN.device());
+  addv2.add_input(addN.input(0));
+  addv2.add_input(addN.input(1));
+  AddNodeAttr("T", addN.attr().at("T"), &addv2);
+
+  auto control_fanins =
+      ctx->graph_view.GetNode(matched_index)->GetControllingFanins();
+  for (size_t i = 0; i < control_fanins.size(); ++i) {
+    auto fanin_name = control_fanins[i].node_view()->node()->name();
+    addv2.add_input(AsControlDependency(fanin_name));
+  }
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(addv2), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched_index] = true;
+  return Status::OK();
+}
+
 Status AddFusedAddN(RemapperContext* ctx, const FusedAddN& matched,
                     std::vector<bool>* invalidated_nodes,
                     std::vector<bool>* nodes_to_delete) {
@@ -5707,6 +5756,14 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
     // Put the fusions that always need to be enabled here no matter `is_full`
     // is true or false.
     {
+      // Use AddV2 for AddN when N=2
+      int AddN_index;
+      if (FindAddV2(ctx, i, &AddN_index)) {
+        TF_ABORT_IF_ERROR(ReplaceAddN(&ctx, AddN_index, &invalidated_nodes,
+                                      &nodes_to_delete));
+        continue;
+      }
+
       // Remap TF2.11 dropout select to TF2.10 cast+mul.
       Dropout dropout;
       if (FindDropout(ctx, i, &dropout)) {
