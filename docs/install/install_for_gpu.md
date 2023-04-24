@@ -37,7 +37,7 @@ Run the following [Dockerfile build procedure](./../../docker/README.md) to buil
 
 #### Get docker container from dockerhub
 
-Pre-built docker images will be available at [DockerHub](https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags) around January 13. 
+Pre-built docker images are available at [DockerHub](https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags).
 Please run the following command to pull Intel® Extension for TensorFlow* Docker container image (`gpu`) to your local machine.
 
 ```

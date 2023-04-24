@@ -32,7 +32,7 @@ Please install [conda](https://conda.io/projects/conda/en/latest/user-guide/inst
 conda create -n itex_build python=3.9
 conda activate itex_build
 ```
-Note, support Python 3.8-3.11.
+Note, support Python 3.8-3.10.
 
 ### Intel GPU Driver (Optional, GPU only)
 
