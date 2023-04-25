@@ -61,7 +61,7 @@ Then go to your browser on http://localhost:8888/
 Need to install components of Intel® oneAPI Base Toolkit:
 - Intel® oneAPI DPC++ Compiler
 - Intel® oneAPI Math Kernel Library (oneMKL)
-- Intel® oneAPI Threading Building Blocks (TBB)
+- Intel® oneAPI Threading Building Blocks (TBB), dependency of DPC++ Compiler.
 - Intel® oneAPI Collective Communications Library (oneCCL), required by Intel® Optimization for Horovod* only
 
 
