@@ -330,7 +330,7 @@ class ItexLSTM(LSTMV1):
 
     # TODO: support ragged_input and mask in the future
     self._could_use_itex_kernel = (self._could_use_itex_kernel and \
-       (not is_ragged_input) and (mask is None))
+       (not is_ragged_input))
 
     # LSTM does not support constants. Ignore it during process.
     inputs, initial_state, _ = self._process_inputs(

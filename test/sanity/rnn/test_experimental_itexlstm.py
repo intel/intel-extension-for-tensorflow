@@ -35,11 +35,9 @@ class LSTMTest(test_util.TensorFlowTestCase):
             x_input = tf.keras.Input(shape=(2,2,))
             x_out = LSTM(20)(x_input, training=False)
             model = tf.keras.Model(inputs=x_input, outputs=x_out)
-            x = np.random.random(batch_input_shape)
+            x = np.random.random(batch_input_shape).astype(np.float32)
             y = model.predict(x)
-            assert LSTM.call == itex.ops.ItexLSTM.call
-            # TODO find a way to check runtime kernel is ItexRnn
-            # when input node is read variable
+            assert "itex_lstm_call" == model.layers[1].call.__func__.__name__
             print(y.shape)
 
      

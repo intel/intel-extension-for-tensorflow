@@ -25,17 +25,20 @@ import types
 import numpy as np
 import tensorflow as tf
 
+from tensorflow.python.framework import config
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from tensorflow.python.framework import config
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import state_ops
 from tensorflow.python.util import compat
 
+from intel_extension_for_tensorflow.python.device import get_backend
 from intel_extension_for_tensorflow.python.ops.layer_norm import _layer_norm
 from intel_extension_for_tensorflow.python.ops.activations import gelu as itex_gelu
-from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM
+from intel_extension_for_tensorflow.python.ops.recurrent import gpu_lstm
+from intel_extension_for_tensorflow.python.ops.recurrent import is_itex_supported_inputs
 
 format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=format_str)
@@ -351,6 +354,7 @@ def experimental_ops_override():
   using itex api in some tf and keras functions.
   '''
   try:
+    from keras import backend # pylint: disable=import-outside-toplevel
     from keras.utils import tf_utils # pylint: disable=import-outside-toplevel
     from pkg_resources import packaging # pylint: disable=import-outside-toplevel
     version = packaging.version.parse
@@ -540,7 +544,8 @@ def experimental_ops_override():
     self._could_use_itex_kernel = (
         self.activation in (tf.keras.activations.tanh, tf.nn.tanh) and
         self.recurrent_activation in (tf.keras.activations.sigmoid, tf.nn.sigmoid) and
-        self.use_bias)
+        self.use_bias) and (config.list_logical_devices('XPU'))
+    # TODO: use ITEX get_backend to check GPU.
     if config.list_logical_devices('XPU'):
       # Only show the message when there is GPU available, itex LSTM only support GPU currently
       if self._could_use_itex_kernel:
@@ -550,6 +555,58 @@ def experimental_ops_override():
                         'doesn\'t meet the criteria. It will '
                         'use a generic GPU kernel as fallback when running '
                         'on GPU.' % self.name)
+
+  def itex_lstm_call(self, inputs, mask=None, training=None, initial_state=None):
+    # if is ragged tensor or on CPU, fall back
+    if (not self._could_use_itex_kernel):
+      return tf_lstm_call(self, inputs, mask, training, initial_state)
+    if (isinstance(inputs, tf.RaggedTensor)):
+      return tf_lstm_call(self, inputs, mask, training, initial_state)
+    # when mask is not None:
+    if mask is not None:
+      if isinstance(mask, list):
+        mask = mask[0]
+      if not is_itex_supported_inputs(mask, self.time_major):
+        return tf_lstm_call(self, inputs, mask, training, initial_state)
+    
+    inputs, row_lengths = backend.convert_inputs_if_ragged(inputs)
+    is_ragged_input = (row_lengths is not None)
+    self._validate_args_if_ragged(is_ragged_input, mask)
+
+    inputs, initial_state, _ = self._process_inputs(
+      inputs, initial_state, None)
+    self._maybe_reset_cell_dropout_mask(self.cell)
+    gpu_lstm_kwargs = {
+        'cell': self.cell,
+        'inputs': inputs,
+        'mask': mask,
+        'training': training,
+        'initial_state': initial_state,
+        'sequence_lengths': row_lengths,
+        'go_backwards': self.go_backwards,
+        'time_major': self.time_major,
+    }
+    last_output, outputs, new_h, new_c = gpu_lstm(**gpu_lstm_kwargs)
+    states = [new_h, new_c]
+    if self.stateful:
+      #Below cast is caused by states has differnet datat type with input when set stateful in official tensorflow
+      #Maybe remove this in the future
+      states = [math_ops.cast(i, self.states[0].dtype) for i  in states]
+      updates = [
+          state_ops.assign(self_state, state)
+          for self_state, state in zip(self.states, states)
+      ]
+      self.add_update(updates)
+
+    if self.return_sequences:
+      output = backend.maybe_convert_to_ragged(
+          is_ragged_input, outputs, row_lengths, go_backwards=self.go_backwards)
+    else:
+      output = last_output
+
+    if self.return_state:
+      return [output] + list(states)
+    return output
 
   
   try:
@@ -565,14 +622,11 @@ def experimental_ops_override():
     from tensorflow.nn import gelu # pylint: disable=import-outside-toplevel
     gelu = itex_gelu
     tf.nn.gelu = itex_gelu
-    if config.list_logical_devices('XPU'):
-      # TODO(itex): Complement the complete implementation of CPU, and When
-      # CPU of XPU is launched, this workaround may be re-edit.
-      tf.keras.layers.LSTM.call = ItexLSTM.call
-      tf.keras.layers.LSTM.build = itex_lstm_build
-      from tensorflow.python import keras # pylint: disable=import-outside-toplevel
-      keras.layers.LSTM.call = ItexLSTM.call
-      keras.layers.LSTM.build = itex_lstm_build
+    tf.keras.layers.LSTM.call = itex_lstm_call
+    tf.keras.layers.LSTM.build = itex_lstm_build
+    from tensorflow.python import keras # pylint: disable=import-outside-toplevel
+    keras.layers.LSTM.call = itex_lstm_call
+    keras.layers.LSTM.build = itex_lstm_build
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
     logger.error("Cannot override itex ops.")
@@ -581,8 +635,7 @@ def experimental_ops_override():
     keras.layers.core.dense.Dense.call = itex_dense_layer_call
     keras.layers.LayerNormalization.call = itex_layer_norm_call
     keras.layers.LayerNormalization.build = itex_layer_norm_build
-    if config.list_logical_devices('XPU'):
-      keras.layers.LSTM.call = ItexLSTM.call
-      keras.layers.LSTM.build = itex_lstm_build
+    keras.layers.LSTM.call = itex_lstm_call
+    keras.layers.LSTM.build = itex_lstm_build
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long
