@@ -76,7 +76,7 @@ For any more details, please follow the procedure in https://www.intel.com/conte
 
 #### Setup environment variables
 ```bash
-# DPC++ Compiler/oneMKL/tbb
+# DPC++ Compiler/oneMKL
 source /path to basekit/intel/oneapi/compiler/latest/env/vars.sh
 source /path to basekit/intel/oneapi/mkl/latest/env/vars.sh
 
