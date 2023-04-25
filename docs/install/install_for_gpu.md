@@ -61,7 +61,7 @@ Then go to your browser on http://localhost:8888/
 Need to install components of Intel® oneAPI Base Toolkit:
 - Intel® oneAPI DPC++ Compiler
 - Intel® oneAPI Math Kernel Library (oneMKL)
-- Intel® oneAPI Threading Building Blocks (TBB)
+- Intel® oneAPI Threading Building Blocks (TBB), dependency of DPC++ Compiler.
 - Intel® oneAPI Collective Communications Library (oneCCL), required by Intel® Optimization for Horovod* only
 
 
@@ -76,10 +76,9 @@ For any more details, please follow the procedure in https://www.intel.com/conte
 
 #### Setup environment variables
 ```bash
-# DPC++ Compiler/oneMKL/tbb
+# DPC++ Compiler/oneMKL
 source /path to basekit/intel/oneapi/compiler/latest/env/vars.sh
 source /path to basekit/intel/oneapi/mkl/latest/env/vars.sh
-source /path to basekit/intel/oneapi/tbb/latest/env/vars.sh
 
 # oneCCL (and Intel® oneAPI MPI Library as its dependency), required by Intel® Optimization for Horovod* only
 source /path to basekit/intel/oneapi/mpi/latest/env/vars.sh
