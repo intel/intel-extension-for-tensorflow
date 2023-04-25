@@ -131,6 +131,10 @@ bool IsAssert(const NodeDef& node) { return node.op() == "Assert"; }
 
 bool IsAtan2(const NodeDef& node) { return node.op() == "Atan2"; }
 
+bool IsBatchToSpaceND(const NodeDef& node) {
+  return node.op() == "BatchToSpaceND";
+}
+
 bool IsBetainc(const NodeDef& node) { return node.op() == "Betainc"; }
 
 bool IsBiasAdd(const NodeDef& node) {
@@ -633,6 +637,10 @@ bool IsSoftmax(const NodeDef& node) { return node.op() == "Softmax"; }
 bool IsSoftplusGrad(const NodeDef& node) { return node.op() == "SoftplusGrad"; }
 
 bool IsSoftsignGrad(const NodeDef& node) { return node.op() == "SoftsignGrad"; }
+
+bool IsSpaceToBatchND(const NodeDef& node) {
+  return node.op() == "SpaceToBatchND";
+}
 
 bool IsSplit(const NodeDef& node) { return node.op() == "Split"; }
 

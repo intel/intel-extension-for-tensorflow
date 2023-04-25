@@ -577,5 +577,62 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
       # Computed output value should be close to reference value.
       self.assertAllCloseAccordingToType(output_val_ref, output_val)
 
+  @test_util.run_deprecated_v1
+  @test_util.disable_xla('This test does not pass with XLA')
+  def testSpaceToBatchNDConv2dBatchToSpaceND(self):
+    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    x = np.random.rand(2, 65, 65, 5)
+    w = np.random.rand(3, 3, 5, 1)
+    b = np.random.rand(1)
+    block_shape = [2, 2]
+    paddings = [[2, 3], [2, 3]]
+    crops = [[0, 1], [0, 1]]
+
+    for precision in ('float32', 'bfloat16', 'float16'):
+      if precision == 'bfloat16':
+        if not is_bf16_supported:
+          self.skipTest('Device do not support bfloat16')
+
+      if precision == 'float16':
+        if not tf.config.list_physical_devices("XPU"):
+          self.skipTest('CPU do not support float16')
+
+      if precision == 'bfloat16':
+        x = math_ops.cast(x, dtypes.bfloat16)
+        w = math_ops.cast(w, dtypes.bfloat16)
+        b = math_ops.cast(b, dtypes.bfloat16)
+
+      if precision == 'float16':
+        x = math_ops.cast(x, dtypes.float16)
+        w = math_ops.cast(w, dtypes.float16)
+        b = math_ops.cast(b, dtypes.float16)
+
+      stob = array_ops.space_to_batch_nd(x, block_shape, paddings)
+      conv = tf.nn.conv2d(stob, w, strides=[1, 1, 1, 1], padding='VALID', data_format='NHWC')
+      btos = array_ops.batch_to_space_nd(conv, block_shape, crops)
+      bias_add = nn.bias_add(btos, b)
+      relu = array_ops.identity(nn.relu(bias_add))
+
+      config = _get_config(remapping_on=False)
+      with self.session(config=config) as sess:
+        output_val_ref = sess.run(relu, options=run_options, run_metadata=metadata)
+
+      config = _get_config(remapping_on=True)
+      with self.session(config=config) as sess:
+        output_val = sess.run(relu, options=run_options, run_metadata=metadata)
+
+      graph = metadata.partition_graphs[0]
+      found_stob_btos_op = False
+      for node in graph.node:
+        if node.op in ('SpaceToBatchND', 'BatchToSpaceND'):
+          found_stob_btos_op = True
+          break
+      self.assertFalse(found_stob_btos_op, "this pattern has fusion issue!!")
+      # Computed output value should be close to reference value.
+      self.assertAllCloseAccordingToType(output_val_ref, output_val)
+
 if __name__ == '__main__':
   test.main()

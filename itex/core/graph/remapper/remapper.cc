@@ -65,6 +65,16 @@ void RemoveAllRegularFanin(RemapperContext* ctx, int node_idx) {
   TF_ABORT_IF_ERROR(mutation->Apply());
 }
 
+Status GetTensorFromConstant(const NodeDef* node_def, Tensor* dst) {
+  if (!dst->FromProto(node_def->attr().at("value").tensor())) {
+    ITEX_CHECK_OK(errors::InvalidArgument(
+        "Could not construct Tensor from TensorProto in node: ",
+        node_def->name()));
+  }
+
+  return Status::OK();
+}
+
 namespace {
 
 // Forward controled fanouts of old nodes to a new fused node
@@ -463,6 +473,17 @@ struct StridedSliceGrad {
   absl::InlinedVector<int64_t, 4> begin;
   absl::InlinedVector<int64_t, 4> end;
   absl::InlinedVector<int64_t, 4> shrinks;
+};
+
+// Contraction node wrapped by SpaceToBatchND and BatchToSpaceND.
+struct DilatedContraction {
+  DilatedContraction() = default;
+  DilatedContraction(int stob, int contraction, int btos)
+      : stob(stob), contraction(contraction), btos(btos) {}
+
+  int stob = kMissingIndex;
+  int contraction = kMissingIndex;
+  int btos = kMissingIndex;
 };
 
 bool IsAddWithNoBroadcast(const RemapperContext& ctx, const NodeDef& node) {
@@ -3167,6 +3188,103 @@ bool FindResNeXtGroupConv2DBlock(const RemapperContext& ctx, int node_index,
   return true;
 }
 
+bool FindDilatedContraction(const RemapperContext& ctx, int node_index,
+                            DilatedContraction* matched) {
+  const auto* btos_node_view = ctx.graph_view.GetNode(node_index);
+  const auto* btos_node_def = btos_node_view->node();
+
+  // Root of the pattern must be a BatchToSpaceND
+  if (!IsBatchToSpaceND(*btos_node_def) || HasControlFanin(*btos_node_view))
+    return false;
+
+  if (btos_node_view->NumRegularFanins() < 3) return false;
+
+  if (btos_node_view->NumRegularFanouts() != 1) return false;
+
+  // TODO(itex): Support INT64 in the future.
+  if (!HasDataType(btos_node_def, DT_INT32, "Tblock_shape") ||
+      !HasDataType(btos_node_def, DT_INT32, "Tcrops"))
+    return false;
+
+  const auto* block_shape_node_def =
+      btos_node_view->GetRegularFanin(1).node_view()->node();
+  const auto* crops_node_def =
+      btos_node_view->GetRegularFanin(2).node_view()->node();
+
+  if (!IsConstant(*block_shape_node_def) || !IsConstant(*crops_node_def))
+    return false;
+
+  Tensor block_shape;
+  ITEX_CHECK_OK(GetTensorFromConstant(block_shape_node_def, &block_shape));
+
+  if (block_shape.NumElements() != 2) return false;
+
+  const auto* contraction_node_view =
+      btos_node_view->GetRegularFanin(0).node_view();
+  const auto* contraction_node_def = contraction_node_view->node();
+
+  if (contraction_node_view->NumRegularFanouts() != 1) return false;
+
+  string data_format;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_node_def, "data_format", &data_format));
+  // TODO(itex): Support NCHW in the future.
+  if (data_format != "NHWC") return false;
+
+  bool is_valid_contraction = IsConv2D(*contraction_node_def) ||
+                              IsDepthwiseConv2dNative(*contraction_node_def);
+
+  if (!is_valid_contraction ||
+      !HaveSameDataType(btos_node_def, contraction_node_def) ||
+      HasControlFaninOrFanout(*contraction_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*contraction_node_view) ||
+      IsInPreserveSet(ctx, contraction_node_def))
+    return false;
+
+  // In dilated Conv pattern from API, the padding type must be VALID and each
+  // element of dilations must be 1.
+  string padding_str;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_node_def, "padding", &padding_str));
+  if (padding_str != "VALID") return false;
+
+  std::vector<int> dilations;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_node_def, "dilations", &dilations));
+  for (int i = 0; i < dilations.size(); i++) {
+    if (dilations[i] != 1) return false;
+  }
+
+  const auto* stob_node_view =
+      contraction_node_view->GetRegularFanin(0).node_view();
+  const auto* stob_node_def = stob_node_view->node();
+
+  if (HasControlFaninOrFanout(*stob_node_view)) return false;
+
+  // The end of pattern must be a SpaceToBatchND
+  if (!IsSpaceToBatchND(*stob_node_def)) return false;
+
+  if (stob_node_view->NumRegularFanins() < 3) return false;
+
+  if (stob_node_view->NumRegularFanouts() != 1) return false;
+
+  // TODO(itex): Support INT64 in the future.
+  if (!HasDataType(stob_node_def, DT_INT32, "Tpaddings")) return false;
+
+  const auto* paddings_node_def =
+      stob_node_view->GetRegularFanin(2).node_view()->node();
+
+  if (!IsConstant(*paddings_node_def)) return false;
+
+  DilatedContraction pattern = {stob_node_view->node_index(),
+                                contraction_node_view->node_index(),
+                                node_index};
+
+  *matched = pattern;
+
+  return true;
+}
+
 void CopyFusedBatchNormAttributes(const NodeDef& fused_batch_norm,
                                   NodeDef* fused_batch_norm_ex) {
   ITEX_DCHECK(IsFusedBatchNorm(fused_batch_norm) ||
@@ -5658,6 +5776,96 @@ Status AddStridedSliceGrad(RemapperContext* ctx,
   return Status::OK();
 }
 
+Status AddDilatedContractionNode(RemapperContext* ctx,
+                                 const DilatedContraction& matched,
+                                 std::vector<bool>* invalidated_nodes,
+                                 std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& stob = graph->node(matched.stob);
+  const NodeDef& contraction = graph->node(matched.contraction);
+  const NodeDef& btos = graph->node(matched.btos);
+
+  NodeDef dilated_op;
+
+  dilated_op.set_name(btos.name());
+  dilated_op.set_op(contraction.op());
+  dilated_op.set_device(contraction.device());
+  dilated_op.add_input(stob.input(0));         // 0: input
+  dilated_op.add_input(contraction.input(1));  // 1: filter
+
+  CopyAllAttrs(contraction, &dilated_op);
+
+  const auto* btos_node_view = ctx->graph_view.GetNode(matched.btos);
+  const auto* block_shape_node_def =
+      btos_node_view->GetRegularFanin(1).node_view()->node();
+  const auto* crops_node_def =
+      btos_node_view->GetRegularFanin(2).node_view()->node();
+
+  const auto* stob_node_view = ctx->graph_view.GetNode(matched.stob);
+  const auto* paddings_node_def =
+      stob_node_view->GetRegularFanin(2).node_view()->node();
+
+  Tensor block_shape;
+  ITEX_CHECK_OK(GetTensorFromConstant(block_shape_node_def, &block_shape));
+
+  int32* block_shape_data =
+      const_cast<int32*>(block_shape.flat<int32>().data());
+
+  int32 new_dilations[] = {1, block_shape_data[0], block_shape_data[1], 1};
+
+  auto* attrs = dilated_op.mutable_attr();
+  SetAttrValue(gtl::ArraySlice<int32>(new_dilations, 4),
+               &(*attrs)["dilations"]);
+
+  Tensor paddings;
+  Tensor crops;
+
+  ITEX_CHECK_OK(GetTensorFromConstant(paddings_node_def, &paddings));
+  ITEX_CHECK_OK(GetTensorFromConstant(crops_node_def, &crops));
+
+  int32* paddings_data = const_cast<int32*>(paddings.flat<int32>().data());
+  int32* crops_data = const_cast<int32*>(crops.flat<int32>().data());
+
+  std::vector<int32> real_paddings;
+  bool is_valid = true;
+  for (int i = 0; i < 4; i++) {
+    real_paddings.emplace_back(paddings_data[i] - crops_data[i]);
+    if (real_paddings[i] != 0) {
+      is_valid = false;
+    }
+  }
+
+  string data_format;
+  ITEX_CHECK_OK(GetNodeAttr(contraction, "data_format", &data_format));
+
+  int32 explicit_paddings[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+  if (!is_valid) {
+    SetAttrValue("EXPLICIT", &(*attrs)["padding"]);
+
+    // Set explicit paddings for NHWC
+    explicit_paddings[2] = real_paddings[0];
+    explicit_paddings[3] = real_paddings[1];
+    explicit_paddings[4] = real_paddings[2];
+    explicit_paddings[5] = real_paddings[3];
+
+    SetAttrValue(gtl::ArraySlice<int32>(explicit_paddings, 8),
+                 &(*attrs)["explicit_paddings"]);
+  }
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(dilated_op), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*nodes_to_delete)[matched.stob] = true;
+  (*nodes_to_delete)[matched.contraction] = true;
+  (*invalidated_nodes)[matched.btos] = true;
+
+  return Status::OK();
+}
+
 }  // namespace
 
 // `is_full` is true by default. It will be set as false if this pass runs
@@ -5799,6 +6007,13 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
         TF_ABORT_IF_ERROR(AddMatmulReshapeBiasadd(&ctx, matmul_reshape_biasadd,
                                                   &invalidated_nodes,
                                                   &nodes_to_delete));
+        continue;
+      }
+
+      DilatedContraction dilated_contraction;
+      if (FindDilatedContraction(ctx, i, &dilated_contraction)) {
+        TF_ABORT_IF_ERROR(AddDilatedContractionNode(
+            &ctx, dilated_contraction, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
     }
