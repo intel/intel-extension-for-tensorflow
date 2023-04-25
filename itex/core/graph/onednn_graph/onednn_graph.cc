@@ -3257,14 +3257,14 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
   bool onednn_graph_compiler_backend_flag =
       GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
   if (!onednn_graph_compiler_backend_flag) {
-    setenv("_DNNL_GRAPH_DISABLE_COMPILER_BACKEND", "1", 0);
+    setenv("_DNNL_DISABLE_COMPILER_BACKEND", "1", 0);
   }
 
   // Enable oneDNN Graph dnnl backend
   bool onednn_graph_dnnl_backend_flag =
       GetOptimizerConfigFlags().enable_onednn_graph_dnnl_backend;
   if (!onednn_graph_dnnl_backend_flag) {
-    setenv("_DNNL_GRAPH_DISABLE_DNNL_BACKEND", "1", 0);
+    setenv("_DNNL_DISABLE_DNNL_BACKEND", "1", 0);
   }
 
   Status status;

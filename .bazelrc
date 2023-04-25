@@ -23,7 +23,7 @@ build:onednn_v3 --copt=-DITEX_ONEDNN_3_0 --define=onednn_version=3
 # This config option is used for LLGA (OneDnnGraph) debugging
 build:llga-debug --define=build_with_llga_debug=true
 
-# This config option is used for LLGA (OneDnnGraph) graph compiler backend,  currently only available for onednn graph v2
+# This config option is used for LLGA (OneDnnGraph) graph compiler backend, default enabled on cpu
 build:graph-compiler --define=build_with_graph_compiler=true
 
 build:jax --config=gpu

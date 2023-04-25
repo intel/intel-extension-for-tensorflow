@@ -212,7 +212,7 @@ cc_library(
     ],
 )
 
-load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_llga_debug")
+load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_graph_compiler", "if_llga_debug")
 
 # TODO(itex): add graph compiler srcs, headers & check build option, once it is merged to oneDNN master.
 
@@ -227,6 +227,13 @@ _GRAPH_COPTS_CPU_LIST = [
     "-DDNNL_ENABLE_GRAPH_DUMP",
 ] + if_llga_debug([
     "-DDNNL_GRAPH_LAYOUT_DEBUG",
+]) + if_graph_compiler([
+    "-DDNNL_ENABLE_COMPILER_BACKEND",
+    "-DSC_BUILTIN_JIT_ENABLED=1",
+    "-DSC_CFAKE_JIT_ENABLED=1",
+    "-DSC_LLVM_BACKEND=13",
+    "-DSC_CPU_THREADPOOL=1",
+    "-fopenmp",
 ])
 
 _GRAPH_SRCS_LIST = glob(
@@ -241,6 +248,13 @@ _GRAPH_SRCS_LIST = glob(
         "src/graph/utils/*.cpp",
         "src/graph/utils/pm/*.cpp",
     ],
+) + if_graph_compiler(
+    glob(
+        [
+            "src/graph/backend/graph_compiler/**/*.cpp",
+        ],
+        exclude = ["src/graph/backend/graph_compiler/core/src/compiler/jit/llvm/llvm_jit_resolver.cpp"],
+    ),
 )
 
 _GRAPH_HDRS_LIST = glob(
@@ -256,22 +270,54 @@ _GRAPH_HDRS_LIST = glob(
         "src/graph/utils/*.hpp",
         "src/graph/utils/pm/*.hpp",
     ],
-)
+) + if_graph_compiler(glob([
+    "src/graph/backend/graph_compiler/**/*.hpp",
+]))
 
 _GRAPH_INCLUDES_LIST = [
     "include",
     "src/graph",
-]
+] + if_graph_compiler([
+    "src/graph/backend/graph_compiler/core/",
+    "src/graph/backend/graph_compiler/core/src/",
+    "src/graph/backend/graph_compiler/core/src/compiler/",
+])
 
 _GRAPH_DEPS_LIST = [
     ":onednn_cpu",
-]
+] + if_graph_compiler(
+    [
+        "@llvm-project-13//llvm:Core",
+        "@llvm-project-13//llvm:Support",
+        "@llvm-project-13//llvm:Target",
+        "@llvm-project-13//llvm:ExecutionEngine",
+        "@llvm-project-13//llvm:MCJIT",
+        "@llvm-project-13//llvm:X86CodeGen",
+        "@llvm-project-13//llvm:AsmParser",
+        "@llvm-project-13//llvm:AllTargetsAsmParsers",
+    ],
+)
 
 cc_library(
     name = "onednn_graph_cpu",
     srcs = _GRAPH_SRCS_LIST,
     hdrs = _GRAPH_HDRS_LIST,
-    copts = _GRAPH_COPTS_CPU_LIST,
+    # TODO(itex): find better way to include xbyak.h within onednn
+    copts = _GRAPH_COPTS_CPU_LIST + ["-I external/onednn_cpu/src/cpu/x64"],
+    includes = _GRAPH_INCLUDES_LIST,
+    visibility = ["//visibility:public"],
+    deps = _GRAPH_DEPS_LIST + if_graph_compiler([":onednn_graph_cpu_special"]),
+    alwayslink = True,
+)
+
+# graph compiler special kernel
+cc_library(
+    name = "onednn_graph_cpu_special",
+    srcs = ["src/graph/backend/graph_compiler/core/src/compiler/jit/llvm/llvm_jit_resolver.cpp"],
+    hdrs = _GRAPH_HDRS_LIST,
+    copts = _GRAPH_COPTS_CPU_LIST + [
+        "-fno-rtti",  # special build option for llvm_jit_resolver.cpp
+    ],
     includes = _GRAPH_INCLUDES_LIST,
     visibility = ["//visibility:public"],
     deps = _GRAPH_DEPS_LIST,
