@@ -4893,9 +4893,6 @@ XlaOp Cos(const XlaOp operand) {
 XlaOp Sin(const XlaOp operand) {
   return operand.builder()->UnaryOp(HloOpcode::kSin, operand);
 }
-XlaOp Tan(const XlaOp operand) {
-  return operand.builder()->UnaryOp(HloOpcode::kTan, operand);
-}
 XlaOp Tanh(const XlaOp operand) {
   return operand.builder()->UnaryOp(HloOpcode::kTanh, operand);
 }

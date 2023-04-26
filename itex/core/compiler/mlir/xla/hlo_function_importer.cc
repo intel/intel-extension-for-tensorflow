@@ -47,9 +47,9 @@ limitations under the License.
 #include "mlir/AsmParser/AsmParser.h"      // from @llvm-project
 #include "mlir/Dialect/Func/IR/FuncOps.h"  // from @llvm-project
 #include "mlir/IR/Attributes.h"            // from @llvm-project
+#include "mlir/IR/BlockAndValueMapping.h"  // from @llvm-project
 #include "mlir/IR/Builders.h"              // from @llvm-project
 #include "mlir/IR/BuiltinTypes.h"          // from @llvm-project
-#include "mlir/IR/IRMapping.h"             // from @llvm-project
 #include "mlir/IR/Location.h"              // from @llvm-project
 #include "mlir/IR/Region.h"                // from @llvm-project
 #include "protos/xla_data.pb.h"
@@ -1426,7 +1426,6 @@ StatusOr<mlir::Operation*> HloFunctionImporter::ImportInstructionImpl(
       NO_ATTRIBUTE_CASE(kSin, SineOp);
       NO_ATTRIBUTE_CASE(kSqrt, SqrtOp);
       NO_ATTRIBUTE_CASE(kSubtract, SubtractOp);
-      NO_ATTRIBUTE_CASE(kTan, TanOp);
       NO_ATTRIBUTE_CASE(kTanh, TanhOp);
       NO_ATTRIBUTE_CASE(kTuple, TupleOp);
       NO_ATTRIBUTE_CASE(kXor, XorOp);
@@ -1450,15 +1449,10 @@ StatusOr<mlir::Operation*> HloFunctionImporter::ImportInstructionImpl(
 
       auto fusion_kind = mlir::mhlo::symbolizeFusionKind(
           itex_xla::ToString(instruction->fusion_kind()));
-      attributes.push_back(builder_->getNamedAttr(
-          "fusion_kind", mlir::mhlo::FusionKindAttr::get(
-                             func_builder->getContext(), fusion_kind.value())));
-      attributes.push_back(builder_->getNamedAttr(
-          "output_operand_aliasing",
-          ConvertOutputOperandAliasing(instruction->output_operand_aliasing(),
-                                       builder_)));
       auto fusion = func_builder->create<mlir::mhlo::FusionOp>(
-          loc, flattened_ret_types, flattened_operands, attributes);
+          loc, flattened_ret_types, flattened_operands,
+          mlir::mhlo::FusionKindAttr::get(func_builder->getContext(),
+                                          fusion_kind.value()));
       TF_RETURN_IF_ERROR(ImportAsRegion(
           *instruction->fused_instructions_computation(),
           &fusion.getFusedComputation(), /*flatten_region_arg_tuple=*/true));

@@ -343,7 +343,8 @@ StatusOr<Attribute> ConvertNonFuncAttributeValue(const AttrValue& value,
         attrs.push_back(FuncAttr::get(builder.getContext(), func_attr.name(),
                                       builder.getDictionaryAttr(subattrs)));
       }
-      return builder.getArrayAttr(llvm::ArrayRef(attrs.begin(), attrs.end()));
+      return builder.getArrayAttr(
+          llvm::makeArrayRef(attrs.begin(), attrs.end()));
     }
     case AttrValue::VALUE_NOT_SET:
       return builder.getUnitAttr();

@@ -112,24 +112,6 @@ mlir::mhlo::ConvDimensionNumbersAttr ConvertConvDimensionNumbers(
       arrayref(dnums.output_spatial_dimensions()));
 }
 
-mlir::ArrayAttr ConvertOutputOperandAliasing(
-    const std::vector<std::pair<itex_xla::ShapeIndex,
-                                std::pair<int64_t, itex_xla::ShapeIndex>>>&
-        aliaInfo,
-    mlir::Builder* builder) {
-  auto arrayref = [](absl::Span<const int64_t> array) {
-    return llvm::ArrayRef<int64_t>{array.data(), array.size()};
-  };
-  std::vector<mlir::Attribute> attrs;
-  for (auto& aliasing : aliaInfo) {
-    auto attr = mlir::mhlo::OutputOperandAliasAttr::get(
-        builder->getContext(), arrayref(aliasing.first), aliasing.second.first,
-        arrayref(aliasing.second.second));
-    attrs.push_back(attr);
-  }
-  return builder->getArrayAttr(attrs);
-}
-
 mlir::ArrayAttr ConvertCustomCallOutputOperandAliasing(
     const std::vector<std::pair<itex_xla::ShapeIndex,
                                 std::pair<int64_t, itex_xla::ShapeIndex>>>&

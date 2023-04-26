@@ -268,7 +268,6 @@ StatusOr<PrimitiveType> MaybeUpcast(
     case HloOpcode::kRsqrt:
     case HloOpcode::kSqrt:
     case HloOpcode::kCbrt:
-    case HloOpcode::kTan:
     case HloOpcode::kTanh:
       if (!ShapeUtil::ElementIsFloating(shape) &&
           !ShapeUtil::ElementIsComplex(shape)) {

@@ -89,7 +89,6 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:span",
         "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:TargetParser",
     ],
 )
 
@@ -107,7 +106,6 @@ cc_library(
         "//itex/core/compiler/xla/stream_executor",
         "@com_google_absl//absl/memory",
         "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:TargetParser",
     ],
 )
 

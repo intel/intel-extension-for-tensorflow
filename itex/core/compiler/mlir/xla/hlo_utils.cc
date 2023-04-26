@@ -415,8 +415,6 @@ StatusOr<::itex_xla::HloOpcode> MhloToHloOpcode(mlir::Operation* op) {
     return itex_xla::HloOpcode::kSin;
   } else if (isa<mlir::mhlo::SqrtOp, mlir::lmhlo::SqrtOp>(op)) {
     return itex_xla::HloOpcode::kSqrt;
-  } else if (isa<mlir::mhlo::TanOp, mlir::lmhlo::TanOp>(op)) {
-    return itex_xla::HloOpcode::kTan;
   } else if (isa<mlir::mhlo::TanhOp, mlir::lmhlo::TanhOp>(op)) {
     return itex_xla::HloOpcode::kTanh;
   } else if (isa<mlir::mhlo::ComplexOp, mlir::lmhlo::ComplexOp>(op)) {

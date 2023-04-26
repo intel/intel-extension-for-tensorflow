@@ -413,7 +413,13 @@ bool GraphFuncOp::isMarkedForCompilation() {
 // Hook for OpTrait::FunctionLike, called after verifying that the 'type'
 // attribute is present and checks if it holds a function type. Ensures
 // getType, getNumFuncArguments, and getNumFuncResults can be called safely
-LogicalResult GraphFuncOp::verifyType() { return success(); }
+LogicalResult GraphFuncOp::verifyType() {
+  auto type = getFunctionTypeAttr().getValue();
+  if (!type.isa<FunctionType>())
+    return emitOpError("requires '" + getTypeAttrName() +
+                       "' attribute of function type");
+  return success();
+}
 
 // Hook for OpTrait::FunctionLike, called after verifying the function
 // type and the presence of the (potentially empty) function body.
@@ -608,8 +614,7 @@ ParseResult GraphFuncOp::parse(OpAsmParser& parser, OperationState& result) {
   }
 
   auto type = builder.getFunctionType(arg_types, result_types);
-  result.addAttribute(GraphFuncOp::getFunctionTypeAttrName(result.name),
-                      TypeAttr::get(type));
+  result.addAttribute(GraphFuncOp::getTypeAttrName(), TypeAttr::get(type));
 
   // If function attributes are present, parse them.
   NamedAttrList parsed_attributes;
@@ -620,10 +625,12 @@ ParseResult GraphFuncOp::parse(OpAsmParser& parser, OperationState& result) {
   // Add the attributes to the function arguments.
   assert(arg_attrs.size() == arg_types.size());
   assert(result_attrs.size() == result_types.size());
-  result.attributes.append(builder.getNamedAttr(
-      getArgAttrsAttrName(result.name), builder.getArrayAttr(arg_attrs)));
-  result.attributes.append(builder.getNamedAttr(
-      getResAttrsAttrName(result.name), builder.getArrayAttr(result_attrs)));
+  result.attributes.append(
+      builder.getNamedAttr(FunctionOpInterface::getArgDictAttrName(),
+                           builder.getArrayAttr(arg_attrs)));
+  result.attributes.append(
+      builder.getNamedAttr(FunctionOpInterface::getResultDictAttrName(),
+                           builder.getArrayAttr(result_attrs)));
 
   // Parse the function body.
   auto* body = result.addRegion();
@@ -708,10 +715,8 @@ void GraphFuncOp::print(OpAsmPrinter& p) {
   if (!op->getAttrs().empty()) {
     p.printNewline();
     function_interface_impl::printFunctionAttributes(
-        p, *this,
-        {"generic", SymbolTable::getVisibilityAttrName(),
-         getFunctionTypeAttrName(), getArgAttrsAttrName(),
-         getResAttrsAttrName()});
+        p, *this, fnType.getNumInputs(), fnType.getNumResults(),
+        {"generic", SymbolTable::getVisibilityAttrName()});
   }
   // Print body.
   p << ' ';
@@ -1451,7 +1456,7 @@ bool FunctionTable::MayBeCall(Operation* op) const {
   if (IsLegacyCall(op)) return true;
   // The operation might be a call if it references a symbol.
   bool references_symbol = false;
-  op->getAttrDictionary().walk(
+  op->getAttrDictionary().walkSubAttrs(
       [&](Attribute attr) { references_symbol |= attr.isa<SymbolRefAttr>(); });
   return references_symbol;
 }

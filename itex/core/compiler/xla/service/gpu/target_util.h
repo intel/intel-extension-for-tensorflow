@@ -24,10 +24,10 @@ limitations under the License.
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Triple.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
-#include "llvm/TargetParser/Triple.h"
 #include "protos/xla_data.pb.h"
 
 namespace itex_xla {
@@ -63,7 +63,6 @@ enum class TargetDeviceFunctionID {
   kRsqrt,
   kSin,
   kSqrt,
-  kTan,
   kTanh,
 };
 

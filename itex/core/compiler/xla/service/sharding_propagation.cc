@@ -239,7 +239,6 @@ const HloInstruction* PickRepresentativeOperand(
     case HloOpcode::kSqrt:
     case HloOpcode::kCbrt:
     case HloOpcode::kSubtract:
-    case HloOpcode::kTan:
     case HloOpcode::kTanh:
     case HloOpcode::kWhile:
     case HloOpcode::kXor: {

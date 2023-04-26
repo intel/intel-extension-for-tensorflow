@@ -146,7 +146,7 @@ void TypeInference::eliminateConstValueImplicitInfer() {
         op_state.addAttribute(
             "value",
             DenseElementsAttr::get(
-                shaped_type, llvm::ArrayRef(/*const value*/ const_values)));
+                shaped_type, llvm::makeArrayRef(/*const value*/ const_values)));
         // Build and set _mlir_name attr.
         auto ori_op_name =
             op->getAttrOfType<StringAttr>(kMlirNameAttr).getValue().str();

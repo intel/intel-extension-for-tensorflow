@@ -433,18 +433,19 @@ Value HStoTFGConversion::buildConstantTensor(OpBuilder* builder, Location loc,
   for (auto i64 : tensor) {
     int32_vec.push_back(i64);
   }
-  return buildTfgOp(builder, loc, "tfg.Const", nullptr, device_name,
-                    [&](OperationState* const_op_state) -> void {
-                      auto element_type = builder->getI32Type();
-                      auto shaped_type = getRankedTensorType(
-                          shape.size(), element_type, shape);
-                      const_op_state->types.push_back(shaped_type);
-                      const_op_state->addAttribute("dtype",
-                                                   TypeAttr::get(element_type));
-                      const_op_state->addAttribute(
-                          "value", DenseElementsAttr::get(
-                                       shaped_type, llvm::ArrayRef(int32_vec)));
-                    })
+  return buildTfgOp(
+             builder, loc, "tfg.Const", nullptr, device_name,
+             [&](OperationState* const_op_state) -> void {
+               auto element_type = builder->getI32Type();
+               auto shaped_type =
+                   getRankedTensorType(shape.size(), element_type, shape);
+               const_op_state->types.push_back(shaped_type);
+               const_op_state->addAttribute("dtype",
+                                            TypeAttr::get(element_type));
+               const_op_state->addAttribute(
+                   "value", DenseElementsAttr::get(
+                                shaped_type, llvm::makeArrayRef(int32_vec)));
+             })
       ->getResult(0);
 }
 
@@ -453,18 +454,19 @@ Value HStoTFGConversion::buildConstantTensor(OpBuilder* builder, Location loc,
                                              const std::string& device_name,
                                              std::vector<float> tensor,
                                              std::vector<int64_t> shape) {
-  return buildTfgOp(builder, loc, "tfg.Const", nullptr, device_name,
-                    [&](OperationState* const_op_state) -> void {
-                      auto element_type = builder->getF32Type();
-                      auto shaped_type = getRankedTensorType(
-                          shape.size(), element_type, shape);
-                      const_op_state->types.push_back(shaped_type);
-                      const_op_state->addAttribute("dtype",
-                                                   TypeAttr::get(element_type));
-                      const_op_state->addAttribute(
-                          "value", DenseElementsAttr::get(
-                                       shaped_type, llvm::ArrayRef(tensor)));
-                    })
+  return buildTfgOp(
+             builder, loc, "tfg.Const", nullptr, device_name,
+             [&](OperationState* const_op_state) -> void {
+               auto element_type = builder->getF32Type();
+               auto shaped_type =
+                   getRankedTensorType(shape.size(), element_type, shape);
+               const_op_state->types.push_back(shaped_type);
+               const_op_state->addAttribute("dtype",
+                                            TypeAttr::get(element_type));
+               const_op_state->addAttribute(
+                   "value", DenseElementsAttr::get(shaped_type,
+                                                   llvm::makeArrayRef(tensor)));
+             })
       ->getResult(0);
 }
 

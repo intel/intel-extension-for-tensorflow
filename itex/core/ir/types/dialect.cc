@@ -394,7 +394,7 @@ Attribute ShapeAttr::parse(AsmParser& parser, Type type) {
              "attribute";
       return {};
     }
-    return ShapeAttr::get(parser.getContext(), std::nullopt);
+    return ShapeAttr::get(parser.getContext(), llvm::None);
   }
 
   SmallVector<int64_t> shape;
@@ -417,7 +417,7 @@ Attribute ShapeAttr::parse(AsmParser& parser, Type type) {
         return {};
     }
   }
-  return ShapeAttr::get(parser.getContext(), llvm::ArrayRef(shape));
+  return ShapeAttr::get(parser.getContext(), llvm::makeArrayRef(shape));
 }
 
 // Get or create a shape attribute.
@@ -438,7 +438,7 @@ ShapeAttr ShapeAttr::get(MLIRContext* context, ShapedType shaped_type) {
 
 llvm::Optional<ArrayRef<int64_t>> ShapeAttr::getValue() const {
   if (hasRank()) return getShape();
-  return std::nullopt;
+  return llvm::None;
 }
 
 bool ShapeAttr::hasRank() const { return !getImpl()->unranked; }
@@ -459,12 +459,12 @@ bool ShapeAttr::hasStaticShape() const {
 }
 
 namespace {
-// Returns the shape of the given value if it's ranked; returns std::nullopt
+// Returns the shape of the given value if it's ranked; returns llvm::None
 // otherwise.
 Optional<ArrayRef<int64_t>> GetShape(Value value) {
   auto shaped_type = value.getType().cast<ShapedType>();
   if (shaped_type.hasRank()) return shaped_type.getShape();
-  return std::nullopt;
+  return llvm::None;
 }
 
 // Merges cast compatible shapes and returns a more refined shape. The two

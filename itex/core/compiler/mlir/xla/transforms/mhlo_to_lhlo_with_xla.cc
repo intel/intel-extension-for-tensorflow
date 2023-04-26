@@ -461,7 +461,6 @@ StatusOr<mlir::Operation*> LhloDialectEmitter::EmitOp(
     case HloOpcode::kSlice:
     case HloOpcode::kSqrt:
     case HloOpcode::kSubtract:
-    case HloOpcode::kTan:
     case HloOpcode::kTanh:
     case HloOpcode::kTranspose:
     case HloOpcode::kXor:
@@ -931,9 +930,16 @@ StatusOr<Operation*> LhloDialectEmitter::EmitDnnConvolution(
               builder_.getF64FloatAttr(backend_config.conv_result_scale()));
 
     auto config = mlir::lmhlo_gpu::ConvolutionBackendConfigAttr::get(
-        builder_.getContext(), 0, false, std::vector<int64_t>(0),
-        std::vector<int64_t>(0), false,
-        backend_config.reordered_int8_nchw_vect(), 0,
+        builder_.getContext(),
+        0,  // algorithm.algo_id(),
+        false, std::vector<int64_t>(0), std::vector<int64_t>(0), false,
+
+        // algorithm.math_type() ==
+        //  stream_executor::dnn::AlgorithmProto::TENSOR_OP_MATH,
+        // knob_ids, knob_values, algorithm.is_cudnn_frontend(),
+        0,  // algorithm.has_workspace_size() ?
+            // algorithm.workspace_size().value()
+            //                             : -1,
         get_layout_attribute(custom_call->operand(0)->shape().layout()),
         get_layout_attribute(custom_call->operand(1)->shape().layout()),
         get_layout_attribute(custom_call->shape().tuple_shapes(0).layout()));
