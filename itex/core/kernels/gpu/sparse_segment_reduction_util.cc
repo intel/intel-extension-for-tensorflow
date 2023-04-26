@@ -57,12 +57,12 @@ operator()(OpKernelContext* context, bool is_mean, bool is_sqrtn,
   const Index total_stripe_count =
       input_inner_dim_size * input_outer_dim_num_stripe;
   TF_RETURN_IF_ERROR(
-      LaunchSortedSegmentMeanKernel<T, Index, SegmentId, OuterDimTileSize,
-                                    ReductionF, AtomicReductionF>()(
+      LaunchSortedSegmentKernel<T, Index, SegmentId, OuterDimTileSize,
+                                ReductionF, AtomicReductionF>()(
           d, input_outer_dim_size, input_inner_dim_size, output_rows,
           indices.data(), segment_ids.data(), segment_offsets.data(),
           input.data(), output.data(), total_stripe_count,
-          static_cast<float>(default_value)));
+          static_cast<float>(default_value), is_mean, is_sqrtn));
 
   return Status::OK();
 }

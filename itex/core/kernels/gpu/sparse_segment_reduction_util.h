@@ -76,13 +76,13 @@ struct SegmentOffsetsKernel {
 
 template <typename T, typename Index, typename SegmentId, typename ReductionF,
           typename AtomicReductionF, int OuterDimTileSize, typename = void>
-struct SortedSegmentMeanKernel {
-  SortedSegmentMeanKernel(Index input_outer_dim_size, Index inner_dim_size,
-                          Index output_outer_dim_size, const Index* indices,
-                          const SegmentId* segment_ids,
-                          const Index* segment_offsets, const T* input,
-                          float* output, Index total_stripe_count,
-                          float initial_value)
+struct SortedSegmentKernel {
+  SortedSegmentKernel(Index input_outer_dim_size, Index inner_dim_size,
+                      Index output_outer_dim_size, const Index* indices,
+                      const SegmentId* segment_ids,
+                      const Index* segment_offsets, const T* input,
+                      float* output, Index total_stripe_count,
+                      float initial_value, bool is_mean, bool is_sqrtn)
       : input_outer_dim_size(input_outer_dim_size),
         inner_dim_size(inner_dim_size),
         output_outer_dim_size(output_outer_dim_size),
@@ -92,7 +92,9 @@ struct SortedSegmentMeanKernel {
         input(input),
         output(output),
         total_stripe_count(total_stripe_count),
-        initial_value(initial_value) {}
+        initial_value(initial_value),
+        is_mean(is_mean),
+        is_sqrtn(is_sqrtn) {}
   void operator()(sycl::nd_item<1> item) const {
     auto id = item.get_global_id(0);
     if (id >= total_stripe_count) return;
@@ -116,7 +118,11 @@ struct SortedSegmentMeanKernel {
         const Index total_segment_number =
             segment_offsets[last_output_segment_id + 1] -
             segment_offsets[last_output_segment_id];
-        if (total_segment_number) reduce_res /= total_segment_number;
+        if (total_segment_number) {
+          if (is_mean) {
+            reduce_res /= total_segment_number;
+          }
+        }
         auto output_index =
             last_output_segment_id * inner_dim_size + segment_offset;
         if (last_output_segment_id == first_segment_id) {
@@ -141,7 +147,11 @@ struct SortedSegmentMeanKernel {
         segment_offsets[last_output_segment_id + 1] -
         segment_offsets[last_output_segment_id];
 
-    if (total_segment_number) reduce_res /= total_segment_number;
+    if (total_segment_number) {
+      if (is_mean) {
+        reduce_res /= total_segment_number;
+      }
+    }
     atom_reduction_op(output + output_index, &reduce_res);
   }
 
@@ -156,20 +166,23 @@ struct SortedSegmentMeanKernel {
   float* output;
   Index total_stripe_count;
   float initial_value;
+  bool is_mean;
+  bool is_sqrtn;
 };
 
 }  // namespace impl
 
 template <typename T, typename Index, typename SegmentId, int OuterDimTileSize,
           typename ReductionF, typename AtomicReductionF>
-struct LaunchSortedSegmentMeanKernel {
+struct LaunchSortedSegmentKernel {
   Status operator()(const Eigen::GpuDevice& device,
                     const Index input_outer_dim_size,
                     const Index inner_dim_size,
                     const Index output_outer_dim_size, const Index* indices,
                     const SegmentId* segment_ids, const Index* segment_offset,
                     const T* input, float* output,
-                    const Index total_stripe_count, const float initial_value) {
+                    const Index total_stripe_count, const float initial_value,
+                    bool is_mean, bool is_sqrtn) {
     auto stream = device.stream();
     auto work_group_size =
         (*stream)
@@ -182,12 +195,12 @@ struct LaunchSortedSegmentMeanKernel {
 
     sycl::range<1> global_size(num_work_group * work_group_size);
     stream->submit([&](sycl::handler& cgh) {
-      impl::SortedSegmentMeanKernel<T, Index, SegmentId, ReductionF,
-                                    AtomicReductionF, OuterDimTileSize>
+      impl::SortedSegmentKernel<T, Index, SegmentId, ReductionF,
+                                AtomicReductionF, OuterDimTileSize>
           task(input_outer_dim_size, inner_dim_size, output_outer_dim_size,
                indices, segment_ids, segment_offset, input, output,
-               total_stripe_count, initial_value);
-      cgh.parallel_for<impl::SortedSegmentMeanKernel<
+               total_stripe_count, initial_value, is_mean, is_sqrtn);
+      cgh.parallel_for<impl::SortedSegmentKernel<
           T, Index, SegmentId, ReductionF, AtomicReductionF, OuterDimTileSize>>(
           sycl::nd_range<1>(global_size, local_size), task);
     });
