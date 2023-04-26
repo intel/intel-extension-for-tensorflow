@@ -104,11 +104,11 @@
 <div class="section" id="i-customize-build-script">
 <h3>I. Customize build script<a class="headerlink" href="#i-customize-build-script" title="Permalink to this headline">¶</a></h3>
 <p><a class="reference external" href="./build.sh">build.sh</a> is provided as docker container build script. While OS version and some software version (such as Python and TensorFlow) is hard coded inside the script. If you prefer to use newer or later version, you can edit this script.</p>
-<p>For example, to build docker container with Python 3.9 and TensorFlow 2.11 on Ubuntu 20.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as below.</p>
+<p>For example, to build docker container with Python 3.9 and TensorFlow 2.12 on Ubuntu 20.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as below.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
         docker build --build-arg UBUNTU_VERSION=20.04 \
                                 --build-arg PYTHON=python3.9 \
-                                --build-arg TF_VER=2.11 \
+                                --build-arg TF_VER=2.12 \
                                 --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
                                 -t $IMAGE_NAME \
                                 -f itex-cpu-ubuntu.Dockerfile .
@@ -118,18 +118,19 @@
 <div class="section" id="ii-build-the-container">
 <h3>II. Build the container<a class="headerlink" href="#ii-build-the-container" title="Permalink to this headline">¶</a></h3>
 <p>To build the docker container, enter into <a class="reference external" href="docker/./">docker</a> folder and run below commands:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="p">[</span><span class="n">gpu</span><span class="o">-</span><span class="n">flex</span><span class="o">/</span><span class="n">gpu</span><span class="o">-</span><span class="nb">max</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">centos</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">ubuntu</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="p">[</span><span class="n">gpu</span><span class="o">/</span><span class="n">gpu</span><span class="o">-</span><span class="n">horovod</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">centos</span><span class="o">/</span><span class="n">cpu</span><span class="o">-</span><span class="n">ubuntu</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="iii-running-container">
 <h3>III. Running container<a class="headerlink" href="#iii-running-container" title="Permalink to this headline">¶</a></h3>
 <p>Run following commands to start docker container. You can use <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using <code class="docutils literal notranslate"><span class="pre">--device</span> <span class="pre">/dev/dri</span></code> option and run the container:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:gpu-max
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:gpu
 docker run -v &lt;your-local-dir&gt;:/workspace \
            -v /dev/dri/by-path:/dev/dri/by-path \
            --device /dev/dri \
            --privileged \
+           --ipc=host \
            -e http_proxy=$http_proxy \
            -e https_proxy=$https_proxy \
            -e no_proxy=$no_proxy \

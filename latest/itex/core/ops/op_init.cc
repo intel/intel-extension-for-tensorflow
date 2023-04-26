@@ -72,14 +72,14 @@ void RegisterOps() {
   Register_ITEXQuantizedMatMulWithBiasAndDequantizeOp();
 
   // Training kernels
-  Register_ApplyAdamWithWeightDecayOp();
-  Register_ResourceApplyAdamWithWeightDecayOp();
-  Register_FusedApplyMomentumOp();
-  Register_FusedResourceApplyMomentumOp();
-  Register_FusedApplyAdamOp();
-  Register_FusedResourceApplyAdamOp();
-  Register_FusedApplyAdamWithWeightDecayOp();
-  Register_FusedResourceApplyAdamWithWeightDecayOp();
+  Register_ITEXApplyAdamWithWeightDecayOp();
+  Register_ITEXFusedApplyAdamOp();
+  Register_ITEXFusedApplyAdamWithWeightDecayOp();
+  Register_ITEXResourceApplyAdamWithWeightDecayOp();
+  Register_ITEXFusedApplyMomentumOp();
+  Register_ITEXFusedResourceApplyAdamOp();
+  Register_ITEXFusedResourceApplyAdamWithWeightDecayOp();
+  Register_ITEXFusedResourceApplyMomentumOp();
 
   Register_QuantizedConv2DV2Op();
   Register_QuantizedConv3DV2Op();

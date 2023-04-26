@@ -76,8 +76,9 @@
              
   <div class="section" id="intel-extension-for-tensorflow">
 <h1>Intel® Extension for TensorFlow*<a class="headerlink" href="#intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference external" href="https://pypi.org/project/intel-extension-for-tensorflow"><img alt="Python" src="https://img.shields.io/pypi/pyversions/tensorflow.svg?style=plastic" /></a>
-<a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/releases"><img alt="version" src="https://img.shields.io/badge/release-1.1.0-green" /></a>
+<p><a class="reference external" href="https://badge.fury.io/py/intel-extension-for-tensorflow"><img alt="Python" src="https://img.shields.io/pypi/pyversions/intel_extension_for_tensorflow" /></a>
+<a class="reference external" href="https://badge.fury.io/py/intel-extension-for-tensorflow"><img alt="PyPI version" src="https://badge.fury.io/py/intel-extension-for-tensorflow.svg" /></a>
+<a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/releases"><img alt="version" src="https://img.shields.io/github/v/release/intel/intel-extension-for-tensorflow?color=brightgreen" /></a>
 <a class="reference external" href="LICENSE.txt"><img alt="license" src="https://img.shields.io/badge/license-Apache%202-blue" /></a></p>
 <p>Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow <a class="reference external" href="https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md">PluggableDevice</a> interface, aiming to bring Intel XPU (GPU, CPU, etc) devices into <a class="reference external" href="https://github.com/tensorflow/tensorflow">TensorFlow</a> open source community for AI workload acceleration. It allows users to flexibly plug an XPU into TensorFlow on-demand, exposing the computing power inside Intel’s hardware.</p>
 <p>This diagram provides a summary of the TensorFlow* PyPI package ecosystem.</p>
@@ -111,30 +112,6 @@
 <h3>Hardware Requirement<a class="headerlink" href="#hardware-requirement" title="Permalink to this headline">¶</a></h3>
 <p>Intel® Extension for TensorFlow* provides <a class="reference external" href="docs/install/install_for_gpu.html#hardware-requirements">Intel GPU</a> support and experimental <a class="reference external" href="docs/install/experimental/install_for_cpu.html#hardware-requirements">Intel CPU</a> support.</p>
 </div>
-<div class="section" id="compatibility-table">
-<h3>Compatibility Table<a class="headerlink" href="#compatibility-table" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
-<thead>
-<tr>
-<th>Intel ® Extension for TensorFlow*</th>
-<th>Stock TensorFlow</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>v1.2.0</td>
-<td>2.12</td>
-</tr>
-<tr>
-<td>v1.1.0</td>
-<td>2.10 &amp; 2.11</td>
-</tr>
-<tr>
-<td>v1.0.0</td>
-<td>2.10</td>
-</tr>
-</tbody>
-</table></div>
 <div class="section" id="software-requirement">
 <h3>Software Requirement<a class="headerlink" href="#software-requirement" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="docutils">
@@ -186,10 +163,33 @@
 </tr>
 </tbody>
 </table></div>
+<div class="section" id="compatibility-table">
+<h3>Compatibility Table<a class="headerlink" href="#compatibility-table" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Intel ® Extension for TensorFlow*</th>
+<th>Stock TensorFlow</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="docs/install/how_to_build.html">latest build from source</a></td>
+<td>2.12</td>
+</tr>
+<tr>
+<td>v1.1.0</td>
+<td>2.10 &amp; 2.11</td>
+</tr>
+<tr>
+<td>v1.0.0</td>
+<td>2.10</td>
+</tr>
+</tbody>
+</table></div>
 <div class="section" id="install-for-gpu">
 <h3>Install for GPU<a class="headerlink" href="#install-for-gpu" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12.0</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Environment check instructions for GPU:</p>
@@ -200,8 +200,7 @@
 </div>
 <div class="section" id="install-for-cpu-experimental">
 <h3>Install for CPU [Experimental]<a class="headerlink" href="#install-for-cpu-experimental" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12.0</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Sanity check instructions:</p>

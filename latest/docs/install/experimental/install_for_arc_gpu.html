@@ -96,15 +96,15 @@
 <li><p>For <a class="reference external" href="https://www.microsoft.com/en-us/windows/get-windows-10">Windows 10</a> or <a class="reference external" href="https://www.microsoft.com/en-us/windows/windows-11">Windows 11</a>:</p>
 <ul>
 <li><p><a class="reference external" href="https://learn.microsoft.com/en-us/windows/wsl/about">Windows Subystem for Linux 2</a> (WSL2) with Ubuntu 22.04 (64-bit)</p></li>
-<li><p>Windows GPU Drivers: <a class="reference external" href="https://www.intel.com/content/www/us/en/download/726609/intel-arc-graphics-windows-dch-driver.html">Intel® Arc™ Graphics Windows Driver 31.0.101.3490</a> or later (installation instructions below)</p></li>
+<li><p>Windows GPU Drivers: <a class="reference external" href="https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html">Intel® Arc™ Graphics Windows Driver 31.0.101.4255</a> or later (installation instructions below)</p></li>
 </ul>
 </li>
 <li><p>For Ubuntu Linux 22.04 within WSL2:</p>
 <ul>
-<li><p>Linux Runtime Libraries: Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a> (installation instructions below)</p></li>
-<li><p>Intel® oneAPI Base Toolkit 2023.0 (installation instructions below)</p></li>
+<li><p>Linux Runtime Libraries: Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a> (installation instructions below)</p></li>
+<li><p>Intel® oneAPI Base Toolkit 2023.1 (installation instructions below)</p></li>
 <li><p>TensorFlow 2.12.0</p></li>
-<li><p>Python 3.8-3.11</p></li>
+<li><p>Python 3.8-3.10</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
 </ul>
 </li>
@@ -116,12 +116,12 @@
 <li><p>Ubuntu 22.04 (64-bit)</p></li>
 <li><p>Intel® GPU Drivers for Linux (installation instructions below)</p>
 <ul>
-<li><p>Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a></p></li>
+<li><p>Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a></p></li>
 </ul>
 </li>
-<li><p>Intel® oneAPI Base Toolkit 2023.0 (installation instructions below)</p></li>
+<li><p>Intel® oneAPI Base Toolkit 2023.1 (installation instructions below)</p></li>
 <li><p>TensorFlow 2.12.0</p></li>
-<li><p>Python 3.8-3.11</p></li>
+<li><p>Python 3.8-3.10</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
 </ul>
 </div>
@@ -146,10 +146,10 @@
 </thead>
 <tbody>
 <tr>
-<td>v1.1.0</td>
+<td>v1.2.0</td>
 <td>Windows 10, Windows 11</td>
 <td>Intel® Arc™ A-Series GPUs</td>
-<td><a href="https://www.intel.com/content/www/us/en/download/726609/intel-arc-graphics-windows-dch-driver.html">Intel® Arc™ Graphics Windows DCH Driver</a></td>
+<td><a href="https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html">Intel® Arc™ Graphics Windows DCH Driver</a></td>
 </tr>
 </tbody>
 </table><p>Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.</p>
@@ -167,10 +167,10 @@
 </thead>
 <tbody>
 <tr>
-<td>v1.1.0</td>
+<td>v1.2.0</td>
 <td>Ubuntu 22.04 installed in WSL2</td>
 <td>Intel® Arc™ A-Series GPUs</td>
-<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a>, please be sure to append the specific version after components, as is done below.</td>
+<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a>, please be sure to append the specific version after components, as is done below.</td>
 </tr>
 </tbody>
 </table><p>The steps to install the runtime components in Ubuntu Linux (within WSL2) are:</p>
@@ -185,9 +185,13 @@ sudo apt-get update
 </li>
 <li><p>Install the necessary runtime packages:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install <span class="se">\</span>
-    intel-opencl-icd<span class="o">=</span><span class="m">22</span>.43.24595.35+i538~22.04 <span class="se">\</span>
-    intel-level-zero-gpu<span class="o">=</span><span class="m">1</span>.3.24595.35+i538~22.04 <span class="se">\</span>
-    level-zero<span class="o">=</span><span class="m">1</span>.8.8+i524~u22.04
+    intel-opencl-icd<span class="o">=</span><span class="m">23</span>.05.25593.18-601~22.04 <span class="se">\</span>
+    intel-level-zero-gpu<span class="o">=</span><span class="m">1</span>.3.25593.18-601~22.04 <span class="se">\</span>
+    level-zero<span class="o">=</span><span class="m">1</span>.9.4+i589~22.04 <span class="se">\</span>
+    intel-igc-cm<span class="o">=</span><span class="m">1</span>.0.176+i600~22.04 <span class="se">\</span>
+    <span class="nv">libigc1</span><span class="o">=</span><span class="m">1</span>.0.13230.8-600~22.04 <span class="se">\</span>
+    <span class="nv">libigdfcl1</span><span class="o">=</span><span class="m">1</span>.0.13230.8-600~22.04 <span class="se">\</span>
+    <span class="nv">libigdgmm12</span><span class="o">=</span><span class="m">22</span>.3.5-601~22.04
 </pre></div>
 </div>
 </li>
@@ -220,15 +224,15 @@ sudo apt-get update
 </thead>
 <tbody>
 <tr>
-<td>v1.1.0</td>
+<td>v1.2.0</td>
 <td>Ubuntu 22.04</td>
 <td>Intel® Arc™ A-Series GPUs</td>
-<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd_22.43.24595.35+i538~22.04_amd64.deb</code></td>
+<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd_23.05.25593.18-601~22.04_amd64.deb</code></td>
 </tr>
 </tbody>
 </table><p>The steps to install the runtime components in Ubuntu Linux are:</p>
 <ul>
-<li><p>The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html">Installation Guides for Intel Arc GPUs</a>. When installing the Intel® Arc™ A-Series GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a>, please be sure to append the specific version after components, such as <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">intel-opencl-icd_22.43.24595.35+i538~22.04_amd64.deb</span></code>|</p></li>
+<li><p>The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html">Installation Guides for Intel Arc GPUs</a>. When installing the Intel® Arc™ A-Series GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a>, please be sure to append the specific version after components, such as <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">intel-opencl-icd_23.05.25593.18-601~22.04_amd64.deb</span></code>|</p></li>
 <li><p>Install the Intel® oneAPI libraries</p>
 <ul>
 <li><p>Add the Intel® oneAPI library repositories to your Ubuntu installation:</p>
@@ -309,9 +313,10 @@ sudo apt-get update
 <li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
 </ul>
 <p>Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18852/l_BaseKit_p_2022.3.0.8767_offline.sh
-<span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL</span>
-$ sudo sh ./l_BaseKit_p_2022.3.0.8767_offline.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/7deeaac4-f605-4bcf-a81b-ea7531577c61/l_BaseKit_p_2023.1.0.46401_offline.sh
+<span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Library and oneMKL</span>
+<span class="c1"># if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too (Intel® oneAPI MPI Library will be installed automatically as its dependency)</span>
+$ sudo sh ./l_BaseKit_p_2023.1.0.46401_offline.sh
 </pre></div>
 </div>
 <p>For any more details, please follow the procedure in <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html">Intel® oneAPI Base Toolkit</a>.</p>

@@ -90,7 +90,7 @@
              
   <div class="section" id="conda-environment-installation-instructions">
 <h1>Conda Environment Installation Instructions<a class="headerlink" href="#conda-environment-installation-instructions" title="Permalink to this headline">¶</a></h1>
-<p>This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.1.0 and Intel® Optimization for Horovod* v0.4.0 deployment for distributed training on Conda environment.</p>
+<p>This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.2.0 and Intel® Optimization for Horovod* v0.5.0 deployment for distributed training on Conda environment.</p>
 <div class="section" id="preconditions">
 <h2>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this headline">¶</a></h2>
 <p>Assume user has installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per <a class="reference external" href="../install_for_gpu.html#install_oneapi_base_toolkit_packages">instructions</a> successfully.</p>
@@ -110,18 +110,24 @@ You can use the following command to install Miniconda. During installation, you
 <p>You may need to update your conda first, as at least conda 4.1.11 is required.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">update</span> <span class="n">conda</span>
 
-<span class="c1">#Take Intel Python 2023.0 as an example to conda environment, but generic Python is also recommended.</span>
-<span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">itex</span> <span class="o">-</span><span class="n">c</span> <span class="n">intel</span> <span class="n">intelpython3_full</span><span class="o">==</span><span class="mf">2023.0.0</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
+<span class="c1">#Take Intel Python 2023.1.0 as an example to conda environment, but generic Python is also recommended.</span>
+<span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">itex</span> <span class="o">-</span><span class="n">c</span> <span class="n">intel</span> <span class="n">intelpython3_full</span><span class="o">==</span><span class="mf">2023.1.0</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
 </pre></div>
 </div>
 <p>Activate the environment by the following commands.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">itex</span>
 </pre></div>
 </div>
-<p>Install stock tensorflow 2.12.0 and Intel® Extension for TensorFlow* GPU wheels.</p>
+<p>Install stock Tensorflow 2.12.0 and Intel® Extension for TensorFlow* GPU wheels.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12.0</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Set required environment variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># DPC++ compiler/oneMKL</span>
+<span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">compiler</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">mkl</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
 </div>
 <p>Check the environment for GPU:</p>
@@ -133,11 +139,14 @@ You can use the following command to install Miniconda. During installation, you
 </pre></div>
 </div>
 <p>Expected result:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v1</span><span class="mf">.1.0</span><span class="o">-</span><span class="n">d4f2f46e</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v1</span><span class="mf">.2.0</span><span class="o">-</span><span class="mf">8e0294</span><span class="n">ba</span>
 </pre></div>
 </div>
-<p>In order to install Intel® Optimization for Horovod* v0.4.0 for distributed training, oneCCL need to be installed at first when you install oneAPI Basekit.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
+<p>In order to install Intel® Optimization for Horovod* v0.5.0 for distributed training, oneCCL need to be installed at first when you install oneAPI Basekit.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">mpi</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">ccl</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
+
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
 </pre></div>
 </div>
 <p>Test multi-node with Intel MPI on cluster System, please set environment variables.</p>

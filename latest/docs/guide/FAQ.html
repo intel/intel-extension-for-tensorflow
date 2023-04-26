@@ -85,7 +85,9 @@
              
   <div class="section" id="frequently-asked-questions">
 <h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
-<p>I. How to check whether GPU drivers are installed successfully?</p>
+<ol class="simple">
+<li><p>How to check whether GPU drivers are installed successfully?</p></li>
+</ol>
 <p>Run <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">tensorflow</span></code> and it will show which platform you are running on: Intel(R) Level-Zero(default) or Intel(R) OpenCL.</p>
 <p>And the high level API of TensorFlow <code class="docutils literal notranslate"><span class="pre">tf.config.experimental.list_physical_devices()</span></code> will tell you the device types that are registered to TensorFlow core.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python
@@ -95,8 +97,20 @@
 [PhysicalDevice(name=&#39;/physical_device:CPU:0&#39;, device_type=&#39;CPU&#39;), PhysicalDevice(name=&#39;/physical_device:XPU:0&#39;, device_type=&#39;XPU&#39;)]
 </pre></div>
 </div>
-<p>II. How to know the configurations and rate of utilization of local GPU devices?</p>
+<ol class="simple">
+<li><p>How to know the configurations and rate of utilization of local GPU devices?</p></li>
+</ol>
 <p><a class="reference external" href="https://github.com/intel/pti-gpu/tree/master/tools/sysmon">System Monitoring Utility</a> tool can be used to show the capability (clock frequency, EU count, amount of device memory and so on) of your devices and usage of each sub-module (device memory, GPU engines and so on).</p>
+<ol class="simple">
+<li><p>What’s the relationship of <code class="docutils literal notranslate"><span class="pre">TensorFlow*</span></code>, <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">of</span> <span class="pre">TensorFlow*</span></code> and <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code>?</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">of</span> <span class="pre">TensorFlow*</span></code> is designed to optimize for Intel CPU. It could replace <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> (<code class="docutils literal notranslate"><span class="pre">Google</span> <span class="pre">TensorFlow*</span></code>) for Intel CPU. All Intel optimizations are available in both <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> and <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> (since 2.9) for Intel CPU. That means you only need to install one of them. <strong>DO NOT</strong> install them in same time, the impact is unknown.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> is an extension of <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> and help extend to accelerate on Intel CPU or support Intel GPU.
+<code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> only co-works with <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code>. Please <strong>DO NOT</strong> install Intel® Extension for TensorFlow* with Intel® Optimization for TensorFlow*.</p>
+<p>Starting in Q1 2024, Intel® Optimization for TensorFlow* will be discontinued. Intel optimization will be available only through <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> co-works with the <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code>. Intel will continue to upstream advanced optimization to <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> in the future.</p>
+<p>Currently, Intel® Extension for TensorFlow* has two releases: CPU &amp; GPU.</p>
+<p>For Intel CPU, <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span> <span class="pre">for</span> <span class="pre">CPU</span></code> + <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> could replace <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">of</span> <span class="pre">TensorFlow*</span></code>. Install command: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">intel-extension-for-tensorflow[cpu]</span></code>.</p>
+<p>For Intel GPU, <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span> <span class="pre">for</span> <span class="pre">GPU</span></code> + <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> is only way to make TensorFlow* support Intel GPU. Install command: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">intel-extension-for-tensorflow[gpu]</span></code>.</p>
 <div class="section" id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
 <p>This section shows common problems and solutions for compilation and runtime issues you may encounter.</p>

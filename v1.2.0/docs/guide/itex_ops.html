@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customized Operators &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Graph fusion" href="itex_fusion.html" />
+    <link rel="prev" title="Features" href="features.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                <a href="../../../versions.html">v1.2.0 ▼</a>
+                <p>Click link above to switch version</p>              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Customized Operators</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#itex-ops-adamwithweightdecayoptimizer"><code class="docutils literal notranslate"><span class="pre">itex.ops.AdamWithWeightDecayOptimizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-ops-layernormalization"><code class="docutils literal notranslate"><span class="pre">itex.ops.LayerNormalization</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-ops-gelu"><code class="docutils literal notranslate"><span class="pre">itex.ops.gelu</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-ops-itexlstm"><code class="docutils literal notranslate"><span class="pre">itex.ops.ItexLSTM</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#graph-optimization">Graph Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#advanced-auto-mixed-precision-amp">Advanced Auto Mixed Precision (AMP)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#ease-of-use-python-api">Ease-of-use Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gpu-profiler">GPU Profiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="features.html">Features</a> &raquo;</li>
+      <li>Customized Operators</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/itex_ops.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="customized-operators">
+<h1>Customized Operators<a class="headerlink" href="#customized-operators" title="Permalink to this headline">¶</a></h1>
+<p>Public API for extended XPU operators is provided by the <code class="docutils literal notranslate"><span class="pre">itex.ops</span></code> namespace. The extended API provides better performance than the original public API.</p>
+<div class="section" id="itex-ops-adamwithweightdecayoptimizer">
+<h2><code class="docutils literal notranslate"><span class="pre">itex.ops.AdamWithWeightDecayOptimizer</span></code><a class="headerlink" href="#itex-ops-adamwithweightdecayoptimizer" title="Permalink to this headline">¶</a></h2>
+<p>This optimizer implements the Adam algorithm with weight decay</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">AdamWithWeightDecayOptimizer</span><span class="p">(</span>
+    <span class="n">weight_decay_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">beta_1</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">beta_2</span><span class="o">=</span><span class="mf">0.999</span><span class="p">,</span>
+    <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-07</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Adam&#39;</span><span class="p">,</span>
+    <span class="n">exclude_from_weight_decay</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;LayerNorm&quot;</span><span class="p">,</span> <span class="s2">&quot;layer_norm&quot;</span><span class="p">,</span> <span class="s2">&quot;bias&quot;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>This is an implementation of the AdamW optimizer described in “Decoupled Weight Decay Regularization” by Loshch ilov &amp; Hutter (<a class="reference external" href="https://arxiv.org/abs/1711.05101">pdf</a>). This python API <code class="docutils literal notranslate"><span class="pre">itex.ops.AdamWithWeightDecayOptimizer</span></code> replaces <a class="reference external" href="https://www.tensorflow.org/addons/api_docs/python/tfa/optimizers/AdamW">tfa.optimizers.AdamW</a>.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">step</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">schedule</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">schedules</span><span class="o">.</span><span class="n">PiecewiseConstantDecay</span><span class="p">(</span>
+    <span class="p">[</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">15000</span><span class="p">],</span> <span class="p">[</span><span class="mf">1e-0</span><span class="p">,</span> <span class="mf">1e-1</span><span class="p">,</span> <span class="mf">1e-2</span><span class="p">])</span>
+<span class="c1"># lr and wd can be a function or a tensor</span>
+<span class="n">lr</span> <span class="o">=</span> <span class="mf">1e-1</span> <span class="o">*</span> <span class="n">schedule</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+<span class="n">wd</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="mf">1e-4</span> <span class="o">*</span> <span class="n">schedule</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+<span class="c1"># ...</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">AdamWithWeightDecayOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="n">wd</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="itex-ops-layernormalization">
+<h2><code class="docutils literal notranslate"><span class="pre">itex.ops.LayerNormalization</span></code><a class="headerlink" href="#itex-ops-layernormalization" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://arxiv.org/abs/1607.06450">Layer normalization layer (Ba et al., 2016)</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">LayerNormalization</span><span class="p">(</span>
+    <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">beta_initializer</span><span class="o">=</span><span class="s1">&#39;zeros&#39;</span><span class="p">,</span> <span class="n">gamma_initializer</span><span class="o">=</span><span class="s1">&#39;ones&#39;</span><span class="p">,</span>
+    <span class="n">beta_regularizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma_regularizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beta_constraint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">gamma_constraint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Normalize the activations of the previous layer for each given example in a batch independently, rather than across a batch like Batch Normalization. This applies a transformation that maintains the mean activation within each example close to 0, and the activation standard deviation close to 1. This python API <code class="docutils literal notranslate"><span class="pre">itex.ops.LayerNormalization</span></code> replaces <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/layers/LayerNormalization">tf.keras.layers.LayerNormalization</a>.</p>
+<p>For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; <span class="nv">data</span> <span class="o">=</span> tf.constant<span class="o">(</span>np.arange<span class="o">(</span><span class="m">10</span><span class="o">)</span>.reshape<span class="o">(</span><span class="m">5</span>, <span class="m">2</span><span class="o">)</span> * <span class="m">10</span>, <span class="nv">dtype</span><span class="o">=</span>tf.float32<span class="o">)</span>
+&gt;&gt;&gt; <span class="nv">layer</span> <span class="o">=</span> itex.ops.LayerNormalization<span class="o">(</span><span class="nv">axis</span><span class="o">=</span><span class="m">1</span><span class="o">)</span>
+&gt;&gt;&gt; <span class="nv">output</span> <span class="o">=</span> layer<span class="o">(</span>data, <span class="nv">training</span><span class="o">=</span>False<span class="o">)</span>
+&gt;&gt;&gt; print<span class="o">(</span>output<span class="o">)</span>
+tf.Tensor<span class="o">(</span>
+<span class="o">[[</span>-0.99998  <span class="m">0</span>.99998<span class="o">]</span>
+ <span class="o">[</span>-0.99998  <span class="m">0</span>.99998<span class="o">]</span>
+ <span class="o">[</span>-0.99998  <span class="m">0</span>.99998<span class="o">]</span>
+ <span class="o">[</span>-0.99998  <span class="m">0</span>.99998<span class="o">]</span>
+ <span class="o">[</span>-0.99998  <span class="m">0</span>.99998<span class="o">]]</span>, <span class="nv">shape</span><span class="o">=(</span><span class="m">5</span>, <span class="m">2</span><span class="o">)</span>, <span class="nv">dtype</span><span class="o">=</span>float32<span class="o">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="itex-ops-gelu">
+<h2><code class="docutils literal notranslate"><span class="pre">itex.ops.gelu</span></code><a class="headerlink" href="#itex-ops-gelu" title="Permalink to this headline">¶</a></h2>
+<p>Applies the Gaussian error linear unit (GELU) activation function.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">gelu</span><span class="p">(</span>
+    <span class="n">features</span><span class="p">,</span> <span class="n">approximate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Gaussian error linear unit (<code class="docutils literal notranslate"><span class="pre">GELU</span></code>) computes <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">P(X</span> <span class="pre">&lt;=</span> <span class="pre">x)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P(X)</span> <span class="pre">~</span> <span class="pre">N(0,</span> <span class="pre">1)</span></code>. The (GELU) nonlinearity weights inputs by their value, rather than gating inputs by their sign as in <code class="docutils literal notranslate"><span class="pre">ReLU</span></code>. This python API <code class="docutils literal notranslate"><span class="pre">itex.ops.gelu</span></code> replaces <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/gelu">tf.nn.gelu</a>.</p>
+<p>For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; <span class="nv">x</span> <span class="o">=</span> tf.constant<span class="o">([</span>-3.0, -1.0, <span class="m">0</span>.0, <span class="m">1</span>.0, <span class="m">3</span>.0<span class="o">]</span>, <span class="nv">dtype</span><span class="o">=</span>tf.float32<span class="o">)</span>
+&gt;&gt;&gt; <span class="nv">y</span> <span class="o">=</span> itex.ops.gelu<span class="o">(</span>x<span class="o">)</span>
+&gt;&gt;&gt; y.numpy<span class="o">()</span>
+array<span class="o">([</span>-0.00404969, -0.15865526,  <span class="m">0</span>.        ,  <span class="m">0</span>.8413447 ,  <span class="m">2</span>.9959502 <span class="o">]</span>,
+      <span class="nv">dtype</span><span class="o">=</span>float32<span class="o">)</span>
+&gt;&gt;&gt; <span class="nv">y</span> <span class="o">=</span> itex.ops.gelu<span class="o">(</span>x, <span class="nv">approximate</span><span class="o">=</span>True<span class="o">)</span>
+&gt;&gt;&gt; y.numpy<span class="o">()</span>
+array<span class="o">([</span>-0.00363725, -0.158808  ,  <span class="m">0</span>.        ,  <span class="m">0</span>.841192  ,  <span class="m">2</span>.9963627 <span class="o">]</span>,
+      <span class="nv">dtype</span><span class="o">=</span>float32<span class="o">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="itex-ops-itexlstm">
+<h2><code class="docutils literal notranslate"><span class="pre">itex.ops.ItexLSTM</span></code><a class="headerlink" href="#itex-ops-itexlstm" title="Permalink to this headline">¶</a></h2>
+<p>Long Short-Term Memory layer (first proposed in Hochreiter &amp; Schmidhuber, 1997), this python api <code class="docutils literal notranslate"><span class="pre">itex.ops.ItexLSTM</span></code> is semantically the same as <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM">tf.keras.layers.LSTM</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">ItexLSTM</span><span class="p">(</span>
+    <span class="mi">200</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;tanh&#39;</span><span class="p">,</span>
+    <span class="n">recurrent_activation</span><span class="o">=</span><span class="s1">&#39;sigmoid&#39;</span><span class="p">,</span>
+    <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">kernel_initializer</span><span class="o">=</span><span class="s1">&#39;glorot_uniform&#39;</span><span class="p">,</span>
+    <span class="n">recurrent_initializer</span><span class="o">=</span><span class="s1">&#39;orthogonal&#39;</span><span class="p">,</span>
+    <span class="n">bias_initializer</span><span class="o">=</span><span class="s1">&#39;zeros&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Based on available runtime hardware and constraints, this layer will choose different implementations (ITEX-based or fallback-TensorFlow) to maximize the performance.<br />If a GPU is available and all the arguments to the layer meet the requirements of the ITEX kernel (see below for details), the layer will use a fast ITEX implementation.
+The requirements to use the ITEX implementation are:</p>
+<ol class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">activation</span></code> == <code class="docutils literal notranslate"><span class="pre">tanh</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recurrent_activation</span></code> == <code class="docutils literal notranslate"><span class="pre">sigmoid</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">use_bias</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p>Inputs, if use masking, are strictly right-padded.</p></li>
+<li><p>Eager execution is enabled in the outermost context.</p></li>
+</ol>
+<p>For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; <span class="nv">inputs</span> <span class="o">=</span> tf.random.normal<span class="o">([</span><span class="m">32</span>, <span class="m">10</span>, <span class="m">8</span><span class="o">])</span>
+&gt;&gt;&gt; <span class="nv">lstm</span> <span class="o">=</span> itex.ops.ItexLSTM<span class="o">(</span><span class="m">4</span><span class="o">)</span>
+&gt;&gt;&gt; <span class="nv">output</span> <span class="o">=</span> lstm<span class="o">(</span>inputs<span class="o">)</span>
+&gt;&gt;&gt; print<span class="o">(</span>output.shape<span class="o">)</span>
+<span class="o">(</span><span class="m">32</span>, <span class="m">4</span><span class="o">)</span>
+&gt;&gt;&gt; <span class="nv">lstm</span> <span class="o">=</span> itex.ops.ItexLSTM<span class="o">(</span><span class="m">4</span>, <span class="nv">return_sequences</span><span class="o">=</span>True, <span class="nv">return_state</span><span class="o">=</span>True<span class="o">)</span>
+&gt;&gt;&gt; whole_seq_output, final_memory_state, <span class="nv">final_carry_state</span> <span class="o">=</span> lstm<span class="o">(</span>inputs<span class="o">)</span>
+&gt;&gt;&gt; print<span class="o">(</span>whole_seq_output.shape<span class="o">)</span>
+<span class="o">(</span><span class="m">32</span>, <span class="m">10</span>, <span class="m">4</span><span class="o">)</span>
+&gt;&gt;&gt; print<span class="o">(</span>final_memory_state.shape<span class="o">)</span>
+<span class="o">(</span><span class="m">32</span>, <span class="m">4</span><span class="o">)</span>
+&gt;&gt;&gt; print<span class="o">(</span>final_carry_state.shape<span class="o">)</span>
+<span class="o">(</span><span class="m">32</span>, <span class="m">4</span><span class="o">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="features.html" class="btn btn-neutral float-left" title="Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="itex_fusion.html" class="btn btn-neutral float-right" title="Graph fusion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

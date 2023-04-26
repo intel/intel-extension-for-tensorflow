@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Environment Variables &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="GPU Profiler" href="how_to_enable_profiler.html" />
+    <link rel="prev" title="Python APIs" href="python_api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                <a href="../../../versions.html">v1.2.0 ▼</a>
+                <p>Click link above to switch version</p>              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#graph-optimization">Graph Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#advanced-auto-mixed-precision-amp">Advanced Auto Mixed Precision (AMP)</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="features.html#ease-of-use-python-api">Ease-of-use Python API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="python_api.html">Python APIs</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Environment Variables</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#environment-variables-only">Environment Variables only</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#itex-verbose-level-definition">ITEX_VERBOSE level definition</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#environment-variables-with-python-apis">Environment Variables with Python APIs</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#backend-and-config-protocol">Backend and Config Protocol</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#auto-mixed-precision-options">Auto Mixed Precision Options</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gpu-profiler">GPU Profiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="features.html">Features</a> &raquo;</li>
+      <li>Environment Variables</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/environment_variables.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="environment-variables">
+<h1>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Intel® Extension for TensorFlow* provides environment variables for users to quickly adjust the configuration without any model code changes. Not all configuration options can be set via environment variable. For the rest, you’ll need to use the Python APIs. The priority for setting values is Python APIs &gt; Environment Variables &gt; Default value.</p>
+</div>
+<div class="section" id="environment-variables-only">
+<h2>Environment Variables only<a class="headerlink" href="#environment-variables-only" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Environment Variables Names</th>
+<th>Default Value</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ITEX_TILE_AS_DEVICE</td>
+<td><code>1</code></td>
+<td>The default is <code>1</code>, which will configure every tile as TensorFlow individual device in the scenario of one GPU card with multiple tiles. If set to <code>0</code>, the whole GPU card will be treated as single Tensorflow device for execution.</td>
+</tr>
+<tr>
+<td>ITEX_FP32_MATH_MODE</td>
+<td><code>FP32</code></td>
+<td>Sets oneDNN primitive floating-point math mode. The value can be <code>FP32</code> or <code>TF32</code> in GPU device and  <code>FP32</code> or <code>BF32</code> in CPU device. Default will be <code>FP32</code>.</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_LOG_PATH</td>
+<td><code>auto_mixed_precision_log_path</code></td>
+<td>Sets log path</td>
+</tr>
+<tr>
+<td>ITEX_VERBOSE</td>
+<td><code>1</code></td>
+<td>Same semantics as <code>TF_CPP_MAX_VLOG_LEVEL</code>, but only works with Intel® Extension for TensorFlow*</td>
+</tr>
+</tbody>
+</table><div class="section" id="itex-verbose-level-definition">
+<h3>ITEX_VERBOSE level definition<a class="headerlink" href="#itex-verbose-level-definition" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Level 1 is basic verbose information including device, graph, kernel and other infrastructure initialization logs, displayed only once.</p></li>
+<li><p>Level 2 is help information including performance, functionality, debug and error logs, displayed only once.</p></li>
+<li><p>Level 3 is normal tips or kernel execution logs. It is reported multiple times across different iterations. Note that Intel® Extension for TensorFlow* will generate large size logs using this level.</p></li>
+<li><p>Level 4 is for graph information. This level can dump node or large-size whole graph information. Example:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span> <span class="p">{</span>
+  <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;bert/encoder/layer_0/attention/output/dense/BiasAdd&quot;</span>
+  <span class="n">op</span><span class="p">:</span> <span class="s2">&quot;BiasAdd&quot;</span>
+  <span class="nb">input</span><span class="p">:</span> <span class="s2">&quot;bert/encoder/layer_0/attention/output/dense/MatMul&quot;</span>
+  <span class="nb">input</span><span class="p">:</span> <span class="s2">&quot;bert/encoder/layer_0/attention/output/dense/bias/read&quot;</span>
+  <span class="n">device</span><span class="p">:</span> <span class="s2">&quot;/job:localhost/replica:0/task:0/device:CPU:0&quot;</span>
+  <span class="n">attr</span> <span class="p">{</span>
+    <span class="n">key</span><span class="p">:</span> <span class="s2">&quot;T&quot;</span>
+    <span class="n">value</span> <span class="p">{</span>
+      <span class="nb">type</span><span class="p">:</span> <span class="n">DT_FLOAT</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="n">attr</span> <span class="p">{</span>
+    <span class="n">key</span><span class="p">:</span> <span class="s2">&quot;data_format&quot;</span>
+    <span class="n">value</span> <span class="p">{</span>
+      <span class="n">s</span><span class="p">:</span> <span class="s2">&quot;NHWC&quot;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Levels 5 or higher are used for any remaining situations.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="environment-variables-with-python-apis">
+<h2>Environment Variables with Python APIs<a class="headerlink" href="#environment-variables-with-python-apis" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="backend-and-config-protocol">
+<h3>Backend and Config Protocol<a class="headerlink" href="#backend-and-config-protocol" title="Permalink to this headline">¶</a></h3>
+<p>Refer to <a class="reference external" href="python_api.html#python-apis-and-preserved-environment-variable-names">Python APIs and preserved environment variable Names</a>.</p>
+</div>
+<div class="section" id="auto-mixed-precision-options">
+<h3>Auto Mixed Precision Options<a class="headerlink" href="#auto-mixed-precision-options" title="Permalink to this headline">¶</a></h3>
+<p>Refer to <a class="reference internal" href="advanced_auto_mixed_precision.html"><span class="doc">Advanced Auto Mixed Precision</span></a>.</p>
+<!Customized Operators Experimental Override
+Refer to [Customized Operators Experimental Override](itex_ops_override.md).></div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="python_api.html" class="btn btn-neutral float-left" title="Python APIs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="how_to_enable_profiler.html" class="btn btn-neutral float-right" title="GPU Profiler" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

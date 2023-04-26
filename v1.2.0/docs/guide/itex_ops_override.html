@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operators Override &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                <a href="../../../versions.html">v1.2.0 ▼</a>
+                <p>Click link above to switch version</p>              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Operators Override</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/itex_ops_override.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="operators-override">
+<h1>Operators Override<a class="headerlink" href="#operators-override" title="Permalink to this headline">¶</a></h1>
+<!Environment variable `ITEX_OPS_OVERRIDE` and><p>Python api <code class="docutils literal notranslate"><span class="pre">itex.experimental_ops_override()</span></code> is provided to automatically replace some TensorFlow operators by <a class="reference internal" href="itex_ops.html"><span class="doc">Custom Operators</span></a> under <code class="docutils literal notranslate"><span class="pre">itex.ops</span></code> namespace, as well as to be compatible with existing trained parameters.</p>
+</div>
+<div class="section" id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
+<!Once `ITEX_OPS_OVERRIDE=1` is set or ><p>After <code class="docutils literal notranslate"><span class="pre">itex.experimental_ops_override()</span></code> is called, these TensorFlow APIs are automatically replaced by Customized Operators. For Keras layers, their call functions will be overloaded; layer names will be kept.</p>
+<!Note that due to a known issue, users have to set `TF_NUM_INTEROP_THREADS=1` when `ITEX_OPS_OVERRIDE` is enabled to avoid possible performance drop on CPU. Calling the python API directly in model code is recommended.><ul class="simple">
+<li><p><a class="reference external" href="#layer-normalization">Layer Normalization</a></p></li>
+<li><p><a class="reference external" href="#dense-layer">Dense Layer</a></p></li>
+<li><p><a class="reference external" href="#gelu-activation">Gelu Activation</a></p></li>
+<li><p><a class="reference external" href="#instance-normalization">instance Normalization</a></p></li>
+<li><p><a class="reference external" href="#lstm">LSTM</a></p></li>
+</ul>
+<div class="section" id="layer-normalization">
+<h2>Layer Normalization<a class="headerlink" href="#layer-normalization" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tf.keras.layers.LayerNormalization</span></code> and <code class="docutils literal notranslate"><span class="pre">keras.layers.LayerNormalization</span></code> will be fused by Customized Operators of LayerNorm and LayerNormGrad. For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt;&gt; import tensorflow as tf
+&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; itex.experimental_ops_override<span class="o">()</span>
+&gt;&gt;&gt; tf.keras.layers.LayerNormalization<span class="o">(</span>
+      <span class="nv">axis</span><span class="o">=</span>-1, <span class="nv">epsilon</span><span class="o">=</span><span class="m">0</span>.001, <span class="nv">center</span><span class="o">=</span>True, <span class="nv">scale</span><span class="o">=</span>True,
+      <span class="nv">beta_initializer</span><span class="o">=</span><span class="s1">&#39;zeros&#39;</span>, <span class="nv">gamma_initializer</span><span class="o">=</span><span class="s1">&#39;ones&#39;</span>,
+      <span class="nv">beta_regularizer</span><span class="o">=</span>None, <span class="nv">gamma_regularizer</span><span class="o">=</span>None, <span class="nv">beta_constraint</span><span class="o">=</span>None,
+      <span class="nv">gamma_constraint</span><span class="o">=</span>None, **kwargs<span class="o">)</span>
+&gt;&gt;&gt; <span class="c1"># it will run by op ITEXLayerNorm and ITEXLayerNormGrad</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dense-layer">
+<h2>Dense Layer<a class="headerlink" href="#dense-layer" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tf.keras.layers.Dense</span></code> and <code class="docutils literal notranslate"><span class="pre">keras.layers.core.dense.Dense</span></code> will be optimized by BatchMatMul, BiasAdd and Activation fusion for prediction, MatMul and BiasAdd fusion for training. For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt;&gt; import tensorflow as tf
+&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; itex.experimental_ops_override<span class="o">()</span>
+&gt;&gt;&gt; tf.keras.layers.Dense<span class="o">(</span><span class="m">32</span>, <span class="nv">activation</span><span class="o">=</span><span class="s1">&#39;relu&#39;</span><span class="o">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="gelu-activation">
+<h2>Gelu Activation<a class="headerlink" href="#gelu-activation" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tf.nn.gelu</span></code> will be replaced by <code class="docutils literal notranslate"><span class="pre">itex.ops.gelu</span></code>. For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt;&gt; import tensorflow as tf
+&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; itex.experimental_ops_override<span class="o">()</span>
+&gt;&gt;&gt; <span class="nv">x</span> <span class="o">=</span> tf.constant<span class="o">([</span>-3.0, -1.0, <span class="m">0</span>.0, <span class="m">1</span>.0, <span class="m">3</span>.0<span class="o">]</span>, <span class="nv">dtype</span><span class="o">=</span>tf.float32<span class="o">)</span>
+&gt;&gt;&gt; <span class="nv">y</span> <span class="o">=</span> tf.nn.gelu<span class="o">(</span>x<span class="o">)</span>
+&gt;&gt;&gt; <span class="c1"># it will run by op ITEXGelu and ITEXGeluGrad</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="instance-normalization">
+<h2>Instance Normalization<a class="headerlink" href="#instance-normalization" title="Permalink to this headline">¶</a></h2>
+<p>If <code class="docutils literal notranslate"><span class="pre">TensorFlow</span> <span class="pre">Addons</span></code> is installed, <code class="docutils literal notranslate"><span class="pre">tfa.layers.InstanceNormalization</span></code> will be replaced by custom implementation using <code class="docutils literal notranslate"><span class="pre">Transpose</span></code> and <code class="docutils literal notranslate"><span class="pre">itex.ops.LayerNormalization</span></code>. For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt;&gt; import tensorflow as tf
+&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; itex.experimental_ops_override<span class="o">()</span>
+tfa.layers.InstanceNormalization<span class="o">(</span>
+      <span class="nv">axis</span><span class="o">=</span>-1,
+      <span class="nv">beta_initializer</span><span class="o">=</span><span class="s1">&#39;zeros&#39;</span>,
+      <span class="nv">gamma_initializer</span><span class="o">=</span><span class="s1">&#39;ones&#39;</span>,
+      **kwargs<span class="o">)</span>
+&gt;&gt;&gt; <span class="c1"># it will run by op Transpose and ITEXLayerNorm</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="lstm">
+<h2>LSTM<a class="headerlink" href="#lstm" title="Permalink to this headline">¶</a></h2>
+<p>If Intel® Extension for TensorFlow* backend is <code class="docutils literal notranslate"><span class="pre">XPU</span></code>, <code class="docutils literal notranslate"><span class="pre">tf.keras.layers.LSTM</span></code> will be replaced by <code class="docutils literal notranslate"><span class="pre">itex.ops.ItexLSTM</span></code>. For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt;&gt; import tensorflow as tf
+&gt;&gt;&gt; import intel_extension_for_tensorflow as itex
+&gt;&gt;&gt; itex.experimental_ops_override<span class="o">()</span>
+&gt;&gt;&gt; itex.ops.ItexLSTM<span class="o">(</span>
+    <span class="m">200</span>, <span class="nv">activation</span><span class="o">=</span><span class="s1">&#39;tanh&#39;</span>,
+    <span class="nv">recurrent_activation</span><span class="o">=</span><span class="s1">&#39;sigmoid&#39;</span>,
+    <span class="nv">use_bias</span><span class="o">=</span>True,
+    <span class="nv">kernel_initializer</span><span class="o">=</span><span class="s1">&#39;glorot_uniform&#39;</span>,
+    <span class="nv">recurrent_initializer</span><span class="o">=</span><span class="s1">&#39;orthogonal&#39;</span>,
+    <span class="nv">bias_initializer</span><span class="o">=</span><span class="s1">&#39;zeros&#39;</span>, **kwargs
+<span class="o">)</span>
+&gt;&gt;&gt; <span class="c1"># it will run by op ItexRnn</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frequently Asked Questions &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Releases" href="../community/releases.html" />
+    <link rel="prev" title="Practice Guide" href="practice_guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+          </a>
+              <div class="version">
+                <a href="../../../versions.html">v1.2.0 ▼</a>
+                <p>Click link above to switch version</p>              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#build-from-source">Build from source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#runtime">Runtime</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Frequently Asked Questions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/FAQ.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="frequently-asked-questions">
+<h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
+<ol class="simple">
+<li><p>How to check whether GPU drivers are installed successfully?</p></li>
+</ol>
+<p>Run <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">tensorflow</span></code> and it will show which platform you are running on: Intel(R) Level-Zero(default) or Intel(R) OpenCL.</p>
+<p>And the high level API of TensorFlow <code class="docutils literal notranslate"><span class="pre">tf.config.experimental.list_physical_devices()</span></code> will tell you the device types that are registered to TensorFlow core.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt;&gt; import tensorflow as tf
+2021-07-01 06:40:55.510076: I itex/core/devices/gpu/dpcpp_runtime.cc:116] Selected platform: Intel(R) Level-Zero.
+&gt;&gt;&gt; tf.config.experimental.list_physical_devices()
+[PhysicalDevice(name=&#39;/physical_device:CPU:0&#39;, device_type=&#39;CPU&#39;), PhysicalDevice(name=&#39;/physical_device:XPU:0&#39;, device_type=&#39;XPU&#39;)]
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>How to know the configurations and rate of utilization of local GPU devices?</p></li>
+</ol>
+<p><a class="reference external" href="https://github.com/intel/pti-gpu/tree/master/tools/sysmon">System Monitoring Utility</a> tool can be used to show the capability (clock frequency, EU count, amount of device memory and so on) of your devices and usage of each sub-module (device memory, GPU engines and so on).</p>
+<ol class="simple">
+<li><p>What’s the relationship of <code class="docutils literal notranslate"><span class="pre">TensorFlow*</span></code>, <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">of</span> <span class="pre">TensorFlow*</span></code> and <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code>?</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">of</span> <span class="pre">TensorFlow*</span></code> is designed to optimize for Intel CPU. It could replace <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> (<code class="docutils literal notranslate"><span class="pre">Google</span> <span class="pre">TensorFlow*</span></code>) for Intel CPU. All Intel optimizations are available in both <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> and <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> (since 2.9) for Intel CPU. That means you only need to install one of them. <strong>DO NOT</strong> install them in same time, the impact is unknown.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> is an extension of <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> and help extend to accelerate on Intel CPU or support Intel GPU.
+<code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> only co-works with <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code>. Please <strong>DO NOT</strong> install Intel® Extension for TensorFlow* with Intel® Optimization for TensorFlow*.</p>
+<p>Starting in Q1 2024, Intel® Optimization for TensorFlow* will be discontinued. Intel optimization will be available only through <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span></code> co-works with the <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code>. Intel will continue to upstream advanced optimization to <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> in the future.</p>
+<p>Currently, Intel® Extension for TensorFlow* has two releases: CPU &amp; GPU.</p>
+<p>For Intel CPU, <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span> <span class="pre">for</span> <span class="pre">CPU</span></code> + <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> could replace <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Optimization</span> <span class="pre">of</span> <span class="pre">TensorFlow*</span></code>. Install command: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">intel-extension-for-tensorflow[cpu]</span></code>.</p>
+<p>For Intel GPU, <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">TensorFlow*</span> <span class="pre">for</span> <span class="pre">GPU</span></code> + <code class="docutils literal notranslate"><span class="pre">stock</span> <span class="pre">TensorFlow*</span></code> is only way to make TensorFlow* support Intel GPU. Install command: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">intel-extension-for-tensorflow[gpu]</span></code>.</p>
+<div class="section" id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<p>This section shows common problems and solutions for compilation and runtime issues you may encounter.</p>
+<div class="section" id="build-from-source">
+<h3>Build from source<a class="headerlink" href="#build-from-source" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Error</th>
+<th>Solution</th>
+<th>Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>external/onednn/src/sycl/level_zero_utils.cpp:33:10: fatal error: 'level_zero/ze_api.h' file not found<br/>#include <level_zero/ze_api.h><br/>         ^~~~~~~~~~~~~~~~~~~~~</td>
+<td>install <code>level-zero-dev</code> lib</td>
+<td><code>level-zero-dev</code> lib is needed when building from source</td>
+</tr>
+</tbody>
+</table></div>
+<div class="section" id="runtime">
+<h3>Runtime<a class="headerlink" href="#runtime" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Error</th>
+<th>Solution</th>
+<th>Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ModuleNotFoundError: No module named 'tensorflow'</td>
+<td>install TensorFlow</td>
+<td>ITEX depends on TensorFlow</td>
+</tr>
+<tr>
+<td>tensorflow.python.framework.errors_impl.NotFoundError: libmkl_sycl.so.2: cannot open shared object file: No such file or directory</td>
+<td><code>source /opt/intel/oneapi/setvars.sh</code></td>
+<td>set env vars of oneAPI Base Toolkit</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="practice_guide.html" class="btn btn-neutral float-left" title="Practice Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../community/releases.html" class="btn btn-neutral float-right" title="Releases" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Copyright (c) 2022 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

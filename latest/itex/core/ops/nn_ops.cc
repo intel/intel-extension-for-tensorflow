@@ -1967,6 +1967,7 @@ void Register_ITEXMaxPoolOp() {
         TF_NewOpDefinitionBuilder("_ITEXMaxPool");
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "T: {bfloat16, half, float} = DT_FLOAT");
     TF_OpDefinitionBuilderAddAttr(op_builder, "ksize: list(int) >= 4");
@@ -1993,6 +1994,7 @@ void Register_ITEXMaxPoolGradOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_output: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
 
     TF_OpDefinitionBuilderAddAttr(op_builder,
@@ -2022,6 +2024,7 @@ void Register_ITEXMaxPoolV2Op() {
     TF_OpDefinitionBuilderAddInput(op_builder, "ksize: int32");
     TF_OpDefinitionBuilderAddInput(op_builder, "strides: int32");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "T: {bfloat16, half, float} = DT_FLOAT");
     TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
@@ -2045,6 +2048,7 @@ void Register_ITEXMaxPoolGradV2Op() {
     TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "ksize: int32");
     TF_OpDefinitionBuilderAddInput(op_builder, "strides: int32");
+    TF_OpDefinitionBuilderAddInput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "T: {bfloat16, float} = DT_FLOAT");
@@ -2067,6 +2071,7 @@ void Register_ITEXMaxPool3DOp() {
         TF_NewOpDefinitionBuilder("_ITEXMaxPool3D");
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: uint8");
 
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "T: {bfloat16, half, float} = DT_FLOAT");
@@ -2095,6 +2100,7 @@ void Register_ITEXMaxPool3DGradOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_input: TInput");
     TF_OpDefinitionBuilderAddInput(op_builder, "orig_output: TInput");
     TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "workspace: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "T: {bfloat16, float} = DT_FLOAT");

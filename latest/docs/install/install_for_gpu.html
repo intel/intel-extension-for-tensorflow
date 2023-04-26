@@ -115,8 +115,8 @@
 <h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this headline">¶</a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
-<li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a></p></li>
-<li><p>Intel® Data Center GPU Flex Series 170, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a></p></li>
+<li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a></p></li>
+<li><p>Intel® Data Center GPU Flex Series 170, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a></p></li>
 <li><p><em>Experimental:</em> Intel® Arc™ A-Series</p></li>
 </ul>
 <p>For experimental support of the Intel® Arc™ A-Series GPUs, please refer to <a class="reference internal" href="experimental/install_for_arc_gpu.html"><span class="doc">Intel® Arc™ A-Series GPU Software Installation</span></a> for details.</p>
@@ -129,14 +129,14 @@
 <li><p>Intel® Data Center GPU Flex Series</p></li>
 </ul>
 </li>
-<li><p>SUSE Linux Enterprise Server(SLES) 15 SP3/SP4, RedHat 8.6 (64-bit)</p>
+<li><p>Ubuntu 22.04, RedHat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP3/SP4</p>
 <ul>
 <li><p>Intel® Data Center GPU Max Series</p></li>
 </ul>
 </li>
-<li><p>Intel® oneAPI Base Toolkit 2023.0</p></li>
+<li><p>Intel® oneAPI Base Toolkit 2023.1</p></li>
 <li><p>TensorFlow 2.12.0</p></li>
-<li><p>Python 3.8-3.11</p></li>
+<li><p>Python 3.8-3.10</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
 </ul>
 </div>
@@ -153,16 +153,16 @@
 </thead>
 <tbody>
 <tr>
-<td>v1.1.0</td>
+<td>v1.2.0</td>
 <td>Ubuntu 22.04, RedHat 8.6</td>
 <td>Intel® Data Center GPU Flex Series</td>
-<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd=22.43.24595.35+i538~22.04</code></td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04</code></td>
 </tr>
 <tr>
-<td>v1.1.0</td>
-<td>SLES 15 SP3/SP4, RedHat 8.6</td>
+<td>v1.2.0</td>
+<td>Ubuntu 22.04, RedHat 8.6, SLES 15 SP3/SP4</td>
 <td>Intel® Data Center GPU Max Series</td>
-<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_540_20221205.html">540</a>, please append the specific version after components.</td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04</code></td>
 </tr>
 </tbody>
 </table></div>
@@ -175,15 +175,15 @@
 </div>
 <div class="section" id="get-docker-container-from-dockerhub">
 <h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Permalink to this headline">¶</a></h3>
-<p>Pre-built docker images will be available at <a class="reference external" href="https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags">DockerHub</a> around January 13.
-Please run the following command to pull the Intel® Data Center GPU Flex Series Docker container image (<code class="docutils literal notranslate"><span class="pre">gpu-flex</span></code>) to your local machine.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:gpu-flex
-$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu-flex
+<p>Pre-built docker images are available at <a class="reference external" href="https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags">DockerHub</a>.
+Please run the following command to pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">gpu</span></code>) to your local machine.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:gpu
+$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu
 </pre></div>
 </div>
-<p>Or pull the Intel® Data Center GPU Max Series Docker container image (<code class="docutils literal notranslate"><span class="pre">gpu-max</span></code>) to your local machine by the following command.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:gpu-max
-$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:gpu-max
+<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">gpu-horovod</span></code>) to your local machine by the following command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:gpu-horovod
+$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:gpu-horovod
 </pre></div>
 </div>
 <p>Then go to your browser on http://localhost:8888/</p>
@@ -197,22 +197,22 @@ $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-
 <ul class="simple">
 <li><p>Intel® oneAPI DPC++ Compiler</p></li>
 <li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
+<li><p>Intel® oneAPI Threading Building Blocks (TBB), dependency of DPC++ Compiler.</p></li>
 <li><p>Intel® oneAPI Collective Communications Library (oneCCL), required by Intel® Optimization for Horovod* only</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/19079/l_BaseKit_p_2023.0.0.25537_offline.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/7deeaac4-f605-4bcf-a81b-ea7531577c61/l_BaseKit_p_2023.1.0.46401_offline.sh
 <span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL</span>
 <span class="c1"># if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too(Intel® oneAPI MPI Library will be installed automatically as its dependency)</span>
-$ sudo sh ./l_BaseKit_p_2023.0.0.25537_offline.sh
+$ sudo sh ./l_BaseKit_p_2023.1.0.46401_offline.sh
 </pre></div>
 </div>
 <p>For any more details, please follow the procedure in https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html.</p>
 </div>
 <div class="section" id="setup-environment-variables">
 <h3>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># DPC++ Compiler/oneMKL/tbb</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># DPC++ Compiler/oneMKL</span>
 <span class="nb">source</span> /path to basekit/intel/oneapi/compiler/latest/env/vars.sh
 <span class="nb">source</span> /path to basekit/intel/oneapi/mkl/latest/env/vars.sh
-<span class="nb">source</span> /path to basekit/intel/oneapi/tbb/latest/env/vars.sh
 
 <span class="c1"># oneCCL (and Intel® oneAPI MPI Library as its dependency), required by Intel® Optimization for Horovod* only</span>
 <span class="nb">source</span> /path to basekit/intel/oneapi/mpi/latest/env/vars.sh
