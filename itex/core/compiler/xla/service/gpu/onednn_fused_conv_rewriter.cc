@@ -179,7 +179,7 @@ StatusOr<bool> FuseConvertToFloat(HloComputation* comp) {
     if (!Match(instr, pattern)) {
       continue;
     }
-    if (!ConsumeFuel("cudnn-fused-convolution-rewriter", [&] {
+    if (!ConsumeFuel("onednn-fused-convolution-rewriter", [&] {
           return absl::StrCat("FuseConvertToFloat: ", conv->ToString());
         })) {
       continue;
@@ -229,7 +229,7 @@ StatusOr<bool> FuseConvAlpha(HloComputation* comp) {
     if (config.conv_result_scale() != 1) {
       continue;
     }
-    if (!ConsumeFuel("cudnn-fused-convolution-rewriter", [&] {
+    if (!ConsumeFuel("onednn-fused-convolution-rewriter", [&] {
           return absl::StrCat("FuseConvAlpha: ", conv->ToString());
         })) {
       continue;
@@ -327,7 +327,7 @@ StatusOr<bool> FuseBiasOrSideInput(HloComputation* comp) {
       continue;
     }
 
-    if (!ConsumeFuel("cudnn-fused-convolution-rewriter", [&] {
+    if (!ConsumeFuel("onednn-fused-convolution-rewriter", [&] {
           return absl::StrCat("FuseBiasOrSideInput: ", conv->ToString());
         })) {
       continue;
@@ -401,7 +401,7 @@ StatusOr<bool> FuseSideInputAlpha(HloComputation* comp) {
                     }))))) {
       continue;
     }
-    if (!ConsumeFuel("cudnn-fused-convolution-rewriter", [&] {
+    if (!ConsumeFuel("onednn-fused-convolution-rewriter", [&] {
           return absl::StrCat("FuseSideInputAlpha: ", conv->ToString());
         })) {
       continue;
@@ -481,7 +481,7 @@ StatusOr<bool> FuseRelu(HloComputation* comp) {
       continue;
     }
 
-    if (!ConsumeFuel("cudnn-fused-convolution-rewriter", [&] {
+    if (!ConsumeFuel("onednn-fused-convolution-rewriter", [&] {
           return absl::StrCat("FuseRelu: ", conv->ToString());
         })) {
       continue;
@@ -524,7 +524,7 @@ StatusOr<bool> FuseConvertToF16(HloComputation* comp) {
               0, m::GetTupleElement(m::Op().WithPredicate(IsConvCustomCall))));
       continue;
     }
-    if (!ConsumeFuel("cudnn-fused-convolution-rewriter", [&] {
+    if (!ConsumeFuel("onednn-fused-convolution-rewriter", [&] {
           return absl::StrCat("FuseConvertToF16: ", conv->ToString());
         })) {
       continue;
@@ -609,7 +609,7 @@ StatusOr<bool> FuseConvertToS8(HloComputation* comp) {
     } else {
       continue;
     }
-    if (!ConsumeFuel("cudnn-fused-convolution-rewriter", [&] {
+    if (!ConsumeFuel("onednn-fused-convolution-rewriter", [&] {
           return absl::StrCat("FuseConvertToS8: ", conv->ToString());
         })) {
       continue;

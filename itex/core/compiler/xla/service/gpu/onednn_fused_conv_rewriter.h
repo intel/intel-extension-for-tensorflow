@@ -97,7 +97,7 @@ namespace gpu {
 class CudnnFusedConvRewriter : public HloModulePass {
  public:
   absl::string_view name() const override {
-    return "cudnn-fused-convolution-rewriter";
+    return "onednn-fused-convolution-rewriter";
   }
 
   using HloPassInterface::Run;
