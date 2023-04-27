@@ -8,7 +8,7 @@ Currently, it only supports data split on the batch dimension. As the first rele
 ## Workflow 
 At the high level, XPUAutoShard is added as a grappler pass of Intel® Extension for TensorFlow*. It accepts a TFG MLIR graph converted from the TensorFlow Graph. It is assumed here that the TensorFlow Graph here containing MatMul or Conv OP is the main part of the model, which can be converted to MLIR module normally, and then AutoShard can be performed, otherwise, it will return directly. The sharding graph rewrite is implemented as MLIR passes and the resulting sharded graph is also a TFG MLIR graph. After the graph is sharded, the TFG MLIR graph is converted back to TensorFlow Graph which is then passed to other graph optimization passes in Intel® Extension for TensorFlow* like graph fusion.
 
-![xla](images/xla.png)
+![autoshard](images/autoshard.png)
 
 ## Code Structure
 Source codes are under `itex/core/experimental/XPUAutoShard/include` and `itex/core/experimental/XPUAutoShard/src`.
