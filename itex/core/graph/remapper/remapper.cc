@@ -1162,8 +1162,8 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
 
   // Limit this patter that dz only has 3 output, BiasAddGrad, MatMulGradFilter
   // and MatMulGradInput.
-  if (dz->NumRegularFanouts() != 3) return false;
-
+  if (dz->NumRegularFanouts() != 3 && dz->NumRegularFanouts() != 2)
+    return false;
   std::vector<int> matmuls;
   for (const auto& dz_fanout_i : dz->GetRegularFanouts()) {
     for (const auto dz_fanout : dz_fanout_i) {
@@ -1173,11 +1173,37 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
     }
   }
 
-  if (matmuls.size() != 2) return false;
-  if (IsLegalMatMulGrad(ctx, matmuls.at(0), dz->node_index())) {
-    matmul_grad_filter_idx = matmuls.at(0);
-  } else if (IsLegalMatMulGrad(ctx, matmuls.at(1), dz->node_index())) {
-    matmul_grad_filter_idx = matmuls.at(1);
+  if (dz->NumRegularFanouts() == 3) {
+    if (matmuls.size() != 2) return false;
+    if (IsLegalMatMulGrad(ctx, matmuls.at(0), dz->node_index())) {
+      matmul_grad_filter_idx = matmuls.at(0);
+    } else if (IsLegalMatMulGrad(ctx, matmuls.at(1), dz->node_index())) {
+      matmul_grad_filter_idx = matmuls.at(1);
+    }
+  } else if (dz->NumRegularFanouts() == 2) {
+    // root has 3 children, BMM(dx), shape, dz (reshape),
+    // dz has 2 children, MatMul(dy) and BiasAddGrad
+    if (!IsReshape(*(dz->node()))) return false;
+    const auto* root = dz->GetRegularFanin(0).node_view();
+    if (root == nullptr) return false;
+    if (root->NumRegularFanouts() != 3) return false;
+    bool has_shape_node = false;
+    bool has_BMM_node = false;
+    for (const auto& root_fanout_i : root->GetRegularFanouts()) {
+      for (const auto root_fanout : root_fanout_i) {
+        if (IsAnyBatchMatMul(*(root_fanout.node_view()->node()))) {
+          has_BMM_node = true;
+        }
+        if (IsShape(*(root_fanout.node_view()->node()))) {
+          has_shape_node = true;
+        }
+      }
+    }
+    if (!(has_BMM_node && has_shape_node)) return false;
+    if (matmuls.size() != 1) return false;
+    if (IsLegalMatMulGrad(ctx, matmuls.at(0), dz->node_index())) {
+      matmul_grad_filter_idx = matmuls.at(0);
+    }
   }
 
   if (matmul_grad_filter_idx < 0) return false;
