@@ -99,6 +99,7 @@ XPUAutoShard on GPU [Experimental]
 Intel® Extension for TensorFlow\* provides XPUAutoShard feature to automatically shard the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage. 
 
 Please refer to `XPUAutoShard <XPUAutoShard.html>`_ for details.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
