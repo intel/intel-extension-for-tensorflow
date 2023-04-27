@@ -247,8 +247,8 @@ void Register_OneDnnMaxPoolOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "input_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "workspace_meta: uint8");
 
     TF_OpDefinitionBuilderAddAttr(op_builder,
