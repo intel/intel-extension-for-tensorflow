@@ -43,7 +43,7 @@ def pybind_extension(
         name = name + ".so",
         copts = copts + PYBIND_COPTS + ["-fvisibility=hidden"],
         features = features + PYBIND_FEATURES,
-        linkopts = ["-Wl,-Bsymbolic"] + linkopts + ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
+        linkopts = ["-Wl,-Bsymbolic"] + linkopts + ["-Wl,-rpath,$$ORIGIN/../"],
         linkshared = 1,
         tags = tags + ["local"],
         deps = deps + PYBIND_DEPS,
