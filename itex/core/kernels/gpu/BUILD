@@ -2018,6 +2018,20 @@ itex_xpu_library(
     alwayslink = True,
 )
 
+itex_xpu_library(
+    name = "test_ops",
+    srcs = ["test_ops.cc"],
+    hdrs = ["test_ops.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
 GPU_KERNELS = [
     ":aggregate_ops",
     ":argmax_op",
@@ -2130,6 +2144,7 @@ GPU_KERNELS = [
     ":where_op",
     ":xent_op",
     ":tensorarray_ops",
+    ":test_ops",
 ]
 
 itex_xpu_library(
