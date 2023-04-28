@@ -17,30 +17,36 @@ declare -A ubuntu_version_list
 ubuntu_version_list[1.0.0]="20.04"
 ubuntu_version_list[1.1.0]="20.04 22.04"
 ubuntu_version_list[1.2.0]="20.04 22.04"
+ubuntu_version_list[latest]="20.04 22.04"
 
 declare -A redhat_version_list
 redhat_version_list[1.0.0]="8.5"
 redhat_version_list[1.1.0]="8.6"
 redhat_version_list[1.2.0]="8.6"
+redhat_version_list[latest]="8.6"
 
 declare -A sles_version_list
 sles_version_list[1.1.0]="15.3 15.4"
 sles_version_list[1.2.0]="15.3 15.4"
+sles_version_list[latest]="15.3 15.4"
 
 declare -A min_python_version
 min_python_version[1.0.0]=7
 min_python_version[1.1.0]=7
 min_python_version[1.2.0]=8
+min_python_version[latest]=8
 
 declare -A max_python_version
 max_python_version[1.0.0]=10
 max_python_version[1.1.0]=10
 max_python_version[1.2.0]=11
+max_python_version[latest]=11
 
 declare -A min_tensorflow_version
 min_tensorflow_version[1.0.0]=10
 min_tensorflow_version[1.1.0]=10
 min_tensorflow_version[1.2.0]=12
+min_tensorflow_version[latest]=12
 
 driver_list_for_ubuntu=(
   "intel-level-zero-gpu"
@@ -459,6 +465,10 @@ check_python() {
   v1=$(${python_bin_path} --version|awk -F '[ .]' '{print $2}')
   v2=$(${python_bin_path} --version|awk -F '[ .]' '{print $3}')
   echo -e "\033[33m python$v1.$v2 is installed. \033[0m"
+
+  if [ -z ${min_python_version[$itex_version]} ]; then
+    itex_version=latest
+  fi
 
   if [[ $v1 -le 2 ]]; then
     die "Python2 is not supported, please install python3!" "Check Python Failed"
