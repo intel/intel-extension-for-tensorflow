@@ -274,11 +274,11 @@ void Register_ITEXFusedResourceApplyAdamWithWeightDecayOp() {
   }
 }
 
-void RegisterRMSPropComputeRMSOp() {
+void Register_ITEXApplyRMSPropComputeRMSOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("ApplyRMSPropComputeRMS");
+        TF_NewOpDefinitionBuilder("_ITEXApplyRMSPropComputeRMS");
     TF_OpDefinitionBuilderAddInput(op_builder, "ms: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "rho: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "grad: T");
@@ -288,15 +288,15 @@ void RegisterRMSPropComputeRMSOp() {
                                                     &unchanged_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "RMSPropComputeRMS op registration failed: ";
+        << "_ITEXApplyRMSPropComputeRMS op registration failed: ";
   }
 }
 
-void RegisterRMSPropVarUpdateOp() {
+void Register_ITEXApplyRMSPropVarUpdateOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("ApplyRMSPropVarUpdate");
+        TF_NewOpDefinitionBuilder("_ITEXApplyRMSPropVarUpdate");
     TF_OpDefinitionBuilderAddInput(op_builder, "var: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "ms: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "lr: T");
@@ -308,6 +308,6 @@ void RegisterRMSPropVarUpdateOp() {
                                                     &unchanged_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "RMSPropVarUpdate op registration failed: ";
+        << "_ITEXApplyRMSPropVarUpdate op registration failed: ";
   }
 }

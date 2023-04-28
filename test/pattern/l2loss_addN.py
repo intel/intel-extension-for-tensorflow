@@ -29,7 +29,7 @@ import os
 tf.compat.v1.disable_eager_execution()
 @test_util.run_all_in_native_and_block_format
 class FusedAddNTest(test.TestCase):
-    """test _FusedAddN"""
+    """test _ITEXFusedAddN"""
     def test_addn_l2loss(self):
         if not test.is_gpu_available():
             self.skipTest("No GPU available")
@@ -56,7 +56,7 @@ class FusedAddNTest(test.TestCase):
             graph = metadata.partition_graphs[0]
             found_fused_op = False
             for node in graph.node:
-                if node.op in ('_FusedAddN'):
+                if node.op in ('_ITEXFusedAddN'):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_op = len(fused_ops) == 2 and fused_ops[0] == b'AddN' and fused_ops[1] == b'l2loss'
                     break

@@ -397,7 +397,7 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
 
   gtl::FlatSet<string> DenyList() override {
     auto add_list_ops = gtl::FlatSet<string>{
-        "_FusedAddN",
+        "_ITEXFusedAddN",
     };
     for (auto op : add_list_ops) {
       deny_list_ops.insert(op);

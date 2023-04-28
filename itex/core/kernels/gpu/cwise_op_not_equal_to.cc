@@ -41,6 +41,6 @@ REGISTER2(BinaryOp, GPU, "NotEqual", functor::not_equal_to, double,
           itex::complex128);
 #endif  // ITEX_ENABLE_DOUBLE
 
-REGISTER3(BinaryOp, GPU, "_NotEqualWithCast", functor::not_equal_to_with_cast,
-          float, Eigen::half, Eigen::bfloat16);
+REGISTER3(BinaryOp, GPU, "_ITEXNotEqualWithCast",
+          functor::not_equal_to_with_cast, float, Eigen::half, Eigen::bfloat16);
 }  // namespace itex

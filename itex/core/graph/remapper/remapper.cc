@@ -132,7 +132,7 @@ struct ComparisonWithCast {
 
   int comparison = kMissingIndex;
   int cast = kMissingIndex;
-  string fused_op = "_";
+  string fused_op = "_ITEX";
 };
 
 // Random op followed by Comparison and cast.

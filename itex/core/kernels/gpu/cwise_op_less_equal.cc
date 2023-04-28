@@ -28,6 +28,6 @@ REGISTER3(BinaryOp, GPU, "LessEqual", functor::less_equal, float, Eigen::half,
 REGISTER(BinaryOp, GPU, "LessEqual", functor::less_equal, double);
 #endif  // ITEX_ENABLE_DOUBLE
 
-REGISTER3(BinaryOp, GPU, "_LessEqualWithCast", functor::less_equal_with_cast,
-          float, Eigen::half, Eigen::bfloat16);
+REGISTER3(BinaryOp, GPU, "_ITEXLessEqualWithCast",
+          functor::less_equal_with_cast, float, Eigen::half, Eigen::bfloat16);
 }  // namespace itex

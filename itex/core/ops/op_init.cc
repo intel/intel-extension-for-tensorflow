@@ -73,6 +73,8 @@ void RegisterOps() {
 
   // Training kernels
   Register_ITEXApplyAdamWithWeightDecayOp();
+  Register_ITEXApplyRMSPropComputeRMSOp();
+  Register_ITEXApplyRMSPropVarUpdateOp();
   Register_ITEXFusedApplyAdamOp();
   Register_ITEXFusedApplyAdamWithWeightDecayOp();
   Register_ITEXResourceApplyAdamWithWeightDecayOp();
@@ -106,6 +108,8 @@ void RegisterOps() {
   Register_ITEXConv2DBackpropInputWithSliceOp();
   Register_ITEXConv3DBackpropFilterWithBiasOp();
   Register_ITEXConv3DBackpropInputV2WithSliceOp();
+  Register_ITEXEqualWithCastOp();
+  Register_ITEXFusedAddNOp();
   Register_ITEXFusedBatchNormGradExOp();
   Register_ITEXFusedBatchMatMulV2Op();
   Register_ITEXFusedConv2DOp();
@@ -120,9 +124,15 @@ void RegisterOps() {
   Register_ITEXFusedQuantizeV2WithQuantizedConv2DOp();
   Register_ITEXFusedQuantizedConv2DWithDequantizeOp();
   Register_ITEXFusedQuantizedConv2DWithCastOp();
+  Register_ITEXFusedRandomOP();
   Register_ITEXFusedBinaryOp();
+  Register_ITEXGreaterEqualWithCastOp();
+  Register_ITEXGreaterWithCastOp();
   Register_ITEXInstanceNormOp();
+  Register_ITEXLessEqualWithCastOp();
+  Register_ITEXLessWithCastOp();
   Register_ITEXMishOp();
+  Register_ITEXNotEqualWithCastOp();
   Register_ITEXPadWithConv2DOp();
   Register_ITEXPadWithConv3DOp();
   Register_ITEXPadWithFusedConv2DOp();
@@ -134,8 +144,6 @@ void RegisterOps() {
   Register_ITEXRnnOp();
   Register_ITEXRnnGradOp();
   Register_OneDnnGraphOp();
-  RegisterRMSPropComputeRMSOp();
-  RegisterRMSPropVarUpdateOp();
 
   // Native kernels
   Register_ITEXAddNOp();
@@ -243,12 +251,15 @@ void RegisterOps() {
   Register_ITEXFusedAccMatMulWithSumOp();
 
   // OneDnn kernels
+  Register_OneDnnAddOp();
   Register_OneDnnAddNOp();
+  Register_OneDnnAddV2Op();
   Register_OneDnnAvgPoolOp();
   Register_OneDnnAvgPoolGradOp();
   Register_OneDnnAvgPool3DOp();
   Register_OneDnnAvgPool3DGradOp();
   Register_OneDnnBatchMatMulV2Op();
+  Register_OneDnnCastOp();
   Register_OneDnnConcatOp();
   Register_OneDnnConcatV2Op();
   Register_OneDnnQuantizedConcatV2Op();
@@ -297,6 +308,7 @@ void RegisterOps() {
   Register_OneDnnMaxPool3DGradOp();
   Register_OneDnnMishOp();
   Register_OneDnnMklLayerNormOp();
+  Register_OneDnnMulOp();
   Register_OneDnnQuantizedBatchMatMulV2AndDequantizeOp();
   Register_OneDnnQuantizedConv2DOp();
   Register_OneDnnQuantizedConv2DAndRequantizeOp();
@@ -342,24 +354,8 @@ void RegisterOps() {
   Register_OneDnnShapeOp();
   Register_OneDnnSliceOp();
   Register_OneDnnSoftmaxOp();
+  Register_OneDnnSubOp();
   Register_OneDnnSwishOp();
   Register_OneDnnToTfOp();
   Register_OneDnnTransposeOp();
-
-  // Math ops
-  Register_EqualWithCastOp();
-  Register_NotEqualWithCastOp();
-  Register_GreaterWithCastOp();
-  Register_GreaterEqualWithCastOp();
-  Register_LessWithCastOp();
-  Register_LessEqualWithCastOp();
-  Register_FusedAddNOp();
-  Register_FusedRandomOP();
-
-  // OneDnn math kernels
-  Register_OneDnnAddOp();
-  Register_OneDnnAddV2Op();
-  Register_OneDnnCastOp();
-  Register_OneDnnMulOp();
-  Register_OneDnnSubOp();
 }

@@ -66,21 +66,21 @@ class ComparisonWithCastTest(test_util.TensorFlowTestCase):
         mid = math_ops.greater_equal(x, y)
         fused = math_ops.cast(mid, tf.float32)
         fused = array_ops.identity(fused)
-        self._test_fusion(fused, '_GreaterEqualWithCast', x, y, x_arr, y_arr, run_options, metadata)
+        self._test_fusion(fused, '_ITEXGreaterEqualWithCast', x, y, x_arr, y_arr, run_options, metadata)
 
     def testLessEqualWithCast(self):
         x, y, x_arr, y_arr, run_options, metadata = self._init_input()
         mid = math_ops.less_equal(x, y)
         fused = math_ops.cast(mid, tf.float32)
         fused = array_ops.identity(fused)
-        self._test_fusion(fused, '_LessEqualWithCast', x, y, x_arr, y_arr, run_options, metadata)
+        self._test_fusion(fused, '_ITEXLessEqualWithCast', x, y, x_arr, y_arr, run_options, metadata)
 
     def testNotEqualWithCast(self):
         x, y, x_arr, y_arr, run_options, metadata = self._init_input()
         mid = math_ops.not_equal(x, y)
         fused = math_ops.cast(mid, tf.float32)
         fused = array_ops.identity(fused)
-        self._test_fusion(fused, '_NotEqualWithCast', x, y, x_arr, y_arr, run_options, metadata)
+        self._test_fusion(fused, '_ITEXNotEqualWithCast', x, y, x_arr, y_arr, run_options, metadata)
 
 if __name__ == '__main__':
     test.main()

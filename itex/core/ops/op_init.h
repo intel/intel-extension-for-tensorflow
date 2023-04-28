@@ -22,6 +22,8 @@ void Register_ITEXQuantizedMatMulWithBiasAndDequantizeOp();
 
 // Training kernels
 void Register_ITEXApplyAdamWithWeightDecayOp();
+void Register_ITEXApplyRMSPropComputeRMSOp();
+void Register_ITEXApplyRMSPropVarUpdateOp();
 void Register_ITEXFusedApplyAdamOp();
 void Register_ITEXFusedApplyAdamWithWeightDecayOp();
 void Register_ITEXFusedApplyMomentumOp();
@@ -59,6 +61,8 @@ void Register_ITEXConv2DBackpropFilterWithBiasOp();
 void Register_ITEXConv2DBackpropInputWithSliceOp();
 void Register_ITEXConv3DBackpropFilterWithBiasOp();
 void Register_ITEXConv3DBackpropInputV2WithSliceOp();
+void Register_ITEXEqualWithCastOp();
+void Register_ITEXFusedAddNOp();
 void Register_ITEXFusedBatchNormGradExOp();
 void Register_ITEXFusedBatchMatMulV2Op();
 void Register_ITEXFusedConv2DWithSumOp();
@@ -73,11 +77,17 @@ void Register_ITEXFusedMatMulWithSumOp();
 void Register_ITEXFusedQuantizeV2WithQuantizedConv2DOp();
 void Register_ITEXFusedQuantizedConv2DWithDequantizeOp();
 void Register_ITEXFusedQuantizedConv2DWithCastOp();
+void Register_ITEXFusedRandomOP();
 void Register_ITEXFusedBinaryOp();
+void Register_ITEXGreaterEqualWithCastOp();
+void Register_ITEXGreaterWithCastOp();
 void Register_ITEXRandomUniformOp();
 void Register_ITEXFusedAddV2WithSoftmaxOp();
 void Register_ITEXInstanceNormOp();
+void Register_ITEXLessEqualWithCastOp();
+void Register_ITEXLessWithCastOp();
 void Register_ITEXMishOp();
+void Register_ITEXNotEqualWithCastOp();
 void Register_ITEXPadWithConv2DOp();
 void Register_ITEXPadWithConv3DOp();
 void Register_ITEXPadWithFusedConv2DOp();
@@ -101,8 +111,6 @@ void Register_LayerNormGradOp();
 void Register_ITEXRnnOp();
 void Register_ITEXRnnGradOp();
 void Register_OneDnnGraphOp();
-void RegisterRMSPropComputeRMSOp();
-void RegisterRMSPropVarUpdateOp();
 
 // Native kernels
 void Register_ITEXAddNOp();
@@ -211,12 +219,15 @@ void Register_ITEXFusedAccMatMulGradOp();
 void Register_ITEXFusedAccMatMulWithSumOp();
 
 // OneDnn kernels
+void Register_OneDnnAddOp();
 void Register_OneDnnAddNOp();
+void Register_OneDnnAddV2Op();
 void Register_OneDnnAvgPoolOp();
 void Register_OneDnnAvgPoolGradOp();
 void Register_OneDnnAvgPool3DOp();
 void Register_OneDnnAvgPool3DGradOp();
 void Register_OneDnnBatchMatMulV2Op();
+void Register_OneDnnCastOp();
 void Register_OneDnnConcatOp();
 void Register_OneDnnConcatV2Op();
 void Register_OneDnnConv2DBackpropFilterOp();
@@ -264,6 +275,7 @@ void Register_OneDnnMaxPool3DOp();
 void Register_OneDnnMaxPool3DGradOp();
 void Register_OneDnnMishOp();
 void Register_OneDnnMklLayerNormOp();
+void Register_OneDnnMulOp();
 void Register_OneDnnQuantizedAvgPoolOp();
 void Register_OneDnnQuantizedBatchMatMulV2AndDequantizeOp();
 void Register_OneDnnQuantizedConcatV2Op();
@@ -310,26 +322,10 @@ void Register_OneDnnResizeNearestNeighborGradOp();
 void Register_OneDnnShapeOp();
 void Register_OneDnnSliceOp();
 void Register_OneDnnSoftmaxOp();
+void Register_OneDnnSubOp();
 void Register_OneDnnSwishOp();
 void Register_OneDnnToTfOp();
 void Register_OneDnnTransposeOp();
-
-// Math ops
-void Register_EqualWithCastOp();
-void Register_FusedAddNOp();
-void Register_FusedRandomOP();
-void Register_GreaterEqualWithCastOp();
-void Register_GreaterWithCastOp();
-void Register_LessEqualWithCastOp();
-void Register_LessWithCastOp();
-void Register_NotEqualWithCastOp();
-
-// OneDnn math kernels
-void Register_OneDnnAddOp();
-void Register_OneDnnAddV2Op();
-void Register_OneDnnCastOp();
-void Register_OneDnnMulOp();
-void Register_OneDnnSubOp();
 
 #ifdef __cplusplus
 extern "C" {

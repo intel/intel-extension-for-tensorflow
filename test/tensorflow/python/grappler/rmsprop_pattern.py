@@ -183,9 +183,9 @@ class RMSpropOptimizerTest(test_lib.TestCase, parameterized.TestCase):
       exist_compute_rms = False
       exist_var_update = False
       for node in graph.node:
-        if 'ApplyRMSPropComputeRMS' in node.op:
+        if '_ITEXApplyRMSPropComputeRMS' in node.op:
           exist_compute_rms = True
-        if 'ApplyRMSPropVarUpdate' in node.op:
+        if '_ITEXApplyRMSPropVarUpdate' in node.op:
           exist_var_update = True
 
       self.assertTrue(exist_compute_rms)

@@ -28,8 +28,8 @@ REGISTER3(BinaryOp, GPU, "Greater", functor::greater, float, Eigen::half,
 REGISTER(BinaryOp, GPU, "Greater", functor::greater, double);
 #endif  // ITEX_ENABLE_DOUBLE
 
-REGISTER3(BinaryOp, GPU, "_GreaterWithCast", functor::greater_with_cast, float,
-          Eigen::half, Eigen::bfloat16);
+REGISTER3(BinaryOp, GPU, "_ITEXGreaterWithCast", functor::greater_with_cast,
+          float, Eigen::half, Eigen::bfloat16);
 
 REGISTER_KERNEL_BUILDER(Name("Greater")
                             .Device(DEVICE_GPU)

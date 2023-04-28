@@ -63,83 +63,83 @@ void register_comparison_with_cast(TF_OpDefinitionBuilder* op_builder) {
                                                   &unknown_shape_fn);
 }
 
-void Register_EqualWithCastOp() {
+void Register_ITEXEqualWithCastOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_EqualWithCast");
+        TF_NewOpDefinitionBuilder("_ITEXEqualWithCast");
     register_equality_comparison_with_cast(op_builder);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_EqualWithCast op registration failed: ";
+        << "_ITEXEqualWithCast op registration failed: ";
   }
 }
 
-void Register_NotEqualWithCastOp() {
+void Register_ITEXNotEqualWithCastOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_NotEqualWithCast");
+        TF_NewOpDefinitionBuilder("_ITEXNotEqualWithCast");
     register_equality_comparison_with_cast(op_builder);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_NotEqualWithCast op registration failed: ";
+        << "_ITEXNotEqualWithCast op registration failed: ";
   }
 }
 
-void Register_GreaterWithCastOp() {
+void Register_ITEXGreaterWithCastOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_GreaterWithCast");
+        TF_NewOpDefinitionBuilder("_ITEXGreaterWithCast");
     register_comparison_with_cast(op_builder);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_GreaterWithCast op registration failed: ";
+        << "_ITEXGreaterWithCast op registration failed: ";
   }
 }
 
-void Register_GreaterEqualWithCastOp() {
+void Register_ITEXGreaterEqualWithCastOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_GreaterEqualWithCast");
+        TF_NewOpDefinitionBuilder("_ITEXGreaterEqualWithCast");
     register_comparison_with_cast(op_builder);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_GreaterEqualWithCast op registration failed: ";
+        << "_ITEXGreaterEqualWithCast op registration failed: ";
   }
 }
 
-void Register_LessWithCastOp() {
+void Register_ITEXLessWithCastOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_LessWithCast");
+        TF_NewOpDefinitionBuilder("_ITEXLessWithCast");
     register_comparison_with_cast(op_builder);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_LessWithCast op registration failed: ";
+        << "_ITEXLessWithCast op registration failed: ";
   }
 }
 
-void Register_LessEqualWithCastOp() {
+void Register_ITEXLessEqualWithCastOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_LessEqualWithCast");
+        TF_NewOpDefinitionBuilder("_ITEXLessEqualWithCast");
     register_comparison_with_cast(op_builder);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_LessEqualWithCast op registration failed: ";
+        << "_ITEXLessEqualWithCast op registration failed: ";
   }
 }
 
-void Register_FusedAddNOp() {
+void Register_ITEXFusedAddNOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_FusedAddN");
+        TF_NewOpDefinitionBuilder("_ITEXFusedAddN");
     TF_OpDefinitionBuilderAddInput(op_builder, "inputs: N * T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "sum: T");
     TF_OpDefinitionBuilderAddAttr(op_builder, "T: numbertype");
@@ -149,7 +149,7 @@ void Register_FusedAddNOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedAddN op registration failed: ";
+        << "_ITEXFusedAddN op registration failed: ";
   }
 }
 
@@ -173,7 +173,7 @@ void Register_ITEXCastOp() {
   }
 }
 
-void Register_FusedRandomOP() {
+void Register_ITEXFusedRandomOP() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
@@ -194,7 +194,7 @@ void Register_FusedRandomOP() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_FusedRandom op registration failed.";
+        << "_ITEXFusedRandom op registration failed.";
   }
 }
 

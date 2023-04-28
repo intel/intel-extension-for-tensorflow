@@ -221,9 +221,9 @@ class FusedAddNOp<GPUDevice, T> : public OpKernel {
   }
 };
 
-#define REGISTER_FUSEDADDN(TYPE)                                       \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("_FusedAddN").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
+#define REGISTER_FUSEDADDN(TYPE)                                           \
+  REGISTER_KERNEL_BUILDER(                                                 \
+      Name("_ITEXFusedAddN").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
       FusedAddNOp<GPUDevice, TYPE>)
 
 TF_CALL_float(REGISTER_FUSEDADDN);

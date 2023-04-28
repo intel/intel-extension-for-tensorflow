@@ -376,14 +376,15 @@ TF_CALL_complex128(REGISTER_ITEX_GPU_KERNELS);
 #undef REGISTER_ITEX_GPU_KERNELS
 #undef REGISTER_KERNELS
 
-#define REGISTER_KERNELS(D, T)                                                 \
-  REGISTER_KERNEL_BUILDER(Name("ApplyRMSPropComputeRMS")                       \
-                              .Device(DEVICE_##D)                              \
-                              .TypeConstraint<T>("T"),                         \
-                          ApplyRMSPropComputeRMSOp<D##Device, T>);             \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("ApplyRMSPropVarUpdate").Device(DEVICE_##D).TypeConstraint<T>("T"), \
-      ApplyRMSPropVarUpdateOp<D##Device, T>);
+#define REGISTER_KERNELS(D, T)                                     \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXApplyRMSPropComputeRMS")      \
+                              .Device(DEVICE_##D)                  \
+                              .TypeConstraint<T>("T"),             \
+                          ApplyRMSPropComputeRMSOp<D##Device, T>); \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXApplyRMSPropVarUpdate")       \
+                              .Device(DEVICE_##D)                  \
+                              .TypeConstraint<T>("T"),             \
+                          ApplyRMSPropVarUpdateOp<D##Device, T>);
 
 #define REGISTER_ITEX_GPU_KERNELS(T) REGISTER_KERNELS(GPU, T)
 TF_CALL_half(REGISTER_ITEX_GPU_KERNELS);
