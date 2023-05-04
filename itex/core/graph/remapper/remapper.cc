@@ -1022,7 +1022,7 @@ bool FindAddV2(const RemapperContext& ctx, int node_index, int* matched_index) {
 
   int num = addN->attr().at("N").i();
   if (num != 2) return false;
-  if (!HasDataType(addN, DT_FLOAT) || !HasDataType(addN, DT_HALF) ||
+  if (!HasDataType(addN, DT_FLOAT) && !HasDataType(addN, DT_HALF) &&
       !HasDataType(addN, DT_BFLOAT16))
     return false;  // AddN may have dtype DT_VARIANT
   *matched_index = node_index;
