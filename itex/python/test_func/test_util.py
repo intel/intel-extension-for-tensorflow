@@ -2317,6 +2317,8 @@ class TensorFlowTestCase(googletest.TestCase):
 
   def __init__(self, methodName="runTest"):  # pylint: disable=invalid-name
     super(TensorFlowTestCase, self).__init__(methodName)
+    # Set Test Mode for all unit tests
+    os.environ['_ITEX_TEST_MODE'] = '1'
     # Make sure we get unfiltered stack traces during the test
     traceback_utils.disable_traceback_filtering()
     if is_xla_enabled():

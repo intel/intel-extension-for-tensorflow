@@ -328,10 +328,19 @@ const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
   return &rinfo;
 }
 
+// Rewrite non-oneDNN op which is optimized in a customized manner.
+const std::vector<NativeFormatInfo>* GetCustomNativeFormatInfo() {
+  static std::vector<NativeFormatInfo> rinfo{
+      {"Cast", "_ITEXCast", CopyAttrsCast, RewriteNativeCast},
+      {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll, AlwaysRewrite},
+  };
+  return &rinfo;
+}
+
 }  // namespace
 
 const NativeFormatInfo* CheckForNodeNativeFormat(
-    const char* device_name, const utils::MutableNodeView& node_view) {
+    OptimizerContext* opt_ctx, const utils::MutableNodeView& node_view) {
   NodeDef& node_def = *(node_view.node());
 
   if (!IsLayoutRewriteSupportedDataType(node_def)) return nullptr;
@@ -340,15 +349,19 @@ const NativeFormatInfo* CheckForNodeNativeFormat(
   // for this op, then we rewrite it to Native op.
   // Find matching NativeFormatInfo and then check that rewrite rule applies.
   const std::vector<NativeFormatInfo>* rinfo;
-  if (absl::StrContains("CPU", device_name)) {
-    rinfo = GetCPUNativeFormatInfo();
-  } else if (absl::StrContains("GPU", device_name)) {
+  if (absl::StrContains("CPU", opt_ctx->device_name)) {
+    if (opt_ctx->enable_complete_opt) {
+      rinfo = GetCPUNativeFormatInfo();
+    } else {
+      rinfo = GetCustomNativeFormatInfo();
+    }
+  } else if (absl::StrContains("GPU", opt_ctx->device_name)) {
     rinfo = GetGPUNativeFormatInfo();
-  } else if (absl::StrContains("XPU", device_name)) {
+  } else if (absl::StrContains("XPU", opt_ctx->device_name)) {
     rinfo = GetGPUNativeFormatInfo();
   } else {
     ITEX_LOG(WARNING) << "invalid device name, expected CPU/GPU/XPU, got "
-                      << device_name;
+                      << opt_ctx->device_name;
     return nullptr;
   }
 
@@ -416,7 +429,7 @@ Status RewriteNode(NativeFormatContext* ctx, const int node_index,
   return Status::OK();
 }
 
-Status RunNativeLayout(const char* device_name, const GrapplerItem& item,
+Status RunNativeLayout(OptimizerContext* opt_ctx, const GrapplerItem& item,
                        const GraphDef& graph_def, GraphDef* optimized_graph) {
   Status status;
   GraphDef multable_graph_def = graph_def;
@@ -437,11 +450,11 @@ Status RunNativeLayout(const char* device_name, const GrapplerItem& item,
     const auto* node_def = node_view->node();
 
     // Check if node can run on current optimizer device.
-    if (!NodeIsOnDevice(device_name, node_def)) continue;
+    if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) continue;
 
     const NativeFormatInfo* ri = nullptr;
     // We will first search if node is to be rewritten.
-    if ((ri = CheckForNodeNativeFormat(device_name, *node_view)) != nullptr) {
+    if ((ri = CheckForNodeNativeFormat(opt_ctx, *node_view)) != nullptr) {
       const string& node_name = node_def->name();
       const string& op_name = node_def->op();
 

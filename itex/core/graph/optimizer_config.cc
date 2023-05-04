@@ -52,6 +52,7 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   bool remapper_flag;
   bool auto_mixed_precision_flag;
   bool layout_opt_flag;
+  bool test_mode_flag;
 
   auto cfg_ = itex::itex_get_config();
 #define USER_IS_ON(CFG) cfg_.graph_options().CFG() == itex::Toggle::ON
@@ -145,6 +146,9 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
                                            &auto_mixed_precision_flag));
   }
 
+  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar(
+      "_ITEX_TEST_MODE", enable_itex_test_mode, &test_mode_flag));
+
 #undef USER_IS_ON
 #undef USER_IS_OFF
 #undef USER_IS_SET
@@ -162,6 +166,7 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   opt_config_flags->enable_remapper = remapper_flag;
   opt_config_flags->enable_auto_mixed_precision = auto_mixed_precision_flag;
   opt_config_flags->enable_layout_opt = layout_opt_flag;
+  opt_config_flags->enable_test_mode = test_mode_flag;
   opt_config_flags->remapper_run_pass = remapper_run_pass;
 }
 

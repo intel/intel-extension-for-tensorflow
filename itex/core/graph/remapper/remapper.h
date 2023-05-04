@@ -139,7 +139,7 @@ void RemoveAllRegularFanin(RemapperContext* ctx, int node_idx);
 // complete as possible for oneDNN graph.
 // `level` is to indicate current remapper fusion level. Simple fusions without
 // any variant will be checked under BASIC(0) level only.
-Status RunRemapper(const char* device_name, const GrapplerItem& item,
+Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
                    bool is_full = true,
                    RemapperLevel level = RemapperLevel::BASIC);

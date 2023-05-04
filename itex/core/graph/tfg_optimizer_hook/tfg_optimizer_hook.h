@@ -20,16 +20,17 @@ limitations under the License.
 
 #include "itex/core/graph/utils/graph_properties.h"
 #include "itex/core/graph/utils/grappler_item.h"
+#include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/status.h"
 #include "protos/graph.pb.h"
 
 namespace mlir {
 namespace tfg {
 
-itex::Status RunAutoShard(const itex::graph::GrapplerItem& item,
+itex::Status RunAutoShard(itex::graph::OptimizerContext* opt_ctx,
+                          const itex::graph::GrapplerItem& item,
                           const itex::GraphDef& graph_def,
-                          itex::GraphDef* optimized_graph,
-                          bool have_matmul_or_conv);
+                          itex::GraphDef* optimized_graph);
 
 }  // end namespace tfg
 }  // end namespace mlir

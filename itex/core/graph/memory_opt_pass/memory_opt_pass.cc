@@ -355,7 +355,7 @@ void StaticInplaceOpt(MemoryOptContext* ctx, const char* device_name) {
   }
 }
 
-Status RunMemoryOptPass(const char* device_name, const GrapplerItem& item,
+Status RunMemoryOptPass(OptimizerContext* opt_ctx, const GrapplerItem& item,
                         const GraphDef& graph_def, GraphDef* optimized_graph) {
   Status status;
   GraphDef mutable_graph_def = graph_def;
@@ -366,7 +366,7 @@ Status RunMemoryOptPass(const char* device_name, const GrapplerItem& item,
   TF_ABORT_IF_ERROR(
       ctx.graph_view.SortTopologically(/*ignore_cycles=*/false, {}));
 
-  StaticInplaceOpt(&ctx, device_name);
+  StaticInplaceOpt(&ctx, opt_ctx->device_name);
 
   // Introduce more optimization if needed.
 

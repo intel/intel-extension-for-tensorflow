@@ -19,6 +19,7 @@
 import numpy as np
 
 from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test
 
 from tensorflow.python.framework import constant_op
 from tensorflow.python.ops import array_ops
@@ -26,14 +27,13 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn_impl
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.ops import variables
-from tensorflow.python.platform import test as test_lib
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.ops import random_ops
 from tensorflow.python.framework import dtypes
 
 @test_util.run_all_in_native_and_block_format
 @test_util.run_all_in_graph_and_eager_modes
-class SwishTest(test_lib.TestCase):
+class SwishTest(test.TestCase):
   def testValues(self):
     np_values = np.array(
         [np.linspace(-7.0, 0.0, 100),
@@ -111,7 +111,7 @@ class SwishTest(test_lib.TestCase):
 
 @test_util.run_all_in_native_and_block_format
 @test_util.run_all_in_graph_and_eager_modes
-class SwishAlphaTest(test_lib.TestCase):
+class SwishAlphaTest(test.TestCase):
   def testValues(self):
     np_values = np.array(
         [np.linspace(-7.0, 0.0, 100),
@@ -212,4 +212,4 @@ class SwishAlphaTest(test_lib.TestCase):
     self.assertTrue(exsiting_swish)
 
 if __name__ == "__main__":
-  test_lib.main()
+  test.main()

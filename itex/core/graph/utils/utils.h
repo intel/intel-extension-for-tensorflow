@@ -44,6 +44,19 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
+struct OptimizerContext {
+  explicit OptimizerContext(const char* device_name)
+      : device_name(device_name),
+        is_compute_intensive(true),
+        enable_complete_opt(true) {}
+  const char* device_name;
+  bool is_compute_intensive;
+  bool enable_complete_opt;
+};
+
+// Check whether current graph contains compute-intensive ops or not.
+bool HaveComputeIntensiveNode(const GraphDef& graph_def);
+
 // Dumps 'graph_def' to a file, as a GraphDef text proto. Returns the file name
 // chosen.
 //

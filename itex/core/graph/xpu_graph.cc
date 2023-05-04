@@ -44,6 +44,7 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
        config.enable_onednn_graph_compiler_backend},
       {"_ITEX_ONEDNN_GRAPH_DNNL_BACKEND",
        config.enable_onednn_graph_dnnl_backend},
+      {"_ITEX_TEST_MODE", config.enable_test_mode},
   };
 
   // set ITEX_CACHE_ONEDNN_OBJECT to 1 if this env did not set.

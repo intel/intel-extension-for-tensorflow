@@ -5900,7 +5900,7 @@ Status AddDilatedContractionNode(RemapperContext* ctx,
 // complete as possible for oneDNN graph.
 // `level` is to indicate current remapper fusion level. Simple fusions without
 // any variant will be checked under BASIC(0) level only.
-Status RunRemapper(const char* device_name, const GrapplerItem& item,
+Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
                    bool is_full, RemapperLevel level) {
   // `level` must be `BASIC` if in partial remapper.
@@ -5981,9 +5981,9 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
     }
 
     // Check if node can run on current optimizer device.
-    if (!NodeIsOnDevice(device_name, node_def)) {
+    if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) {
       ITEX_VLOG(3) << "The node " << node_def->op() << ":" << node_def->name()
-                   << "is not at " << device_name;
+                   << "is not at " << opt_ctx->device_name;
       continue;
     }
 

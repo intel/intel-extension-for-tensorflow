@@ -823,7 +823,7 @@ Status MarkOneDnnGraphEndNode(OneDnnLayoutContext* ctx, const int node_index) {
 ///////////////////////////////////////////////////////////////////////////////
 //              Run function for the pass
 ///////////////////////////////////////////////////////////////////////////////
-Status RunOneDnnLayout(const char* device_name, const GrapplerItem& item,
+Status RunOneDnnLayout(OptimizerContext* opt_ctx, const GrapplerItem& item,
                        const GraphDef& graph_def, GraphDef* optimized_graph) {
   Status status;
   GraphDef multable_graph_def = graph_def;
@@ -844,7 +844,7 @@ Status RunOneDnnLayout(const char* device_name, const GrapplerItem& item,
     const auto* node_def = node_view->node();
 
     // Check if node can run on current optimizer device.
-    if (!NodeIsOnDevice(device_name, node_def)) continue;
+    if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) continue;
 
     // Don't rewrite fetch node because layout will insert `OneDnnToTf` op
     // behind it and break the fetch node dependency.

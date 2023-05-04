@@ -163,6 +163,19 @@ NodeMapInternal<const GraphDef, const NodeDef>::GetNodeDefFromGraph(
 }
 }  // namespace internal
 
+bool HaveComputeIntensiveNode(const GraphDef& graph_def) {
+  for (auto node : graph_def.node()) {
+    if (node.op().find("Conv") != std::string::npos ||
+        node.op().find("GRU") != std::string::npos ||
+        node.op().find("LSTM") != std::string::npos ||
+        node.op().find("MatMul") != std::string::npos ||
+        node.op().find("RNN") != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
 string DumpGraphDefToFile(const string& name, GraphDef const& graph_def,
                           const string& dirname, bool is_output_binary) {
   string filepath;

@@ -67,7 +67,7 @@ class GenericLayoutOptimizer {
 
   string name() const { return "layout"; }
 
-  Status Optimize(const char* device_name, const GrapplerItem& item,
+  Status Optimize(OptimizerContext* opt_ctx, const GrapplerItem& item,
                   const GraphDef& graph_def, GraphDef* optimized_graph);
 };
 

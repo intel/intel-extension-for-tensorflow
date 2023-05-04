@@ -1732,10 +1732,11 @@ Status AutoMixedPrecisionImpl::ChangeTypeAttrsAndAddCasts(
 }
 
 }  // end namespace
-Status RunAutoMixedPrecision(const char* device_name, const GrapplerItem& item,
+Status RunAutoMixedPrecision(OptimizerContext* opt_ctx,
+                             const GrapplerItem& item,
                              const GraphDef& graph_def, GraphDef* output) {
   auto mode = AutoMixedPrecisionMode::GPU_FLOAT16;
-  Status status = GetAutoMixedPrecisionMode(device_name, &mode);
+  Status status = GetAutoMixedPrecisionMode(opt_ctx->device_name, &mode);
   // Start by copying input graph to output.
   *output = graph_def;
 

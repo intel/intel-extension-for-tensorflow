@@ -33,6 +33,7 @@ constexpr static bool enable_itex_optimize_aggressive = false;
 constexpr static bool enable_itex_remapper = true;
 constexpr static bool enable_itex_auto_mixed_precision = false;
 constexpr static bool enable_itex_layout_opt = true;
+constexpr static bool enable_itex_test_mode = false;
 constexpr static int32_t remapper_run_pass = 2;
 
 typedef struct _OptimizerConfigFlags {
@@ -47,6 +48,7 @@ typedef struct _OptimizerConfigFlags {
   bool enable_auto_mixed_precision;
   // TODO(itex): To integrate DOC & GraphOptions
   bool enable_layout_opt;
+  bool enable_test_mode;
   int32_t remapper_run_pass;
 } OptimizerConfigFlags;
 

@@ -246,7 +246,7 @@ Status GenericLayoutContext::InitializeContext(bool assume_valid_feeds,
   return OkStatus();
 }
 
-Status GenericLayoutOptimizer::Optimize(const char* device_name,
+Status GenericLayoutOptimizer::Optimize(OptimizerContext* opt_ctx,
                                         const GrapplerItem& item,
                                         const GraphDef& graph_def,
                                         GraphDef* optimized_graph) {
@@ -265,7 +265,7 @@ Status GenericLayoutOptimizer::Optimize(const char* device_name,
     utils::MutableNodeView* node_view = graph_view->GetNode(i);
     NodeDef* node_def = node_view->node();
 
-    if (!NodeIsOnDevice(device_name, node_def)) continue;
+    if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) continue;
 
     if (context.nodes_to_preserve.count(node_def->name()) > 0) continue;
 
