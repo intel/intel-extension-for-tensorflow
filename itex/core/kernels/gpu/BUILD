@@ -89,20 +89,6 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
-    name = "argmin_op",
-    srcs = ["argmin_op.cc"],
-    hdrs = ["argmin_op.h"],
-    copts = tf_copts(),
-    linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        ":reduction_utils",
-        "//itex:core",
-    ],
-    alwayslink = True,
-)
-
-itex_xpu_library(
     name = "histogram_op",
     srcs = ["histogram_op.cc"],
     hdrs = [
@@ -2035,7 +2021,6 @@ itex_xpu_library(
 GPU_KERNELS = [
     ":aggregate_ops",
     ":argmax_op",
-    ":argmin_op",
     ":batchtospace_op",
     ":batch_norm_ops",
     ":group_norm_ops",
