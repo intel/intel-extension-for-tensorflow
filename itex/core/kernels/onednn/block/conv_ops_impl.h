@@ -341,7 +341,9 @@ class OneDnnConvOp : public OpKernel {
       } else if ((std::is_same<Toutput, float>::value ||
                   std::is_same<Toutput, Eigen::half>::value) &&
                  std::is_same<Tfilter, qint8>::value) {
-        auto dst_format_tag = src_onednn_shape_.GetFormatTag();
+        auto dst_format_tag = src_onednn_shape_.IsOneDnnTensor()
+                                  ? src_onednn_shape_.GetFormatTag()
+                                  : data_layout;
         dst_md = memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(),
                               dst_format_tag);
         add_dst_md_ = dst_md;
