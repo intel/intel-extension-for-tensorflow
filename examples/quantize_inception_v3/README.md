@@ -3,11 +3,11 @@
 
 ## Background
 
-Intel® Extension for Tensorflow* provides quantization feature by cooperating with Intel® Neural Compressor and oneDNN Graph. It will provide better quantization: better performance and accuracy loss under control.
+Intel® Extension for TensorFlow* provides quantization feature by cooperating with Intel® Neural Compressor and oneDNN Graph. It will provide better quantization: better performance and accuracy loss under control.
 
-Intel® Neural Compressor executes the calibration process to output the QDQ quantization model which inserts Quantize and Dequantize layers to includes help information for quantization.
+Intel® Neural Compressor executes the calibration process to output the QDQ quantization model, which inserts Quantize and Dequantize layers to includes help information for quantization.
 
-When use Intel® Extension for Tensorflow* to execute the inference of this model, oneDNN Graph will be called to quantize and optimize the model. Then the quantized model will be executed by Intel® Extension for Tensorflow* and accelerated by Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions on Intel® Xeon®.
+When you use Intel® Extension for Tensorflow* to execute the inference of this model, oneDNN Graph will be called to quantize and optimize the model. Then the quantized model will be executed by Intel® Extension for Tensorflow* and accelerated by Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions on Intel® Xeon® processors.
 
 ## Introduction
 
@@ -24,7 +24,7 @@ The example shows an end-to-end pipeline:
 
 ### Intel® Extension for Tensorflow* Version
 
-Please install Intel® Extension for Tensorflow* > 1.1.0 and newer for this feature.
+Install Intel® Extension for Tensorflow* > 1.1.0 for this feature.
 
 ### Enable oneDNN Graph
 
@@ -68,9 +68,9 @@ tf.compat.v1.keras.backend.set_session(session)
 
 ### CPU
 
-It's recommended to run the example on the Intel® Xeon® which supports Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions.
+It's recommended to run the example on the Intel® Xeon® processors, which supports Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions.
 
-Without the hardware features above for AI workloads, the performance speedup with FP32 will not be increased much, such as only 1.x.
+Without the hardware features above for AI workloads, the performance speedup with FP32 will not be increased much.
 
 #### Check Intel® Deep Learning Boost
 
@@ -80,6 +80,8 @@ In Linux, run command:
 lscpu | grep vnni
 ```
 
+You are expected to see `avx_vnni` and `avx512-vnni`, otherwise your processors do not support Intel® Deep Learning Boost.
+
 #### Check Intel® Advanced Matrix Extensions
 
 In Linux, run command:
@@ -87,17 +89,18 @@ In Linux, run command:
 ```
 lscpu | grep amx
 ```
+You are expected to see `amx_bf16` and `amx_int8`, otherwise your processors do not support Intel® Advanced Matrix Extensions.
 
 ### Intel® DevCloud
 
-If you have no such CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions, you could register to Intel® DevCloud and try this example on new Xeon with Intel® Deep Learning Boost freely. To learn more about working with Intel® DevCloud, please refer to [Intel® DevCloud](https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html)
+If you have no CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions, you could register on Intel® DevCloud and try this example on an second generation Intel® Xeon based processors or newer. To learn more about working with Intel® DevCloud, refer to [Intel® DevCloud](https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html)
 
 
 ## Running Environment
 
-1. Install Python 3.8~3.10 supported by Intel® Extension for Tensorflow*.
+1. Install Python versions >=3.8 and versions <=3.10 supported by Intel® Extension for Tensorflow*.
 
-2. Create the running environment **env_itex**.
+2. Create the running Python Virtual environment **env_itex**.
 
 ```
 bash pip_set_env.sh
@@ -120,7 +123,7 @@ http://xxx.yyy.com:8888/xxxxxxxx
 
 ```
 
-2. Open the link outputted by Jupyter Notebook in Chrome.
+2. Open the link outputted by Jupyter Notebook in your browser.
 
 3. Choose and open the **quantize_inception_v3.ipynb** in Jupyter Notebook.
 

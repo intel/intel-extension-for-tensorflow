@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The XPUAutoShard feature of Intel® Extension for TensorFlow* automatically shards the input data to the Intel® GPU devices. Currently, it supports to apply the shards on multiple GPU tiles to maximize the hardware utilization and improve performance.  
+The XPUAutoShard feature of Intel® Extension for TensorFlow* automatically shards the input data to the Intel® GPU devices. Currently, it supports applying the shards on multiple GPU tiles to maximize the hardware utilization and improve performance.  
 
 This example shows ResNet50 training speedup with XPUAutoShard enabled.
 
@@ -19,7 +19,7 @@ This example only applies to stock TensorFlow* >=2.12.0 and Intel® Extension fo
 ```bash
 git clone https://github.com/tensorflow/models tf-models
 cd tf-models
-git checkout r2.11
+git checkout r2.12
 git apply ../shard.patch
 ```
  
@@ -72,7 +72,7 @@ python resnet_ctl_imagenet_main.py \
 ### With XPUAutoShard
 
 #### Python API
-Intel® Extension for TensorFlow* provides python API to enable XPUAutoShard feature as follwing:
+Intel® Extension for TensorFlow* provides Python APIs to enable XPUAutoShard feature as follws:
 
 ```python
 config = itex.ShardingConfig()
@@ -89,7 +89,7 @@ itex.set_config(itex_cfg)
 
 #### Sharding Parameters Setting
 
-In this example, the above codes have been added to `resnet_ctl_imagenet_main.py` with the patch and you can enable XPUAutoShard via simply adding `--use_itex_sharding=True` to the command-line. You can optionly modify the follwing parameters in the `ShardingConfig` based on your need.
+In this example, the above code has been added to `resnet_ctl_imagenet_main.py` with the patch and you can enable XPUAutoShard via simply adding `--use_itex_sharding=True` to the command-line. You can optionally modify the following parameters in the `ShardingConfig` based on your need.
 
 |Prameters|Config Suggestions|
 |-|-|
@@ -100,7 +100,7 @@ In this example, the above codes have been added to `resnet_ctl_imagenet_main.py
 The global batch size should be `device_num` * `batch_size` * `stage_num`. In this example, the default global batch size is 2x256x10=5120.
 
 #### Further Settings
-For further peformance speedup, you can enable multi-stream via setting `ITEX_ENABLE_MULTIPLE_STREAM=1` to create multiple queues for each device.
+For further performance speedup, you can enable multi-stream via setting `ITEX_ENABLE_MULTIPLE_STREAM=1` to create multiple queues for each device.
 
 #### Executing Command
 ```bash

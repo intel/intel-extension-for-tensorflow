@@ -1,7 +1,7 @@
 # Distributed training example with Intel® Optimization for Horovod*
 
 ## Dependency
-- [Tensorflow](https://pypi.org/project/tensorflow/)
+- [TensorFlow](https://pypi.org/project/tensorflow/)
 - [Intel® Extension for TensorFlow*](https://pypi.org/project/intel-extension-for-tensorflow/)
 - [Intel® Optimization for Horovod*](https://pypi.org/project/intel-optimization-for-horovod/)
 - others show as below 
@@ -18,12 +18,12 @@ cd horovod/examples/tensorflow2
 git apply tensorflow2_keras_mnist.patch
 ```
 **Notes**:  
-Please refer to [tensorflow2_keras_mnist.py](https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py) for other changes about how to enable horovod.
+Refer to [tensorflow2_keras_mnist.py](https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py) for other changes about how to enable horovod.
 
 ## Execution
-To run on **a** machine with **4** XPUs:  
+To run on a machine with 4 XPUs:  
 **Notes**:  
-Please check log "### is_mpi", "### gpus" to get how many XPUs in your platform. This case is on a machine with 2 Intel® Data Center GPU Max Series, and 2 tiles in each GPU are taken as 2 independent XPU devices, a total of 4 XPU devices.
+Check log looking for "### is_mpi" and "### gpus" to get how many XPUs are in your platform. Our example is on a machine with 2 Intel® Data Center GPU Max Series. The 2 tiles in each GPU are taken as 2 independent XPU devices, for a total of 4 XPU devices.
 ```
 horovodrun -np 4 -H localhost:4 python ./tensorflow2_keras_mnist.py
 ```

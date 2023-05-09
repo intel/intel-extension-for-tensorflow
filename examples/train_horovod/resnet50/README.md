@@ -1,17 +1,17 @@
-# Distributed training example with Intel® Optimization for Horovod*
+# Distributed Training Example with Intel® Optimization for Horovod*
 
 ## Model Information
 
 | Use Case |Framework | Model Repo | Branch Commit Tag | Optional Patch 
 | :---: | :---: | :---: | :---: | :---: |
-| Training | Tensorflow | [Tensorflow-Models](https://github.com/tensorflow/models) | v2.8.0 | itex.yaml <br> itex_dummy.yaml <br> hvd_support_light.patch <br> or hvd_support.patch |
+| Training | TensorFlow | [Tensorflow-Models](https://github.com/tensorflow/models) | v2.8.0 | itex.yaml <br> itex_dummy.yaml <br> hvd_support_light.patch <br> or hvd_support.patch |
 
 <br>
 
 ## Dependency
 - [Tensorflow](https://pypi.org/project/tensorflow/)
 - [Intel® Extension for TensorFlow*](https://pypi.org/project/intel-extension-for-tensorflow/)
-- [Intel® Optimization for Horovod*](https://pypi.org/project/intel-optimization-for-horovod/)
+- [Intel® Optimization for Horovod*](https://pypi.org/project/intel-optimization-for-Horovod/)
 - others show as below 
 ```
 pip install gin gin-config tensorflow-addons tensorflow-model-optimization tensorflow-datasets
@@ -21,24 +21,27 @@ pip install gin gin-config tensorflow-addons tensorflow-model-optimization tenso
 
 ### Model Repo
 ```
-WORKSPACE=xxxx # please set your workspace folder
+WORKSPACE=xxxx # set your workspace folder
 cd $WORKSPACE
 git clone -b v2.8.0 https://github.com/tensorflow/models.git tensorflow-models
 cd tensorflow-models
 git apply path/to/hvd_support_light.patch  # or path/to/hvd_support.patch
 ```
 **hvd_support_light.patch** is the minimum change.
-- hvd.init() is horovod initialization, including resource allocation.
+- hvd.init() is Horovod initialization, including resource allocation.
 - tf.config.experimental.set_memory_growth(): If memory growth is enabled, the runtime initialization will not allocate all memory on the device.
 - tf.config.experimental.set_visible_devices(): Set the list of visible devices.
 - strategy_scope: Remove native distributed.
-- hvd.DistributedOptimizer(): use horovod distributed optimizer.
-- dataset.shard(): Multiple workers run the same code but the different data. Dataset is split equally between diferent index workers.  
+- hvd.DistributedOptimizer(): use Horovod distributed optimizer.
+- dataset.shard(): Multiple workers run the same code but with different data. Dataset is split equally between different index workers.  
   
 **hvd_support.patch** adds LARS optimizer [paper](https://arxiv.org/abs/1708.03888) 
 
 ### Download Dataset
 Download imagenet dataset from https://image-net.org/download-images.php
+
+
+**Note** Only for non-commercial research and/or educational purposes
 
 <br>
 
@@ -54,7 +57,7 @@ CONFIG_FILE=path/to/itex.yaml
 NUMBER_OF_PROCESS=2
 PROCESS_PER_NODE=2
 ```
-- Download `itex.yaml` or `itex_dummy.yaml` and set one of them as CONFIG_FILE, then model would correspondly run with `real data` or `dummy data`. Default value is itex.yaml.
+- Download `itex.yaml` or `itex_dummy.yaml` and set one of them as CONFIG_FILE, then model would correspondingly run with `real data` or `dummy data`. Default value is itex.yaml.
 - Set `NUMBER_OF_PROCESS` and `PROCESS_PER_NODE` according to hvd rank number you need. Default value is a 2 rank task.
 ### HVD command
 

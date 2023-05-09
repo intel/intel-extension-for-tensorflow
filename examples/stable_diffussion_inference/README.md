@@ -2,10 +2,10 @@
 
 ## Introduction
 
-Intel® Extension for TensorFlow* is compatible with stock Tensorflow*. 
+Intel® Extension for TensorFlow* is compatible with stock TensorFlow*. 
 This example shows Stable Diffusion Inference for Text2Image.
 
-Install the Intel® Extension for TensorFlow* in legacy running envrionment, Tensorflow will execute the Inference on Intel GPU.
+Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Inference on Intel GPU.
 
 ## Hardware Requirements
 
@@ -16,7 +16,7 @@ Verified Hardware Platforms:
 ## Prerequisites
 
 ### Model Code change
-We optimized official keras-cv Stable Diffusion, eg, concatenate two forward pass, combine computation in loops to reduce op number, add fp16 mode for model. However, this optimization hasn't been up streamed, so to get better perforamnce, instead of installing official keras-cv, you may want to clone keras-cv, apply patch, then install it
+We optimized official keras-cv Stable Diffusion, for example, concatenate two forward passes, combine computation in loops to reduce op number, and add fp16 mode for model. However, this optimization hasn't been up streamed. To get better performance, instead of installing official keras-cv, you may want to clone keras-cv, apply patch, then install it as shown here:
 ```
 git clone https://github.com/keras-team/keras-cv.git
 cd keras-cv
