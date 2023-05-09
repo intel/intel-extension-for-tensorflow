@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <algorithm>
 
+#include "itex/core/kernels/gpu/segment_reduction_ops.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/plugin_tensor.h"
 
@@ -39,40 +40,6 @@ struct SparseSegmentReductionFunctor {
 }  // namespace functor
 
 namespace impl {
-
-template <typename Tindex, typename Tsegmentids>
-struct SegmentOffsetsKernel {
-  SegmentOffsetsKernel(Tindex size, Tsegmentids nsegments,
-                       const Tsegmentids* segment_ids, Tindex* segment_offsets)
-      : size_(size),
-        nsegments_(nsegments),
-        segment_ids_(segment_ids),
-        segment_offsets_(segment_offsets) {}
-  void operator()(sycl::nd_item<1> item) const {
-    auto i = item.get_global_linear_id();
-    if (i >= size_ + 1) return;
-    // IDs are clipped to [-1, nsegments] so that out-of-bounds IDs are ignored.
-    // Note that we can't report invalid IDs from the GPU without incurring
-    // additional overhead.
-    auto clip = [&](Tsegmentids id) {
-      return sycl::min(sycl::max(Tsegmentids(-1), id), nsegments_);
-    };
-    const Tsegmentids cur_id = (i < size_) ? clip(segment_ids_[i]) : nsegments_;
-    const Tsegmentids prev_id =
-        (i == 0) ? Tsegmentids(-1) : clip(segment_ids_[i - 1]);
-    // At segment boundaries, write the offset for this ID and any missing IDs
-    // since the previous one.
-    for (Tsegmentids id = prev_id + 1; id <= cur_id; ++id) {
-      segment_offsets_[id] = i;
-    }
-  }
-
- private:
-  Tindex size_;
-  Tsegmentids nsegments_;
-  const Tsegmentids* segment_ids_;
-  Tindex* segment_offsets_;
-};
 
 template <typename T, typename Index, typename SegmentId, typename ReductionF,
           typename AtomicReductionF, int OuterDimTileSize, typename = void>
@@ -205,30 +172,6 @@ struct LaunchSortedSegmentKernel {
           sycl::nd_range<1>(global_size, local_size), task);
     });
 
-    return Status::OK();
-  }
-};
-
-template <typename Tindex, typename Tsegmentids>
-struct LaunchSegmentOffsetsKernel {
-  Status operator()(const Eigen::GpuDevice& d, Tindex size, Tindex nsegments,
-                    const Tsegmentids* segment_ids, Tindex* segment_offsets) {
-    auto stream = d.stream();
-    auto work_group_size =
-        (*stream)
-            .get_device()
-            .template get_info<sycl::info::device::max_work_group_size>();
-    auto total_size = size + 1;
-    auto num_work_group = (total_size + work_group_size - 1) / work_group_size;
-
-    sycl::range<1> local_size(work_group_size);
-    sycl::range<1> global_size(num_work_group * work_group_size);
-    stream->submit([&](sycl::handler& cgh) {
-      impl::SegmentOffsetsKernel<Tindex, Tsegmentids> task(
-          size, nsegments, segment_ids, segment_offsets);
-      cgh.parallel_for<impl::SegmentOffsetsKernel<Tindex, Tsegmentids>>(
-          sycl::nd_range<1>(global_size, local_size), task);
-    });
     return Status::OK();
   }
 };

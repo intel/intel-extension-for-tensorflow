@@ -177,7 +177,7 @@ REGISTER_SUM_GPU_UNSORTED_KERNELS_HALF();
 #undef REGISTER_REAL_GPU_UNSORTED_KERNELS_HALF
 #undef REGISTER_SUM_GPU_UNSORTED_KERNELS_HALF
 
-template <class T, class Index, class SegmentReductionFunctor>
+template <class T, class Index, class SegmentReductionFunctor, bool IsMean>
 class SegmentReductionGPUOp : public OpKernel {
  public:
   explicit SegmentReductionGPUOp(OpKernelConstruction* context)
@@ -249,17 +249,16 @@ class SegmentReductionGPUOp : public OpKernel {
     OP_REQUIRES_OK(context, context->allocate_temp(DataTypeToEnum<float>::value,
                                                    output_shape, &output_fp32));
     auto output_fp32_flat = output_fp32.flat_outer_dims<float>();
-
     auto data_ptr = input.template flat<T>().data();
     auto segment_flat = segment_ids.flat<Index>();
-    functor_(context, output_rows, segment_ids.shape(), segment_flat,
+    functor_(context, output_rows, segment_ids.shape(), segment_flat, IsMean,
              input.NumElements(), data_ptr, output_flat, output_fp32_flat);
   }
 };
 
 #define REGISTER_GPU_KERNEL_SORTEDSEGMENT(                                   \
     name, type, index_type, initial_value_functor, reduction_kernel_functor, \
-    atomic_reduction_kernel_functor)                                         \
+    atomic_reduction_kernel_functor, is_mean)                                \
   REGISTER_KERNEL_BUILDER(                                                   \
       Name(name)                                                             \
           .Device(DEVICE_GPU)                                                \
@@ -269,25 +268,30 @@ class SegmentReductionGPUOp : public OpKernel {
           type, index_type,                                                  \
           itex::functor::SegmentReductionFunctor<                            \
               type, index_type, initial_value_functor,                       \
-              reduction_kernel_functor, atomic_reduction_kernel_functor> >)
+              reduction_kernel_functor, atomic_reduction_kernel_functor>,    \
+          is_mean>)
 
 #define REGISTER_GPU_SORTED_KERNELS(type, reduction_type, index_type)         \
   REGISTER_GPU_KERNEL_SORTEDSEGMENT(                                          \
       "SegmentSum", type, index_type, itex::functor::Zero<reduction_type>,    \
       itex::functor::NonAtomicSumOpGpu<reduction_type>,                       \
-      itex::functor::SumOpGpu<reduction_type>);                               \
+      itex::functor::SumOpGpu<reduction_type>, false);                        \
+  REGISTER_GPU_KERNEL_SORTEDSEGMENT(                                          \
+      "SegmentMean", type, index_type, itex::functor::Zero<reduction_type>,   \
+      itex::functor::NonAtomicSumOpGpu<reduction_type>,                       \
+      itex::functor::SumOpGpu<reduction_type>, true);                         \
   REGISTER_GPU_KERNEL_SORTEDSEGMENT(                                          \
       "SegmentProd", type, index_type, itex::functor::One<reduction_type>,    \
       itex::functor::NonAtomicProdOpGpu<reduction_type>,                      \
-      itex::functor::ProdOpGpu<reduction_type>);                              \
+      itex::functor::ProdOpGpu<reduction_type>, false);                       \
   REGISTER_GPU_KERNEL_SORTEDSEGMENT(                                          \
       "SegmentMin", type, index_type, itex::functor::Highest<reduction_type>, \
       itex::functor::NonAtomicMinOpGpu<reduction_type>,                       \
-      itex::functor::MinOpGpu<reduction_type>);                               \
+      itex::functor::MinOpGpu<reduction_type>, false);                        \
   REGISTER_GPU_KERNEL_SORTEDSEGMENT(                                          \
       "SegmentMax", type, index_type, itex::functor::Lowest<reduction_type>,  \
       itex::functor::NonAtomicMaxOpGpu<reduction_type>,                       \
-      itex::functor::MaxOpGpu<reduction_type>);
+      itex::functor::MaxOpGpu<reduction_type>, false);
 
 #define REGISTER_GPU_SORTED_KERNELS_ALL(type)           \
   REGISTER_GPU_SORTED_KERNELS(type, type, itex::int32); \
