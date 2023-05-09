@@ -156,8 +156,9 @@ class OneDnnFusedBatchNormOp : public OpKernel {
       } else {
         onednn_tensor_fmt =
             TFDataFormatToOneDnnDataFormat(tensor_format_, !use_3d_format);
-        onednn_tag = OneDnnTensorFormatToTag(onednn_tensor_fmt);
       }
+
+      onednn_tag = OneDnnTensorFormatToTag(onednn_tensor_fmt);
 
       if (src_onednn_shape.IsOneDnnTensor()) {
         src_dims = src_onednn_shape.GetSizesAsOneDnnDims();
