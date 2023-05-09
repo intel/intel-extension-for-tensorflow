@@ -2005,6 +2005,20 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "isTensorFloat32Enabled_op",
+    srcs = ["isTensorFloat32Enabled_op.cc"],
+    hdrs = ["isTensorFloat32Enabled_op.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "test_ops",
     srcs = ["test_ops.cc"],
     hdrs = ["test_ops.h"],
@@ -2129,6 +2143,7 @@ GPU_KERNELS = [
     ":where_op",
     ":xent_op",
     ":tensorarray_ops",
+    ":isTensorFloat32Enabled_op",
     ":test_ops",
 ]
 
