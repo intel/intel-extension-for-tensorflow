@@ -1,16 +1,18 @@
 import time
-from keras_cv.models.stable_diffusion import StableDiffusion
+from keras_cv.models.stable_diffusion import StableDiffusion, StableDiffusionV2
 from tensorflow import keras
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import argparse
-
+from keras_fid import fid
+import os
 import numpy as np
 from numpy import cov
 from numpy import trace
 from numpy import iscomplexobj
 from numpy.random import random
 from scipy.linalg import sqrtm
+
 
 parser = argparse.ArgumentParser("Stable Diffusion inference with TensorFlow")
 parser.add_argument(
@@ -35,13 +37,6 @@ parser.add_argument(
     "--precision", default="fp32", type=str, help="precision, only support(fp32, fp16)"
 )
 parser.add_argument("--iterations", type=int, default=2, help="number of iterations")
-parser.add_argument(
-    "--accuracy",
-    action="store_true",
-    default=False,
-    help="whether to compare accuracy with cpu",
-)
-
 args = parser.parse_args()
 
 
@@ -52,21 +47,29 @@ def text2image():
         jit_compile=args.use_xla,
         precision=args.precision,
     )
-
+    seed = 65537
     print("Start Warmup")
     model.text_to_image(
         "warming up the model", batch_size=args.batch_size, num_steps=args.num_steps
     )
     # Start inference
     print("Start running inference and generating images")
+    start = time.time()
     for i in range(args.iterations):
-        images = model.text_to_image(prompt=args.prompt, batch_size=args.batch_size)
+        images = model.text_to_image(prompt=args.prompt, batch_size=args.batch_size, seed=seed)
+    end = time.time()
+    latency = (end - start) / args.iterations / args.num_steps
+    throughput = 1 / latency
+    print("latency {} ms, throughput {} it/s".format(latency * 1000, throughput))
     return images
 
 
 def plot_images(images):
-    png_name = "{}_{}imgs_{}steps.png".format(
-        args.precision, args.batch_size, args.num_steps
+    path = "./images"
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    png_name = "{}/{}_imgs_{}steps.png".format(path,
+        args.precision, args.num_steps
     )
     print("Start plotting the generated images to %s" % (png_name))
     plt.figure(figsize=(20, 20))
