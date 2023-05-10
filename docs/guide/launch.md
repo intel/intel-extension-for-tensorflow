@@ -10,7 +10,7 @@
   - [Multi-instance](#multi-instance)
   - [NUMA Control](#numa-control)
   - [Memory Allocator](#memory-allocator)
-  - [Environment Viriables](#environment-variables)
+  - [Environment Variables](#environment-variables)
 - [Examples](#examples)
 
 ## Overview
@@ -31,7 +31,7 @@ The *launch* script is provided as a module of Intel® Extension for TensorFlow*
 python -m intel_extension_for_tensorflow.python.launch [knobs] <your_script> [your_script_args]
 ```
 
-In most cases for better performance, *```--latency_mode```* or *```--throughput_mode```* is often enabled. The launcher script will automatically calculate the number of instance and number of cores used for each instance, so no manual setting is required. If you want to customize your execution, see [Advanced Setting](#advanced-settings).
+In most cases for better performance, *```--latency_mode```* or *```--throughput_mode```* is often enabled. The launcher script will automatically calculate the number of instances and number of cores used for each instance, so no manual setting is required. If you want to customize your execution, see [Advanced Setting](#advanced-settings).
 
 ### Latency mode
 
@@ -92,7 +92,7 @@ You may want to launch multiple instances for better performance, for example, w
 
 ### NUMA Control
 
-These knobs are used to set the NUMA policy to better utilize your harware resource.
+These knobs are used to set the NUMA policy to better utilize your hardware resource.
 
 
 | Knob | Type | Default Value | Description |
@@ -119,7 +119,7 @@ This script provides users three memory allocator types, specified with the foll
 
 The *launch* script respects existing environment variables on launch. If you prefer some certain environment variables, you can set them before executing the *launch* script. Intel OpenMP library uses an environment variable *`KMP_AFFINITY`* to control its behavior. Different settings bring different performance. By default, the *launch* script will set *`KMP_AFFINITY`* to "granularity=fine,verbose,compact,1,0" or "granularity=fine,verbose,compact," depending on whether hyper threading is on or off. If you want to try other values, you can use *```export```* command on Linux to set *`KMP_AFFINITY`* before you run the *launch* script. In this case, the script will not set the default value but take the existing value of *`KMP_AFFINITY`*, and print a message to stdout.
 
-Our launcher also automatically set some environment variables related to TensorFlow and Intel® Extension for TensorFlow*. By default, *`TF_NUM_INTEROP_THREADS`* and *`TF_NUM_INTRAOP_THREADS`* are set to *`1`* and number of cores per instance. [ITEX AMP](advanced_auto_mixed_precision.md) and [Intel® Extension for TensorFlow* layout optimization](practice_guide.md#memory-layout-format) are disabled.
+Our launcher also automatically sets some environment variables related to TensorFlow and Intel® Extension for TensorFlow*. By default, *`TF_NUM_INTEROP_THREADS`* and *`TF_NUM_INTRAOP_THREADS`* are set to *`1`* and number of cores per instance. [ITEX AMP](advanced_auto_mixed_precision.md) and [Intel® Extension for TensorFlow* layout optimization](practice_guide.md#memory-layout-format) are disabled.
 Users can change them by the following knobs.
 
 | Knob | Type | Default Value | Description |

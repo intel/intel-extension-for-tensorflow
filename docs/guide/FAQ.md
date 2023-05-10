@@ -2,7 +2,7 @@
 
 1. How to check whether GPU drivers are installed successfully?
 
-Run `import tensorflow` and it will show which platform you are running on: Intel(R) Level-Zero(default) or Intel(R) OpenCL.
+Run `import tensorflow` and it will show which platform you are running on: Intel Level-Zero(default) or Intel OpenCL.
 
 And the high level API of TensorFlow `tf.config.experimental.list_physical_devices()` will tell you the device types that are registered to TensorFlow core.
 
@@ -17,7 +17,7 @@ $ python
    
 2. How to know the configurations and rate of utilization of local GPU devices?
 
-[System Monitoring Utility](https://github.com/intel/pti-gpu/tree/master/tools/sysmon) tool can be used to show the capability (clock frequency, EU count, amount of device memory and so on) of your devices and usage of each sub-module (device memory, GPU engines and so on).
+[System Monitoring Utility](https://github.com/intel/pti-gpu/tree/master/tools/sysmon) tool can be used to show the capability (clock frequency, EU count, amount of device memory, and so on) of your devices and usage of each sub-module (device memory, GPU engines, and so on).
 
 
 3. What's the relationship of `TensorFlow*`, `Intel® Optimization of TensorFlow*` and `Intel® Extension for TensorFlow*`?
@@ -53,6 +53,6 @@ This section shows common problems and solutions for compilation and runtime iss
 
 | Error                                                        | Solution                              | Comments                            |
 | ------------------------------------------------------------ | ------------------------------------- | ----------------------------------- |
-| ModuleNotFoundError: No module named 'tensorflow'            | install TensorFlow                    | ITEX depends on TensorFlow          |
+| ModuleNotFoundError: No module named 'tensorflow'            | install TensorFlow                    | Intel® Extension for TensorFlow* depends on TensorFlow          |
 | tensorflow.python.framework.errors_impl.NotFoundError: libmkl_sycl.so.2: cannot open shared object file: No such file or directory | `source /opt/intel/oneapi/setvars.sh` | set env vars of oneAPI Base Toolkit |
 | version GLIBCXX_3.4.30' not found | `conda install -c conda-forge gxx_linux-64==12.1.0` | install higher version glibcxx |  
