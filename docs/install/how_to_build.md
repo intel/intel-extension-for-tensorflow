@@ -6,7 +6,7 @@ When will you need to build from source code?
 
 1. You want to get the latest feature in development branch.
 
-2. You want to develop feature or contribute on Intel® Extension for TensorFlow*.
+2. You want to develop a feature or contribute to Intel® Extension for TensorFlow*.
 
 3. Verify your code update.
 
@@ -24,7 +24,7 @@ Verified Hardware Platforms:
 
 1. Conda
 
-Please install [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+Install [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 2. Create Virtual Running Environment
 
@@ -36,13 +36,13 @@ Note, support Python 3.8-3.10.
 
 ### Intel GPU Driver (Optional, GPU only)
 
-Please install the Intel GPU Driver in the building server, which is needed to build with GPU support and **AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html))**.
+Install the Intel GPU Driver in the building server, which is needed to build with GPU support and **AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html))**.
 
 Refer to [Install Intel GPU driver](install_for_gpu.md).
 
 Note:
 
-1. Please make sure to [install developer run-time packages](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages) before building Intel® Extension for TensorFlow*.
+1. Make sure to [install developer runtime packages](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages) before building Intel® Extension for TensorFlow*.
 
 2. **AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html))**
 
@@ -75,9 +75,9 @@ Following commands are based on the folder **/opt/intel/oneapi**. If you install
 
 Refer to [Install oneAPI Base Toolkit Packages](install_for_gpu.md#install-oneapi-base-toolkit-packages)
 
-It provides compiler and libraried used by Intel® Extension for TensorFlow*.
+It provides compiler and libraries used by Intel® Extension for TensorFlow*.
 
-Enable oneAPI componets:
+Enable oneAPI components:
 
 ```
 source /opt/intel/oneapi/compiler/latest/env/vars.sh
@@ -128,20 +128,20 @@ Configure the system build by running the `./configure` command at the root of y
 
 ### Choose to Build with GPU Support.
 
-'Y' for GPU support; 'n' for CPU only.
+'Y' for GPU support; 'N' for CPU only.
 
 ### Specify the Location of Compiler (DPC++).
 
-Default is **/opt/intel/oneapi/compiler/latest/linux/**, that is the default installed path. Click **enter** to confirm default location.
+Default is **/opt/intel/oneapi/compiler/latest/linux/**, which is the default installed path. Click **enter** to confirm default location.
 
-If it's wrong, please confirm the compiler (DPC++) installed path and fill the correct path.
+If it's differenct, confirm the compiler (DPC++) installed path and fill the correct path.
 
 
 ### Specify the Ahead of Time (AOT) Compilation Platforms.
 
-Default is '', that means no AOT.
+Default is '', which means no AOT.
 
-Fill the one or more device type strings of special hardware platforms, like 'ats-m150,acm-g11'.
+Fill one or more device type strings of special hardware platforms, like 'ats-m150,acm-g11'.
 
 Here is the list of GPUs verified:
 
@@ -159,7 +159,7 @@ To learn how to get the device type, please refer to [Use AOT for Integrated Gra
 
 Recommend to choose 'y'.
 
-Default is **/opt/intel/oneapi/mkl/latest**, that is the default installed path. Click **enter** to confirm default location.
+Default is **/opt/intel/oneapi/mkl/latest**, which is the default installed path. Click **enter** to confirm default location.
 
 If it's wrong, please confirm the oneMKL installed path and fill the correct path.
 

@@ -1,6 +1,6 @@
 # Intel® Extension for TensorFlow* for C++
 
-This guide shows how to build an Intel® Extension for TensorFlow* CC library from source and how to work with tensorflow_cc to build bindings for C/C++ languages on ubuntu 20.04 (64-bit).
+This guide shows how to build an Intel® Extension for TensorFlow* CC library from source and how to work with tensorflow_cc to build bindings for C/C++ languages on Ubuntu 20.04 (64-bit).
 
 ## Prepare
 
@@ -63,8 +63,8 @@ a. Prepare TensorFlow* source code
 
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git
-$ git checkout origin/r2.12 -b r2.12
 $ cd tensorflow
+$ git checkout origin/r2.12 -b r2.12
 ```
 
 b. Build libtensorflow_cc.so
@@ -109,7 +109,7 @@ $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<Path to intel-extension-for-tensorflo
 ### Load
 
 TensorFlow* has C API: `TF_LoadPluggableDeviceLibrary` to support the pluggable device library.
-To support Intel® Extension for TensorFlow* cc library, we need to modify the orginal C++ code:
+To support Intel® Extension for TensorFlow* cc library, we need to modify the original C++ code:
 
 a. Add the header file: `"tensorflow/c/c_api_experimental.h"`.
 
@@ -229,7 +229,7 @@ $ make
 $ ./example_test
 ```
 
-**NOTE:** For GPU support, please setup oneapi environment variables before run.
+**NOTE:** For GPU support, please set up oneapi environment variables before running the example.
 
 ```bash
 $ source /opt/intel/oneapi/compiler/latest/env/vars.sh
