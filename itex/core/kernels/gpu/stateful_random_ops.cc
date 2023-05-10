@@ -36,9 +36,7 @@ namespace itex {
 
 template <typename Distribution>
 struct FillKernelTask {
-  FillKernelTask(sycl::accessor<char, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>
-                     local_philox_acc,
+  FillKernelTask(sycl::local_accessor<char, 1> local_philox_acc,
                  StateElementType* state_data,
                  typename Distribution::ResultElementType* output_data,
                  int64_t output_size, int* item_count_ptr, Distribution dist)
@@ -80,9 +78,7 @@ struct FillKernelTask {
   }
 
  private:
-  sycl::accessor<char, 1, sycl::access::mode::read_write,
-                 sycl::access::target::local>
-      local_philox_acc;
+  sycl::local_accessor<char, 1> local_philox_acc;
   StateElementType* state_data;
   typename Distribution::ResultElementType* output_data;
   int64_t output_size;
@@ -112,9 +108,8 @@ void FillKernel(const GPUDevice& d, const int total_count, Distribution dist,
                               .get_access<sycl::access::mode::read_write,
                                           sycl::access::target::device>(cgh)
                               .get_pointer();
-    sycl::accessor<char, 1, sycl::access::mode::read_write,
-                   sycl::access::target::local>
-        local_philox_acc(sycl::range<1>(sizeof(PhiloxRandom)), cgh);
+    sycl::local_accessor<char, 1> local_philox_acc(
+        sycl::range<1>(sizeof(PhiloxRandom)), cgh);
     FillKernelTask<Distribution> task(local_philox_acc, state_data, output_data,
                                       output_size, item_count_ptr, dist);
     cgh.parallel_for<FillKernelTask<Distribution>>(

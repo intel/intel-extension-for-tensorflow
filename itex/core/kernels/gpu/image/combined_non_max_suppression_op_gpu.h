@@ -29,8 +29,7 @@ namespace itex {
 namespace functor {
 namespace internal {
 
-using LocalAcc = sycl::accessor<uint8, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<uint8_t, 1>;
 
 template <int KEYS_PER_ITEM, int GROUP_SIZE, class Selector, int SUB_GROUP_SIZE>
 struct TopkScoresKernel {

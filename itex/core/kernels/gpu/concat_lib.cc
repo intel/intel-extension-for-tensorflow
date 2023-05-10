@@ -131,13 +131,11 @@ struct ConcatVariableKernel {
 
 template <typename T, typename IntType>
 struct ConcatVariableKernelSLM {
-  ConcatVariableKernelSLM(
-      size_t num_work_items, size_t total_cols, size_t input_size,
-      size_t cache_count, const IntType* col_scan,
-      const T* const* input_ptrs_ptr, T* output_ptr,
-      sycl::accessor<IntType, 1, sycl::access::mode::read_write,
-                     sycl::access::target::local>
-          scratch)
+  ConcatVariableKernelSLM(size_t num_work_items, size_t total_cols,
+                          size_t input_size, size_t cache_count,
+                          const IntType* col_scan,
+                          const T* const* input_ptrs_ptr, T* output_ptr,
+                          sycl::local_accessor<IntType, 1> scratch)
       : num_work_items(num_work_items),
         total_cols(total_cols),
         input_size(input_size),
@@ -188,9 +186,7 @@ struct ConcatVariableKernelSLM {
   const IntType* col_scan;
   const T* const* input_ptrs_ptr;
   T* output_ptr;
-  sycl::accessor<IntType, 1, sycl::access::mode::read_write,
-                 sycl::access::target::local>
-      scratch;
+  sycl::local_accessor<IntType, 1> scratch;
 };
 
 template <typename T, typename IntType>
@@ -219,9 +215,7 @@ void ConcatVariable(OpKernelContext* c, const size_t& total_rows,
   if (slm_used < slm_size) {
     auto cache_count = output_scan.size;
     stream->submit([&](sycl::handler& cgh) {
-      sycl::accessor<IntType, 1, sycl::access::mode::read_write,
-                     sycl::access::target::local>
-          scratch(cache_count, cgh);
+      sycl::local_accessor<IntType, 1> scratch(cache_count, cgh);
       ConcatVariableKernelSLM<T, IntType> task(
           num_work_items, total_cols, input_ptr_data.size, cache_count,
           col_scan, input_ptrs_ptr, output_ptr, scratch);

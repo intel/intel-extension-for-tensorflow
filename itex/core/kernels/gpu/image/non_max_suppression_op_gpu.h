@@ -28,8 +28,7 @@ namespace functor {
 namespace internal {
 
 using float4 = sycl::vec<float, 4>;
-using LocalAcc = sycl::accessor<uint8, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<uint8, 1>;
 
 // ------------------------------------------------------------------
 // GroupTopkKernel

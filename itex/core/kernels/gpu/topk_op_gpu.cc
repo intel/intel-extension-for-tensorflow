@@ -72,8 +72,7 @@ void LaunchCopyKernel(const gpuStream_t& stream, const T* input, T* values,
   });
 }
 
-using LocalAcc = sycl::accessor<uint8_t, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<uint8_t, 1>;
 template <int KEYS_PER_ITEM, int GROUP_SIZE, int SUB_GROUP_SIZE, typename T,
           typename IndexT>
 struct RadixTopKKernel {
@@ -397,9 +396,7 @@ void LaunchFallBackKeyValueRadixSort(const gpuStream_t& stream,
   sycl::nd_range<1> range(row * group_size, group_size);
   constexpr int RADIX_STATUS = 1 << RADIX_BITS;
   stream->submit([&](sycl::handler& cgh) {
-    typedef sycl::accessor<int, 1, sycl::access::mode::read_write,
-                           sycl::access::target::local>
-        LocalAcc;
+    typedef sycl::local_accessor<int, 1> LocalAcc;
     LocalAcc counters(RADIX_STATUS * group_size, cgh);
     FallBackKeyValueRadixSort<LocalAcc, KeyT, ValueT, RADIX_BITS, Ascending>
         task(key_array, key_src, key_dst, value_src, value_dst, counters, row,

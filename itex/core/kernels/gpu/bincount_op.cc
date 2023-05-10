@@ -25,8 +25,6 @@ limitations under the License.
 #include "itex/core/utils/types.h"
 
 namespace itex {
-constexpr static auto read_write = sycl::access::mode::read_write;
-constexpr static auto local_target = sycl::access::target::local;
 
 typedef Eigen::GpuDevice GPUDevice;
 
@@ -311,10 +309,9 @@ struct BincountColReduceSharedKernel;
 
 template <typename Tidx, typename T, bool binary_count>
 struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
-  BincountColReduceSharedKernel(
-      int num_rows, int num_cols, const Tidx* in_ptr, Tidx num_bins, T* out_ptr,
-      const T* weights_ptr,
-      sycl::accessor<T, 1, read_write, local_target> local_acc)
+  BincountColReduceSharedKernel(int num_rows, int num_cols, const Tidx* in_ptr,
+                                Tidx num_bins, T* out_ptr, const T* weights_ptr,
+                                sycl::local_accessor<T, 1> local_acc)
       : num_rows(num_rows),
         num_cols(num_cols),
         in_ptr(in_ptr),
@@ -370,14 +367,14 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
   Tidx num_bins;
   T* out_ptr;
   const T* weights_ptr;
-  sycl::accessor<T, 1, read_write, local_target> local_acc;
+  sycl::local_accessor<T, 1> local_acc;
 };
 
 template <typename Tidx, typename T, bool binary_count>
 struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
-  BincountColReduceSharedKernel(
-      int num_rows, int num_cols, const Tidx* in_ptr, Tidx num_bins, T* out_ptr,
-      sycl::accessor<T, 1, read_write, local_target> local_acc)
+  BincountColReduceSharedKernel(int num_rows, int num_cols, const Tidx* in_ptr,
+                                Tidx num_bins, T* out_ptr,
+                                sycl::local_accessor<T, 1> local_acc)
       : num_rows(num_rows),
         num_cols(num_cols),
         in_ptr(in_ptr),
@@ -430,7 +427,7 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
   const Tidx* in_ptr;
   Tidx num_bins;
   T* out_ptr;
-  sycl::accessor<T, 1, read_write, local_target> local_acc;
+  sycl::local_accessor<T, 1> local_acc;
 };
 
 template <typename Tidx, typename T, bool binary_count>
@@ -464,8 +461,7 @@ struct functor::BincountReduceFunctor<GPUDevice, Tidx, T, binary_count> {
           auto weights_ptr = weights.data();
           auto out_ptr = out.data();
 
-          sycl::accessor<T, 1, read_write, local_target> local_acc(
-              sycl::range<1>(smem_usage), cgh);
+          sycl::local_accessor<T, 1> local_acc(sycl::range<1>(smem_usage), cgh);
           BincountColReduceSharedKernel<Tidx, T, binary_count, true>
               kernel_functor(num_rows, num_cols, in_ptr, num_bins, out_ptr,
                              weights_ptr, local_acc);
@@ -480,8 +476,7 @@ struct functor::BincountReduceFunctor<GPUDevice, Tidx, T, binary_count> {
           auto in_ptr = in.data();
           auto out_ptr = out.data();
 
-          sycl::accessor<T, 1, read_write, local_target> local_acc(
-              sycl::range<1>(smem_usage), cgh);
+          sycl::local_accessor<T, 1> local_acc(sycl::range<1>(smem_usage), cgh);
           BincountColReduceSharedKernel<Tidx, T, binary_count, false>
               kernel_functor(num_rows, num_cols, in_ptr, num_bins, out_ptr,
                              local_acc);
