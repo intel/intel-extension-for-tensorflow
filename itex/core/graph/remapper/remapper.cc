@@ -75,6 +75,10 @@ Status GetTensorFromConstant(const NodeDef* node_def, Tensor* dst) {
   return Status::OK();
 }
 
+TensorShape GetTensorShapeFromConstant(const NodeDef* node_def) {
+  return TensorShape(node_def->attr().at("value").tensor().tensor_shape());
+}
+
 namespace {
 
 // Forward controled fanouts of old nodes to a new fused node
@@ -854,9 +858,8 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
   auto* readvariable = biasadd->GetRegularFanin(1).node_view();
   // if pb is frozen
   if (IsConstant(*readvariable->node())) {
-    const TensorProto& bias_val =
-        readvariable->node()->attr().at("value").tensor();
-    const TensorShape bias_shape(bias_val.tensor_shape());
+    const TensorShape bias_shape =
+        GetTensorShapeFromConstant(readvariable->node());
     bias_dim = bias_shape.num_elements();
   }
 
@@ -894,9 +897,8 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
 
   // if pb is frozen
   if (IsConstant(*readvariable2->node())) {
-    const TensorProto& weight_val =
-        readvariable2->node()->attr().at("value").tensor();
-    const TensorShape weight_shape(weight_val.tensor_shape());
+    const TensorShape weight_shape =
+        GetTensorShapeFromConstant(readvariable2->node());
     weight_dim = weight_shape.dim_size(1);
   }
 
@@ -2059,9 +2061,8 @@ bool FindConv2DBackpropInputWithSliceLLGA(const RemapperContext& ctx,
 
   Tensor slice_start_tensor;
   std::vector<int> slice_start_value;
-  if (slice_start_node->op() == "Const" &&
-      slice_start_tensor.FromProto(
-          slice_start_node->attr().at("value").tensor())) {
+  if (slice_start_node->op() == "Const") {
+    ITEX_CHECK_OK(GetTensorFromConstant(slice_start_node, &slice_start_tensor));
     int length = slice_start_tensor.NumElements();
     for (int i = 0; i < length; i++) {
       slice_start_value.push_back(slice_start_tensor.flat<int32>()(i));
@@ -2080,9 +2081,8 @@ bool FindConv2DBackpropInputWithSliceLLGA(const RemapperContext& ctx,
 
   Tensor slice_size_tensor;
   std::vector<int> slice_size_value;
-  if (slice_size_node->op() == "Const" &&
-      slice_size_tensor.FromProto(
-          slice_size_node->attr().at("value").tensor())) {
+  if (slice_size_node->op() == "Const") {
+    ITEX_CHECK_OK(GetTensorFromConstant(slice_size_node, &slice_size_tensor));
     int length = slice_size_tensor.NumElements();
     for (int i = 0; i < length; i++) {
       slice_size_value.push_back(slice_size_tensor.flat<int32>()(i));
@@ -2096,9 +2096,8 @@ bool FindConv2DBackpropInputWithSliceLLGA(const RemapperContext& ctx,
 
   Tensor input_size_tensor;
   std::vector<int> input_size_value;
-  if (input_size_node->op() == "Const" &&
-      input_size_tensor.FromProto(
-          input_size_node->attr().at("value").tensor())) {
+  if (input_size_node->op() == "Const") {
+    ITEX_CHECK_OK(GetTensorFromConstant(input_size_node, &input_size_tensor));
     int length = input_size_tensor.NumElements();
     for (int i = 0; i < length; i++) {
       input_size_value.push_back(input_size_tensor.flat<int32>()(i));
@@ -2560,7 +2559,7 @@ bool FindMulWithMaximum(const RemapperContext& ctx, int node_index,
     float alpha_value = -1;
     DataType const_dtype = GetDataTypeFromAttr(*const_node, "dtype");
     Tensor const_tensor;
-    const_tensor.FromProto(const_node->attr().at("value").tensor());
+    ITEX_CHECK_OK(GetTensorFromConstant(const_node, &const_tensor));
     if (const_dtype == DT_BFLOAT16) {
       alpha_value = static_cast<float>(const_tensor.flat<Eigen::bfloat16>()(0));
     } else if (const_dtype == DT_HALF) {
@@ -2621,8 +2620,7 @@ bool FindConstWithCast(const RemapperContext& ctx, int node_index,
 
   // As Const + Cast fusion will create a new tensor, it requires the tensor
   // size is valid
-  const TensorProto& raw_val = constant_node_def->attr().at("value").tensor();
-  const TensorShape shape(raw_val.tensor_shape());
+  const TensorShape shape = GetTensorShapeFromConstant(constant_node_def);
   const int64_t num_tensor_values = shape.num_elements();
 
   if (num_tensor_values <= 0) return false;
@@ -2851,8 +2849,7 @@ bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
     const auto* constant_ref = constant.node();
 
     Tensor const_tensor;
-    if (!const_tensor.FromProto(constant_ref->attr().at("value").tensor()))
-      return false;
+    ITEX_CHECK_OK(GetTensorFromConstant(constant_ref, &const_tensor));
 
     DataType const_dtype = GetDataTypeFromAttr(*constant_ref, "dtype");
     float const_value = 1;
@@ -2985,15 +2982,11 @@ bool FindStridedSliceGrad(const RemapperContext& ctx, int node_index,
     return false;
 
   Tensor input_shape_tensor, begin_tensor, end_tensor, strides_tensor;
-  if (!input_shape_tensor.FromProto(
-          input_shape_node_def->attr().at("value").tensor()))
-    return false;
-  if (!begin_tensor.FromProto(begin_node_def->attr().at("value").tensor()))
-    return false;
-  if (!end_tensor.FromProto(end_node_def->attr().at("value").tensor()))
-    return false;
-  if (!strides_tensor.FromProto(strides_node_def->attr().at("value").tensor()))
-    return false;
+  ITEX_CHECK_OK(
+      GetTensorFromConstant(input_shape_node_def, &input_shape_tensor));
+  ITEX_CHECK_OK(GetTensorFromConstant(begin_node_def, &begin_tensor));
+  ITEX_CHECK_OK(GetTensorFromConstant(end_node_def, &end_tensor));
+  ITEX_CHECK_OK(GetTensorFromConstant(strides_node_def, &strides_tensor));
 
   auto shape_is_wrong = [](Tensor lt, Tensor rt) {
     return !(TensorShapeUtils::IsVector(lt.shape()) &&
@@ -3099,10 +3092,8 @@ bool FindResNeXtGroupConv2DBlock(const RemapperContext& ctx, int node_index,
     if (!IsConstant(*const_node_def)) {
       return axis_value;
     }
-    TensorProto tensor_proto = const_node_def->attr().at("value").tensor();
-    if (!axis_tensor.FromProto(tensor_proto)) {
-      return axis_value;
-    }
+
+    ITEX_CHECK_OK(GetTensorFromConstant(const_node_def, &axis_tensor));
     axis_value = axis_tensor.flat<int32_t>()(0);
     return axis_value;
   };
@@ -3156,10 +3147,9 @@ bool FindResNeXtGroupConv2DBlock(const RemapperContext& ctx, int node_index,
     if (!IsConstant(*const_node_def)) {
       return shape_tensor.shape();
     }
-    TensorProto tensor_proto = const_node_def->attr().at("value").tensor();
-    if (!shape_tensor.FromProto(tensor_proto)) {
-      return shape_tensor.shape();
-    }
+
+    ITEX_CHECK_OK(GetTensorFromConstant(const_node_def, &shape_tensor));
+
     return shape_tensor.shape();
   };
   TensorShape first_conv_shape = getWeightShape(*conv0_node_view);
@@ -4810,13 +4800,11 @@ Status AddConv2DBackpropInputWithSliceNodeLLGA(
   // set pad as a new attribute of conv3d
   Tensor const_slice_tensor;
   std::vector<int> pad_value;
-  if (const_slice_tensor.FromProto(
-          const_slice_node->attr().at("value").tensor())) {
-    int length = const_slice_tensor.NumElements();
-    for (int i = 0; i < length; i++) {
-      pad_value.push_back(const_slice_tensor.flat<int32>()(i));
-      pad_value.push_back(const_slice_tensor.flat<int32>()(i));
-    }
+
+  ITEX_CHECK_OK(GetTensorFromConstant(const_slice_node, &const_slice_tensor));
+  for (int i = 0; i < const_slice_tensor.NumElements(); i++) {
+    pad_value.push_back(const_slice_tensor.flat<int32>()(i));
+    pad_value.push_back(const_slice_tensor.flat<int32>()(i));
   }
 
   // check name and attr
@@ -4831,22 +4819,19 @@ Status AddConv2DBackpropInputWithSliceNodeLLGA(
   Tensor input_size_tensor;
   std::vector<int> input_size_value;
 
-  if (input_size_tensor.FromProto(
-          input_size_node->attr().at("value").tensor())) {
-    int length = input_size_tensor.NumElements();
-    for (int i = 0; i < length; i++) {
-      if (i == 0 || i == length - 1) {
-        input_size_value.push_back(input_size_tensor.flat<int32>()(i));
-      } else {
-        input_size_value.push_back(input_size_tensor.flat<int32>()(i) - 2);
-      }
+  ITEX_CHECK_OK(GetTensorFromConstant(input_size_node, &input_size_tensor));
+  int length = input_size_tensor.NumElements();
+  for (int i = 0; i < length; i++) {
+    if (i == 0 || i == length - 1) {
+      input_size_value.push_back(input_size_tensor.flat<int32>()(i));
+    } else {
+      input_size_value.push_back(input_size_tensor.flat<int32>()(i) - 2);
     }
   }
 
   Tensor input_size_subtract_slice_tensor =
       Tensor(DT_INT32, input_size_tensor.shape());
-  int length = input_size_tensor.NumElements();
-  for (int i = 0; i < length; i++) {
+  for (int i = 0; i < input_size_tensor.NumElements(); i++) {
     input_size_subtract_slice_tensor.flat<int32>()(i) = input_size_value[i];
   }
 
@@ -5184,12 +5169,11 @@ Status AddPadConvFwdBwd(RemapperContext* ctx, const PadConvFwdBwd& matched,
 
   Tensor pad_value_tensor;
   std::vector<int> pad_value;
-  if (pad_value_tensor.FromProto(
-          input_pad_val_node.attr().at("value").tensor())) {
-    int length = pad_value_tensor.NumElements();
-    for (int i = 0; i < length; i++) {
-      pad_value.push_back(pad_value_tensor.flat<int32>()(i));
-    }
+
+  ITEX_CHECK_OK(GetTensorFromConstant(&input_pad_val_node, &pad_value_tensor));
+  int length = pad_value_tensor.NumElements();
+  for (int i = 0; i < length; i++) {
+    pad_value.push_back(pad_value_tensor.flat<int32>()(i));
   }
 
   auto* conv2d_view = ctx->graph_view.GetNode(matched.conv2d);
@@ -5241,8 +5225,8 @@ inline bool VerifyConstants(RemapperContext* ctx,
     MutableNodeView* node_view = ctx->graph_view.GetNode(node_idx);
     NodeDef* node_def = node_view->node();
     Tensor const_tensor;
-    if (node_def != nullptr && node_def->op() == "Const" &&
-        const_tensor.FromProto(node_def->attr().at("value").tensor())) {
+    if (node_def != nullptr && node_def->op() == "Const") {
+      ITEX_CHECK_OK(GetTensorFromConstant(node_def, &const_tensor));
       if (const_tensor.NumElements() == 1) {
         DataType dtype = const_tensor.dtype();
         if (!(dtype == DT_FLOAT || dtype == DT_BFLOAT16 || dtype == DT_HALF))
@@ -5542,13 +5526,12 @@ Status AddConstWithCastNode(RemapperContext* ctx, const ConstWithCast& matched,
 
   DataType dst_dtype = GetDataTypeFromAttr(cast, "DstT");
 
-  const TensorProto& raw_val = constant.attr().at("value").tensor();
-  Tensor value = Tensor(raw_val.dtype(), raw_val.tensor_shape());
-  value.FromProto(raw_val);
+  Tensor value;
+  ITEX_CHECK_OK(GetTensorFromConstant(&constant, &value));
 
   const Eigen::ThreadPoolDevice d =
       OpKernelContext::eigen_cpu_device_singleton();
-  Tensor cast_value = Tensor(dst_dtype, raw_val.tensor_shape());
+  Tensor cast_value = Tensor(dst_dtype, value.shape());
   if (dst_dtype == DT_BFLOAT16) {
     cast_value.flat<Eigen::bfloat16>().device(d) =
         value.flat<float>().template cast<Eigen::bfloat16>();
