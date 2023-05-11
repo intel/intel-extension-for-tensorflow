@@ -93,10 +93,12 @@ class SparseSegmentReductionOpBase<GPUDevice, T, Index, SegmentId>
 
     // Allocate and compute segment_offsets.
     Tensor segment_offsets;
-    OP_REQUIRES_OK(context,
-                   context->allocate_temp(DataTypeToEnum<Index>::value,
-                                          TensorShape({output_rows + 1}),
-                                          &segment_offsets));
+    if (is_mean_) {
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<Index>::value,
+                                            TensorShape({output_rows + 1}),
+                                            &segment_offsets));
+    }
     auto segment_offsets_flat = segment_offsets.vec<Index>();
     functor::SparseSegmentReductionFunctor<T, Index, SegmentId,
                                            functor::NonAtomicSumOpGpu<float>,
@@ -141,6 +143,17 @@ class SparseSegmentReductionMeanOp
       : SparseSegmentReductionOpBase<Device, T, Index, SegmentId>(
             context, true /*is_mean*/, false /*is_sqrtn*/,
             false /* has_num_segments */, T(0) /* default_value */) {}
+};
+
+template <typename Device, typename T, typename Index, typename SegmentId>
+class SparseSegmentReductionMeanWithNumSegmentsOp
+    : public SparseSegmentReductionOpBase<Device, T, Index, SegmentId> {
+ public:
+  explicit SparseSegmentReductionMeanWithNumSegmentsOp(
+      OpKernelConstruction* context)
+      : SparseSegmentReductionOpBase<Device, T, Index, SegmentId>(
+            context, true /*is_mean*/, false /*is_sqrtn*/,
+            true /* has_num_segments */, T(0) /* default_value */) {}
 };
 
 template <typename Device, typename T, typename Index, typename SegmentId>
