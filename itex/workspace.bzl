@@ -96,6 +96,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     tf_http_archive(
         name = "com_googlesource_code_re2",
+        build_file = clean_dep("//third_party:re2.BUILD"),
         sha256 = "d070e2ffc5476c496a6a872a6f246bfddce8e7797d6ba605a7c8d72866743bf9",
         strip_prefix = "re2-506cfa4bffd060c06ec338ce50ea3468daa6c814",
         system_build_file = "//third_party/systemlibs:re2.BUILD",
@@ -166,6 +167,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     tf_http_archive(
         name = "nsync",
+        build_file = clean_dep("//third_party:nsync.BUILD"),
         sha256 = "caf32e6b3d478b78cff6c2ba009c3400f8251f646804bcb65465666a9cea93c4",
         strip_prefix = "nsync-1.22.0",
         system_build_file = clean_dep("//third_party/systemlibs:nsync.BUILD"),

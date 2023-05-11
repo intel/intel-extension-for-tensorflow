@@ -1,8 +1,9 @@
-load("//itex:itex.bzl", "if_jax", "if_not_jax")
+load("//itex:itex.bzl", "cc_library", "if_jax", "if_not_jax")
 load(
     "//itex/core/utils:build_config.bzl",
     "tf_protobuf_deps",
 )
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
 
 package(
     default_visibility = [
@@ -108,13 +109,10 @@ cc_library(
 
 cc_library(
     name = "device_gpu_impl",
-    deps = select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": [
-            "//itex/core/devices/gpu:eigen_stream_device",
-            "//itex/core/devices/gpu:gpu_device_impl",
-        ],
-        "//conditions:default": [],
-    }),
+    deps = if_dpcpp([
+        "//itex/core/devices/gpu:eigen_stream_device",
+        "//itex/core/devices/gpu:gpu_device_impl",
+    ]),
 )
 
 cc_library(
@@ -145,8 +143,23 @@ cc_library(
 )
 
 cc_library(
+    name = "device_types",
+    srcs = [
+        "device_types.cc",
+    ],
+    hdrs = [
+        "device_types.h",
+        "macros.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "types",
-    hdrs = ["types.h"],
+    hdrs = [
+        "device_types.h",
+        "types.h",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":platform",
@@ -160,7 +173,10 @@ cc_library(
 
 cc_library(
     name = "logging",
-    srcs = ["logging.cc"],
+    srcs = [
+        "env_time.cc",
+        "logging.cc",
+    ],
     hdrs = [
         "env_time.h",
         "integral_types.h",
@@ -226,7 +242,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":logging",
-        ":types",
     ],
 )
 

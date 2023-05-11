@@ -20,7 +20,7 @@ limitations under the License.
 static const char* frozen_backend = nullptr;
 static bool backend_is_frozen = false;
 
-void itex_freeze_backend_internel(const char* backend) {
+void itex_freeze_backend_internal(const char* backend) {
   if (strcasecmp(backend, "GPU") == 0) {
     frozen_backend = itex::DEVICE_GPU;
   } else if (strcasecmp(backend, "CPU") == 0) {
@@ -82,7 +82,7 @@ void itex_set_backend(const char* backend) {
     return;
   }
 
-  itex_freeze_backend_internel(backend);
+  itex_freeze_backend_internal(backend);
 }
 
 const char* itex_backend_to_string(ITEX_BACKEND backend) {

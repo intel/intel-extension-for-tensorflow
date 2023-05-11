@@ -1,18 +1,19 @@
-load("//itex:itex.bzl", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "cc_binary", "cc_library", "itex_xpu_library", "tf_copts")
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
 
 XPU_KERNEL_DEPS = [
     "//itex/core/devices:device_backend_util_hdr",
     "//itex/core/kernels/common:no_ops",
     "@local_config_python//:python_headers",
     "@local_config_tf//:tf_header_lib",
-] + select({
-    "@local_config_dpcpp//dpcpp:using_dpcpp": [
+] + if_dpcpp(
+    [
         "//itex/core/kernels/gpu:gpu_kernel_impl",
     ],
-    "//conditions:default": [
+    [
         "//itex/core/kernels/cpu:cpu_kernel_impl",
     ],
-})
+)
 
 itex_xpu_library(
     name = "xpu_kernel",
@@ -56,6 +57,7 @@ cc_binary(
         "common.h",
     ],
     linkshared = True,
+    set_target = "common_lib",
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices:device_backend_util",

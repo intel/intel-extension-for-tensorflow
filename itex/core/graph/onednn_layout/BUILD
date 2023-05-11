@@ -1,7 +1,5 @@
-load(
-    "//itex/core/utils:build_config.bzl",
-    "tf_protobuf_deps",
-)
+load("//itex/core/utils:build_config.bzl", "tf_protobuf_deps")
+load("//itex:itex.bzl", "cc_library")
 
 cc_library(
     name = "onednn_layout",

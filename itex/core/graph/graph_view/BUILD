@@ -2,6 +2,8 @@ package(
     licenses = ["notice"],  # Apache 2.0
 )
 
+load("//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "graph_view",
     srcs = ["graph_view.cc"],

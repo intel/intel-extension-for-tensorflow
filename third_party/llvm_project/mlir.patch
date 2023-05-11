@@ -12,3 +12,45 @@ index d550e0e33f3e..058a35d3e60f 100644
  
    switch (op.getPredicate()) {
  #define DISPATCH(cmpPredicate, spirvOp)                                        \
+diff --git a/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
+index 87412e6061dd..700338cc015c 100644
+--- a/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
+@@ -13,6 +13,10 @@ load(
+     "if_cuda_available",
+     "mlir_c_api_cc_library",
+ )
++load(
++    "@intel_extension_for_tensorflow//itex:itex.bzl",
++    "cc_library",
++)
+ 
+ package(
+     default_visibility = ["//visibility:public"],
+diff --git a/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl b/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl
+index 9d26822ac163..9b43352e9eac 100644
+--- a/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl
++++ b/utils/bazel/llvm-project-overlay/mlir/tblgen.bzl
+@@ -4,6 +4,13 @@
+ """BUILD extensions for MLIR table generation."""
+ 
+ load("@bazel_skylib//lib:paths.bzl", "paths")
++load("@intel_extension_for_tensorflow//itex:itex.bzl",
++    "avx_copts",
++    "if_cpu_build",
++    "if_cpu_avx512_build",
++    "if_gpu_build"
++)
++load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+ 
+ TdInfo = provider(
+     "Holds TableGen files and the dependencies and include paths necessary to" +
+@@ -424,6 +431,8 @@ def gentbl_cc_library(
+         skip_opts = ["-gen-op-doc"],
+         **kwargs
+     )
++    copts = copts if copts else []
++    copts = copts + if_cpu_build(["-DINTEL_CPU_ONLY", "-mfma", "-O3"]) + avx_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"])
+     native.cc_library(
+         name = name,
+         # strip_include_prefix does not apply to textual_hdrs.

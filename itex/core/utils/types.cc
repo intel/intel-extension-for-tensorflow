@@ -80,12 +80,6 @@ std::ostream& operator<<(std::ostream& os, const DeviceType& d) {
   return os;
 }
 
-const char* const DEVICE_DEFAULT = "DEFAULT";
-const char* const DEVICE_CPU = "CPU";
-const char* const DEVICE_GPU = "GPU";
-const char* const DEVICE_XPU = "XPU";
-const char* const DEVICE_AUTO = "AUTO";
-
 // NOLINTNEXTLINE
 const std::string DeviceName<Eigen::ThreadPoolDevice>::value = DEVICE_CPU;
 // NOLINTNEXTLINE

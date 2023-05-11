@@ -10,7 +10,7 @@ index f2ed54a4f4bd..65a4dbaa6f88 100644
 +build_v13/*
 \ No newline at end of file
 diff --git a/utils/bazel/WORKSPACE b/utils/bazel/WORKSPACE
-index af189f7f6646..69a46d49495d 100644
+index af189f7f6646..02ca20d70443 100644
 --- a/utils/bazel/WORKSPACE
 +++ b/utils/bazel/WORKSPACE
 @@ -16,15 +16,17 @@ http_archive(
@@ -139,7 +139,7 @@ index be78de3c19fb..3d353a55e1de 100644
      },
  )
 diff --git a/utils/bazel/examples/submodule/WORKSPACE b/utils/bazel/examples/submodule/WORKSPACE
-index c83ab9716949..e702caa78b2f 100644
+index c83ab9716949..46b094235597 100644
 --- a/utils/bazel/examples/submodule/WORKSPACE
 +++ b/utils/bazel/examples/submodule/WORKSPACE
 @@ -17,21 +17,16 @@ http_archive(
@@ -172,10 +172,18 @@ index c83ab9716949..e702caa78b2f 100644
  # Disables optional dependencies for Support like zlib and terminfo. You may
  # instead want to configure them using the macros in the corresponding bzl
 diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
-index 2428b0cb7531..a7bf5e233c8b 100644
+index 2428b0cb7531..5925d183074c 100644
 --- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
-@@ -23,6 +23,7 @@ exports_files(["LICENSE.TXT"])
+@@ -8,6 +8,7 @@ load(":config.bzl", "llvm_config_defines")
+ load(":targets.bzl", "llvm_targets")
+ load(":enum_targets_gen.bzl", "enum_targets_gen")
+ load(":binary_alias.bzl", "binary_alias")
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
+ package(
+     default_visibility = ["//visibility:public"],
+@@ -23,6 +24,7 @@ exports_files(["LICENSE.TXT"])
  # this `Make` variable.
  llvm_copts = [
      "$(STACK_FRAME_UNLIMITED)",

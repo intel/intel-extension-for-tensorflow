@@ -1,3 +1,4 @@
+load("//itex:itex.bzl", "cc_library")
 load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
 
 package(

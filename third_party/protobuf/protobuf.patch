@@ -1,15 +1,33 @@
 diff --git a/BUILD.bazel b/BUILD.bazel
---- a/BUILD.bazel	(revision 90b73ac3f0b10320315c2ca0d03a5a9b095d2f66)
-+++ b/BUILD.bazel	(date 1670471682469)
-@@ -68,6 +68,7 @@
+index 0f6e41e3a..2de1fffb6 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -1,7 +1,7 @@
+ # Bazel (https://bazel.build/) BUILD file for Protobuf.
+ 
+ load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
++load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+ load("@rules_pkg//:mappings.bzl", "pkg_files", "strip_prefix")
+ load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain", "proto_library")
+ load("@rules_python//python:defs.bzl", "py_library")
+@@ -15,6 +15,7 @@ load(
+     "internal_protobuf_py_tests",
+     "py_proto_library",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ licenses(["notice"])
+ 
+@@ -68,6 +69,7 @@ cc_library(
      copts = COPTS,
      includes = ["src/"],
      linkopts = LINK_OPTS,
 +    alwayslink = 1,
      visibility = ["//visibility:public"],
  )
-
-@@ -135,6 +136,7 @@
+ 
+@@ -135,6 +137,7 @@ cc_library(
      copts = COPTS,
      includes = ["src/"],
      linkopts = LINK_OPTS,

@@ -11,6 +11,8 @@ licenses([
 
 exports_files(["LICENSE"])
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
 #load("//third_party/mkl:build_defs.bzl", "if_mkl")
 
 EIGEN3_THIRD_PARTY_HEADERS = [

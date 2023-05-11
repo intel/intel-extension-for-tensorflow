@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 exports_files(["LICENSE"])
 

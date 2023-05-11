@@ -16,10 +16,11 @@
 # limitations under the License.
 # ==============================================================================
 
-onednn_gpu_path="bazel-bin/external/onednn_gpu/include/oneapi/dnnl/dnnl_version.h"
-onednn_cpu_path="bazel-bin/external/onednn_cpu/include/oneapi/dnnl/dnnl_version.h"
-onednn_gpu_v2_path="bazel-bin/external/onednn_gpu_v2/include/oneapi/dnnl/dnnl_version.h"
-onednn_cpu_v2_path="bazel-bin/external/onednn_cpu_v2/include/oneapi/dnnl/dnnl_version.h"
+onednn_gpu_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_gpu/include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+onednn_cpu_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_cpu/include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+onednn_gpu_v2_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_gpu_v2//include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+onednn_cpu_v2_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_cpu_v2//include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+
 itex_tmp_folder_name="itex.tmp"
 lib_tmp_folder_name="lib.tmp"
 
@@ -67,13 +68,13 @@ function emit_version_info() {
   echo "VERSION = __version__" >> $1
   echo "GIT_VERSION = 'v' + __version__ + '-' + __git_desc__" >> $1
   echo "COMPILER_VERSION = '`get_compiler_version`'" >> $1
-  if [ -f ${onednn_gpu_path} ]; then
+  if [ ! -z "${onednn_gpu_path}" ] && [ -f "${onednn_gpu_path}" ]; then
     onednn_path=${onednn_gpu_path}
-  elif [ -f ${onednn_cpu_path} ]; then
+  elif [ ! -z "${onednn_cpu_path}" ] && [ -f ${onednn_cpu_path} ]; then
     onednn_path=${onednn_cpu_path}
-  elif [ -f ${onednn_gpu_v2_path} ]; then
+  elif [ ! -z "${onednn_gpu_v2_path}" ] && [ -f ${onednn_gpu_v2_path} ]; then
     onednn_path=${onednn_gpu_v2_path}
-  elif [ -f ${onednn_cpu_v2_path} ]; then
+  elif [ ! -z "${onednn_cpu_v2_path}" ] && [ -f ${onednn_cpu_v2_path} ]; then
     onednn_path=${onednn_cpu_v2_path}
   else
     echo "Error: no oneDNN version files"
@@ -85,7 +86,6 @@ function emit_version_info() {
   fi
   echo "TF_COMPATIBLE_VERSION = '>= 2.8.0'" >> $1
 }
-
 
 PLATFORM="$(uname -s | tr 'A-Z' 'a-z')"
 

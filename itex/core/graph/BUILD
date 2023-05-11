@@ -1,3 +1,6 @@
+load("//itex:itex.bzl", "cc_library")
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+
 cc_library(
     name = "xpu_optimizer",
     srcs = ["xpu_optimizer.cc"],
@@ -13,12 +16,13 @@ cc_library(
         "//itex/core/graph/onednn_graph",
         "//itex/core/graph/onednn_layout",
         "//itex/core/graph/remapper",
-    ] + select({
+    ] + if_dpcpp(
         # TFG should be disabled when building with CPU, otherwise it will introduce llvm symbol conflict.
         # TFG depends on llvm-15, while CPU graph compiler needs llvm-13.
-        "@local_config_dpcpp//dpcpp:using_dpcpp": ["//itex/core/graph/tfg_optimizer_hook"],
-        "//conditions:default": [],
-    }),
+        [
+            "//itex/core/graph/tfg_optimizer_hook",
+        ],
+    ),
     alwayslink = True,
 )
 

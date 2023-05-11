@@ -1,5 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
+load("//itex:itex.bzl", "cc_library")
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+
 cc_library(
     name = "xpu_device_util",
     hdrs = ["xpu_device_util.h"],
@@ -21,10 +24,9 @@ cc_library(
     deps = [
         ":device_backend_util_hdr",
         "@local_config_tf//:tf_header_lib",
-    ] + select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": ["//itex/core/devices/gpu:gpu_device_impl"],
-        "//conditions:default": [],
-    }),
+    ] + if_dpcpp(
+        ["//itex/core/devices/gpu:gpu_device_impl"],
+    ),
     alwayslink = True,
 )
 
@@ -47,6 +49,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core:protos_all_cc",
+        "//itex/core/utils:logging",
     ],
 )
 

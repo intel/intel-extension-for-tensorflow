@@ -1,4 +1,5 @@
 load("@intel_extension_for_tensorflow//third_party/onednn_graph:build_defs.bzl", "if_graph_compiler", "if_llga_debug")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 _COPTS_CPU_LIST = [
     "-Wall",

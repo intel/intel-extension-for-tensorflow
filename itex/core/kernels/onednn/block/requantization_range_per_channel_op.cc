@@ -181,15 +181,6 @@ class OneDnnRequantizationRangePerChannelOp : public OpKernel {
           .HostMemory("output_max"),        \
       OneDnnRequantizationRangePerChannelOp<GPUDevice, TYPE>)
 TF_CALL_qint32(REGISTER_KERNEL);
-
-#else
-#define REGISTER_KERNEL(TYPE)               \
-  REGISTER_KERNEL_BUILDER(                  \
-      Name("RequantizationRangePerChannel") \
-          .Device(DEVICE_CPU)               \
-          .TypeConstraint<TYPE>("T"),       \
-      OneDnnRequantizationRangePerChannelOp<CPUDevice, TYPE>)
-TF_CALL_qint32(REGISTER_KERNEL);
 #endif  // INTEL_CPU_ONLY
 
 }  // namespace itex

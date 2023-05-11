@@ -1,8 +1,8 @@
-load("//itex:itex.bzl", "tf_copts")
-
 package(
     licenses = ["notice"],  # Apache 2.0
 )
+
+load("//itex:itex.bzl", "cc_library", "tf_copts")
 
 cc_library(
     name = "grappler_item",

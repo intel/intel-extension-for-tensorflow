@@ -23,6 +23,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 
+#include "itex/core/utils/device_types.h"
 #include "itex/core/utils/gtl/array_slice.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/integral_types.h"
@@ -74,13 +75,6 @@ class DeviceType {
   std::string type_;
 };
 std::ostream& operator<<(std::ostream& os, const DeviceType& d);
-
-// Convenient constants that can be passed to a DeviceType constructor
-TF_EXPORT extern const char* const DEVICE_DEFAULT;  // "DEFAULT"
-TF_EXPORT extern const char* const DEVICE_CPU;      // "CPU"
-TF_EXPORT extern const char* const DEVICE_GPU;      // "GPU"
-TF_EXPORT extern const char* const DEVICE_XPU;
-TF_EXPORT extern const char* const DEVICE_AUTO;  // "AUTO"
 
 template <typename Device>
 struct DeviceName {};

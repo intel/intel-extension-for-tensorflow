@@ -3,6 +3,7 @@ load(
     "tf_proto_library",
     "tf_pyclif_proto_library",
 )
+load("//itex:itex.bzl", "cc_library")
 
 package(
     default_visibility = [

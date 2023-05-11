@@ -18,7 +18,8 @@ limitations under the License.
 
 #include <string>
 
-#include "itex/core/utils/types.h"
+#include "itex/core/utils/device_types.h"
+#include "itex/core/utils/logging.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +37,7 @@ enum ITEX_BACKEND {
 ITEX_BACKEND itex_get_backend();
 void itex_set_backend(const char* backend);
 const char* itex_backend_to_string(ITEX_BACKEND backend);
-void itex_freeze_backend_internel(const char* backend);
+void itex_freeze_backend_internal(const char* backend);
 void itex_freeze_backend(ITEX_BACKEND backend);
 
 // Get the real backend name of given device.

@@ -2,6 +2,8 @@ licenses(["notice"])  # MIT
 
 exports_files(["COPYING"])
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
 config_setting(
     name = "windows",
     values = {

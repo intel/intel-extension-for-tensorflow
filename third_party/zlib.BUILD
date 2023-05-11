@@ -2,6 +2,8 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # BSD/MIT-like license (for zlib)
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "zlib",
     srcs = [

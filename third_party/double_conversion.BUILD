@@ -4,6 +4,8 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "double-conversion",
     srcs = [

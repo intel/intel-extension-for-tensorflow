@@ -1,5 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 exports_files(["LICENSE"])
 
@@ -22,6 +23,22 @@ config_setting(
     name = "build_with_tbb",
     define_values = {
         "build_with_tbb": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v3",
+    define_values = {
+        "onednn_version": "3",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v2",
+    define_values = {
+        "onednn_version": "2",
     },
     visibility = ["//visibility:public"],
 )

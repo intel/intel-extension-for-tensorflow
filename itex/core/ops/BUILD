@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "tf_copts")
 
 filegroup(
     name = "core_ops_hdrs",

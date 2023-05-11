@@ -5,6 +5,7 @@ load(
     "template_rule",
 )
 load("@intel_extension_for_tensorflow//itex/core/utils:build_config.bzl", "cc_proto")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 cc_library(
     name = "tf_header_lib",
@@ -360,13 +361,13 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":api_def_proto",
-        ":graph_proto",
-        ":xplane_proto",
-        ":op_performance_data_proto",
-        ":kernel_def_proto",
         ":graph_debug_info_proto",
-        ":tensor_proto",
+        ":graph_proto",
+        ":kernel_def_proto",
+        ":op_performance_data_proto",
         ":summary_proto",
+        ":tensor_proto",
+        ":xplane_proto",
     ],
 )
 

@@ -1,3 +1,4 @@
+load("//itex:itex.bzl", "cc_library")
 load("//third_party/onednn:build_defs.bzl", "onednn_deps", "onednn_graph_deps")
 
 cc_library(

@@ -2,6 +2,8 @@ package(
     licenses = ["notice"],  # Apache 2.0
 )
 
+load("//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "eigen_runtime_impl",
     srcs = ["eigen_itex_gpu_runtime.cc"],

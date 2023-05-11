@@ -1,5 +1,6 @@
 exports_files(["LICENSE"])
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 load(
     "@intel_extension_for_tensorflow//third_party:common.bzl",
     "template_rule",

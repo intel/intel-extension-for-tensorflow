@@ -23,6 +23,7 @@ limitations under the License.
 
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "itex/core/utils/integral_types.h"
 #include "itex/core/utils/macros.h"
 #include "itex/core/utils/stringpiece.h"
 #include "itex/core/utils/types.h"

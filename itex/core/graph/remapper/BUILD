@@ -1,3 +1,5 @@
+load("//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "remapper",
     srcs = [

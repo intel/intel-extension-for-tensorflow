@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <string>
 
+#include "itex/core/utils/integral_types.h"
 #include "itex/core/utils/platform_types.h"
 #include "itex/core/utils/stringpiece.h"
 

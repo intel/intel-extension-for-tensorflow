@@ -11,6 +11,7 @@ load(
     "gen_onednn_version",
 )
 load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp_build_is_configured")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 config_setting(
     name = "clang_linux_x86_64",

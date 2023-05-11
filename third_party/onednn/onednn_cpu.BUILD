@@ -8,6 +8,7 @@ load(
     "@intel_extension_for_tensorflow//third_party/onednn:onednn.bzl",
     "gen_onednn_version",
 )
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 _DNNL_RUNTIME_TBB = {
     "#cmakedefine DNNL_CPU_THREADING_RUNTIME DNNL_RUNTIME_${DNNL_CPU_THREADING_RUNTIME}": "#define DNNL_CPU_THREADING_RUNTIME DNNL_RUNTIME_TBB",
