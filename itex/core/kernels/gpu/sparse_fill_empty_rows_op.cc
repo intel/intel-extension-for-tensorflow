@@ -158,24 +158,24 @@ struct SparseFillEmptyRows<GPUDevice, T, Tindex> {
                  sizeof(Tindex))
         .wait();
 
-    OP_REQUIRES(context, first_invalid_index_host == kAllIndicesValid,
-                errors::InvalidArgument("indices(", first_invalid_index_host,
-                                        ", 0) is invalid."));
+    if (first_invalid_index_host != kAllIndicesValid) {
+      ITEX_CHECK_OK(errors::InvalidArgument(
+          "indices(", first_invalid_index_host, ", 0) is invalid."));
+    }
 
     Tindex* output_indices;
     T* output_values;
     Tindex* reverse_index_map;
 
-    OP_REQUIRES_OK(context,
-                   AllocateOutputsExceptEmptyRowIndicator(
-                       context, indices_num, rank, num_empty_rows_host,
-                       &output_indices, &output_values, &reverse_index_map));
+    TF_RETURN_IF_ERROR(AllocateOutputsExceptEmptyRowIndicator(
+        context, indices_num, rank, num_empty_rows_host, &output_indices,
+        &output_values, &reverse_index_map));
     Tindex* input_index_map = nullptr;
     Tensor input_index_map_t;
     if (rows_are_not_ordered_host) {
-      OP_REQUIRES_OK(
-          context, ArgSortByRows(context, device, indices_num, rank, dense_rows,
-                                 indices, &input_index_map_t));
+      TF_RETURN_IF_ERROR(ArgSortByRows(context, device, indices_num, rank,
+                                       dense_rows, indices,
+                                       &input_index_map_t));
       input_index_map = input_index_map_t.vec<Tindex>().data();
     }
     if (indices_num > 0) {
