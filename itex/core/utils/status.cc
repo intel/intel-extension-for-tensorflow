@@ -24,7 +24,7 @@ limitations under the License.
 namespace itex {
 
 Status::Status(TF_Code code, itex::StringPiece msg) {
-  assert(code != tensorflow::error::OK);
+  assert(code != TF_OK);
   state_ = std::unique_ptr<State>(new State);
   state_->code = code;
   state_->msg = std::string(msg);
