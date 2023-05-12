@@ -61,6 +61,7 @@ Intel® Extension for TensorFlow* can be installed from the following channels:
 ### Install for GPU
 
 ```
+pip install tensorflow==2.12
 pip install intel-extension-for-tensorflow[gpu]==1.2.0
 ```
 
@@ -68,6 +69,7 @@ Refer to [GPU installation](docs/install/install_for_gpu.md) for details.
 
 ### Install for CPU [Experimental]
 ```
+pip install tensorflow==2.12
 pip install intel-extension-for-tensorflow[cpu]==1.2.0
 ```
 
