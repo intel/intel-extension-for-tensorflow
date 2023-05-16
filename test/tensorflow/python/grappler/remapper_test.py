@@ -27,6 +27,7 @@ import numpy as np
 from absl.testing import parameterized
 
 from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test
 
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.core.protobuf import rewriter_config_pb2
@@ -40,7 +41,6 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import variables
-from tensorflow.python.platform import test
 from tensorflow.python.util import _pywrap_utils
 
 
@@ -584,9 +584,9 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
-    x = np.random.rand(2, 65, 65, 5)
-    w = np.random.rand(3, 3, 5, 1)
-    b = np.random.rand(1)
+    x = np.random.rand(2, 65, 65, 5).astype(np.float32)
+    w = np.random.rand(3, 3, 5, 1).astype(np.float32)
+    b = np.random.rand(1).astype(np.float32)
     block_shape = [2, 2]
     paddings = [[2, 3], [2, 3]]
     crops = [[0, 1], [0, 1]]
