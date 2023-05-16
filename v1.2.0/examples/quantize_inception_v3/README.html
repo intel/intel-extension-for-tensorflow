@@ -78,9 +78,9 @@
 <h1>Quantize Inception V3 by Intel® Extension for Tensorflow* on Intel® Xeon®<a class="headerlink" href="#quantize-inception-v3-by-intel-extension-for-tensorflow-on-intel-xeon" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="background">
 <h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
-<p>Intel® Extension for Tensorflow* provides quantization feature by cooperating with Intel® Neural Compressor and oneDNN Graph. It will provide better quantization: better performance and accuracy loss under control.</p>
-<p>Intel® Neural Compressor executes the calibration process to output the QDQ quantization model which inserts Quantize and Dequantize layers to includes help information for quantization.</p>
-<p>When use Intel® Extension for Tensorflow* to execute the inference of this model, oneDNN Graph will be called to quantize and optimize the model. Then the quantized model will be executed by Intel® Extension for Tensorflow* and accelerated by Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions on Intel® Xeon®.</p>
+<p>Intel® Extension for TensorFlow* provides quantization feature by cooperating with Intel® Neural Compressor and oneDNN Graph. It will provide better quantization: better performance and accuracy loss under control.</p>
+<p>Intel® Neural Compressor executes the calibration process to output the QDQ quantization model, which inserts Quantize and Dequantize layers to includes help information for quantization.</p>
+<p>When you use Intel® Extension for Tensorflow* to execute the inference of this model, oneDNN Graph will be called to quantize and optimize the model. Then the quantized model will be executed by Intel® Extension for Tensorflow* and accelerated by Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions on Intel® Xeon® processors.</p>
 </div>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
@@ -95,7 +95,7 @@
 <h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="intel-extension-for-tensorflow-version">
 <h3>Intel® Extension for Tensorflow* Version<a class="headerlink" href="#intel-extension-for-tensorflow-version" title="Permalink to this headline">¶</a></h3>
-<p>Please install Intel® Extension for Tensorflow* &gt; 1.1.0 and newer for this feature.</p>
+<p>Install Intel® Extension for Tensorflow* &gt; 1.1.0 for this feature.</p>
 </div>
 <div class="section" id="enable-onednn-graph">
 <h3>Enable oneDNN Graph<a class="headerlink" href="#enable-onednn-graph" title="Permalink to this headline">¶</a></h3>
@@ -134,14 +134,15 @@
 <h2>Hardware Environment<a class="headerlink" href="#hardware-environment" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="cpu">
 <h3>CPU<a class="headerlink" href="#cpu" title="Permalink to this headline">¶</a></h3>
-<p>It’s recommended to run the example on the Intel® Xeon® which supports Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions.</p>
-<p>Without the hardware features above for AI workloads, the performance speedup with FP32 will not be increased much, such as only 1.x.</p>
+<p>It’s recommended to run the example on the Intel® Xeon® processors, which supports Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions.</p>
+<p>Without the hardware features above for AI workloads, the performance speedup with FP32 will not be increased much.</p>
 <div class="section" id="check-intel-deep-learning-boost">
 <h4>Check Intel® Deep Learning Boost<a class="headerlink" href="#check-intel-deep-learning-boost" title="Permalink to this headline">¶</a></h4>
 <p>In Linux, run command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lscpu</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">vnni</span>
 </pre></div>
 </div>
+<p>You are expected to see <code class="docutils literal notranslate"><span class="pre">avx_vnni</span></code> and <code class="docutils literal notranslate"><span class="pre">avx512-vnni</span></code>, otherwise your processors do not support Intel® Deep Learning Boost.</p>
 </div>
 <div class="section" id="check-intel-advanced-matrix-extensions">
 <h4>Check Intel® Advanced Matrix Extensions<a class="headerlink" href="#check-intel-advanced-matrix-extensions" title="Permalink to this headline">¶</a></h4>
@@ -149,18 +150,19 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lscpu</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">amx</span>
 </pre></div>
 </div>
+<p>You are expected to see <code class="docutils literal notranslate"><span class="pre">amx_bf16</span></code> and <code class="docutils literal notranslate"><span class="pre">amx_int8</span></code>, otherwise your processors do not support Intel® Advanced Matrix Extensions.</p>
 </div>
 </div>
 <div class="section" id="intel-devcloud">
 <h3>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Permalink to this headline">¶</a></h3>
-<p>If you have no such CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions, you could register to Intel® DevCloud and try this example on new Xeon with Intel® Deep Learning Boost freely. To learn more about working with Intel® DevCloud, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a></p>
+<p>If you have no CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions, you could register on Intel® DevCloud and try this example on an second generation Intel® Xeon based processors or newer. To learn more about working with Intel® DevCloud, refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a></p>
 </div>
 </div>
 <div class="section" id="running-environment">
 <h2>Running Environment<a class="headerlink" href="#running-environment" title="Permalink to this headline">¶</a></h2>
 <ol class="simple">
-<li><p>Install Python 3.8~3.10 supported by Intel® Extension for Tensorflow*.</p></li>
-<li><p>Create the running environment <strong>env_itex</strong>.</p></li>
+<li><p>Install Python versions &gt;=3.8 and versions &lt;=3.10 supported by Intel® Extension for Tensorflow*.</p></li>
+<li><p>Create the running Python Virtual environment <strong>env_itex</strong>.</p></li>
 </ol>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">pip_set_env</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
@@ -184,7 +186,7 @@
 </pre></div>
 </div>
 <ol class="simple">
-<li><p>Open the link outputted by Jupyter Notebook in Chrome.</p></li>
+<li><p>Open the link outputted by Jupyter Notebook in your browser.</p></li>
 <li><p>Choose and open the <strong>quantize_inception_v3.ipynb</strong> in Jupyter Notebook.</p></li>
 </ol>
 <p>Set the kernel to “env_itex”.</p>

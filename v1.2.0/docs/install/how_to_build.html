@@ -122,7 +122,7 @@
 <p>When will you need to build from source code?</p>
 <ol class="simple">
 <li><p>You want to get the latest feature in development branch.</p></li>
-<li><p>You want to develop feature or contribute on Intel® Extension for TensorFlow*.</p></li>
+<li><p>You want to develop a feature or contribute to Intel® Extension for TensorFlow*.</p></li>
 <li><p>Verify your code update.</p></li>
 </ol>
 <div class="section" id="prepare">
@@ -142,7 +142,7 @@
 <ol class="simple">
 <li><p>Conda</p></li>
 </ol>
-<p>Please install <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">conda</a>.</p>
+<p>Install <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">conda</a>.</p>
 <ol class="simple">
 <li><p>Create Virtual Running Environment</p></li>
 </ol>
@@ -154,11 +154,11 @@
 </div>
 <div class="section" id="intel-gpu-driver-optional-gpu-only">
 <h3>Intel GPU Driver (Optional, GPU only)<a class="headerlink" href="#intel-gpu-driver-optional-gpu-only" title="Permalink to this headline">¶</a></h3>
-<p>Please install the Intel GPU Driver in the building server, which is needed to build with GPU support and <strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong>.</p>
+<p>Install the Intel GPU Driver in the building server, which is needed to build with GPU support and <strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong>.</p>
 <p>Refer to <a class="reference internal" href="install_for_gpu.html"><span class="doc">Install Intel GPU driver</span></a>.</p>
 <p>Note:</p>
 <ol class="simple">
-<li><p>Please make sure to <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages">install developer run-time packages</a> before building Intel® Extension for TensorFlow*.</p></li>
+<li><p>Make sure to <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages">install developer runtime packages</a> before building Intel® Extension for TensorFlow*.</p></li>
 <li><p><strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong></p></li>
 </ol>
 <p>AOT is option of compiling, which reduces the initialization time of GPU kernels at startup time, by creating the binary code for specified hardware platform directly during compiling. AOT will make the installation package be with bigger size.</p>
@@ -182,8 +182,8 @@
 <p>We recommend to install oneAPI by ‘sudo or root’ to folder <strong>/opt/intel/oneapi</strong>.</p>
 <p>Following commands are based on the folder <strong>/opt/intel/oneapi</strong>. If you install it in other folder, please change the oneAPI path as yours.</p>
 <p>Refer to <a class="reference external" href="install_for_gpu.html#install-oneapi-base-toolkit-packages">Install oneAPI Base Toolkit Packages</a></p>
-<p>It provides compiler and libraried used by Intel® Extension for TensorFlow*.</p>
-<p>Enable oneAPI componets:</p>
+<p>It provides compiler and libraries used by Intel® Extension for TensorFlow*.</p>
+<p>Enable oneAPI components:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">compiler</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
 <span class="n">source</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">mkl</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
@@ -223,17 +223,17 @@ $ <span class="nb">cd</span> intel-extension-for-tensorflow
 </div>
 <div class="section" id="choose-to-build-with-gpu-support">
 <h3>Choose to Build with GPU Support.<a class="headerlink" href="#choose-to-build-with-gpu-support" title="Permalink to this headline">¶</a></h3>
-<p>‘Y’ for GPU support; ‘n’ for CPU only.</p>
+<p>‘Y’ for GPU support; ‘N’ for CPU only.</p>
 </div>
 <div class="section" id="specify-the-location-of-compiler-dpc">
 <h3>Specify the Location of Compiler (DPC++).<a class="headerlink" href="#specify-the-location-of-compiler-dpc" title="Permalink to this headline">¶</a></h3>
-<p>Default is <strong>/opt/intel/oneapi/compiler/latest/linux/</strong>, that is the default installed path. Click <strong>enter</strong> to confirm default location.</p>
-<p>If it’s wrong, please confirm the compiler (DPC++) installed path and fill the correct path.</p>
+<p>Default is <strong>/opt/intel/oneapi/compiler/latest/linux/</strong>, which is the default installed path. Click <strong>enter</strong> to confirm default location.</p>
+<p>If it’s differenct, confirm the compiler (DPC++) installed path and fill the correct path.</p>
 </div>
 <div class="section" id="specify-the-ahead-of-time-aot-compilation-platforms">
 <h3>Specify the Ahead of Time (AOT) Compilation Platforms.<a class="headerlink" href="#specify-the-ahead-of-time-aot-compilation-platforms" title="Permalink to this headline">¶</a></h3>
-<p>Default is ‘’, that means no AOT.</p>
-<p>Fill the one or more device type strings of special hardware platforms, like ‘ats-m150,acm-g11’.</p>
+<p>Default is ‘’, which means no AOT.</p>
+<p>Fill one or more device type strings of special hardware platforms, like ‘ats-m150,acm-g11’.</p>
 <p>Here is the list of GPUs verified:</p>
 <table border="1" class="docutils">
 <thead>
@@ -269,7 +269,7 @@ $ <span class="nb">cd</span> intel-extension-for-tensorflow
 <div class="section" id="choose-to-build-with-onemkl-support">
 <h3>Choose to Build with oneMKL Support.<a class="headerlink" href="#choose-to-build-with-onemkl-support" title="Permalink to this headline">¶</a></h3>
 <p>Recommend to choose ‘y’.</p>
-<p>Default is <strong>/opt/intel/oneapi/mkl/latest</strong>, that is the default installed path. Click <strong>enter</strong> to confirm default location.</p>
+<p>Default is <strong>/opt/intel/oneapi/mkl/latest</strong>, which is the default installed path. Click <strong>enter</strong> to confirm default location.</p>
 <p>If it’s wrong, please confirm the oneMKL installed path and fill the correct path.</p>
 </div>
 <div class="section" id="example">

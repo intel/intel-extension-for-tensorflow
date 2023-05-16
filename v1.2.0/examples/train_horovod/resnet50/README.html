@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Distributed training example with Intel® Optimization for Horovod* &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <title>Distributed Training Example with Intel® Optimization for Horovod* &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -64,7 +64,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Distributed training example with Intel® Optimization for Horovod*</li>
+      <li>Distributed Training Example with Intel® Optimization for Horovod*</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../_sources/examples/train_horovod/resnet50/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -75,7 +75,7 @@
            <div itemprop="articleBody">
              
   <div class="section" id="distributed-training-example-with-intel-optimization-for-horovod">
-<h1>Distributed training example with Intel® Optimization for Horovod*<a class="headerlink" href="#distributed-training-example-with-intel-optimization-for-horovod" title="Permalink to this headline">¶</a></h1>
+<h1>Distributed Training Example with Intel® Optimization for Horovod*<a class="headerlink" href="#distributed-training-example-with-intel-optimization-for-horovod" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="model-information">
 <h2>Model Information<a class="headerlink" href="#model-information" title="Permalink to this headline">¶</a></h2>
 <table border="1" class="docutils">
@@ -91,7 +91,7 @@
 <tbody>
 <tr>
 <td align="center">Training</td>
-<td align="center">Tensorflow</td>
+<td align="center">TensorFlow</td>
 <td align="center"><a href="https://github.com/tensorflow/models">Tensorflow-Models</a></td>
 <td align="center">v2.8.0</td>
 <td align="center">itex.yaml <br> itex_dummy.yaml <br> hvd_support_light.patch <br> or hvd_support.patch</td>
@@ -103,7 +103,7 @@
 <ul class="simple">
 <li><p><a class="reference external" href="https://pypi.org/project/tensorflow/">Tensorflow</a></p></li>
 <li><p><a class="reference external" href="https://pypi.org/project/intel-extension-for-tensorflow/">Intel® Extension for TensorFlow*</a></p></li>
-<li><p><a class="reference external" href="https://pypi.org/project/intel-optimization-for-horovod/">Intel® Optimization for Horovod*</a></p></li>
+<li><p><a class="reference external" href="https://pypi.org/project/intel-optimization-for-Horovod/">Intel® Optimization for Horovod*</a></p></li>
 <li><p>others show as below</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">gin</span> <span class="n">gin</span><span class="o">-</span><span class="n">config</span> <span class="n">tensorflow</span><span class="o">-</span><span class="n">addons</span> <span class="n">tensorflow</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">optimization</span> <span class="n">tensorflow</span><span class="o">-</span><span class="n">datasets</span>
@@ -114,7 +114,7 @@
 <h2>Model examples preparation<a class="headerlink" href="#model-examples-preparation" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="model-repo">
 <h3>Model Repo<a class="headerlink" href="#model-repo" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>WORKSPACE=xxxx # please set your workspace folder
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>WORKSPACE=xxxx # set your workspace folder
 cd $WORKSPACE
 git clone -b v2.8.0 https://github.com/tensorflow/models.git tensorflow-models
 cd tensorflow-models
@@ -123,18 +123,19 @@ git apply path/to/hvd_support_light.patch  # or path/to/hvd_support.patch
 </div>
 <p><strong>hvd_support_light.patch</strong> is the minimum change.</p>
 <ul class="simple">
-<li><p>hvd.init() is horovod initialization, including resource allocation.</p></li>
+<li><p>hvd.init() is Horovod initialization, including resource allocation.</p></li>
 <li><p>tf.config.experimental.set_memory_growth(): If memory growth is enabled, the runtime initialization will not allocate all memory on the device.</p></li>
 <li><p>tf.config.experimental.set_visible_devices(): Set the list of visible devices.</p></li>
 <li><p>strategy_scope: Remove native distributed.</p></li>
-<li><p>hvd.DistributedOptimizer(): use horovod distributed optimizer.</p></li>
-<li><p>dataset.shard(): Multiple workers run the same code but the different data. Dataset is split equally between diferent index workers.</p></li>
+<li><p>hvd.DistributedOptimizer(): use Horovod distributed optimizer.</p></li>
+<li><p>dataset.shard(): Multiple workers run the same code but with different data. Dataset is split equally between different index workers.</p></li>
 </ul>
 <p><strong>hvd_support.patch</strong> adds LARS optimizer <a class="reference external" href="https://arxiv.org/abs/1708.03888">paper</a></p>
 </div>
 <div class="section" id="download-dataset">
 <h3>Download Dataset<a class="headerlink" href="#download-dataset" title="Permalink to this headline">¶</a></h3>
 <p>Download imagenet dataset from https://image-net.org/download-images.php</p>
+<p><strong>Note</strong> Only for non-commercial research and/or educational purposes</p>
 <br></div>
 </div>
 <div class="section" id="execution">
@@ -152,7 +153,7 @@ PROCESS_PER_NODE=2
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Download <code class="docutils literal notranslate"><span class="pre">itex.yaml</span></code> or <code class="docutils literal notranslate"><span class="pre">itex_dummy.yaml</span></code> and set one of them as CONFIG_FILE, then model would correspondly run with <code class="docutils literal notranslate"><span class="pre">real</span> <span class="pre">data</span></code> or <code class="docutils literal notranslate"><span class="pre">dummy</span> <span class="pre">data</span></code>. Default value is itex.yaml.</p></li>
+<li><p>Download <code class="docutils literal notranslate"><span class="pre">itex.yaml</span></code> or <code class="docutils literal notranslate"><span class="pre">itex_dummy.yaml</span></code> and set one of them as CONFIG_FILE, then model would correspondingly run with <code class="docutils literal notranslate"><span class="pre">real</span> <span class="pre">data</span></code> or <code class="docutils literal notranslate"><span class="pre">dummy</span> <span class="pre">data</span></code>. Default value is itex.yaml.</p></li>
 <li><p>Set <code class="docutils literal notranslate"><span class="pre">NUMBER_OF_PROCESS</span></code> and <code class="docutils literal notranslate"><span class="pre">PROCESS_PER_NODE</span></code> according to hvd rank number you need. Default value is a 2 rank task.</p></li>
 </ul>
 </div>

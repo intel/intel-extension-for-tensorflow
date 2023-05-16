@@ -79,7 +79,7 @@
 <div class="section" id="dependency">
 <h2>Dependency<a class="headerlink" href="#dependency" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://pypi.org/project/tensorflow/">Tensorflow</a></p></li>
+<li><p><a class="reference external" href="https://pypi.org/project/tensorflow/">TensorFlow</a></p></li>
 <li><p><a class="reference external" href="https://pypi.org/project/intel-extension-for-tensorflow/">Intel® Extension for TensorFlow*</a></p></li>
 <li><p><a class="reference external" href="https://pypi.org/project/intel-optimization-for-horovod/">Intel® Optimization for Horovod*</a></p></li>
 <li><p>others show as below</p></li>
@@ -97,12 +97,12 @@
 <span class="n">git</span> <span class="n">apply</span> <span class="n">tensorflow2_keras_mnist</span><span class="o">.</span><span class="n">patch</span>
 </pre></div>
 </div>
-<p><strong>Notes</strong>:<br />Please refer to <a class="reference external" href="https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py">tensorflow2_keras_mnist.py</a> for other changes about how to enable horovod.</p>
+<p><strong>Notes</strong>:<br />Refer to <a class="reference external" href="https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py">tensorflow2_keras_mnist.py</a> for other changes about how to enable horovod.</p>
 </div>
 </div>
 <div class="section" id="execution">
 <h2>Execution<a class="headerlink" href="#execution" title="Permalink to this headline">¶</a></h2>
-<p>To run on <strong>a</strong> machine with <strong>4</strong> XPUs:<br /><strong>Notes</strong>:<br />Please check log “### is_mpi”, “### gpus” to get how many XPUs in your platform. This case is on a machine with 2 Intel® Data Center GPU Max Series, and 2 tiles in each GPU are taken as 2 independent XPU devices, a total of 4 XPU devices.</p>
+<p>To run on a machine with 4 XPUs:<br /><strong>Notes</strong>:<br />Check log looking for “### is_mpi” and “### gpus” to get how many XPUs are in your platform. Our example is on a machine with 2 Intel® Data Center GPU Max Series. The 2 tiles in each GPU are taken as 2 independent XPU devices, for a total of 4 XPU devices.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">horovodrun</span> <span class="o">-</span><span class="n">np</span> <span class="mi">4</span> <span class="o">-</span><span class="n">H</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">4</span> <span class="n">python</span> <span class="o">./</span><span class="n">tensorflow2_keras_mnist</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Intel® Extension for TensorFlow* is a Python package that extends the official TensorFlow, in order to achieve improved performance. Although both official TensorFlow and the default configuration of Intel® Extension for TensorFlow* perform well, there are additional steps users can take to optimize performance on specific platforms. Most optimized configurations can be set automatically by the launcher script. This article covers common tips recommended by Intel developers.
+Intel® Extension for TensorFlow* is a Python package that extends the official TensorFlow, in order to achieve improved performance. Although both official TensorFlow and the default configuration of Intel® Extension for TensorFlow* perform well, there are additional steps you can take to optimize performance on specific platforms. Most optimized configurations can be set automatically by the launcher script. This article covers common tips recommended by Intel developers.
 
 ## Table of Contents
 
@@ -31,10 +31,10 @@ This section briefly introduces the structure of Intel CPUs, as well as the conc
 
 #### Non-Uniform Memory Access (NUMA)
 
-More and more CPU cores are being provided to users in one socket, which provides the benefit of greater computation resources. However, this also causes memory access competition. Programs may stall due to the memory being busy. To address this problem, `Non-Uniform Memory Access` (`NUMA`) was introduced. Compared to `Uniform Memory Access` (`UMA`), where all memories are connected to all cores equally, NUMA divides memories into multiple groups. A certain number of memories are directly attached to one socket's integrated memory controller, to become local memory of this socket, while other memories become remote memory to other sockets. Local memory access is much faster than remote memory access.
+More and more CPU cores are being provided in one socket, which provides the benefit of greater computation resources. However, this also causes memory access competition. Programs may stall due to the memory being busy. To address this problem, `Non-Uniform Memory Access` (`NUMA`) was introduced. Compared to `Uniform Memory Access` (`UMA`), where all memories are connected to all cores equally, NUMA divides memories into multiple groups. A certain number of memories are directly attached to one socket's integrated memory controller, to become local memory of this socket, while other memories become remote memory to other sockets. Local memory access is much faster than remote memory access.
 
 You can get CPU information with the ```lscpu``` command on Linux to see how many cores and sockets are on the machine, as well as NUMA information such as how CPU cores are distributed.
-The following is an example of ```lscpu``` execution on a machine with two Intel® Xeon® Platinum 8180M CPUs. Two sockets were detected. Each socket has 28 physical cores onboard. Since Hyper-Threading is enabled, each core can run 2 threads. That means each socket has another 28 logical cores. Thus, a total of 112 CPU cores are available. When indexing CPU cores, physical cores are typically indexed prior to logical cores. In this case, the first 28 cores (0-27) are physical cores on the first NUMA socket (node), while the second 28 cores (28-55) are physical cores on the second `NUMA` socket (node). Logical cores are indexed afterward. 56-83 are 28 logical cores on the first `NUMA` socket (node), and 84-111 are the second 28 logical cores on the second `NUMA` socket (node). Typically, running `Intel® Extension for TensorFlow*` on logical cores can negatively impact performance and should therefore be avoided.
+The following is an example of ```lscpu``` execution on a machine with two Intel® Xeon® Platinum 8180M CPUs. Two sockets were detected. Each socket has 28 physical cores onboard. Since Hyper-Threading is enabled, each core can run 2 threads. That means each socket has another 28 logical cores. Thus, a total of 112 CPU cores are available. When indexing CPU cores, physical cores are typically indexed before logical cores. In this case, the first 28 cores (0-27) are physical cores on the first NUMA socket (node), while the second 28 cores (28-55) are physical cores on the second `NUMA` socket (node). Logical cores are indexed afterward. 56-83 are 28 logical cores on the first `NUMA` socket (node), and 84-111 are the second 28 logical cores on the second `NUMA` socket (node). Typically, running `Intel® Extension for TensorFlow*` on logical cores can negatively impact performance and should therefore be avoided.
 
 ```
 $ lscpu
@@ -68,7 +68,7 @@ The below environment settings are for the two different memory formats mentione
 
 #### Numactl
 
-Since NUMA largely influences memory access performance, the Linux tool ```numactl```allows users to control NUMA policy for processes or shared memory. It runs processes with a specific NUMA scheduling or memory placement policy. As described in the previous section, cores share high-speed caches in one socket, thus it is a good idea to avoid cross socket computations. From a memory access perspective, bounding memory access to local memories is much faster than accessing remote memories.
+Since NUMA largely influences memory access performance, the Linux tool ```numactl``` allows you to control NUMA policy for processes or shared memory. It runs processes with a specific NUMA scheduling or memory placement policy. As described in the previous section, cores share high-speed caches in one socket, thus it is a good idea to avoid cross socket computations. From a memory access perspective, bounding memory access to local memories is much faster than accessing remote memories.
 
 The following is an example of numactl usage to run a workload on the Nth socket, and limit memory access to its local memories on the Nth socket. More detailed description of numactl command can be found on the [Numactl Linux Man Page](https://linux.die.net/man/8/numactl).
 
@@ -88,7 +88,7 @@ OpenMP is an implementation of multi-threading, a method of parallelizing whereb
 
 Figure 1 A number of parallel block execution threads are forked from master thread
 
-Users can control OpenMP behaviors through some environment variables to fit their workloads. Also, beside the GNU OpenMP library ([libgomp](https://gcc.gnu.org/onlinedocs/libgomp/)), Intel provides another OpenMP implementation [libiomp](https://software.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top/optimization-and-programming-guide/openmp-support.html) for users to choose from. Environment variables which control behavior of OpenMP threads may differ from libgomp and libiomp. They will be introduced separately in sections below.
+You can control OpenMP behaviors through some environment variables to fit your workloads. Also, beside the GNU OpenMP library ([libgomp](https://gcc.gnu.org/onlinedocs/libgomp/)), Intel provides another OpenMP implementation [libiomp](https://software.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top/optimization-and-programming-guide/openmp-support.html) to choose from. Environment variables that control behavior of OpenMP threads may differ from libgomp and libiomp. They will be introduced separately in sections below.
 
 [1] [Wikipedia - OpenMP](https://en.wikipedia.org/wiki/OpenMP)
 
@@ -107,7 +107,7 @@ numactl -C 0-3 --membind 0 python <script>
 
 Beside `OMP_NUM_THREADS`, a couple of GNU `OpenMP` specific environment variables are commonly used to improve performance.
 
-- GOMP_CPU_AFFINITY: Binds threads to specific CPUs. The variable should contain a space-separated or comma-separated list of CPUs or Hyphen-separated CPU numbers specifying a range of CPUs.
+- GOMP_CPU_AFFINITY: Binds threads to specific CPUs. The variable should contain a space-separated or comma-separated list of CPUs or hyphen-separated CPU numbers specifying a range of CPUs.
 - OMP_PROC_BIND: Specifies whether threads may be moved between processors. Setting it to `CLOSE` keeps OpenMP threads close to the primary thread in contiguous place partitions.
 - OMP_SCHEDULE: Determine how OpenMP threads are scheduled.
 
@@ -133,7 +133,7 @@ Similar to GNU OpenMP, besides `OMP_NUM_THREADS`, there are several Intel OpenMP
 
   KMP_AFFINITY controls how to bind OpenMP threads to physical processing units. Depending on the system (machine) topology, application, and operating system, thread affinity can have a dramatic effect on the application speed. 
 
-  A common usage scenario is for consecutive threads to be bound close together, as is done with `KMP_AFFINITY`=compact, so that communication overhead, cache line invalidation overhead, and page thrashing are minimized. Now, suppose the application also had a number of parallel regions which did not utilize all of the available OpenMP threads. We should avoid binding multiple threads to the same core and leaving other cores not utilized, since a thread normally executes faster on a core where it is not competing for resources with another active thread on the same core. This can be achieved by the following command. Figure 2.2 illustrates this strategy.
+  A common usage scenario is for consecutive threads to be bound close together, as is done with `KMP_AFFINITY`=compact, so that communication overhead, cache line invalidation overhead, and page thrashing are minimized. Now, suppose the application also had a number of parallel regions that did not utilize all of the available OpenMP threads. We should avoid binding multiple threads to the same core and leaving other cores not utilized, since a thread normally executes faster on a core where it is not competing for resources with another active thread on the same core. This can be achieved by the following command. Figure 2.2 illustrates this strategy.
 
   ```
   export KMP_AFFINITY=granularity=fine,compact,1,0
@@ -157,7 +157,8 @@ Similar to GNU OpenMP, besides `OMP_NUM_THREADS`, there are several Intel OpenMP
 
   KMP_BLOCKTIME sets the time, in milliseconds, that a thread should wait, after completing the execution of a parallel region, before sleeping. The default value is 200ms.
 
-  After completing the execution of a parallel region, threads wait for new parallel work to become available. After a certain period of time has elapsed, they stop waiting and sleep. Sleeping allows the threads to be used, until more parallel work becomes available, by non-OpenMP threaded code that may execute between parallel regions, or by other applications. A small `KMP_BLOCKTIME` value may offer better overall performance if the application contains non-OpenMP threaded code that executes between parallel regions. A larger KMP_BLOCKTIME value may be more appropriate if threads are to be reserved solely for use for OpenMP execution, but may penalize other concurrently-running OpenMP or threaded applications. It is suggested to be set to 0 or 1 for convolutional neural network (CNN) based models.
+  After completing the execution of a parallel region, threads wait for new parallel work to become available. After a certain period of time has elapsed, they stop waiting and sleep. 
+Sleeping allows the threads to be used by non-OpenMP threaded code or by other applications, until more parallel work becomes available. A small `KMP_BLOCKTIME` value may offer better overall performance if the application contains non-OpenMP threaded code that executes between parallel regions. A larger KMP_BLOCKTIME value may be more appropriate if threads are to be reserved solely for use for OpenMP execution, but may penalize other concurrently-running OpenMP or threaded applications. Set it to 0 or 1 for convolutional neural network (CNN) based models.
 
   ```
   export KMP_BLOCKTIME=0 (or 1)
@@ -165,7 +166,7 @@ Similar to GNU OpenMP, besides `OMP_NUM_THREADS`, there are several Intel OpenMP
 
 #### Memory Allocator
 
-Memory allocator plays an important performance role as well. A more efficient memory usage reduces overhead on unnecessary memory allocations or destructions, and thus results in a faster execution. From practical experience, for deep learning workloads, TCMalloc can get better performance by reusing memory as much as possible versus the default malloc funtion.
+Memory allocator plays an important performance role as well. A more efficient memory usage reduces overhead on unnecessary memory allocations or destructions, and thus results in a faster execution. From practical experience, for deep learning workloads, TCMalloc can get better performance by reusing memory as much as possible versus the default malloc function.
 
 To enable TCMalloc, add the path of TCMalloc dynamic library to environment variable LD_PRELOAD to switch the memory allocator.
 

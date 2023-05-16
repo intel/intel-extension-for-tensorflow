@@ -34,8 +34,8 @@ CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/li
 
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git
-$ git checkout origin/r2.10 -b r2.10
 $ cd tensorflow
+$ git checkout origin/r2.10 -b r2.10
 ```
 
 Apply patch as below to support **TF_LoadPluggableDeviceLibrary**, which is defined in "//tensorflow/c:c_api_experimental"

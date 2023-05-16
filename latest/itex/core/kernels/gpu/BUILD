@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "itex_xpu_library", "tf_copts")
 
 package(
     licenses = ["notice"],  # Apache 2.0
@@ -83,20 +83,6 @@ itex_xpu_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "//itex:core",
-    ],
-    alwayslink = True,
-)
-
-itex_xpu_library(
-    name = "argmin_op",
-    srcs = ["argmin_op.cc"],
-    hdrs = ["argmin_op.h"],
-    copts = tf_copts(),
-    linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        ":reduction_utils",
         "//itex:core",
     ],
     alwayslink = True,
@@ -2019,6 +2005,20 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "isTensorFloat32Enabled_op",
+    srcs = ["isTensorFloat32Enabled_op.cc"],
+    hdrs = ["isTensorFloat32Enabled_op.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "test_ops",
     srcs = ["test_ops.cc"],
     hdrs = ["test_ops.h"],
@@ -2035,7 +2035,6 @@ itex_xpu_library(
 GPU_KERNELS = [
     ":aggregate_ops",
     ":argmax_op",
-    ":argmin_op",
     ":batchtospace_op",
     ":batch_norm_ops",
     ":group_norm_ops",
@@ -2144,6 +2143,7 @@ GPU_KERNELS = [
     ":where_op",
     ":xent_op",
     ":tensorarray_ops",
+    ":isTensorFloat32Enabled_op",
     ":test_ops",
 ]
 
@@ -2164,7 +2164,9 @@ itex_xpu_library(
         "//itex/core/kernels/gpu/special_math:special_math_op",
         "//itex/core/kernels/legacy:legacy_kernels",
         "//itex/core/kernels/onednn:onednn_kernels",
-        "//itex/core/kernels/onednn_graph:onednn_graph_op",
-    ] + GPU_KERNELS,
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["//itex/core/kernels/onednn_graph:onednn_graph_op"],
+        "//conditions:default": [],
+    }) + GPU_KERNELS,
     alwayslink = True,
 )

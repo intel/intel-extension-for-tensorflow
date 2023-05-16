@@ -103,7 +103,7 @@ The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
     sudo apt-get install intel-oneapi-runtime-dpcpp-cpp intel-oneapi-runtime-mkl
     ```
 
-The above commands install only runtime libraries for Intel® oneAPI which are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section [Optional: Install Full Intel® oneAPI Base Toolkit Packages](#optional-install-full-intel®-oneapi).
+The above commands install only runtime libraries for Intel® oneAPI that are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section [Optional: Install Full Intel® oneAPI Base Toolkit Packages](#optional-install-full-intel®-oneapi).
 
 
 #### Native Linux Running Directly on Hardware
@@ -132,7 +132,7 @@ The steps to install the runtime components in Ubuntu Linux are:
         sudo apt-get install intel-oneapi-runtime-dpcpp-cpp intel-oneapi-runtime-mkl
         ```
 
-The above commands install only runtime libraries for Intel® oneAPI which are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section [Optional: Install Full Intel® oneAPI Base Toolkit Packages](#optional-install-full-intel®-oneapi).
+The above commands install only runtime libraries for Intel® oneAPI that are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section [Optional: Install Full Intel® oneAPI Base Toolkit Packages](#optional-install-full-intel®-oneapi).
 
 
 ### 2. Install TensorFlow* via PyPI Wheel in Linux
@@ -162,11 +162,11 @@ The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version
 
 * ##### System environment install 
 
-    If want to system install in $HOME, please append `--user` to the commands.
+    If you prefer install tensorflow in $HOME, append `--user` to the commands.
     ```bash
     $ pip install --user 'tensorflow==2.12.0'
     ```
-    And the following system environment install for Intel® Extension for TensorFlow* will use the same practice. 
+    And the following system environment install for Intel® Extension for TensorFlow* will also append `--user` to the commands. 
 
 ### 3. Install Intel® Extension for TensorFlow*
 
@@ -191,7 +191,7 @@ You can also run a [quick_example](../../../examples/quick_example.md) to verify
 
 ### Optional: Install Full Intel® oneAPI
 
-If you prefer to have access to full Intel® oneAPI you need to install at least the following:
+If you prefer to have access to full Intel® oneAPI, you need to install at least the following:
 
 - Intel® oneAPI DPC++ Compiler
 
@@ -216,7 +216,7 @@ When using the full Intel® oneAPI Base Toolkit, you will need to set up necessa
 source /opt/intel/oneapi/setvars.sh
 ```
 
-A user may install more components than Intel® Extension for TensorFlow* needs, and if required, `setvars.sh` can be customized to point to a specific directory by using a [configuration file](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-programming-guide/top/oneapi-development-environment-setup/use-the-setvars-script-with-linux-or-macos/use-a-config-file-for-setvars-sh-on-linux-or-macos.html):
+You may install more components than Intel® Extension for TensorFlow* needs, and if required, `setvars.sh` can be customized to point to a specific directory by using a [configuration file](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-programming-guide/top/oneapi-development-environment-setup/use-the-setvars-script-with-linux-or-macos/use-a-config-file-for-setvars-sh-on-linux-or-macos.html):
 
 ```bash
 source /opt/intel/oneapi/setvars.sh --config="full/path/to/your/config.txt"

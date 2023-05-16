@@ -55,3 +55,7 @@ This section shows common problems and solutions for compilation and runtime iss
 | ------------------------------------------------------------ | ------------------------------------- | ----------------------------------- |
 | ModuleNotFoundError: No module named 'tensorflow'            | install TensorFlow                    | ITEX depends on TensorFlow          |
 | tensorflow.python.framework.errors_impl.NotFoundError: libmkl_sycl.so.2: cannot open shared object file: No such file or directory | `source /opt/intel/oneapi/setvars.sh` | set env vars of oneAPI Base Toolkit |
+| version GLIBCXX_3.4.30' not found | `conda install -c conda-forge gxx_linux-64==12.1.0` | install higher version glibcxx |  
+
+
+

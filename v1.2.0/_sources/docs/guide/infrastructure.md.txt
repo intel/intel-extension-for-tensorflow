@@ -23,7 +23,7 @@ Intel® Extension for TensorFlow* provides additional custom APIs to extend the 
 Intel Advanced Feature and Extension Management
 -----------------------------------------------------------
 
-Generally, the default configuration of Intel® Extension for TensorFlow\* can provide good performance without any code changes. For advanced users, simple frontend Python APIs and utilities can be used to provide peak performance optimizations with minor code changes for specialized application scenarios. Typically, only two to three clauses are required to be added to the original code.
+Generally, the default configuration of Intel® Extension for TensorFlow\* can provide good performance without any code changes. For advanced users, simple frontend Python APIs and utilities can be used to provide peak performance optimizations with minor code changes for specialized application scenarios. Typically, only two to three clauses need to be added to the original code.
 
 Check [Python APIs](python_api.md) for details of API functions and [Environment Variables](environment_variables.md) page for environment setting.
    

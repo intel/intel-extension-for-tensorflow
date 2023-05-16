@@ -5,7 +5,7 @@
 [![version](https://img.shields.io/github/v/release/intel/intel-extension-for-tensorflow?color=brightgreen)](https://github.com/intel/intel-extension-for-tensorflow/releases)
 [![license](https://img.shields.io/badge/license-Apache%202-blue)](LICENSE.txt)
 
-Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow [PluggableDevice](https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md) interface, aiming to bring Intel XPU (GPU, CPU, etc) devices into [TensorFlow](https://github.com/tensorflow/tensorflow) open source community for AI workload acceleration. It allows users to flexibly plug an XPU into TensorFlow on-demand, exposing the computing power inside Intel's hardware.
+Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow [PluggableDevice](https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md) interface, aiming to bring Intel CPU or GPU devices into [TensorFlow](https://github.com/tensorflow/tensorflow) open source community for AI workload acceleration. It allows users to flexibly plug an XPU into TensorFlow on-demand, exposing the computing power inside Intel's hardware.
 
 This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
 
@@ -45,13 +45,14 @@ Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_
 ### Installation Channel:
 Intel® Extension for TensorFlow* can be installed through the following channels:
 
-|PyPI|DockerHub|Source|
-|-|-|-|
-|[GPU](docs/install/install_for_gpu.md#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.md#install-via-pypi-wheel-in-bare-metal)  |[ GPU Container ](docs/install/install_for_gpu.md#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.md#install-via-docker-container)|[Build from source](docs/install/how_to_build.md)|
+* PyPI: [GPU](docs/install/install_for_gpu.md#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.md#install-via-pypi-wheel-in-bare-metal) 
+* DockerHub: [ GPU Container ](docs/install/install_for_gpu.md#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.md#install-via-docker-container)
+* Source: [Build from source](docs/install/how_to_build.md)
+
 
 ### Compatibility Table
 
-| Intel ® Extension for TensorFlow*  | Stock TensorFlow |
+| Intel® Extension for TensorFlow*  | Stock TensorFlow |
 | ------- | ----------- |    
 | v1.2.0  | 2.12        |
 | v1.1.0  | 2.10 & 2.11 |
@@ -59,6 +60,7 @@ Intel® Extension for TensorFlow* can be installed through the following channel
 
 ### Install for GPU
 ```
+pip install tensorflow==2.12
 pip install intel-extension-for-tensorflow[gpu]==1.2.0
 ```
 
@@ -68,10 +70,11 @@ Environment check instructions for GPU:
 bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
 ```
 
-Please refer to [GPU installation](docs/install/install_for_gpu.md) for details.
+Refer to [GPU installation](docs/install/install_for_gpu.md) for details.
 
 ### Install for CPU [Experimental]
 ```
+pip install tensorflow==2.12
 pip install intel-extension-for-tensorflow[cpu]==1.2.0
 ```
 
@@ -97,7 +100,7 @@ This project is intended to be a safe, welcoming space for collaboration, and co
 - [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://cqpreview.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
 
 ## Support
-Please submit your questions, feature requests, and bug reports on the [GitHub issues](https://github.com/intel/intel-extension-for-tensorflow/issues) page.
+Submit your questions, feature requests, and bug reports on the [GitHub issues](https://github.com/intel/intel-extension-for-tensorflow/issues) page.
 
 ## Security
 See Intel's [Security Center](https://www.intel.com/content/www/us/en/security-center/default.html) for information on how to report a potential security issue or vulnerability.

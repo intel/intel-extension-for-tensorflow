@@ -86,8 +86,8 @@
 </div>
 <div class="section" id="configuration-list">
 <h3>Configuration List<a class="headerlink" href="#configuration-list" title="Permalink to this headline">¶</a></h3>
-<p>In order to achieve faster performance with strong numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST that let users manually configure a balance of performance and accuracy with FP16/BF16 if the default configuration doesn’t provide the expected performance.</p>
-<p>Set the lists according to the numerically-safe or numerically-dangerous type of the operations. The lists include the Operation Types of Tensorflow, and support fused Operations.</p>
+<p>In order to achieve faster performance with strong numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST that let you manually configure a balance of performance and accuracy with FP16/BF16 if the default configuration doesn’t provide the expected performance.</p>
+<p>Set the lists according to the numerically-safe or numerically-dangerous type of the operations. The lists include the Operation Types of TensorFlow, and support fused Operations.</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -262,7 +262,7 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
 </div>
 <div class="section" id="environment-variable-difference-with-stock-tensorflow">
 <h3>Environment Variable Difference with Stock TensorFlow<a class="headerlink" href="#environment-variable-difference-with-stock-tensorflow" title="Permalink to this headline">¶</a></h3>
-<p>Advanced AMP has many extra operations. For example, ITEX_AUTO_MIXED_PRECISION_DATA_TYPE lets users use different data types (FP16/BF16) to speed up the model.</p>
+<p>Advanced AMP has many extra operations. For example, ITEX_AUTO_MIXED_PRECISION_DATA_TYPE lets you use different data types (FP16/BF16) to speed up the model.</p>
 <p>The following table shows the corresponding relationship between Advanced AMP and TensorFlow AMP environment variable names.</p>
 <table border="1" class="docutils">
 <thead>
@@ -323,8 +323,8 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
 <h2>Usage<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Steps:</p>
 <p>I. Install Intel® Extension for TensorFlow* in running environment.</p>
-<p>After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock Tensorflow.</p>
-<p>Refer to <a class="reference external" href="/README.html#Install">installation</a> instructions for more details.</p>
+<p>After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.</p>
+<p>Refer to <a class="reference external" href="../../README.html#Install">installation</a> instructions for more details.</p>
 <p>II. Enable Advanced AMP.</p>
 <p>With the default configuration, in most cases the Advanced AMP will balance accuracy with performance.</p>
 <table border="1" class="docutils">

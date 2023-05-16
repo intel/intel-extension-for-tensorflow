@@ -2,9 +2,9 @@
 
 ## Overview
 
-  Intel® Extension for TensorFlow* supports **[keras mixed precision](https://www.tensorflow.org/guide/mixed_precision)**,  which can run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption. 
+  Intel® Extension for TensorFlow* supports **[Keras mixed precision](https://www.tensorflow.org/guide/mixed_precision)**,  which can run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption. 
 
-  After installing Intel® Extension for TensorFlow*, you need to configure mixed_precision.Policy and identify hardware devices, the models will run with 16-bit and 32-bit mixed floating-point types. The following table shows the types of mixed_precision.Policy supported for Intel hardwares.
+  After installing Intel® Extension for TensorFlow*, you need to configure mixed_precision.Policy and identify hardware devices, the models will run with 16-bit and 32-bit mixed floating-point types. The following table shows the types of mixed_precision.Policy supported for Intel hardware.
 
 | mixed_precision.Policy | Hardware device |
 | ---------------------- | --------------- |
@@ -15,17 +15,17 @@
 
 ## How to identify different hardware types?
 
-​Enable keras mixed-precision with Intel® Extension for TensorFlow* backend. We provide two ways to distinguish it.  
+​Enable Keras mixed-precision with Intel® Extension for TensorFlow* backend. We provide two ways to distinguish it.  
 
-- Through **tf.config.list_physical_devices*
+- Through `tf.config.list_physical_devices`
 
-  For stock TensorFlow, if run with Nvidia GPU,  **tf.config.list_physical_devices('GPU')**  will return true. 
+  For stock TensorFlow, if run with Nvidia GPU,  `tf.config.list_physical_devices('GPU')`  will return true. 
 
-  For Intel® Extension for TensorFlow*, if run with Intel GPU, **tf.config.list_physical_devices('XPU')**  will return true. If run with Intel CPU, it will return false. 
+  For Intel® Extension for TensorFlow*, if run with Intel GPU, `tf.config.list_physical_devices('XPU')`  will return true. If run with Intel CPU, it will return false. 
 
 - Through Intel® Extension for TensorFlow* Python API
 
-  If run with GPU, is_gpu_available()  will return true,  if not, it will return false.
+  If run with GPU, `is_gpu_available()`  will return true,  if not, it will return false.
 
   ```python
   from intel_extension_for_tensorflow.python.test_func import test
@@ -34,7 +34,7 @@
       ...
   ```
 
-> **Note: Other than the difference in the identification of the hardware device, other behavior is the same, refer to the [keras mixed precision](https://www.tensorflow.org/guide/mixed_precision)** for details.
+> **Note: Other than the difference in the identification of the hardware device, other behavior is the same, refer to the [Keras mixed precision](https://www.tensorflow.org/guide/mixed_precision)** for details.
 
 ## Setup
 
@@ -61,7 +61,7 @@ export ENABLE_TF_PROFILER=1
 
 ## Setting the dtype policy
 
-To use mixed precision in Keras, you need to create a [`tf.keras.mixed_precision.Policy`](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/Policy), typically referred to as a *dtype policy*. Dtype policies specify how the dtypes layers will run in. In this guide, you will construct a policy from the string `'mixed_float16'` and set it as the global policy. This will cause subsequently created layers to use mixed precision with a mix of float16 and float32.
+To use mixed precision in Keras, you need to create a [`tf.keras.mixed_precision.Policy`](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/Policy), typically referred to as a *dtype policy*. Dtype policies specify how the dtypes layers will run. In this guide, you will construct a policy from the string `'mixed_float16'` and set it as the global policy. This will cause subsequently created layers to use mixed precision with a mix of float16 and float32.
 
 ```python
 policy = mixed_precision.Policy('mixed_float16')
@@ -91,16 +91,16 @@ Compute dtype: float16
 Variable dtype: float32
 ```
 
-As mentioned before,  The policy will run on Intel GPUs and CPUs, and also could improve performance.
+As mentioned before,  the policy will run on Intel GPUs and CPUs, and also could improve performance.
 
 ## Building the model
 
-Next, let's start to build a simple model. Very small toy models typically do not benefit from mixed precision, because overhead from the TensorFlow runtime typically dominates the execution time, making any performance improvement on the Intel GPU negligible. Therefore, let's build two large `Dense` layers with 4096 units each when a GPU is used.
+Next, let's start to build a simple model. Very small models typically do not benefit from mixed precision, because overhead from the TensorFlow runtime typically dominates the execution time, making any performance improvement on the Intel GPU negligible. Therefore, let's build two large `Dense` layers with 4096 units each when a GPU is used.
 
 ```python
 inputs = keras.Input(shape=(784,), name='digits')
 if tf.config.list_physical_devices('XPU'):
-  print('The model will run with 4096 units on a Intel GPU')
+  print('The model will run with 4096 units on an Intel GPU')
   num_units = 4096
 else:
   # Use fewer units on CPUs so the model finishes in a reasonable amount of time
@@ -113,7 +113,7 @@ x = dense2(x)
 ```
 
 ```
-The model will run with 4096 units on a Intel GPU
+The model will run with 4096 units on an Intel GPU
 ```
 
 Each layer has a policy and uses the global policy by default. Each of the `Dense` layers therefore have the `mixed_float16` policy because you set the global policy to `mixed_float16` previously. This will cause the dense layers to do float16 computations and have float32 variables. They cast their inputs to float16 in order to do float16 computations, which causes their outputs to be float16 as a result. Their variables are float32 and will be cast to float16 when the layers are called to avoid errors from dtype mismatches.
@@ -226,9 +226,9 @@ Epoch 5/5
 6/6 [==============================] - 0s 84ms/step - loss: 0.1986 - accuracy: 0.9410 - val_loss: 0.4498 - val_accuracy: 0.8534
 ```
 
-Notice the model prints the time per step in the logs: for example, "84ms/step". The first epoch may be slower as TensorFlow spends some time optimizing the model, but afterwards the time per step should stabilize.
+Notice the model prints the time per step in the logs: for example, "84ms/step". The first epoch may be slower as TensorFlow spends some time optimizing the model, but afterward the time per step should stabilize.
 
-If you are running this guide in Colab, you can compare the performance of mixed precision with float32. To do so, change the policy from `mixed_float16` to `float32` in the "Setting the dtype policy" section, then rerun all the cells up to this point. On GPUs, you should see the time per step significantly increase, indicating mixed precision sped up the model. Make sure to change the policy back to `mixed_float16` and rerun the cells before continuing with the guide.
+If you are running this guide in Colab, you can compare the performance of mixed precision with float32. To do so, change the policy from `mixed_float16` to `float32` in the [Setting the dtype policy](#setting-the-dtype-policy) section, then rerun all the cells up to this point. On GPUs, you should see the time per step significantly increase, indicating mixed precision sped up the model. Make sure to change the policy back to `mixed_float16` and rerun the cells before continuing with the guide.
 
 For many real-world models, mixed precision also allows you to double the batch size without running out of memory, as float16 tensors take half the memory. This does not apply however to this toy model, as you can likely run the model in any dtype where each batch consists of the entire MNIST dataset of 60,000 images.
 
@@ -288,7 +288,7 @@ optimizer = keras.optimizers.RMSprop()
 optimizer = mixed_precision.LossScaleOptimizer(optimizer)
 ```
 
-You can choose an explicit loss scale or otherwise customize the loss scaling behavior, but it is highly recommended to keep the default loss scaling behavior, as it has been found to work well on all known models. See the [`tf.keras.mixed_precision.LossScaleOptimizer`](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer) documention if you want to customize the loss scaling behavior.
+You can choose an explicit loss scale or otherwise customize the loss scaling behavior, but it is highly recommended to keep the default loss scaling behavior, as it has been found to work well on all known models. See the [`tf.keras.mixed_precision.LossScaleOptimizer`](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer) documentation if you want to customize the loss scaling behavior.
 
 Next, define the loss object and the [`tf.data.Dataset`](https://www.tensorflow.org/api_docs/python/tf/data/Dataset)s:
 

@@ -95,7 +95,7 @@
 <a class="reference external" href="https://badge.fury.io/py/intel-extension-for-tensorflow"><img alt="PyPI version" src="https://badge.fury.io/py/intel-extension-for-tensorflow.svg" /></a>
 <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/releases"><img alt="version" src="https://img.shields.io/github/v/release/intel/intel-extension-for-tensorflow?color=brightgreen" /></a>
 <a class="reference external" href="LICENSE.txt"><img alt="license" src="https://img.shields.io/badge/license-Apache%202-blue" /></a></p>
-<p>Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow <a class="reference external" href="https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md">PluggableDevice</a> interface to bring Intel XPU(GPU, CPU, etc) devices into <a class="reference external" href="https://github.com/tensorflow/tensorflow">TensorFlow</a> open source community for AI workload acceleration. It allows flexibly plugging an XPU into TensorFlow on-demand, and exposing computing power inside Intel’s hardware.</p>
+<p>Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow <a class="reference external" href="https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md">PluggableDevice</a> interface to bring Intel CPU or GPU devices into <a class="reference external" href="https://github.com/tensorflow/tensorflow">TensorFlow</a> open source community for AI workload acceleration. It allows flexibly plugging an XPU into TensorFlow on-demand, and exposing computing power inside Intel’s hardware.</p>
 <p>This diagram provides a summary of the TensorFlow* PyPI package ecosystem.</p>
 <div align=center>
 <img src="docs/guide/images/pip_pkg_deps.png">
@@ -162,28 +162,18 @@
 <div class="section" id="installation-channel">
 <h3>Installation Channel:<a class="headerlink" href="#installation-channel" title="Permalink to this headline">¶</a></h3>
 <p>Intel® Extension for TensorFlow* can be installed from the following channels:</p>
-<table border="1" class="docutils">
-<thead>
-<tr>
-<th>PyPI</th>
-<th>DockerHub</th>
-<th>Source</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="docs/install/install_for_gpu.html#install-via-pypi-wheel-in-bare-metal">GPU</a> \ <a href="docs/install/experimental/install_for_cpu.html#install-via-pypi-wheel-in-bare-metal">CPU</a></td>
-<td><a href="docs/install/install_for_gpu.html#install-via-docker-container"> GPU Container </a> \ <a href="docs/install/experimental/install_for_cpu.html#install-via-docker-container"> CPU Container</a></td>
-<td><a href="docs/install/how_to_build.html">Build from source</a></td>
-</tr>
-</tbody>
-</table></div>
+<ul class="simple">
+<li><p>PyPI: <a class="reference external" href="docs/install/install_for_gpu.html#install-via-pypi-wheel-in-bare-metal">GPU</a> \ <a class="reference external" href="docs/install/experimental/install_for_cpu.html#install-via-pypi-wheel-in-bare-metal">CPU</a></p></li>
+<li><p>DockerHub: <a class="reference external" href="docs/install/install_for_gpu.html#install-via-docker-container"> GPU Container </a> \ <a class="reference external" href="docs/install/experimental/install_for_cpu.html#install-via-docker-container"> CPU Container</a></p></li>
+<li><p>Source: <a class="reference external" href="docs/install/how_to_build.html">Build from source</a></p></li>
+</ul>
+</div>
 <div class="section" id="compatibility-table">
 <h3>Compatibility Table<a class="headerlink" href="#compatibility-table" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="docutils">
 <thead>
 <tr>
-<th>Intel ® Extension for TensorFlow*</th>
+<th>Intel® Extension for TensorFlow*</th>
 <th>Stock TensorFlow</th>
 </tr>
 </thead>
@@ -204,14 +194,16 @@
 </table></div>
 <div class="section" id="install-for-gpu">
 <h3>Install for GPU<a class="headerlink" href="#install-for-gpu" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span><span class="o">==</span><span class="mf">1.2.0</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span><span class="o">==</span><span class="mf">1.2.0</span>
 </pre></div>
 </div>
-<p>Please refer to <a class="reference internal" href="docs/install/install_for_gpu.html"><span class="doc">GPU installation</span></a> for details.</p>
+<p>Refer to <a class="reference internal" href="docs/install/install_for_gpu.html"><span class="doc">GPU installation</span></a> for details.</p>
 </div>
 <div class="section" id="install-for-cpu-experimental">
 <h3>Install for CPU [Experimental]<a class="headerlink" href="#install-for-cpu-experimental" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span><span class="o">==</span><span class="mf">1.2.0</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">cpu</span><span class="p">]</span><span class="o">==</span><span class="mf">1.2.0</span>
 </pre></div>
 </div>
 <p>Sanity check by:</p>
@@ -230,7 +222,7 @@
 </div>
 <div class="section" id="support">
 <h2>Support<a class="headerlink" href="#support" title="Permalink to this headline">¶</a></h2>
-<p>Please submit your questions, feature requests, and bug reports on the <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">GitHub issues</a> page.</p>
+<p>Submit your questions, feature requests, and bug reports on the <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">GitHub issues</a> page.</p>
 </div>
 </div>
 

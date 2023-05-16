@@ -14,7 +14,7 @@ Intel® Extension for TensorFlow* adopts PJRT plugin interface to implement Inte
     `register_pjrt_plugin_factories` registers backend for PJRT plugins. For intel XPU  `PJRT_NAMES_AND_LIBRARY_PATHS` is set to be `'xpu:Your_itex_path/bazel-bin/itex/libitex_xla_extension.so'`,  `xpu` is the backend name and `libitex_xla_extension.so` is the PJRT plugin library.
 * In jaxlib python package `jaxlib/xla_extension.so`,    
    Jaxlib gets the lastest tensorflow code which calls the [PJRT C API interface](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/c/pjrt_c_api.h). The backend needs to implement these API.
-*  `libitex_xla_extension.so` implements `PJRT C API inferface` which can be got in [GetPjrtApi](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/pjrt_api.cc#L82).
+*  `libitex_xla_extension.so` implements `PJRT C API interface` which can be got in [GetPjrtApi](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/pjrt_api.cc#L82).
 
 ## 2. Build Library for JAX
 There are some differences from   [source build procedure](https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.md)

@@ -60,7 +60,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#itex-get-backend">itex.get_backend</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="#itex-config-protocol">Itex Config Protocol</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#intel-extension-for-tensorflow-config-protocol">Intel® Extension for TensorFlow* Config Protocol</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#itex-configproto">itex.ConfigProto</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-gpuoptions">itex.GPUOptions</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#itex-graphoptions">itex.GraphOptions</a></li>
@@ -164,9 +164,9 @@
 <tbody>
 <tr>
 <td><code>itex.set_backend</code></td>
-<td><code>GPU</code>or<code>CPU</code></td>
+<td><code>GPU</code> or <code>CPU</code></td>
 <td><code>ITEX_XPU_BACKEND</code></td>
-<td><code>GPU</code>or<code>CPU</code></td>
+<td><code>GPU</code> or <code>CPU</code></td>
 <td>set <code>CPU</code>/<code>GPU</code> as specific <code>XPU</code> backend with optimization options for execution.</td>
 </tr>
 <tr>
@@ -299,8 +299,8 @@
 <p>Then the log will output <code class="docutils literal notranslate"><span class="pre">GPU</span></code>.</p>
 </div>
 </div>
-<div class="section" id="itex-config-protocol">
-<h2>Itex Config Protocol<a class="headerlink" href="#itex-config-protocol" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="intel-extension-for-tensorflow-config-protocol">
+<h2>Intel® Extension for TensorFlow* Config Protocol<a class="headerlink" href="#intel-extension-for-tensorflow-config-protocol" title="Permalink to this headline">¶</a></h2>
 <p><strong>itex.ConfigProto: ProtocolMessage for XPU configuration under different types of backends and optimization options.</strong></p>
 <p><strong>enum class</strong></p>
 <table border="1" class="docutils">
@@ -535,7 +535,7 @@
 <div class="section" id="itex-ops-override">
 <h2>itex ops override<a class="headerlink" href="#itex-ops-override" title="Permalink to this headline">¶</a></h2>
 <p><strong>itex.experimental_ops_override: Public API to override TensorFlow specific operators with same name by Customized Operators in itex.ops namespace.</strong></p>
-<p>For details, refer to <a class="reference internal" href="itex_ops_override.html"><span class="doc">ITEX ops override</span></a>.</p>
+<p>For details, refer to <a class="reference internal" href="itex_ops_override.html"><span class="doc">Intel® Extension for TensorFlow* ops override</span></a>.</p>
 <p>Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>

@@ -84,16 +84,16 @@
 </table>
 
 
-## Hightlights
+## Highlights
 
 * Environment variables & Python API
 
-  Generally, the default configuration of Intel® Extension for TensorFlow\* will provide good performance without any code changes. 
-  Intel® Extension for TensorFlow\* also provides simple frontend Python APIs and utilities, for advanced users to get more optimized performance with only minor code changes, for different kinds of application scenarios. Typically, only two or three clauses are required to be added to the original code.
+  Generally, the default configuration of Intel® Extension for TensorFlow\* provides good performance without any code changes. 
+  Intel® Extension for TensorFlow\* also provides simple frontend Python APIs and utilities for advanced users to get more optimized performance with only minor code changes for different kinds of application scenarios. Typically, you only need to add two or three clauses to the original code.
 
 * Advanced auto mixed precision (AMP)
 
-  Low precision data types `bfloat16` and` float16` are natively supported from the `3rd Generation Xeon® Scalable Processors` [Cooper Lake](https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html)  with `AVX512` instruction set and Intel® Data Center GPU with further boosts to performance and with less memory consumption. The lower-precision data types supported by Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.
+  Low precision data types `bfloat16` and` float16` are natively supported from the `3rd Generation Xeon® Scalable Processors`, code name [Cooper Lake](https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html),  with `AVX512` instruction set and the Intel® Data Center GPU, which further boosts performance and uses less memory. The lower-precision data types supported by Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.
 
 * Graph optimization
 
@@ -101,7 +101,7 @@
 
 * Operator optimization
 
-  Intel® Extension for TensorFlow\* also optimizes operators and implements several customized operators for performance boost. The `itex.ops` namespace is used to extend TensorFlow public APIs implementation for better performance.
+  Intel® Extension for TensorFlow\* also optimizes operators and implements several customized operators for a performance boost. The `itex.ops` namespace is used to extend TensorFlow public APIs implementation for better performance.
 
 * GPU profiler
 

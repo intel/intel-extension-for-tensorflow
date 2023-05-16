@@ -3,20 +3,20 @@
 This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.2.0 and Intel® Optimization for Horovod* v0.5.0 deployment for distributed training on Conda environment.    
 
 ## Preconditions
-Assume user has installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per [instructions](../install_for_gpu.md#install_oneapi_base_toolkit_packages) successfully. 
+We assume you have installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per [instructions](../install_for_gpu.md#install_oneapi_base_toolkit_packages) successfully. 
 
 
 ## Step by step instructions:
 
 Miniconda is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.
-You can use the following command to install Miniconda. During installation, you may need to press enter and type "yes". Skip this step, if you have already insall conda.
+You can use the following command to install Miniconda. During installation, you may need to press enter and type "yes". Skip this step, if you have already installed conda.
 
 ```
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 ```
 
-You may need to restart your terminal or source ~/.bashrc to enable the conda command. Use conda -V to test if it is installed successfully.
+You may need to restart your terminal or `source ~/.bashrc` to enable the conda command. Use this command to test if it is installed successfully.
 ```
 conda -V
 ```
@@ -60,7 +60,7 @@ Expected result:
 v1.2.0-8e0294ba
 ```
 
-In order to install Intel® Optimization for Horovod* v0.5.0 for distributed training, oneCCL need to be installed at first when you install oneAPI Basekit.
+In order to install Intel® Optimization for Horovod* v0.5.0 for distributed training, you should install oneCCL after you install oneAPI Basekit.
 
 ```
 source /path/to/intel/oneapi/mpi/latest/env/vars.sh
@@ -69,7 +69,7 @@ source /path/to/intel/oneapi/ccl/latest/env/vars.sh
 pip install intel-optimization-for-horovod
 ```
 
-Test multi-node with Intel MPI on cluster System, please set environment variables.
+Test multi-node with Intel MPI on cluster System, set environment variables.
 ```
 export FI_PROVIDER=sockets
 ```

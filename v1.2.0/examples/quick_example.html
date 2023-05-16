@@ -79,13 +79,13 @@
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>If you are using a heterogeneous machine which contains the Intel GPU, please refer to <a class="reference internal" href="../docs/install/install_for_gpu.html"><span class="doc">Intel GPU Software Installation</span></a></p></li>
+<li><p>If you are using a heterogeneous machine that contains the Intel GPU, please refer to <a class="reference internal" href="../docs/install/install_for_gpu.html"><span class="doc">Intel GPU Software Installation</span></a></p></li>
 <li><p>Otherwise, please refer to <a class="reference internal" href="../docs/install/experimental/install_for_cpu.html"><span class="doc">Intel CPU Software Installation</span></a></p></li>
 </ul>
 </div>
 <div class="section" id="code">
 <h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
-<p>Use Tensorflow to compute graph: Conv -&gt; ReLU activation -&gt; Bias</p>
+<p>Use TensorFlow to compute graph: Conv -&gt; ReLU activation -&gt; Bias</p>
 <div class="section" id="quick-example-py">
 <h3>quick_example.py<a class="headerlink" href="#quick-example-py" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -160,8 +160,8 @@
 <div class="section" id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
 <ol class="simple">
-<li><p>In this example, it is not necessary to import intel_extension_for_tensorflow, and no need to call any its APIs.<br/>
-If install the <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[cpu]</span></code>, then the script will choose CPU as the backend and be executed on the CPU automatically; while if install <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[gpu]</span></code>, then the default backend will be GPU and the script will be executed on the GPU.</p></li>
+<li><p>In this example, it is not necessary to import intel_extension_for_tensorflow, and no need to call any of its APIs.<br/>
+If installed as the <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[cpu]</span></code>, then the script will choose CPU as the backend and be executed on the CPU automatically; while if installed as <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[gpu]</span></code>, then the default backend will be GPU and the script will be executed on the GPU.</p></li>
 </ol>
 </div>
 </div>

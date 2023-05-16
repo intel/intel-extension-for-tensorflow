@@ -4,8 +4,8 @@
 This example shows the guideline to run Model Zoo workloads on Intel CPU and GPU with the optimizations from Intel® Extension for TensorFlow*, without any model code changes.
 
 ## Prerequisites
-For Intel CPU, please refer to [Intel CPU software installation](../../docs/install/experimental/install_for_cpu.md#intel-cpu-software-installation).
-For Intel GPU, please refer to [Intel GPU software installation](../../docs/install/install_for_gpu.md#intel-gpu-software-installation).
+For Intel CPU, refer to [Intel CPU software installation](../../docs/install/experimental/install_for_cpu.md#intel-cpu-software-installation).
+For Intel GPU, refer to [Intel GPU software installation](../../docs/install/install_for_gpu.md#intel-gpu-software-installation).
 
 ## Execute
 
@@ -38,19 +38,21 @@ git checkout v2.8.0
 
   Take the ResNet50 v1.5 INT8 pb for example,
   ```
+
   wget https://storage.googleapis.com/intel-optimized-tensorflow/models/v1_8/resnet50v1_5_int8_pretrained_model.pb
+
   python host_const.py -i <path to the frozen graph downloaded above>/resnet50v1_5_int8_pretrained_model.pb -b -o <path to save the converted frozen graph>/resnet50v1_5_int8_pretrained_model-hostconst.pb
   ```
   Use the new INT8 pb for INT8 inference, After converting to the new INT8 pb.
 
 ## FAQ
-1.  During the Inception V3 INT8 batch inference, if choose to run with real data, you might encounter a message "Running out of images from dataset". It is a known issue of Model Zoo script.
+1.  During the Inception V3 INT8 batch inference, if running with real data, you might encounter a message "Running out of images from dataset". It is a known issue of Model Zoo script.
 
 Solution: 
 
 - Option 1: Please use dummy data instead. 
 
-- Option 2: If you want to run inference by real data, use the command below. And comment the last line of above script to unspecify the warmup_steps and steps.  
+- Option 2: If you want to run inference with real data, use the command below. And comment the last line of below int8_batch_inference.sh script to unspecify the warmup_steps and steps.  
 ```bash
 cd models
 vi ./quickstart/image_recognition/tensorflow/inceptionv3/inference/cpu/int8/int8_batch_inference.sh

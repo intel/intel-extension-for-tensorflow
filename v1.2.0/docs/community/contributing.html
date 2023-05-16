@@ -124,7 +124,7 @@ Submit a <a class="reference external" href="https://github.com/intel/intel-exte
 </div>
 <div class="section" id="developing-intel-extension-for-tensorflow">
 <h2>Developing Intel® Extension for TensorFlow*<a class="headerlink" href="#developing-intel-extension-for-tensorflow" title="Permalink to this headline">¶</a></h2>
-<p>Please refer to a full set of <a class="reference internal" href="../install/how_to_build.html"><span class="doc">instructions</span></a> on installing Intel® Extension for TensorFlow* from source.</p>
+<p>Refer to a full set of <a class="reference internal" href="../install/how_to_build.html"><span class="doc">instructions</span></a> on installing Intel® Extension for TensorFlow* from source.</p>
 </div>
 <div class="section" id="tips-and-debugging">
 <h2>Tips and Debugging<a class="headerlink" href="#tips-and-debugging" title="Permalink to this headline">¶</a></h2>
@@ -192,7 +192,7 @@ clang-format-12 -i -style<span class="o">=</span>file &lt;file&gt;
 cpplint --filter<span class="o">=</span>-legal/copyright --exclude<span class="o">=</span>./third_party --recursive ./
 </pre></div>
 </div>
-<p>Sometimes <code class="docutils literal notranslate"><span class="pre">cpplint</span></code> may report false positive errors, and you can comment code with <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">NOLINT</span></code> or <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">NOLINTNEXTLINE</span></code> to skip the line for check:</p>
+<p>Sometimes <code class="docutils literal notranslate"><span class="pre">cpplint</span></code> may report false positive errors. You can comment code with <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">NOLINT</span></code> or <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">NOLINTNEXTLINE</span></code> to skip the line for check:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;mkl.h&quot;</span><span class="c1"> // NOLINT(build/include_subdir)</span><span class="cp"></span>
 
 <span class="c1">// NOLINTNEXTLINE</span>
@@ -202,7 +202,7 @@ cpplint --filter<span class="o">=</span>-legal/copyright --exclude<span class="o
 </div>
 <div class="section" id="bazel-style-guide">
 <h3>bazel style guide<a class="headerlink" href="#bazel-style-guide" title="Permalink to this headline">¶</a></h3>
-<p><a class="reference external" href="https://github.com/bazelbuild/buildtools/tree/master/buildifier">buildifier</a> is a tool for formatting bazel <code class="docutils literal notranslate"><span class="pre">BUILD</span></code> and <code class="docutils literal notranslate"><span class="pre">.bzl</span></code> files with a standard convention(<code class="docutils literal notranslate"><span class="pre">xxx.tpl</span></code> files are not supported).</p>
+<p><a class="reference external" href="https://github.com/bazelbuild/buildtools/tree/master/buildifier">buildifier</a> is a tool for formatting bazel <code class="docutils literal notranslate"><span class="pre">BUILD</span></code> and <code class="docutils literal notranslate"><span class="pre">.bzl</span></code> files with a standard convention (<code class="docutils literal notranslate"><span class="pre">xxx.tpl</span></code> files are not supported).</p>
 <p>To check bazel files manually:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install go</span>
 wget https://golang.org/dl/go1.15.3.linux-amd64.tar.gz

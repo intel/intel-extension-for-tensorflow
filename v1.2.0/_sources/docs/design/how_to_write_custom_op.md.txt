@@ -2,19 +2,19 @@
 # How to write custom op
 
 ## 1.  Prerequisite
-* Before code changes, please make sure the environment setting and source code build pass by  [build procedure](https://github.com/intel-innersource/frameworks.ai.infrastructure.intel-extension-for-tensorflow.intel-extension-for-tensorflow/install/how_to_build.md).
+* Before code changes, please make sure the environment setting and source code build pass by  [build procedure](../install/how_to_build.md).
 * Check TensorFlow version.
     ```bash
     $ python -c "import tensorflow as tf;print(tf.__version__)
     ```
-* Check intel® Extension for TensorFlow* with verbose.
+* Check Intel Extension for TensorFlow* with verbose.
     ```bash
     $ export ITEX_VERBOSE=1
     $ export ONEDNN_VERBOSE=1
     ```
-    Refer to [quick example](../../examples/quick_example.md) to verify.    
-    Refer to [here](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-extension-for-tensorflow-code.html) to familiar with source code architecture. Custom op is built into all intel® Extension for Tensorflow* library.    
-    Refer to [here](https://www.tensorflow.org/guide/create_op) for TensorFlow offcial doc.
+    Refer to [quick example](../../examples/quick_example.md).    
+    Refer to [Intel® Extension for Tensorflow* Code Guide](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-extension-for-tensorflow-code.html) to familiar with source code architecture. Custom op is built into all Intel® Extension for Tensorflow* library.    
+    Refer to [TensorFlow Guide for Creating OP](https://www.tensorflow.org/guide/create_op) for TensorFlow offcial doc.
 
 ## 2.  Define the op interface and Register op
 Take **GeluOp** as an example.

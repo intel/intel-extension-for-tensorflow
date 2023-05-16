@@ -117,10 +117,9 @@
 <h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this headline">¶</a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
-<li><p>Cascade Lake</p></li>
-<li><p>Cooper Lake</p></li>
-<li><p>Ice Lake</p></li>
-<li><p>Sapphire Rapids</p></li>
+<li><p>2nd Generation Intel® Xeon® Scalable Processors.</p></li>
+<li><p>3rd Generation Intel® Xeon® Scalable Processors.</p></li>
+<li><p>4th Generation Intel® Xeon® Scalable Processors.</p></li>
 </ul>
 </div>
 <div class="section" id="software-requirements">
@@ -140,7 +139,7 @@
 <div class="section" id="get-docker-container-from-dockerhub">
 <h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Permalink to this headline">¶</a></h3>
 <p>Pre-built docker images are available at <a class="reference external" href="https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags">DockerHub</a>.
-Please run the following command to pull the CPU Docker container image to your local machine.</p>
+Run the following command to pull the CPU Docker container image to your local machine.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:cpu
 $ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:cpu
 </pre></div>
@@ -168,11 +167,11 @@ $ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:cpu
 </div>
 <div class="section" id="system-environment-install">
 <h4>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this headline">¶</a></h4>
-<p>If want to system install in $HOME, append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
+<p>If you prefer install tensorflow in $HOME, append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip3 install --user <span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.12.0
 </pre></div>
 </div>
-<p>And the following system environment install for Intel® Extension for TensorFlow* will use the same practice.</p>
+<p>And the following system environment install for Intel® Extension for TensorFlow* will also append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the command.</p>
 </div>
 </div>
 <div class="section" id="install-intel-extension-for-tensorflow">

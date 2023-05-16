@@ -78,7 +78,7 @@
 <h1>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU<a class="headerlink" href="#accelerate-resnet50-training-by-xpuautoshard-on-intel-gpu" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The XPUAutoShard feature of Intel® Extension for TensorFlow* automatically shards the input data to the Intel® GPU devices. Currently, it supports to apply the shards on multiple GPU tiles to maximize the hardware utilization and improve performance.</p>
+<p>The XPUAutoShard feature of Intel® Extension for TensorFlow* automatically shards the input data to the Intel® GPU devices. Currently, it supports applying the shards on multiple GPU tiles to maximize the hardware utilization and improve performance.</p>
 <p>This example shows ResNet50 training speedup with XPUAutoShard enabled.</p>
 </div>
 <div class="section" id="hardware-requirements">
@@ -95,7 +95,7 @@
 <h3>Prepare the Codes<a class="headerlink" href="#prepare-the-codes" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/tensorflow/models tf-models
 <span class="nb">cd</span> tf-models
-git checkout r2.11
+git checkout r2.12
 git apply ../shard.patch
 </pre></div>
 </div>
@@ -154,7 +154,7 @@ python resnet_ctl_imagenet_main.py <span class="se">\</span>
 <h3>With XPUAutoShard<a class="headerlink" href="#with-xpuautoshard" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="python-api">
 <h4>Python API<a class="headerlink" href="#python-api" title="Permalink to this headline">¶</a></h4>
-<p>Intel® Extension for TensorFlow* provides python API to enable XPUAutoShard feature as follwing:</p>
+<p>Intel® Extension for TensorFlow* provides Python APIs to enable XPUAutoShard feature as follws:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">config</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ShardingConfig</span><span class="p">()</span>
 <span class="n">config</span><span class="o">.</span><span class="n">auto_mode</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="n">device_gpu</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">add</span><span class="p">()</span>
@@ -170,7 +170,7 @@ python resnet_ctl_imagenet_main.py <span class="se">\</span>
 </div>
 <div class="section" id="sharding-parameters-setting">
 <h4>Sharding Parameters Setting<a class="headerlink" href="#sharding-parameters-setting" title="Permalink to this headline">¶</a></h4>
-<p>In this example, the above codes have been added to <code class="docutils literal notranslate"><span class="pre">resnet_ctl_imagenet_main.py</span></code> with the patch and you can enable XPUAutoShard via simply adding <code class="docutils literal notranslate"><span class="pre">--use_itex_sharding=True</span></code> to the command-line. You can optionly modify the follwing parameters in the <code class="docutils literal notranslate"><span class="pre">ShardingConfig</span></code> based on your need.</p>
+<p>In this example, the above code has been added to <code class="docutils literal notranslate"><span class="pre">resnet_ctl_imagenet_main.py</span></code> with the patch and you can enable XPUAutoShard via simply adding <code class="docutils literal notranslate"><span class="pre">--use_itex_sharding=True</span></code> to the command-line. You can optionally modify the following parameters in the <code class="docutils literal notranslate"><span class="pre">ShardingConfig</span></code> based on your need.</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -196,7 +196,7 @@ python resnet_ctl_imagenet_main.py <span class="se">\</span>
 </div>
 <div class="section" id="further-settings">
 <h4>Further Settings<a class="headerlink" href="#further-settings" title="Permalink to this headline">¶</a></h4>
-<p>For further peformance speedup, you can enable multi-stream via setting <code class="docutils literal notranslate"><span class="pre">ITEX_ENABLE_MULTIPLE_STREAM=1</span></code> to create multiple queues for each device.</p>
+<p>For further performance speedup, you can enable multi-stream via setting <code class="docutils literal notranslate"><span class="pre">ITEX_ENABLE_MULTIPLE_STREAM=1</span></code> to create multiple queues for each device.</p>
 </div>
 <div class="section" id="executing-command">
 <h4>Executing Command<a class="headerlink" href="#executing-command" title="Permalink to this headline">¶</a></h4>

@@ -167,27 +167,15 @@ void DumpToFileInDirOrStdout(const std::string& file_name,
   outputFile->keep();
 }
 
-Status RunAutoShard(const itex::graph::GrapplerItem& item,
-                    const GraphDef& graph_def, GraphDef* optimized_graph,
-                    bool have_matmul_or_conv) {
+Status RunAutoShard(itex::graph::OptimizerContext* opt_ctx,
+                    const itex::graph::GrapplerItem& item,
+                    const GraphDef& graph_def, GraphDef* optimized_graph) {
   // Use shape inference feature.
   Status status;
   GraphDef multable_graph_def = graph_def;
   auto ctx = itex::graph::AutoShardContext(item, &multable_graph_def, &status);
   // Infer statically first and only once.
   ctx.GetGraphProperties();
-
-  // It is assumed here that the GraphDef containing MatMul or Conv OP is
-  // the main part of the model, which can be converted to MLIR normally,
-  // and then AutoShard can be performed.
-  // On the contrary, the GraphDef that does not contain MatMul or Conv OP
-  // is not what we need to pay attention to, and it may not be converted into
-  // MLIR normally, and then AutoShard cannot be performed, so it will return
-  // directly.
-  if (have_matmul_or_conv == false) {
-    *optimized_graph = multable_graph_def;
-    return Status::OK();
-  }
 
   TFGPassPipelineBuilder builder = DefaultGrapplerPipeline;
   unsigned num_tfg_threads = 0;

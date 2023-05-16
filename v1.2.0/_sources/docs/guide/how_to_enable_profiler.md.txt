@@ -70,6 +70,6 @@ The GPU profiler supports the following profiling items:
 
 
 ## FAQ
-  1.If you see "No dashboards are activated for the current data set." the first time you enter the Tensorboard in the browser:
+  1.If you see "No dashboards are activated for the current data set." the first time you enter the TensorBoard in the browser:
   
      Refresh the page, and the profile should be shown.

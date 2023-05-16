@@ -2,13 +2,13 @@
 
 ## Installation
 
-* If you are using a heterogeneous machine which contains the Intel GPU, please refer to [Intel GPU Software Installation](../docs/install/install_for_gpu.md)
+* If you are using a heterogeneous machine that contains the Intel GPU, please refer to [Intel GPU Software Installation](../docs/install/install_for_gpu.md)
 
 * Otherwise, please refer to [Intel CPU Software Installation](../docs/install/experimental/install_for_cpu.md)
 
 ## Code
 
-Use Tensorflow to compute graph: Conv -> ReLU activation -> Bias
+Use TensorFlow to compute graph: Conv -> ReLU activation -> Bias
 
 ### quick_example.py
 ```python
@@ -78,5 +78,5 @@ Finished
 ```
 
 ## Notes
-1. In this example, it is not necessary to import intel_extension_for_tensorflow, and no need to call any its APIs.<br/>
-If install the `intel-extension-for-tensorflow[cpu]`, then the script will choose CPU as the backend and be executed on the CPU automatically; while if install `intel-extension-for-tensorflow[gpu]`, then the default backend will be GPU and the script will be executed on the GPU.
+1. In this example, it is not necessary to import intel_extension_for_tensorflow, and no need to call any of its APIs.<br/>
+If installed as the `intel-extension-for-tensorflow[cpu]`, then the script will choose CPU as the backend and be executed on the CPU automatically; while if installed as `intel-extension-for-tensorflow[gpu]`, then the default backend will be GPU and the script will be executed on the GPU.

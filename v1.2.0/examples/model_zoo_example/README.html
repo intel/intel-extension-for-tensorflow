@@ -82,8 +82,8 @@
 </div>
 <div class="section" id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
-<p>For Intel CPU, please refer to <a class="reference external" href="../../docs/install/experimental/install_for_cpu.html#intel-cpu-software-installation">Intel CPU software installation</a>.
-For Intel GPU, please refer to <a class="reference external" href="../../docs/install/install_for_gpu.html#intel-gpu-software-installation">Intel GPU software installation</a>.</p>
+<p>For Intel CPU, refer to <a class="reference external" href="../../docs/install/experimental/install_for_cpu.html#intel-cpu-software-installation">Intel CPU software installation</a>.
+For Intel GPU, refer to <a class="reference external" href="../../docs/install/install_for_gpu.html#intel-gpu-software-installation">Intel GPU software installation</a>.</p>
 </div>
 <div class="section" id="execute">
 <h2>Execute<a class="headerlink" href="#execute" title="Permalink to this headline">¶</a></h2>
@@ -135,7 +135,9 @@ git checkout v2.8.0
 <li><p>INT8 Inference Optimization</p>
 <p>To avoid memory copy on GPU, we provide a tool to convert the const to host const for INT8 pretrained-models.</p>
 <p>Take the ResNet50 v1.5 INT8 pb for example,</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">storage</span><span class="o">.</span><span class="n">googleapis</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">optimized</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">v1_8</span><span class="o">/</span><span class="n">resnet50v1_5_int8_pretrained_model</span><span class="o">.</span><span class="n">pb</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+<span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">storage</span><span class="o">.</span><span class="n">googleapis</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">optimized</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">v1_8</span><span class="o">/</span><span class="n">resnet50v1_5_int8_pretrained_model</span><span class="o">.</span><span class="n">pb</span>
+
 <span class="n">python</span> <span class="n">host_const</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">i</span> <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">the</span> <span class="n">frozen</span> <span class="n">graph</span> <span class="n">downloaded</span> <span class="n">above</span><span class="o">&gt;/</span><span class="n">resnet50v1_5_int8_pretrained_model</span><span class="o">.</span><span class="n">pb</span> <span class="o">-</span><span class="n">b</span> <span class="o">-</span><span class="n">o</span> <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">save</span> <span class="n">the</span> <span class="n">converted</span> <span class="n">frozen</span> <span class="n">graph</span><span class="o">&gt;/</span><span class="n">resnet50v1_5_int8_pretrained_model</span><span class="o">-</span><span class="n">hostconst</span><span class="o">.</span><span class="n">pb</span>
 </pre></div>
 </div>
@@ -147,12 +149,12 @@ git checkout v2.8.0
 <div class="section" id="faq">
 <h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
 <ol class="simple">
-<li><p>During the Inception V3 INT8 batch inference, if choose to run with real data, you might encounter a message “Running out of images from dataset”. It is a known issue of Model Zoo script.</p></li>
+<li><p>During the Inception V3 INT8 batch inference, if running with real data, you might encounter a message “Running out of images from dataset”. It is a known issue of Model Zoo script.</p></li>
 </ol>
 <p>Solution:</p>
 <ul class="simple">
 <li><p>Option 1: Please use dummy data instead.</p></li>
-<li><p>Option 2: If you want to run inference by real data, use the command below. And comment the last line of above script to unspecify the warmup_steps and steps.</p></li>
+<li><p>Option 2: If you want to run inference with real data, use the command below. And comment the last line of below int8_batch_inference.sh script to unspecify the warmup_steps and steps.</p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> models
 vi ./quickstart/image_recognition/tensorflow/inceptionv3/inference/cpu/int8/int8_batch_inference.sh

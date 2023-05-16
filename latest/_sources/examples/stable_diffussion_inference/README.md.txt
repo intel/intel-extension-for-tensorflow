@@ -20,7 +20,7 @@ We optimized official keras-cv Stable Diffusion, eg, concatenate two forward pas
 ```
 git clone https://github.com/keras-team/keras-cv.git
 cd keras-cv
-git reset --hard f2de9510460fe8368c23df8fd168827c02c45679
+git reset --hard 53d8aad680ce56bb37f7245dd5e2782f2ca37034
 git apply patch
 pip install .
 ```
@@ -55,13 +55,18 @@ python stable_diffusion_inference.py --precision fp32
 python stable_diffusion_inference.py --precision fp16
 ```
 
+#### Accuracy
+Note: At present, we evaluate accuracy by calculating the Fréchet inception distance (FID) between FP16 outcomes of 7 images on XPU and FP16 outcomes on NVIDIA A100. This may change with subsequent releases.
+```shell
+python stable_diffusion_accuracy.py --precision fp16 \
+  --load_ref_result --ref_result_dir "./nv_results/img_arrays_for_acc.txt"
+```
 
 ## Example Output
 With successful execution, it will print out the following results:
 
 ```
-50/50 [==============================] - 4s 88ms/step
-Start plotting the generated images to fp16_1imgs_50steps.png
+latency 81.1146879196167 ms, throughput 12.328223477737884 it/s
 ```
 
 ## FAQ

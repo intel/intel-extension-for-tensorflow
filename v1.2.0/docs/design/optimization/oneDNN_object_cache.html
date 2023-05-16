@@ -78,20 +78,20 @@
 <h1>oneDNN object cache optimization<a class="headerlink" href="#onednn-object-cache-optimization" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The OneDNN object (primitive/primitive description/memory) creation overhead becomes noticeable, especially in small model latency scenarios.</p>
+<p>The oneDNN object (primitive/primitive description/memory) creation overhead becomes noticeable, especially in small model latency scenarios.</p>
 <p>OneDNN object cache optimization is an experimental feature for optimizing model latency by binding a oneDNN object to a TensorFlow graph node. You can enable this environment by setting the environment variable ‘ITEX_CACHE_ONEDNN_OBJECT’ to on. By default, it is set to off.</p>
 <p>TensorFlow supports optimizations to support different scenarios:</p>
 <ul class="simple">
 <li><p><strong>Dynamic Shape</strong> - TensorFlow supports dynamic shape, which means a node can get different shape input. This optimization will invalidate the cache by checking the input dims/shape with the oneDNN meta input (used in layout propagation).</p></li>
 <li><p><strong>Operator Parallel Execution</strong> - TensorFlow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/config/threading">operator parallel execution</a>, which means a node may execute in different schedule threads. The oneDNN requires thread safe in this scenario only: <strong>user scratchpad</strong> and <strong>oneDNN stream creation on demand</strong>. This optimization is aligning to satisfy a oneDNN requirement.</p></li>
-<li><p><strong>Concurrent Execution</strong> - Tensorflow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session#as_default">concurrent execution</a>, which means a node may be executed in different thread concurrently. The optimization handles this case by adding a mutex lock.</p></li>
+<li><p><strong>Concurrent Execution</strong> - TensorFlow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session#as_default">concurrent execution</a>, which means a node may be executed in different thread concurrently. The optimization handles this case by adding a mutex lock.</p></li>
 </ul>
 </div>
 <div class="section" id="optimization-in-convolution">
 <h2>Optimization in convolution<a class="headerlink" href="#optimization-in-convolution" title="Permalink to this headline">¶</a></h2>
 <p>Convolution optimization will cache oneDNN object <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_memory-2.html">dnnl::memory</a>, <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_primitive-2.html">dnnl::primitive</a>, <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_primitive_desc-2.html">dnnl::primitive_desc</a> and <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_exec_arg_t.html">dnnl_exec_arg_t</a></p>
 <ul class="simple">
-<li><p><strong>dnnl::memory</strong> - input/weight/bias/output/scratchpad memory and two temporary memory for input and weight reorder if needed.</p></li>
+<li><p><strong>dnnl::memory</strong> - input/weight/bias/output/scratchpad memory and two temporary memory areas for input and weight reorder if needed.</p></li>
 <li><p><strong>dnnl::primitive</strong> - convolution primitive and input/weight reorder primitive if needed.</p></li>
 <li><p><strong>dnnl::primitive_desc</strong> - convolution primitive description.</p></li>
 <li><p><strong>dnnl_exec_arg_t</strong> - convolution primitive arguments and input/weight reorder primitive arguments if needed.</p></li>
