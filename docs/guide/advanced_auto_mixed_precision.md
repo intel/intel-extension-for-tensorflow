@@ -2,7 +2,7 @@
 
 Mixed Precision uses lower-precision data types (such as FP16 or BF16) to make models run faster with less memory consumption during training and inference.
 
-Stock Tensorflow provides two ways to do this, Grappler Graph Optimization [Auto Mixed Precision](https://www.tensorflow.org/guide/graph_optimization)**(AMP)** and [Keras mixed precision API](https://www.tensorflow.org/guide/mixed_precision).
+Stock TensorFlow provides two ways to do this, Grappler Graph Optimization [Auto Mixed Precision](https://www.tensorflow.org/guide/graph_optimization) **(AMP)** and [Keras mixed precision API](https://www.tensorflow.org/guide/mixed_precision).
 
 Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API in Stock TensorFlow, and provides an **Advanced Auto Mixed Precision** feature for better performance.
 
@@ -30,7 +30,7 @@ Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision
 
 II. Advanced Auto Mixed Precision
 
-Advanced Auto Mixed Precision (Advanced AMP) is similar to stock Tensorflow Auto Mixed Precision, but it offers better usage and performance on Intel CPU and GPU.
+Advanced Auto Mixed Precision (Advanced AMP) is similar to stock TensorFlow Auto Mixed Precision, but it offers better usage and performance on Intel CPU and GPU.
 
 |Feature|Keras Mixed Precision API|Advanced Auto Mixed Precision|
 |-|-|-|
@@ -64,11 +64,11 @@ Advanced Auto Mixed Precision supports data type depended on hardware:
 
 Intel® Extension for TensorFlow* graph optimizer provides more powerful optimization for mixed precision graph versus a stock TensorFlow custom graph optimizer.
 
-I. After Advanced AMP of Intel® Extension for TensorFlow* is enabled, the stock Tensorflow AMP components: AMP and Remapper will be disabled automatically.
+I. After Advanced AMP of Intel® Extension for TensorFlow* is enabled, the stock TensorFlow AMP components: AMP and Remapper will be disabled automatically.
 
 II. Intel® Extension for TensorFlow* AMP and Remapper work for mixed precision. The order is changed to Remapper, then AMP, so that fusion operations can be mixed precision.
 
-III. Intel® Extension for TensorFlow* implements some existing operations to cover those in stock Tensorflow, for better performance in Intel hardware.
+III. Intel® Extension for TensorFlow* implements some existing operations to cover those in stock TensorFlow, for better performance in Intel hardware.
 
 IV. Intel® Extension for TensorFlow* implements custom operations.
 
@@ -95,7 +95,7 @@ I. Install Intel® Extension for TensorFlow* in running environment.
 
 After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.
 
-Refer to [installation](/README.md#Install) instructions for more details.
+Refer to [installation](../../get_started.md##Install) instructions for more details.
 
 II. Enable Advanced AMP.
 
@@ -122,7 +122,7 @@ Train model for BF16 with Advanced AMP on GPU device.
 
 #### Setup
 
-Install Intel® Extension for TensorFlow*, refer to [installation](/README.md#Install).
+Install Intel® Extension for TensorFlow*, refer to [installation](../../get_started.md##Install).
 
 #### Enable Advanced AMP
 
@@ -134,7 +134,7 @@ Use either the Python API or the environment variables to enable Advanced AMP.
 
 #### Original Code
 
-Insert the python API above in the original code, or set environment variables above before executing the original code.
+Insert the Python API above in the original code, or set environment variables above before executing the original code.
 
 ```python
 import tensorflow as tf
@@ -143,7 +143,7 @@ from tensorflow.keras import layers
 
 
 if tf.config.list_physical_devices('XPU'):
-  print('The model will run with 4096 units on a XPU')
+  print('The model will run with 4096 units on an XPU')
   num_units = 4096
 else:
   print('The model will run with 64 units on a CPU')
@@ -181,7 +181,7 @@ The first epoch may be slower because TensorFlow optimizes the model during the 
 
 ### Log and Save Optimized Graph
 
-Advanced AMP supports outputting the log and optimized graph by setting environment variable:
+Advanced AMP supports outputting the log and optimized graph by setting an environment variable:
 
 `export ITEX_AUTO_MIXED_PRECISION_LOG_PATH="/my/path/"`
 

@@ -4,7 +4,7 @@
 
 ### Intel GPU Driver
 
-Refer to [Install Intel GPU dirver](./../docs/install/install_for_gpu.md#install-gpu-drivers)
+Refer to [Install Intel GPU driver](./../docs/install/install_for_gpu.md#install-gpu-drivers)
 
 ### Intel® oneAPI Base Toolkit
 
@@ -13,14 +13,15 @@ Refer to [Install Intel® oneAPI Base Toolkit](./../docs/install/install_for_gpu
 ### Setup Running Environment
 1. Python
 
-    This example is recommend to use Python 3.9 or newer. Check it:
+    We recommend you use Python 3.9 or newer.  Check which version you're running by using this command:
     ```
     python -V
     ```
 
 2. Create Virtual Environment
 
-    We suggest to create virtual environments **env_itex** and install official Tensorflow* in it, like:
+    
+    We recommend you create a virtual Python environment called env_itex and install official Tensorflow* in it, like this:
     
     ```
     export ENV_NAME=env_itex
@@ -52,4 +53,4 @@ source env_itex/bin/activate
 
 ### Run Script
 
-Please run your script with Intel® Extension for TensorFlow*.
+Run your script with Intel® Extension for TensorFlow*.

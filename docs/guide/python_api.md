@@ -28,7 +28,7 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 
 | Python APIs        | Default value | Environment Variables                                        | Default value                                | Definition                                                   |
 | ------------------ | ------------------ | ------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------ |
-| `itex.set_backend` |`GPU`or`CPU` |`ITEX_XPU_BACKEND`                                           | `GPU`or`CPU`                                        | set `CPU`/`GPU` as specific `XPU` backend with optimization options for execution.  |
+| `itex.set_backend` |`GPU` or `CPU` |`ITEX_XPU_BACKEND`                                           | `GPU` or `CPU`                                        | set `CPU`/`GPU` as specific `XPU` backend with optimization options for execution.  |
 | `itex.get_backend` |`N/A`| `N/A`                                                        | `N/A`                                        | Get the string of current XPU backend. For example `CPU`, `GPU` or `AUTO`. |
 | `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION`<br>`ITEX_SHARDING` | `0`<br>`1`*<br>`1`<br/>`0`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Intel® Data Center GPU Max Series) and default `OFF` in Intel CPU by hardware attributes|
 | `itex.experimental_ops_override` |`N/A` |`N/A`                                           | OFF                                        | Call this function to automatically override the operators with same name in TensorFlow by `itex.ops`. |
@@ -119,7 +119,7 @@ print(itex.get_backend())
 ```
 Then the log will output `GPU`.
 
-## Itex Config Protocol
+## Intel® Extension for TensorFlow* Config Protocol
 **itex.ConfigProto: ProtocolMessage for XPU configuration under different types of backends and optimization options.**
 
 **enum class**
@@ -270,7 +270,7 @@ For details, refer to [Customized Operators](itex_ops.md).
 
 **itex.experimental_ops_override: Public API to override TensorFlow specific operators with same name by Customized Operators in itex.ops namespace.**
 
-For details, refer to [ITEX ops override](itex_ops_override.md).
+For details, refer to [Intel® Extension for TensorFlow* ops override](itex_ops_override.md).
 
 Example:
 
