@@ -20,6 +20,14 @@ config_setting(
 )
 
 config_setting(
+    name = "build_with_onednn_graph",
+    define_values = {
+        "build_with_onednn_graph": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
     name = "build_with_tbb",
     define_values = {
         "build_with_tbb": "true",

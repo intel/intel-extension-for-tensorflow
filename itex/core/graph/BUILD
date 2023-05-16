@@ -5,6 +5,10 @@ cc_library(
     name = "xpu_optimizer",
     srcs = ["xpu_optimizer.cc"],
     hdrs = ["xpu_optimizer.h"],
+    defines = select({
+        "//third_party/onednn:build_with_onednn_graph": ["ITEX_ONEDNN_GRAPH"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         ":optimizer_config_hdr",
@@ -13,10 +17,12 @@ cc_library(
         "//itex/core/graph/generic_layout_optimizer",
         "//itex/core/graph/memory_opt_pass",
         "//itex/core/graph/native_layout",
-        "//itex/core/graph/onednn_graph",
         "//itex/core/graph/onednn_layout",
         "//itex/core/graph/remapper",
-    ] + if_dpcpp(
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["//itex/core/graph/onednn_graph"],
+        "//conditions:default": [],
+    }) + if_dpcpp(
         # TFG should be disabled when building with CPU, otherwise it will introduce llvm symbol conflict.
         # TFG depends on llvm-15, while CPU graph compiler needs llvm-13.
         [

@@ -437,7 +437,9 @@ itex_xpu_library(
         "//itex:core",
         "//itex/core/kernels/legacy:legacy_kernels",
         "//itex/core/kernels/onednn:onednn_kernels",
-        "//itex/core/kernels/onednn_graph:onednn_graph_op",
-    ] + CPU_KERNELS,
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["//itex/core/kernels/onednn_graph:onednn_graph_op"],
+        "//conditions:default": [],
+    }) + CPU_KERNELS,
     alwayslink = True,
 )

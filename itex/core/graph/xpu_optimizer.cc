@@ -18,7 +18,9 @@ limitations under the License.
 #include "itex/core/graph/generic_layout_optimizer/generic_layout_optimizer.h"
 #include "itex/core/graph/memory_opt_pass/memory_opt_pass.h"
 #include "itex/core/graph/native_layout/native_layout.h"
+#ifdef ITEX_ONEDNN_GRAPH
 #include "itex/core/graph/onednn_graph/onednn_graph.h"
+#endif  // ITEX_ONEDNN_GRAPH
 #include "itex/core/graph/onednn_layout/onednn_layout.h"
 #include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/remapper/remapper.h"
@@ -165,6 +167,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
     }
   }
 
+#ifdef ITEX_ONEDNN_GRAPH
   if (config.enable_onednn_graph && opt_ctx.enable_complete_opt) {
     optimized_graph_def.Swap(&graph_def);
     SET_STATUS_IF_ERROR(tf_status,
@@ -181,6 +184,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
       }
     }
   }
+#endif  // ITEX_ONEDNN_GRAPH
 
   if (config.enable_layout_opt && opt_ctx.enable_complete_opt) {
     optimized_graph_def.Swap(&graph_def);

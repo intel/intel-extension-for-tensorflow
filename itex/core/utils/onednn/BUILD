@@ -26,9 +26,16 @@ cc_library(
     hdrs = glob([
         "onednn_layout_util.h",
     ]),
+    defines = select({
+        "//third_party/onednn:build_with_onednn_graph": ["ITEX_ONEDNN_GRAPH"],
+        "//conditions:default": [],
+    }),
     linkstatic = 1,
     visibility = ["//visibility:public"],
-    deps = onednn_graph_deps() + [
+    deps = select({
+        "//third_party/onednn:build_with_onednn_graph": [":onednn_graph_util"],
+        "//conditions:default": [],
+    }) + [
         ":onednn_util",
         "//itex/core/utils:common_utils",
     ] + onednn_deps(),  #TODO3.0: LLGA and onednn use different branch.

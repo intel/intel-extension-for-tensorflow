@@ -2164,7 +2164,9 @@ itex_xpu_library(
         "//itex/core/kernels/gpu/special_math:special_math_op",
         "//itex/core/kernels/legacy:legacy_kernels",
         "//itex/core/kernels/onednn:onednn_kernels",
-        "//itex/core/kernels/onednn_graph:onednn_graph_op",
-    ] + GPU_KERNELS,
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["//itex/core/kernels/onednn_graph:onednn_graph_op"],
+        "//conditions:default": [],
+    }) + GPU_KERNELS,
     alwayslink = True,
 )

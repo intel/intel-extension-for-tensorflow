@@ -18,10 +18,12 @@ limitations under the License.
 
 #include <vector>
 
+#ifdef ITEX_ONEDNN_GRAPH
 #include "oneapi/dnnl/dnnl_graph.hpp"
 #ifndef INTEL_CPU_ONLY
 #include "oneapi/dnnl/dnnl_graph_sycl.hpp"
 #endif  // INTEL_CPU_ONLY
+#endif  // ITEX_ONEDNN_GRAPH
 
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/onednn/onednn_util.h"
@@ -188,6 +190,7 @@ class OneDnnShape {
   }
 
   // Set shape of logical tensor.
+#ifdef ITEX_ONEDNN_GRAPH
 #ifdef ITEX_ONEDNN_3_0
   inline void SetShape(dnnl::graph::logical_tensor::dims shape) {
 #else
@@ -195,8 +198,10 @@ class OneDnnShape {
 #endif
     for (size_t i = 0; i < shape.size(); i++) data_.shape_[i] = shape[i];
   }
+#endif
 
   // Get shape of logical tensor.
+#ifdef ITEX_ONEDNN_GRAPH
 #ifdef ITEX_ONEDNN_3_0
   inline const dnnl::graph::logical_tensor::dims GetShape() {
     dnnl::graph::logical_tensor::dims retVal;
@@ -209,8 +214,10 @@ class OneDnnShape {
       if (data_.shape_[i] != -1) retVal.push_back(data_.shape_[i]);
     return retVal;
   }
+#endif
 
   // Set stride of logical tensor.
+#ifdef ITEX_ONEDNN_GRAPH
 #ifdef ITEX_ONEDNN_3_0
   inline void SetStride(dnnl::graph::logical_tensor::dims stride) {
 #else
@@ -218,8 +225,10 @@ class OneDnnShape {
 #endif
     for (int i = 0; i < stride.size(); i++) data_.stride_[i] = stride[i];
   }
+#endif
 
   // Get stride of logical tensor.
+#ifdef ITEX_ONEDNN_GRAPH
 #ifdef ITEX_ONEDNN_3_0
   inline const dnnl::graph::logical_tensor::dims GetStride() {
     dnnl::graph::logical_tensor::dims retVal;
@@ -232,6 +241,7 @@ class OneDnnShape {
       if (data_.stride_[i] != -1) retVal.push_back(data_.stride_[i]);
     return retVal;
   }
+#endif
 
   inline void SetLayoutId(int64_t layout_id) { data_.layout_id_ = layout_id; }
 
