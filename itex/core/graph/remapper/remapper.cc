@@ -1038,13 +1038,13 @@ bool FindFusedAddN(const RemapperContext& ctx, int node_index,
   if (HasControlFaninOrFanout(*node_view)) return false;
 
   const auto* addN = node_view->node();
-  if (!addN || !IsAddN(*addN)) return false;
+  if (!addN || !(IsAddN(*addN) || IsAddV2(*addN))) return false;
 
   // TODO(itex): only support AddN+L2Loss fusion on GPU for now, will remove
   // this limitation once supported
   if (!NodeIsOnGpu(addN)) return false;
-
-  int num = addN->attr().at("N").i();
+  int num = 2;
+  if (IsAddN(*addN)) num = addN->attr().at("N").i();
   std::vector<int> inputs;
   for (int i = 0; i < num; ++i) {
     const auto* l2loss = node_view->GetRegularFanin(i).node_view();
@@ -3683,7 +3683,7 @@ Status AddFusedAddN(RemapperContext* ctx, const FusedAddN& matched,
   const GraphDef* graph = ctx->graph_view.graph();
   const NodeDef& addN = graph->node(matched.addN);
 
-  ITEX_DCHECK(IsAddN(addN));
+  ITEX_DCHECK(IsAddN(addN) || IsAddV2(addN));
 
   int num = matched.inputs_of_addN.size();
   ITEX_DCHECK_GE(num, 0);
@@ -3701,6 +3701,7 @@ Status AddFusedAddN(RemapperContext* ctx, const FusedAddN& matched,
     fused_op.add_input(graph->node(l2loss_index).input(0));
   }
   CopyAllAttrs(addN, &fused_op);
+  if (IsAddV2(addN)) AddNodeAttr("N", 2, &fused_op);
   AddNodeAttr("fused_ops",
               absl::Span<const absl::string_view>{"AddN", "l2loss"}, &fused_op);
 

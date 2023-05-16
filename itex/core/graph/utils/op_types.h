@@ -26,6 +26,7 @@ namespace graph {
 bool IsAccMatMul(const NodeDef& node);
 bool IsAdd(const NodeDef& node);
 bool IsAddN(const NodeDef& node);
+bool IsAddV2(const NodeDef& node);
 bool IsAll(const NodeDef& node);
 bool IsAngle(const NodeDef& node);
 bool IsAny(const NodeDef& node);

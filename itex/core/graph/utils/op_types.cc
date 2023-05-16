@@ -44,6 +44,8 @@ bool IsAdd(const NodeDef& node) {
 
 bool IsAddN(const NodeDef& node) { return node.op() == "AddN"; }
 
+bool IsAddV2(const NodeDef& node) { return node.op() == "AddV2"; }
+
 bool IsAll(const NodeDef& node) { return node.op() == "All"; }
 
 bool IsAngle(const NodeDef& node) { return node.op() == "Angle"; }
