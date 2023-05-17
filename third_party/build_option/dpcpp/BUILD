@@ -1,5 +1,7 @@
 licenses(["notice"])
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
 config_setting(
     name = "build_with_dpcpp",
     define_values = {

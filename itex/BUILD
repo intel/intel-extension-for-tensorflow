@@ -11,8 +11,11 @@ string_flag(
     values = [
         "cpu_avx2_backend",
         "cpu_avx512_backend",
-        "gpu_backend",
+        "cpu_cc_backend",
+        "gpu_orig_backend",
+        "gpu_cc_backend",
         "common_lib",
+        "xla_extension",
         "dummy",
     ],
 )
@@ -29,18 +32,39 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "cpu_cc_build",
+    flag_values = {":itex_build_target": "cpu_cc_backend"},
+    visibility = ["//visibility:public"],
+)
+
 selects.config_setting_group(
     name = "cpu_build",
     match_any = [
         ":cpu_avx2_build",
         ":cpu_avx512_build",
+        ":cpu_cc_build",
     ],
 )
 
 config_setting(
-    name = "gpu_build",
-    flag_values = {":itex_build_target": "gpu_backend"},
+    name = "gpu_orig_build",
+    flag_values = {":itex_build_target": "gpu_orig_backend"},
     visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "gpu_cc_build",
+    flag_values = {":itex_build_target": "gpu_cc_backend"},
+    visibility = ["//visibility:public"],
+)
+
+selects.config_setting_group(
+    name = "gpu_build",
+    match_any = [
+        ":gpu_orig_build",
+        ":gpu_cc_build",
+    ],
 )
 
 selects.config_setting_group(
@@ -90,7 +114,7 @@ itex_xpu_binary(
         "-DINTEL_GPU_ONLY",
     ],
     linkshared = True,
-    set_target = "gpu_backend",
+    set_target = "gpu_orig_backend",
     visibility = ["//visibility:public"],
     deps = if_dpcpp(
         [
@@ -109,6 +133,7 @@ itex_xpu_binary(
 itex_xpu_binary(
     name = "libitex_xla_extension.so",
     linkshared = True,
+    set_target = "xla_extension",
     visibility = ["//visibility:public"],
     deps = if_dpcpp(
         [
@@ -122,6 +147,7 @@ itex_xpu_binary(
     name = "libitex_gpu_cc.so",
     linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
     linkshared = True,
+    set_target = "gpu_cc_backend",
     visibility = ["//visibility:public"],
     deps = if_dpcpp(
         [
@@ -164,6 +190,7 @@ cc_binary(
         "-DINTEL_CPU_ONLY",
     ],
     linkshared = True,
+    set_target = "cpu_cc_backend",
     visibility = ["//visibility:public"],
     deps = if_dpcpp(
         [],

@@ -55,8 +55,9 @@ def if_cpu_backend(if_true, if_false = []):
     })
 
 def avx_copts():
-    # Default CPU build opts: "-mavx", "-mavx2"
-    # avx512 CPU build opts: "-mavx", "-mavx2", "-mavx512f", "-mavx512pf", "-mavx512cd", "-mavx512bw", "-march=skylake-avx512", "-mavx512dq"
+    # CPU default build opts: "-mavx", "-mavx2"
+    # CPU avx512 build opts: "-mavx", "-mavx2", "-mavx512f", "-mavx512pf", "-mavx512cd", "-mavx512bw", "-march=skylake-avx512", "-mavx512dq"
+    # CPU CC build opts: "-march=native"
     return (
         select({
             "@intel_extension_for_tensorflow//itex:cpu_build": [
@@ -72,6 +73,11 @@ def avx_copts():
                 "-mavx512bw",
                 "-march=skylake-avx512",
                 "-mavx512dq",
+            ],
+            "//conditions:default": [],
+        }) + select({
+            "@intel_extension_for_tensorflow//itex:cpu_cc_build": [
+                "-march=native",
             ],
             "//conditions:default": [],
         })
