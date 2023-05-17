@@ -60,9 +60,9 @@ struct Scan<Eigen::internal::SumReducer<T>, T> {
     const int elems = num_outer * num_scaned * num_inner;
     bool is_full_scan = (num_outer == 1) && (num_inner == 1);
     if (is_full_scan)
-      launchFullScan<const T, T, T, BinaryOp>(ctx, in.data(), out.data(), init,
-                                              BinaryOp(), exclusive, reverse,
-                                              elems);
+      OP_REQUIRES_OK(ctx, launchFullScan<const T, T, T, BinaryOp>(
+                              ctx, in.data(), out.data(), init, BinaryOp(),
+                              exclusive, reverse, elems));
     else
       launchPartialScan<const T, T, T, BinaryOp>(
           ctx, in.data(), out.data(), init, BinaryOp(), exclusive, reverse,
@@ -84,9 +84,10 @@ struct Scan<Eigen::internal::SumReducer<Eigen::bfloat16>, Eigen::bfloat16> {
     const int elems = num_outer * num_scaned * num_inner;
     bool is_full_scan = (num_outer == 1) && (num_inner == 1);
     if (is_full_scan)
-      launchFullScan<const Eigen::bfloat16, Eigen::bfloat16, IntermediateType,
-                     BinaryOp>(ctx, in.data(), out.data(), init, BinaryOp(),
-                               exclusive, reverse, elems);
+      OP_REQUIRES_OK(ctx, launchFullScan<const Eigen::bfloat16, Eigen::bfloat16,
+                                         IntermediateType, BinaryOp>(
+                              ctx, in.data(), out.data(), init, BinaryOp(),
+                              exclusive, reverse, elems));
     else
       launchPartialScan<const Eigen::bfloat16, Eigen::bfloat16,
                         IntermediateType, BinaryOp>(
@@ -109,10 +110,12 @@ struct Scan<Eigen::internal::SumReducer<Eigen::half>, Eigen::half> {
     const int elems = num_outer * num_scaned * num_inner;
     bool is_full_scan = (num_outer == 1) && (num_inner == 1);
     if (is_full_scan)
-      launchFullScan<const sycl::half, sycl::half, IntermediateType, BinaryOp>(
-          ctx, reinterpret_cast<const sycl::half*>(in.data()),
-          reinterpret_cast<sycl::half*>(out.data()), init, BinaryOp(),
-          exclusive, reverse, elems);
+      OP_REQUIRES_OK(
+          ctx, launchFullScan<const sycl::half, sycl::half, IntermediateType,
+                              BinaryOp>(
+                   ctx, reinterpret_cast<const sycl::half*>(in.data()),
+                   reinterpret_cast<sycl::half*>(out.data()), init, BinaryOp(),
+                   exclusive, reverse, elems));
     else
       launchPartialScan<const sycl::half, sycl::half, IntermediateType,
                         BinaryOp>(
@@ -134,9 +137,9 @@ struct Scan<Eigen::internal::ProdReducer<T>, T> {
     const int elems = num_outer * num_scaned * num_inner;
     bool is_full_scan = (num_outer == 1) && (num_inner == 1);
     if (is_full_scan)
-      launchFullScan<const T, T, T, BinaryOp>(ctx, in.data(), out.data(), init,
-                                              BinaryOp(), exclusive, reverse,
-                                              elems);
+      OP_REQUIRES_OK(ctx, launchFullScan<const T, T, T, BinaryOp>(
+                              ctx, in.data(), out.data(), init, BinaryOp(),
+                              exclusive, reverse, elems));
     else
       launchPartialScan<const T, T, T, BinaryOp>(
           ctx, in.data(), out.data(), init, BinaryOp(), exclusive, reverse,
@@ -158,9 +161,10 @@ struct Scan<Eigen::internal::ProdReducer<Eigen::bfloat16>, Eigen::bfloat16> {
     const int elems = num_outer * num_scaned * num_inner;
     bool is_full_scan = (num_outer == 1) && (num_inner == 1);
     if (is_full_scan)
-      launchFullScan<const Eigen::bfloat16, Eigen::bfloat16, IntermediateType,
-                     BinaryOp>(ctx, in.data(), out.data(), init, BinaryOp(),
-                               exclusive, reverse, elems);
+      OP_REQUIRES_OK(ctx, launchFullScan<const Eigen::bfloat16, Eigen::bfloat16,
+                                         IntermediateType, BinaryOp>(
+                              ctx, in.data(), out.data(), init, BinaryOp(),
+                              exclusive, reverse, elems));
     else
       launchPartialScan<const Eigen::bfloat16, Eigen::bfloat16,
                         IntermediateType, BinaryOp>(
@@ -183,10 +187,12 @@ struct Scan<Eigen::internal::ProdReducer<Eigen::half>, Eigen::half> {
     const int elems = num_outer * num_scaned * num_inner;
     bool is_full_scan = (num_outer == 1) && (num_inner == 1);
     if (is_full_scan)
-      launchFullScan<const sycl::half, sycl::half, IntermediateType, BinaryOp>(
-          ctx, reinterpret_cast<const sycl::half*>(in.data()),
-          reinterpret_cast<sycl::half*>(out.data()), init, BinaryOp(),
-          exclusive, reverse, elems);
+      OP_REQUIRES_OK(
+          ctx, launchFullScan<const sycl::half, sycl::half, IntermediateType,
+                              BinaryOp>(
+                   ctx, reinterpret_cast<const sycl::half*>(in.data()),
+                   reinterpret_cast<sycl::half*>(out.data()), init, BinaryOp(),
+                   exclusive, reverse, elems));
     else
       launchPartialScan<const sycl::half, sycl::half, IntermediateType,
                         BinaryOp>(
