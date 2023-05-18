@@ -35,7 +35,7 @@ namespace itex {
 
 typedef Eigen::GpuDevice GPUDevice;
 
-template <typename Device, typename T>
+template <typename Device>
 class IsTensorFloat32Enabled : public OpKernel {
  public:
   explicit IsTensorFloat32Enabled(OpKernelConstruction* ctx) : OpKernel(ctx) {}
@@ -43,17 +43,11 @@ class IsTensorFloat32Enabled : public OpKernel {
   void Compute(OpKernelContext* ctx) override {
     Tensor* output = nullptr;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape({}), &output));
-    output->scalar<T>()() = tensor_float_32_execution_enabled();
+    output->scalar<bool>()() = tensor_float_32_execution_enabled();
   }
 };
 
-#define REGISTER_ISTENSORFLOAT32ENABLED_GPU(T)           \
-  REGISTER_KERNEL_BUILDER(Name("IsTensorFloat32Enabled") \
-                              .Device(DEVICE_GPU)        \
-                              .TypeConstraint<T>("T")    \
-                              .HostMemory("output"),     \
-                          IsTensorFloat32Enabled<GPUDevice, T>)
-
-TF_CALL_bool(REGISTER_ISTENSORFLOAT32ENABLED_GPU);
-#undef REGISTER_ISTENSORFLOAT32ENABLED_GPU
+REGISTER_KERNEL_BUILDER(
+    Name("IsTensorFloat32Enabled").Device(DEVICE_GPU).HostMemory("enabled"),
+    IsTensorFloat32Enabled<GPUDevice>)
 }  // namespace itex
