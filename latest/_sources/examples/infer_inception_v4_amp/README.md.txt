@@ -61,7 +61,7 @@ There are two methods to enable Advanced AMP based on Intel® Extension for Tens
 
 1. Python API
 
-Add code in the beginning of python code:
+Add code in the beginning of Python code:
 
 For BF16:
 ```
@@ -165,7 +165,7 @@ Latency Normalized              1                       X.6153628825864496
 Throughputs Normalized          1                       X.867908472383153
 ```
 
-**Note, if the data type (BF16, FP16) is not supported by the hardware, the training will be executed by converting to FP32. That will make the performance is worse than FP32 case.**
+**Note, if the data type (BF16, FP16) is not supported by the hardware, the training will be executed by converting to FP32. That will make the performance worse than FP32 case.**
 
 ## FAQ
 

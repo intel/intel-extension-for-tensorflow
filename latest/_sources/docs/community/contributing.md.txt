@@ -26,7 +26,7 @@ We welcome community contributions to Intel® Extension for TensorFlow*. Before 
 
 ## Developing Intel® Extension for TensorFlow\*
 
-Please refer to a full set of [instructions](../install/how_to_build.md) on installing Intel® Extension for TensorFlow\* from source.
+Refer to a full set of [instructions](../install/how_to_build.md) on installing Intel® Extension for TensorFlow\* from source.
 
 ## Tips and Debugging
 
@@ -99,7 +99,7 @@ pip install cpplint
 cpplint --filter=-legal/copyright --exclude=./third_party --recursive ./
 ```
 
-Sometimes `cpplint` may report false positive errors, and you can comment code with `// NOLINT` or `// NOLINTNEXTLINE` to skip the line for check:
+Sometimes `cpplint` may report false positive errors. You can comment code with `// NOLINT` or `// NOLINTNEXTLINE` to skip the line for check:
 
 ```c++
 #include "mkl.h" // NOLINT(build/include_subdir)
@@ -110,7 +110,7 @@ Sometimes `cpplint` may report false positive errors, and you can comment code w
 
 ### bazel style guide
 
-[buildifier](https://github.com/bazelbuild/buildtools/tree/master/buildifier) is a tool for formatting bazel `BUILD` and `.bzl` files with a standard convention(`xxx.tpl` files are not supported).
+[buildifier](https://github.com/bazelbuild/buildtools/tree/master/buildifier) is a tool for formatting bazel `BUILD` and `.bzl` files with a standard convention (`xxx.tpl` files are not supported).
 
 To check bazel files manually:
 

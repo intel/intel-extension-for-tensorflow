@@ -78,9 +78,9 @@
 <h1>Stable Diffusion Inference for Text2Image on Intel GPU<a class="headerlink" href="#stable-diffusion-inference-for-text2image-on-intel-gpu" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>Intel® Extension for TensorFlow* is compatible with stock Tensorflow*.
+<p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
 This example shows Stable Diffusion Inference for Text2Image.</p>
-<p>Install the Intel® Extension for TensorFlow* in legacy running envrionment, Tensorflow will execute the Inference on Intel GPU.</p>
+<p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Inference on Intel GPU.</p>
 </div>
 <div class="section" id="hardware-requirements">
 <h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this headline">¶</a></h2>
@@ -94,7 +94,7 @@ This example shows Stable Diffusion Inference for Text2Image.</p>
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="model-code-change">
 <h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this headline">¶</a></h3>
-<p>We optimized official keras-cv Stable Diffusion, eg, concatenate two forward pass, combine computation in loops to reduce op number, add fp16 mode for model. However, this optimization hasn’t been up streamed, so to get better perforamnce, instead of installing official keras-cv, you may want to clone keras-cv, apply patch, then install it</p>
+<p>We optimized official keras-cv Stable Diffusion, for example, concatenate two forward passes, combine computation in loops to reduce op number, and add fp16 mode for model. However, this optimization hasn’t been up streamed. To get better performance, instead of installing official keras-cv, you may want to clone keras-cv, apply patch, then install it as shown here:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">keras</span><span class="o">-</span><span class="n">team</span><span class="o">/</span><span class="n">keras</span><span class="o">-</span><span class="n">cv</span><span class="o">.</span><span class="n">git</span>
 <span class="n">cd</span> <span class="n">keras</span><span class="o">-</span><span class="n">cv</span>
 <span class="n">git</span> <span class="n">reset</span> <span class="o">--</span><span class="n">hard</span> <span class="mi">53</span><span class="n">d8aad680ce56bb37f7245dd5e2782f2ca37034</span>

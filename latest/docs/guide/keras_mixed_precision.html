@@ -78,8 +78,8 @@
 <h1>Keras Mixed Precision<a class="headerlink" href="#keras-mixed-precision" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>Intel® Extension for TensorFlow* supports <strong><a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">keras mixed precision</a></strong>,  which can run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption.</p>
-<p>After installing Intel® Extension for TensorFlow*, you need to configure mixed_precision.Policy and identify hardware devices, the models will run with 16-bit and 32-bit mixed floating-point types. The following table shows the types of mixed_precision.Policy supported for Intel hardwares.</p>
+<p>Intel® Extension for TensorFlow* supports <strong><a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision</a></strong>,  which can run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption.</p>
+<p>After installing Intel® Extension for TensorFlow*, you need to configure mixed_precision.Policy and identify hardware devices, the models will run with 16-bit and 32-bit mixed floating-point types. The following table shows the types of mixed_precision.Policy supported for Intel hardware.</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -100,14 +100,14 @@
 </table></div>
 <div class="section" id="how-to-identify-different-hardware-types">
 <h2>How to identify different hardware types?<a class="headerlink" href="#how-to-identify-different-hardware-types" title="Permalink to this headline">¶</a></h2>
-<p>​Enable keras mixed-precision with Intel® Extension for TensorFlow* backend. We provide two ways to distinguish it.</p>
+<p>​Enable Keras mixed-precision with Intel® Extension for TensorFlow* backend. We provide two ways to distinguish it.</p>
 <ul>
-<li><p>Through *<em>tf.config.list_physical_devices</em></p>
-<p>For stock TensorFlow, if run with Nvidia GPU,  <strong>tf.config.list_physical_devices(‘GPU’)</strong>  will return true.</p>
-<p>For Intel® Extension for TensorFlow*, if run with Intel GPU, <strong>tf.config.list_physical_devices(‘XPU’)</strong>  will return true. If run with Intel CPU, it will return false.</p>
+<li><p>Through <code class="docutils literal notranslate"><span class="pre">tf.config.list_physical_devices</span></code></p>
+<p>For stock TensorFlow, if run with Nvidia GPU,  <code class="docutils literal notranslate"><span class="pre">tf.config.list_physical_devices('GPU')</span></code>  will return true.</p>
+<p>For Intel® Extension for TensorFlow*, if run with Intel GPU, <code class="docutils literal notranslate"><span class="pre">tf.config.list_physical_devices('XPU')</span></code>  will return true. If run with Intel CPU, it will return false.</p>
 </li>
 <li><p>Through Intel® Extension for TensorFlow* Python API</p>
-<p>If run with GPU, is_gpu_available()  will return true,  if not, it will return false.</p>
+<p>If run with GPU, <code class="docutils literal notranslate"><span class="pre">is_gpu_available()</span></code>  will return true,  if not, it will return false.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_tensorflow.python.test_func</span> <span class="kn">import</span> <span class="n">test</span>
 
 <span class="k">if</span> <span class="n">test</span><span class="o">.</span><span class="n">is_gpu_available</span><span class="p">():</span>
@@ -117,7 +117,7 @@
 </li>
 </ul>
 <blockquote>
-<div><p><strong>Note: Other than the difference in the identification of the hardware device, other behavior is the same, refer to the <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">keras mixed precision</a></strong> for details.</p>
+<div><p><strong>Note: Other than the difference in the identification of the hardware device, other behavior is the same, refer to the <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision</a></strong> for details.</p>
 </div></blockquote>
 </div>
 <div class="section" id="setup">
@@ -144,7 +144,7 @@
 </div>
 <div class="section" id="setting-the-dtype-policy">
 <h2>Setting the dtype policy<a class="headerlink" href="#setting-the-dtype-policy" title="Permalink to this headline">¶</a></h2>
-<p>To use mixed precision in Keras, you need to create a <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/Policy"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.Policy</span></code></a>, typically referred to as a <em>dtype policy</em>. Dtype policies specify how the dtypes layers will run in. In this guide, you will construct a policy from the string <code class="docutils literal notranslate"><span class="pre">'mixed_float16'</span></code> and set it as the global policy. This will cause subsequently created layers to use mixed precision with a mix of float16 and float32.</p>
+<p>To use mixed precision in Keras, you need to create a <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/Policy"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.Policy</span></code></a>, typically referred to as a <em>dtype policy</em>. Dtype policies specify how the dtypes layers will run. In this guide, you will construct a policy from the string <code class="docutils literal notranslate"><span class="pre">'mixed_float16'</span></code> and set it as the global policy. This will cause subsequently created layers to use mixed precision with a mix of float16 and float32.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">policy</span> <span class="o">=</span> <span class="n">mixed_precision</span><span class="o">.</span><span class="n">Policy</span><span class="p">(</span><span class="s1">&#39;mixed_float16&#39;</span><span class="p">)</span>
 <span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span>
 </pre></div>
@@ -167,14 +167,14 @@
 <span class="n">Variable</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">float32</span>
 </pre></div>
 </div>
-<p>As mentioned before,  The policy will run on Intel GPUs and CPUs, and also could improve performance.</p>
+<p>As mentioned before,  the policy will run on Intel GPUs and CPUs, and also could improve performance.</p>
 </div>
 <div class="section" id="building-the-model">
 <h2>Building the model<a class="headerlink" href="#building-the-model" title="Permalink to this headline">¶</a></h2>
-<p>Next, let’s start to build a simple model. Very small toy models typically do not benefit from mixed precision, because overhead from the TensorFlow runtime typically dominates the execution time, making any performance improvement on the Intel GPU negligible. Therefore, let’s build two large <code class="docutils literal notranslate"><span class="pre">Dense</span></code> layers with 4096 units each when a GPU is used.</p>
+<p>Next, let’s start to build a simple model. Very small models typically do not benefit from mixed precision, because overhead from the TensorFlow runtime typically dominates the execution time, making any performance improvement on the Intel GPU negligible. Therefore, let’s build two large <code class="docutils literal notranslate"><span class="pre">Dense</span></code> layers with 4096 units each when a GPU is used.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">inputs</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">784</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;digits&#39;</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">list_physical_devices</span><span class="p">(</span><span class="s1">&#39;XPU&#39;</span><span class="p">):</span>
-  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The model will run with 4096 units on a Intel GPU&#39;</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The model will run with 4096 units on an Intel GPU&#39;</span><span class="p">)</span>
   <span class="n">num_units</span> <span class="o">=</span> <span class="mi">4096</span>
 <span class="k">else</span><span class="p">:</span>
   <span class="c1"># Use fewer units on CPUs so the model finishes in a reasonable amount of time</span>
@@ -186,7 +186,7 @@
 <span class="n">x</span> <span class="o">=</span> <span class="n">dense2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">model</span> <span class="n">will</span> <span class="n">run</span> <span class="k">with</span> <span class="mi">4096</span> <span class="n">units</span> <span class="n">on</span> <span class="n">a</span> <span class="n">Intel</span> <span class="n">GPU</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">model</span> <span class="n">will</span> <span class="n">run</span> <span class="k">with</span> <span class="mi">4096</span> <span class="n">units</span> <span class="n">on</span> <span class="n">an</span> <span class="n">Intel</span> <span class="n">GPU</span>
 </pre></div>
 </div>
 <p>Each layer has a policy and uses the global policy by default. Each of the <code class="docutils literal notranslate"><span class="pre">Dense</span></code> layers therefore have the <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> policy because you set the global policy to <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> previously. This will cause the dense layers to do float16 computations and have float32 variables. They cast their inputs to float16 in order to do float16 computations, which causes their outputs to be float16 as a result. Their variables are float32 and will be cast to float16 when the layers are called to avoid errors from dtype mismatches.</p>
@@ -276,8 +276,8 @@
 <span class="mi">6</span><span class="o">/</span><span class="mi">6</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">0</span><span class="n">s</span> <span class="mi">84</span><span class="n">ms</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">0.1986</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.9410</span> <span class="o">-</span> <span class="n">val_loss</span><span class="p">:</span> <span class="mf">0.4498</span> <span class="o">-</span> <span class="n">val_accuracy</span><span class="p">:</span> <span class="mf">0.8534</span>
 </pre></div>
 </div>
-<p>Notice the model prints the time per step in the logs: for example, “84ms/step”. The first epoch may be slower as TensorFlow spends some time optimizing the model, but afterwards the time per step should stabilize.</p>
-<p>If you are running this guide in Colab, you can compare the performance of mixed precision with float32. To do so, change the policy from <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> to <code class="docutils literal notranslate"><span class="pre">float32</span></code> in the “Setting the dtype policy” section, then rerun all the cells up to this point. On GPUs, you should see the time per step significantly increase, indicating mixed precision sped up the model. Make sure to change the policy back to <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> and rerun the cells before continuing with the guide.</p>
+<p>Notice the model prints the time per step in the logs: for example, “84ms/step”. The first epoch may be slower as TensorFlow spends some time optimizing the model, but afterward the time per step should stabilize.</p>
+<p>If you are running this guide in Colab, you can compare the performance of mixed precision with float32. To do so, change the policy from <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> to <code class="docutils literal notranslate"><span class="pre">float32</span></code> in the <a class="reference external" href="#setting-the-dtype-policy">Setting the dtype policy</a> section, then rerun all the cells up to this point. On GPUs, you should see the time per step significantly increase, indicating mixed precision sped up the model. Make sure to change the policy back to <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> and rerun the cells before continuing with the guide.</p>
 <p>For many real-world models, mixed precision also allows you to double the batch size without running out of memory, as float16 tensors take half the memory. This does not apply however to this toy model, as you can likely run the model in any dtype where each batch consists of the entire MNIST dataset of 60,000 images.</p>
 </div>
 <div class="section" id="loss-scaling">
@@ -326,7 +326,7 @@
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">mixed_precision</span><span class="o">.</span><span class="n">LossScaleOptimizer</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>You can choose an explicit loss scale or otherwise customize the loss scaling behavior, but it is highly recommended to keep the default loss scaling behavior, as it has been found to work well on all known models. See the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.LossScaleOptimizer</span></code></a> documention if you want to customize the loss scaling behavior.</p>
+<p>You can choose an explicit loss scale or otherwise customize the loss scaling behavior, but it is highly recommended to keep the default loss scaling behavior, as it has been found to work well on all known models. See the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.LossScaleOptimizer</span></code></a> documentation if you want to customize the loss scaling behavior.</p>
 <p>Next, define the loss object and the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/data/Dataset"><code class="docutils literal notranslate"><span class="pre">tf.data.Dataset</span></code></a>s:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">loss_object</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">SparseCategoricalCrossentropy</span><span class="p">()</span>
 <span class="n">train_dataset</span> <span class="o">=</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">((</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">))</span>

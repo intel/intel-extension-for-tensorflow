@@ -14,9 +14,37 @@ Intel® Extension for TensorFlow* adopts PJRT plugin interface to implement Inte
     `register_pjrt_plugin_factories` registers backend for PJRT plugins. For intel XPU  `PJRT_NAMES_AND_LIBRARY_PATHS` is set to be `'xpu:Your_itex_path/bazel-bin/itex/libitex_xla_extension.so'`,  `xpu` is the backend name and `libitex_xla_extension.so` is the PJRT plugin library.
 * In jaxlib python package `jaxlib/xla_extension.so`,    
    Jaxlib gets the lastest tensorflow code which calls the [PJRT C API interface](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/c/pjrt_c_api.h). The backend needs to implement these API.
-*  `libitex_xla_extension.so` implements `PJRT C API inferface` which can be got in [GetPjrtApi](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/pjrt_api.cc#L82).
+*  `libitex_xla_extension.so` implements `PJRT C API interface` which can be got in [GetPjrtApi](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/pjrt_api.cc#L82).
 
-## 2. Build Library for JAX
+## 2. Hardware and Software Requirement 
+
+### Hardware Requirements
+
+Verified Hardware Platforms:
+ - Intel® Data Center GPU Max Series, Driver Version: [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)
+ - Intel® Data Center GPU Flex Series 170, Driver Version: [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)
+ - *Experimental:* Intel® Arc™ A-Series
+
+### Software Requirements
+- Ubuntu 22.04, Red Hat 8.6 (64-bit)
+  - Intel® Data Center GPU Flex Series 
+- Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP3/SP4
+  - Intel® Data Center GPU Max Series 
+- Intel® oneAPI Base Toolkit 2023.1
+- TensorFlow 2.12.0
+- Python 3.8-3.10
+- pip 19.0 or later (requires manylinux2014 support)
+
+
+### Install GPU Drivers
+
+|Release|OS|Intel GPU|Install Intel GPU Driver|
+|-|-|-|-|
+|v1.2.0|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04`|
+|v1.2.0|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP3/SP4|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04`|
+
+
+## 3. Build Library for JAX
 There are some differences from   [source build procedure](https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.md)
 * Make sure get Intel® Extension for TensorFlow* main branch code and python version >=3.8.
 * In TensorFlow installation steps, make sure to install jax and jaxlib at the same time.
@@ -32,7 +60,7 @@ There are some differences from   [source build procedure](https://github.com/in
     ```
 Then we can get the library with xla extension   **./bazel-bin/itex/libitex_xla_extension.so**
 
-## 3. Run JAX Example
+## 4. Run JAX Example
 * **Set library path.**
 ```bash
 $ export PJRT_NAMES_AND_LIBRARY_PATHS='xpu:Your_itex_path/bazel-bin/itex/libitex_xla_extension.so'
@@ -97,7 +125,7 @@ I itex/core/compiler/xla/pjrt/pjrt_stream_executor_client.cc:1208] PjRtStreamExe
 I itex/core/compiler/xla/pjrt/pjrt_stream_executor_client.cc:1299] PjRtStreamExecutorBuffer::ToLiteral
 ```
 
-**4. More JAX examples.**    
+* **More JAX examples**    
 Get examples from [https://github.com/google/jax](https://github.com/google/jax/tree/jaxlib-v0.4.4/examples) to run.
 ```bash
 $ git clone https://github.com/google/jax.git

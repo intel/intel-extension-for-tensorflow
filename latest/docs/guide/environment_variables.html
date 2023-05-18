@@ -49,7 +49,7 @@
 <li class="toctree-l3"><a class="reference internal" href="python_api.html">Python APIs</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Environment Variables</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#environment-variables-only">Environment Variables only</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#configuration-via-environment-variables">Configuration via Environment Variables</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#itex-verbose-level-definition">ITEX_VERBOSE level definition</a></li>
 </ul>
 </li>
@@ -110,8 +110,8 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>Intel® Extension for TensorFlow* provides environment variables for users to quickly adjust the configuration without any model code changes. Not all configuration options can be set via environment variable. For the rest, you’ll need to use the Python APIs. The priority for setting values is Python APIs &gt; Environment Variables &gt; Default value.</p>
 </div>
-<div class="section" id="environment-variables-only">
-<h2>Environment Variables only<a class="headerlink" href="#environment-variables-only" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="configuration-via-environment-variables">
+<h2>Configuration via Environment Variables<a class="headerlink" href="#configuration-via-environment-variables" title="Permalink to this headline">¶</a></h2>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -124,7 +124,7 @@
 <tr>
 <td>ITEX_TILE_AS_DEVICE</td>
 <td><code>1</code></td>
-<td>The default is <code>1</code>, which will configure every tile as TensorFlow individual device in the scenario of one GPU card with multiple tiles. If set to <code>0</code>, the whole GPU card will be treated as single Tensorflow device for execution.</td>
+<td>The default is <code>1</code>, which will configure every tile as TensorFlow individual device in the scenario of one GPU card with multiple tiles. If set to <code>0</code>, the whole GPU card will be treated as single TensorFlow device for execution.</td>
 </tr>
 <tr>
 <td>ITEX_FP32_MATH_MODE</td>

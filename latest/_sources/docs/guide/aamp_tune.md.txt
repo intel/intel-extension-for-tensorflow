@@ -12,9 +12,9 @@ Some operations are **numerically-dangerous** for FP16/BF16. This means the oper
 
 ### Configuration List
 
-In order to achieve faster performance with strong numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST that let users manually configure a balance of performance and accuracy with FP16/BF16 if the default configuration doesn't provide the expected performance.
+In order to achieve faster performance with strong numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST that let you manually configure a balance of performance and accuracy with FP16/BF16 if the default configuration doesn't provide the expected performance.
 
-Set the lists according to the numerically-safe or numerically-dangerous type of the operations. The lists include the Operation Types of Tensorflow, and support fused Operations.
+Set the lists according to the numerically-safe or numerically-dangerous type of the operations. The lists include the Operation Types of TensorFlow, and support fused Operations.
 
 
 | List Name | Description                                                  |
@@ -107,7 +107,7 @@ For example: AvgPool is in INFERLIST by default. To add it to ALLOWLIST, remove 
 
 ### Environment Variable Difference with Stock TensorFlow
 
-Advanced AMP has many extra operations. For example, ITEX_AUTO_MIXED_PRECISION_DATA_TYPE lets users use different data types (FP16/BF16) to speed up the model.
+Advanced AMP has many extra operations. For example, ITEX_AUTO_MIXED_PRECISION_DATA_TYPE lets you use different data types (FP16/BF16) to speed up the model.
 
 The following table shows the corresponding relationship between Advanced AMP and TensorFlow AMP environment variable names.
 
@@ -132,9 +132,9 @@ Steps:
 
 I. Install Intel® Extension for TensorFlow* in running environment.
 
-After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock Tensorflow.
+After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.
 
-Refer to [installation](/README.md#Install) instructions for more details.
+Refer to [installation](../../README.md#Install) instructions for more details.
 
 II. Enable Advanced AMP.
 

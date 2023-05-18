@@ -10,11 +10,10 @@ Stock [TensorFlow](https://pypi.org/project/tensorflow/) and [Intel® Optimizati
 ## Hardware Requirements
 
 Verified Hardware Platforms:
-- Cascade Lake
-- Cooper Lake
-- Ice Lake
-- Sapphire Rapids
- 
+- 2nd Generation Intel® Xeon® Scalable Processors.
+- 3rd Generation Intel® Xeon® Scalable Processors.
+- 4th Generation Intel® Xeon® Scalable Processors.
+
 ## Software Requirements
 
 - Ubuntu 20.04 (64-bit), Ubuntu 22.04 (64-bit) or CentOS Linux 8 (64-bit), and Sapphire Rapids requires Ubuntu 22.04 or CentOS Linux 8 with kernel version >= 5.16
@@ -30,7 +29,7 @@ Run the following [Dockerfile build procedure](./../../../docker/README.md) to b
 #### Get docker container from dockerhub
 
 Pre-built docker images are available at [DockerHub](https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags).
-Please run the following command to pull the CPU Docker container image to your local machine.
+Run the following command to pull the CPU Docker container image to your local machine.
 
 ```
 $ docker pull intel/intel-extension-for-tensorflow:cpu
@@ -62,11 +61,11 @@ To install in virtual environment, you can run
 ```
 
 ##### System environment install 
-If want to system install in $HOME, append `--user` to the commands.
+If you prefer install tensorflow in $HOME, append `--user` to the commands.
 ```bash
 $ pip3 install --user tensorflow==2.12.0
 ``` 
-And the following system environment install for Intel® Extension for TensorFlow* will use the same practice. 
+And the following system environment install for Intel® Extension for TensorFlow* will also append `--user` to the command. 
 
 #### Install Intel® Extension for TensorFlow*
 

@@ -208,7 +208,7 @@ sudo apt-get update
 </div>
 </li>
 </ul>
-<p>The above commands install only runtime libraries for Intel® oneAPI which are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section <a class="reference external" href="#optional-install-full-intel%C2%AE-oneapi">Optional: Install Full Intel® oneAPI Base Toolkit Packages</a>.</p>
+<p>The above commands install only runtime libraries for Intel® oneAPI that are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section <a class="reference external" href="#optional-install-full-intel%C2%AE-oneapi">Optional: Install Full Intel® oneAPI Base Toolkit Packages</a>.</p>
 </div>
 </div>
 <div class="section" id="id2">
@@ -251,7 +251,7 @@ sudo apt-get update
 </ul>
 </li>
 </ul>
-<p>The above commands install only runtime libraries for Intel® oneAPI which are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section <a class="reference external" href="#optional-install-full-intel%C2%AE-oneapi">Optional: Install Full Intel® oneAPI Base Toolkit Packages</a>.</p>
+<p>The above commands install only runtime libraries for Intel® oneAPI that are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section <a class="reference external" href="#optional-install-full-intel%C2%AE-oneapi">Optional: Install Full Intel® oneAPI Base Toolkit Packages</a>.</p>
 </div>
 </div>
 <div class="section" id="install-tensorflow-via-pypi-wheel-in-linux">
@@ -279,11 +279,11 @@ sudo apt-get update
 <li></li>
 <div class="section" id="system-environment-install">
 <h5>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this headline">¶</a></h5>
-<p>If want to system install in $HOME, please append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
+<p>If you prefer install tensorflow in $HOME, append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install --user <span class="s1">&#39;tensorflow==2.12.0&#39;</span>
 </pre></div>
 </div>
-<p>And the following system environment install for Intel® Extension for TensorFlow* will use the same practice.</p>
+<p>And the following system environment install for Intel® Extension for TensorFlow* will also append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
 </div>
 </div>
 </div>
@@ -307,7 +307,7 @@ sudo apt-get update
 </div>
 <div class="section" id="optional-install-full-intel-oneapi">
 <h3>Optional: Install Full Intel® oneAPI<a class="headerlink" href="#optional-install-full-intel-oneapi" title="Permalink to this headline">¶</a></h3>
-<p>If you prefer to have access to full Intel® oneAPI you need to install at least the following:</p>
+<p>If you prefer to have access to full Intel® oneAPI, you need to install at least the following:</p>
 <ul class="simple">
 <li><p>Intel® oneAPI DPC++ Compiler</p></li>
 <li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
@@ -326,7 +326,7 @@ $ sudo sh ./l_BaseKit_p_2023.1.0.46401_offline.sh
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> /opt/intel/oneapi/setvars.sh
 </pre></div>
 </div>
-<p>A user may install more components than Intel® Extension for TensorFlow* needs, and if required, <code class="docutils literal notranslate"><span class="pre">setvars.sh</span></code> can be customized to point to a specific directory by using a <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-programming-guide/top/oneapi-development-environment-setup/use-the-setvars-script-with-linux-or-macos/use-a-config-file-for-setvars-sh-on-linux-or-macos.html">configuration file</a>:</p>
+<p>You may install more components than Intel® Extension for TensorFlow* needs, and if required, <code class="docutils literal notranslate"><span class="pre">setvars.sh</span></code> can be customized to point to a specific directory by using a <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-programming-guide/top/oneapi-development-environment-setup/use-the-setvars-script-with-linux-or-macos/use-a-config-file-for-setvars-sh-on-linux-or-macos.html">configuration file</a>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> /opt/intel/oneapi/setvars.sh --config<span class="o">=</span><span class="s2">&quot;full/path/to/your/config.txt&quot;</span>
 </pre></div>
 </div>

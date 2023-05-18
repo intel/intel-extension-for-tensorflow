@@ -109,7 +109,7 @@
              
   <div class="section" id="intel-extension-for-tensorflow-for-c">
 <h1>Intel® Extension for TensorFlow* for C++<a class="headerlink" href="#intel-extension-for-tensorflow-for-c" title="Permalink to this headline">¶</a></h1>
-<p>This guide shows how to build an Intel® Extension for TensorFlow* CC library from source and how to work with tensorflow_cc to build bindings for C/C++ languages on ubuntu 20.04 (64-bit).</p>
+<p>This guide shows how to build an Intel® Extension for TensorFlow* CC library from source and how to work with tensorflow_cc to build bindings for C/C++ languages on Ubuntu 20.04 (64-bit).</p>
 <div class="section" id="prepare">
 <h2>Prepare<a class="headerlink" href="#prepare" title="Permalink to this headline">¶</a></h2>
 <p>Refer to <a class="reference external" href="../how_to_build.html#prepare">Build from Source Code -&gt; Prepare</a></p>
@@ -122,14 +122,14 @@
 <h2>Build the CC library<a class="headerlink" href="#build-the-cc-library" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="gpu-support">
 <h3>GPU support<a class="headerlink" href="#gpu-support" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build -c opt --config<span class="o">=</span>gpu //itex:itex_gpu_cc
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build -c opt --config<span class="o">=</span>gpu //itex:libitex_gpu_cc.so
 </pre></div>
 </div>
 <p>CC library location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">intel-extension-for-tensorflow&gt;/bazel-bin/itex/libitex_gpu_cc.so</span></code></p>
 </div>
 <div class="section" id="cpu-only-experimental">
 <h3>CPU only (experimental)<a class="headerlink" href="#cpu-only-experimental" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build -c opt --config<span class="o">=</span>cpu //itex:itex_cpu_cc
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bazel build -c opt --config<span class="o">=</span>cpu //itex:libitex_cpu_cc.so
 </pre></div>
 </div>
 <p>CC library location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">intel-extension-for-tensorflow&gt;/bazel-bin/itex/libitex_cpu_cc.so</span></code></p>
@@ -161,8 +161,8 @@ $ ln -s libtensorflow_framework.so.2 libtensorflow_framework.so
 <h3>Option 2: Build from TensorFlow* source code<a class="headerlink" href="#option-2-build-from-tensorflow-source-code" title="Permalink to this headline">¶</a></h3>
 <p>a. Prepare TensorFlow* source code</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/tensorflow/tensorflow.git
-$ git checkout origin/r2.12 -b r2.12
 $ <span class="nb">cd</span> tensorflow
+$ git checkout origin/r2.12 -b r2.12
 </pre></div>
 </div>
 <p>b. Build libtensorflow_cc.so</p>
@@ -199,7 +199,7 @@ $ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span cl
 <div class="section" id="load">
 <h3>Load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h3>
 <p>TensorFlow* has C API: <code class="docutils literal notranslate"><span class="pre">TF_LoadPluggableDeviceLibrary</span></code> to support the pluggable device library.
-To support Intel® Extension for TensorFlow* cc library, we need to modify the orginal C++ code:</p>
+To support Intel® Extension for TensorFlow* cc library, we need to modify the original C++ code:</p>
 <p>a. Add the header file: <code class="docutils literal notranslate"><span class="pre">&quot;tensorflow/c/c_api_experimental.h&quot;</span></code>.</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;tensorflow/c/c_api_experimental.h&quot;</span><span class="cp"></span>
 </pre></div>
@@ -310,7 +310,7 @@ run:
 $ ./example_test
 </pre></div>
 </div>
-<p><strong>NOTE:</strong> For GPU support, please setup oneapi environment variables before run.</p>
+<p><strong>NOTE:</strong> For GPU support, please set up oneapi environment variables before running the example.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">source</span> /opt/intel/oneapi/compiler/latest/env/vars.sh
 $ <span class="nb">source</span> /opt/intel/oneapi/mkl/latest/env/vars.sh
 $ <span class="nb">source</span> /opt/intel/oneapi/tbb/latest/env/vars.sh

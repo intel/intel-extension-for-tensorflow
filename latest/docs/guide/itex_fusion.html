@@ -254,13 +254,13 @@ The new kernels are implemented（<code class="docutils literal notranslate"><sp
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Tout</span></code>: Output data type ∈ {<code class="docutils literal notranslate"><span class="pre">float32</span></code>}.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">Tpost</span></code>: Post op data type ∈ {<code class="docutils literal notranslate"><span class="pre">bfloat16</span></code>, <code class="docutils literal notranslate"><span class="pre">float32</span></code>}.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">is_bf16_math_mode</span></code>: A boolean to indicate whether to use oneDNN <code class="docutils literal notranslate"><span class="pre">BF16</span></code> math mode in the case of <code class="docutils literal notranslate"><span class="pre">FP32</span></code> input, <code class="docutils literal notranslate"><span class="pre">FP32</span></code> output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_bf16_math_mode</span></code>: A Boolean to indicate whether to use oneDNN <code class="docutils literal notranslate"><span class="pre">BF16</span></code> math mode if <code class="docutils literal notranslate"><span class="pre">FP32</span></code> input, <code class="docutils literal notranslate"><span class="pre">FP32</span></code> output.</p></li>
 </ul>
 </div>
 </div>
 <div class="section" id="generic-layout-optimizer">
 <h2>Generic layout optimizer<a class="headerlink" href="#generic-layout-optimizer" title="Permalink to this headline">¶</a></h2>
-<p>As the channels_first format is currently not supported by stock TensorFlow on CPU, so it inserts transpose nodes before and after the Conv3D/MaxPool3D nodes. However, this problem does not exist in GPU device. In order to avoid unnecessary layout transformation when running on a GPU device, Intel® Extension for TensorFlow* adds a separate layout optimizer to handle such a special case.</p>
+<p>As the channels_first format is not supported by stock TensorFlow on CPU, it inserts transpose nodes before and after the Conv3D/MaxPool3D nodes. However, this problem does not exist in GPU device. To avoid unnecessary layout transformation when running on a GPU device, Intel® Extension for TensorFlow* adds a separate layout optimizer.</p>
 <table border="1" class="docutils">
 <thead>
 <tr>

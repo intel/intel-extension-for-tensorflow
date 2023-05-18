@@ -78,9 +78,9 @@
 <h1>BERT Training for Classifying Text on Intel CPU and GPU<a class="headerlink" href="#bert-training-for-classifying-text-on-intel-cpu-and-gpu" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>Intel® Extension for TensorFlow* is compatable with stock Tensorflow*.
-This example uses the tutorial from tensorflow.org <a class="reference external" href="https://www.tensorflow.org/text/tutorials/classify_text_with_bert">Classify text with BERT</a> to show training on BERT model without change original code.</p>
-<p>Install the Intel® Extension for TensorFlow* in legacy running envrionment, Tensorflow will execute the training on Intel CPU and GPU.</p>
+<p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
+This example uses the tutorial from tensorflow.org <a class="reference external" href="https://www.tensorflow.org/text/tutorials/classify_text_with_bert">Classify text with BERT</a> to show training on BERT model without changing the original code.</p>
+<p>Installing the Intel® Extension for TensorFlow* in legacy running environment, TensorFlow will execute the training on Intel CPU and GPU.</p>
 <p><strong>No need any code change</strong></p>
 </div>
 <div class="section" id="hardware-requirements">
@@ -126,10 +126,9 @@ This example uses the tutorial from tensorflow.org <a class="reference external"
 </pre></div>
 </div>
 <ol class="simple">
-<li><p>Install the python packages used in <a class="reference external" href="https://www.tensorflow.org/text/tutorials/classify_text_with_bert">Classify text with BERT</a>.</p></li>
+<li><p>Install the Python packages used in <a class="reference external" href="https://www.tensorflow.org/text/tutorials/classify_text_with_bert">Classify text with BERT</a>.</p></li>
 </ol>
-<p>The jupyter nodebook script will install other depended pacakge during running.
-No need pre-install them.</p>
+<p>The Jupyter notebook script will install other required pacakges while it is running. So there’s no need to pre-install them.</p>
 </div>
 <div class="section" id="download-jupyter-code">
 <h3>Download Jupyter Code:<a class="headerlink" href="#download-jupyter-code" title="Permalink to this headline">¶</a></h3>
@@ -146,20 +145,20 @@ No need pre-install them.</p>
 http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333
 </pre></div>
 </div>
-<p>Open the url:http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333 above by web browser.</p>
+<p>Open the url:http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333 above in your web browser.</p>
 </div>
 <div class="section" id="execute">
 <h2>Execute<a class="headerlink" href="#execute" title="Permalink to this headline">¶</a></h2>
 <ol class="simple">
-<li><p>Open classify_text_with_bert.ipynb by jupyter notebook.</p></li>
-<li><p>Run the tutorial according to the descrition in the Jupyter notebook.</p></li>
+<li><p>Open classify_text_with_bert.ipynb by Jupyter notebook.</p></li>
+<li><p>Run the tutorial according to the description in the Jupyter notebook.</p></li>
 <li><p>The TensorFlow will train and infer the BERT model on Intel CPU or GPU.</p></li>
 </ol>
 </div>
 <div class="section" id="faq">
 <h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
 <ol class="simple">
-<li><p>The following error log is a known issue and it is not caused by Intel® Extension for TensorFlow*. This crash happens when the code is finished and try to release resource and  doesn’t impact the result of the Bert training and inference/test.</p></li>
+<li><p>The following error log is a known issue and it is not caused by Intel® Extension for TensorFlow*. This crash happens when the code is finished and tries to release resources. It doesn’t impact the result of the Bert training and inference/test.</p></li>
 </ol>
 <div class="highlight-Exception ignored in: &lt;function _CheckpointRestoreCoordinatorDeleter.__del__ at 0x7fa167430d30&gt; notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
   File &quot;/home/xxx/xxx/env_itex/lib/python3.9/site-packages/tensorflow/python/training/tracking/util.py&quot;, line 174, in __del__
