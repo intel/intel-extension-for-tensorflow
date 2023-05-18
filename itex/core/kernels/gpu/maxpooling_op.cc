@@ -543,6 +543,7 @@ REGISTER_KERNEL_BUILDER(Name("MaxPoolWithArgmax")
                             .TypeConstraint<int64>("Targmax")
                             .TypeConstraint<double>("T"),
                         MaxPoolingWithArgmaxOp<GPUDevice, double>);
+TF_CALL_double(REGISTER_GPU_POOL_KERNELS);
 #endif
 #undef REGISTER_GPU_POOL_KERNELS
 
@@ -592,6 +593,7 @@ REGISTER_KERNEL_BUILDER(Name("MaxPoolGradWithArgmax")
                             .TypeConstraint<double>("T")
                             .TypeConstraint<int64>("Targmax"),
                         MaxPoolingGradWithArgmaxOp<GPUDevice, double>);
+TF_CALL_double(REGISTER_GPU_POOL_GRAD_KERNELS);
 #endif
 #undef REGISTER_GPU_POOL_GRAD_KERNELS
 
