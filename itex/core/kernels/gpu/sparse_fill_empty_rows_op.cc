@@ -158,10 +158,10 @@ struct SparseFillEmptyRows<GPUDevice, T, Tindex> {
                  sizeof(Tindex))
         .wait();
 
-    if (first_invalid_index_host != kAllIndicesValid) {
-      ITEX_CHECK_OK(errors::InvalidArgument(
-          "indices(", first_invalid_index_host, ", 0) is invalid."));
-    }
+    OP_REQUIRES_RETURN_STATUS(
+        context, first_invalid_index_host == kAllIndicesValid,
+        errors::InvalidArgument("indices(", first_invalid_index_host,
+                                ", 0) is invalid."));
 
     Tindex* output_indices;
     T* output_values;
