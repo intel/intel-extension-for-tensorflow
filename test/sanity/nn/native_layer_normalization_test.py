@@ -23,7 +23,10 @@ from intel_extension_for_tensorflow.python.test_func import keras_testing_utils 
 from intel_extension_for_tensorflow.python.test_func import keras_parameterized
 
 import intel_extension_for_tensorflow.python.ops.layer_norm as layer_normalization
-from keras.layers.normalization import layer_normalization as tf_layer_normalization
+try:
+  from keras.layers.normalization import layer_normalization as tf_layer_normalization
+except ImportError:
+  from keras.src.layers.normalization import layer_normalization as tf_layer_normalization
 
 import numpy as np
 

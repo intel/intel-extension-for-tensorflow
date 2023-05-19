@@ -26,7 +26,10 @@ from keras import initializers
 from keras import regularizers
 from keras.layers import InputSpec
 from keras.layers import Layer
-from keras.utils import tf_utils
+try:
+    from keras.utils import tf_utils
+except ImportError:
+    from keras.src.utils import tf_utils
 
 # isort: off
 from tensorflow.python.util.tf_export import keras_export

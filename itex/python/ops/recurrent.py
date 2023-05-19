@@ -38,8 +38,12 @@ from keras import backend
 from keras import constraints
 from keras import initializers
 from keras import regularizers
-from keras.engine.input_spec import InputSpec
-from keras.layers import LSTMV1
+try:
+  from keras.engine.input_spec import InputSpec
+  from keras.layers import LSTMV1
+except ImportError:
+  from keras.src.engine.input_spec import InputSpec
+  from keras.src.layers import LSTMV1
 
 _ITEX_AVAILABLE_MSG = 'Layer %s will use ITEX kernels when running on GPU.'
 _ITEX_NOT_AVAILABLE_MSG = ('Layer %s will not use ITEX kernels since it '

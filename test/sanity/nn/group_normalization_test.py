@@ -17,8 +17,12 @@ import tensorflow.compat.v2 as tf
 import numpy as np
 from tensorflow import keras
 from keras.initializers import Constant
-from keras.testing_infra import test_combinations
-from keras.testing_infra import test_utils
+try:
+  from keras.testing_infra import test_combinations
+  from keras.testing_infra import test_utils
+except ImportError:
+  from keras.src.testing_infra import test_combinations
+  from keras.src.testing_infra import test_utils
 import intel_extension_for_tensorflow as itex
 from tensorflow.python.ops import math_ops
 from intel_extension_for_tensorflow.python.ops import GroupNormalization

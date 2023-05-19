@@ -36,8 +36,11 @@ from keras import backend as K
 from keras import constraints
 from keras import initializers
 from keras import regularizers
-from keras.engine.base_layer import Layer
-from keras.utils import control_flow_util
+from keras.layers import Layer
+try:
+  from keras.utils import control_flow_util
+except ImportError:
+  from keras.src.utils import control_flow_util
 
 def _layer_norm(
     x,
