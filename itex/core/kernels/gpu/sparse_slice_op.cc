@@ -250,16 +250,13 @@ struct SparseSliceFunctor<GPUDevice, T> {
     OP_REQUIRES_OK(context, s);
 
     // Copy num_true to host, which is the number of output indices.
-    int64_t* output_nnz_host = static_cast<int64_t*>(sycl::aligned_alloc_host(
-        /*alignment=*/64, sizeof(int64_t), *stream));
+    int64_t output_nnz;
     stream
-        ->memcpy(output_nnz_host, input_cumsum_t.data() + input_nnz - 1,
+        ->memcpy(&output_nnz, input_cumsum_t.data() + input_nnz - 1,
                  sizeof(int64_t))
         .wait();
 
     // Allocate output indices and values.
-    auto output_nnz = *output_nnz_host;
-
     Tensor* output_indices = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, {output_nnz, dims},
                                                      &output_indices));
