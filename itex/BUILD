@@ -107,6 +107,12 @@ selects.config_setting_group(
     ],
 )
 
+config_setting(
+    name = "tf_version_2_12",
+    define_values = {"tf_main_version": "2.12"},
+    visibility = ["//visibility:public"],
+)
+
 itex_xpu_binary(
     name = "libitex_gpu.so",
     linkopts = [

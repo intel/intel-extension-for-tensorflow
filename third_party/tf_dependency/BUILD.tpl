@@ -109,7 +109,10 @@ template_rule(
 
 template_rule(
     name = "graph_debug_info_plugin",
-    src = "include/tensorflow/core/protobuf/graph_debug_info.proto",
+    src = select({
+        "@intel_extension_for_tensorflow//itex:tf_version_2_12": "include/tensorflow/core/protobuf/graph_debug_info.proto",
+        "//conditions:default": "include/tensorflow/core/framework/graph_debug_info.proto",
+    }),
     out = "include/protos/graph_debug_info.proto",
     substitutions = {
         "package tensorflow;": "package itex;",
@@ -158,6 +161,7 @@ template_rule(
     substitutions = {
         "package tensorflow;": "package itex;",
         "tensorflow/core/framework/function.proto": "function.proto",
+        "tensorflow/core/framework/graph_debug_info.proto": "graph_debug_info.proto",
         "tensorflow/core/framework/node_def.proto": "node_def.proto",
         "tensorflow/core/framework/versions.proto": "versions.proto",
     },
@@ -316,6 +320,7 @@ cc_proto(
     src = "graph.proto",
     deps = [
         ":function_proto",
+        ":graph_debug_info_proto",
         ":node_def_proto",
         ":versions_proto",
     ],

@@ -305,6 +305,9 @@ def setup_python(environ_cp):
         name, version = line.split()
         version = version.split("rc")[0]
         current_tensorflow_version = convert_version_to_int(version)
+        tf_major_version = version.split(".")[0]
+        tf_minor_version = version.split(".")[1]
+        write_to_bazelrc('build --define=tf_main_version=' + tf_major_version + '.' + tf_minor_version)
         min_tf_version = convert_version_to_int("2.12.0")
         if current_tensorflow_version < min_tf_version:
           print('Make sure you installed tensorflow version >= 2.12.0')
@@ -928,9 +931,6 @@ def main():
 
   set_cc_opt_flags()
   set_system_libs_flag(environ_cp)
-
-  # Add a config option to build TensorFlow 2.0 API.
-  write_to_bazelrc('build:v2 --define=tf_api_version=2')
 
   system_specific_test_config(os.environ)
 
