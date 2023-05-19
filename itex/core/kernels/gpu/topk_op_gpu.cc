@@ -412,7 +412,7 @@ namespace functor {
 
 typedef Eigen::GpuDevice GPUDevice;
 
-template <typename KeyT, typename ValueT>
+template <typename KeyT, typename ValueT, bool Ascending>
 void DispatchToFallBackRadixSort(const gpuStream_t& stream,
                                  const KeyT* key_array, KeyT* key_src,
                                  KeyT* key_dst, ValueT* value_src,
@@ -447,7 +447,7 @@ void DispatchToFallBackRadixSort(const gpuStream_t& stream,
   switch (RADIX_BITS) {
 #define HANDLE_N(NUM)                                                        \
   case (NUM):                                                                \
-    LaunchFallBackKeyValueRadixSort<KeyT, ValueT, NUM, false>(               \
+    LaunchFallBackKeyValueRadixSort<KeyT, ValueT, NUM, Ascending>(           \
         stream, key_array, key_src, key_dst, value_src, value_dst, num_rows, \
         num_cols, group_size);                                               \
     break;
@@ -502,9 +502,9 @@ void LaunchLargeKKernel(OpKernelContext* context, const T* input,
   T* values_dst = values_tmp_ping.flat<T>().data();
   IndexT* indices_dst = indices_tmp_ping.flat<IndexT>().data();
 
-  DispatchToFallBackRadixSort(stream, input, values_src, values_dst,
-                              indices_src, indices_dst, num_rows, num_cols,
-                              max_group_size);
+  DispatchToFallBackRadixSort<T, IndexT, false>(
+      stream, input, values_src, values_dst, indices_src, indices_dst, num_rows,
+      num_cols, max_group_size);
 
   if (num_topk < num_cols) {
     // Need to copy subsets of sorted_indices and sorted_outputs to
@@ -625,12 +625,12 @@ void TopKFunctor<GPUDevice, T, IndexT>::operator()(
 
 #define INSTANTIATE_GPU(T)                                                   \
   template struct TopKFunctor<GPUDevice, T, int32>;                          \
-  template void DispatchToFallBackRadixSort<T, int32>(                       \
+  template void DispatchToFallBackRadixSort<T, int32, true>(                 \
       const gpuStream_t& stream, const T* key_array, T* key_src, T* key_dst, \
       int32* value_src, int32* value_dst, const int num_rows,                \
       const int num_cols, const int max_group_size);                         \
   template struct TopKFunctor<GPUDevice, T, int64>;                          \
-  template void DispatchToFallBackRadixSort<T, int64>(                       \
+  template void DispatchToFallBackRadixSort<T, int64, true>(                 \
       const gpuStream_t& stream, const T* key_array, T* key_src, T* key_dst, \
       int64* value_src, int64* value_dst, const int num_rows,                \
       const int num_cols, const int max_group_size);

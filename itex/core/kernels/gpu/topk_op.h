@@ -40,7 +40,7 @@ struct TopKFunctor<GPUDevice, T, IndexT> {
                   int num_topk);
 };
 
-template <typename KeyT, typename ValueT>
+template <typename KeyT, typename ValueT, bool Ascending = true>
 void DispatchToFallBackRadixSort(const gpuStream_t& stream,
                                  const KeyT* key_array, KeyT* key_src,
                                  KeyT* key_dst, ValueT* value_src,
