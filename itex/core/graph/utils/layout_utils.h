@@ -73,7 +73,7 @@ bool AlwaysRewrite(const utils::MutableNodeView& node_view);
 bool RewriteBackwardDataType(const utils::MutableNodeView& node_view);
 
 // Conv op is rewritten only if there are OneDnn ops in its input or output.
-bool RewriteConv(const utils::MutableNodeView& node_view);
+bool RewriteOneDnnConv(const utils::MutableNodeView& node_view);
 
 // Only rewrite GPU nodes.
 bool RewriteForGPU(const utils::MutableNodeView& node_view);
@@ -91,6 +91,8 @@ bool RewriteFusedBatchNormEx(const utils::MutableNodeView& node_view);
 bool RewriteFusedBatchNormExGrad(const utils::MutableNodeView& node_view);
 
 bool RewriteFusedConv(const utils::MutableNodeView& node_view);
+
+bool RewriteOneDnnFusedConv(const utils::MutableNodeView& node_view);
 
 // MatMul is not rewritten when trans_a/trans_b = True.
 bool RewriteMatMul(const utils::MutableNodeView& node_view);

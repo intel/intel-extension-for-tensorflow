@@ -144,7 +144,7 @@ static const std::vector<string>* GetPotentialOneDnnOpList() {
   return &onednn_op_list;
 }
 
-bool RewriteConv(const utils::MutableNodeView& node_view) {
+bool RewriteOneDnnConv(const utils::MutableNodeView& node_view) {
   for (int i = 0; i < node_view.NumRegularFanins(); ++i) {
     const NodeDef* input_node_def =
         node_view.GetRegularFanin(i).node_view()->node();
@@ -201,7 +201,11 @@ bool RewriteFusedConv(const utils::MutableNodeView& node_view) {
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "fused_ops", &fused_ops));
 
-  return post_op_util.AddOps(fused_ops) && RewriteConv(node_view);
+  return post_op_util.AddOps(fused_ops);
+}
+
+bool RewriteOneDnnFusedConv(const utils::MutableNodeView& node_view) {
+  return RewriteFusedConv(node_view) && RewriteOneDnnConv(node_view);
 }
 
 bool RewriteMatMul(const utils::MutableNodeView& node_view) {
