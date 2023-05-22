@@ -131,16 +131,15 @@ struct BincountFunctor<GPUDevice, Tidx, T, false> {
       const typename TTypes<T, 1>::ConstTensor& weights,
       typename TTypes<T, 1>::Tensor& output,  // NOLINT(runtime/references)
       const Tidx num_bins) {
-    if (arr.size() == 0 || output.size() == 0) {
-      return Status::OK();
-    }
+    if (output.size() == 0) return Status::OK();
+    auto* stream = context->GetDeviceStream();
+    output.device(context->eigen_gpu_device()) = output.constant(T(0));
+    if (arr.size() == 0) return Status::OK();
 
     auto arr_size = arr.size();
     auto arr_ptr = arr.data();
     auto output_ptr = output.data();
 
-    auto* stream = context->GetDeviceStream();
-    output.device(context->eigen_gpu_device()) = output.constant(T(0));
     int max_group_size =
         stream->get_device()
             .template get_info<sycl::info::device::max_work_group_size>();
@@ -208,16 +207,15 @@ struct BincountFunctor<GPUDevice, Tidx, T, true> {
       const typename TTypes<T, 1>::ConstTensor& weights,
       typename TTypes<T, 1>::Tensor& output,  // NOLINT(runtime/references)
       const Tidx num_bins) {
-    if (arr.size() == 0 || output.size() == 0) {
-      return Status::OK();
-    }
+    if (output.size() == 0) return Status::OK();
+    auto* stream = context->GetDeviceStream();
+    output.device(context->eigen_gpu_device()) = output.constant(T(0));
+    if (arr.size() == 0) return Status::OK();
 
     auto arr_size = arr.size();
     auto arr_ptr = arr.data();
     auto output_ptr = output.data();
 
-    auto* stream = context->GetDeviceStream();
-    output.device(context->eigen_gpu_device()) = output.constant(T(0));
     int max_group_size =
         stream->get_device()
             .template get_info<sycl::info::device::max_work_group_size>();
