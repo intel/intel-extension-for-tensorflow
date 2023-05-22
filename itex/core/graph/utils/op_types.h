@@ -59,6 +59,7 @@ bool IsBiasAddV2(const NodeDef& node);
 bool IsBiasAddGrad(const NodeDef& node);
 bool IsBitcast(const NodeDef& node);
 bool IsBlockOneDnnGraph(const NodeDef& node);
+bool IsBroadcastGradientArgs(const NodeDef& node);
 bool IsBroadcastTo(const NodeDef& node);
 bool IsCast(const NodeDef& node);
 bool IsCheckNumerics(const NodeDef& node);

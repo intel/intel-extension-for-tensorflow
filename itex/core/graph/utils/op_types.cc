@@ -153,6 +153,10 @@ bool IsBlockOneDnnGraph(const NodeDef& node) {
   return node.op() == "_OneDnnGraph";
 }
 
+bool IsBroadcastGradientArgs(const NodeDef& node) {
+  return node.op() == "BroadcastGradientArgs";
+}
+
 bool IsBroadcastTo(const NodeDef& node) { return node.op() == "BroadcastTo"; }
 
 bool IsCast(const NodeDef& node) { return node.op() == "Cast"; }
