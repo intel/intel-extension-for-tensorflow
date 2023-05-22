@@ -538,11 +538,6 @@ class MaxPooling3dGradGradOp : public OpKernel {
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_POOL_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_KERNEL_BUILDER(Name("MaxPoolWithArgmax")
-                            .Device(DEVICE_GPU)
-                            .TypeConstraint<int64>("Targmax")
-                            .TypeConstraint<double>("T"),
-                        MaxPoolingWithArgmaxOp<GPUDevice, double>);
 TF_CALL_double(REGISTER_GPU_POOL_KERNELS);
 #endif
 #undef REGISTER_GPU_POOL_KERNELS
@@ -588,11 +583,6 @@ TF_CALL_double(REGISTER_GPU_POOL_KERNELS);
 
 TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_GPU_POOL_GRAD_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_KERNEL_BUILDER(Name("MaxPoolGradWithArgmax")
-                            .Device(DEVICE_GPU)
-                            .TypeConstraint<double>("T")
-                            .TypeConstraint<int64>("Targmax"),
-                        MaxPoolingGradWithArgmaxOp<GPUDevice, double>);
 TF_CALL_double(REGISTER_GPU_POOL_GRAD_KERNELS);
 #endif
 #undef REGISTER_GPU_POOL_GRAD_KERNELS
