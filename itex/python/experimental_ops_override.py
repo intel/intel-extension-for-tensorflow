@@ -150,10 +150,12 @@ def itex_dense_layer_call(self, inputs, training=None):
       outputs = original_inputs.with_flat_values(outputs)
   # Broadcast kernel to inputs.
   else:
-    if self.use_bias:
+    if training == True and self.use_bias:
       outputs = itex_optimized_bmm(inputs, self.kernel, self.bias)
     else:
       outputs = tf.raw_ops.BatchMatMulV2(x=inputs, y=self.kernel)
+      if self.use_bias:
+        outputs = tf.nn.bias_add(outputs, self.bias)
     if self.activation is not None:
       outputs = self.activation(outputs)
 
@@ -407,7 +409,7 @@ def experimental_ops_override():
         mask = mask[0]
       if not is_itex_supported_inputs(mask, self.time_major):
         return tf_lstm_call(self, inputs, mask, training, initial_state)
-    
+
     inputs, row_lengths = backend.convert_inputs_if_ragged(inputs)
     is_ragged_input = (row_lengths is not None)
     self._validate_args_if_ragged(is_ragged_input, mask)
