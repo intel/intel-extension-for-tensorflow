@@ -1,21 +1,29 @@
 diff --git a/examples/tensorflow2/tensorflow2_keras_mnist.py b/examples/tensorflow2/tensorflow2_keras_mnist.py
-index 167aafb..e6726f3 100644
+index 167aafb..10fa23a 100644
 --- a/examples/tensorflow2/tensorflow2_keras_mnist.py
 +++ b/examples/tensorflow2/tensorflow2_keras_mnist.py
-@@ -25,12 +25,18 @@ def main():
+@@ -14,7 +14,7 @@
+ # ==============================================================================
+ 
+ import sys
+-
++import numpy as np
+ import tensorflow as tf
+ 
+ import horovod
+@@ -25,20 +25,25 @@ def main():
      # Horovod: initialize Horovod.
      hvd.init()
  
-+    is_mpi = hvd.size()
-+    print("### is_mpi ", is_mpi)
-+    if is_mpi == 0:
-+        print("No MPI horovod support, this is running in no-MPI mode!")
++    hvd_size = hvd.size()
++    print("Horovod size {}".format(hvd_size))
 +
      # Horovod: pin GPU to be used to process local rank (one GPU per process)
 -    gpus = tf.config.experimental.list_physical_devices('GPU')
 +    gpus = tf.config.experimental.list_physical_devices('XPU')
-+    print("### gpus ", gpus)
++    print("XPU count is {}".format(len(gpus)))
      for gpu in gpus:
++        print("XPU: {}".format(gpu))
          tf.config.experimental.set_memory_growth(gpu, True)
      if gpus:
 -        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
@@ -23,3 +31,14 @@ index 167aafb..e6726f3 100644
  
      (mnist_images, mnist_labels), _ = \
          tf.keras.datasets.mnist.load_data(path='mnist-%d.npz' % hvd.rank())
+ 
+     dataset = tf.data.Dataset.from_tensor_slices(
+-        (tf.cast(mnist_images[..., tf.newaxis] / 255.0, tf.float32),
+-                 tf.cast(mnist_labels, tf.int64))
+-    )
++        ((mnist_images[..., tf.newaxis] / 255.0).astype(np.float32),
++        tf.cast(mnist_labels, tf.int32)))
++
+     dataset = dataset.repeat().shuffle(10000).batch(128)
+ 
+     mnist_model = tf.keras.Sequential([
