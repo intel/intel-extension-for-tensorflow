@@ -32,6 +32,7 @@ constexpr char kApplyRMSPropVarUpdate[] = "_ITEXApplyRMSPropVarUpdate";
 constexpr char kAssignVariableOp[] = "AssignVariableOp";
 constexpr char kBatchMatMulV2[] = "BatchMatMulV2";
 constexpr char kBiasAdd[] = "BiasAdd";
+constexpr char kBiasAddGrad[] = "BiasAddGrad";
 constexpr char kBinaryAdd[] = "BinaryAdd";
 constexpr char kBinaryMul[] = "BinaryMul";
 constexpr char kCast[] = "Cast";

@@ -498,6 +498,16 @@ struct DilatedContraction {
   int btos = kMissingIndex;
 };
 
+struct ContractionWithReshapeAndBiasAddGrad {
+  ContractionWithReshapeAndBiasAddGrad() = default;
+  ContractionWithReshapeAndBiasAddGrad(int root, int reshape, int biasaddgrad)
+      : root_(root), reshape_(reshape), biasaddgrad_(biasaddgrad) {}
+
+  int root_ = kMissingIndex;
+  int reshape_ = kMissingIndex;
+  int biasaddgrad_ = kMissingIndex;
+};
+
 bool IsAddWithNoBroadcast(const RemapperContext& ctx, const NodeDef& node) {
   if (!IsAdd(node)) return false;
 
@@ -3068,7 +3078,7 @@ bool FindStridedSliceGrad(const RemapperContext& ctx, int node_index,
   ITEX_CHECK_OK(GetTensorFromConstant(end_node_def, &end_tensor));
   ITEX_CHECK_OK(GetTensorFromConstant(strides_node_def, &strides_tensor));
 
-  auto shape_is_wrong = [](Tensor lt, Tensor rt) {
+  auto shape_is_wrong = [](const Tensor& lt, const Tensor& rt) {
     return !(TensorShapeUtils::IsVector(lt.shape()) &&
              lt.NumElements() == rt.NumElements());
   };
@@ -3378,6 +3388,114 @@ bool FindDilatedContraction(const RemapperContext& ctx, int node_index,
 
   *matched = pattern;
 
+  return true;
+}
+
+/*          before fusion
+                 root
+                  |               \
+                Reshape      BiasAddGrad
+      /           |
+Contraction   Contraction
+            After fusion
+                 root
+                  |
+                reshape
+      /           |               \
+Contraction   Contraction     BiasAddGrad
+
+BiasAddGrad is reduce sum on last dim (only check NHWC case). If the reshape
+does not change the size of the last dim, it is safe to move BiasAddGrad after
+reshape. So that the Contraction(MatMul and Conv2DBackpropFilter) can be fused
+with BiasAddGrad in the later remap stage.
+*/
+bool FindContractionWithReshapeAndBiasAddGrad(
+    const RemapperContext& ctx, int node_index,
+    ContractionWithReshapeAndBiasAddGrad* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // BiasAddGrad should have 1 input
+  const auto* bias_add_grad = node_view->node();
+
+  if (!bias_add_grad || !IsBiasAddGrad(*bias_add_grad) ||
+      HasControlFaninOrFanout(*node_view) ||
+      IsInPreserveSet(ctx, node_view->node()) ||
+      node_view->NumRegularFanins() != 1)
+    return false;
+  const auto* root_node_view = node_view->GetRegularFanin(0).node_view();
+  const auto* root = root_node_view->node();
+  if (!root || HasControlFaninOrFanout(*root_node_view) ||
+      IsInPreserveSet(ctx, root))
+    return false;
+  if (root_node_view->NumRegularFanouts() != 2) return false;
+  int reshape_position = 0;
+  // Root node should have at least 2 children. reshape and biasaddgrad
+  // TODO(itex): consider >2 children or on fanout_1
+  if (root_node_view->GetRegularFanout(0).size() != 2) return false;
+  if (IsBiasAddGrad(
+          *root_node_view->GetRegularFanout(0)[0].node_view()->node()))
+    reshape_position = 1;
+
+  const auto* reshape =
+      root_node_view->GetRegularFanout(0)[reshape_position].node_view();
+  if (!IsReshape(*reshape->node())) return false;
+
+  auto find_contraction_bwd_patterns = [reshape]() {
+    bool can_fuse_conv_filter = false;
+    bool can_fuse_matmul = false;
+    const auto& reshape_fanout_0 = reshape->GetRegularFanout(0);
+    // Make sure the Reshape is ConvBackpropFilter's 3rd input (dy), in which
+    // case it can be fused with BiasaddGrad. A typical negative example is
+    // deconv, which is implemented by ConvBackpropFilter.
+    for (const auto& fanout : reshape_fanout_0) {
+      if (IsConv2DBackpropFilter(*(fanout.node_view()->node())) ||
+          IsConv3DBackpropFilterV2(*(fanout.node_view()->node()))) {
+        if (reshape->node() !=
+            fanout.node_view()->GetRegularFanin(2).node_view()->node())
+          continue;
+        can_fuse_conv_filter = true;
+        break;
+      }
+    }
+    if (reshape->NumRegularFanouts() == 2 &&
+        IsMatMul(*reshape_fanout_0[0].node_view()->node()) &&
+        IsMatMul(*reshape_fanout_0[1].node_view()->node())) {
+      can_fuse_matmul = true;
+    }
+    return can_fuse_conv_filter || can_fuse_matmul;
+  };
+  if (!find_contraction_bwd_patterns()) return false;
+
+  const string& data_format = bias_add_grad->attr().at("data_format").s();
+  if (data_format != "NHWC") return false;
+
+  std::vector<OpInfo_TensorProperties> bias_props;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+      bias_add_grad->name(), &bias_props));
+
+  std::vector<OpInfo_TensorProperties> reshape_props;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetOutputProperties(reshape->GetName(),
+                                                             &reshape_props));
+
+  // In NHWC case, as long as the channel dimensions of these two shapes are
+  // equal, the biasaddgrad can be moved under the reshape.
+  const TensorShapeProto& bias_input = bias_props[0].shape();
+  const TensorShapeProto& reshape_output = reshape_props[0].shape();
+  if (bias_input.unknown_rank() || reshape_output.unknown_rank()) {
+    return false;
+  }
+
+  const auto& bias_input_last_dim = bias_input.dim(bias_input.dim_size() - 1);
+  const auto& reshape_output_last_dim =
+      reshape_output.dim(reshape_output.dim_size() - 1);
+  if (IsUnknown(bias_input_last_dim) || IsUnknown(reshape_output_last_dim))
+    return false;
+  if (bias_input_last_dim.size() != reshape_output_last_dim.size())
+    return false;
+
+  const ContractionWithReshapeAndBiasAddGrad pattern{
+      root_node_view->node_index(), reshape->node_index(),
+      node_view->node_index()};
+  *matched = pattern;
   return true;
 }
 
@@ -3778,6 +3896,30 @@ Status AddSum(RemapperContext* ctx, const ReplaceableSum& matched,
   TF_ABORT_IF_ERROR(mutation->Apply());
   (*invalidated_nodes)[matched.bias_sum] = true;
 
+  return Status::OK();
+}
+
+Status AddContractionWithReshapeAndBiasAddGrad(
+    RemapperContext* ctx, const ContractionWithReshapeAndBiasAddGrad& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& reshape = graph->node(matched.reshape_);
+  const NodeDef& biasaddgrad = graph->node(matched.biasaddgrad_);
+  NodeDef new_biasaddgrad;
+
+  new_biasaddgrad.set_op(kBiasAddGrad);
+  new_biasaddgrad.set_device(biasaddgrad.device());
+  new_biasaddgrad.set_name(biasaddgrad.name());
+  new_biasaddgrad.add_input(reshape.name());
+  CopyAllAttrs(biasaddgrad, &new_biasaddgrad);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(new_biasaddgrad), &status);
+  (*invalidated_nodes)[matched.biasaddgrad_] = true;
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
   return Status::OK();
 }
 
@@ -6141,6 +6283,18 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
             AddSum(&ctx, bias_sum, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
+
+      // Move BiasAddGrad after Reshape, so that the Contraction(MatMul and
+      // Conv2DBackpropFilter) can be fused with BiasAddGrad in the later remap
+      // stage.
+      ContractionWithReshapeAndBiasAddGrad contraction_reshape_bias_grad;
+      if (FindContractionWithReshapeAndBiasAddGrad(
+              ctx, i, &contraction_reshape_bias_grad)) {
+        TF_ABORT_IF_ERROR(AddContractionWithReshapeAndBiasAddGrad(
+            &ctx, contraction_reshape_bias_grad, &invalidated_nodes,
+            &nodes_to_delete));
+        continue;
+      }
     }
 
     // The entry of pattern matcher. It will iterate all fusion registered.
@@ -6416,6 +6570,7 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
       if (FindStridedSliceGrad(ctx, i, &strided_slice_grad)) {
         TF_ABORT_IF_ERROR(AddStridedSliceGrad(
             &ctx, strided_slice_grad, &invalidated_nodes, &nodes_to_delete));
+        continue;
       }
     } else {
       // Only run in llga mode
