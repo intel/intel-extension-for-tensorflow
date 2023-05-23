@@ -93,12 +93,10 @@ class SparseSegmentReductionOpBase<GPUDevice, T, Index, SegmentId>
 
     // Allocate and compute segment_offsets.
     Tensor segment_offsets;
-    if (is_mean_) {
-      OP_REQUIRES_OK(context,
-                     context->allocate_temp(DataTypeToEnum<Index>::value,
-                                            TensorShape({output_rows + 1}),
-                                            &segment_offsets));
-    }
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<Index>::value,
+                                          TensorShape({output_rows + 1}),
+                                          &segment_offsets));
     auto segment_offsets_flat = segment_offsets.vec<Index>();
     functor::SparseSegmentReductionFunctor<T, Index, SegmentId,
                                            functor::NonAtomicSumOpGpu<float>,
