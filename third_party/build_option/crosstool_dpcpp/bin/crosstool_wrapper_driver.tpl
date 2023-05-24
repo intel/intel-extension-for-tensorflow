@@ -163,7 +163,7 @@ def call_compiler(argv, link = False, dpcpp = True):
     if isinstance(f, list):
       flags[i] = ''.join(f)
 
-  cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + DPCPP_PATH + ' ' + ' '.join(flags))
+  cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + DPCPP_PATH + ' -xCORE-AVX2 ' + ' '.join(flags))
 
   return system(cmd)
 

@@ -35,6 +35,7 @@ cc_library(
 cc_library(
     name = "xpu_graph",
     srcs = ["xpu_graph.cc"],
+    hdrs = ["xpu_graph.h"],
     textual_hdrs = ["//itex/core:itex_version_generator"],
     visibility = ["//visibility:public"],
     deps = [

@@ -22,7 +22,7 @@ limitations under the License.
 
 // TODO(ahentz): This is not strictly required here but, for historical
 // reasons, many people depend on cpu_info.h in order to use kLittleEndian.
-#include "itex/core/utils/byte_order.h"
+// #include "itex/core/utils/byte_order.h"
 
 #if defined(_MSC_VER)
 // included so __cpuidex function is available for GETCPUID on Windows
@@ -61,6 +61,9 @@ int MaxParallelism(int numa_node);
 // the user must check for validity.
 static constexpr int kUnknownCPU = -1;
 int NumTotalCPUs();
+
+// Return whether the CPU supports AVX512 features.
+bool CPUIDAVX512();
 
 // Returns the id of the current CPU.  Returns -1 if the current CPU cannot be
 // identified.  If successful, the return value will be in [0, NumTotalCPUs()).

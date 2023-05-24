@@ -18,6 +18,7 @@ XPU_KERNEL_DEPS = [
 itex_xpu_library(
     name = "xpu_kernel",
     srcs = ["xpu_kernel.cc"],
+    hdrs = ["xpu_kernel.h"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
@@ -29,9 +30,6 @@ itex_xpu_library(
 itex_xpu_library(
     name = "xpu_kernel_cc",
     srcs = ["xpu_kernel.cc"],
-    copts = [
-        "-DCC_BUILD",
-    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
@@ -46,7 +44,7 @@ cc_import(
         "common.h",
         "//itex/core/ops:core_ops_hdrs",
     ],
-    shared_library = ":libitex_common.so",
+    shared_library = ":itex_common",
     visibility = ["//visibility:public"],
 )
 
@@ -57,12 +55,12 @@ cc_binary(
         "common.h",
     ],
     linkshared = True,
-    set_target = "common_lib",
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices:device_backend_util",
         "//itex/core/graph:config_util",
         "//itex/core/ops:op_impl",
+        "@local_config_tf//:_pywrap_tensorflow_internal",
     ],
 )
 

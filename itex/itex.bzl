@@ -42,6 +42,13 @@ def if_gpu_build(if_true, if_false = []):
         "//conditions:default": if_false,
     })
 
+def if_cc_build(if_true, if_false = []):
+    return select({
+        "@intel_extension_for_tensorflow//itex:cpu_cc_build": if_true,
+        "@intel_extension_for_tensorflow//itex:gpu_cc_build": if_true,
+        "//conditions:default": if_false,
+    })
+
 def if_gpu_backend(if_true, if_false = []):
     return selects.with_or({
         ("@local_config_dpcpp//dpcpp:using_dpcpp", "@intel_extension_for_tensorflow//itex:xpu_build"): if_true,
@@ -54,15 +61,14 @@ def if_cpu_backend(if_true, if_false = []):
         "//conditions:default": if_false,
     })
 
-def avx_copts():
-    # CPU default build opts: "-mavx", "-mavx2"
-    # CPU avx512 build opts: "-mavx", "-mavx2", "-mavx512f", "-mavx512pf", "-mavx512cd", "-mavx512bw", "-march=skylake-avx512", "-mavx512dq"
+def cpu_copts():
+    # CPU default build opts: "-DINTEL_CPU_ONLY", "-mfma", "-O3", "-mavx", "-mavx2"
+    # CPU avx512 build opts: "-mavx512f", "-mavx512pf", "-mavx512cd", "-mavx512bw", "-march=skylake-avx512", "-mavx512dq"
     # CPU CC build opts: "-march=native"
     return (
         select({
             "@intel_extension_for_tensorflow//itex:cpu_build": [
-                "-mavx",
-                "-mavx2",
+                "-DINTEL_CPU_ONLY",
             ],
             "//conditions:default": [],
         }) + select({
@@ -137,7 +143,7 @@ def cc_binary(name, set_target = None, srcs = [], deps = [], *argc, **kwargs):
     )
 
 def cc_library(name, srcs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + if_cpu_build(["-DINTEL_CPU_ONLY", "-mfma", "-O3"]) + avx_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"])
+    kwargs["copts"] = kwargs.get("copts", []) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"])
     kwargs["linkopts"] = kwargs.get("linkopts", []) + if_gpu_build(["-DINTEL_GPU_ONLY"])
     native.cc_library(
         name = name,
@@ -147,7 +153,7 @@ def cc_library(name, srcs = [], deps = [], *argc, **kwargs):
     )
 
 def itex_xpu_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + if_cpu_build(["-DINTEL_CPU_ONLY", "-mfma", "-O3"]) + avx_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"])
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"])
     kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"])
     native.cc_library(
         name = name,

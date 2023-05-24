@@ -26,7 +26,6 @@ limitations under the License.
 #include "itex/core/utils/integral_types.h"
 #include "itex/core/utils/macros.h"
 #include "itex/core/utils/stringpiece.h"
-#include "itex/core/utils/types.h"
 
 // Basic string utility routines
 namespace itex {

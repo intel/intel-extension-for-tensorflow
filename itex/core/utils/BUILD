@@ -199,6 +199,21 @@ cc_library(
 )
 
 cc_library(
+    name = "cpu_info",
+    srcs = ["cpu_info.cc"],
+    hdrs = [
+        "cpu_info.h",
+        "integral_types.h",
+        "platform.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logging",
+        "@com_google_absl//absl/base",
+    ],
+)
+
+cc_library(
     name = "mutex",
     srcs = ["mutex.cc"],
     hdrs = [

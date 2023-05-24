@@ -36,7 +36,7 @@ index 9d26822ac163..9b43352e9eac 100644
  
  load("@bazel_skylib//lib:paths.bzl", "paths")
 +load("@intel_extension_for_tensorflow//itex:itex.bzl",
-+    "avx_copts",
++    "cpu_copts",
 +    "if_cpu_build",
 +    "if_cpu_avx512_build",
 +    "if_gpu_build"
@@ -50,7 +50,7 @@ index 9d26822ac163..9b43352e9eac 100644
          **kwargs
      )
 +    copts = copts if copts else []
-+    copts = copts + if_cpu_build(["-DINTEL_CPU_ONLY", "-mfma", "-O3"]) + avx_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"])
++    copts = copts + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"])
      native.cc_library(
          name = name,
          # strip_include_prefix does not apply to textual_hdrs.

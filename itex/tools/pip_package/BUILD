@@ -55,7 +55,9 @@ COMMON_PIP_DEPS = [
     "//itex:libitex_gpu.so",
 ]) + if_cpu_onednn([
     # TODO(itex): need refine if_cpu_onednn
-    "//itex:libitex_cpu.so",
+    "//itex:itex_cpu",
+    "//itex:libitex_cpu_internal_avx512.so",
+    "//itex:libitex_cpu_internal_avx2.so",
 ])
 
 py_binary(

@@ -112,7 +112,7 @@ function prepare_src() {
   fi
 
   RUNFILES=bazel-bin/itex/tools/pip_package/build_pip_package.runfiles/intel_extension_for_tensorflow
-  cp -R \
+  cp -LR \
       bazel-bin/itex/tools/pip_package/build_pip_package.runfiles/intel_extension_for_tensorflow/itex \
       "${ITEX_TMPDIR}"
   # Copy oneDNN libs over so they can be loaded at runtime
@@ -152,7 +152,11 @@ function prepare_src() {
   mkdir -p ${LIB_TMPDIR}/intel_extension_for_tensorflow_lib
   touch ${LIB_TMPDIR}/intel_extension_for_tensorflow_lib/__init__.py
   mv -f ${LIB_TMPDIR}/third-party-programs ${LIB_TMPDIR}/intel_extension_for_tensorflow_lib/
-  mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/lib*.so ${LIB_TMPDIR}/tensorflow-plugins
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu.so ${LIB_TMPDIR}/tensorflow-plugins/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu.so ${LIB_TMPDIR}/tensorflow-plugins/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx2.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx2.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   cp ${RUNFILES}/../../../../core/kernels/libitex_common.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   mkdir ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
   cp -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py ${LIB_TMPDIR}/intel_extension_for_tensorflow/python/

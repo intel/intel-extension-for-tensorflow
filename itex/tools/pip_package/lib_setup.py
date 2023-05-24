@@ -159,7 +159,7 @@ setup(
     package_data={
         _ext_path: [
             'python/*.so',
-            'libitex_common.so'
+            '*.so',
         ] + matches + env_check_tool,
         _plugin_path: [
             '*'

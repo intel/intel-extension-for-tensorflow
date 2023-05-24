@@ -38,6 +38,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core:protos_all_cc",
+        "//itex/core/utils:device_types",
         "//itex/core/utils:logging",
     ],
     alwayslink = True,
@@ -49,6 +50,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core:protos_all_cc",
+        "//itex/core/utils:device_types",
         "//itex/core/utils:logging",
     ],
 )

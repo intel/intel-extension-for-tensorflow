@@ -14,9 +14,15 @@ limitations under the License.
 ==============================================================================*/
 
 #include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/graph/optimizer_config.h"
+#if defined(INTEL_CPU_ONLY) && !defined(CC_BUILD)
+#include "itex/core/graph/xpu_graph.h"
+#endif
 #include "itex/core/graph/xpu_optimizer.h"
 #include "itex/core/utils/cpu_info.h"
 #include "itex/core/utils/env_var.h"
@@ -116,7 +122,12 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
 #endif  // INTEL_CPU_ONLY
 }
 
+#if defined(INTEL_CPU_ONLY) && !defined(CC_BUILD)
+void TF_InitGraph_Internal(TP_OptimizerRegistrationParams* params,
+                           TF_Status* status) {
+#else
 void TF_InitGraph(TP_OptimizerRegistrationParams* params, TF_Status* status) {
+#endif
   params->struct_size = TP_OPTIMIZER_REGISTRATION_PARAMS_STRUCT_SIZE;
   params->optimizer_configs->struct_size = TP_OPTIMIZER_CONFIGS_STRUCT_SIZE;
   params->optimizer->struct_size = TP_OPTIMIZER_STRUCT_SIZE;

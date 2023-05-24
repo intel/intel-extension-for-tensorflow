@@ -3,7 +3,7 @@ build:cpu --define=build_with_onednn=true
 build:cpu --define=build_with_onednn_graph=true
 build:cpu --define=build_with_graph_compiler=true
 build:cpu --copt=-DINTEL_CPU_ONLY
-build:cpu --copt=-march=native
+build:cpu --copt=-mfma --copt=-O3 --copt=-mavx --copt=-mavx2
 build:cpu --cxxopt=-std=c++14
 build:cpu --host_cxxopt=-std=c++14
 build:cpu --define=device=cpu

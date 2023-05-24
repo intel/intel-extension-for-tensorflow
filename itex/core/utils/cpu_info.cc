@@ -18,9 +18,9 @@ limitations under the License.
 #include "itex/core/utils/cpu_info.h"
 
 #include "absl/base/call_once.h"
+#include "itex/core/utils/integral_types.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/platform.h"
-#include "itex/core/utils/types.h"
 #if defined(PLATFORM_IS_X86)
 #include <mutex>  // NOLINT
 #endif
@@ -355,6 +355,13 @@ bool TestCPUFeature(CPUFeature feature) {
 #else
   return false;
 #endif
+}
+
+bool CPUIDAVX512() {
+#ifdef PLATFORM_IS_X86
+  return CPUIDInfo::TestFeature(AVX512F);
+#endif  // PLATFORM_IS_X86
+  return false;
 }
 
 std::string CPUVendorIDString() {

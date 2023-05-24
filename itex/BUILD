@@ -14,7 +14,6 @@ string_flag(
         "cpu_cc_backend",
         "gpu_orig_backend",
         "gpu_cc_backend",
-        "common_lib",
         "xla_extension",
         "dummy",
     ],
@@ -170,12 +169,50 @@ itex_xpu_binary(
 
 cc_binary(
     name = "libitex_cpu.so",
+    srcs = [
+        "//itex/core/wrapper:itex_cpu_wrapper",
+    ],
+    linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core/devices:device_backend_util_hdr",
+        "//itex/core/kernels:libitex_common",
+        "//itex/core/utils:cpu_info",
+        "//itex/core/utils:env_var",
+        "//itex/core/utils:logging",
+    ],
+)
+
+cc_binary(
+    name = "libitex_cpu_internal_avx512.so",
     linkopts = [
         "-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow",
         "-DINTEL_CPU_ONLY",
     ],
     linkshared = True,
     set_target = "cpu_avx512_backend",
+    visibility = ["//visibility:public"],
+    deps = if_dpcpp(
+        [],
+        [
+            "//itex/core/graph:xpu_graph",
+            "//itex/core/kernels:xpu_kernel",
+        ],
+    ) + [
+        "//itex/core/kernels:libitex_common",
+        "@local_config_tf//:_pywrap_tensorflow_internal",
+    ],
+)
+
+cc_binary(
+    name = "libitex_cpu_internal_avx2.so",
+    linkopts = [
+        "-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow",
+        "-DINTEL_CPU_ONLY",
+    ],
+    linkshared = True,
+    set_target = "cpu_avx2_backend",
     visibility = ["//visibility:public"],
     deps = if_dpcpp(
         [],
