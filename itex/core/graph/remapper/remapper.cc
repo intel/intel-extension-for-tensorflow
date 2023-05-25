@@ -6295,13 +6295,7 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
             &nodes_to_delete));
         continue;
       }
-    }
 
-    // The entry of pattern matcher. It will iterate all fusion registered.
-    TF_ABORT_IF_ERROR(LaunchPatternMatcher(&ctx, i, &invalidated_nodes,
-                                           &nodes_to_delete, is_full));
-
-    if (is_full) {
       // keras Dense layer fwd
       KerasDenseLayerFwd keras_dense_layer_fwd;
       if (FindKerasDenseLayerFwd(ctx, i, &keras_dense_layer_fwd)) {
@@ -6309,7 +6303,13 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
             &ctx, keras_dense_layer_fwd, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
+    }
 
+    // The entry of pattern matcher. It will iterate all fusion registered.
+    TF_ABORT_IF_ERROR(LaunchPatternMatcher(&ctx, i, &invalidated_nodes,
+                                           &nodes_to_delete, is_full));
+
+    if (is_full) {
       // Remap Conv2D+BiasAdd+Activation+Add into the _ITEXFusedConv2D.
       ContractionWithBiasAndActivationAdd contract_with_bias_and_activation_add;
       if (FindContractionWithBiasAndActivationAdd(
