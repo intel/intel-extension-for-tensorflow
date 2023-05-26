@@ -19,6 +19,7 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "itex/core/utils/onednn/onednn_util.h"
 
@@ -38,16 +39,58 @@ class EltwiseBaseOp : public OpKernel {
  public:
   explicit EltwiseBaseOp(OpKernelConstruction* ctx, dnnl::algorithm algo,
                          float alpha, float beta)
-      : OpKernel(ctx), alg_kind_(algo), alpha_(alpha), beta_(beta) {}
+      : OpKernel(ctx), alg_kind_(algo), alpha_(alpha), beta_(beta) {
+    ITEX_CHECK_OK(
+        ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false, &enable_cache_));
+  }
+
+  void InitOrSetMemory(OpKernelContext* context) {
+    if (!(enable_cache_ && is_init_ &&
+          context->is_input_same(0, input_dims_))) {
+      Init(context);
+      return;
+    }
+
+    if (is_input_zero_) {
+      OP_REQUIRES_OK(context, context->allocate_output(
+                                  kDstIndex_, src_tensor_shape_, &dst_tensor_));
+      return;
+    }
+
+    src_mem_.set_data_handle(context->tensor_data(kSrcIndex_));
+
+    // Reallocate scratchpad memory.
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<T>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<T>(scratchpad_tensor_.get()));
+
+    OP_REQUIRES_OK(context, context->allocate_output(
+                                kDstIndex_, src_tensor_shape_, &dst_tensor_));
+    dst_mem_.set_data_handle(GetTensorBuffer<T>(dst_tensor_));
+  }
 
   void Compute(OpKernelContext* context) override {
+    mutex_lock lock(&mu_compute_);
+    onednn_engine_ = CreateDnnlEngine<Device>(*context);
+    // onednn_stream has thread safety issue, need create a new one in
+    // every compute.
+    onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
+    InitOrSetMemory(context);
+    if (is_input_zero_) {
+      scratchpad_tensor_.reset();
+      return;
+    }
+    fwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
+  }
+
+  void Init(OpKernelContext* context) {
     try {
-      auto onednn_engine = CreateDnnlEngine<Device>(*context);
-      // index of src input tensor: "features"
-      const size_t kSrcIndex = 0;
-      // index of dst output tensor: "activations"
-      const size_t kDstIndex = 0;
-      const Tensor& src_tensor = context->input(kSrcIndex);
+      const Tensor& src_tensor = context->input(kSrcIndex_);
 
       if (std::is_same<T, qint8>::value) {
         OP_REQUIRES(
@@ -56,67 +99,68 @@ class EltwiseBaseOp : public OpKernel {
                 "Tensor size must be a multiple of 4 for Relu<qint8>. Got ",
                 src_tensor.NumElements()));
       }
+      fwd_primitive_args_.clear();
+      input_dims_.clear();
+      src_tensor_shape_ = src_tensor.shape();
+      for (int i = 0; i < src_tensor_shape_.dims(); ++i) {
+        input_dims_.push_back(src_tensor_shape_.dim_size(i));
+      }
 
-      Tensor* dst_tensor = nullptr;
       // Nothing to compute, return.
-      if (src_tensor.shape().num_elements() == 0) {
+      if (src_tensor_shape_.num_elements() == 0) {
         OP_REQUIRES_OK(context,
-                       context->allocate_output(kDstIndex, src_tensor.shape(),
-                                                &dst_tensor));
+                       context->allocate_output(kDstIndex_, src_tensor.shape(),
+                                                &dst_tensor_));
+        is_input_zero_ = true;
+        is_init_ = true;
         return;
       }
 
       // memory desc
-      memory::desc src_md({}, memory::data_type::undef,
-                          memory::format_tag::undef);
-      memory::dims src_dims = TFShapeToOneDnnDims(src_tensor.shape());
-      src_md = CreatePlainMemDescWithFormatTag<T>(src_dims);
+      memory::dims src_dims = TFShapeToOneDnnDims(src_tensor_shape_);
+      memory::desc src_md = CreatePlainMemDescWithFormatTag<T>(src_dims);
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 
       // Create an eltwise forward descriptor and primitive descriptor
 #ifdef ITEX_ONEDNN_3_0
-      eltwise_forward::primitive_desc fwd_pd(onednn_engine, prop_kind::forward,
+      eltwise_forward::primitive_desc fwd_pd(onednn_engine_, prop_kind::forward,
                                              alg_kind_, src_md, src_md, alpha_,
                                              beta_, attr);
 #else
       eltwise_forward::desc fwd_desc(prop_kind::forward, alg_kind_, src_md,
                                      alpha_, beta_);
-      eltwise_forward::primitive_desc fwd_pd(fwd_desc, attr, onednn_engine);
+      eltwise_forward::primitive_desc fwd_pd(fwd_desc, attr, onednn_engine_);
 #endif
-      Tensor scratchpad_tensor;
-      int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
+      scratchpad_size_ = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor));
-      auto scratchpad_mem =
-          dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine,
-                       GetTensorBuffer<T>(&scratchpad_tensor));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_ =
+          dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine_,
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
-      primitive fwd_primitive(fwd_pd);
+      fwd_primitive_ = primitive(fwd_pd);
 
       // Create memory primitive
       T* src_data =
           static_cast<T*>(const_cast<T*>(src_tensor.flat<T>().data()));
-      auto src_mem = CreateDnnlMemory(fwd_pd.src_desc(), onednn_engine,
-                                      static_cast<void*>(src_data));
+      src_mem_ = CreateDnnlMemory(fwd_pd.src_desc(), onednn_engine_,
+                                  static_cast<void*>(src_data));
 
       OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
-                                  {static_cast<const int>(kSrcIndex)},
-                                  static_cast<const int>(kDstIndex),
-                                  src_tensor.shape(), &dst_tensor));
+                                  {static_cast<const int>(kSrcIndex_)},
+                                  static_cast<const int>(kDstIndex_),
+                                  src_tensor.shape(), &dst_tensor_));
 
-      T* dst_data = dst_tensor->flat<T>().data();
-      auto dst_mem = CreateDnnlMemory(fwd_pd.dst_desc(), onednn_engine,
-                                      static_cast<void*>(dst_data));
+      dst_mem_ = CreateDnnlMemory(fwd_pd.dst_desc(), onednn_engine_,
+                                  GetTensorBuffer<T>(dst_tensor_));
 
-      auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
-      std::unordered_map<int, memory> fwd_primitive_args = {
-          {DNNL_ARG_SRC, src_mem},
-          {DNNL_ARG_DST, dst_mem},
-          {DNNL_ARG_SCRATCHPAD, scratchpad_mem}};
-      fwd_primitive.execute(onednn_stream, fwd_primitive_args);
+      fwd_primitive_args_.emplace(DNNL_ARG_SRC, src_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_DST, dst_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_SCRATCHPAD, scratchpad_mem_);
+      is_init_ = true;
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
                          ", message: " + string(e.message) + ", in file " +
@@ -131,6 +175,36 @@ class EltwiseBaseOp : public OpKernel {
   algorithm alg_kind_ = algorithm::eltwise_relu;
   float alpha_ = 0.0f;
   float beta_ = 0.0f;
+
+  mutex mu_compute_;
+
+  // index of src input tensor: "features"
+  const size_t kSrcIndex_ = 0;
+  // index of dst output tensor: "activations"
+  const size_t kDstIndex_ = 0;
+
+  bool enable_cache_ = false;
+  bool is_init_ = false;
+  bool is_input_zero_ = false;
+
+ private:
+  TensorShape src_tensor_shape_;
+
+  std::vector<int64> input_dims_;
+
+  dnnl::memory src_mem_;
+  dnnl::memory dst_mem_;
+  dnnl::memory scratchpad_mem_;
+
+  dnnl::stream onednn_stream_;
+  dnnl::engine onednn_engine_;
+
+  eltwise_forward::primitive fwd_primitive_;
+
+  Tensor* dst_tensor_ = nullptr;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
+  std::unordered_map<int, memory> fwd_primitive_args_;
 };
 
 template <typename Device, typename T>
