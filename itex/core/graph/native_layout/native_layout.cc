@@ -97,8 +97,6 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll, AlwaysRewrite},
-      {"Relu", "_ITEXRelu", CopyAttrsAll, AlwaysRewrite},
-      {"Relu6", "_ITEXRelu6", CopyAttrsAll, AlwaysRewrite},
       {"Relu6Grad", "_ITEXRelu6Grad", CopyAttrsAll, RewriteBackwardDataType},
       {"ReluGrad", "_ITEXReluGrad", CopyAttrsAll, RewriteBackwardDataType},
       {"ResizeBilinear", "_ITEXResizeBilinear", CopyAttrsAll, RewriteResize},

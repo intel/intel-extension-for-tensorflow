@@ -202,9 +202,7 @@ void Register_ITEXQuantizedDepthwiseConv2DV2Op();
 void Register_ITEXQuantizedMatMulOp();
 
 void Register_ITEXRelu6GradOp();
-void Register_ITEXRelu6Op();
 void Register_ITEXReluGradOp();
-void Register_ITEXReluOp();
 void Register_ITEXResizeBilinearOp();
 void Register_ITEXResizeBilinearGradOp();
 void Register_ITEXSliceOp();

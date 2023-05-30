@@ -2397,23 +2397,6 @@ void Register_ITEXFusedBatchNormGradExOp() {
   }
 }
 
-void Register_ITEXReluOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("_ITEXRelu");
-    TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "T: {bfloat16, half, float} = DT_FLOAT");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unchanged_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXRelu op registration failed: ";
-  }
-}
-
 void Register_ITEXReluGradOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
@@ -2542,24 +2525,6 @@ void Register_ITEXEluGradOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_ITEXEluGrad op registration failed.";
-  }
-}
-
-void Register_ITEXRelu6Op() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_ITEXRelu6");
-    TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "T: {bfloat16, half, float} = DT_FLOAT");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unchanged_shape_fn);
-
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXRelu6 op registration failed: ";
   }
 }
 
