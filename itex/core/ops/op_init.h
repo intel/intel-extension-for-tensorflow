@@ -325,6 +325,10 @@ void Register_OneDnnSwishOp();
 void Register_OneDnnToTfOp();
 void Register_OneDnnTransposeOp();
 
+// FP8 kernels
+void Register_Fp8QuantizeOp();
+void Register_Fp8DequantizeOp();
+
 #ifdef __cplusplus
 extern "C" {
 #endif

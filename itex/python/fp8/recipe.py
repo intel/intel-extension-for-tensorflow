@@ -7,7 +7,7 @@ from pydantic.dataclasses import dataclass
 
 class _FormatHelper(NamedTuple):
   """
-  Stores max FP8 values for fprop and bprop a `Format`.
+  Stores max FP8 values for fprop and bprop.
   """
 
   max_fwd: float
@@ -17,20 +17,13 @@ class _FormatHelper(NamedTuple):
 class Format(Enum):
   """
   Supported FP8 formats.
-
   Values
   ------
-  E4M3 :
-        All FP8 tensors are in e4m3 format
-  E5M2 :
-        All FP8 tensors are in e5m2 format
   HYBRID :
           FP8 tensors in the forward pass are in e4m3 format,
           FP8 tensors in the backward pass are in e5m2 format
   """
 
-  E4M3 = _FormatHelper(max_fwd=448, max_bwd=448)
-  E5M2 = _FormatHelper(max_fwd=57344, max_bwd=57344)
   HYBRID = _FormatHelper(max_fwd=448, max_bwd=57344)
 
 @dataclass()
@@ -38,16 +31,12 @@ class DelayedScaling:
   """
   Use the delayed scaling factor strategy.
   Use scale factor from previous iteration,
-  recompute once every `interval`, and record
-  amax history of `amax_history_len` steps.
-
+  and record amax history of `amax_history_len` steps.
   Parameters
   ----------
   margin : int, default = 0
            Margin for the scaling factor computation.
-  interval : int, default = 1
-             Controls how often the scaling factor is recomputed.
-  fp8_format : {Format.E4M3, Format.HYBRID}, default = Format.HYBRID
+  fp8_format : {Format.HYBRID}, default = Format.HYBRID
                Controls the FP8 data format used during forward and backward
                pass.
   amax_history_len : int, default = 1024
@@ -98,14 +87,6 @@ class DelayedScaling:
   """
 
   margin: int = 0
-  interval: int = 1
-  fp8_format: Format = Format.HYBRID
-  amax_history_len: int = 1024
-  amax_compute_algo: Union[Literal["max", "most_recent"], Callable] = "max"
-  scaling_factor_compute_algo: Optional[Callable] = None
-
-  margin: int = 0
-  interval: int = 1
   fp8_format: Format = Format.HYBRID
   amax_history_len: int = 1024
   amax_compute_algo: Union[Literal["max", "most_recent"], Callable] = "max"

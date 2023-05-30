@@ -17,7 +17,6 @@ class BaseModule:
     self.fp8_meta = {}
     self.fp8_meta["recipe"] = get_default_fp8_recipe()
     self.fp8_meta_tensors_initialized = False
-
   """
   Below are fp8 helper functions for transformer core op.
   We should allocate tensor for fp8 meta data, so please call fp8_init() at the first.
@@ -27,15 +26,15 @@ class BaseModule:
   post_forward() / post_backward() records fp8 output and its corresponding scale inv.
 
   Example for MLP (2-layer):
-    self.fp8_init(num_gemms = 2, num_fp8_outs_fwd = 1, num_fp8_outs_bwd = 2)
+    self.fp8_init(num_fp8_inps=1, num_gemms=2, num_fp8_outs=1)
     @tf.custom_gradient
     def forward_func(x, y):
       self.pre_forward()
-      fwd_fp8_meta_tensors = self.get_fp8_meta_tensors(x, y, fwd = True)
+      fwd_fp8_meta_tensors = self.get_fp8_meta_tensors(x, y, max_fp8_outs=1, fwd=True)
       z = mlp_forward(x, y, fwd_fp8_meta_tensors)
       def grad_fn(upstream):
         self.pre_backward()
-        bwd_fp8_meta_tensors = self.get_fp8_meta_tensors(upstream, fwd = False)
+        bwd_fp8_meta_tensors = self.get_fp8_meta_tensors(upstream, max_fp8_outs=1, fwd=False)
         bwd_fp8_meta_tensors.append(fwd_fp8_meta_tensors[0])
         bwd_fp8_meta_tensors.append(fwd_fp8_meta_tensors[1])
         dx, dy = mlp_backward(x, y, bwd_fp8_meta_tensors)
@@ -59,15 +58,15 @@ class BaseModule:
     gemm_meta_tensors = fp8_meta[fp8_meta_tensor_key]["gemm"]
     if num_fp8_gemm_tensors > 0:
       gemm_meta_tensors["scale"] = tf.Variable(
-        initial_value = tf.ones(num_fp8_gemm_tensors),
-        trainable = False)
+        initial_value=tf.ones(num_fp8_gemm_tensors),
+        trainable=False)
       gemm_meta_tensors["scale_inv"] = tf.Variable(
-        initial_value = tf.ones(num_fp8_gemm_tensors),
-        trainable = False)
+        initial_value=tf.ones(num_fp8_gemm_tensors),
+        trainable=False)
       gemm_meta_tensors["amax_history"] = tf.Variable(
-        initial_value = tf.zeros(
+        initial_value=tf.zeros(
           [self.fp8_meta["recipe"].amax_history_len, num_fp8_gemm_tensors]),
-        trainable = False)
+        trainable=False)
 
     num_fp8_out_tensors = (
       fp8_meta["num_fp8_outs_fwd"] if fwd else fp8_meta["num_fp8_outs_bwd"]
@@ -76,23 +75,23 @@ class BaseModule:
       fp8_meta[fp8_meta_tensor_key]["out" + str(ind)] = {}
       out_meta_tensors = fp8_meta[fp8_meta_tensor_key]["out" + str(ind)]
       out_meta_tensors["scale"] = tf.Variable(
-        initial_value = tf.ones(1),
-        trainable = False)
+        initial_value=tf.ones(1),
+        trainable=False)
       out_meta_tensors["scale_inv"] = tf.Variable(
-        initial_value = tf.ones(1),
-        trainable = False)
+        initial_value=tf.ones(1),
+        trainable=False)
       out_meta_tensors["amax_history"] = tf.Variable(
-        initial_value = tf.zeros(
+        initial_value=tf.zeros(
           [fp8_meta["recipe"].amax_history_len, 1]),
-        trainable = False)
+        trainable=False)
 
   def init_fp8_meta_tensors(self):
     """Init scales and amaxes."""
     if self.fp8_meta_tensors_initialized:
       return
 
-    self.set_fp8_meta_tensors(True)
-    self.set_fp8_meta_tensors(False)
+    self.set_fp8_meta_tensors(fwd=True)
+    self.set_fp8_meta_tensors(fwd=False)
 
   def record_fp8_out(self, *outs, fwd=True):
     """Record fp8 out and its scale inverse factor."""
@@ -131,14 +130,13 @@ class BaseModule:
 
   """
   Currently, we only support fp8 as intermediate gemm in/out or transformer core op in/out.
-  It is necessary to specify the number of gemms and fp8 outs.
+  It is necessary to specify the number of gemms and fp8 inps/outs.
   """
-  def fp8_init(self, num_gemms = 1, num_fp8_outs_fwd = 1, num_fp8_outs_bwd = 1):
+  def fp8_init(self, num_fp8_inps=1, num_gemms=1, num_fp8_outs=1):
     """Initialize fp8 related metadata and tensors during fprop."""
     if not is_fp8_enabled():
       self.fp8 = False
       return
-
     # FP8 is already enabled and recipe is the same, don't do anything.
     if self.fp8 and get_fp8_recipe() == self.fp8_meta['recipe']:
       return
@@ -146,8 +144,8 @@ class BaseModule:
     # Set FP8, recipe, and other FP8 metadata.
     self.fp8 = True
     self.fp8_meta["recipe"] = get_fp8_recipe()
-    self.fp8_meta["num_fp8_outs_fwd"] = num_fp8_outs_fwd
-    self.fp8_meta["num_fp8_outs_bwd"] = num_fp8_outs_bwd
+    self.fp8_meta["num_fp8_outs_fwd"] = num_fp8_outs
+    self.fp8_meta["num_fp8_outs_bwd"] = num_fp8_inps
     self.fp8_meta["num_gemms"] = num_gemms
 
     # Set FP8_MAX per tensor according to recipe.
@@ -158,26 +156,26 @@ class BaseModule:
     # Allocate scales and amaxes.
     self.init_fp8_meta_tensors()
 
-  def get_fp8_meta_tensors(self, *inps, fwd=True):
-    "Get fp8 meta tensors for inputs, gemm and outputs."
-    meta_tensors = []
+  def get_fp8_meta_tensors(self, *inps, max_fp8_outs=1, fwd=True):
+    "Get fp8 meta tensors for inputs, gemms and outputs."
+    fp8_meta_tensors = [[], [], []]
     # fp8 meta tensor for inputs.
     for inp in inps:
       if inp.dtype == tf.int8:
         scale_inv = get_fp8_out_scale_inv(inp)
-        meta_tensors.append(scale_inv)
+        fp8_meta_tensors[0].append(scale_inv)
       else:
-        meta_tensors.append(tf.constant([], dtype=tf.float32))
+        fp8_meta_tensors[0].append(tf.constant([], dtype=tf.float32))
 
     fp8_meta_tensor_key = "scaling_fwd" if fwd else "scaling_bwd"
 
     # fp8 meta tensors for gemm.
     if self.fp8_meta["num_gemms"] > 0:
-      meta_tensors.append(
+      fp8_meta_tensors[1].append(
         self.fp8_meta[fp8_meta_tensor_key]["gemm"]["amax_history"])
-      meta_tensors.append(
+      fp8_meta_tensors[1].append(
         self.fp8_meta[fp8_meta_tensor_key]["gemm"]["scale"])
-      meta_tensors.append(
+      fp8_meta_tensors[1].append(
         self.fp8_meta[fp8_meta_tensor_key]["gemm"]["scale_inv"])
 
     # fp8 meta tensor for outputs.
@@ -185,17 +183,21 @@ class BaseModule:
       self.fp8_meta["num_fp8_outs_fwd"] if fwd \
       else self.fp8_meta["num_fp8_outs_bwd"]
     )
-    for ind in range(0, num_fp8_out_tensors):
-      meta_tensors.append(
-        self.fp8_meta[fp8_meta_tensor_key]["out" + str(ind)]["amax_history"])
-      meta_tensors.append(
-        self.fp8_meta[fp8_meta_tensor_key]["out" + str(ind)]["scale"])
-    return meta_tensors
+    for ind in range(0, max(num_fp8_out_tensors, max_fp8_outs)):
+      if ind < num_fp8_out_tensors:
+        fp8_meta_tensors[2].append(
+          self.fp8_meta[fp8_meta_tensor_key]["out" + str(ind)]["amax_history"])
+        fp8_meta_tensors[2].append(
+          self.fp8_meta[fp8_meta_tensor_key]["out" + str(ind)]["scale"])
+      else:
+        fp8_meta_tensors[2].append(tf.constant([], dtype=tf.float32))
+        fp8_meta_tensors[2].append(tf.constant([], dtype=tf.float32))
+    return fp8_meta_tensors
 
   def pre_forward(self, training):
     """Update fp8 meta data before forward."""
     if self.fp8 and training:
-      self.update_fp8_meta_tensors(True)
+      self.update_fp8_meta_tensors(fwd=True)
 
   def post_forward(self, *outs):
     """Record forward fp8 outputs."""
@@ -203,7 +205,7 @@ class BaseModule:
 
   def pre_backward(self):
     """Update fp8 meta data before backward."""
-    self.update_fp8_meta_tensors(False)
+    self.update_fp8_meta_tensors(fwd=False)
 
   def post_backward(self, *outs):
     """Record backward fp8 outputs."""

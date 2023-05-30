@@ -356,4 +356,8 @@ void RegisterOps() {
   Register_OneDnnSwishOp();
   Register_OneDnnToTfOp();
   Register_OneDnnTransposeOp();
+
+  // FP8 kernels
+  Register_Fp8QuantizeOp();
+  Register_Fp8DequantizeOp();
 }

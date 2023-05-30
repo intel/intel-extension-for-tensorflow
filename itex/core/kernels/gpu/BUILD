@@ -2177,6 +2177,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/gpu/fp8:fp8_op",
         "//itex/core/kernels/gpu/image",
         "//itex/core/kernels/gpu/image:crop_and_resize_op",
         "//itex/core/kernels/gpu/linalg",

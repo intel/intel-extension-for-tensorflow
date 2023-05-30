@@ -27,13 +27,10 @@ def get_default_fp8_recipe():
   """
   return DelayedScaling()
 
-def get_fp8_dtype(fp8_recipe, fprop_tensor = True):
+def get_fp8_dtype(fp8_recipe, fwd=True):
   """Get fp8 data type according to recipe and tensor"""
-  if fp8_recipe.fp8_format == Format.E4M3 or (
-    fp8_recipe.fp8_format == Format.HYBRID and fprop_tensor
-  ):
-    return "E4M3"
-  return "E5M2"
+  assert fp8_recipe.fp8_format == Format.HYBRID
+  return "E4M3" if fwd else "E5M2"
 
 def is_fp8_enabled():
   """Is FP8 enabled"""
@@ -77,7 +74,6 @@ def _most_recent_and_default_sf_compute(amax_history, scale, fp8_max, margin):
 def fused_amax_and_scale_update(
     amax_history,
     scale,
-    scale_inv,
     fp8_max,
     margin,
     amax_compute_algo,
@@ -92,9 +88,8 @@ def fused_amax_and_scale_update(
     updated, sf = _most_recent_and_default_sf_compute(
       amax_history, scale, fp8_max, margin
     )
-  amax_history.assign(updated)
-  scale.assign(sf)
-  scale_inv.assign(1.0 / sf)
+
+  return updated, sf
 
 def amax_and_scale_update(fp8_meta_tensors, recipe, fp8_max):
   """Updates fp8 amaxes/scales for fwd | bwd."""
@@ -102,13 +97,21 @@ def amax_and_scale_update(fp8_meta_tensors, recipe, fp8_max):
   sf_compute = recipe.scaling_factor_compute_algo
 
   if not callable(amax_compute) and sf_compute is None:
-    fused_amax_and_scale_update(
+    amax, scale = fused_amax_and_scale_update(
       fp8_meta_tensors["amax_history"],
       fp8_meta_tensors["scale"],
-      fp8_meta_tensors["scale_inv"],
       fp8_max,
       recipe.margin,
       recipe.amax_compute_algo,
+    )
+    fp8_meta_tensors["amax_history"] = (
+      fp8_meta_tensors["amax_history"].assign(amax)
+    )
+    fp8_meta_tensors["scale"] = (
+      fp8_meta_tensors["scale"].assign(scale)
+    )
+    fp8_meta_tensors["scale_inv"] = (
+      fp8_meta_tensors["scale_inv"].assign(1.0 / scale)
     )
   else:
     raise ValueError(
