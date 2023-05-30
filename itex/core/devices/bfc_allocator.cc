@@ -15,14 +15,17 @@ limitations under the License.
 
 #include "itex/core/devices/bfc_allocator.h"
 
+#include <limits>
+
 namespace itex {
 
 BFCAllocator::BFCAllocator(ITEX_GPUDevice* device) : Allocator() {
   device_ = device;
   memory_limit_ = device_->get_info<sycl::info::device::global_mem_size>();
-  size_t _800mb = 800 * 1024 * 1024;
-  // Leave 800MB memory for system like proper did.
-  memory_limit_ -= _800mb;
+  if (AllocMode() == 1) {
+    // Leave 800MB memory for system like proper did.
+    memory_limit_ -= 800 * 1024 * 1024;
+  }
   ITEX_VLOG(1) << "Set memory limit to " << memory_limit_ << " Bytes";
   curr_region_allocation_bytes_ = RoundedBytes(memory_limit_);
   free_chunks_list_ = kInvalidChunkHandle;
@@ -153,7 +156,8 @@ void* BFCAllocator::FindChunkPtr(BinNum bin_num, size_t rounded_bytes,
             static_cast<int64_t>(chunk->size) - rounded_bytes >=
                 kMaxInternalFragmentation) {
           SplitChunk(h, rounded_bytes);
-          chunk = ChunkFromHandle(h);  // Update chunk pointer in case it moved
+          // Update chunk pointer in case it moved
+          chunk = ChunkFromHandle(h);
         }
 
         // The requested size of the returned chunk is what the user
@@ -236,13 +240,14 @@ void BFCAllocator::InsertFreeChunkIntoBin(BFCAllocator::ChunkHandle h) {
 }
 
 // This function set the upper bound of memory allocation size, the
-// actuall allocation size is the minimal value of this limit size
+// actual allocation size is the minimal value of this limit size
 // and the size want to get from system.
 size_t BFCAllocator::GetLimitAlloc() {
-  int64 limit_size = 4 * 1024;  // unit is MB
+  // set default limit to 4GB
+  int64 limit_size = 4 * 1024;
   if (IsXeHPC(device_)) {
     // Use a big value that means do not set limit.
-    limit_size = 1024 * 1024;
+    limit_size = std::numeric_limits<int64_t>::max();
   }
   TF_ABORT_IF_ERROR(ReadInt64FromEnvVar("ITEX_LIMIT_MEMORY_SIZE_IN_MB",
                                         limit_size, &limit_size));
@@ -255,6 +260,17 @@ size_t BFCAllocator::LimitAlloc() {
 }
 
 bool BFCAllocator::Extend(size_t rounded_bytes) {
+  if (AllocMode() == 1) {
+    return ExtendLarge(rounded_bytes);
+  } else if (AllocMode() == 2) {
+    return ExtendSmall(rounded_bytes);
+  } else {
+    ITEX_LOG(WARNING) << "Invalid allocation mode set by ITEX_ALLOC_MODE";
+    return false;
+  }
+}
+
+bool BFCAllocator::ExtendLarge(size_t rounded_bytes) {
   size_t available_bytes = memory_limit_ - total_region_allocated_bytes_;
   // Rounds available_bytes down to the nearest multiple of kMinAllocationSize.
   available_bytes = (available_bytes / kMinAllocationSize) * kMinAllocationSize;
@@ -299,6 +315,68 @@ bool BFCAllocator::Extend(size_t rounded_bytes) {
     curr_region_allocation_bytes_ *= 2;
   }
 
+  ITEX_VLOG(1) << "Extending allocation by " << bytes << " bytes.";
+
+  total_region_allocated_bytes_ += bytes;
+  ITEX_VLOG(1) << "Total allocated bytes: " << total_region_allocated_bytes_;
+
+  ITEX_VLOG(1) << "Allocated memory at " << mem_addr << " to "
+               << static_cast<void*>(static_cast<char*>(mem_addr) + bytes);
+
+  region_manager_.AddAllocationRegion(mem_addr, bytes);
+
+  // Create one large chunk for the whole memory space that will
+  // be chunked later.
+  ChunkHandle h = AllocateChunk();
+  BFCAllocator::Chunk* c = ChunkFromHandle(h);
+  c->ptr = mem_addr;
+  c->size = bytes;
+  c->allocation_id = -1;
+  c->prev = kInvalidChunkHandle;
+  c->next = kInvalidChunkHandle;
+
+  region_manager_.set_handle(c->ptr, h);
+
+  // Maybe merge adjacent chunks and insert the chunk into the right bin.
+  InsertFreeChunkIntoBin(h);
+
+  return true;
+}
+
+bool BFCAllocator::ExtendSmall(size_t rounded_bytes) {
+  size_t available_bytes = memory_limit_ - total_region_allocated_bytes_;
+  // Rounds available_bytes down to the nearest multiple of kMinAllocationSize.
+  available_bytes = (available_bytes / kMinAllocationSize) * kMinAllocationSize;
+
+  // Do we have enough space to handle the client's request?
+  // If not, fail immediately.
+  if (rounded_bytes > available_bytes) {
+    return false;
+  }
+
+  // Try allocating.
+  constexpr size_t kSmallSize = 1048576;
+  constexpr size_t kSmallBuffer = 2097152;
+  constexpr size_t kLargeBuffer = 20971520;
+  constexpr size_t kMinLargeAlloc = 10485760;
+  constexpr size_t kRoundLarge = 2097152;
+  // Requested bytes              --- Allocated bytes
+  // (0, kSmallSize]              --- kSmallBuffer
+  // (kSmallSize, kMinLargeAlloc) --- kLargeBuffer
+  // [kMinLargeAlloc, max]        --- round up to multiple of kRoundLarge
+  size_t bytes =
+      (rounded_bytes <= kSmallSize)
+          ? kSmallBuffer
+          : ((rounded_bytes < kMinLargeAlloc)
+                 ? kLargeBuffer
+                 : (kRoundLarge *
+                    ((rounded_bytes + kRoundLarge - 1) / kRoundLarge)));
+
+  void* mem_addr = ITEX_GPUMalloc(device_, bytes);
+
+  if (mem_addr == nullptr) {
+    return false;
+  }
   ITEX_VLOG(1) << "Extending allocation by " << bytes << " bytes.";
 
   total_region_allocated_bytes_ += bytes;
@@ -415,6 +493,17 @@ const BFCAllocator::Chunk* BFCAllocator::ChunkFromHandle(ChunkHandle h) const {
   ITEX_DCHECK_GE(h, 0);
   ITEX_DCHECK_LT(h, static_cast<int>(chunks_.size()));
   return &(chunks_[h]);
+}
+
+int64 AllocModeFromEnv() {
+  int64 alloc_mode_env = 1;
+  TF_ABORT_IF_ERROR(ReadInt64FromEnvVar("ITEX_ALLOC_MODE", 1, &alloc_mode_env));
+  return alloc_mode_env;
+}
+
+int64 BFCAllocator::AllocMode() {
+  static int64 alloc_mode = AllocModeFromEnv();
+  return alloc_mode;
 }
 
 }  // namespace itex

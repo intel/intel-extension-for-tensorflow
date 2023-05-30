@@ -362,6 +362,11 @@ class BFCAllocator : public Allocator {
   // failure.
   bool Extend(size_t rounded_bytes) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
+  // Extend a large memory(almost all device memory)
+  bool ExtendLarge(size_t rounded_bytes) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  // Extend size near the required.
+  bool ExtendSmall(size_t rounded_bytes) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
   ChunkHandle TryToCoalesce(ChunkHandle h) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
   // Removes a free chunk from the bin.
@@ -373,6 +378,8 @@ class BFCAllocator : public Allocator {
 
   // Removes the chunk metadata represented by 'h'.
   void DeleteChunk(ChunkHandle h) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
+  int64 AllocMode();
 
   char bins_space_[sizeof(Bin) * kNumBins];
   mutable mutex lock_;
