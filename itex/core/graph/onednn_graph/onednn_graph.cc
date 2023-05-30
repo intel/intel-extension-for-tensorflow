@@ -2268,21 +2268,22 @@ Status FuseFwPartitionWithLLGA(
     return Status::OK();
   }
 
-  bool find_all_binary = true;
+  bool find_all_binary_on_CPU = true;
   for (size_t l_index = 0; l_index < nodes_no; l_index++) {
     auto node_index = p.get_ops()[l_index];
     const auto* f_node_view = ctx->graph_view.GetNode(node_index);
     const auto* f_node_def = f_node_view->node();
 
-    if (!IsAnyBinary(*f_node_def)) {
-      find_all_binary = false;
+    if (!IsAnyBinary(*f_node_def) || !NodeIsOnCpu(f_node_def)) {
+      find_all_binary_on_CPU = false;
       break;
     }
   }
 
-  if (find_all_binary) {
-    ITEX_VLOG(2) << "oneDNN Graph partition doesn't contain non-binary op, "
-                    "won't rewrite this partition to ";
+  if (find_all_binary_on_CPU) {
+    ITEX_VLOG(2)
+        << "oneDNN Graph partition doesn't contain non-binary op on CPU, "
+           "won't rewrite this partition to ";
     return Status::OK();
   }
 
