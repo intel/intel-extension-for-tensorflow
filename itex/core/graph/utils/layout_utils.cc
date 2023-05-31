@@ -716,8 +716,7 @@ bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def) {
       DataType T;
       AttrSlice attr_list(node_def);
       ITEX_CHECK_OK(GetNodeAttr(attr_list, "T", &T));
-      return (T == DataType::DT_QINT8 || T == DataType::DT_QUINT8 ||
-              T == DataType::DT_QINT32);
+      return (T == DataType::DT_QINT8 || T == DataType::DT_QUINT8);
     } else if (op_name == "QuantizedConv2D" ||
                op_name == "QuantizedConv2DPerChannel") {
       DataType Tinput;

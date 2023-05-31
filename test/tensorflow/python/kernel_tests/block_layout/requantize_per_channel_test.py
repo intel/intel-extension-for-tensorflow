@@ -38,9 +38,6 @@ class RequantizePerChannelTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testRequantizePerChannel(self):
-    # Only XPU kernel is registered for RequantizePerChannel
-    if not test.is_gpu_available():
-      return
     with ops.name_scope("test"):
       x_f32_np = np.random.uniform(low=-3.0, high=3.0,
                                   size=(1, 4, 4, 3)).astype(np.float32)

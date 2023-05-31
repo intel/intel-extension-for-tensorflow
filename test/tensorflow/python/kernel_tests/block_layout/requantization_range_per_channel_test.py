@@ -39,12 +39,6 @@ class RequantizationRangePerChannelTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testRequantizationRangePerChannel(self):
-    # TODO(itex): Both Tensorflow and ITEX have registered CPU kernel for RequantizationRangePerChannel.
-    # Therefore, in CPU mode, this UT will cause error: 
-    # Multiple OpKernel registrations match NodeDef at the same priority.
-    # We only run this test on XPU before the issue is fixed.
-    if not test.is_gpu_available():
-      return
     with ops.name_scope("test"):
       x_f32_np = np.random.uniform(low=-3.0, high=3.0,
                                   size=(1, 4, 4, 3)).astype(np.float32)
