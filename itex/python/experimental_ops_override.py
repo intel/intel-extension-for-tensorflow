@@ -195,12 +195,18 @@ def experimental_ops_override():
   using itex api in some tf and keras functions.
   '''
   try:
-    from keras import backend # pylint: disable=import-outside-toplevel
-    from keras.utils import tf_utils # pylint: disable=import-outside-toplevel
     from pkg_resources import packaging # pylint: disable=import-outside-toplevel
     version = packaging.version.parse
     if version(tf.__version__) < version("2.9.0"):
       return
+    if version(tf.__version__).release >= version("2.13").release:
+        # New versions of Keras require importing from `keras.src` when
+        # importing internal symbols.
+        from keras.src import backend # pylint: disable=import-outside-toplevel
+        from keras.src.utils import tf_utils # pylint: disable=import-outside-toplevel
+    else:
+        from keras import backend # pylint: disable=import-outside-toplevel
+        from keras.utils import tf_utils # pylint: disable=import-outside-toplevel
     tf_ln_call = copy_func(tf.keras.layers.LayerNormalization.call)
     tf_lstm_call = copy_func(tf.keras.layers.LSTM.call)
     tf_lstm_build = copy_func(tf.keras.layers.LSTM.build)
@@ -464,18 +470,23 @@ def experimental_ops_override():
     tf.nn.gelu = itex_gelu
     tf.keras.layers.LSTM.call = itex_lstm_call
     tf.keras.layers.LSTM.build = itex_lstm_build
-    from tensorflow.python import keras # pylint: disable=import-outside-toplevel
-    keras.layers.LSTM.call = itex_lstm_call
-    keras.layers.LSTM.build = itex_lstm_build
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
     logger.error("Cannot override itex ops.")
   try:
     import keras # pylint: disable=import-outside-toplevel
-    keras.layers.core.dense.Dense.call = itex_dense_layer_call
-    keras.layers.LayerNormalization.call = itex_layer_norm_call
-    keras.layers.LayerNormalization.build = itex_layer_norm_build
-    keras.layers.LSTM.call = itex_lstm_call
-    keras.layers.LSTM.build = itex_lstm_build
+    if version(tf.__version__).release >= version("2.13").release:
+      keras.src.layers.core.dense.Dense.call = itex_dense_layer_call
+      keras.src.layers.normalization.layer_normalization.LayerNormalization.call = itex_layer_norm_call
+      keras.src.layers.normalization.layer_normalization.LayerNormalization.build = itex_layer_norm_build
+      keras.src.layers.rnn.lstm.LSTM.call = itex_lstm_call
+      keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
+    else:
+      keras.layers.core.dense.Dense.call = itex_dense_layer_call
+      keras.layers.LayerNormalization.call = itex_layer_norm_call
+      keras.layers.LayerNormalization.build = itex_layer_norm_build
+      keras.layers.LSTM.call = itex_lstm_call
+      keras.layers.LSTM.build = itex_lstm_build
+  
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long

@@ -20,7 +20,10 @@ import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
 from intel_extension_for_tensorflow.python.test_func import test as test_lib
-import tensorflow_addons as tfa
+try:      
+  import tensorflow_addons as tfa
+except BaseException: # pylint: disable=broad-except
+  quit()
 from tensorflow import keras
 from tensorflow.python.framework import dtypes
 
