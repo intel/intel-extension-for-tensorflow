@@ -66,11 +66,15 @@ class BiasSumTest(test_util.TensorFlowTestCase):
             # Graph should contain fused op.
             graph = metadata.partition_graphs[0]
             found_fused_op = False
+            found_non_fused_op = False
             for node in graph.node:
                 if node.op in ('BiasAddGrad'):
                     found_fused_op = True
-                    break
-            self.assertTrue(found_fused_op, "this pattern has fusion issue!!")
+                if node.op in ('Sum'):
+                    found_non_fused_op = True
+
+            is_found = found_fused_op and not found_non_fused_op
+            self.assertTrue(is_found, "this pattern has fusion issue!!")
 
         os.environ['ITEX_REMAPPER'] = '0'
         with self.session(use_gpu=True) as sess:
