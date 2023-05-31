@@ -19,6 +19,10 @@ from tensorflow.python.framework import dtypes
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 
 
@@ -44,9 +48,9 @@ class ApplyAdamWithWeightDecay(test.TestCase):
         grad = np.arange(100, dtype=dtype.as_numpy_dtype)
 
         t=2
-        var_t = variables.RefVariable(var)
-        m_t = variables.RefVariable(m)
-        v_t = variables.RefVariable(v)
+        var_t = RefVariable(var)
+        m_t = RefVariable(m)
+        v_t = RefVariable(v)
         beta1 = np.array(0.9, dtype=var.dtype)
         beta2 = np.array(0.999, dtype=var.dtype)
         beta1_power = beta1**t

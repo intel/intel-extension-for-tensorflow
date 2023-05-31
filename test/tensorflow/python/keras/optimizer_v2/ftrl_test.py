@@ -22,10 +22,14 @@ import numpy as np
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import indexed_slices
 try:
   from keras.optimizers.optimizer_v2 import ftrl
 except ImportError:
-  from keras.optimizers.legacy import ftrl
+  try:
+    from keras.optimizers.legacy import ftrl
+  except ImportError:
+    from keras.src.optimizers.legacy import ftrl
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import variables
@@ -289,10 +293,10 @@ class FtrlOptimizerTest(test.TestCase):
       with ops.Graph().as_default(), self.cached_session(use_gpu=True):
         var0 = variables.Variable([[1.0], [2.0]], dtype=dtype)
         var1 = variables.Variable([[4.0], [3.0]], dtype=dtype)
-        grads0 = ops.IndexedSlices(
+        grads0 = indexed_slices.IndexedSlices(
             constant_op.constant([0.1], shape=[1, 1], dtype=dtype),
             constant_op.constant([0]), constant_op.constant([2, 1]))
-        grads1 = ops.IndexedSlices(
+        grads1 = indexed_slices.IndexedSlices(
             constant_op.constant([0.02], shape=[1, 1], dtype=dtype),
             constant_op.constant([1]), constant_op.constant([2, 1]))
 
@@ -364,10 +368,10 @@ class FtrlOptimizerTest(test.TestCase):
     if is_sparse:
       var0 = variables.Variable([[0.0], [0.0]], dtype=dtype)
       var1 = variables.Variable([[0.0], [0.0]], dtype=dtype)
-      grads0 = ops.IndexedSlices(
+      grads0 = indexed_slices.IndexedSlices(
           constant_op.constant([0.1], shape=[1, 1], dtype=dtype),
           constant_op.constant([0]), constant_op.constant([2, 1]))
-      grads1 = ops.IndexedSlices(
+      grads1 = indexed_slices.IndexedSlices(
           constant_op.constant([0.02], shape=[1, 1], dtype=dtype),
           constant_op.constant([1]), constant_op.constant([2, 1]))
     else:

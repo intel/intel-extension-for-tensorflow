@@ -21,8 +21,12 @@ import numpy as np
 import tensorflow.compat.v2 as tf
 
 import keras
-from keras.testing_infra import test_combinations
-from keras.testing_infra import test_utils
+try:
+    from keras.src.testing_infra import test_combinations
+    from keras.src.testing_infra import test_utils
+except ImportError:
+    from keras.testing_infra import test_combinations
+    from keras.testing_infra import test_utils
 
 from tensorflow.python.keras import combinations
 

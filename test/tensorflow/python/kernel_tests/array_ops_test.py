@@ -49,6 +49,10 @@ from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variable_scope
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.variable_v1 import VariableV1
 from tensorflow.python.ops.ragged.ragged_tensor import RaggedTensor
 
 
@@ -1280,7 +1284,7 @@ class SliceAssignTest(test_util.TensorFlowTestCase, parameterized.TestCase):
     init_val = constant_op.constant([1, 2], dtype=dtypes.int32)
     too_small_val = constant_op.constant([3, 4], dtype=dtypes.int8)
     too_large_val = constant_op.constant([3, 4], dtype=dtypes.int64)
-    v = variables.VariableV1(init_val)
+    v = VariableV1(init_val)
     with self.assertRaises((ValueError, TypeError)):
       self.evaluate(v[:].assign(too_small_val))
     with self.assertRaises((ValueError, TypeError)):
@@ -1489,7 +1493,7 @@ class ConcatSliceResourceTest(test_util.TensorFlowTestCase):
   def testConcatSlice(self):
     r1 = test_ops.stub_resource_handle_op(container="a", shared_name="b")
     r2 = test_ops.stub_resource_handle_op(container="a", shared_name="c")
-    c = array_ops.stack([r1, r2])
+    c = tf.stack([r1, r2])
     s = array_ops.strided_slice(c, [1], [2])
     self.evaluate(test_ops.resource_create_op(s))
     with self.assertRaises(errors.AlreadyExistsError):

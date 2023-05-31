@@ -882,7 +882,7 @@ class TensorArrayTest(test_util.TensorFlowTestCase):
 
   #     def body(time, ta_t, state):
   #       sliced = array_ops.slice(
-  #           v0, begin=array_ops.stack([time, 0]), size=[1, -1])
+  #           v0, begin=tf.stack([time, 0]), size=[1, -1])
   #       sliced = array_ops.squeeze(sliced)
   #       out = sliced + var + state
   #       state += sliced

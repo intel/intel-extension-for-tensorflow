@@ -32,6 +32,7 @@ import numpy as np
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.keras import combinations
 from intel_extension_for_tensorflow.python.test_func import keras_testing_utils as testing_utils
 from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
@@ -392,11 +393,11 @@ class RMSpropOptimizerTest(test.TestCase, parameterized.TestCase):
   #       var0 = variables.Variable(var0_np)
   #       var1 = variables.Variable(var1_np)
   #       grads0_np_indices = np.array([0], dtype=np.int32)
-  #       grads0 = ops.IndexedSlices(
+  #       grads0 = indexed_slices.IndexedSlices(
   #           constant_op.constant(grads0_np),
   #           constant_op.constant(grads0_np_indices), constant_op.constant([1]))
   #       grads1_np_indices = np.array([1], dtype=np.int32)
-  #       grads1 = ops.IndexedSlices(
+  #       grads1 = indexed_slices.IndexedSlices(
   #           constant_op.constant(grads1_np),
   #           constant_op.constant(grads1_np_indices), constant_op.constant([1]))
   #       opt = rmsprop.RMSprop(

@@ -22,6 +22,7 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 import itertools
 
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.client import session
 from tensorflow.python.framework import constant_op
@@ -59,10 +60,10 @@ class TridiagonalMulOpTest(test.TestCase):
     diags_matrix = constant_op.constant(diags_matrix, dtype)
     rhs = constant_op.constant(rhs, dtype)
 
-    rhs_batch = array_ops.stack([rhs, 2 * rhs])
-    diags_compact_batch = array_ops.stack([diags_compact, 2 * diags_compact])
-    diags_matrix_batch = array_ops.stack([diags_matrix, 2 * diags_matrix])
-    diags_sequence_batch = [array_ops.stack([x, 2 * x]) for x in diags_sequence]
+    rhs_batch = tf.stack([rhs, 2 * rhs])
+    diags_compact_batch = tf.stack([diags_compact, 2 * diags_compact])
+    diags_matrix_batch = tf.stack([diags_matrix, 2 * diags_matrix])
+    diags_sequence_batch = [tf.stack([x, 2 * x]) for x in diags_sequence]
 
     results = [
         linalg_impl.tridiagonal_matmul(

@@ -15,6 +15,7 @@
 """Functional tests for Stack and ParallelStack Ops."""
 
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python import tf2
 from tensorflow.python.eager import context
@@ -60,7 +61,7 @@ class StackOpTest(test.TestCase):
           xs = np_split_squeeze(data, axis)
           # Stack back into a single tensorflow tensor
           with self.subTest(shape=shape, axis=axis, dtype=dtype):
-            c = array_ops.stack(xs, axis=axis)
+            c = tf.stack(xs, axis=axis)
             self.assertAllEqual(c, data)
 
   def testSimpleParallelCPU(self):
@@ -104,7 +105,7 @@ class StackOpTest(test.TestCase):
     with test_util.use_gpu():
       # Verify that shape induction works with shapes produced via const stack
       a = constant_op.constant([1, 2, 3, 4, 5, 6])
-      b = array_ops.reshape(a, array_ops.stack([2, 3]))
+      b = array_ops.reshape(a, tf.stack([2, 3]))
       self.assertAllEqual(b.get_shape(), [2, 3])
 
       # Check on a variety of shapes and types
@@ -113,7 +114,7 @@ class StackOpTest(test.TestCase):
           with self.subTest(shape=shape, dtype=dtype):
             data = self.randn(shape, dtype)
             # Stack back into a single tensorflow tensor directly using np array
-            c = array_ops.stack(data)
+            c = tf.stack(data)
             if not context.executing_eagerly():
               # This is implemented via a Const:
               self.assertEqual(c.op.type, "Const")
@@ -122,7 +123,7 @@ class StackOpTest(test.TestCase):
             # Python lists also work for 1-D case:
             if len(shape) == 1:
               data_list = list(data)
-              cl = array_ops.stack(data_list)
+              cl = tf.stack(data_list)
               if not context.executing_eagerly():
                 self.assertEqual(cl.op.type, "Const")
               self.assertAllEqual(cl, data)
@@ -169,7 +170,7 @@ class StackOpTest(test.TestCase):
         with self.cached_session():
 
           def func(*xs):
-            return array_ops.stack(xs)
+            return tf.stack(xs)
           # TODO(irving): Remove list() once we handle maps correctly
           xs = list(map(constant_op.constant, data))
           theoretical, numerical = gradient_checker_v2.compute_gradient(
@@ -186,7 +187,7 @@ class StackOpTest(test.TestCase):
         with self.cached_session():
 
           def func(*inp):
-            return array_ops.stack(inp, axis=1)
+            return tf.stack(inp, axis=1)
           # TODO(irving): Remove list() once we handle maps correctly
           xs = list(map(constant_op.constant, data))
           theoretical, numerical = gradient_checker_v2.compute_gradient(
@@ -201,7 +202,7 @@ class StackOpTest(test.TestCase):
         for shape in (0,), (3, 0), (0, 3):
           with self.subTest(shape=shape):
             x = np.zeros((2,) + shape).astype(np.int32)
-            p = self.evaluate(array_ops.stack(list(x)))
+            p = self.evaluate(tf.stack(list(x)))
             self.assertAllEqual(p, x)
 
             p = self.evaluate(array_ops.parallel_stack(list(x)))
@@ -216,7 +217,7 @@ class StackOpTest(test.TestCase):
         for shape in (3, 0), (0, 3):
           with self.subTest(shape=shape):
             x = np.zeros((2,) + shape).astype(np.int32)
-            p = self.evaluate(array_ops.stack(list(x)))
+            p = self.evaluate(tf.stack(list(x)))
             self.assertAllEqual(p, x)
 
             p = self.evaluate(array_ops.parallel_stack(list(x)))
@@ -227,7 +228,7 @@ class StackOpTest(test.TestCase):
     with ops.Graph().as_default():
       with test_util.device(use_gpu=False):
         t = [constant_op.constant([1, 2, 3]), constant_op.constant([4, 5, 6])]
-        stacked = self.evaluate(array_ops.stack(t))
+        stacked = self.evaluate(tf.stack(t))
         parallel_stacked = self.evaluate(array_ops.parallel_stack(t))
 
       expected = np.array([[1, 2, 3], [4, 5, 6]])
@@ -239,7 +240,7 @@ class StackOpTest(test.TestCase):
     with ops.Graph().as_default():
       with test_util.device(use_gpu=True):
         t = [constant_op.constant([1, 2, 3]), constant_op.constant([4, 5, 6])]
-        stacked = self.evaluate(array_ops.stack(t))
+        stacked = self.evaluate(tf.stack(t))
         parallel_stacked = self.evaluate(array_ops.parallel_stack(t))
 
       expected = np.array([[1, 2, 3], [4, 5, 6]])
@@ -258,11 +259,11 @@ class StackOpTest(test.TestCase):
 
           with self.cached_session():
             with self.subTest(shape=shape, dtype=dtype, axis=axis):
-              actual_pack = array_ops.stack(test_arrays, axis=axis)
+              actual_pack = tf.stack(test_arrays, axis=axis)
               self.assertEqual(expected.shape, actual_pack.get_shape())
               actual_pack = self.evaluate(actual_pack)
 
-              actual_stack = array_ops.stack(test_arrays, axis=axis)
+              actual_stack = tf.stack(test_arrays, axis=axis)
               self.assertEqual(expected.shape, actual_stack.get_shape())
               actual_stack = self.evaluate(actual_stack)
 
@@ -272,13 +273,13 @@ class StackOpTest(test.TestCase):
     t = [constant_op.constant([1, 2, 3]), constant_op.constant([4, 5, 6])]
     with self.assertRaisesRegex(ValueError,
                                 r"Argument `axis` = 2 not in range \[-2, 2\)"):
-      array_ops.stack(t, axis=2)
+      tf.stack(t, axis=2)
 
   def testDimOutOfNegativeRange(self):
     t = [constant_op.constant([1, 2, 3]), constant_op.constant([4, 5, 6])]
     with self.assertRaisesRegex(ValueError,
                                 r"Argument `axis` = -3 not in range \[-2, 2\)"):
-      array_ops.stack(t, axis=-3)
+      tf.stack(t, axis=-3)
 
   def testComplex(self):
     np.random.seed(7)
@@ -288,7 +289,7 @@ class StackOpTest(test.TestCase):
           with self.subTest(shape=shape, dtype=dtype):
             data = self.randn(shape, dtype)
             xs = list(map(constant_op.constant, data))
-            c = array_ops.stack(xs)
+            c = tf.stack(xs)
             self.assertAllEqual(self.evaluate(c), data)
 
   def testZeroDimUnmatch(self):
@@ -299,7 +300,7 @@ class StackOpTest(test.TestCase):
                                 r"Shapes"):
       with self.session():
         t = [array_ops.zeros([2, 3]), array_ops.zeros([1, 3])]
-        self.evaluate(array_ops.stack(t))
+        self.evaluate(tf.stack(t))
 
 
 class AutomaticStackingTest(test.TestCase):

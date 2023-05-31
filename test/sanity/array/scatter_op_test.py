@@ -27,6 +27,10 @@ from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
 
 
 def _AsType(v, vtype):
@@ -208,7 +212,7 @@ class ScatterTest(test.TestCase):
                     np_scatter(new, indices, updates)
                     # Scatter via tensorflow
                     if use_raw_ops:
-                        ref = variables.RefVariable(old)
+                        ref = RefVariable(old)
                     else:
                         ref = variables.Variable(old)
                     self.evaluate(ref.initializer)
@@ -401,7 +405,7 @@ class ScatterTest(test.TestCase):
             params = np.array([1, 2, 3, 4, 5, 6]).astype(np.float32)
             updates = np.array([-3, -4, -5]).astype(np.float32)
             with self.session(force_gpu=True):
-                ref = variables.RefVariable(params)
+                ref = RefVariable(params)
                 self.evaluate(ref.initializer)
 
                 indices = np.array([2, 0, 5])

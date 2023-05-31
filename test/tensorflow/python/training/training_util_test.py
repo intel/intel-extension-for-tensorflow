@@ -24,6 +24,10 @@ from intel_extension_for_tensorflow.python.test_func import test
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.variable_v1 import VariableV1
 from tensorflow.python.training import monitored_session
 from tensorflow.python.training import training_util
 
@@ -38,7 +42,7 @@ class GlobalStepTest(test.TestCase):
   def test_invalid_dtype(self):
     with ops.Graph().as_default() as g:
       self.assertIsNone(training_util.get_global_step())
-      variables.VariableV1(
+      VariableV1(
           0.0,
           trainable=False,
           dtype=dtypes.float32,
@@ -52,7 +56,7 @@ class GlobalStepTest(test.TestCase):
   def test_invalid_shape(self):
     with ops.Graph().as_default() as g:
       self.assertIsNone(training_util.get_global_step())
-      variables.VariableV1(
+      VariableV1(
           [0],
           trainable=False,
           dtype=dtypes.int32,
@@ -77,7 +81,7 @@ class GlobalStepTest(test.TestCase):
   def test_get_global_step(self):
     with ops.Graph().as_default() as g:
       self.assertIsNone(training_util.get_global_step())
-      variables.VariableV1(
+      VariableV1(
           0,
           trainable=False,
           dtype=dtypes.int32,

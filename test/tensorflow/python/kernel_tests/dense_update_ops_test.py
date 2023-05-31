@@ -24,6 +24,10 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.variable_v1 import VariableV1
 
 
 class AssignOpTest(test.TestCase):
@@ -87,7 +91,7 @@ class AssignOpTest(test.TestCase):
   def testAssignNonStrictShapeChecking(self):
     with self.cached_session():
       data = array_ops.fill([1024, 1024], 0)
-      p = variables.VariableV1([1])
+      p = VariableV1([1])
       a = state_ops.assign(p, data, validate_shape=False)
       a.op.run()
       self.assertAllEqual(p, self.evaluate(data))
@@ -101,7 +105,7 @@ class AssignOpTest(test.TestCase):
   @test_util.run_v1_only("b/120545219")
   def testInitRequiredAssignAdd(self):
     with self.cached_session():
-      p = variables.VariableV1(array_ops.fill([1024, 1024], 1), dtypes.int32)
+      p = VariableV1(array_ops.fill([1024, 1024], 1), dtypes.int32)
       a = state_ops.assign_add(p, array_ops.fill([1024, 1024], 0))
       with self.assertRaisesOpError("use uninitialized"):
         a.op.run()
@@ -109,7 +113,7 @@ class AssignOpTest(test.TestCase):
   @test_util.run_v1_only("b/120545219")
   def testInitRequiredAssignSub(self):
     with self.cached_session():
-      p = variables.VariableV1(array_ops.fill([1024, 1024], 1), dtypes.int32)
+      p = VariableV1(array_ops.fill([1024, 1024], 1), dtypes.int32)
       a = state_ops.assign_sub(p, array_ops.fill([1024, 1024], 0))
       with self.assertRaisesOpError("use uninitialized"):
         a.op.run()

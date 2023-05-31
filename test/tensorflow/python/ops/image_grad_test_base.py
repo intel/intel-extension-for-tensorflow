@@ -21,6 +21,7 @@ from intel_extension_for_tensorflow.python.test_func import test
 
 from absl.testing import parameterized
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.eager import backprop
 from tensorflow.python.eager import context
@@ -627,7 +628,7 @@ class RGBToHSVOpTestBase(test.TestCase):
   #     s = 1 - math_ops.div_no_nan(b, r)
   #     h = 60 * math_ops.div_no_nan(g - b, r - b)
   #     h = h / 360
-  #     return array_ops.stack([h, s, v], axis=-1)
+  #     return tf.stack([h, s, v], axis=-1)
   #
   #   # Building a custom input tensor where R>G>B
   #   x_reds = np.ones((in_shape[0], in_shape[1], in_shape[2])).astype(np.float32)

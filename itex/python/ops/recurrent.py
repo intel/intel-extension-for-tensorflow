@@ -34,7 +34,10 @@ from tensorflow.python.platform import tf_logging as logging
 
 from tensorflow.python import keras
 from keras import activations
-from keras import backend
+try:
+  from keras.src import backend
+except ImportError:
+  from keras import backend
 from keras import constraints
 from keras import initializers
 from keras import regularizers

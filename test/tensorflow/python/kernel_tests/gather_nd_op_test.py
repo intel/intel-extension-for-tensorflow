@@ -31,10 +31,15 @@ from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
 
 
 class GatherNdTest(test.TestCase):
@@ -201,7 +206,7 @@ class GatherNdTest(test.TestCase):
     self.assertEqual([10, 10, 20], gather_nd_t.get_shape())
 
   def assertIndexedSlices(self, t):
-    self.assertIsInstance(t, ops.IndexedSlices)
+    self.assertIsInstance(t, indexed_slices.IndexedSlices)
 
   @test_util.run_deprecated_v1
   def testUnknownIndices(self):
@@ -371,7 +376,7 @@ class GatherNdTest(test.TestCase):
   @test_util.run_v1_only("RefVariable is not supported in v2")
   def testGatherNdRefVariable(self):
     with self.cached_session():
-      v = variables.RefVariable(constant_op.constant([[1, 2], [3, 4], [5, 6]]))
+      v = RefVariable(constant_op.constant([[1, 2], [3, 4], [5, 6]]))
       self.evaluate(variables.global_variables_initializer())
       gather = array_ops.gather_nd(v, [[0, 1], [2, 0]])
       if not context.executing_eagerly():  # .op doesn't make sense in Eager

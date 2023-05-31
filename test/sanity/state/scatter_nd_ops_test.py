@@ -39,6 +39,12 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
+  from tensorflow.python.ops.variable_v1 import VariableV1
 
 GRADIENT_TESTS_DTYPES = [dtypes.float16, dtypes.bfloat16, dtypes.float32, dtypes.float64]
 
@@ -153,7 +159,7 @@ class StatefulScatterNdTest(test.TestCase):
         np_scatter(new, indices, updates)
         # Scatter via tensorflow
         if is_ref:
-          ref_var = variables.RefVariable(ref)
+          ref_var = RefVariable(ref)
         else:
           ref_var = variables.Variable(ref)
         self.evaluate(ref_var.initializer)
@@ -328,7 +334,7 @@ class StatefulScatterNdTest(test.TestCase):
       params = np.array([1, 2, 3, 4, 5, 6]).astype(np.float32)
       updates = np.array([-3, -4, -5]).astype(np.float32)
       with test_util.device(use_gpu=False):
-        ref = variables.VariableV1(params)
+        ref = VariableV1(params)
         self.evaluate(ref.initializer)
 
         # Indices all in range, no problem.

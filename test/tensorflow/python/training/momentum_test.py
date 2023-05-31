@@ -29,6 +29,7 @@ from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
@@ -216,7 +217,7 @@ class MomentumOptimizerTest(test.TestCase):
         mom_op = momentum_lib.MomentumOptimizer(
             learning_rate=2.0, momentum=0.9, use_nesterov=True)
         x_feed = array_ops.placeholder(dtype)
-        y_feed = ops.IndexedSlices(x_feed, constant_op.constant([0, 1]),
+        y_feed = indexed_slices.IndexedSlices(x_feed, constant_op.constant([0, 1]),
                                    constant_op.constant([2]))
         grads_and_vars = [(y_feed, var0),
                           (constant_op.constant([3.0, 3.0], dtype=dtype), var1)]
@@ -466,10 +467,10 @@ class MomentumOptimizerTest(test.TestCase):
       with ops.Graph().as_default(), self.cached_session():
         var0 = variables.Variable(array_ops.zeros([4, 2], dtype=dtype))
         var1 = variables.Variable(constant_op.constant(1.0, dtype, [4, 2]))
-        grads0 = ops.IndexedSlices(
+        grads0 = indexed_slices.IndexedSlices(
             constant_op.constant([[.1, .1]], dtype=dtype),
             constant_op.constant([1]), constant_op.constant([4, 2]))
-        grads1 = ops.IndexedSlices(
+        grads1 = indexed_slices.IndexedSlices(
             constant_op.constant([[.01, .01], [.01, .01]], dtype=dtype),
             constant_op.constant([2, 3]), constant_op.constant([4, 2]))
         mom_opt = momentum_lib.MomentumOptimizer(

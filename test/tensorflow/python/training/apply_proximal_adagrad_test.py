@@ -28,6 +28,10 @@ import numpy as np
 
 from intel_extension_for_tensorflow.python.test_func.test_util import TensorFlowTestCase
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.variable_v1 import VariableV1
 from tensorflow.python.platform import googletest
 from tensorflow.python.training import training_ops
 
@@ -36,8 +40,8 @@ class ApplyProximalAdagradTest(TensorFlowTestCase):
   def _testTypesForApplyProximalAdagrad(self, x, y, lr, l1, l2, grad, use_gpu=None):
     self.setUp()
     with self.session(use_gpu=use_gpu):
-      var = variables.VariableV1(x)
-      accum = variables.VariableV1(y)
+      var = VariableV1(x)
+      accum = VariableV1(y)
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))

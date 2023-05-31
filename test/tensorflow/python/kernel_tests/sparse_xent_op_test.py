@@ -22,6 +22,7 @@ import time
 
 from absl import app
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.client import session
@@ -46,8 +47,8 @@ def _sparse_vs_dense_xent_benchmark_dense(labels, logits):
     length = batch_size * num_entries
     labels += num_entries * math_ops.range(batch_size)
     target = sparse_ops.sparse_to_dense(labels,
-                                        array_ops.stack([length]), 1.0, 0.0)
-  target = array_ops.reshape(target, array_ops.stack([-1, num_entries]))
+                                        tf.stack([length]), 1.0, 0.0)
+  target = array_ops.reshape(target, tf.stack([-1, num_entries]))
   crossent = nn_ops.softmax_cross_entropy_with_logits(
       labels=target, logits=logits, name="SequenceLoss/CrossEntropy")
   crossent_sum = math_ops.reduce_sum(crossent)

@@ -33,7 +33,10 @@ from tensorflow.python.keras import combinations
 try:
   from keras.optimizers.optimizer_v2 import adadelta
 except ImportError:
-  from keras.optimizers.legacy import adadelta
+  try:
+    from keras.optimizers.legacy import adadelta
+  except ImportError:
+    from keras.src.optimizers.legacy import adadelta
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import variables
