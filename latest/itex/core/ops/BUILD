@@ -95,6 +95,20 @@ cc_library(
     alwayslink = True,
 )
 
+cc_library(
+    name = "fp8_ops",
+    srcs = ["fp8_ops.cc"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":shape_inference_fns",
+        "//itex/core/ops/utils:logging",
+        "//itex/core/ops/utils:status",
+    ],
+    alwayslink = True,
+)
+
 OPS = [
     ":array_ops",
     ":math_ops",
@@ -102,6 +116,7 @@ OPS = [
     ":nn_ops",
     ":onednn_graph_op",
     ":training_ops",
+    ":fp8_ops",
 ]
 
 cc_library(

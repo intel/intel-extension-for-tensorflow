@@ -23,12 +23,6 @@ namespace itex {
       Name("_ITEXElu").Device(DEVICE_CPU).TypeConstraint<type>("T"),       \
       EluOp<CPUDevice, type>);                                             \
   REGISTER_KERNEL_BUILDER(                                                 \
-      Name("_ITEXRelu").Device(DEVICE_CPU).TypeConstraint<type>("T"),      \
-      ReluOp<CPUDevice, type>);                                            \
-  REGISTER_KERNEL_BUILDER(                                                 \
-      Name("_ITEXRelu6").Device(DEVICE_CPU).TypeConstraint<type>("T"),     \
-      Relu6Op<CPUDevice, type>);                                           \
-  REGISTER_KERNEL_BUILDER(                                                 \
       Name("_ITEXLeakyRelu").Device(DEVICE_CPU).TypeConstraint<type>("T"), \
       LeakyReluOp<CPUDevice, type>);                                       \
   REGISTER_KERNEL_BUILDER(                                                 \

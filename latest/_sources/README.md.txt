@@ -54,7 +54,7 @@ Intel® Extension for TensorFlow* can be installed through the following channel
 
 | Intel® Extension for TensorFlow*  | Stock TensorFlow |
 | ------- | ----------- |    
-| [latest build from source](docs/install/how_to_build.html)  | 2.12        |
+| [latest build from source](docs/install/how_to_build.md)  | 2.12        |
 | v1.1.0  | 2.10 & 2.11 |
 | v1.0.0  | 2.10        | 
 

@@ -229,9 +229,7 @@ void RegisterOps() {
   Register_ITEXQuantizedDepthwiseConv2DOp();
   Register_ITEXQuantizedDepthwiseConv2DWithBiasAndReluAndRequantizeOp();
   Register_ITEXRelu6GradOp();
-  Register_ITEXRelu6Op();
   Register_ITEXReluGradOp();
-  Register_ITEXReluOp();
   Register_ITEXResizeBilinearOp();
   Register_ITEXResizeBilinearGradOp();
   Register_ITEXSliceOp();
@@ -358,4 +356,8 @@ void RegisterOps() {
   Register_OneDnnSwishOp();
   Register_OneDnnToTfOp();
   Register_OneDnnTransposeOp();
+
+  // FP8 kernels
+  Register_Fp8QuantizeOp();
+  Register_Fp8DequantizeOp();
 }

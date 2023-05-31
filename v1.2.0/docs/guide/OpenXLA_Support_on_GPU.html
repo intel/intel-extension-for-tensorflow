@@ -53,8 +53,14 @@
 <li class="toctree-l2 current"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">OpenXLA Support on GPU</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#overview">1. Overview</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#build-library-for-jax">2. Build Library for JAX</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#run-jax-example">3. Run JAX Example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hardware-and-software-requirement">2. Hardware and Software Requirement</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#hardware-requirements">Hardware Requirements</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#software-requirements">Software Requirements</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#install-gpu-drivers">Install GPU Drivers</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#build-library-for-jax">3. Build Library for JAX</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-jax-example">4. Run JAX Example</a></li>
 </ul>
 </li>
 </ul>
@@ -101,7 +107,7 @@
 <p>This guide introduces the overview of OpenXLA high level integration structure, and demonstrates how to build Intel® Extension for TensorFlow* and run JAX example with OpenXLA.</p>
 <div class="section" id="overview">
 <h2>1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>Intel® Extension for TensorFlow* adopts PJRT plugin interface to implement Intel GPU backend for OpenXLA experimental support, and takes JAX front end APIs as example. PJRT is a uniform device API in OpenXLA ecosystem. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">OpenXLA PJRT Plugin RFC</a> for more details.</p>
+<p>Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which seamlessly runs JAX models on Intel&#64; GPU. The PJRT API simplified the integration, which allowed the Intel GPU plugin to be developed separately and quickly integrated into JAX. This same PJRT implementation also enables initial Intel GPU support for TensorFlow and PyTorch models with XLA acceleration. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">OpenXLA PJRT Plugin RFC</a> for more details.</p>
 <p><img alt="xla" src="../../_images/xla.png" /></p>
 <ul>
 <li><p><a class="reference external" href="https://jax.readthedocs.io/en/latest/">JAX</a> provides a familiar NumPy-style API, includes composable function transformations for compilation, batching, automatic differentiation, and parallelization, and  the same code executes on multiple backends.</p></li>
@@ -115,8 +121,65 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">libitex_xla_extension.so</span></code> implements <code class="docutils literal notranslate"><span class="pre">PJRT</span> <span class="pre">C</span> <span class="pre">API</span> <span class="pre">interface</span></code> which can be got in <a class="reference external" href="https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/pjrt/pjrt_api.cc#L82">GetPjrtApi</a>.</p></li>
 </ul>
 </div>
+<div class="section" id="hardware-and-software-requirement">
+<h2>2. Hardware and Software Requirement<a class="headerlink" href="#hardware-and-software-requirement" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="hardware-requirements">
+<h3>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this headline">¶</a></h3>
+<p>Verified Hardware Platforms:</p>
+<ul class="simple">
+<li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a></p></li>
+<li><p>Intel® Data Center GPU Flex Series 170, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a></p></li>
+<li><p><em>Experimental:</em> Intel® Arc™ A-Series</p></li>
+</ul>
+</div>
+<div class="section" id="software-requirements">
+<h3>Software Requirements<a class="headerlink" href="#software-requirements" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Ubuntu 22.04, Red Hat 8.6 (64-bit)</p>
+<ul>
+<li><p>Intel® Data Center GPU Flex Series</p></li>
+</ul>
+</li>
+<li><p>Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP3/SP4</p>
+<ul>
+<li><p>Intel® Data Center GPU Max Series</p></li>
+</ul>
+</li>
+<li><p>Intel® oneAPI Base Toolkit 2023.1</p></li>
+<li><p>TensorFlow 2.12.0</p></li>
+<li><p>Python 3.8-3.10</p></li>
+<li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
+</ul>
+</div>
+<div class="section" id="install-gpu-drivers">
+<h3>Install GPU Drivers<a class="headerlink" href="#install-gpu-drivers" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Release</th>
+<th>OS</th>
+<th>Intel GPU</th>
+<th>Install Intel GPU Driver</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1.2.0</td>
+<td>Ubuntu 22.04, Red Hat 8.6</td>
+<td>Intel® Data Center GPU Flex Series</td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04</code></td>
+</tr>
+<tr>
+<td>v1.2.0</td>
+<td>Ubuntu 22.04, Red Hat 8.6, SLES 15 SP3/SP4</td>
+<td>Intel® Data Center GPU Max Series</td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_602_20230323.html">602</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04</code></td>
+</tr>
+</tbody>
+</table></div>
+</div>
 <div class="section" id="build-library-for-jax">
-<h2>2. Build Library for JAX<a class="headerlink" href="#build-library-for-jax" title="Permalink to this headline">¶</a></h2>
+<h2>3. Build Library for JAX<a class="headerlink" href="#build-library-for-jax" title="Permalink to this headline">¶</a></h2>
 <p>There are some differences from   <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.md">source build procedure</a></p>
 <ul>
 <li><p>Make sure get Intel® Extension for TensorFlow* main branch code and python version &gt;=3.8.</p></li>
@@ -139,7 +202,7 @@
 <p>Then we can get the library with xla extension   <strong>./bazel-bin/itex/libitex_xla_extension.so</strong></p>
 </div>
 <div class="section" id="run-jax-example">
-<h2>3. Run JAX Example<a class="headerlink" href="#run-jax-example" title="Permalink to this headline">¶</a></h2>
+<h2>4. Run JAX Example<a class="headerlink" href="#run-jax-example" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Set library path.</strong></p></li>
 </ul>
@@ -209,7 +272,9 @@ $ <span class="nb">export</span> <span class="nv">ITEX_VERBOSE</span><span class
 <span class="n">I</span> <span class="n">itex</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">compiler</span><span class="o">/</span><span class="n">xla</span><span class="o">/</span><span class="n">pjrt</span><span class="o">/</span><span class="n">pjrt_stream_executor_client</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">1299</span><span class="p">]</span> <span class="n">PjRtStreamExecutorBuffer</span><span class="p">::</span><span class="n">ToLiteral</span>
 </pre></div>
 </div>
-<p><strong>4. More JAX examples.</strong><br />Get examples from <a class="reference external" href="https://github.com/google/jax/tree/jaxlib-v0.4.4/examples">https://github.com/google/jax</a> to run.</p>
+<ul class="simple">
+<li><p><strong>More JAX examples</strong><br />Get examples from <a class="reference external" href="https://github.com/google/jax/tree/jaxlib-v0.4.4/examples">https://github.com/google/jax</a> to run.</p></li>
+</ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/google/jax.git
 $ <span class="nb">cd</span> jax <span class="o">&amp;&amp;</span> git checkout jax-v0.4.4
 $ <span class="nb">export</span> <span class="nv">PJRT_NAMES_AND_LIBRARY_PATHS</span><span class="o">=</span><span class="s1">&#39;xpu:Your_itex_path/bazel-bin/itex/libitex_xla_extension.so&#39;</span>

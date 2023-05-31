@@ -1407,6 +1407,24 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_split_op",
+    srcs = ["sparse_split_op.cc"],
+    hdrs = [
+        "sparse_split_op.h",
+        "topk_op.h",
+        "unique_op.h",
+        "unique_op_helpers.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_tensor_dense_mat_mul_op",
     srcs = ["sparse_tensor_dense_mat_mul_op.cc"],
     hdrs = ["sparse_tensor_dense_mat_mul_op.h"],
@@ -2124,6 +2142,7 @@ GPU_KERNELS = [
     ":sparse_math_ops",
     ":sparse_slice_grad_op",
     ":sparse_slice_op",
+    ":sparse_split_op",
     ":sparse_tensor_dense_mat_mul_op",
     ":sparse_xent_op",
     ":split_op",
@@ -2158,6 +2177,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/gpu/fp8:fp8_op",
         "//itex/core/kernels/gpu/image",
         "//itex/core/kernels/gpu/image:crop_and_resize_op",
         "//itex/core/kernels/gpu/linalg",
