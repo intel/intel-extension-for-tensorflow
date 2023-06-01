@@ -1,4 +1,4 @@
-# OpenXLA Support on GPU
+# OpenXLA Support on GPU via PJRT
 This guide introduces the overview of OpenXLA high level integration structure, and demonstrates how to build Intel® Extension for TensorFlow* and run JAX example with OpenXLA.
 
 ## 1. Overview
