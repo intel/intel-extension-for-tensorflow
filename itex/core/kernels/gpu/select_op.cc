@@ -85,33 +85,59 @@ struct BCastSelectFunctor<GPUDevice, T, NDIMS> {
                   typename Eigen::array<Eigen::DenseIndex, NDIMS> cond_bcast,
                   typename Eigen::array<Eigen::DenseIndex, NDIMS> then_bcast,
                   typename Eigen::array<Eigen::DenseIndex, NDIMS> else_bcast) {
+    const bool cond_bcast_all_one = AllOne<NDIMS>(cond_bcast);
     const bool then_bcast_all_one = AllOne<NDIMS>(then_bcast);
     const bool else_bcast_all_one = AllOne<NDIMS>(else_bcast);
 
-#define KERNEL_INT_TYPE(IntTypePattern)                                        \
-  if (then_bcast_all_one && else_bcast_all_one) {                              \
-    IntTypePattern(output_tensor).device(d) =                                  \
-        IntTypePattern(cond_tensor)                                            \
-            .broadcast(cond_bcast)                                             \
-            .select(IntTypePattern(then_tensor), IntTypePattern(else_tensor)); \
-  } else if (then_bcast_all_one) {                                             \
-    IntTypePattern(output_tensor).device(d) =                                  \
-        IntTypePattern(cond_tensor)                                            \
-            .broadcast(cond_bcast)                                             \
-            .select(IntTypePattern(then_tensor),                               \
-                    IntTypePattern(else_tensor).broadcast(else_bcast));        \
-  } else if (else_bcast_all_one) {                                             \
-    IntTypePattern(output_tensor).device(d) =                                  \
-        IntTypePattern(cond_tensor)                                            \
-            .broadcast(cond_bcast)                                             \
-            .select(IntTypePattern(then_tensor).broadcast(then_bcast),         \
-                    IntTypePattern(else_tensor));                              \
-  } else {                                                                     \
-    IntTypePattern(output_tensor).device(d) =                                  \
-        IntTypePattern(cond_tensor)                                            \
-            .broadcast(cond_bcast)                                             \
-            .select(IntTypePattern(then_tensor).broadcast(then_bcast),         \
-                    IntTypePattern(else_tensor).broadcast(else_bcast));        \
+#define KERNEL_INT_TYPE(IntTypePattern)                                   \
+  if (cond_bcast_all_one) {                                               \
+    if (then_bcast_all_one && else_bcast_all_one) {                       \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .select(IntTypePattern(then_tensor),                        \
+                      IntTypePattern(else_tensor));                       \
+    } else if (then_bcast_all_one) {                                      \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .select(IntTypePattern(then_tensor),                        \
+                      IntTypePattern(else_tensor).broadcast(else_bcast)); \
+    } else if (else_bcast_all_one) {                                      \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .select(IntTypePattern(then_tensor).broadcast(then_bcast),  \
+                      IntTypePattern(else_tensor));                       \
+    } else {                                                              \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .select(IntTypePattern(then_tensor).broadcast(then_bcast),  \
+                      IntTypePattern(else_tensor).broadcast(else_bcast)); \
+    }                                                                     \
+  } else {                                                                \
+    if (then_bcast_all_one && else_bcast_all_one) {                       \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .broadcast(cond_bcast)                                      \
+              .select(IntTypePattern(then_tensor),                        \
+                      IntTypePattern(else_tensor));                       \
+    } else if (then_bcast_all_one) {                                      \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .broadcast(cond_bcast)                                      \
+              .select(IntTypePattern(then_tensor),                        \
+                      IntTypePattern(else_tensor).broadcast(else_bcast)); \
+    } else if (else_bcast_all_one) {                                      \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .broadcast(cond_bcast)                                      \
+              .select(IntTypePattern(then_tensor).broadcast(then_bcast),  \
+                      IntTypePattern(else_tensor));                       \
+    } else {                                                              \
+      IntTypePattern(output_tensor).device(d) =                           \
+          IntTypePattern(cond_tensor)                                     \
+              .broadcast(cond_bcast)                                      \
+              .select(IntTypePattern(then_tensor).broadcast(then_bcast),  \
+                      IntTypePattern(else_tensor).broadcast(else_bcast)); \
+    }                                                                     \
   }
 
     KERNEL_INT_TYPE(To32Bit);
