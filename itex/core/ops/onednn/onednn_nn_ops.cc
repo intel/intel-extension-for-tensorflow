@@ -923,7 +923,7 @@ void Register_OneDnnFusedBatchNormExOp() {
     TF_OpDefinitionBuilderAddOutput(op_builder, "batch_variance: U");
     TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_1: U");
     TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_2: U");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_3: U");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_3: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "y_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "batch_mean_meta: uint8");
     TF_OpDefinitionBuilderAddOutput(op_builder, "batch_variance_meta: uint8");
@@ -1082,7 +1082,7 @@ void Register_OneDnnFusedBatchNormGradExOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "scale: float");
     TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_1: U");
     TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_2: U");
-    TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_3: U");
+    TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_3: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "offset: float");
     TF_OpDefinitionBuilderAddInput(op_builder, "y: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "y_backprop_meta: uint8");
