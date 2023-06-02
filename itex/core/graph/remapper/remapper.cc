@@ -1141,7 +1141,8 @@ bool FindSum(const RemapperContext& ctx, int node_index,
 
   if (input_props.size() < 2) return false;
   const TensorShapeProto& input_shape = input_props[0].shape();
-  if (input_shape.dim_size() < 1) return false;
+  // BiasAddGrad doesn't support 1-D.
+  if (input_shape.dim_size() <= 1) return false;
   if (matched->kind == ReplaceableSum::Kind::kBiasAddGrad &&
       input_shape.dim(input_shape.dim_size() - 1).size() != reduction_indices)
     return false;
