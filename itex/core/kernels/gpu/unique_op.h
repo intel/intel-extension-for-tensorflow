@@ -426,6 +426,9 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
         DataTypeToEnum<ValueT>::value, TensorShape({size}), &tmp_indices_in));
     ValueT* mutable_indices_in = tmp_indices_in.flat<ValueT>().data();
     indices_in = mutable_indices_in;
+    // Set indices_in to range only if indices_in is created internally.
+    ITEX_CHECK_OK(LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1),
+                                                ValueT(size), indices_in));
   }
 
   Tensor tmp_keys_out;
@@ -437,9 +440,6 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
   }
 
   if (size <= KEYS_PER_ITEM * GROUP_SIZE) {
-    ITEX_CHECK_OK(LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1),
-                                                ValueT(size), indices_in));
-
     using Rsortor = GroupRadixSortor<
         KeyT, /*key_per_item==*/KEYS_PER_ITEM, /*group_size=*/GROUP_SIZE,
         /*subgroup_size =*/SUBGROUP_SIZE, sycl::group<1>, ValueT>;

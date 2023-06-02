@@ -76,4 +76,19 @@ TF_CALL_double(REGISTER_GPU_SPARSE_KERNELS_FOR_EACH_INDEX_TYPE);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_GPU_SPARSE_KERNELS
 
+#define REGISTER_GPU_SPARSE_KERNELS(type, index_type, segment_ids_type) \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("SparseSegmentSumGrad")                                      \
+          .Device(DEVICE_GPU)                                           \
+          .HostMemory("output_dim0")                                    \
+          .TypeConstraint<type>("T")                                    \
+          .TypeConstraint<index_type>("Tidx")                           \
+          .TypeConstraint<segment_ids_type>("Tsegmentids"),             \
+      SparseSegmentSumGradOp<GPUDevice, type, index_type, segment_ids_type>);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_SPARSE_KERNELS_FOR_EACH_INDEX_TYPE);
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_GPU_SPARSE_KERNELS_FOR_EACH_INDEX_TYPE);
+#endif  // ITEX_ENABLE_DOUBLE
+#undef REGISTER_GPU_SPARSE_KERNELS
+
 }  // namespace itex

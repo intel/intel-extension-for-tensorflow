@@ -17,6 +17,7 @@ limitations under the License.
 #include "itex/core/kernels/gpu/sparse_segment_reduction_util.h"
 
 #include "itex/core/kernels/gpu/segment_reduction_ops.h"
+#include "itex/core/kernels/gpu/unique_op.h"
 #include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/plugin_tensor.h"
@@ -27,29 +28,23 @@ limitations under the License.
 namespace itex {
 typedef Eigen::GpuDevice GPUDevice;
 
-namespace functor {
 template <typename T, typename Index, typename SegmentId, typename ReductionF,
           typename AtomicReductionF>
-Status SparseSegmentReductionFunctor<T, Index, SegmentId, ReductionF,
-                                     AtomicReductionF>::
-operator()(OpKernelContext* context, bool is_mean, bool is_sqrtn,
-           T default_value, typename TTypes<T, 2>::ConstTensor input,
-           const Index data_size, typename TTypes<Index>::ConstVec indices,
-           typename TTypes<SegmentId>::ConstVec segment_ids,
-           typename TTypes<Index>::Vec segment_offsets,
-           typename TTypes<float, 2>::Tensor output) {
+Status SparseSegmentReduce(OpKernelContext* context, Index input_outer_dim_size,
+                           Index input_inner_dim_size, SegmentId nsegments,
+                           T initial_value, bool is_mean, bool is_sqrtn,
+                           const T* input, const SegmentId* segment_ids,
+                           const Index* indices, float* output) {
   const GPUDevice& d = context->eigen_gpu_device();
-  // atomic operators only support fp32 now.
-  output.device(d) = output.constant(static_cast<float>(default_value));
 
-  const Index output_rows = static_cast<Index>(output.dimension(0));
-  const Index input_outer_dim_size =
-      static_cast<Index>(segment_ids.dimension(0));
-  const Index input_inner_dim_size = output.size() / output_rows;
-
-  TF_RETURN_IF_ERROR(LaunchSegmentOffsetsKernel<Index, SegmentId>()(
-      d, input_outer_dim_size, output_rows, segment_ids.data(),
-      segment_offsets.data()));
+  // Allocate and compute segment_offsets.
+  Tensor segment_offsets;
+  TF_RETURN_IF_ERROR(context->allocate_temp(DataTypeToEnum<Index>::value,
+                                            TensorShape({nsegments + 1}),
+                                            &segment_offsets));
+  Index* segment_offsets_ptr = segment_offsets.flat<Index>().data();
+  TF_RETURN_IF_ERROR(functor::LaunchSegmentOffsetsKernel<Index, SegmentId>()(
+      d, input_outer_dim_size, nsegments, segment_ids, segment_offsets_ptr));
 
   const int OuterDimTileSize = 8;
   const Index input_outer_dim_num_stripe =
@@ -59,17 +54,112 @@ operator()(OpKernelContext* context, bool is_mean, bool is_sqrtn,
   TF_RETURN_IF_ERROR(
       LaunchSortedSegmentKernel<T, Index, SegmentId, OuterDimTileSize,
                                 ReductionF, AtomicReductionF>()(
-          d, input_outer_dim_size, input_inner_dim_size, output_rows,
-          indices.data(), segment_ids.data(), segment_offsets.data(),
-          input.data(), output.data(), total_stripe_count,
-          static_cast<float>(default_value), is_mean, is_sqrtn));
+          d, input_outer_dim_size, input_inner_dim_size, nsegments, indices,
+          segment_ids, segment_offsets_ptr, input, output, total_stripe_count,
+          static_cast<float>(initial_value), is_mean, is_sqrtn));
 
   return Status::OK();
+}
+
+namespace functor {
+template <typename T, typename Index, typename SegmentId, typename ReductionF,
+          typename AtomicReductionF>
+Status SparseSegmentReductionFunctor<T, Index, SegmentId, ReductionF,
+                                     AtomicReductionF>::
+operator()(OpKernelContext* context, bool is_mean, bool is_sqrtn,
+           T default_value, typename TTypes<T, 2>::ConstTensor input,
+           const Index data_size, typename TTypes<Index>::ConstVec indices,
+           typename TTypes<SegmentId>::ConstVec segment_ids,
+           typename TTypes<float, 2>::Tensor output) {
+  const GPUDevice& d = context->eigen_gpu_device();
+  // atomic operators only support fp32 now.
+  output.device(d) = output.constant(static_cast<float>(default_value));
+  Index nouter = segment_ids.dimension(0);
+  Index ninner = input.dimension(1);
+  SegmentId nsegments = output.dimension(0);
+
+  return SparseSegmentReduce<T, Index, SegmentId, ReductionF, AtomicReductionF>(
+      context, /*input_outer_dim_size=*/nouter, /*input_inner_dim_size=*/ninner,
+      /*nsegments=*/nsegments, /*initial_value=*/T(0),
+      /*is_mean=*/is_mean, /*is_sqrtn=*/is_sqrtn,
+      /*input=*/input.data(), /*segment_ids=*/segment_ids.data(),
+      /*indices=*/indices.data(),
+      /*output=*/output.data());
+}
+
+template <typename T, typename Index, typename SegmentId, typename ReductionF,
+          typename AtomicReductionF>
+void SparseSegmentGradFunctor<T, Index, SegmentId, ReductionF,
+                              AtomicReductionF>::
+operator()(OpKernelContext* context, SparseSegmentReductionOperation operation,
+           typename TTypes<T>::ConstMatrix input_flat,
+           typename TTypes<Index>::ConstVec indices_vec,
+           typename TTypes<SegmentId>::ConstVec segment_vec,
+           typename TTypes<float>::Matrix output_flat) {
+  const GPUDevice& device = context->eigen_gpu_device();
+
+  const Index ninner = input_flat.dimension(1);
+  const Index nouter = indices_vec.dimension(0);
+  const Index noutput = output_flat.dimension(0);
+
+  // Todo: Allocate and compute segment weights (for Mean/SqrtN operations
+  // only).
+
+  const Index* sorted_indices_ptr = indices_vec.data();
+  const SegmentId* sorted_segment_ptr = segment_vec.data();
+  Tensor tmp_sorted_indices;
+  Tensor tmp_sorted_segment;
+  if (noutput > 1) {
+    // Sort indices and permute segments.
+    OP_REQUIRES_OK(context, context->allocate_temp(DataTypeToEnum<Index>::value,
+                                                   TensorShape({nouter}),
+                                                   &tmp_sorted_indices));
+    Index* tmp_sorted_indices_ptr = tmp_sorted_indices.flat<Index>().data();
+    OP_REQUIRES_OK(context, context->allocate_temp(
+                                DataTypeToEnum<SegmentId>::value,
+                                TensorShape({nouter}), &tmp_sorted_segment));
+    SegmentId* tmp_sorted_segment_ptr =
+        tmp_sorted_segment.flat<SegmentId>().data();
+
+    OP_REQUIRES_OK(
+        context,
+        ::itex::impl::DispatchRadixSort<Index, SegmentId, /*KEYS_PER_ITEM=*/8,
+                                        /*GROUP_SIZE=*/256,
+                                        /*SUBGROUP_SIZE*/ 16>(
+            context, nouter,
+            /*keys_in = */ const_cast<Index*>(indices_vec.data()),
+            /*indices_in = */ const_cast<SegmentId*>(segment_vec.data()),
+            /*keys_out = */ tmp_sorted_indices_ptr,
+            /*indices_out = */ tmp_sorted_segment_ptr));
+
+    sorted_indices_ptr = tmp_sorted_indices_ptr;
+    sorted_segment_ptr = tmp_sorted_segment_ptr;
+  }
+
+  // Set default value to 0
+  output_flat.device(device) = output_flat.constant(static_cast<float>(0));
+
+  // Compute the gradient using a weighted SegmentReduceGPU with the segment
+  // IDs and indices swapped.
+  OP_REQUIRES_OK(
+      context,
+      SparseSegmentReduce<T, SegmentId, Index, ReductionF, AtomicReductionF>(
+          context,
+          /*input_outer_dim_size=*/static_cast<SegmentId>(nouter),
+          /*input_inner_dim_size=*/static_cast<SegmentId>(ninner),
+          /*nsegments=*/noutput, /*initial_value=*/T(0),
+          /*is_mean=*/false, /*is_sqrtn=*/false,
+          /*input=*/input_flat.data(), /*segment_ids=*/sorted_indices_ptr,
+          /*indices=*/sorted_segment_ptr,
+          /*output=*/output_flat.data()));
 }
 
 #define DEFINE_SORTED_GPU_SPECS_INDEX_SEGMENTID(T, T_Reduction, Index, \
                                                 SegmentId)             \
   template struct SparseSegmentReductionFunctor<                       \
+      T, Index, SegmentId, functor::NonAtomicSumOpGpu<T_Reduction>,    \
+      functor::SumOpGpu<T_Reduction>>;                                 \
+  template struct SparseSegmentGradFunctor<                            \
       T, Index, SegmentId, functor::NonAtomicSumOpGpu<T_Reduction>,    \
       functor::SumOpGpu<T_Reduction>>;
 

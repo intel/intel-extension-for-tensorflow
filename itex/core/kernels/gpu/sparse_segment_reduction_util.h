@@ -26,6 +26,9 @@ limitations under the License.
 
 namespace itex {
 
+// Type of SparseSegmentReduction operation to perform gradient of.
+enum class SparseSegmentReductionOperation { kSum, kMean, kSqrtN };
+
 namespace functor {
 template <typename T, typename Index, typename SegmentId, typename ReductionF,
           typename AtomicReductionF>
@@ -34,9 +37,20 @@ struct SparseSegmentReductionFunctor {
                     T default_value, typename TTypes<T, 2>::ConstTensor input,
                     Index data_size, typename TTypes<Index>::ConstVec indices,
                     typename TTypes<SegmentId>::ConstVec segment_ids,
-                    typename TTypes<Index>::Vec segment_offsets,
                     typename TTypes<float, 2>::Tensor output);
 };
+
+template <typename T, typename Index, typename SegmentId, typename ReductionF,
+          typename AtomicReductionF>
+struct SparseSegmentGradFunctor {
+  void operator()(OpKernelContext* context,
+                  SparseSegmentReductionOperation operation,
+                  typename TTypes<T>::ConstMatrix input_flat,
+                  typename TTypes<Index>::ConstVec indices_vec,
+                  typename TTypes<SegmentId>::ConstVec segment_vec,
+                  typename TTypes<float>::Matrix output_flat);
+};
+
 }  // namespace functor
 
 namespace impl {

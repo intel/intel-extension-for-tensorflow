@@ -34,6 +34,14 @@ class SparseSegmentReductionOpBase : public OpKernel {
       : OpKernel(context) {}
 };
 
+template <typename Device, typename T, typename Index, typename SegmentId>
+class SparseSegmentGradOpBase : public OpKernel {
+ public:
+  explicit SparseSegmentGradOpBase(OpKernelConstruction* context,
+                                   SparseSegmentReductionOperation operation)
+      : OpKernel(context) {}
+};
+
 template <typename T, typename Index, typename SegmentId>
 class SparseSegmentReductionOpBase<GPUDevice, T, Index, SegmentId>
     : public OpKernel {
@@ -91,13 +99,6 @@ class SparseSegmentReductionOpBase<GPUDevice, T, Index, SegmentId>
     const auto indices_vec = indices.vec<Index>();
     const auto segment_ids_vec = segment_ids.vec<SegmentId>();
 
-    // Allocate and compute segment_offsets.
-    Tensor segment_offsets;
-    OP_REQUIRES_OK(context,
-                   context->allocate_temp(DataTypeToEnum<Index>::value,
-                                          TensorShape({output_rows + 1}),
-                                          &segment_offsets));
-    auto segment_offsets_flat = segment_offsets.vec<Index>();
     functor::SparseSegmentReductionFunctor<T, Index, SegmentId,
                                            functor::NonAtomicSumOpGpu<float>,
                                            functor::SumOpGpu<float>>
@@ -105,21 +106,20 @@ class SparseSegmentReductionOpBase<GPUDevice, T, Index, SegmentId>
     // Atomic operators only support fp32 now.
     if (std::is_same<T, float>::value) {
       auto output_flat = output->flat_outer_dims<float>();
-      OP_REQUIRES_OK(
-          context, functor(context, is_mean_, is_sqrtn_, default_value_,
-                           input_flat, input.NumElements(), indices_vec,
-                           segment_ids_vec, segment_offsets_flat, output_flat));
+      OP_REQUIRES_OK(context,
+                     functor(context, is_mean_, is_sqrtn_, default_value_,
+                             input_flat, input.NumElements(), indices_vec,
+                             segment_ids_vec, output_flat));
     } else {
       Tensor output_fp32;
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<float>::value,
                                             output_shape, &output_fp32));
       auto output_fp32_flat = output_fp32.flat_outer_dims<float>();
-      OP_REQUIRES_OK(
-          context,
-          functor(context, is_mean_, is_sqrtn_, default_value_, input_flat,
-                  input.NumElements(), indices_vec, segment_ids_vec,
-                  segment_offsets_flat, output_fp32_flat));
+      OP_REQUIRES_OK(context,
+                     functor(context, is_mean_, is_sqrtn_, default_value_,
+                             input_flat, input.NumElements(), indices_vec,
+                             segment_ids_vec, output_fp32_flat));
       ConvertFromFp32<GPUDevice, T>(device, output->NumElements(),
                                     static_cast<float*>(output_fp32.data()),
                                     static_cast<T*>(output->data()));
@@ -173,6 +173,82 @@ class SparseSegmentReductionSumWithNumSegmentsOp
       : SparseSegmentReductionOpBase<Device, T, Index, SegmentId>(
             context, false /*is_mean*/, false /*is_sqrtn*/,
             true /* has_num_segments */, T(0) /* default_value */) {}
+};
+
+// Implements the common logic for the gradients of SparseSegmentReduction
+// kernels.
+template <typename T, typename Index, typename SegmentId>
+class SparseSegmentGradOpBase<GPUDevice, T, Index, SegmentId>
+    : public OpKernel {
+ public:
+  explicit SparseSegmentGradOpBase(OpKernelConstruction* context,
+                                   SparseSegmentReductionOperation operation)
+      : OpKernel(context), operation_(operation) {}
+
+  void Compute(OpKernelContext* context) override {
+    const Tensor& input = context->input(0);
+    const Tensor& indices = context->input(1);
+    const Tensor& segment_ids = context->input(2);
+    const Tensor& output_dim0 = context->input(3);
+    const GPUDevice& device = context->eigen_gpu_device();
+
+    OP_REQUIRES(context, TensorShapeUtils::IsVector(indices.shape()),
+                errors::InvalidArgument("indices should be a vector."));
+    OP_REQUIRES(context, TensorShapeUtils::IsVector(segment_ids.shape()),
+                errors::InvalidArgument("segment_ids should be a vector."));
+    OP_REQUIRES(context, TensorShapeUtils::IsScalar(output_dim0.shape()),
+                errors::InvalidArgument("output_dim0 should be a scalar."));
+
+    const int64_t N = indices.NumElements();
+    OP_REQUIRES(context, N == segment_ids.NumElements(),
+                errors::InvalidArgument(
+                    "segment_ids and indices should have same size."));
+    const SegmentId M = internal::SubtleMustCopy(output_dim0.scalar<int32>()());
+
+    auto input_flat = input.flat_outer_dims<T>();
+    const auto indices_vec = indices.vec<Index>();
+    const auto segment_vec = segment_ids.vec<SegmentId>();
+
+    TensorShape output_shape = input.shape();
+    output_shape.set_dim(0, M);
+    Tensor* output = nullptr;
+    OP_REQUIRES_OK(context, context->allocate_output(0, output_shape, &output));
+    if (M == 0 || N == 0) return;
+
+    functor::SparseSegmentGradFunctor<T, Index, SegmentId,
+                                      functor::NonAtomicSumOpGpu<float>,
+                                      functor::SumOpGpu<float>>
+        functor;
+    // Atomic operators only support fp32 now.
+    if (std::is_same<T, float>::value) {
+      auto output_flat = output->flat_outer_dims<float>();
+      functor(context, operation_, input_flat, indices_vec, segment_vec,
+              output_flat);
+    } else {
+      Tensor output_fp32;
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<float>::value,
+                                            output_shape, &output_fp32));
+      auto output_fp32_flat = output_fp32.flat_outer_dims<float>();
+      functor(context, operation_, input_flat, indices_vec, segment_vec,
+              output_fp32_flat);
+      ConvertFromFp32<GPUDevice, T>(device, output->NumElements(),
+                                    static_cast<float*>(output_fp32.data()),
+                                    static_cast<T*>(output->data()));
+    }
+  }
+
+ private:
+  const SparseSegmentReductionOperation operation_;
+};
+
+template <typename Device, class T, typename Index, typename SegmentId>
+class SparseSegmentSumGradOp
+    : public SparseSegmentGradOpBase<Device, T, Index, SegmentId> {
+ public:
+  explicit SparseSegmentSumGradOp(OpKernelConstruction* context)
+      : SparseSegmentGradOpBase<Device, T, Index, SegmentId>(
+            context, SparseSegmentReductionOperation::kSum) {}
 };
 
 }  // namespace itex
