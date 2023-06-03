@@ -16,6 +16,14 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_GPU_HELPER_H_
 #define ITEX_CORE_UTILS_GPU_HELPER_H_
 
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+#elif __has_include(<CL/sycl.hpp>)
+#include <CL/sycl.hpp>
+#else
+#error "Unsupported compiler"
+#endif
+
 #include <algorithm>
 #include <cstdint>
 #include <utility>
@@ -170,9 +178,11 @@ inline T RoundUp(T val, T rounding) {
   return DivUp(val, rounding) * rounding;
 }
 
-template <int Data>
+// Allows for the treatment of an integral constant
+// as a type at compile-time
+template <int VAL>
 struct Int2Type {
-  enum { VALUE = Data };
+  enum { VALUE = VAL };
 };
 
 template <typename T>
@@ -339,6 +349,17 @@ void DispatchToVectorized(int64_t max_vec_size, Args&&... args) {
   }
 }
 
+// This funciton is to back compatible with old DPCPP compiler
+template <typename T, int Dims = 1>
+inline T* ITEXGetLocalAccPointer(
+    const sycl::local_accessor<T, Dims>& accessor) {
+  if constexpr (std::is_same_v<decltype(accessor.get_pointer()),
+                               sycl::local_ptr<T>>) {
+    return accessor.get_pointer().get();
+  } else {
+    return accessor.get_pointer();
+  }
+}
 }  // namespace  itex
 
 #endif  //  ITEX_CORE_UTILS_GPU_HELPER_H_

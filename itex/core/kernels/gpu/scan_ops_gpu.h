@@ -18,11 +18,11 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_SCAN_OPS_GPU_H_
 #define ITEX_CORE_KERNELS_GPU_SCAN_OPS_GPU_H_
 
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/tensor_types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
-
 namespace itex {
 
 namespace functor {
@@ -770,9 +770,9 @@ struct OptimizedOuterScan {
 
     T updated_reduce_sum = init_;
     slmScan<T, sycl::nd_item<1>, BinaryOp, SubGroupSize, NumSubGroup>(
-        item, local_mem_.get_pointer().get(),
-        local_mem_carry_.get_pointer().get(), &reduce_sum, &updated_reduce_sum,
-        init_, binary_op_);
+        item, ITEXGetLocalAccPointer(local_mem_),
+        ITEXGetLocalAccPointer(local_mem_carry_), &reduce_sum,
+        &updated_reduce_sum, init_, binary_op_);
 
     // Each SubGroup do interanl scan and store data to Global Memory
     if (IsExclusive) {
