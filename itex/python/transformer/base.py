@@ -52,7 +52,7 @@ class BaseModule:
     fp8_meta[fp8_meta_tensor_key] = {}
 
     num_fp8_gemm_tensors = (
-      fp8_meta["num_gemms"] * 2 if fwd else fp8_meta["num_gemms"]
+      fp8_meta["num_gemms"] * 3 if fwd else fp8_meta["num_gemms"] * 2
     )
     fp8_meta[fp8_meta_tensor_key]["gemm"] = {}
     gemm_meta_tensors = fp8_meta[fp8_meta_tensor_key]["gemm"]

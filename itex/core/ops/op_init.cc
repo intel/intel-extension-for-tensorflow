@@ -360,4 +360,9 @@ void RegisterOps() {
   // FP8 kernels
   Register_Fp8QuantizeOp();
   Register_Fp8DequantizeOp();
+  Register_Fp8LayerNormOp();
+  Register_Fp8LayerNormGradOp();
+  Register_Fp8GeluOp();
+  Register_Fp8QuantizeDbiasOp();
+  Register_Fp8QuantizeDbiasDgeluOp();
 }

@@ -121,22 +121,19 @@ index 0000000..1829e12
 +    return tf.compat.v1.train.LoggingTensorHook({"\t Loss " : total_loss}, every_n_iter=n)
 \ No newline at end of file
 diff --git a/modeling.py b/modeling.py
-index fed5259..8e9bee3 100644
+index fed5259..508a648 100644
 --- a/modeling.py
 +++ b/modeling.py
-@@ -26,7 +26,10 @@ import re
+@@ -26,6 +26,8 @@ import re
  import numpy as np
  import six
  import tensorflow as tf
--
 +import generic_ops as bf
-+from generic_ops import get_keras_policy
-+from intel_extension_for_tensorflow.python.transformer.layer import Dense
-+from tensorflow.keras import mixed_precision
++from intel_extension_for_tensorflow.python.transformer.layer import LayerNormMLP
+ 
  
  class BertConfig(object):
-   """Configuration for `BertModel`."""
-@@ -42,7 +45,9 @@ class BertConfig(object):
+@@ -42,7 +44,9 @@ class BertConfig(object):
                 attention_probs_dropout_prob=0.1,
                 max_position_embeddings=512,
                 type_vocab_size=16,
@@ -147,7 +144,7 @@ index fed5259..8e9bee3 100644
      """Constructs BertConfig.
  
      Args:
-@@ -66,6 +71,7 @@ class BertConfig(object):
+@@ -66,6 +70,7 @@ class BertConfig(object):
          `BertModel`.
        initializer_range: The stdev of the truncated_normal_initializer for
          initializing all weight matrices.
@@ -155,7 +152,7 @@ index fed5259..8e9bee3 100644
      """
      self.vocab_size = vocab_size
      self.hidden_size = hidden_size
-@@ -78,6 +84,10 @@ class BertConfig(object):
+@@ -78,6 +83,10 @@ class BertConfig(object):
      self.max_position_embeddings = max_position_embeddings
      self.type_vocab_size = type_vocab_size
      self.initializer_range = initializer_range
@@ -166,7 +163,7 @@ index fed5259..8e9bee3 100644
  
    @classmethod
    def from_dict(cls, json_object):
-@@ -90,7 +100,7 @@ class BertConfig(object):
+@@ -90,7 +99,7 @@ class BertConfig(object):
    @classmethod
    def from_json_file(cls, json_file):
      """Constructs a `BertConfig` from a json file of parameters."""
@@ -175,7 +172,7 @@ index fed5259..8e9bee3 100644
        text = reader.read()
      return cls.from_dict(json.loads(text))
  
-@@ -103,6 +113,21 @@ class BertConfig(object):
+@@ -103,6 +112,21 @@ class BertConfig(object):
      """Serializes this instance to a JSON string."""
      return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
  
@@ -197,7 +194,7 @@ index fed5259..8e9bee3 100644
  
  class BertModel(object):
    """BERT model ("Bidirectional Encoder Representations from Transformers").
-@@ -153,6 +178,16 @@ class BertModel(object):
+@@ -153,6 +177,16 @@ class BertModel(object):
        ValueError: The config is invalid or one of the input tensor shapes
          is invalid.
      """
@@ -214,7 +211,7 @@ index fed5259..8e9bee3 100644
      config = copy.deepcopy(config)
      if not is_training:
        config.hidden_dropout_prob = 0.0
-@@ -168,8 +203,8 @@ class BertModel(object):
+@@ -168,8 +202,8 @@ class BertModel(object):
      if token_type_ids is None:
        token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
  
@@ -225,7 +222,7 @@ index fed5259..8e9bee3 100644
          # Perform embedding lookup on the word ids.
          (self.embedding_output, self.embedding_table) = embedding_lookup(
              input_ids=input_ids,
-@@ -193,7 +228,7 @@ class BertModel(object):
+@@ -193,7 +227,7 @@ class BertModel(object):
              max_position_embeddings=config.max_position_embeddings,
              dropout_prob=config.hidden_dropout_prob)
  
@@ -234,7 +231,7 @@ index fed5259..8e9bee3 100644
          # This converts a 2D mask of shape [batch_size, seq_length] to a 3D
          # mask of shape [batch_size, seq_length, seq_length] which is used
          # for the attention scores.
-@@ -202,8 +237,10 @@ class BertModel(object):
+@@ -202,8 +236,10 @@ class BertModel(object):
  
          # Run the stacked transformer.
          # `sequence_output` shape = [batch_size, seq_length, hidden_size].
@@ -246,7 +243,7 @@ index fed5259..8e9bee3 100644
              attention_mask=attention_mask,
              hidden_size=config.hidden_size,
              num_hidden_layers=config.num_hidden_layers,
-@@ -221,18 +258,25 @@ class BertModel(object):
+@@ -221,18 +257,25 @@ class BertModel(object):
        # [batch_size, hidden_size]. This is necessary for segment-level
        # (or segment-pair-level) classification tasks where we need a fixed
        # dimensional representation of the segment.
@@ -276,7 +273,7 @@ index fed5259..8e9bee3 100644
  
    def get_sequence_output(self):
      """Gets final hidden layer of encoder.
-@@ -240,8 +284,14 @@ class BertModel(object):
+@@ -240,8 +283,14 @@ class BertModel(object):
      Returns:
        float Tensor of shape [batch_size, seq_length, hidden_size] corresponding
        to the final hidden of the transformer encoder.
@@ -292,7 +289,7 @@ index fed5259..8e9bee3 100644
  
    def get_all_encoder_layers(self):
      return self.all_encoder_layers
-@@ -255,26 +305,16 @@ class BertModel(object):
+@@ -255,26 +304,16 @@ class BertModel(object):
        embeddings with the positional embeddings and the token type embeddings,
        then performing layer normalization. This is the input to the transformer.
      """
@@ -327,7 +324,7 @@ index fed5259..8e9bee3 100644
  
  
  def get_activation(activation_string):
-@@ -307,18 +347,52 @@ def get_activation(activation_string):
+@@ -307,18 +346,61 @@ def get_activation(activation_string):
    elif act == "relu":
      return tf.nn.relu
    elif act == "gelu":
@@ -348,16 +345,25 @@ index fed5259..8e9bee3 100644
 +    regex2 = re.compile(r"squad")
 +  elif task=="Classifier":
 +    regex2 = re.compile(r"classifier")
-+  else :
-+    regex2 = None 
++  else:
++    regex2 = None
++  maps = []
++  maps.append([re.compile(r"LayerNormMLP/gamma"), "attention/output/LayerNorm/gamma"])
++  maps.append([re.compile(r"LayerNormMLP/beta"), "attention/output/LayerNorm/beta"])
++  maps.append([re.compile(r"LayerNormMLP/fc1_kernel"), "intermediate/dense/kernel"])
++  maps.append([re.compile(r"LayerNormMLP/fc1_bias"), "intermediate/dense/bias"])
++  maps.append([re.compile(r"LayerNormMLP/fc2_kernel"), "output/dense/kernel"])
++  maps.append([re.compile(r"LayerNormMLP/fc2_bias"), "output/dense/bias"])
 +
-+  return regex1, regex2
++  return regex1, regex2, maps
 +
-+def apply_remaps(name, map1, map2):
-+  if map1!=None:
++def apply_remaps(name, map1, map2, maps):
++  if map1 != None:
 +    name = map1.sub("LayerNorm", name)
-+  if map2!=None :
++  if map2 != None:
 +    name = map2.sub("seq_relationship", name)
++  for old_name, new_name in maps:
++    name = old_name.sub(new_name, name)
 +  return name 
 +
 +def check_model_validity(tvars, assignment_map) :
@@ -378,21 +384,21 @@ index fed5259..8e9bee3 100644
    assignment_map = {}
    initialized_variable_names = {}
  
-+  map1, map2 = get_remaps(task)
++  map1, map2, maps = get_remaps(task)
 +
    name_to_variable = collections.OrderedDict()
    for var in tvars:
      name = var.name
-@@ -326,6 +400,8 @@ def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
+@@ -326,6 +408,8 @@ def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
      if m is not None:
        name = m.group(1)
      name_to_variable[name] = var
-+    name = apply_remaps(name, map1, map2)
++    name = apply_remaps(name, map1, map2, maps)
 +    name_to_variable[name] = var
  
    init_vars = tf.train.list_variables(init_checkpoint)
  
-@@ -334,12 +410,17 @@ def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
+@@ -334,12 +418,17 @@ def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
      (name, var) = (x[0], x[1])
      if name not in name_to_variable:
        continue
@@ -414,7 +420,7 @@ index fed5259..8e9bee3 100644
  
  def dropout(input_tensor, dropout_prob):
    """Perform dropout.
-@@ -355,13 +436,13 @@ def dropout(input_tensor, dropout_prob):
+@@ -355,13 +444,13 @@ def dropout(input_tensor, dropout_prob):
    if dropout_prob is None or dropout_prob == 0.0:
      return input_tensor
  
@@ -430,7 +436,7 @@ index fed5259..8e9bee3 100644
        inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
  
  
-@@ -374,7 +455,7 @@ def layer_norm_and_dropout(input_tensor, dropout_prob, name=None):
+@@ -374,7 +463,7 @@ def layer_norm_and_dropout(input_tensor, dropout_prob, name=None):
  
  def create_initializer(initializer_range=0.02):
    """Creates a `truncated_normal_initializer` with the given range."""
@@ -439,7 +445,7 @@ index fed5259..8e9bee3 100644
  
  
  def embedding_lookup(input_ids,
-@@ -406,7 +487,7 @@ def embedding_lookup(input_ids,
+@@ -406,7 +495,7 @@ def embedding_lookup(input_ids,
    if input_ids.shape.ndims == 2:
      input_ids = tf.expand_dims(input_ids, axis=[-1])
  
@@ -448,7 +454,7 @@ index fed5259..8e9bee3 100644
        name=word_embedding_name,
        shape=[vocab_size, embedding_size],
        initializer=create_initializer(initializer_range))
-@@ -473,7 +554,7 @@ def embedding_postprocessor(input_tensor,
+@@ -473,7 +562,7 @@ def embedding_postprocessor(input_tensor,
      if token_type_ids is None:
        raise ValueError("`token_type_ids` must be specified if"
                         "`use_token_type` is True.")
@@ -457,7 +463,7 @@ index fed5259..8e9bee3 100644
          name=token_type_embedding_name,
          shape=[token_type_vocab_size, width],
          initializer=create_initializer(initializer_range))
-@@ -487,9 +568,9 @@ def embedding_postprocessor(input_tensor,
+@@ -487,9 +576,9 @@ def embedding_postprocessor(input_tensor,
      output += token_type_embeddings
  
    if use_position_embeddings:
@@ -469,7 +475,7 @@ index fed5259..8e9bee3 100644
            name=position_embedding_name,
            shape=[max_position_embeddings, width],
            initializer=create_initializer(initializer_range))
-@@ -631,7 +712,7 @@ def attention_layer(from_tensor,
+@@ -631,7 +720,7 @@ def attention_layer(from_tensor,
      output_tensor = tf.reshape(
          input_tensor, [batch_size, seq_length, num_attention_heads, width])
  
@@ -478,7 +484,7 @@ index fed5259..8e9bee3 100644
      return output_tensor
  
    from_shape = get_shape_list(from_tensor, expected_rank=[2, 3])
-@@ -663,7 +744,7 @@ def attention_layer(from_tensor,
+@@ -663,7 +752,7 @@ def attention_layer(from_tensor,
    to_tensor_2d = reshape_to_matrix(to_tensor)
  
    # `query_layer` = [B*F, N*H]
@@ -487,7 +493,7 @@ index fed5259..8e9bee3 100644
        from_tensor_2d,
        num_attention_heads * size_per_head,
        activation=query_act,
-@@ -671,7 +752,7 @@ def attention_layer(from_tensor,
+@@ -671,7 +760,7 @@ def attention_layer(from_tensor,
        kernel_initializer=create_initializer(initializer_range))
  
    # `key_layer` = [B*T, N*H]
@@ -496,7 +502,7 @@ index fed5259..8e9bee3 100644
        to_tensor_2d,
        num_attention_heads * size_per_head,
        activation=key_act,
-@@ -679,7 +760,7 @@ def attention_layer(from_tensor,
+@@ -679,7 +768,7 @@ def attention_layer(from_tensor,
        kernel_initializer=create_initializer(initializer_range))
  
    # `value_layer` = [B*T, N*H]
@@ -505,7 +511,7 @@ index fed5259..8e9bee3 100644
        to_tensor_2d,
        num_attention_heads * size_per_head,
        activation=value_act,
-@@ -699,8 +780,8 @@ def attention_layer(from_tensor,
+@@ -699,8 +788,8 @@ def attention_layer(from_tensor,
    # attention scores.
    # `attention_scores` = [B, N, F, T]
    attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
@@ -516,7 +522,7 @@ index fed5259..8e9bee3 100644
  
    if attention_mask is not None:
      # `attention_mask` = [B, 1, F, T]
-@@ -709,7 +790,7 @@ def attention_layer(from_tensor,
+@@ -709,7 +798,7 @@ def attention_layer(from_tensor,
      # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
      # masked positions, this operation will create a tensor which is 0.0 for
      # positions we want to attend and -10000.0 for masked positions.
@@ -525,7 +531,7 @@ index fed5259..8e9bee3 100644
  
      # Since we are adding it to the raw scores before the softmax, this is
      # effectively the same as removing these entirely.
-@@ -717,7 +798,7 @@ def attention_layer(from_tensor,
+@@ -717,7 +806,7 @@ def attention_layer(from_tensor,
  
    # Normalize the attention scores to probabilities.
    # `attention_probs` = [B, N, F, T]
@@ -534,7 +540,7 @@ index fed5259..8e9bee3 100644
  
    # This is actually dropping out entire tokens to attend to, which might
    # seem a bit unusual, but is taken from the original Transformer paper.
-@@ -729,13 +810,13 @@ def attention_layer(from_tensor,
+@@ -729,13 +818,13 @@ def attention_layer(from_tensor,
        [batch_size, to_seq_length, num_attention_heads, size_per_head])
  
    # `value_layer` = [B, N, T, H]
@@ -550,7 +556,7 @@ index fed5259..8e9bee3 100644
  
    if do_return_2d_tensor:
      # `context_layer` = [B*F, N*H]
-@@ -757,7 +838,7 @@ def transformer_model(input_tensor,
+@@ -757,7 +846,7 @@ def transformer_model(input_tensor,
                        num_hidden_layers=12,
                        num_attention_heads=12,
                        intermediate_size=3072,
@@ -559,7 +565,7 @@ index fed5259..8e9bee3 100644
                        hidden_dropout_prob=0.1,
                        attention_probs_dropout_prob=0.1,
                        initializer_range=0.02,
-@@ -824,24 +905,24 @@ def transformer_model(input_tensor,
+@@ -824,24 +913,23 @@ def transformer_model(input_tensor,
  
    all_layer_outputs = []
    for layer_idx in range(num_hidden_layers):
@@ -568,7 +574,6 @@ index fed5259..8e9bee3 100644
        layer_input = prev_output
 -
 -      with tf.variable_scope("attention"):
-+      mixed_precision.set_global_policy(get_keras_policy())
 +      with tf.compat.v1.variable_scope("attention"):
          attention_heads = []
 -        with tf.variable_scope("self"):
@@ -599,54 +604,56 @@ index fed5259..8e9bee3 100644
            attention_heads.append(attention_head)
  
          attention_output = None
-@@ -854,8 +935,8 @@ def transformer_model(input_tensor,
+@@ -852,34 +940,26 @@ def transformer_model(input_tensor,
+           # them to the self-attention head before the projection.
+           attention_output = tf.concat(attention_heads, axis=-1)
  
-         # Run a linear projection of `hidden_size` then add a residual
-         # with `layer_input`.
+-        # Run a linear projection of `hidden_size` then add a residual
+-        # with `layer_input`.
 -        with tf.variable_scope("output"):
 -          attention_output = tf.layers.dense(
++        # Run a linear projection of `hidden_size`
 +        with tf.compat.v1.variable_scope("output"):
 +          attention_output = tf.compat.v1.layers.dense(
                attention_output,
                hidden_size,
                kernel_initializer=create_initializer(initializer_range))
-@@ -863,23 +944,24 @@ def transformer_model(input_tensor,
-           attention_output = layer_norm(attention_output + layer_input)
- 
-       # The activation is only applied to the "intermediate" hidden layer.
+           attention_output = dropout(attention_output, hidden_dropout_prob)
+-          attention_output = layer_norm(attention_output + layer_input)
+-
+-      # The activation is only applied to the "intermediate" hidden layer.
 -      with tf.variable_scope("intermediate"):
 -        intermediate_output = tf.layers.dense(
 -            attention_output,
 -            intermediate_size,
 -            activation=intermediate_act_fn,
 -            kernel_initializer=create_initializer(initializer_range))
-+      with tf.compat.v1.variable_scope("intermediate"):
-+        intermediate_output = Dense(
-+            units=intermediate_size,
-+            gelu_activation=True,
-+            kernel_initializer=create_initializer(initializer_range),
-+            name="dense")(attention_output)
- 
-       # Down-project back to `hidden_size` then add the residual.
+-
+-      # Down-project back to `hidden_size` then add the residual.
 -      with tf.variable_scope("output"):
 -        layer_output = tf.layers.dense(
 -            intermediate_output,
 -            hidden_size,
 -            kernel_initializer=create_initializer(initializer_range))
++
++      layer_output, attention_output = LayerNormMLP(
++        fc1_units=intermediate_size,
++        fc2_units=hidden_size,
++        return_layernorm_output=True,
++        name="LayerNormMLP")(attention_output + layer_input)
++
 +      with tf.compat.v1.variable_scope("output"):
-+        layer_output = Dense(
-+            units=hidden_size,
-+            kernel_initializer=create_initializer(initializer_range),
-+            name="dense")(intermediate_output)
          layer_output = dropout(layer_output, hidden_dropout_prob)
          layer_output = layer_norm(layer_output + attention_output)
-         prev_output = layer_output
-         all_layer_outputs.append(layer_output)
-+      mixed_precision.set_global_policy('float32')
+-        prev_output = layer_output
+-        all_layer_outputs.append(layer_output)
++        
++      prev_output = layer_output
++      all_layer_outputs.append(layer_output)
  
    if do_return_all_layers:
      final_outputs = []
-@@ -923,7 +1005,7 @@ def get_shape_list(tensor, expected_rank=None, name=None):
+@@ -923,7 +1003,7 @@ def get_shape_list(tensor, expected_rank=None, name=None):
    if not non_static_indexes:
      return shape
  
@@ -655,7 +662,7 @@ index fed5259..8e9bee3 100644
    for index in non_static_indexes:
      shape[index] = dyn_shape[index]
    return shape
-@@ -979,7 +1061,7 @@ def assert_rank(tensor, expected_rank, name=None):
+@@ -979,7 +1059,7 @@ def assert_rank(tensor, expected_rank, name=None):
  
    actual_rank = tensor.shape.ndims
    if actual_rank not in expected_rank_dict:

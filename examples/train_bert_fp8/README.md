@@ -45,7 +45,7 @@ Enable oneAPI running environment (only for GPU) and virtual running environment
 ### Execute the Example
 #### BF16 + FP8 Fine-tuning
 ```
-export BERT_LARGR_DIR=/path/to/bert-large-dir
+export BERT_LARGE_DIR=/path/to/bert-large-dir
 export SQUAD_DIR=/path/to/squad-dir
 export OUTPUT_DIR=/path/to/output-dir
 python run_squad.py \
@@ -56,7 +56,7 @@ python run_squad.py \
    --train_file=$SQUAD_DIR/train-v1.1.json \
    --do_predict=True \
    --predict_file=$SQUAD_DIR/dev-v1.1.json \
-   --train_batch_size=16 \
+   --train_batch_size=32 \
    --learning_rate=3e-5 \
    --num_train_epochs=2.0 \
    --max_seq_length=512 \

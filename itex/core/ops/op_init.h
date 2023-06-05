@@ -328,6 +328,11 @@ void Register_OneDnnTransposeOp();
 // FP8 kernels
 void Register_Fp8QuantizeOp();
 void Register_Fp8DequantizeOp();
+void Register_Fp8LayerNormOp();
+void Register_Fp8LayerNormGradOp();
+void Register_Fp8GeluOp();
+void Register_Fp8QuantizeDbiasOp();
+void Register_Fp8QuantizeDbiasDgeluOp();
 
 #ifdef __cplusplus
 extern "C" {
