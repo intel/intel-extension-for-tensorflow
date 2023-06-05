@@ -50,6 +50,16 @@ class LaunchDimensions {
       : block_counts_(block_counts),
         thread_counts_per_block_(thread_counts_per_block) {}
 
+  void adjust_along_x_to_fit(const GpuDeviceInfo& gpu_device_info) {
+    auto hw_limit = gpu_device_info.threads_per_block_limit;
+
+    if (hw_limit < this->total_nb_threads()) {
+      auto ratio = this->thread_counts_per_block_.x / hw_limit;
+      this->thread_counts_per_block_.x = hw_limit;
+      this->block_counts_.x = this->block_counts_.x * ratio;
+    }
+  }
+
   Dim3D block_counts() const { return block_counts_; }
 
   Dim3D thread_counts_per_block() const { return thread_counts_per_block_; }

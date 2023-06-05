@@ -5465,6 +5465,9 @@ Status IrEmitterUnnested::EmitUnnestedReduction(mlir::lmhlo::FusionOp fusion) {
                << " - threads per block: "
                << tiling_scheme.GetNumThreadsPerBlockPhysical();
 
+  launch_dimensions.adjust_along_x_to_fit(
+      ir_emitter_context_->gpu_device_info());
+
   std::vector<llvm_ir::IrArray> ir_arrays;
   TF_ASSIGN_OR_RETURN(std::unique_ptr<Thunk> kernel_thunk,
                       BuildKernelThunk(fusion, Thunk::ThunkInfo(), &ir_arrays,
