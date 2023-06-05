@@ -134,7 +134,13 @@ void TF_InitGraph(TP_OptimizerRegistrationParams* params, TF_Status* status) {
 
   // Define some configs to turn off existing optimizers.
   params->optimizer_configs->remapping = TF_TriState_Off;
+#ifdef INTEL_CPU_ONLY
+  if (GetOptimizerConfigFlags().enable_layout_opt) {
+    params->optimizer_configs->layout_optimizer = TF_TriState_Off;
+  }
+#else
   params->optimizer_configs->layout_optimizer = TF_TriState_Off;
+#endif
   // Disable tensorflow auto mixed precision when enable auto mixed precision
   // on itex.
   if (GetOptimizerConfigFlags().enable_auto_mixed_precision) {
