@@ -506,6 +506,12 @@ class BatchMatMulCustomOp : public OpKernel {
   REGISTER_KERNEL_BUILDER(                                                   \
       Name("BatchMatMulV2").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"),    \
       BatchMatMulOp<GPUDevice, TYPE, TYPE, TYPE>);                           \
+  REGISTER_KERNEL_BUILDER(Name("BatchMatMulV3")                              \
+                              .Device(DEVICE_GPU)                            \
+                              .TypeConstraint<TYPE>("Ta")                    \
+                              .TypeConstraint<TYPE>("Tb")                    \
+                              .TypeConstraint<TYPE>("Tout"),                 \
+                          BatchMatMulOp<GPUDevice, TYPE, TYPE, TYPE>);       \
   REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBatchMatMulV2")                    \
                               .Device(DEVICE_GPU)                            \
                               .TypeConstraint<TYPE>("T"),                    \
@@ -534,6 +540,12 @@ REGISTER_KERNEL_BUILDER(
 REGISTER_KERNEL_BUILDER(
     Name("BatchMatMulV2").Device(DEVICE_GPU).TypeConstraint<double>("T"),
     BatchMatMulCustomOp<GPUDevice, double, double>);
+REGISTER_KERNEL_BUILDER(Name("BatchMatMulV3")
+                            .Device(DEVICE_GPU)
+                            .TypeConstraint<double>("Ta")
+                            .TypeConstraint<double>("Tb")
+                            .TypeConstraint<double>("Tout"),
+                        BatchMatMulCustomOp<GPUDevice, double, double>);
 #endif
 
 #define REGISTER_MATMUL_GRAD_GPU(TYPE)                    \
