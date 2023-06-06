@@ -20,6 +20,7 @@ limitations under the License.
 #include <unordered_set>
 
 #include "itex/core/graph/utils/graph_view.h"
+#include "itex/core/utils/cpu_info.h"
 #include "itex/core/utils/function.h"
 #include "itex/core/utils/op_def_util.h"
 
@@ -115,6 +116,8 @@ bool RewriteOneDnnPool(const utils::MutableNodeView& node_view);
 // Only MaxPoolGrad requires the input from MaxPool. AvgPool doesn't have such
 // input tensor.
 bool RewriteMaxPoolGrad(const utils::MutableNodeView& node_view);
+
+bool RewriteRandomUniform(const utils::MutableNodeView& node_view);
 
 bool RewriteQuantize(const utils::MutableNodeView& node_view);
 

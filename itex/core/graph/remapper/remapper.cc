@@ -1444,9 +1444,8 @@ bool FindContractionWithBiasAddAndAdd(const RemapperContext& ctx,
 
   if (!IsAddN(*node_def) && !IsAddWithNoBroadcast(ctx, *node_def)) return false;
 
-  // OneDnn AddN ops only support float, float16 and bfloat16 data types on GPU.
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   ContractionWithBiasAdd base;
@@ -1544,7 +1543,7 @@ bool FindContractionWithBiasAndAddActivation(
   // OneDnn activation op only supports float, float16 and bfloat16 data types
   // on GPU.
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   // And input to activation must match ContractionWithBiasAddAndAdd pattern.
@@ -1611,7 +1610,7 @@ bool FindContractionWithBiasAndActivationAdd(
   // OneDnn activation op only supports float, float16 and bfloat16 data types
   // on GPU.
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   ContractionWithBiasAddAndActivation base;
@@ -2429,7 +2428,7 @@ bool FindContractionWithMul(const RemapperContext& ctx, int node_index,
   bool hasValidType = false;
   hasValidType =
       (HasDataType(node_def, DT_FLOAT) || HasDataType(node_def, DT_BFLOAT16) ||
-       (HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)));
+       HasDataType(node_def, DT_HALF));
 
   if (!hasValidType) return false;
 
@@ -2567,7 +2566,7 @@ bool FindComparisonWithCast(const RemapperContext& ctx, int node_index,
   DataType dst_dtype = GetDataTypeFromAttr(*node_def, "DstT");
 
   if ((comparator_dtype != DT_FLOAT) && (comparator_dtype != DT_BFLOAT16) &&
-      !(comparator_dtype == DT_HALF && NodeIsOnGpu(comparison_node_def)))
+      (comparator_dtype != DT_HALF))
     return false;
   if ((comparator_dtype != dst_dtype) || (src_dtype != DT_BOOL)) return false;
 
@@ -2626,6 +2625,7 @@ bool FindRandomWithComparisonAndCast(const RemapperContext& ctx, int node_index,
   DataType random_dtype = GetDataTypeFromAttr(*random_node_def, "dtype");
 
   if ((random_dtype != DT_FLOAT) && (random_dtype != DT_BFLOAT16) &&
+      // CPU _ITEXFusedRandom doesn't support fp16.
       !(random_dtype == DT_HALF && NodeIsOnGpu(random_node_def)))
     return false;
 
@@ -2848,7 +2848,7 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
   if (!IsAdd(*node_def) && !IsMul(*node_def) && !IsSub(*node_def)) return false;
 
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   // Returns true iff the node is a compatible FusedBatchNorm node.
@@ -2895,8 +2895,7 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
 
       if (!HasDataType(input_node_def, DT_FLOAT) &&
           !HasDataType(input_node_def, DT_BFLOAT16) &&
-          !(HasDataType(input_node_def, DT_HALF) &&
-            NodeIsOnGpu(input_node_def)))
+          !HasDataType(input_node_def, DT_HALF))
         continue;
 
       if (HasControlFaninOrFanout(*input_node_view) ||
@@ -2930,7 +2929,7 @@ bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
   if (!IsSelect(*node_def) || HasControlFanin(*node_view)) return false;
 
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   // SelectOp has 3 input, condition, t and e
@@ -3008,8 +3007,7 @@ bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
     return false;
   if (!HasDataType(select_1_node_def, DT_FLOAT) &&
       !HasDataType(select_1_node_def, DT_BFLOAT16) &&
-      !(HasDataType(select_1_node_def, DT_HALF) &&
-        NodeIsOnGpu(select_1_node_def)))
+      !HasDataType(select_1_node_def, DT_HALF))
     return false;
 
   // SelectOp has 3 input, condition, t and e
@@ -3064,7 +3062,7 @@ bool FindStridedSliceGrad(const RemapperContext& ctx, int node_index,
     return false;
 
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   if (node_view->NumRegularFanins() != 5) return false;
@@ -3202,7 +3200,7 @@ bool FindResNeXtGroupConv2DBlock(const RemapperContext& ctx, int node_index,
   if (!IsConcatV2(*concat_node_def)) return false;
   if (!HasDataType(concat_node_def, DT_FLOAT) &&
       !HasDataType(concat_node_def, DT_BFLOAT16) &&
-      !(HasDataType(concat_node_def, DT_HALF)))
+      !HasDataType(concat_node_def, DT_HALF))
     return false;
 
   int64 N;
@@ -5525,8 +5523,6 @@ inline bool VerifyConstants(RemapperContext* ctx,
         DataType dtype = const_tensor.dtype();
         if (!(dtype == DT_FLOAT || dtype == DT_BFLOAT16 || dtype == DT_HALF))
           return false;
-        // TODO(itex): A workaround for GPU with FP16 data type.
-        if (dtype == DT_HALF && NodeIsOnCpu(node_def)) return false;
         auto const_value = (dtype == DT_FLOAT)
                                ? const_tensor.flat<float>()(0)
                                : const_tensor.flat<Eigen::bfloat16>()(0);
@@ -6221,6 +6217,14 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
   string last_op;
   for (int i = num_nodes - 1; i >= 0;) {
     NodeDef* node_def = (ctx.graph_view.GetNode(i))->node();
+
+    // Check if node is fp16 and supported on device.
+    if (NodeIsOnCpu(node_def) &&
+        GetDataTypeFromAttr(*node_def, "T") == DT_HALF &&
+        !port::HasCpuFP16Support()) {
+      ctx.nodes_to_preserve.insert(node_def->name());
+      continue;
+    }
 
     // Dynamic check node status:
     //   1. Do normal fusion check when current node is visited first time

@@ -57,7 +57,7 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_MATMUL_CPU);
                               .TypeConstraint<float>("Tpost"),      \
                           MatMulOp<CPUDevice, TYPE, float, float>);
 
-TF_CALL_CPU_NUMBER_TYPES(REGISTER_BF32MATMUL_CPU);
+TF_CALL_CPU_NUMBER_TYPES_WITHOUT_HALF(REGISTER_BF32MATMUL_CPU);
 #undef REGISTER_BF32MATMUL_CPU
 
 #define REGISTER_BF32MATMUL_CPU(TYPE)                                         \

@@ -55,6 +55,9 @@ REGISTER_NATIVE_KERNEL_ALL_BIAS_TYPES(
 REGISTER_NATIVE_KERNEL_ALL_BIAS_TYPES(
     "_ITEXQuantizedMatMulWithBiasAndDequantize", QuantizedMatMulOp,
     Eigen::bfloat16);
+REGISTER_NATIVE_KERNEL_ALL_BIAS_TYPES(
+    "_ITEXQuantizedMatMulWithBiasAndDequantize", QuantizedMatMulOp,
+    Eigen::half);
 #undef BIAS_TYPE_CONSTRAINT
 
 #undef TEMPLATE_ARGS
@@ -80,6 +83,8 @@ REGISTER_NATIVE_KERNEL_ALL_BIAS_TYPES(
   REGISTER_NATIVE_KERNEL_ALL_INPUT_TYPES(op, kernel, float, output_type);  \
   REGISTER_NATIVE_KERNEL_ALL_INPUT_TYPES(op, kernel, Eigen::bfloat16,      \
                                          output_type);                     \
+  REGISTER_NATIVE_KERNEL_ALL_INPUT_TYPES(op, kernel, Eigen::half,          \
+                                         output_type);                     \
   REGISTER_NATIVE_KERNEL_ALL_INPUT_TYPES(op, kernel, qint32, output_type); \
   REGISTER_NATIVE_KERNEL_ALL_INPUT_TYPES(op, kernel, quint8, output_type); \
   REGISTER_NATIVE_KERNEL_ALL_INPUT_TYPES(op, kernel, qint8, output_type);
@@ -97,6 +102,9 @@ REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
     "_ITEXQuantizedFusedMatMulAndDequantize", QuantizedFusedMatMulOp,
     Eigen::bfloat16);
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
+    "_ITEXQuantizedFusedMatMulAndDequantize", QuantizedFusedMatMulOp,
+    Eigen::half);
+REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
     "_ITEXQuantizedFusedMatMulAndRequantize", QuantizedFusedMatMulOp, quint8);
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
     "_ITEXQuantizedFusedMatMulAndRequantize", QuantizedFusedMatMulOp, qint8);
@@ -109,6 +117,8 @@ REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
     "_QuantizedFusedMatMulAndDequantize", QuantizedFusedMatMulOp,
     Eigen::bfloat16);
+REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
+    "_QuantizedFusedMatMulAndDequantize", QuantizedFusedMatMulOp, Eigen::half);
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
     "_QuantizedFusedMatMulAndRequantize", QuantizedFusedMatMulOp, quint8);
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES(
@@ -144,6 +154,9 @@ REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_ITEXQuantizedMatMul",
                                                 Eigen::bfloat16);
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_ITEXQuantizedMatMul",
                                                 QuantizedFusedMatMulV2Op,
+                                                Eigen::half);
+REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_ITEXQuantizedMatMul",
+                                                QuantizedFusedMatMulV2Op,
                                                 quint8);
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_ITEXQuantizedMatMul",
                                                 QuantizedFusedMatMulV2Op,
@@ -159,6 +172,9 @@ REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_QuantizedMatMul",
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_QuantizedMatMul",
                                                 QuantizedFusedMatMulV2Op,
                                                 Eigen::bfloat16);
+REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_QuantizedMatMul",
+                                                QuantizedFusedMatMulV2Op,
+                                                Eigen::half);
 REGISTER_NATIVE_KERNEL_ALL_INPUT_AND_ARGS_TYPES("_QuantizedMatMul",
                                                 QuantizedFusedMatMulV2Op,
                                                 quint8);

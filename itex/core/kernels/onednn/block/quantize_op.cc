@@ -558,6 +558,8 @@ REGISTER_KERNEL(float, qint8);
 REGISTER_KERNEL(float, quint8);
 REGISTER_KERNEL(Eigen::bfloat16, qint8);
 REGISTER_KERNEL(Eigen::bfloat16, quint8);
+REGISTER_KERNEL(Eigen::half, qint8);
+REGISTER_KERNEL(Eigen::half, quint8);
 #undef REGISTER_KERNEL
 
 #else
@@ -572,6 +574,8 @@ REGISTER_KERNEL(float, qint8);
 REGISTER_KERNEL(float, quint8);
 REGISTER_KERNEL(Eigen::bfloat16, qint8);
 REGISTER_KERNEL(Eigen::bfloat16, quint8);
+REGISTER_KERNEL(Eigen::half, qint8);
+REGISTER_KERNEL(Eigen::half, quint8);
 #undef REGISTER_KERNEL
 
 #endif  // INTEL_CPU_ONLY

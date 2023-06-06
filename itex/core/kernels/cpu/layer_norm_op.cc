@@ -30,6 +30,7 @@ namespace itex {
                           LayerNormOp<CPUDevice, T, U>);
 REGISTER_LAYERNORM_CPU(float, float);
 REGISTER_LAYERNORM_CPU(Eigen::bfloat16, float);
+REGISTER_LAYERNORM_CPU(Eigen::half, float);
 #undef REGISTER_LAYERNORM_CPU
 
 #define REGISTER_LAYERNORM_GRAD_CPU(T, U)                    \
@@ -45,6 +46,7 @@ REGISTER_LAYERNORM_CPU(Eigen::bfloat16, float);
                           LayerNormGradOp<CPUDevice, T, U>);
 REGISTER_LAYERNORM_GRAD_CPU(float, float);
 REGISTER_LAYERNORM_GRAD_CPU(Eigen::bfloat16, float);
+REGISTER_LAYERNORM_GRAD_CPU(Eigen::half, float);
 #undef REGISTER_LAYERNORM_GRAD_CPU
 
 #define REGISTER_MKLLAYERNORM_CPU(T, U)                                    \
@@ -53,6 +55,7 @@ REGISTER_LAYERNORM_GRAD_CPU(Eigen::bfloat16, float);
       LayerNormOp<CPUDevice, T, U, true>);
 REGISTER_MKLLAYERNORM_CPU(float, float);
 REGISTER_MKLLAYERNORM_CPU(Eigen::bfloat16, Eigen::bfloat16);
+REGISTER_MKLLAYERNORM_CPU(Eigen::half, Eigen::half);
 #undef REGISTER_MKLLAYERNORM_CPU
 
 }  // namespace itex

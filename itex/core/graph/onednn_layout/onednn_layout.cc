@@ -848,6 +848,12 @@ Status RunOneDnnLayout(OptimizerContext* opt_ctx, const GrapplerItem& item,
     // Check if node can run on current optimizer device.
     if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) continue;
 
+    // Check if node is fp16 and supported on device.
+    if (NodeIsOnCpu(node_def) &&
+        GetDataTypeFromAttr(*node_def, "T") == DT_HALF &&
+        !port::HasCpuFP16Support())
+      continue;
+
     // Don't rewrite fetch node because layout will insert `OneDnnToTf` op
     // behind it and break the fetch node dependency.
     // TODO(itex): Rewrite fetch nodes if meeting performance regression.

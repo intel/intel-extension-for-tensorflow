@@ -50,7 +50,7 @@ class ReluTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testNpRelu(self):
-    self.assertAllClose(
+    self.assertAllCloseAccordingToType(
       np.array([[0.0, 0.7, 0.0, 0.3, 0.0], [0.1, 0.0, 0.5, 0.0, 0.9]]),
       self._npRelu(
         np.array([[-0.9, 0.7, -0.5, 0.3, -0.1], [0.1, -0.3, 0.5, -0.7,
@@ -62,7 +62,7 @@ class ReluTest(test.TestCase):
     z = np_features * 0.
     z = z.astype(np_features.dtype)
     tf_relu = array_ops.identity(nn_ops.relu(math_ops.add_n([np_features, z])))
-    self.assertAllClose(np_relu, tf_relu)
+    self.assertAllCloseAccordingToType(np_relu, tf_relu)
     self.assertShapeEqual(np_relu, tf_relu)
 
   @test_util.run_deprecated_v1
@@ -88,7 +88,7 @@ class ReluTest(test.TestCase):
   #   inputs = np.array([[-50, 7, 23, 0], [-1, -5, 6, 11]])
   #   np_relu = self._npRelu(inputs)
   #   tf_relu = nn_ops.relu(constant_op.constant(inputs, dtypes.qint8))
-  #   self.assertAllClose(np_relu, tf_relu)
+  #   self.assertAllCloseAccordingToType(np_relu, tf_relu)
   #   self.assertShapeEqual(np_relu, tf_relu)
 
   # @test_util.disable_xla("b/123338077")  # Passes with XLA
@@ -163,7 +163,7 @@ class ReluTest(test.TestCase):
     # values are randomly generated for each run.
     for _ in xrange(100):
       d32, d16 = f()
-      self.assertAllClose(d32, d16, atol=3e-4)
+      self.assertAllCloseAccordingToType(d32, d16, atol=3e-4)
 
   @test_util.run_deprecated_v1
   def testGradientFloat64(self):
@@ -226,7 +226,7 @@ class ReluTest(test.TestCase):
   #     learning_rate=0.25)
   #   self.evaluate(variables.global_variables_initializer())
   #   self.evaluate(optimizer.minimize(loss))
-  #   self.assertAllClose(x.read_value(), 50.0)
+  #   self.assertAllCloseAccordingToType(x.read_value(), 50.0)
 
   @test_util.run_deprecated_v1
   def testGradientNoElement(self):
@@ -250,7 +250,7 @@ class LeakyReluTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testNpLeakyRelu(self):
-    self.assertAllClose(
+    self.assertAllCloseAccordingToType(
       np.array([[-0.09, 0.7, -0.05, 0.3, -0.01],
             [0.1, -0.03, 0.5, -0.07, 0.9]]),
       self._npLeakyRelu(
@@ -265,7 +265,7 @@ class LeakyReluTest(test.TestCase):
     z = z.astype(np_features.dtype)
     tf_leaky_relu = array_ops.identity(
       nn_ops.leaky_relu(math_ops.add_n([np_features, z]), alpha))
-    self.assertAllClose(np_leaky_relu, tf_leaky_relu)
+    self.assertAllCloseAccordingToType(np_leaky_relu, tf_leaky_relu)
     self.assertShapeEqual(np_leaky_relu, tf_leaky_relu)
 
   @test_util.run_deprecated_v1
@@ -338,7 +338,7 @@ class LeakyReluTest(test.TestCase):
   #     learning_rate=0.2)
   #   self.evaluate(variables.global_variables_initializer())
   #   self.evaluate(optimizer.minimize(loss))
-  #   self.assertAllClose(x.read_value(), -99.9)
+  #   self.assertAllCloseAccordingToType(x.read_value(), -99.9)
 
 @test_util.run_all_in_native_and_block_format
 class Relu6Test(test.TestCase):
@@ -352,7 +352,7 @@ class Relu6Test(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testNpRelu6(self):
-    self.assertAllClose(
+    self.assertAllCloseAccordingToType(
       np.array([[0.0, 0.7, 0.0, 0.3, 6.0], [0.1, 0.0, 6.0, 0.0, 0.9]]),
       self._npRelu6(
         np.array([[-0.9, 0.7, -0.5, 0.3, 6.0], [0.1, -0.3, 6.5, -0.7,
@@ -364,7 +364,7 @@ class Relu6Test(test.TestCase):
     z = np_features * 0.
     z = z.astype(np_features.dtype)
     tf_relu6 = array_ops.identity(nn_ops.relu6(math_ops.add_n([np_features, z])))
-    self.assertAllClose(np_relu6, tf_relu6)
+    self.assertAllCloseAccordingToType(np_relu6, tf_relu6)
     self.assertShapeEqual(np_relu6, tf_relu6)
 
   @test_util.run_deprecated_v1

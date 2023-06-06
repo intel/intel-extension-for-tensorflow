@@ -418,8 +418,7 @@ class InstanceNormLeakyRelu : public InstanceNormFusion {
         return ret.ToEmpty();
       if (!HasDataType(activation_node, DT_FLOAT) &&
           !HasDataType(activation_node, DT_BFLOAT16) &&
-          !(HasDataType(activation_node, DT_HALF) &&
-            NodeIsOnGpu(activation_node)))
+          !HasDataType(activation_node, DT_HALF))
         return ret.ToEmpty();
     }
     return ret;

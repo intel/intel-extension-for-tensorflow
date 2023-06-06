@@ -726,6 +726,7 @@ REGISTER_MKLLAYERNORM_GPU(Eigen::half);
                           OneDnnLayerNormOp<CPUDevice, T, U>);
 REGISTER_LAYERNORM_CPU(float, float);
 REGISTER_LAYERNORM_CPU(Eigen::bfloat16, float);
+REGISTER_LAYERNORM_CPU(Eigen::half, float);
 #undef REGISTER_LAYERNORM_CPU
 
 #define REGISTER_LAYERNORM_GRAD_CPU(T, U)              \
@@ -744,6 +745,7 @@ REGISTER_LAYERNORM_GRAD_CPU(Eigen::bfloat16, float);
       OneDnnLayerNormOp<CPUDevice, T, T, true>);
 REGISTER_MKLLAYERNORM_CPU(float);
 REGISTER_MKLLAYERNORM_CPU(Eigen::bfloat16);
+REGISTER_MKLLAYERNORM_CPU(Eigen::half);
 #undef REGISTER_MKLLAYERNORM_CPU
 
 #endif

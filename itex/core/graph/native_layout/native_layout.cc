@@ -96,7 +96,8 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool},
       {"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll, RewriteMaxPoolGrad},
-      {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll, AlwaysRewrite},
+      {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll,
+       RewriteRandomUniform},
       {"Relu6Grad", "_ITEXRelu6Grad", CopyAttrsAll, RewriteBackwardDataType},
       {"ReluGrad", "_ITEXReluGrad", CopyAttrsAll, RewriteBackwardDataType},
       {"ResizeBilinear", "_ITEXResizeBilinear", CopyAttrsAll, RewriteResize},
@@ -449,6 +450,12 @@ Status RunNativeLayout(OptimizerContext* opt_ctx, const GrapplerItem& item,
 
     // Check if node can run on current optimizer device.
     if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) continue;
+
+    // Check if node is fp16 and supported on device.
+    if (NodeIsOnCpu(node_def) &&
+        GetDataTypeFromAttr(*node_def, "T") == DT_HALF &&
+        !port::HasCpuFP16Support())
+      continue;
 
     const NativeFormatInfo* ri = nullptr;
     // We will first search if node is to be rewritten.

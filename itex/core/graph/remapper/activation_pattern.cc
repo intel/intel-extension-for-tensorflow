@@ -39,8 +39,7 @@ class ActivationFusionBase : public Fusion {
     auto& graph_view = ctx->graph_view;
     auto* node_def = graph_view.GetNode(node_index)->node();
     if (!HasDataType(node_def, DT_FLOAT) &&
-        !HasDataType(node_def, DT_BFLOAT16) &&
-        !(NodeIsOnGpu(node_def) && HasDataType(node_def, DT_HALF)))
+        !HasDataType(node_def, DT_BFLOAT16) && !HasDataType(node_def, DT_HALF))
       return ret;
 
     ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);

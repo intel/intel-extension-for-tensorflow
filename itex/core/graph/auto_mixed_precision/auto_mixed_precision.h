@@ -26,7 +26,12 @@ limitations under the License.
 namespace itex {
 namespace graph {
 
-enum class AutoMixedPrecisionMode { GPU_FLOAT16, GPU_BFLOAT16, CPU_BFLOAT16 };
+enum class AutoMixedPrecisionMode {
+  GPU_FLOAT16,
+  GPU_BFLOAT16,
+  CPU_FLOAT16,
+  CPU_BFLOAT16
+};
 
 Status RunAutoMixedPrecision(OptimizerContext* opt_ctx,
                              const GrapplerItem& item,

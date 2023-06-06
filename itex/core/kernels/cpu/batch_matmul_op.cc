@@ -53,6 +53,8 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_BATCH_MATMUL_CPU);
   REGISTER_NATIVE_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, float, is_v2,           \
                                            output_type_name);                  \
   REGISTER_NATIVE_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::bfloat16, is_v2, \
+                                           output_type_name);                  \
+  REGISTER_NATIVE_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::half, is_v2,     \
                                            output_type_name);
 
 // Concrete Native BatchMatMul INT8 V1 API (deprecated) kernel implementation

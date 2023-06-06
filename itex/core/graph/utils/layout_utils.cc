@@ -66,12 +66,12 @@ bool RewriteCast(const utils::MutableNodeView& node_view) {
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "SrcT", &T));
   if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
+        T == DataType::DT_HALF))
     return false;
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "DstT", &T));
   if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
+        T == DataType::DT_HALF))
     return false;
 
   return RewriteWithBlockInput(node_view);
@@ -294,6 +294,16 @@ bool RewriteMaxPoolGrad(const utils::MutableNodeView& node_view) {
   return false;
 }
 
+bool RewriteRandomUniform(const utils::MutableNodeView& node_view) {
+  const NodeDef& node_def = *(node_view.node());
+
+  // CPU _ITEXRandomUniform doesn't support fp16.
+  DataType T;
+  ITEX_CHECK_OK(GetNodeAttr(node_def, "dtype", &T));
+  if (NodeIsOnCpu(&node_def) && T == DT_HALF) return false;
+  return true;
+}
+
 bool RewriteQuantize(const utils::MutableNodeView& node_view) {
   // TODO(itex): in intel-tf constant input data is not rewrite. Not sure
   // why there is such setting. In plugin, we allow such rewrite to enable
@@ -360,12 +370,12 @@ bool RewriteNativeCast(const utils::MutableNodeView& node_view) {
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "SrcT", &T));
   if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
+        T == DataType::DT_HALF))
     return false;
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "DstT", &T));
   if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
+        T == DataType::DT_HALF))
     return false;
 
   return true;
@@ -747,7 +757,7 @@ bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def) {
   }
 
   return (T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-          (T == DataType::DT_HALF && NodeIsOnGpu(&node_def)));
+          T == DataType::DT_HALF);
 }
 
 OpDef GetOpDef(const NodeDef& node_def) {

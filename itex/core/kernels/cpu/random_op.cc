@@ -32,7 +32,7 @@ namespace itex {
       PhiloxRandomOp<CPUDevice, random::UniformDistribution< \
                                     random::PhiloxRandom, TYPE>>);
 
-TF_CALL_CPU_NUMBER_TYPES(REGISTER_RANDOM_KERNEL);
+TF_CALL_CPU_NUMBER_TYPES_WITHOUT_HALF(REGISTER_RANDOM_KERNEL);
 #undef REGISTER_RANDOM_KERNEL
 
 }  // namespace itex

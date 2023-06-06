@@ -577,7 +577,7 @@ TF_CALL_bfloat16(REGISTER_MATMUL_GRAD_GPU);
                               .TypeConstraint<float>("Tpost"),      \
                           MatMulOp<GPUDevice, TYPE, float, float>);
 
-TF_CALL_CPU_NUMBER_TYPES(REGISTER_BF32MATMUL_GPU);
+TF_CALL_CPU_NUMBER_TYPES_WITHOUT_HALF(REGISTER_BF32MATMUL_GPU);
 #undef REGISTER_BF32MATMUL_GPU
 
 #define REGISTER_BF32MATMUL_GPU(TYPE)                                         \

@@ -92,7 +92,7 @@ class FusedRandomOp : public OpKernel {
                               .TypeConstraint<TYPE>("DstT"), \
                           FusedRandomOp<CPUDevice, TYPE>);
 
-TF_CALL_CPU_NUMBER_TYPES(REGISTER_FUSED_RANDOM_KERNEL);
+TF_CALL_CPU_NUMBER_TYPES_WITHOUT_HALF(REGISTER_FUSED_RANDOM_KERNEL);
 #undef REGISTER_FUSED_RANDOM_KERNEL
 
 }  // namespace itex

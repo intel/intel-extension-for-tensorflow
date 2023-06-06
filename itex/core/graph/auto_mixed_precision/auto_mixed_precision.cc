@@ -37,6 +37,7 @@ limitations under the License.
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/symbolic_shapes.h"
 #include "itex/core/graph/utils/utils.h"
+#include "itex/core/utils/cpu_info.h"
 #include "itex/core/utils/device_name_utils.h"
 #include "itex/core/utils/env_time.h"
 #include "itex/core/utils/function.h"
@@ -83,14 +84,22 @@ Status GetAutoMixedPrecisionMode(const char* device_name,
     mode_type = absl::AsciiStrToUpper(mode_type);
   }
 
-  // Set AutoMixedPrecision mode on CPU device. CPU only support BF16.
+  // Set AutoMixedPrecision mode on CPU device. CPU support BF16 and FP16.
   if (device_name == DEVICE_CPU) {
-    if (mode_type == "BFLOAT16") {
+    if (mode_type == "FLOAT16") {
+      if (port::HasCpuFP16Support()) {
+        *model = AutoMixedPrecisionMode::CPU_FLOAT16;
+      } else {
+        return errors::InvalidArgument(
+            "Auto Mixed Precision data type should be set BFLOAT16, "
+            "Because user's CPU only support bfloat16 data type.");
+      }
+    } else if (mode_type == "BFLOAT16") {
       *model = AutoMixedPrecisionMode::CPU_BFLOAT16;
     } else {
       return errors::InvalidArgument(
-          "Auto Mixed Precision data type should be set BFLOAT16, "
-          "Because CPU only support bfloat16 data type.");
+          "Auto Mixed Precision data type should be set BFLOAT16 or "
+          "FLOAT16.");
     }
   }
   // Set AutoMixedPrecision mode on GPU device. GPUs support BF16 and FP16.
@@ -637,7 +646,8 @@ class AutoMixedPrecisionImpl {
         function_library_(*graph),
         graph_view_(graph),
         mode_(mode),
-        target_dtype_(mode_ == AutoMixedPrecisionMode::GPU_FLOAT16
+        target_dtype_((mode_ == AutoMixedPrecisionMode::GPU_FLOAT16 ||
+                       mode_ == AutoMixedPrecisionMode::CPU_FLOAT16)
                           ? DT_HALF
                           : DT_BFLOAT16) {}
 
@@ -651,6 +661,8 @@ class AutoMixedPrecisionImpl {
         return absl::make_unique<AutoMixedPrecisionListsGPU>();
       case AutoMixedPrecisionMode::GPU_BFLOAT16:
         return absl::make_unique<AutoMixedPrecisionListsGPU>();
+      case AutoMixedPrecisionMode::CPU_FLOAT16:
+        return absl::make_unique<AutoMixedPrecisionListsCPU>();
       case AutoMixedPrecisionMode::CPU_BFLOAT16:
         return absl::make_unique<AutoMixedPrecisionListsCPU>();
       default:
@@ -997,6 +1009,9 @@ Status AutoMixedPrecisionImpl::Optimize() {
         break;
       case AutoMixedPrecisionMode::GPU_BFLOAT16:
         should_process = !MustPreserve(node) && IsOnDevice(node, DEVICE_XPU);
+        break;
+      case AutoMixedPrecisionMode::CPU_FLOAT16:
+        should_process = !MustPreserve(node) && IsOnDevice(node, DEVICE_CPU);
         break;
       case AutoMixedPrecisionMode::CPU_BFLOAT16:
         should_process = !MustPreserve(node) && IsOnDevice(node, DEVICE_CPU);

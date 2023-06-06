@@ -137,6 +137,9 @@ enum CPUFeature {
   AMX_TILE = 41,  // Tile configuration and load/store
   AMX_INT8 = 42,  // Int8 tile matrix multiplication
   AMX_BF16 = 43,  // Bfloat16 tile matrix multiplication
+
+  AVX512_FP16 = 44,  // Float16 neural network
+  AMX_FP16 = 45,     // Float16 tile matrix multiplication
 };
 
 // Checks whether the current processor supports one of the features above.
@@ -157,6 +160,8 @@ int CPUModelNum();
 
 // Returns num of hyperthreads per physical core
 int CPUIDNumSMT();
+
+bool HasCpuFP16Support();
 
 }  // namespace port
 }  // namespace itex

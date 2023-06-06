@@ -1125,6 +1125,7 @@ REGISTER_FUSED_BATCHNORM_GRAD_GPU(Eigen::bfloat16, float);
       OneDnnFusedBatchNormOp<CPUDevice, T, U, true, true>);
 REGISTER_FUSED_BATCHNORM_CPU(float, float);
 REGISTER_FUSED_BATCHNORM_CPU(Eigen::bfloat16, float);
+REGISTER_FUSED_BATCHNORM_CPU(Eigen::half, float);
 #undef REGISTER_FUSED_BATCHNORM_CPU
 
 #define REGISTER_FUSED_BATCHNORM_GRAD_CPU(T, U)                   \
@@ -1153,6 +1154,7 @@ REGISTER_FUSED_BATCHNORM_CPU(Eigen::bfloat16, float);
       OneDnnFusedBatchNormGradOp<CPUDevice, T, U, true, true>);
 REGISTER_FUSED_BATCHNORM_GRAD_CPU(float, float);
 REGISTER_FUSED_BATCHNORM_GRAD_CPU(Eigen::bfloat16, float);
+REGISTER_FUSED_BATCHNORM_GRAD_CPU(Eigen::half, float);
 #undef REGISTER_FUSED_BATCHNORM_GRAD_CPU
 #endif
 }  // namespace itex

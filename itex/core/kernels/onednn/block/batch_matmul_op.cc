@@ -530,16 +530,10 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL);
 #define REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, output_type) \
   REGISTER_ONEDNN_KERNEL(op, kernel, qint8, qint8, output_type);
 
-#ifdef INTEL_CPU_ONLY
-#define REGISTER_ONEDNN_KERNEL_ALL_OUTPUT_TYPES(op, kernel)    \
-  REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, float); \
-  REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::bfloat16);
-#else
 #define REGISTER_ONEDNN_KERNEL_ALL_OUTPUT_TYPES(op, kernel)              \
   REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, float);           \
   REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::bfloat16); \
   REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::half);
-#endif  // INTEL_CPU_ONLY
 
 // Concrete OneDnn BatchnMatMul INT8 kernel implementation
 #define TEMPLATE_ARGS(Device, lhs_type, rhs_type, output_type) \

@@ -28,6 +28,11 @@ namespace itex {
   REGISTER_KERNEL_BUILDER(Name("_ITEXDequantize")                          \
                               .Device(DEVICE_CPU)                          \
                               .TypeConstraint<TYPE>("T")                   \
+                              .TypeConstraint<Eigen::half>("dtype"),       \
+                          DequantizeOp<CPUDevice, TYPE, Eigen::half>);     \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXDequantize")                          \
+                              .Device(DEVICE_CPU)                          \
+                              .TypeConstraint<TYPE>("T")                   \
                               .TypeConstraint<float>("dtype"),             \
                           DequantizeOp<CPUDevice, TYPE, float>);
 TF_CALL_qint8(REGISTER_KERNEL);

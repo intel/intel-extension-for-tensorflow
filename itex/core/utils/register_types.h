@@ -107,7 +107,12 @@ const int CPU_PRIORITY = 1;
 #define TF_CALL_POD_TYPES(m) TF_CALL_NUMBER_TYPES(m) TF_CALL_bool(m)
 
 // Call "m" on all number types supported on CPU.
-#define TF_CALL_CPU_NUMBER_TYPES(m) TF_CALL_float(m) TF_CALL_bfloat16(m)
+#define TF_CALL_CPU_NUMBER_TYPES(m) \
+  TF_CALL_float(m) TF_CALL_bfloat16(m) TF_CALL_half(m)
+
+// Call "m" on all number types supported on CPU without half.
+#define TF_CALL_CPU_NUMBER_TYPES_WITHOUT_HALF(m) \
+  TF_CALL_float(m) TF_CALL_bfloat16(m)
 
 // Call "m" on all number types supported on GPU.
 #define TF_CALL_GPU_NUMBER_TYPES(m) \

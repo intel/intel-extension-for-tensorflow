@@ -17,22 +17,23 @@ limitations under the License.
 
 namespace itex {
 
-REGISTER2(BinaryOp, CPU, "_ITEXEqualWithCast", functor::equal_to_with_cast,
-          float, Eigen::bfloat16);
+REGISTER3(BinaryOp, CPU, "_ITEXEqualWithCast", functor::equal_to_with_cast,
+          float, Eigen::bfloat16, Eigen::half);
 
-REGISTER2(BinaryOp, CPU, "_ITEXGreaterEqualWithCast",
-          functor::greater_equal_with_cast, float, Eigen::bfloat16);
+REGISTER3(BinaryOp, CPU, "_ITEXGreaterEqualWithCast",
+          functor::greater_equal_with_cast, float, Eigen::bfloat16,
+          Eigen::half);
 
-REGISTER2(BinaryOp, CPU, "_ITEXGreaterWithCast", functor::greater_with_cast,
-          float, Eigen::bfloat16);
+REGISTER3(BinaryOp, CPU, "_ITEXGreaterWithCast", functor::greater_with_cast,
+          float, Eigen::bfloat16, Eigen::half);
 
-REGISTER2(BinaryOp, CPU, "_ITEXLessEqualWithCast",
-          functor::less_equal_with_cast, float, Eigen::bfloat16);
+REGISTER3(BinaryOp, CPU, "_ITEXLessEqualWithCast",
+          functor::less_equal_with_cast, float, Eigen::bfloat16, Eigen::half);
 
-REGISTER2(BinaryOp, CPU, "_ITEXLessWithCast", functor::less_with_cast, float,
-          Eigen::bfloat16);
+REGISTER3(BinaryOp, CPU, "_ITEXLessWithCast", functor::less_with_cast, float,
+          Eigen::bfloat16, Eigen::half);
 
-REGISTER2(BinaryOp, CPU, "_ITEXNotEqualWithCast",
-          functor::not_equal_to_with_cast, float, Eigen::bfloat16);
+REGISTER3(BinaryOp, CPU, "_ITEXNotEqualWithCast",
+          functor::not_equal_to_with_cast, float, Eigen::bfloat16, Eigen::half);
 
 }  // namespace itex

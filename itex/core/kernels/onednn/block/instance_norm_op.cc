@@ -359,6 +359,7 @@ REGISTER_INSTANCE_NORM_GPU(Eigen::half, float);
                           OneDnnInstanceNormOp<CPUDevice, T, U, true>);
 REGISTER_INSTANCE_NORM_CPU(float, float);
 REGISTER_INSTANCE_NORM_CPU(Eigen::bfloat16, float);
+REGISTER_INSTANCE_NORM_CPU(Eigen::half, float);
 #undef REGISTER_INSTANCE_NORM_CPU
 
 #endif
