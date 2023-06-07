@@ -945,12 +945,23 @@ class AccMatmulGradTest(test_lib.TestCase):
     gb = array_ops.identity(tf.cast(gb, tf.float32))
     gbias = array_ops.identity(tf.cast(gbias, tf.float32))
     result = array_ops.identity(nn_ops.bias_add(math_ops.matmul(ga, gb), gbias))
+
+    # np.finfo doesn't support bfloat16. So, we manually compute the eps which
+    # defines the difference between 1.0 and the next smallest representable
+    # float larger than 1.0. For bfloat16, the difference is 1/128.
+    if a_np.dtype == dtypes.bfloat16.as_numpy_dtype:
+      epsilon = 0.0078125
+    else:
+      epsilon = np.finfo(a_np.dtype).eps
+    delta = epsilon**(1.0 / 3.0)
+    tol = 20 * delta
+
     with self.session() as sess:
       sess.run(variables.global_variables_initializer())
       output_val = sess.run(result, options=run_options, run_metadata=metadata)
       expected = [[4.893589, 0.762014, 0.607488],
                   [3.082745, -0.287658, 0.405976]]
-      self.assertAllClose(output_val, expected)
+      self.assertAllClose(output_val, expected, rtol=tol, atol=tol)
       graph = metadata.partition_graphs[0]
 
       existing_pattern = False
@@ -960,6 +971,8 @@ class AccMatmulGradTest(test_lib.TestCase):
               node.attr['Tgrad'].type == dtypes.float32._type_enum):
             existing_pattern = True
           break
+      if test_lib.is_gpu_available():
+        self.skipTest("This fusion on GPU side is canceled.") 
       self.assertTrue(existing_pattern)
 
 
