@@ -95,7 +95,9 @@ constexpr char kFusedApplyAdamWithWeightDecay[] =
 constexpr char kFusedAddN[] = "_ITEXFusedAddN";
 constexpr char kFusedApplyMomentum[] = "_ITEXFusedApplyMomentum";
 constexpr char kFusedBatchMatMul[] = "_ITEXFusedBatchMatMulV2";
-constexpr char kFusedBatchNormEx[] = "_FusedBatchNormEx";
+// _ITEXFusedBatchNormEx & _FusedBatchNormEx has different datatype on workspace
+// tensor: uint8 vs U.
+constexpr char kFusedBatchNormEx[] = "_ITEXFusedBatchNormEx";
 constexpr char kFusedBatchNormGradEx[] = "_ITEXFusedBatchNormGradEx";
 constexpr char kFusedBinary[] = "_ITEXFusedBinary";
 constexpr char kFusedConv2D[] = "_ITEXFusedConv2D";
