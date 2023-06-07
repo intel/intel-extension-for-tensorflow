@@ -692,6 +692,8 @@ class LegacyOneDnnQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32,
                    context->GetAttr("transpose_b", &this->transpose_b_));
   }
   void Compute(OpKernelContext* context) override {
+    const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
+    const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
     try {
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
 
@@ -750,6 +752,24 @@ class LegacyOneDnnQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32,
           memory::desc(dst_dims_onednn_order, OneDnnType<Toutput>(),
                        memory::format_tag::any);
 
+      OneDnnShape dst_onednn_shape;
+      int64 dst_data_size = static_cast<int64>(batch) * channel;
+      TensorShape dst_shape = TensorShape({dst_data_size});
+      Tensor* dst_tensor = nullptr;
+
+      if (dst_data_size == 0) {
+        // Early exit for trivial case.
+        this->AllocateEmptyOutputTensor(
+            context, dst_exec_md, dst_dims_onednn_order,
+            OneDnnTensorFormat::FORMAT_NC, &dst_onednn_shape, dst_shape,
+            &dst_tensor);
+        AllocateBlockOutputMinMax<Tinput, Tweight, Toutput>(
+            context, min_input, max_input, kFilterMinRangeIndex,
+            kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
+            kDstMinRangeIndex, kDstMaxRangeIndex);
+        return;
+      }
+
       // Note: Extend the basic parameters for data types and fusions.
       this->ExtendInt8PostOps(context);
 
@@ -764,11 +784,6 @@ class LegacyOneDnnQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32,
       auto fwd_primitive = dnnl::inner_product_forward(fwd_pd);
 
       // Allocate output Tensor.
-      OneDnnShape dst_onednn_shape;
-      int64 dst_data_size = fwd_pd.dst_desc().get_size() / sizeof(Toutput);
-      TensorShape dst_shape = TensorShape({dst_data_size});
-
-      Tensor* dst_tensor = nullptr;
       this->AllocateOutputTensor(context, fwd_pd, dst_dims_onednn_order,
                                  OneDnnTensorFormat::FORMAT_NC,
                                  &dst_onednn_shape, dst_shape, &dst_tensor);
@@ -901,9 +916,6 @@ class LegacyOneDnnQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32,
           errors::Aborted("Operation received an exception:", error_msg));
     }
 
-    const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
-    const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
-
     AllocateBlockOutputMinMax<Tinput, Tweight, Toutput>(
         context, min_input, max_input, kFilterMinRangeIndex,
         kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
@@ -992,6 +1004,21 @@ class LegacyOneDnnQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32,
       AllocateOutputSetOneDnnShape(context, kOutputIndex_Dst, dst_tensor,
                                    tensor_shape, *dst_onednn_shape);
     }
+  }
+
+  // Allocate empty output tensor.
+  virtual void AllocateEmptyOutputTensor(
+      OpKernelContext* context, const dnnl::memory::desc& dst_md_onednn,
+      const dnnl::memory::dims& dst_dims_onednn,
+      OneDnnTensorFormat dst_tf_format, OneDnnShape* dst_onednn_shape,
+      TensorShape tensor_shape, Tensor** dst_tensor) {
+    ITEX_DCHECK(dst_tensor);
+
+    SetOutputTensorShape(dst_md_onednn, dst_tf_format, &tensor_shape,
+                         dst_onednn_shape, true /*is_onednn*/);
+
+    AllocateOutputSetOneDnnShape(context, kOutputIndex_Dst, dst_tensor,
+                                 tensor_shape, *dst_onednn_shape);
   }
 
   void ComputeOutputRangeForInt32(OpKernelContext* context,
