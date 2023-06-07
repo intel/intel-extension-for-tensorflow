@@ -518,11 +518,18 @@ itex_xpu_library(
 itex_xpu_library(
     name = "dynamic_partition_op",
     srcs = ["dynamic_partition_op.cc"],
+    hdrs = [
+        "gather_functor.h",
+        "topk_op.h",
+        "unique_op.h",
+        "unique_op_helpers.h",
+    ],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
     ],
     alwayslink = True,
 )
@@ -2084,8 +2091,7 @@ GPU_KERNELS = [
     ":dilation_op",
     ":diag_op",
     ":dynamic_stitch_op",
-    # TODO(itex): Temporarily disable DynamicPartition op as its gpu implementation needs refactor.
-    # ":dynamic_partition_op"
+    ":dynamic_partition_op",
     ":extract_image_patches_op",
     ":extract_volume_patches_op",
     ":fft_ops",
