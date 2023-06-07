@@ -86,6 +86,7 @@ itex_xpu_library(
     name = "concat_op",
     srcs = ["concat_op.cc"],
     hdrs = [
+        "//itex/core/kernels/common:host_data_cache_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
     ],
     copts = tf_copts(),
