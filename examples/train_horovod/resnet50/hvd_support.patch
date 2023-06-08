@@ -227,7 +227,7 @@ index 760b3dce0..3939249b6 100644
  
  @dataclasses.dataclass
 diff --git a/official/vision/image_classification/dataset_factory.py b/official/vision/image_classification/dataset_factory.py
-index a0458eccc..e6dfb39f6 100644
+index a0458eccc..9ff76333b 100644
 --- a/official/vision/image_classification/dataset_factory.py
 +++ b/official/vision/image_classification/dataset_factory.py
 @@ -29,6 +29,7 @@ import tensorflow_datasets as tfds
@@ -247,7 +247,7 @@ index a0458eccc..e6dfb39f6 100644
  
    @property
    def dtype(self) -> tf.dtypes.DType:
-@@ -403,14 +404,10 @@ class DatasetBuilder:
+@@ -403,14 +404,9 @@ class DatasetBuilder:
      Returns:
        A TensorFlow dataset outputting batched images and labels.
      """
@@ -255,22 +255,22 @@ index a0458eccc..e6dfb39f6 100644
 -        self.input_context.num_input_pipelines > 1):
 -      dataset = dataset.shard(self.input_context.num_input_pipelines,
 -                              self.input_context.input_pipeline_id)
-+    if self.is_training:
-+      dataset = dataset.shard(hvd.size(), hvd.rank())
-       logging.info(
+-      logging.info(
 -          'Sharding the dataset: input_pipeline_id=%d '
 -          'num_input_pipelines=%d', self.input_context.num_input_pipelines,
 -          self.input_context.input_pipeline_id)
-+          'Sharding the dataset: total size: %d ', hvd.size(), " local rank: %d ", hvd.rank())
++    if self.is_training:
++      dataset = dataset.shard(hvd.size(), hvd.rank())
++      print("Sharding the dataset: total size: ", hvd.size(), " local rank: ", hvd.rank())
  
      if self.is_training and self.config.builder == 'records':
        # Shuffle the input files.
 diff --git a/official/vision/image_classification/lars_optimizer.py b/official/vision/image_classification/lars_optimizer.py
 new file mode 100644
-index 000000000..45e6a8da2
+index 000000000..e54a9738c
 --- /dev/null
 +++ b/official/vision/image_classification/lars_optimizer.py
-@@ -0,0 +1,241 @@
+@@ -0,0 +1,239 @@
 +# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -304,15 +304,13 @@ index 000000000..45e6a8da2
 +# from tensorflow.python.keras import backend_config
 +# from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 +tf_minor = int(tf.__version__.split('.')[1])
-+if tf_minor >= 9:
-+  from keras.optimizers.optimizer_v2 import optimizer_v2
-+  from keras import backend_config
-+elif tf_minor >= 6:
-+  from keras.optimizer_v2 import optimizer_v2
-+  from keras import backend_config
-+else:
-+  from tensorflow.python.keras.optimizer_v2 import optimizer_v2
-+  from tensorflow.python.keras import backend_config
++if tf_minor >= 7:
++  if tf_minor >= 12:
++    from keras.optimizers.legacy import optimizer_v2
++  elif tf_minor >= 9:
++    from keras.optimizers.optimizer_v2 import optimizer_v2
++  else:
++    from keras.optimizer_v2 import optimizer_v2
 +
 +# class LARSOptimizer(optimizer_v2modified.OptimizerV2Modified):
 +class LARSOptimizer(optimizer_v2.OptimizerV2):
