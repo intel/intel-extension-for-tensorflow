@@ -72,6 +72,19 @@ TF_CALL_double(REGISTER_ELU_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_ELU_GPU_KERNELS
 
+#define REGISTER_RELU_GPU_KERNELS(type)                           \
+  REGISTER_KERNEL_BUILDER(                                        \
+      Name("Relu").Device(DEVICE_GPU).TypeConstraint<type>("T"),  \
+      ReluOp<GPUDevice, type>);                                   \
+  REGISTER_KERNEL_BUILDER(                                        \
+      Name("Relu6").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      Relu6Op<GPUDevice, type>);
+
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_RELU_GPU_KERNELS);
+#endif  // ITEX_ENABLE_DOUBLE
+#undef REGISTER_RELU_GPU_KERNELS
+
 #define REGISTER_GRAD_GPU_KERNELS(type)                                   \
   REGISTER_KERNEL_BUILDER(                                                \
       Name("ReluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
@@ -120,5 +133,18 @@ TF_CALL_double(REGISTER_GPU_KERNELS);
 TF_CALL_double(REGISTER_ELUGRAD_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_ELUGRAD_GPU_KERNELS
+
+#define REGISTER_RELUG_GPU_KERNELS(type)                              \
+  REGISTER_KERNEL_BUILDER(                                            \
+      Name("ReluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),  \
+      ReluGradOp<GPUDevice, type>);                                   \
+  REGISTER_KERNEL_BUILDER(                                            \
+      Name("Relu6Grad").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      Relu6GradOp<GPUDevice, type>);
+
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_RELUG_GPU_KERNELS);
+#endif  // ITEX_ENABLE_DOUBLE
+#undef REGISTER_RELUG_GPU_KERNELS
 
 }  // namespace itex
