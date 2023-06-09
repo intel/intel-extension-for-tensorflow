@@ -400,10 +400,10 @@ index 76f3366d7..e4cbafc05 100644
    // output.value = static_cast<uint16_t>(input);
 diff --git a/Eigen/src/Core/arch/DPCPP/BFloat16.h b/Eigen/src/Core/arch/DPCPP/BFloat16.h
 new file mode 100644
-index 000000000..12ae9bd43
+index 000000000..dd2ac3641
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/BFloat16.h
-@@ -0,0 +1,697 @@
+@@ -0,0 +1,727 @@
 +/* Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 +
 +Licensed under the Apache License, Version 2.0 (the "License");
@@ -469,10 +469,36 @@ index 000000000..12ae9bd43
 +
 +  template<class T>
 +  explicit EIGEN_DEVICE_FUNC bfloat16(const T& val)
-+      : bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<internal::is_integral<T>::value>(static_cast<float>(val))) {}
-+  
++      :
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++        bfloat16_impl::bfloat16_base(__bfloat16_raw(sycl::bit_cast<uint16_t>(sycl::ext::oneapi::bfloat16(static_cast<float>(val)))))
++#else
++        bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<internal::is_integral<T>::value>(static_cast<float>(val)))
++#endif
++{
++}
++
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++  template<>
++  explicit EIGEN_DEVICE_FUNC bfloat16(const sycl::ext::oneapi::bfloat16& val)
++      : bfloat16_impl::bfloat16_base(__bfloat16_raw(*reinterpret_cast<const unsigned short*>(&val))) {}
++
++  EIGEN_DEVICE_FUNC operator sycl::ext::oneapi::bfloat16() const {
++     return *reinterpret_cast<const sycl::ext::oneapi::bfloat16*>(this); 
++  }
++#endif
++
++
 +  explicit EIGEN_DEVICE_FUNC bfloat16(float f)
-+      : bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<false>(f)) {}
++      :
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++        bfloat16_impl::bfloat16_base(__bfloat16_raw(sycl::bit_cast<uint16_t>(sycl::ext::oneapi::bfloat16(f))))
++#else
++        bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<false>(f))
++#endif
++{
++}
++
 +
 +  // Following the convention of numpy, converting between complex and
 +  // float will lead to loss of imag value.
@@ -481,7 +507,11 @@ index 000000000..12ae9bd43
 +      : bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<false>(static_cast<float>(val.real()))) {}
 +
 +  EIGEN_DEVICE_FUNC operator float() const {  // NOLINT: Allow implicit conversion to float, because it is lossless.
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++    return float(*reinterpret_cast<const sycl::ext::oneapi::bfloat16*>(this));
++#else
 +    return bfloat16_impl::bfloat16_to_float(*this);
++#endif
 +  }
 +
 +#if EIGEN_HAS_CXX11
