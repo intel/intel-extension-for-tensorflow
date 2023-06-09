@@ -1343,8 +1343,13 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
 
   for (auto const& bias_out : node_view->GetRegularFanouts()) {
     for (auto const bias_out_i : bias_out) {
-      matched->bias_add_grad_outs.push_back(
-          bias_out_i.node_view()->node_index());
+      if (find(matched->bias_add_grad_outs.begin(),
+               matched->bias_add_grad_outs.end(),
+               bias_out_i.node_view()->node_index()) ==
+          matched->bias_add_grad_outs.end()) {
+        matched->bias_add_grad_outs.push_back(
+            bias_out_i.node_view()->node_index());
+      }
     }
   }
   return true;
@@ -1403,8 +1408,13 @@ bool FindConvContractionWithBiasAddGrad(const RemapperContext& ctx,
 
   for (auto const& bias_out : node_view->GetRegularFanouts()) {
     for (auto const bias_out_i : bias_out) {
-      matched->bias_add_grad_outs.push_back(
-          bias_out_i.node_view()->node_index());
+      if (find(matched->bias_add_grad_outs.begin(),
+               matched->bias_add_grad_outs.end(),
+               bias_out_i.node_view()->node_index()) ==
+          matched->bias_add_grad_outs.end()) {
+        matched->bias_add_grad_outs.push_back(
+            bias_out_i.node_view()->node_index());
+      }
     }
   }
   return true;
