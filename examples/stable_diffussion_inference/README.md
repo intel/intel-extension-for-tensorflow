@@ -43,6 +43,22 @@ Enable oneAPI running environment (only for GPU) and virtual running environment
 
    * For GPU, refer to [Running](../common_guide_running.md##Running)
 
+### Running the Jupyter Notebook
+   * Add kernel for env_itex environment:
+ ```
+ python3 -m ipykernel install --name env_itex --user
+  ```
+   * Change to the sample directory.
+   * Launch Jupyter Notebook.
+ ```
+ jupyter notebook --no-browser --port=8888 
+  ```
+   * Follow the instructions to open the URL with the token in your browser.
+   * Locate and select the Notebook.
+ ```
+ stable_diffussion_inference.ipynb
+  ```
+   * Run every cell in the Notebook in sequence.
 
 ### Executes the Example with Python API
 #### FP32 Inference
