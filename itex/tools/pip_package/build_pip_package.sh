@@ -68,21 +68,36 @@ function emit_version_info() {
   echo "VERSION = __version__" >> $1
   echo "GIT_VERSION = 'v' + __version__ + '-' + __git_desc__" >> $1
   echo "COMPILER_VERSION = '`get_compiler_version`'" >> $1
+  onednn_version_check=0
   if [ ! -z "${onednn_gpu_path}" ] && [ -f "${onednn_gpu_path}" ]; then
-    onednn_path=${onednn_gpu_path}
-  elif [ ! -z "${onednn_cpu_path}" ] && [ -f ${onednn_cpu_path} ]; then
-    onednn_path=${onednn_cpu_path}
-  elif [ ! -z "${onednn_gpu_v2_path}" ] && [ -f ${onednn_gpu_v2_path} ]; then
-    onednn_path=${onednn_gpu_v2_path}
-  elif [ ! -z "${onednn_cpu_v2_path}" ] && [ -f ${onednn_cpu_v2_path} ]; then
-    onednn_path=${onednn_cpu_v2_path}
-  else
+    onednn_gpu_git_version=`get_onednn_git_version ${onednn_gpu_path}`
+    if [ ${onednn_gpu_git_version} != "none" ]; then
+      echo "ONEDNN_GPU_GIT_VERSION = '${onednn_gpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  elif [ ! -z "${onednn_gpu_v2_path}" ] && [ -f "${onednn_gpu_v2_path}" ]; then
+    onednn_gpu_git_version=`get_onednn_git_version ${onednn_gpu_v2_path}`
+    if [ ${onednn_gpu_git_version} != "none" ]; then
+      echo "ONEDNN_GPU_GIT_VERSION = '${onednn_gpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  fi
+  if [ ! -z "${onednn_cpu_path}" ] && [ -f "${onednn_cpu_path}" ]; then
+    onednn_cpu_git_version=`get_onednn_git_version ${onednn_cpu_path}`
+    if [ ${onednn_cpu_git_version} != "none" ]; then
+      echo "ONEDNN_CPU_GIT_VERSION = '${onednn_cpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  elif [ ! -z "${onednn_cpu_v2_path}" ] && [ -f "${onednn_cpu_v2_path}" ]; then
+    onednn_cpu_git_version=`get_onednn_git_version ${onednn_cpu_v2_path}`
+    if [ ${onednn_cpu_git_version} != "none" ]; then
+      echo "ONEDNN_CPU_GIT_VERSION = '${onednn_cpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  fi
+  if [ $onednn_version_check -eq 0 ]; then
     echo "Error: no oneDNN version files"
     exit -1
-  fi
-  onednn_git_version=`get_onednn_git_version ${onednn_path}`
-  if [ ${onednn_git_version} != "none" ]; then
-    echo "ONEDNN_GIT_VERSION = '${onednn_git_version}'" >> $1
   fi
   echo "TF_COMPATIBLE_VERSION = '>= 2.8.0'" >> $1
 }

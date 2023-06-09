@@ -80,7 +80,7 @@ def find_dpcpp_root(repository_ctx):
     """Find DPC++ compiler."""
     sycl_name = ""
     if _DPCPP_TOOLKIT_PATH in repository_ctx.os.environ:
-        sycl_name = repository_ctx.os.environ[_DPCPP_TOOLKIT_PATH].strip()
+        sycl_name = str(repository_ctx.path(repository_ctx.os.environ[_DPCPP_TOOLKIT_PATH].strip()).realpath)
     if sycl_name.startswith("/"):
         return sycl_name
     fail("Cannot find DPC++ compiler, please correct your path")
@@ -98,7 +98,7 @@ def find_dpcpp_include_path(repository_ctx):
     real_base_path = str(repository_ctx.path(base_path).realpath).strip()
     include_dirs = []
     for l in outlist:
-        if l.startswith(" ") and l.strip().startswith("/"):
+        if l.startswith(" ") and l.strip().startswith("/") and str(repository_ctx.path(l.strip()).realpath) not in include_dirs:
             include_dirs.append(str(repository_ctx.path(l.strip()).realpath))
     return include_dirs
 

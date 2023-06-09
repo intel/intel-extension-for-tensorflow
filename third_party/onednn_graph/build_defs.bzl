@@ -1,3 +1,5 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
 def if_llga_debug(if_true, if_false = []):
     """Shorthand for select()' on whether DEBUG mode LLGA is used.
 
@@ -27,7 +29,7 @@ def onednn_graph_deps():
       a select evaluating to a list of library dependencies, suitable for
       inclusion in the deps attribute of rules.
     """
-    return select({
-        str(Label("//third_party/build_option/dpcpp:build_with_dpcpp")): ["@onednn_graph//:onednn_graph_gpu"],
+    return selects.with_or({
+        (str(Label("//third_party/build_option/dpcpp:build_with_dpcpp")), "@intel_extension_for_tensorflow//itex:gpu_build"): ["@onednn_graph//:onednn_graph_gpu"],
         "//conditions:default": ["@onednn_graph//:onednn_graph_cpu"],
     })

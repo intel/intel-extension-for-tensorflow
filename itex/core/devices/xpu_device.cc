@@ -13,6 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef CC_BUILD
+#include "itex/core/devices/xpu_device.h"
+#endif
+
 #include "itex/core/devices/device_backend_util.h"
 #include "itex/core/utils/types.h"
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
@@ -776,8 +780,13 @@ void SE_InitXPUPluginFns(SE_PlatformRegistrationParams* const params,
 
 }  // namespace itex
 
+#ifndef CC_BUILD
+void SE_InitPlugin_Internal(SE_PlatformRegistrationParams* const params,
+                            TF_Status* const status) {
+#else
 void SE_InitPlugin(SE_PlatformRegistrationParams* const params,
                    TF_Status* const status) {
+#endif
   params->platform->struct_size = SP_PLATFORM_STRUCT_SIZE;
   params->platform->name = DEVICE_XPU_NAME;
   params->platform->type = itex::DEVICE_XPU;

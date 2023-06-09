@@ -35,7 +35,8 @@ namespace itex {
   REGISTER_KERNEL_BUILDER(Name("Conv3DBackpropFilterV2")                      \
                               .Device(DEVICE_GPU)                             \
                               .TypeConstraint<T>("T")                         \
-                              .HostMemory("filter_sizes"),                    \
+                              .HostMemory("filter_sizes")                     \
+                              .Priority(1),                                   \
                           ConvBackpropFilterOp<GPUDevice, T>);                \
   REGISTER_KERNEL_BUILDER(Name("_ITEXConv3DBackpropFilterWithBias")           \
                               .Device(DEVICE_GPU)                             \

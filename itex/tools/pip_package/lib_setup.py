@@ -71,7 +71,7 @@ if is_cpu and not is_gpu:
 elif not is_cpu and is_gpu:
   _VERSION = _VERSION + ".1"
 elif is_cpu and is_gpu:
-  raise Exception("This version does not yet support both CPU and GPU.")
+  _VERSION = _VERSION + ".2"
 else:
   raise Exception("There are no .so files in the folder of \
                    tensorflow-plugins, please check it.")

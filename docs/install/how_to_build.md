@@ -34,7 +34,7 @@ conda activate itex_build
 ```
 Note, support Python 3.8-3.10.
 
-### Intel GPU Driver (Optional, GPU only)
+### Intel GPU Driver (Optional, GPU and XPU)
 
 Install the Intel GPU Driver in the building server, which is needed to build with GPU support and **AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html))**.
 
@@ -177,6 +177,12 @@ For GPU:
 $ bazel build -c opt --config=gpu  //itex/tools/pip_package:build_pip_package
 ```
 
+For XPU:
+
+```bash
+$ bazel build -c opt --config=xpu  //itex/tools/pip_package:build_pip_package
+```
+
 For CPU only (experimental):
 
 ```bash
@@ -195,6 +201,7 @@ It will generate two wheels:
 The Intel_extension_for_tensorflow_lib will differentiate between the CPU version or the GPU version
 - CPU version identifier is {ITEX_VERSION}**.0**
 - GPU version identifier is {ITEX_VERSION}**.1**
+- XPU version identifier is {ITEX_VERSION}**.2**
 
 For example
 
@@ -225,8 +232,8 @@ $ pip install ./intel_extension_for_tensorflow_lib-*.whl
 ├── intel_extension_for_tensorflow_lib
 ├── tensorflow
 ├── tensorflow-plugins
-|   ├── libitex_cpu.so # for CPU-only build
-│   └── libitex_gpu.so # for GPU build
+|   ├── libitex_cpu.so # for CPU or XPU build
+│   └── libitex_gpu.so # for GPU or XPU build
 
 ```
 ## Uninstall
@@ -240,7 +247,7 @@ $ pip uninstall intel_extension_for_tensorflow
 
 ### Configure Example
 
-- For GPU
+- For GPU or XPU
 
 ```
 You have bazel 5.3.0 installed.

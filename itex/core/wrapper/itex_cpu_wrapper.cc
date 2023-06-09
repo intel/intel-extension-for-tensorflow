@@ -56,8 +56,6 @@ void* LoadCpuLibrary() {
 
 void UnloadCpuLibrary() {
   if (handle) {
-    ITEX_LOG(INFO)
-        << "Intel Extension for Tensorflow* CPU backend is unloaded.";
     dlclose(handle);
   }
 }

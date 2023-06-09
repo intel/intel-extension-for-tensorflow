@@ -55,6 +55,7 @@ cc_binary(
         "common.h",
     ],
     linkshared = True,
+    set_target = "dummy",
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices:device_backend_util",

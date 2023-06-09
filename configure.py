@@ -940,6 +940,8 @@ def main():
   if environ_cp.get('TF_NEED_DPCPP') == '1':
     config_info_line('gpu', ('Build Intel® Extension for TensorFlow* '
                      'with GPU support.'))
+    config_info_line('xpu', ('Build Intel® Extension for TensorFlow* '
+                     'with XPU support.'))
   else:
     config_info_line('cpu', 'Build Intel® Extension for TensorFlow* '
                      'with CPU support.')

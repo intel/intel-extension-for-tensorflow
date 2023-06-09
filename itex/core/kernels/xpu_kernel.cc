@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#if defined(INTEL_CPU_ONLY) && !defined(CC_BUILD)
+#ifndef CC_BUILD
 #include "itex/core/kernels/xpu_kernel.h"
 #endif
 
@@ -28,11 +28,11 @@ limitations under the License.
 #else
 #include "itex/core/kernels/cpu/cpu_kernel_init.h"
 #endif  // INTEL_CPU_ONLY
-#if !defined(INTEL_CPU_ONLY) || defined(CC_BUILD)
+#ifdef CC_BUILD
 #include "tensorflow/c/kernels.h"
 #endif
 
-#if defined(INTEL_CPU_ONLY) && !defined(CC_BUILD)
+#ifndef CC_BUILD
 void TF_InitKernel_Internal() {
 #else
 void TF_InitKernel() {

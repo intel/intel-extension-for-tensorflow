@@ -5,7 +5,10 @@ load("//itex:itex.bzl", "cc_library")
 cc_library(
     name = "gpu_profiler",
     srcs = ["gpu_profiler.cc"],
-    hdrs = ["gpu_collector.h"],
+    hdrs = [
+        "gpu_collector.h",
+        "gpu_profiler.h",
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [

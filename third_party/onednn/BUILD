@@ -130,9 +130,17 @@ config_setting(
 )
 
 config_setting(
-    name = "build_with_graph_compiler",
+    name = "build_with_graph_compiler_flag",
     define_values = {
         "build_with_graph_compiler": "true",
     },
+)
+
+selects.config_setting_group(
+    name = "build_with_graph_compiler",
+    match_all = [
+        "@intel_extension_for_tensorflow//itex:cpu_build",
+        ":build_with_graph_compiler_flag",
+    ],
     visibility = ["//visibility:public"],
 )

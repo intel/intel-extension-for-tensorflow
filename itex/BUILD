@@ -7,7 +7,7 @@ load("@bazel_skylib//lib:selects.bzl", "selects")
 
 string_flag(
     name = "itex_build_target",
-    build_setting_default = "dummy",
+    build_setting_default = "",
     values = [
         "cpu_avx2_backend",
         "cpu_avx512_backend",
@@ -16,6 +16,7 @@ string_flag(
         "gpu_cc_backend",
         "xla_extension",
         "dummy",
+        "",
     ],
 )
 
@@ -112,8 +113,25 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-itex_xpu_binary(
+cc_binary(
     name = "libitex_gpu.so",
+    srcs = [
+        "//itex/core/wrapper:itex_gpu_wrapper",
+    ],
+    linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
+    linkshared = True,
+    set_target = "dummy",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core/devices:device_backend_util_hdr",
+        "//itex/core/kernels:libitex_common",
+        "//itex/core/utils:env_var",
+        "//itex/core/utils:logging",
+    ],
+)
+
+itex_xpu_binary(
+    name = "libitex_gpu_internal.so",
     linkopts = [
         "-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow",
         "-DINTEL_GPU_ONLY",
@@ -174,6 +192,7 @@ cc_binary(
     ],
     linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
     linkshared = True,
+    set_target = "dummy",
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices:device_backend_util_hdr",
@@ -249,6 +268,12 @@ cc_binary(
 config_setting(
     name = "linux_x86_64",
     values = {"cpu": "k8"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "xpu_build",
+    define_values = {"build_as_xpu": "true"},
     visibility = ["//visibility:public"],
 )
 

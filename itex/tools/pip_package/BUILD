@@ -5,6 +5,8 @@ package(default_visibility = ["//visibility:private"])
 
 load(
     "//itex:itex.bzl",
+    "if_cpu_backend",
+    "if_gpu_backend",
     "transitive_hdrs",
 )
 load(
@@ -51,11 +53,12 @@ COMMON_PIP_DEPS = [
     "included_headers",
     "//itex/python:_pywrap_itex.so",
     "//itex/core:protos_all_py",
-] + if_dpcpp([
+] + if_gpu_backend([
     "//itex:libitex_gpu.so",
-]) + if_cpu_onednn([
+    "//itex:libitex_gpu_internal.so",
+]) + if_cpu_backend([
     # TODO(itex): need refine if_cpu_onednn
-    "//itex:itex_cpu",
+    "//itex:libitex_cpu.so",
     "//itex:libitex_cpu_internal_avx512.so",
     "//itex:libitex_cpu_internal_avx2.so",
 ])

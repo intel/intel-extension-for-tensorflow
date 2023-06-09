@@ -13258,7 +13258,7 @@ index 597ca64cd..60ec3e5bb 100644
  }  // end namespace internal
  
  
-@@ -178,11 +197,140 @@ struct TensorEvaluator<const TensorShufflingOp<Shuffle, ArgType>, Device>
+@@ -178,11 +197,143 @@ struct TensorEvaluator<const TensorShufflingOp<Shuffle, ArgType>, Device>
  
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions& dimensions() const { return m_dimensions; }
  
@@ -13306,11 +13306,15 @@ index 597ca64cd..60ec3e5bb 100644
 +#if defined(EIGEN_USE_DPCPP)
 +  template <bool IsBuiltInDataType>
 +  EIGEN_DEVICE_FUNC
-+  bool evalSubExprsIfNeededCommon(EvaluatorPointerType data);
++  bool evalSubExprsIfNeededCommon(EvaluatorPointerType data) {
++    if constexpr (IsBuiltInDataType)
++       return evalSubExprsIfNeededCommonForBuiltInTypes(data);
++    else
++      return evalSubExprsIfNeededCommonForNonBuiltInType(data);
++  }
 +
-+  template <>
 +  EIGEN_DEVICE_FUNC
-+  bool evalSubExprsIfNeededCommon<true>(EvaluatorPointerType data){
++  bool evalSubExprsIfNeededCommonForBuiltInTypes(EvaluatorPointerType data){
 +    static const bool RunningOnGPU = internal::is_same<Device, Eigen::GpuDevice>::value;
 +    if (!RunningOnGPU || m_is_identity) return true;
 +
@@ -13368,9 +13372,8 @@ index 597ca64cd..60ec3e5bb 100644
      return true;
    }
  
-+  template <>
 +  EIGEN_DEVICE_FUNC
-+  bool evalSubExprsIfNeededCommon<false>(EvaluatorPointerType data){
++  bool evalSubExprsIfNeededCommonForNonBuiltInType(EvaluatorPointerType data){
 +      return true;
 +  }
 +
@@ -13401,7 +13404,7 @@ index 597ca64cd..60ec3e5bb 100644
  #ifdef EIGEN_USE_THREADS
    template <typename EvalSubExprsCallback>
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalSubExprsIfNeededAsync(
-@@ -302,10 +450,11 @@ struct TensorEvaluator<const TensorShufflingOp<Shuffle, ArgType>, Device>
+@@ -302,6 +453,7 @@ struct TensorEvaluator<const TensorShufflingOp<Shuffle, ArgType>, Device>
    }
  
    EIGEN_DEVICE_FUNC typename Storage::Type data() const { return NULL; }
@@ -13821,7 +13824,7 @@ index 0044b8a27..d5e781832 100644
    EIGEN_DEVICE_FUNC
    static EIGEN_STRONG_INLINE float run(float x) {
 -#if !defined(EIGEN_GPU_COMPILE_PHASE) && (defined(_BSD_SOURCE) || defined(_SVID_SOURCE)) && !defined(__APPLE__)
-+#if defined(DPCPP_DEVICE_ONLY) || defined(EIGEN_USE_DPCPP)
++#if defined(DPCPP_DEVICE_ONLY)
 +    return sycl::lgamma(x);
 +#elif !defined(EIGEN_GPU_COMPILE_PHASE) && (defined(_BSD_SOURCE) || defined(_SVID_SOURCE)) && !defined(__APPLE__)
      int dummy;
@@ -13836,7 +13839,7 @@ index 0044b8a27..d5e781832 100644
    EIGEN_DEVICE_FUNC
    static EIGEN_STRONG_INLINE double run(double x) {
 -#if !defined(EIGEN_GPU_COMPILE_PHASE) && (defined(_BSD_SOURCE) || defined(_SVID_SOURCE)) && !defined(__APPLE__)
-+#if defined(DPCPP_DEVICE_ONLY) || defined(EIGEN_USE_DPCPP)
++#if defined(DPCPP_DEVICE_ONLY)
 +    return sycl::lgamma(x);
 +#elif !defined(EIGEN_GPU_COMPILE_PHASE) && (defined(_BSD_SOURCE) || defined(_SVID_SOURCE)) && !defined(__APPLE__)
      int dummy;

@@ -341,11 +341,11 @@ class Conv2DTest(test.TestCase):
                     fp16_tol=1e-3):
     if gpu_only and not test.is_gpu_available(cuda_only=True):
       return
-    tensors = []
     dilations = list(dilations)
     for (data_format, use_gpu) in GetTestConfigs():
       if gpu_only and not use_gpu:
         continue
+      tensors = []
       dtypes_to_test = self._DtypesToTest(use_gpu, forward=True)
       for dtype in dtypes_to_test:
         result = self._SetupValuesForDevice(

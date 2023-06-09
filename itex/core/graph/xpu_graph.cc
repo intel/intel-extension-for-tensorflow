@@ -13,6 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef CC_BUILD
+#include "itex/core/graph/xpu_graph.h"
+#endif
+
 #include <algorithm>
 #include <string>
 #include <utility>
@@ -20,9 +24,6 @@ limitations under the License.
 
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/graph/optimizer_config.h"
-#if defined(INTEL_CPU_ONLY) && !defined(CC_BUILD)
-#include "itex/core/graph/xpu_graph.h"
-#endif
 #include "itex/core/graph/xpu_optimizer.h"
 #include "itex/core/utils/cpu_info.h"
 #include "itex/core/utils/env_var.h"
@@ -122,7 +123,7 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
 #endif  // INTEL_CPU_ONLY
 }
 
-#if defined(INTEL_CPU_ONLY) && !defined(CC_BUILD)
+#ifndef CC_BUILD
 void TF_InitGraph_Internal(TP_OptimizerRegistrationParams* params,
                            TF_Status* status) {
 #else

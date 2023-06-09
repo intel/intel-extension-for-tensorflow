@@ -1,13 +1,13 @@
 # Macros for building DPCPP code.
 def if_dpcpp(if_true, if_false = []):
-    """Shorthand for select()'ing on whether we're building with DPCPP.
+    """Shorthand for selects()'ing on whether we're building with DPCPP.
 
     Returns a select statement which evaluates to if_true if we're building
     with DPCPP enabled.  Otherwise, the select statement evaluates to if_false.
 
     """
     return select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": if_true,
+        "@intel_extension_for_tensorflow//itex:if_using_dpcpp": if_true,
         "//conditions:default": if_false,
     })
 

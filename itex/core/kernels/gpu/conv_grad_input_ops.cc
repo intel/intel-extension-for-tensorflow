@@ -30,7 +30,8 @@ namespace itex {
   REGISTER_KERNEL_BUILDER(Name("Conv3DBackpropInputV2")                      \
                               .Device(DEVICE_GPU)                            \
                               .TypeConstraint<T>("T")                        \
-                              .HostMemory("input_sizes"),                    \
+                              .HostMemory("input_sizes")                     \
+                              .Priority(1),                                  \
                           ConvBackpropInputOp<GPUDevice, T>);                \
   REGISTER_KERNEL_BUILDER(Name("_ITEXConv2DBackpropInputWithSlice")          \
                               .Device(DEVICE_GPU)                            \

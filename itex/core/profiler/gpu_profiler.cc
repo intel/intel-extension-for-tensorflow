@@ -13,6 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef CC_BUILD
+#include "itex/core/profiler/gpu_profiler.h"
+#endif
+
+#include <string>
+#include <vector>
+
 #include "itex/core/profiler/gpu_collector.h"
 #include "itex/core/profiler/utils.h"
 #include "itex/core/profiler/utils/xplane_utils.h"
@@ -125,7 +132,12 @@ void gpu_destroy_profiler(TP_Profiler* profiler) {}
 
 void gpu_destroy_profiler_fns(TP_ProfilerFns* profiler_fns) {}
 
+#ifndef CC_BUILD
+void TF_InitProfiler_Internal(TF_ProfilerRegistrationParams* params,
+                              TF_Status* status) {
+#else
 void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status) {
+#endif
   params->struct_size = TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE;
   params->profiler->struct_size = TP_PROFILER_STRUCT_SIZE;
   params->profiler_fns->struct_size = TP_PROFILER_FNS_STRUCT_SIZE;

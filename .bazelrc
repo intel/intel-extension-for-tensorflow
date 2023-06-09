@@ -20,6 +20,13 @@ build:gpu --define=build_with_onednn_graph=true
 build:gpu --define=device=gpu
 build:gpu --config=onednn_v3
 
+# This config option is used for XPU backend.
+build:xpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
+build:xpu --define=build_as_xpu=true
+build:xpu --define=build_with_onednn_graph=true
+build:xpu --define=build_with_graph_compiler=true
+build:xpu --config=onednn_v3
+
 # This config build with oneDNN V3 API, which is enabled by default
 build:onednn_v3 --copt=-DITEX_ONEDNN_3_0 --define=onednn_version=3
 
@@ -31,7 +38,7 @@ build:graph-compiler --define=build_with_graph_compiler=true
 
 build:jax --config=gpu
 build:jax --copt=-DITEX_BUILD_JAX
-build:jax --copt=-DINTEL_GPU_ONLY
+build:jax --copt=-DINTEL_GPU_ONLY --linkopt=-DINTEL_GPU_ONLY
 build:jax --define=build_for_jax=true
 
 build --define=use_fast_cpp_protos=true

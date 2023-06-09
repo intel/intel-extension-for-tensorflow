@@ -36,17 +36,17 @@ Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_
 
 ### Software Requirement
 
-|Package|CPU|GPU|Installation|
-|-|-|-|-|
-|Intel GPU driver||Y|[Install Intel GPU driver](docs/install/install_for_gpu.md#install-gpu-drivers)|
-|Intel® oneAPI Base Toolkit||Y|[Install Intel® oneAPI Base Toolkit](docs/install/install_for_gpu.md#install-oneapi-base-toolkit-packages)|
-|TensorFlow|Y|Y|[Install TensorFlow 2.12.0](https://www.tensorflow.org/install)|
+|Package|CPU|GPU|XPU|Installation|
+|-|-|-|-|-|
+|Intel GPU driver||Y|Y|[Install Intel GPU driver](docs/install/install_for_gpu.md#install-gpu-drivers)|
+|Intel® oneAPI Base Toolkit||Y|Y|[Install Intel® oneAPI Base Toolkit](docs/install/install_for_gpu.md#install-oneapi-base-toolkit-packages)|
+|TensorFlow|Y|Y|Y|[Install TensorFlow 2.12.0](https://www.tensorflow.org/install)|
 
 ### Installation Channel:
 Intel® Extension for TensorFlow* can be installed through the following channels:
 
-* PyPI: [GPU](docs/install/install_for_gpu.md#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.md#install-via-pypi-wheel-in-bare-metal) 
-* DockerHub: [ GPU Container ](docs/install/install_for_gpu.md#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.md#install-via-docker-container)
+* PyPI: [GPU](docs/install/install_for_gpu.md#install-via-pypi-wheel-in-bare-metal) \ [XPU](docs/install/install_for_xpu.md#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.md#install-via-pypi-wheel-in-bare-metal)
+* DockerHub: [ GPU Container ](docs/install/install_for_gpu.md#install-via-docker-container) \ [ XPU Container ](docs/install/install_for_xpu.md#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.md#install-via-docker-container)
 * Source: [Build from source](docs/install/how_to_build.md)
 
 
@@ -70,6 +70,19 @@ bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
 ```
 
 Refer to [GPU installation](docs/install/install_for_gpu.md) for details.
+
+### Install for XPU
+```
+pip install --upgrade intel-extension-for-tensorflow[xpu]
+```
+
+Environment check instructions for XPU:
+
+```bash
+bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+```
+
+Refer to [XPU installation](docs/install/install_for_xpu.md) for details.
 
 ### Install for CPU [Experimental]
 ```

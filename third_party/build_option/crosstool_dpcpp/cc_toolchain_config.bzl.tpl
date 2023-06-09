@@ -516,7 +516,6 @@ def _impl(ctx):
                     ACTION_NAMES.cpp_link_nodeps_dynamic_library,
                 ],
                 flag_groups = [flag_group(flags = [
-                    "-link_stage",
                     "-rdynamic",
                     "-fPIC",
                     "-no-canonical-prefixes",
@@ -602,9 +601,6 @@ def _impl(ctx):
                     flag_group(flags = [
                         "-std=c++17",
                         "-fPIC",
-                        # ref: https://github.com/intel/llvm/blob/sycl/clang/docs/UsersManual.rst#controlling-floating-point-behavior
-                        "-fno-finite-math-only",
-                        "-fno-approx-func",
                         "-DITEX_USE_MKL=%{TF_NEED_MKL}",
                         "-DITEX_ENABLE_DOUBLE=1",
                         "-DEIGEN_USE_DPCPP=1",
@@ -670,6 +666,8 @@ def _impl(ctx):
             supports_pic_feature,
         ]
     sys_inc = [
+        "/usr/lib",
+        "/usr/lib64",
         %{additional_include_directories},
         "%{DPCPP_INTERNAL_INC}",
         "%{DPCPP_RUNTIME_INC}",

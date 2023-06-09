@@ -5,3 +5,11 @@ filegroup(
     ],
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "itex_gpu_wrapper",
+    srcs = [
+        "itex_gpu_wrapper.cc",
+    ],
+    visibility = ["//visibility:public"],
+)

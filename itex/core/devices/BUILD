@@ -19,6 +19,7 @@ cc_library(
 cc_library(
     name = "xpu_device",
     srcs = ["xpu_device.cc"],
+    hdrs = ["xpu_device.h"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
