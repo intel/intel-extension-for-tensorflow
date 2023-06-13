@@ -93,7 +93,10 @@ def find_dpcpp_include_path(repository_ctx):
         bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "clang")
         if not bin_path.exists:
             fail("Cannot find DPC++ compiler, please correct your path")
-    cmd_out = repository_ctx.execute([bin_path, "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null"])
+    gcc_path = repository_ctx.path("/usr/bin/gcc")
+    gcc_install_dir = repository_ctx.execute([gcc_path, "-print-libgcc-file-name"])
+    gcc_install_dir_opt = "--gcc-install-dir=" + str(repository_ctx.path(gcc_install_dir.stdout.strip()).dirname)
+    cmd_out = repository_ctx.execute([bin_path, gcc_install_dir_opt, "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null"])
     outlist = cmd_out.stderr.split("\n")
     real_base_path = str(repository_ctx.path(base_path).realpath).strip()
     include_dirs = []
