@@ -196,6 +196,27 @@ class SparseSegmentReductionSumWithNumSegmentsOp
             true /* has_num_segments */, T(0) /* default_value */) {}
 };
 
+template <typename Device, typename T, typename Index, typename SegmentId>
+class SparseSegmentReductionSqrtNOp
+    : public SparseSegmentReductionOpBase<Device, T, Index, SegmentId> {
+ public:
+  explicit SparseSegmentReductionSqrtNOp(OpKernelConstruction* context)
+      : SparseSegmentReductionOpBase<Device, T, Index, SegmentId>(
+            context, false /*is_mean*/, true /*is_sqrtn*/,
+            false /* has_num_segments */, T(0) /* default_value */) {}
+};
+
+template <typename Device, typename T, typename Index, typename SegmentId>
+class SparseSegmentReductionSqrtNWithNumSegmentsOp
+    : public SparseSegmentReductionOpBase<Device, T, Index, SegmentId> {
+ public:
+  explicit SparseSegmentReductionSqrtNWithNumSegmentsOp(
+      OpKernelConstruction* context)
+      : SparseSegmentReductionOpBase<Device, T, Index, SegmentId>(
+            context, false /*is_mean*/, true /*is_sqrtn*/,
+            true /* has_num_segments */, T(0) /* default_value */) {}
+};
+
 // Implements the common logic for the gradients of SparseSegmentReduction
 // kernels.
 template <typename T, typename Index, typename SegmentId>

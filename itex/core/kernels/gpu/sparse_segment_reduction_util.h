@@ -103,6 +103,14 @@ struct SortedSegmentKernel {
           if (total_segment_number) {
             reduce_res /= total_segment_number;
           }
+        } else if (is_sqrtn) {
+          const Index total_segment_number =
+              segment_offsets[last_output_segment_id + 1] -
+              segment_offsets[last_output_segment_id];
+          if (total_segment_number) {
+            reduce_res /=
+                Eigen::numext::sqrt(static_cast<float>(total_segment_number));
+          }
         }
         auto output_index =
             last_output_segment_id * inner_dim_size + segment_offset;
@@ -131,6 +139,15 @@ struct SortedSegmentKernel {
 
       if (total_segment_number) {
         reduce_res /= total_segment_number;
+      }
+    } else if (is_sqrtn) {
+      const Index total_segment_number =
+          segment_offsets[last_output_segment_id + 1] -
+          segment_offsets[last_output_segment_id];
+
+      if (total_segment_number) {
+        reduce_res /=
+            Eigen::numext::sqrt(static_cast<float>(total_segment_number));
       }
     }
     atom_reduction_op(output + output_index, &reduce_res);
