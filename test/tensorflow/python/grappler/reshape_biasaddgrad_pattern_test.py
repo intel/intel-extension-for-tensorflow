@@ -122,7 +122,9 @@ class ContractionWithReshapeAndBiasAddGradFusionTest(test_lib.TestCase):
         if 'FusedMatMulGrad' in node.op:
           exist_fusion_type = True
 
-      self.assertTrue(exist_fusion_type)
+      # FusedMatMulGrad fusion is cancelled on GPU side.
+      if not test_util.is_gpu_available():
+        self.assertTrue(exist_fusion_type)
       for i, out1 in enumerate(output1):
         self.assertAllCloseAccordingToType(out1, output2[i])
 
