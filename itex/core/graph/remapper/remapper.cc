@@ -3376,12 +3376,6 @@ bool FindDilatedContraction(const RemapperContext& ctx, int node_index,
 
   if (contraction_node_view->NumRegularFanouts() != 1) return false;
 
-  string data_format;
-  TF_ABORT_IF_ERROR(
-      GetNodeAttr(*contraction_node_def, "data_format", &data_format));
-  // TODO(itex): Support NCHW in the future.
-  if (data_format != "NHWC") return false;
-
   bool is_valid_contraction = IsConv2D(*contraction_node_def) ||
                               IsDepthwiseConv2dNative(*contraction_node_def);
 
@@ -3391,6 +3385,12 @@ bool FindDilatedContraction(const RemapperContext& ctx, int node_index,
       !HasAtMostOneFanoutAtPort0(*contraction_node_view) ||
       IsInPreserveSet(ctx, contraction_node_def))
     return false;
+
+  string data_format;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_node_def, "data_format", &data_format));
+  // TODO(itex): Support NCHW in the future.
+  if (data_format != "NHWC") return false;
 
   // In dilated Conv pattern from API, the padding type must be VALID and each
   // element of dilations must be 1.
