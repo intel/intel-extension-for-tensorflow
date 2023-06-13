@@ -23,6 +23,47 @@ limitations under the License.
 
 namespace itex {
 typedef Eigen::GpuDevice GPUDevice;
+template <typename T>
+class SoftmaxOp<GPUDevice, T> : public OpKernel {
+ public:
+  ~SoftmaxOp() {}
+
+  explicit SoftmaxOp(OpKernelConstruction* context) : OpKernel(context) {
+    is_inplace_ = false;
+    if (context->HasAttr("is_inplace")) {
+      OP_REQUIRES_OK(context, context->GetAttr("is_inplace", &is_inplace_));
+    }
+  }
+
+  void Compute(OpKernelContext* context) {
+    const Tensor& logits_in = context->input(0);
+    OP_REQUIRES(context, TensorShapeUtils::IsVectorOrHigher(logits_in.shape()),
+                errors::InvalidArgument("logits must have >= 1 dimension, got ",
+                                        logits_in.shape().DebugString()));
+    Tensor* softmax_out = nullptr;
+    OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
+                                {0}, 0, logits_in.shape(), &softmax_out));
+    if (logits_in.NumElements() > 0) {
+      SoftmaxFunctor<GPUDevice, T> functor;
+      functor(context->eigen_device<GPUDevice>(),
+              logits_in.flat_inner_dims<T>(), softmax_out, false);
+    }
+  }
+
+ private:
+  bool is_inplace_;
+};
+
+#define REGISTER_SOFTMAX(type)                                      \
+  REGISTER_KERNEL_BUILDER(                                          \
+      Name("Softmax").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      SoftmaxOp<GPUDevice, type>);
+
+TF_CALL_float(REGISTER_SOFTMAX);
+TF_CALL_bfloat16(REGISTER_SOFTMAX);
+TF_CALL_half(REGISTER_SOFTMAX);
+#undef REGISTER_SOFTMAX
+
 template <typename Device, typename T>
 class LogSoftmaxOp : public OpKernel {
  public:
@@ -51,6 +92,15 @@ class LogSoftmaxOp : public OpKernel {
     }
   }
 };
+
+#define REGISTER_LOGSOFTMAX(type)                                      \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("LogSoftmax").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      LogSoftmaxOp<GPUDevice, type>);
+TF_CALL_float(REGISTER_LOGSOFTMAX);
+TF_CALL_bfloat16(REGISTER_LOGSOFTMAX);
+TF_CALL_half(REGISTER_LOGSOFTMAX);
+#undef REGISTER_LOGSOFTMAX
 
 template <typename Device, typename T>
 class AddV2WithSoftmaxOp : public OpKernel {
@@ -99,23 +149,6 @@ class AddV2WithSoftmaxOp : public OpKernel {
   }
 };
 
-#define REGISTER_SOFTMAX(type)                                      \
-  REGISTER_KERNEL_BUILDER(                                          \
-      Name("Softmax").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
-      SoftmaxOp<GPUDevice, type>);
-
-TF_CALL_float(REGISTER_SOFTMAX);
-TF_CALL_bfloat16(REGISTER_SOFTMAX);
-TF_CALL_half(REGISTER_SOFTMAX);
-
-#define REGISTER_LOGSOFTMAX(type)                                      \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("LogSoftmax").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
-      LogSoftmaxOp<GPUDevice, type>);
-TF_CALL_float(REGISTER_LOGSOFTMAX);
-TF_CALL_bfloat16(REGISTER_LOGSOFTMAX);
-TF_CALL_half(REGISTER_LOGSOFTMAX);
-
 #define REGISTER_ADDV2WITHSOFTMAX(type)                      \
   REGISTER_KERNEL_BUILDER(Name("_ITEXFusedAddV2WithSoftmax") \
                               .Device(DEVICE_GPU)            \
@@ -124,5 +157,7 @@ TF_CALL_half(REGISTER_LOGSOFTMAX);
 TF_CALL_float(REGISTER_ADDV2WITHSOFTMAX);
 TF_CALL_bfloat16(REGISTER_ADDV2WITHSOFTMAX);
 TF_CALL_half(REGISTER_ADDV2WITHSOFTMAX);
+
+#undef REGISTER_ADDV2WITHSOFTMAX
 
 }  // namespace itex
