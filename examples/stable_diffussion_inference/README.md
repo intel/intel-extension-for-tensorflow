@@ -20,7 +20,7 @@ We optimized official keras-cv Stable Diffusion, for example, concatenate two fo
 ```
 git clone https://github.com/keras-team/keras-cv.git
 cd keras-cv
-git reset --hard 53d8aad680ce56bb37f7245dd5e2782f2ca37034
+git reset --hard 66fa74b6a2a0bb1e563ae8bce66496b118b95200
 git apply patch
 pip install .
 ```
