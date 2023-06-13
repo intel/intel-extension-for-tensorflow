@@ -30,11 +30,11 @@ class PadWithConvBackpropFilterFusion : public Fusion {
     using utils::OpTypePattern;
 
     // It supports multiple types of conv.
-    std::string conv_repr =
-        absl::StrJoin({kConv2DBackpropFilter, kConv2DBackpropFilterWithBias,
-                       kConv3DBackpropFilter, kConv3DBackpropFilterV2,
-                       kConv3DBackpropFilterWithBias},
-                      "|");
+    std::vector<std::string> conv_str{
+        kConv2DBackpropFilter, kConv2DBackpropFilterWithBias,
+        kConv3DBackpropFilter, kConv3DBackpropFilterV2,
+        kConv3DBackpropFilterWithBias};
+    std::string conv_repr = absl::StrJoin(conv_str, "|");
 
     // Note. We do not delete the pad here. Due to the pad will be used as the
     // input for conv forward.

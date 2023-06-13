@@ -168,7 +168,6 @@ itex_xpu_binary(
 
 itex_xpu_binary(
     name = "libitex_gpu_cc.so",
-    linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
     linkshared = True,
     set_target = "gpu_cc_backend",
     visibility = ["//visibility:public"],
@@ -248,7 +247,6 @@ cc_binary(
 cc_binary(
     name = "libitex_cpu_cc.so",
     linkopts = [
-        "-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow",
         "-DINTEL_CPU_ONLY",
     ],
     linkshared = True,
