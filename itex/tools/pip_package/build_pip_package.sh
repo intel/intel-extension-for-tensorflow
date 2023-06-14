@@ -64,6 +64,12 @@ function emit_version_info() {
     echo "$1 not exists!"
     exit -1
   fi
+  # weekly build, add .dev suffix
+  if [ ! -z "$2" ] && [ $(grep -E "__version__ *= *'[0-9]+.[0-9]+.[0-9]+.*'" $1 >& /dev/null; echo $?) -eq 0 ]; then
+    origin_version=$(grep -E "__version__ *= *'[0-9]+.[0-9]+.[0-9]+.*'" $1 | awk -F"'" '{print $2}')
+    dev_version="${origin_version}.dev$(date +%Y%m%d)"
+    sed -i "s#$origin_version#$dev_version#" $1
+  fi
   echo "__git_desc__= '`get_git_desc`'" >> $1
   echo "VERSION = __version__" >> $1
   echo "GIT_VERSION = 'v' + __version__ + '-' + __git_desc__" >> $1
@@ -152,7 +158,7 @@ function prepare_src() {
     cp -rf itex/python/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python
     mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/base_init.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__init__.py
     mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/__main__.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__main__.py
-    emit_version_info ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py
+    emit_version_info ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py "$WEEKLY_BUILD_FLAG"
     chmod +x ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__init__.py
     rm -rf ${ITEX_TMPDIR}/itex
   fi

@@ -36,10 +36,10 @@ if sys.byteorder == 'little':
 project_name = 'intel_extension_for_tensorflow_lib'
 DEV_VERSION_SUFFIX = ""
 if "--weekly_build" in sys.argv:
-        today_number = date.today().strftime("%Y%m%d")
-        DEV_VERSION_SUFFIX = ".dev" + today_number
+        DEV_VERSION_SUFFIX = ".dev" + _VERSION.split(".dev")[1]
+        _VERSION = _VERSION.split(".dev")[0]
         sys.argv.remove("--weekly_build")
-        project_name = "itex_lib_weekly"
+        project_name = "intel_extension_for_tensorflow_lib_weekly"
 if '--project_name' in sys.argv:
   project_name_idx = sys.argv.index('--project_name')
   project_name = sys.argv[project_name_idx + 1] + "_lib"
