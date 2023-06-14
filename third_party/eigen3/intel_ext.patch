@@ -6907,7 +6907,7 @@ index 5968ff4b7..b4e8d6564 100644
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h
 new file mode 100644
-index 000000000..5d9ab272c
+index 000000000..14c2454a5
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h
 @@ -0,0 +1,1631 @@
@@ -7384,7 +7384,7 @@ index 000000000..5d9ab272c
 +  static EIGEN_CONSTEXPR StorageIndex NStride =
 +      contraction_tp == contraction_type::local ? Properties::WorkLoadPerThreadN : RHSBlockProperties::nc_stride;
 +
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local> Scratch;
++  typedef sycl::local_accessor<OutScalar, 1> Scratch;
 +  typedef sycl::multi_ptr<OutScalar, sycl::access::address_space::local_space> local_ptr;
 +  typedef OutScalar * /*sycl::multi_ptr<OutScalar, sycl::access::address_space::private_space>*/ private_ptr;
 +  typedef
@@ -7915,7 +7915,7 @@ index 000000000..5d9ab272c
 +      PacketReturnType;
 +  static EIGEN_CONSTEXPR int PacketSize =
 +      Eigen::internal::Vectorise<OutScalar, Eigen::GpuDevice, Vectorizable>::PacketSize;
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local> Scratch;
++  typedef sycl::local_accessor<OutScalar, 1> Scratch;
 +
 +  static EIGEN_CONSTEXPR StorageIndex OutScratchOffset =
 +      KFactor * Properties::LocalThreadSizeC * Properties::LocalThreadSizeNC;
@@ -8151,7 +8151,7 @@ index 000000000..5d9ab272c
 +template <typename OutScalar, typename LhsScalar, typename RhsScalar, typename OutAccessor, typename LhsMapper,
 +          typename RhsMapper, typename StorageIndex, bool Vectorizable>
 +struct GeneralScalarContraction {
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local> Scratch;
++  typedef sycl::local_accessor<OutScalar, 1> Scratch;
 +  Scratch scratch;
 +  const LhsMapper lhs;
 +  const RhsMapper rhs;
@@ -9164,7 +9164,7 @@ index 476b2282a..292b2855d 100644
    }
  #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h b/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h
-index 7f3394438..54fc519c1 100644
+index 7f3394438..8a5bb4523 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h
 @@ -273,7 +273,7 @@ struct GpuDevice {
@@ -9203,7 +9203,7 @@ index 7f3394438..54fc519c1 100644
    EIGEN_STRONG_INLINE int majorDeviceVersion() const {
      return stream_->deviceProperties().major;
    }
-@@ -320,9 +333,142 @@ struct GpuDevice {
+@@ -320,9 +333,132 @@ struct GpuDevice {
  #endif
    }
  
@@ -9231,11 +9231,7 @@ index 7f3394438..54fc519c1 100644
 +                                                 Index scratchSize,
 +                                                 T... var) const {
 +    auto kernel_functor = [=](sycl::handler &cgh) {
-+    typedef sycl::accessor<OutScalar, 1,
-+                               sycl::access::mode::read_write,
-+                               sycl::access::target::local>
-+        LocalAccessor;
-+
++    typedef sycl::local_accessor<OutScalar, 1> LocalAccessor;
 +    LocalAccessor scratch(sycl::range<1>(scratchSize), cgh);
 +    cgh.parallel_for<sycl_kernel>(
 +          thread_range, sycl_kernel(scratch, inptr, var...));
@@ -9257,10 +9253,7 @@ index 7f3394438..54fc519c1 100644
 +                                                 Index scratchSize,
 +                                                 T... var) const {
 +    auto kernel_functor = [=](sycl::handler &cgh) {
-+    typedef sycl::accessor<OutScalar, 1,
-+                               sycl::access::mode::read_write,
-+                               sycl::access::target::local>
-+        LocalAccessor;
++    typedef sycl::local_accessor<OutScalar, 1> LocalAccessor;
 +
 +    LocalAccessor scratch(sycl::range<1>(scratchSize), cgh);
 +    cgh.parallel_for<sycl_kernel>(
@@ -9280,10 +9273,7 @@ index 7f3394438..54fc519c1 100644
 +                                                  Index scratchSize,
 +                                                  T... var) const {
 +    auto kernel_functor = [=](sycl::handler &cgh) {
-+    typedef sycl::accessor<OutScalar, 1,
-+                               sycl::access::mode::read_write,
-+                               sycl::access::target::local>
-+        LocalAccessor;
++    typedef sycl::local_accessor<OutScalar, 1> LocalAccessor;
 +
 +    LocalAccessor scratch(sycl::range<1>(scratchSize), cgh);
 +    cgh.parallel_for<sycl_kernel>(
@@ -11822,10 +11812,10 @@ index 9b0eb3e2f..4a2167be0 100644
  : public TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>, Eigen::SyclDevice> {
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h
 new file mode 100644
-index 000000000..66dcd0d0e
+index 000000000..264565283
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h
-@@ -0,0 +1,579 @@
+@@ -0,0 +1,575 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -11893,8 +11883,7 @@ index 000000000..66dcd0d0e
 +
 +template <typename CoeffReturnType, typename OpType, typename InputAccessor, typename OutputAccessor, typename Index>
 +struct SecondStepFullReducer {
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<CoeffReturnType, 1> LocalAccessor;
 +  typedef OpDefiner<OpType, CoeffReturnType, Index, true> OpDef;
 +  typedef typename OpDef::type Op;
 +  LocalAccessor scratch;
@@ -11949,8 +11938,7 @@ index 000000000..66dcd0d0e
 +  typedef
 +      typename ::Eigen::internal::conditional<(Evaluator::ReducerTraits::PacketAccess & Evaluator::InputPacketAccess),
 +                                              PacketReturnType, CoeffReturnType>::type OutType;
-+  typedef sycl::accessor<OutType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<OutType, 1> LocalAccessor;
 +  LocalAccessor scratch;
 +  Evaluator evaluator;
 +  EvaluatorPointerType final_output;
@@ -12080,8 +12068,7 @@ index 000000000..66dcd0d0e
 +  typedef typename Evaluator::Index Index;
 +  typedef OpDefiner<OpType, CoeffReturnType, Index, false> OpDef;
 +  typedef typename OpDef::type Op;
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      ScratchAcc;
++  typedef sycl::local_accessor<CoeffReturnType, 1> ScratchAcc;
 +  ScratchAcc scratch;
 +  Evaluator evaluator;
 +  EvaluatorPointerType output_accessor;
@@ -12186,8 +12173,7 @@ index 000000000..66dcd0d0e
 +struct SecondStepPartialReduction {
 +  typedef OpDefiner<OpType, OutScalar, Index, false> OpDef;
 +  typedef typename OpDef::type Op;
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      ScratchAccessor;
++  typedef sycl::local_accessor<OutScalar, 1> ScratchAccessor;
 +  InputAccessor input_accessor;
 +  OutputAccessor output_accessor;
 +  Op op;
@@ -12622,10 +12608,10 @@ index 9e3b1a0b9..5782cc585 100644
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h
 new file mode 100644
-index 000000000..940967140
+index 000000000..29d32dea6
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h
-@@ -0,0 +1,515 @@
+@@ -0,0 +1,513 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -12712,8 +12698,7 @@ index 000000000..940967140
 +template <typename Evaluator, typename CoeffReturnType, typename OutAccessor, typename Op, typename Index,
 +          scan_step stp>
 +struct ScanKernelFunctor {
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<CoeffReturnType, 1> LocalAccessor;
 +  static EIGEN_CONSTEXPR int PacketSize = ScanParameters<Index>::ScanPerThread / 2;
 +
 +  LocalAccessor scratch;
@@ -12921,8 +12906,7 @@ index 000000000..940967140
 +
 +template <typename CoeffReturnType, typename InAccessor, typename OutAccessor, typename Op, typename Index>
 +struct ScanAdjustmentKernelFunctor {
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<CoeffReturnType, 1> LocalAccessor;
 +  static EIGEN_CONSTEXPR int PacketSize = ScanParameters<Index>::ScanPerThread / 2;
 +  InAccessor in_accessor;
 +  OutAccessor out_accessor;
@@ -13229,7 +13213,7 @@ index 7f68ecb6a..01084801d 100644
  };
  
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h b/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h
-index 597ca64cd..60ec3e5bb 100644
+index 597ca64cd..c759be349 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h
 @@ -46,6 +46,25 @@ struct nested<TensorShufflingOp<Shuffle, XprType>, 1, typename eval<TensorShuffl
@@ -13412,11 +13396,6 @@ index 597ca64cd..60ec3e5bb 100644
  
  #ifdef EIGEN_USE_SYCL
     // binding placeholder accessors to a command group handler for SYCL
--  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(cl::sycl::handler &cgh) const {
-+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(sycl::handler &cgh) const {
-     m_impl.bind(cgh);
-   }
- #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h
 new file mode 100644
 index 000000000..48cadf103
@@ -13816,7 +13795,7 @@ index abefe99b7..e037e32ab 100644
  };
  template<typename Scalar>
 diff --git a/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h b/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h
-index 0044b8a27..d5e781832 100644
+index 0044b8a27..828337c20 100644
 --- a/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h
 +++ b/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h
 @@ -61,11 +61,11 @@ template <>
