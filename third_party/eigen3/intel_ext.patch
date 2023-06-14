@@ -13213,7 +13213,7 @@ index 7f68ecb6a..01084801d 100644
  };
  
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h b/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h
-index 597ca64cd..c759be349 100644
+index 597ca64cd..60ec3e5bb 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h
 @@ -46,6 +46,25 @@ struct nested<TensorShufflingOp<Shuffle, XprType>, 1, typename eval<TensorShuffl
@@ -13393,6 +13393,11 @@ index 597ca64cd..c759be349 100644
  
  #ifdef EIGEN_USE_SYCL
     // binding placeholder accessors to a command group handler for SYCL
+-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(cl::sycl::handler &cgh) const {
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(sycl::handler &cgh) const {
+     m_impl.bind(cgh);
+   }
+ #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h
 new file mode 100644
 index 000000000..48cadf103
@@ -13792,7 +13797,7 @@ index abefe99b7..e037e32ab 100644
  };
  template<typename Scalar>
 diff --git a/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h b/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h
-index 0044b8a27..828337c20 100644
+index 0044b8a27..d5e781832 100644
 --- a/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h
 +++ b/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h
 @@ -61,11 +61,11 @@ template <>
