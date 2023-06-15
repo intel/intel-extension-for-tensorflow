@@ -23,7 +23,6 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 import tensorflow as tf
 from tensorflow.python.ops import stateful_random_ops as random
-from keras.backend import set_session
 import re
 
 from absl.testing import parameterized

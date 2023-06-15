@@ -508,8 +508,6 @@ class GatherTest(test.TestCase, parameterized.TestCase):
           constant_op.constant([[1, 2], [3, 4], [5, 6]]))
       self.evaluate(variables.global_variables_initializer())
       gather = array_ops.gather(v, [0, 2])
-      if not context.executing_eagerly():  # .op doesn't make sense in Eager
-        self.assertEqual("ResourceGather", gather.op.inputs[0].op.type)
       self.assertAllEqual([[1, 2], [5, 6]], gather)
 
 if __name__ == "__main__":

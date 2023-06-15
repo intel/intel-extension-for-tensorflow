@@ -27,7 +27,10 @@ from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
 from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_util
+try:
+  from tensorflow.python.ops import shape_util
+except ImportError:
+  from tensorflow.python.framework import tensor_util as shape_util
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import random_ops
@@ -44,13 +47,13 @@ def stateless_random_normal(shape,
   stateless_random_ops now only call v2 version.
   Here is a py implementation calling v1 version for testing.
   """
-  shape = tensor_util.shape_tensor(shape)
+  shape = shape_util.shape_tensor(shape)
   mean = ops.convert_to_tensor(mean, dtype=dtype, name="mean")
   stddev = ops.convert_to_tensor(stddev, dtype=dtype, name="stddev")
   rnd = gen_stateless_random_ops.stateless_random_normal(
       shape, seed, dtype=dtype)
   result = math_ops.add(rnd * stddev, mean, name=name)
-  tensor_util.maybe_set_static_shape(result, shape)
+  shape_util.maybe_set_static_shape(result, shape)
   return result
 
 def stateless_truncated_normal(shape,
@@ -63,13 +66,13 @@ def stateless_truncated_normal(shape,
   stateless_random_ops now only call v2 version.
   Here is a py implementation calling v1 version for testing.
   """
-  shape = tensor_util.shape_tensor(shape)
+  shape = shape_util.shape_tensor(shape)
   mean = ops.convert_to_tensor(mean, dtype=dtype, name="mean")
   stddev = ops.convert_to_tensor(stddev, dtype=dtype, name="stddev")
   rnd = gen_stateless_random_ops.stateless_truncated_normal(
       shape, seed, dtype=dtype)
   result = math_ops.add(rnd * stddev, mean, name=name)
-  tensor_util.maybe_set_static_shape(result, shape)
+  shape_util.maybe_set_static_shape(result, shape)
   return result
 
 def stateless_random_uniform(shape,
@@ -102,7 +105,7 @@ def stateless_random_uniform(shape,
           f"is not None. Please don't use unsigned integers in this case.")
   elif maxval is None:
     maxval = 1
-  shape = tensor_util.shape_tensor(shape)
+  shape = shape_util.shape_tensor(shape)
   if dtype.is_integer and minval is None:
     result = (
         gen_stateless_random_ops.stateless_random_uniform_full_int(
@@ -121,7 +124,7 @@ def stateless_random_uniform(shape,
       rnd = gen_stateless_random_ops.stateless_random_uniform(
           shape, seed, dtype=dtype)
       result = math_ops.add(rnd * (maxval - minval), minval, name=name)
-  tensor_util.maybe_set_static_shape(result, shape)
+  shape_util.maybe_set_static_shape(result, shape)
   return result
 
 def invert_philox(key, value):
