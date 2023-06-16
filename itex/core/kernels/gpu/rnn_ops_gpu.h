@@ -152,7 +152,7 @@ struct ApplyMaskThenReduceKernel {
     int x = id / extend_z;
     int z = id - x * extend_z;
 
-    float res = 1.0;
+    float res = 0.0f;
     for (int y = 0; y < extend_y; ++y) {
       int offset1 = x * extend_y * extend_z + y * extend_z + z;
       int offset2 = y * extend_z + z;
@@ -196,7 +196,7 @@ struct ApplyMaskThenReduceKernel<Eigen::bfloat16, UseMask> {
     int x = id / extend_z;
     int z = id - x * extend_z;
 
-    float res = 1.0;
+    float res = 0.0f;
     for (int y = 0; y < extend_y; ++y) {
       int offset1 = x * extend_y * extend_z + y * extend_z + z;
       int offset2 = y * extend_z + z;
@@ -1039,19 +1039,19 @@ struct LstmGradEltwiseKernel {
         Eigen::numext::tanh(static_cast<float>(const_cast<T*>(c_next)[id]));
     float dc_next =
         static_cast<float>(const_cast<T*>(c_next_grad)[id]) +
-        dh_next * ot * (static_cast<float>(1.0) - square(tanh_c_next));
+        dh_next * ot * (static_cast<float>(1.0f) - square(tanh_c_next));
     // dc_prev = dct * ft
     float dc_prev = dc_next * ft;
 
     // dot = dst_diff_h * tanh(c_next) * ot * (1 - ot)
-    float dot = dh_next * tanh_c_next * ot * (static_cast<float>(1.0) - ot);
+    float dot = dh_next * tanh_c_next * ot * (static_cast<float>(1.0f) - ot);
     // dft = dct * c_prev * ft * (1 - ft)
     float dft = dc_next * static_cast<float>(const_cast<T*>(c_prev)[id]) * ft *
-                (static_cast<float>(1.0) - ft);
+                (static_cast<float>(1.0f) - ft);
     //  dit = dct * gt * it * (1 - it)
-    float dit = dc_next * gt * it * (static_cast<float>(1.0) - it);
+    float dit = dc_next * gt * it * (static_cast<float>(1.0f) - it);
     // dgt = dct * it * (1 - np.square(gt))
-    float dgt = dc_next * it * (static_cast<float>(1.0) - square(gt));
+    float dgt = dc_next * it * (static_cast<float>(1.0f) - square(gt));
 
     c_prev_grad[id] = static_cast<T>(dc_prev);
     gates_grad[id] = static_cast<T>(dit);
@@ -1117,21 +1117,21 @@ struct LstmGradEltwiseKernel<Eigen::bfloat16> {
     float dc_next =
         static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
             const_cast<Eigen::bfloat16*>(c_next_grad))[id]) +
-        dh_next * ot * (static_cast<float>(1.0) - square(tanh_c_next));
+        dh_next * ot * (static_cast<float>(1.0f) - square(tanh_c_next));
     // dc_prev = dct * ft
     float dc_prev = dc_next * ft;
 
     // dot = dst_diff_h * tanh(c_next) * ot * (1 - ot)
-    float dot = dh_next * tanh_c_next * ot * (static_cast<float>(1.0) - ot);
+    float dot = dh_next * tanh_c_next * ot * (static_cast<float>(1.0f) - ot);
     // dft = dct * c_prev * ft * (1 - ft)
     float dft = dc_next *
                 static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
                     const_cast<Eigen::bfloat16*>(c_prev))[id]) *
-                ft * (static_cast<float>(1.0) - ft);
+                ft * (static_cast<float>(1.0f) - ft);
     //  dit = dct * gt * it * (1 - it)
-    float dit = dc_next * gt * it * (static_cast<float>(1.0) - it);
+    float dit = dc_next * gt * it * (static_cast<float>(1.0f) - it);
     // dgt = dct * it * (1 - np.square(gt))
-    float dgt = dc_next * it * (static_cast<float>(1.0) - square(gt));
+    float dgt = dc_next * it * (static_cast<float>(1.0f) - square(gt));
 
     reinterpret_cast<sycl_bf16_t*>(c_prev_grad)[id] =
         static_cast<sycl_bf16_t>(dc_prev);
