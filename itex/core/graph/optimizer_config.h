@@ -20,11 +20,7 @@ limitations under the License.
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
 constexpr static bool enable_itex_sharding = false;
-#ifndef INTEL_CPU_ONLY
-constexpr static bool enable_itex_onednn_graph = false;
-#else
 constexpr static bool enable_itex_onednn_graph = true;
-#endif  // INTEL_CPU_ONLY
 constexpr static bool enable_itex_onednn_graph_all_type = false;
 constexpr static bool enable_itex_onednn_graph_compiler_backend = false;
 constexpr static bool enable_itex_onednn_graph_dnnl_backend = true;

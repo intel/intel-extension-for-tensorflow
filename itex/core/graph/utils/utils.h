@@ -52,10 +52,14 @@ struct OptimizerContext {
   const char* device_name;
   bool is_compute_intensive;
   bool enable_complete_opt;
+  bool is_quantization_graph;
 };
 
 // Check whether current graph contains compute-intensive ops or not.
 bool HaveComputeIntensiveNode(const GraphDef& graph_def);
+
+// Check whether current graph contains Quantization ops or not.
+bool HaveQuantizeDequantizeNode(const GraphDef& graph_def);
 
 // Dumps 'graph_def' to a file, as a GraphDef text proto. Returns the file name
 // chosen.

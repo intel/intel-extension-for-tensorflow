@@ -80,6 +80,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
   auto config = GetOptimizerConfigFlags();
 
   opt_ctx.is_compute_intensive = HaveComputeIntensiveNode(graph_def);
+  opt_ctx.is_quantization_graph = HaveQuantizeDequantizeNode(graph_def);
 #ifndef INTEL_CPU_ONLY
   // Compute-extensive check is not required on GPU except AutoShard.
   opt_ctx.enable_complete_opt = true;
@@ -128,6 +129,14 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
   }
 #endif  // INTEL_CPU_ONLY
 
+  // The optimization pass order with or without oneDNN Graph are different.
+  // With oneDNN Graph:     partial_remapper -> auto_mixed_precision
+  //                                         -> onednn_graph -> full_remapper
+  // Without oneDNN Graph:  full_remapper -> auto_mixed_precision
+  bool onednn_graph_optimize =
+      config.enable_onednn_graph &&
+      (opt_ctx.is_quantization_graph || config.enable_onednn_graph_all_type);
+
   optimized_graph_def.Swap(&graph_def);
   GenericLayoutOptimizer generic_layout_opt;
   SET_STATUS_IF_ERROR(tf_status,
@@ -135,7 +144,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
                                                   &optimized_graph_def));
 
   if (config.enable_remapper && opt_ctx.enable_complete_opt) {
-    if (config.enable_onednn_graph) {
+    if (onednn_graph_optimize) {
       // We don't want full scope remapper here if oneDNN graph is enabled.
       optimized_graph_def.Swap(&graph_def);
       SET_STATUS_IF_ERROR(tf_status, RunRemapper(&opt_ctx, item, graph_def,
@@ -160,7 +169,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
     // before Const op. So run remapper Const + Cast fusion will remove
     // these overhead.
     // We don't want ITEX remapper pass change graph before LLGA pass
-    if (config.enable_remapper && !config.enable_onednn_graph) {
+    if (config.enable_remapper && !onednn_graph_optimize) {
       optimized_graph_def.Swap(&graph_def);
       SET_STATUS_IF_ERROR(tf_status, RunRemapper(&opt_ctx, item, graph_def,
                                                  &optimized_graph_def));
@@ -168,7 +177,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
   }
 
 #ifdef ITEX_ONEDNN_GRAPH
-  if (config.enable_onednn_graph && opt_ctx.enable_complete_opt) {
+  if (onednn_graph_optimize && opt_ctx.enable_complete_opt) {
     optimized_graph_def.Swap(&graph_def);
     SET_STATUS_IF_ERROR(tf_status,
                         RunOneDnnGraph(item, graph_def, &optimized_graph_def));

@@ -176,6 +176,16 @@ bool HaveComputeIntensiveNode(const GraphDef& graph_def) {
   return false;
 }
 
+bool HaveQuantizeDequantizeNode(const GraphDef& graph_def) {
+  for (auto node : graph_def.node()) {
+    if (node.op().find("QuantizeV2") != std::string::npos ||
+        node.op().find("Dequantize") != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
 string DumpGraphDefToFile(const string& name, GraphDef const& graph_def,
                           const string& dirname, bool is_output_binary) {
   string filepath;

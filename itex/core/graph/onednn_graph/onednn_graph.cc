@@ -2250,24 +2250,6 @@ Status FuseFwPartitionWithLLGA(
 
   ITEX_VLOG(2) << "rewrite partition id: " << p.get_id();
 
-  bool find_quantize_dequantize = false;
-  for (size_t l_index = 0; l_index < nodes_no; l_index++) {
-    auto node_index = p.get_ops()[l_index];
-    const auto* f_node_view = ctx->graph_view.GetNode(node_index);
-    const auto* f_node_def = f_node_view->node();
-
-    if (f_node_def->op() == "QuantizeV2" || f_node_def->op() == "Dequantize") {
-      find_quantize_dequantize = true;
-      break;
-    }
-  }
-
-  if (!onednn_graph_all_type_flag & !find_quantize_dequantize) {
-    ITEX_VLOG(2) << "oneDNN Graph partition doesn't contain INT8 op, won't "
-                    "rewrite this partition to ";
-    return Status::OK();
-  }
-
   bool find_all_binary_on_CPU = true;
   for (size_t l_index = 0; l_index < nodes_no; l_index++) {
     auto node_index = p.get_ops()[l_index];
