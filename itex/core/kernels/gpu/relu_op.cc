@@ -72,6 +72,16 @@ TF_CALL_double(REGISTER_ELU_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_ELU_GPU_KERNELS
 
+#define REGISTER_LR_GPU_KERNELS(type)                                 \
+  REGISTER_KERNEL_BUILDER(                                            \
+      Name("LeakyRelu").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      LeakyReluOp<GPUDevice, type>);
+
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_LR_GPU_KERNELS);
+#endif  // ITEX_ENABLE_DOUBLE
+#undef REGISTER_LR_GPU_KERNELS
+
 #define REGISTER_RELU_GPU_KERNELS(type)                           \
   REGISTER_KERNEL_BUILDER(                                        \
       Name("Relu").Device(DEVICE_GPU).TypeConstraint<type>("T"),  \
@@ -133,6 +143,16 @@ TF_CALL_double(REGISTER_GPU_KERNELS);
 TF_CALL_double(REGISTER_ELUGRAD_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_ELUGRAD_GPU_KERNELS
+
+#define REGISTER_LRG_GPU_KERNELS(type)                                    \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("LeakyReluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      LeakyReluGradOp<GPUDevice, type>);
+
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_LRG_GPU_KERNELS);
+#endif  // ITEX_ENABLE_DOUBLE
+#undef REGISTER_LRG_GPU_KERNELS
 
 #define REGISTER_RELUG_GPU_KERNELS(type)                              \
   REGISTER_KERNEL_BUILDER(                                            \
