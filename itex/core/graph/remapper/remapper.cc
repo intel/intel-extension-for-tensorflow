@@ -6231,14 +6231,7 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
   for (int i = num_nodes - 1; i >= 0;) {
     NodeDef* node_def = (ctx.graph_view.GetNode(i))->node();
 
-    // Check if node is fp16 and supported on device.
-    if (NodeIsOnCpu(node_def) &&
-        GetDataTypeFromAttr(*node_def, "T") == DT_HALF &&
-        !port::HasCpuFP16Support()) {
-      ctx.nodes_to_preserve.insert(node_def->name());
-      continue;
-    }
-
+    // IMPORTANT: Always keep this dynamic check in the start.
     // Dynamic check node status:
     //   1. Do normal fusion check when current node is visited first time
     //   2. Recheck this node only if it's new fused and never rechecked before
@@ -6260,6 +6253,14 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
     } else {
       last_op = node_def->op();
       is_visited = true;
+    }
+
+    // Check if node is fp16 and supported on device.
+    if (NodeIsOnCpu(node_def) &&
+        GetDataTypeFromAttr(*node_def, "T") == DT_HALF &&
+        !port::HasCpuFP16Support()) {
+      ctx.nodes_to_preserve.insert(node_def->name());
+      continue;
     }
 
     // Check if node was deleted by one of the previous remaps.
