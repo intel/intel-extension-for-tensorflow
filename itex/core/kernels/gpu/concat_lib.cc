@@ -158,7 +158,7 @@ struct ConcatVariableKernelSLM {
     // do an initial binary search and then scan linearly from there
     // works well when there are many small segments and when the
     // segments are much longer
-    auto scratch_ptr = scratch.get_pointer().get();
+    IntType* scratch_ptr = ITEXGetLocalAccPointer<IntType>(scratch);
     const int segment =
         std::upper_bound(scratch_ptr, scratch_ptr + input_size, col_id) -
         scratch_ptr - 1;

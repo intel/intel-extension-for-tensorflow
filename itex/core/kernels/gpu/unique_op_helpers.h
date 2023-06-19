@@ -18,6 +18,7 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_UNIQUE_OP_HELPERS_H_
 #define ITEX_CORE_KERNELS_GPU_UNIQUE_OP_HELPERS_H_
 
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/tensor_types.h"
@@ -28,8 +29,7 @@ namespace itex {
 namespace impl {
 
 template <typename T>
-using LocalAcc = sycl::accessor<T, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<T, 1>;
 
 template <bool IsReverse>
 inline int MapReversedIndex(int dim_size, int index);
@@ -61,7 +61,7 @@ struct GroupScan {
   void operator()(sycl::nd_item<1> item) const {
     auto group = item.get_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to SLM
     auto end = GroupSize * ElemsPerWorkItem;
@@ -142,7 +142,7 @@ struct DeviceScanFirstStep {
     auto group_id = item.get_group_linear_id();
     auto group = item.get_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to slm
     auto start = group_id * GroupSize * ElemsPerWorkItem;

@@ -47,8 +47,7 @@ inline int MapReversedIndex<false>(int dim_size, int index) {
 }
 
 template <typename T>
-using LocalAcc = sycl::accessor<T, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<T, 1>;
 
 template <typename InputT, typename OutputT, typename InitValueT,
           typename BinaryOp, typename LocalAccessor, int GroupSize,
@@ -73,7 +72,7 @@ struct GroupScan {
     typedef InitValueT T;
     auto group = item.get_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to SLM
     auto end = GroupSize * ElemsPerWorkItem;
@@ -182,7 +181,7 @@ struct DeviceScanFirstStep {
     auto group_id = item.get_group_linear_id();
     auto group = item.get_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to slm
     auto start = group_id * GroupSize * ElemsPerWorkItem;

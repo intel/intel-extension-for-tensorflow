@@ -21,6 +21,7 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/col_reduction_kernels.h"
 #include "itex/core/kernels/gpu/group_norm_op.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
@@ -121,7 +122,7 @@ struct MeanAndVarKernel {
       }
     }
 
-    U* lmem = scratch_.get_pointer().get();
+    U* lmem = ITEXGetLocalAccPointer<U>(scratch_);
     int total = num_hw_ * chans_per_group_;
     GroupMeanVar<SUB_GROUP_SIZE>(item, &sum, &sqr, total, lmem);
 
@@ -203,7 +204,7 @@ struct PartialSumKernel {
     int num_sg = sg.get_group_linear_range();
 
     const T* p_input = input_ + batch_id * num_hw_ * num_channels_;
-    U* lmem = scratch_.get_pointer().get();
+    U* lmem = ITEXGetLocalAccPointer<U>(scratch_);
 
     for (int idx = id * VECSize; idx < num_channels_;
          idx += group_size * VECSize) {
@@ -352,7 +353,7 @@ struct MeanFromPartialKernel {
       sqr += p_sqr[i];
     }
 
-    T* lmem = scratch_.get_pointer().get();
+    T* lmem = ITEXGetLocalAccPointer<T>(scratch_);
     int total = num_hw_ * chans_per_group_;
     GroupMeanVar<SUB_GROUP_SIZE>(item, &sum, &sqr, total, lmem);
 

@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <algorithm>
 
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/group_radix_select.h"
 #include "itex/core/utils/group_radix_sort.h"
 #include "itex/core/utils/radix_utils.h"
@@ -57,7 +58,7 @@ struct GroupTopkKernel {
         sycl::min(group_workload_, num_boxes_ - offset);
 
     // set the pointer of local memory and radix selector
-    uint8* local_mem = scratch_.get_pointer().get();
+    uint8* local_mem = ITEXGetLocalAccPointer<uint8>(scratch_);
     Selector selector(g, item.get_sub_group(), local_id, local_mem);
 
     uint32 item_scores[KeysPerItem] = {0u};
@@ -196,7 +197,7 @@ struct GroupSortKernel {
     }
 
     // get the pointer of share local memory
-    uint8* local_mem = scratch_.get_pointer().get();
+    uint8* local_mem = ITEXGetLocalAccPointer<uint8>(scratch_);
 
     if (FilterScore) {
       // Need to filter scores, counting the number of valid scores
@@ -395,7 +396,7 @@ struct NMSKernel {
     int local_id = item.get_local_id(0);
 
     // local memory allocation
-    uint8* local_mem = scratch_.get_pointer().get();
+    uint8* local_mem = ITEXGetLocalAccPointer<uint8>(scratch_);
     float4* sorted_boxes =
         reinterpret_cast<float4*>(local_mem + NmsReducer::LocalStorage::SIZE);
 

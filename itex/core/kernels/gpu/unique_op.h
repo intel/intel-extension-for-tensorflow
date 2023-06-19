@@ -20,6 +20,7 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/topk_op.h"
 #include "itex/core/kernels/gpu/unique_op_helpers.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/group_radix_sort.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
@@ -33,8 +34,7 @@ typedef Eigen::GpuDevice GPUDevice;
 namespace impl {
 
 template <typename T>
-using __shared__ = sycl::accessor<T, 1, sycl::access::mode::read_write,
-                                  sycl::access::target::local>;
+using __shared__ = sycl::local_accessor<T, 1>;
 
 inline int Log2Floor(uint32_t n) {
   if (n == 0) return -1;
@@ -371,7 +371,7 @@ struct RadixSortKernel {
       }
     }
     // get the pointer of share local memory
-    uint8_t* local_mem = scratch.get_pointer().get();
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch);
     // Sorting the scores in ascending order
     Sortor(item.get_group(), item.get_sub_group(), local_id, local_mem)
         .Sort(item_scores, item_boxIds, sorted_input_ptr, sorted_input_inds_ptr,

@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/topk_op.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/group_radix_select.h"
 #include "itex/core/utils/group_radix_sort.h"
 #include "itex/core/utils/op_kernel.h"
@@ -96,7 +97,7 @@ struct RadixTopKKernel {
     int local_id = item.get_local_id(0);
 
     // Set up radix selector
-    uint8_t* local_mem = scratch.get_pointer().get();
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch);
     Rselector rselector(g, item.get_sub_group(), local_id, local_mem);
 
     // Pointer of the input
@@ -229,7 +230,7 @@ struct RadixSortKernel {
     }
 
     // get the pointer of share local memory
-    uint8_t* local_mem = scratch.get_pointer().get();
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch);
 
     // Do sorting
     Rsortor(g, item.get_sub_group(), local_id, local_mem)

@@ -71,8 +71,7 @@ T Log(T x) {
 constexpr int kSubGroupSize = 32;
 
 template <typename T>
-using __shared__ = sycl::accessor<T, 1, sycl::access_mode::read_write,
-                                  sycl::access::target::local>;
+using __shared__ = sycl::local_accessor<T, 1>;
 
 template <typename T>
 struct SumOp {
@@ -460,7 +459,8 @@ struct SoftmaxWorkgroupSMemImplKernel {
         device_load(device_load),
         device_store(device_store) {}
   void operator()(sycl::nd_item<1> id) const {
-    auto* buf = reinterpret_cast<ComputeType*>(scratch.get_pointer().get());
+    auto* buf = reinterpret_cast<ComputeType*>(
+        ITEXGetLocalAccPointer<unsigned char>(scratch));
     const int local_id = id.get_local_id(0);
     for (int32 row = id.get_group(0); row < rows;
          row += id.get_group_range(0)) {

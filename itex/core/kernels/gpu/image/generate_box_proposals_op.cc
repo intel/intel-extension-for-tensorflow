@@ -34,8 +34,7 @@ typedef sycl::vec<float, 2> float2;
 typedef sycl::vec<float, 3> float3;
 typedef sycl::vec<float, 4> float4;
 template <typename T>
-using LocalMem = sycl::accessor<T, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalMem = sycl::local_accessor<T, 1>;
 constexpr int kNmsBoxesPerWorkItem = 8 * sizeof(int);
 constexpr int kNmsGroupDim = 16;
 
@@ -676,7 +675,7 @@ void NMSReduce(const sycl::nd_item<1>& item, LocalMem<int> scratch,
                const int bit_mask_len, const int num_boxes,
                const int max_output_size, char* result_mask) {
   auto id = item.get_global_linear_id();
-  int* local_ptr = scratch.get_pointer().get();
+  int* local_ptr = ITEXGetLocalAccPointer<int>(scratch);
   auto range = wg_size;
   for (int i = id; i < bit_mask_len; i += range) {
     local_ptr[i] = ~(static_cast<int>(0));
