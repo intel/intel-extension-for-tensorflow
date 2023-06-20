@@ -141,6 +141,8 @@ void TF_InitGraph(TP_OptimizerRegistrationParams* params, TF_Status* status) {
   if (GetOptimizerConfigFlags().enable_auto_mixed_precision) {
     params->optimizer_configs->auto_mixed_precision = TF_TriState_Off;
     params->optimizer_configs->auto_mixed_precision_mkl = TF_TriState_Off;
+    params->optimizer_configs->auto_mixed_precision_onednn_bfloat16 =
+        TF_TriState_Off;
   }
 
   // ITEX + oneDNN Graph INT8 pass doesn't support constant folding pass
