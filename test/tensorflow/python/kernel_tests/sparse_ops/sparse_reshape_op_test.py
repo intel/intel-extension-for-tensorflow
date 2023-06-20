@@ -18,14 +18,15 @@
 from absl.testing import parameterized
 import numpy as np
 
+from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test
+
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import errors
 from tensorflow.python.framework import sparse_tensor
-from tensorflow.python.framework import test_util
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import sparse_ops
-from tensorflow.python.platform import test
 
 
 class SparseReshapeTest(test.TestCase):

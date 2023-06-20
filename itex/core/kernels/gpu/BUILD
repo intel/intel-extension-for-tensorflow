@@ -1383,6 +1383,20 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_reorder_op",
+    srcs = ["sparse_reorder_op.cc"],
+    hdrs = ["sparse_reorder_op.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_slice_grad_op",
     srcs = ["sparse_slice_grad_op.cc"],
     hdrs = [
@@ -2149,6 +2163,7 @@ GPU_KERNELS = [
     ":spacetobatch_op",
     ":sparse_fill_empty_rows_op",
     ":sparse_math_ops",
+    ":sparse_reorder_op",
     ":sparse_slice_grad_op",
     ":sparse_slice_op",
     ":sparse_split_op",
