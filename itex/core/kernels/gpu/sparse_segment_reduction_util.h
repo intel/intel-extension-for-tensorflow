@@ -55,18 +55,48 @@ struct SparseSegmentGradFunctor {
 
 namespace impl {
 
+template <typename T, typename Index, typename Tsegmentids>
+struct SegmentWeightsKernel {
+  SegmentWeightsKernel(Tsegmentids nsegments,
+                       SparseSegmentReductionOperation operation,
+                       const Index* segment_offsets, T* weights_ptr)
+      : nsegments_(nsegments),
+        operation_(operation),
+        segment_offsets_(segment_offsets),
+        weights_(weights_ptr) {}
+  void operator()(sycl::nd_item<1> item) const {
+    auto i = item.get_global_linear_id();
+    if (i >= nsegments_) return;
+
+    Index segment_size = segment_offsets_[i + 1] - segment_offsets_[i];
+    segment_size = sycl::max(segment_size, Index(1));  // Avoid division by zero
+    if (operation_ == SparseSegmentReductionOperation::kMean) {
+      weights_[i] = T(1) / static_cast<T>(segment_size);
+    } else if (operation_ == SparseSegmentReductionOperation::kSqrtN) {
+      weights_[i] = T(1) / Eigen::numext::sqrt(static_cast<T>(segment_size));
+    }
+  }
+
+ private:
+  Tsegmentids nsegments_;
+  SparseSegmentReductionOperation operation_;
+  const Index* segment_offsets_;  // [nsegments + 1]
+  T* weights_;
+};
+
 template <typename T, typename Index, typename SegmentId, typename ReductionF,
           typename AtomicReductionF, int OuterDimTileSize, typename = void>
 struct SortedSegmentKernel {
   SortedSegmentKernel(Index input_outer_dim_size, Index inner_dim_size,
                       Index output_outer_dim_size, const Index* indices,
-                      const SegmentId* segment_ids,
+                      const T* weights, const SegmentId* segment_ids,
                       const Index* segment_offsets, const T* input,
                       float* output, Index total_stripe_count,
                       float initial_value, bool is_mean, bool is_sqrtn)
       : input_outer_dim_size(input_outer_dim_size),
         inner_dim_size(inner_dim_size),
         output_outer_dim_size(output_outer_dim_size),
+        weights(weights),
         segment_ids(segment_ids),
         segment_offsets(segment_offsets),
         indices(indices),
@@ -125,6 +155,11 @@ struct SortedSegmentKernel {
       fetch_add = static_cast<float>(
           input[indices[input_outer_dim_index_base + j] * inner_dim_size +
                 segment_offset]);
+      // Apply weights if provided.
+      if (weights) {
+        fetch_add *= static_cast<float>(
+            weights[indices[input_outer_dim_index_base + j]]);
+      }
       reduction_op(&reduce_res, &fetch_add);
 
       last_output_segment_id = current_output_segment_id;
@@ -157,6 +192,7 @@ struct SortedSegmentKernel {
   Index input_outer_dim_size;
   Index inner_dim_size;
   Index output_outer_dim_size;
+  const T* weights;
   const SegmentId* segment_ids;
   const Index* segment_offsets;
   const Index* indices;
@@ -170,6 +206,31 @@ struct SortedSegmentKernel {
 
 }  // namespace impl
 
+template <typename T, typename Index, typename Tsegmentids>
+struct LaunchSegmentWeightsKernel {
+  Status operator()(const Eigen::GpuDevice& d, Tsegmentids nsegments,
+                    SparseSegmentReductionOperation operation,
+                    const Index* segment_offsets, T* weights_ptr) {
+    auto stream = d.stream();
+    auto work_group_size =
+        (*stream)
+            .get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    auto total_size = nsegments;
+    auto num_work_group = (total_size + work_group_size - 1) / work_group_size;
+
+    sycl::range<1> local_size(work_group_size);
+    sycl::range<1> global_size(num_work_group * work_group_size);
+    stream->submit([&](sycl::handler& cgh) {
+      impl::SegmentWeightsKernel<T, Index, Tsegmentids> task(
+          nsegments, operation, segment_offsets, weights_ptr);
+      cgh.parallel_for<impl::SegmentWeightsKernel<T, Index, Tsegmentids>>(
+          sycl::nd_range<1>(global_size, local_size), task);
+    });
+    return Status::OK();
+  }
+};
+
 template <typename T, typename Index, typename SegmentId, int OuterDimTileSize,
           typename ReductionF, typename AtomicReductionF>
 struct LaunchSortedSegmentKernel {
@@ -177,8 +238,8 @@ struct LaunchSortedSegmentKernel {
                     const Index input_outer_dim_size,
                     const Index inner_dim_size,
                     const Index output_outer_dim_size, const Index* indices,
-                    const SegmentId* segment_ids, const Index* segment_offset,
-                    const T* input, float* output,
+                    const T* weights, const SegmentId* segment_ids,
+                    const Index* segment_offset, const T* input, float* output,
                     const Index total_stripe_count, const float initial_value,
                     bool is_mean, bool is_sqrtn) {
     auto stream = device.stream();
@@ -196,7 +257,7 @@ struct LaunchSortedSegmentKernel {
       impl::SortedSegmentKernel<T, Index, SegmentId, ReductionF,
                                 AtomicReductionF, OuterDimTileSize>
           task(input_outer_dim_size, inner_dim_size, output_outer_dim_size,
-               indices, segment_ids, segment_offset, input, output,
+               indices, weights, segment_ids, segment_offset, input, output,
                total_stripe_count, initial_value, is_mean, is_sqrtn);
       cgh.parallel_for<impl::SortedSegmentKernel<
           T, Index, SegmentId, ReductionF, AtomicReductionF, OuterDimTileSize>>(

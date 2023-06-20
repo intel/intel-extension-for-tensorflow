@@ -272,6 +272,24 @@ class SparseSegmentSumGradOp
             context, SparseSegmentReductionOperation::kSum) {}
 };
 
+template <typename Device, class T, typename Index, typename SegmentId>
+class SparseSegmentMeanGradOp
+    : public SparseSegmentGradOpBase<Device, T, Index, SegmentId> {
+ public:
+  explicit SparseSegmentMeanGradOp(OpKernelConstruction* context)
+      : SparseSegmentGradOpBase<Device, T, Index, SegmentId>(
+            context, SparseSegmentReductionOperation::kMean) {}
+};
+
+template <typename Device, class T, typename Index, typename SegmentId>
+class SparseSegmentSqrtNGradOp
+    : public SparseSegmentGradOpBase<Device, T, Index, SegmentId> {
+ public:
+  explicit SparseSegmentSqrtNGradOp(OpKernelConstruction* context)
+      : SparseSegmentGradOpBase<Device, T, Index, SegmentId>(
+            context, SparseSegmentReductionOperation::kSqrtN) {}
+};
+
 }  // namespace itex
 
 #endif  // ITEX_CORE_KERNELS_GPU_SPARSE_SEGMENT_REDUCTION_OPS_H_

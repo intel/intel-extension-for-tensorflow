@@ -34,7 +34,8 @@ Status SparseSegmentReduce(OpKernelContext* context, Index input_outer_dim_size,
                            Index input_inner_dim_size, SegmentId nsegments,
                            T initial_value, bool is_mean, bool is_sqrtn,
                            const T* input, const SegmentId* segment_ids,
-                           const Index* indices, float* output) {
+                           const Index* indices, const T* weights,
+                           float* output) {
   const GPUDevice& d = context->eigen_gpu_device();
 
   // Allocate and compute segment_offsets.
@@ -55,8 +56,9 @@ Status SparseSegmentReduce(OpKernelContext* context, Index input_outer_dim_size,
       LaunchSortedSegmentKernel<T, Index, SegmentId, OuterDimTileSize,
                                 ReductionF, AtomicReductionF>()(
           d, input_outer_dim_size, input_inner_dim_size, nsegments, indices,
-          segment_ids, segment_offsets_ptr, input, output, total_stripe_count,
-          static_cast<float>(initial_value), is_mean, is_sqrtn));
+          weights, segment_ids, segment_offsets_ptr, input, output,
+          total_stripe_count, static_cast<float>(initial_value), is_mean,
+          is_sqrtn));
 
   return Status::OK();
 }
@@ -83,7 +85,7 @@ operator()(OpKernelContext* context, bool is_mean, bool is_sqrtn,
       /*nsegments=*/nsegments, /*initial_value=*/T(0),
       /*is_mean=*/is_mean, /*is_sqrtn=*/is_sqrtn,
       /*input=*/input.data(), /*segment_ids=*/segment_ids.data(),
-      /*indices=*/indices.data(),
+      /*indices=*/indices.data(), /*weights=*/static_cast<T*>(nullptr),
       /*output=*/output.data());
 }
 
@@ -98,12 +100,32 @@ operator()(OpKernelContext* context, SparseSegmentReductionOperation operation,
            typename TTypes<float>::Matrix output_flat) {
   const GPUDevice& device = context->eigen_gpu_device();
 
+  const SegmentId nsegments = input_flat.dimension(0);
   const Index ninner = input_flat.dimension(1);
   const Index nouter = indices_vec.dimension(0);
   const Index noutput = output_flat.dimension(0);
 
-  // Todo: Allocate and compute segment weights (for Mean/SqrtN operations
-  // only).
+  // Allocate and compute segment weights (for Mean/SqrtN operations only).
+  Tensor weights;
+  T* weights_ptr = nullptr;
+  if (operation != SparseSegmentReductionOperation::kSum) {
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<T>::value,
+                                          TensorShape({nsegments}), &weights));
+    weights_ptr = weights.flat<T>().data();
+
+    // Allocate and compute segment_offsets.
+    Tensor segment_offsets;
+    OP_REQUIRES_OK(context, context->allocate_temp(DataTypeToEnum<Index>::value,
+                                                   TensorShape({nsegments + 1}),
+                                                   &segment_offsets));
+    Index* segment_offsets_ptr = segment_offsets.flat<Index>().data();
+    Status s = functor::LaunchSegmentOffsetsKernel<Index, SegmentId>()(
+        device, nouter, nsegments, segment_vec.data(), segment_offsets_ptr);
+    // Compute the weights based on the segment sizes using segment_offsets.
+    Status s_w = LaunchSegmentWeightsKernel<T, Index, SegmentId>()(
+        device, nsegments, operation, segment_offsets_ptr, weights_ptr);
+  }
 
   const Index* sorted_indices_ptr = indices_vec.data();
   const SegmentId* sorted_segment_ptr = segment_vec.data();
@@ -150,7 +172,7 @@ operator()(OpKernelContext* context, SparseSegmentReductionOperation operation,
           /*nsegments=*/noutput, /*initial_value=*/T(0),
           /*is_mean=*/false, /*is_sqrtn=*/false,
           /*input=*/input_flat.data(), /*segment_ids=*/sorted_indices_ptr,
-          /*indices=*/sorted_segment_ptr,
+          /*indices=*/sorted_segment_ptr, /*weights=*/weights_ptr,
           /*output=*/output_flat.data()));
 }
 
