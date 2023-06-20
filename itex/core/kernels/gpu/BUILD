@@ -1364,6 +1364,23 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_concat_op",
+    srcs = ["sparse_concat_op.cc"],
+    hdrs = [
+        "gpu_device_array.h",
+        "sparse_concat_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_fill_empty_rows_op",
     srcs = ["sparse_fill_empty_rows_op.cc"],
     hdrs = [
@@ -2161,6 +2178,7 @@ GPU_KERNELS = [
     ":softplus_op",
     ":softsign_op",
     ":spacetobatch_op",
+    ":sparse_concat_op",
     ":sparse_fill_empty_rows_op",
     ":sparse_math_ops",
     ":sparse_reorder_op",
