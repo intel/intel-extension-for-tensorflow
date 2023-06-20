@@ -365,4 +365,7 @@ void RegisterOps() {
   Register_Fp8GeluOp();
   Register_Fp8QuantizeDbiasOp();
   Register_Fp8QuantizeDbiasDgeluOp();
+  Register_Fp8MatmulOp();
+  Register_Fp8ScaledDotProductAttentionOp();
+  Register_Fp8ScaledDotProductAttentionGradOp();
 }

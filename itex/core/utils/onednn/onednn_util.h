@@ -181,6 +181,11 @@ inline dnnl::memory::data_type OneDnnType<qint8>() {
 }
 
 template <>
+inline dnnl::memory::data_type OneDnnType<int8>() {
+  return dnnl::memory::data_type::s8;
+}
+
+template <>
 inline dnnl::memory::data_type OneDnnType<qint32>() {
   return dnnl::memory::data_type::s32;
 }

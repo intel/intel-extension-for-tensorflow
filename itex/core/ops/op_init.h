@@ -333,6 +333,9 @@ void Register_Fp8LayerNormGradOp();
 void Register_Fp8GeluOp();
 void Register_Fp8QuantizeDbiasOp();
 void Register_Fp8QuantizeDbiasDgeluOp();
+void Register_Fp8MatmulOp();
+void Register_Fp8ScaledDotProductAttentionOp();
+void Register_Fp8ScaledDotProductAttentionGradOp();
 
 #ifdef __cplusplus
 extern "C" {

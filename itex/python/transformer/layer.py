@@ -4,40 +4,18 @@ from tensorflow.keras import layers, initializers
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from intel_extension_for_tensorflow.python.fp8.autocast import get_fp8_dtype
 from intel_extension_for_tensorflow.python.transformer import BaseModule
-
-def get_init_method(user_input, default_init_method):
-  """Get initializer method for variables."""
-  if user_input is None:
-    return default_init_method
-
-  if callable(user_input):
-    return user_input
-
-  assert isinstance(user_input, str)
-  return initializers.get(user_input)
-
-def get_activation_dtype(input_dtype, compute_dtype):
-  assert input_dtype in [tf.float32, tf.bfloat16, tf.int8]
-  assert compute_dtype in [tf.float32, tf.bfloat16]
-
-  if input_dtype == tf.bfloat16:
-    return tf.bfloat16
-  return compute_dtype
-
-def cast_if_needed(inputs, dtype):
-  if inputs.dtype == tf.int8:
-    return inputs
-  if inputs.dtype == dtype:
-    return inputs
-  return tf.cast(inputs, dtype)
+from intel_extension_for_tensorflow.python.transformer.common import (
+  get_init_method,
+  get_activation_dtype,
+  cast_if_needed,
+  fp8_matmul,
+)
 
 class Dense(BaseModule, layers.Layer):
   def __init__(
     self,
     units,
     use_bias=True,
-    gelu_activation=False,
-    fp8_out=False,
     kernel_initializer=None,
     bias_initializer=None,
     **kwargs,
@@ -55,9 +33,6 @@ class Dense(BaseModule, layers.Layer):
     self.bias_initializer = get_init_method(
       bias_initializer, initializers.get("zeros")
     )
-
-    # We temporarily disabled fp8 in/out feature.
-    self.fp8_out = False
 
   def build(self, input_shape):
     """One-time allocation of the variables."""
@@ -95,29 +70,13 @@ class Dense(BaseModule, layers.Layer):
       fwd_fp8_meta_tensors = self.get_fp8_meta_tensors(
         inputs, max_fp8_outs=1, fwd=True)
 
-      if self.fp8_inp:
-        inputs = load_ops_library.fp8_dequantize(
-          inputs,
-          fwd_fp8_meta_tensors[0][0],
-          fp8_meta_index=0,
-          fp8_dtype=fp8_dtype_forward,
-          out_dtype=self.activation_dtype,
-        )
-      else:
-        inputs = load_ops_library.fp8_quantize(
-          inputs,
-          fwd_fp8_meta_tensors[1][0],
-          fwd_fp8_meta_tensors[1][1],
-          fp8_meta_index=0,
-          fp8_dtype=fp8_dtype_forward,
-        )
-        inputs = load_ops_library.fp8_dequantize(
-          inputs,
-          fwd_fp8_meta_tensors[1][2],
-          fp8_meta_index=0,
-          fp8_dtype=fp8_dtype_forward,
-          out_dtype=self.activation_dtype,
-        )
+      inputs = load_ops_library.fp8_quantize(
+        inputs,
+        fwd_fp8_meta_tensors[1][0],
+        fwd_fp8_meta_tensors[1][1],
+        fp8_meta_index=0,
+        fp8_dtype=fp8_dtype_forward,
+      )
 
       kernel = load_ops_library.fp8_quantize(
         kernel,
@@ -126,30 +85,19 @@ class Dense(BaseModule, layers.Layer):
         fp8_meta_index=1,
         fp8_dtype=fp8_dtype_forward,
       )
-      kernel = load_ops_library.fp8_dequantize(
+
+      out = fp8_matmul(
+        inputs,
+        fwd_fp8_meta_tensors[1][2],
+        0,
+        fp8_dtype_forward,
         kernel,
         fwd_fp8_meta_tensors[1][2],
-        fp8_meta_index=1,
-        fp8_dtype=fp8_dtype_forward,
-        out_dtype=self.activation_dtype,
+        1,
+        fp8_dtype_forward,
+        self.activation_dtype,
+        bias=bias,
       )
-
-      out = tf.matmul(inputs, kernel)
-      if self.use_bias:
-        out = out + bias
-
-      activation = out
-      if self.gelu_activation:
-        activation = load_ops_library.gelu(activation, approximate=True)
-
-      if self.fp8_out:
-        activation = load_ops_library.fp8_quantize(
-          activation,
-          fwd_fp8_meta_tensors[2][0],
-          fwd_fp8_meta_tensors[2][1],
-          fp8_meta_index=0,
-          fp8_dtype=fp8_dtype_forward,
-        )
 
       def grad_fn(upstream):
         self.pre_backward()
@@ -157,54 +105,54 @@ class Dense(BaseModule, layers.Layer):
         bwd_fp8_meta_tensors = self.get_fp8_meta_tensors(
           upstream, max_fp8_outs=1, fwd=False)
 
-        if self.fp8_out:
-          upstream = load_ops_library.fp8_dequantize(
-            upstream,
-            bwd_fp8_meta_tensors[0][0],
-            fp8_meta_index=0,
-            fp8_dtype=fp8_dtype_backward,
-            out_dtype=self.activation_dtype,
-          )
-
-        if self.gelu_activation:
-          upstream = load_ops_library.gelu_grad(
-            upstream,
-            out,
-            approximate=True,
-          )
-
         bgrad = None
         if self.use_bias:
-          bgrad = tf.reduce_sum(upstream, 0)
-
-        if not self.fp8_out:
-          upstream = load_ops_library.fp8_quantize(
+          grad, bgrad = load_ops_library.fp8_quantize_dbias(
             upstream,
             bwd_fp8_meta_tensors[1][0],
             bwd_fp8_meta_tensors[1][1],
             fp8_meta_index=0,
             fp8_dtype=fp8_dtype_backward,
           )
-          upstream = load_ops_library.fp8_dequantize(
+          grad = tf.reshape(grad, out.shape)
+          bgrad = tf.reshape(bgrad, bias.shape)
+        else:
+          grad = load_ops_library.fp8_quantize(
             upstream,
-            bwd_fp8_meta_tensors[1][2],
-            fp8_meta_index=0,
-            fp8_dtype=fp8_dtype_backward,
-            out_dtype=self.activation_dtype,
-          )
-        wgrad = tf.matmul(inputs, upstream, transpose_a=True)
-        dgrad = tf.matmul(upstream, kernel, transpose_b=True)
-        if self.fp8_inp:
-          dgrad = load_ops_library.fp8_quantize(
-            dgrad,
-            bwd_fp8_meta_tensors[2][0],
-            bwd_fp8_meta_tensors[2][1],
+            bwd_fp8_meta_tensors[1][0],
+            bwd_fp8_meta_tensors[1][1],
             fp8_meta_index=0,
             fp8_dtype=fp8_dtype_backward,
           )
-        self.post_backward(dgrad)
+
+        wgrad = fp8_matmul(
+          inputs,
+          fwd_fp8_meta_tensors[1][2],
+          0,
+          fp8_dtype_forward,
+          grad,
+          bwd_fp8_meta_tensors[1][2],
+          0,
+          fp8_dtype_backward,
+          self.activation_dtype,
+          transpose_a=True,
+        )
+
+        dgrad = fp8_matmul(
+          grad,
+          bwd_fp8_meta_tensors[1][2],
+          0,
+          fp8_dtype_backward,
+          kernel,
+          fwd_fp8_meta_tensors[1][2],
+          1,
+          fp8_dtype_forward,
+          self.activation_dtype,
+          transpose_b=True,
+        )
+
         return dgrad, wgrad, bgrad
-      return activation, grad_fn
+      return out, grad_fn
 
     return fp8_dense_func(inputs, kernel, bias)
 
@@ -224,11 +172,8 @@ class Dense(BaseModule, layers.Layer):
     self.activation_dtype = get_activation_dtype(
       inputs.dtype, self.compute_dtype)
 
-    self.fp8_inp = inputs.dtype == tf.int8
-    num_fp8_inps = 1 if self.fp8_inp else 0
-    num_fp8_outs = 1 if self.fp8_out else 0
     self.fp8_init(
-      num_fp8_inps=num_fp8_inps, num_gemms=1, num_fp8_outs=num_fp8_outs)
+      num_fp8_inps=0, num_gemms=1, num_fp8_outs=0)
 
     inputs = cast_if_needed(inputs, self.activation_dtype)
     kernel = cast_if_needed(self.kernel, self.activation_dtype)
@@ -376,7 +321,7 @@ class LayerNormMLP(BaseModule, layers.Layer):
       fwd_fp8_meta_tensors = self.get_fp8_meta_tensors(
         inputs, max_fp8_outs=1, fwd=True)
 
-      ln_out, mu, rsigma = load_ops_library.fp8_layer_norm(
+      ln_out_fp8, mu, rsigma = load_ops_library.fp8_layer_norm(
         inputs,
         gamma,
         beta,
@@ -388,13 +333,14 @@ class LayerNormMLP(BaseModule, layers.Layer):
         out_dtype=tf.int8,
       )
 
-      ln_out = load_ops_library.fp8_dequantize(
-        ln_out,
-        fwd_fp8_meta_tensors[1][2],
-        fp8_meta_index=0,
-        fp8_dtype=fp8_dtype_forward,
-        out_dtype=self.activation_dtype,
-      )
+      if self.return_layernorm_output:
+        ln_out = load_ops_library.fp8_dequantize(
+          ln_out_fp8,
+          fwd_fp8_meta_tensors[1][2],
+          fp8_meta_index=0,
+          fp8_dtype=fp8_dtype_forward,
+          out_dtype=self.activation_dtype,
+        )
 
       fc1_kernel = load_ops_library.fp8_quantize(
         fc1_kernel,
@@ -403,16 +349,19 @@ class LayerNormMLP(BaseModule, layers.Layer):
         fp8_meta_index=1,
         fp8_dtype=fp8_dtype_forward,
       )
-      fc1_kernel = load_ops_library.fp8_dequantize(
+
+      fc1_out = fp8_matmul(
+        ln_out_fp8,
+        fwd_fp8_meta_tensors[1][2],
+        0,
+        fp8_dtype_forward,
         fc1_kernel,
         fwd_fp8_meta_tensors[1][2],
-        fp8_meta_index=1,
-        fp8_dtype=fp8_dtype_forward,
-        out_dtype=self.activation_dtype,
+        1,
+        fp8_dtype_forward,
+        self.activation_dtype,
+        bias=fc1_bias,
       )
-
-      fc1_out = tf.matmul(ln_out, fc1_kernel)
-      fc1_out = fc1_out + fc1_bias
 
       gelu_out = load_ops_library.fp8_gelu(
         fc1_out,
@@ -420,13 +369,6 @@ class LayerNormMLP(BaseModule, layers.Layer):
         fwd_fp8_meta_tensors[1][1],
         fp8_meta_index=2,
         fp8_dtype=fp8_dtype_forward,
-      )
-      gelu_out = load_ops_library.fp8_dequantize(
-        gelu_out,
-        fwd_fp8_meta_tensors[1][2],
-        fp8_meta_index=2,
-        fp8_dtype=fp8_dtype_forward,
-        out_dtype=self.activation_dtype,
       )
 
       fc2_kernel = load_ops_library.fp8_quantize(
@@ -436,16 +378,19 @@ class LayerNormMLP(BaseModule, layers.Layer):
         fp8_meta_index=3,
         fp8_dtype=fp8_dtype_forward,
       )
-      fc2_kernel = load_ops_library.fp8_dequantize(
+
+      fc2_out = fp8_matmul(
+        gelu_out,
+        fwd_fp8_meta_tensors[1][2],
+        2,
+        fp8_dtype_forward,
         fc2_kernel,
         fwd_fp8_meta_tensors[1][2],
-        fp8_meta_index=3,
-        fp8_dtype=fp8_dtype_forward,
-        out_dtype=self.activation_dtype,
+        3,
+        fp8_dtype_forward,
+        self.activation_dtype,
+        bias=fc2_bias,
       )
-      fc2_out = tf.matmul(gelu_out, fc2_kernel)
-      if self.output_use_bias:
-        fc2_out = fc2_out + fc2_bias
 
       def grad_fn(*upstream):
         self.pre_backward()
@@ -472,16 +417,32 @@ class LayerNormMLP(BaseModule, layers.Layer):
             fp8_dtype=fp8_dtype_backward,
           )
           fc2_bias_grad = None
-        grad = load_ops_library.fp8_dequantize(
+
+        fc2_kernel_grad = fp8_matmul(
+          gelu_out,
+          fwd_fp8_meta_tensors[1][2],
+          2,
+          fp8_dtype_forward,
           grad,
           bwd_fp8_meta_tensors[1][2],
-          fp8_meta_index=0,
-          fp8_dtype=fp8_dtype_backward,
-          out_dtype=self.activation_dtype,
+          0,
+          fp8_dtype_backward,
+          self.activation_dtype,
+          transpose_a=True,
         )
 
-        fc2_kernel_grad = tf.matmul(gelu_out, grad, transpose_a=True)
-        grad = tf.matmul(grad, fc2_kernel, transpose_b=True)
+        grad = fp8_matmul(
+          grad,
+          bwd_fp8_meta_tensors[1][2],
+          0,
+          fp8_dtype_backward,
+          fc2_kernel,
+          fwd_fp8_meta_tensors[1][2],
+          3,
+          fp8_dtype_forward,
+          self.activation_dtype,
+          transpose_b=True,
+        )
 
         grad, fc1_bias_grad = load_ops_library.fp8_quantize_dbias_dgelu(
           grad,
@@ -493,24 +454,40 @@ class LayerNormMLP(BaseModule, layers.Layer):
         )
         fc1_bias_grad = tf.reshape(fc1_bias_grad, fc1_bias.shape)
         grad = tf.reshape(grad, fc1_out.shape)
-        grad = load_ops_library.fp8_dequantize(
+
+        fc1_kernel_grad = fp8_matmul(
+          ln_out_fp8,
+          fwd_fp8_meta_tensors[1][2],
+          0,
+          fp8_dtype_forward,
           grad,
           bwd_fp8_meta_tensors[1][2],
-          fp8_meta_index=1,
-          fp8_dtype=fp8_dtype_backward,
-          out_dtype=self.activation_dtype,
+          1,
+          fp8_dtype_backward,
+          self.activation_dtype,
+          transpose_a=True,
         )
 
-        fc1_kernel_grad = tf.matmul(ln_out, grad, transpose_a=True)
-        grad = tf.matmul(grad, fc1_kernel, transpose_b=True)
+        ln_out_grad = None
         if self.return_layernorm_output:
-          grad = grad + upstream[1]
-        grad = load_ops_library.fp8_quantize(
+          ln_out_grad = upstream[1]
+        grad = fp8_matmul(
           grad,
-          bwd_fp8_meta_tensors[1][0],
-          bwd_fp8_meta_tensors[1][1],
-          fp8_meta_index=2,
-          fp8_dtype=fp8_dtype_backward,
+          bwd_fp8_meta_tensors[1][2],
+          1,
+          fp8_dtype_backward,
+          fc1_kernel,
+          fwd_fp8_meta_tensors[1][2],
+          1,
+          fp8_dtype_forward,
+          self.activation_dtype,
+          transpose_b=True,
+          post_add=ln_out_grad,
+          output_amax=bwd_fp8_meta_tensors[1][0],
+          output_scale=bwd_fp8_meta_tensors[1][1],
+          output_index=2,
+          output_fp8_dtype=fp8_dtype_backward,
+          fp8_out=True,
         )
 
         dx, dgamma, dbeta = load_ops_library.fp8_layer_norm_grad(
@@ -565,7 +542,9 @@ class LayerNormMLP(BaseModule, layers.Layer):
     self.activation_dtype = get_activation_dtype(
       inputs.dtype, self.compute_dtype)
 
-    assert len(inputs.shape) == 2
+    inputs_shape = inputs.shape
+    assert len(inputs_shape) == 2
+    self.batch = inputs_shape[0]
     self.fp8_init(
       num_fp8_inps=0, num_gemms=2, num_fp8_outs=0)
 

@@ -179,6 +179,9 @@ class TransposeOp : public OpKernel {
           case DT_QINT8:
             return TransposeND<Device, qint8>(ctx, in, out, perm);
             break;
+          case DT_INT8:
+            return TransposeND<Device, int8>(ctx, in, out, perm);
+            break;
           default:
             break;
         }

@@ -188,3 +188,121 @@ void Register_Fp8QuantizeDbiasDgeluOp() {
         << "Fp8QuantizeDbiasDgelu op registration failed: ";
   }
 }
+
+void Register_Fp8MatmulOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("Fp8Matmul");
+    TF_OpDefinitionBuilderAddInput(op_builder, "src: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "weight: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "bias: sum_dtype");
+    TF_OpDefinitionBuilderAddInput(op_builder, "post_add: sum_dtype");
+    TF_OpDefinitionBuilderAddInput(op_builder, "a_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "b_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "c_amax: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "c_scale: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "dst: out_dtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_a: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_b: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_c: int = -1");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "transpose_a: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "transpose_b: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_bias: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "has_post_add: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "sum_dtype: {float, bfloat16, half}");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "out_dtype: {float, bfloat16, half, int8}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_dtype_a: {'E4M3', 'E5M2'}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_dtype_b: {'E4M3', 'E5M2'}");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "fp8_dtype_c: {'E4M3', 'E5M2', ''} = ''");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "Fp8Matmul op registration failed: ";
+  }
+}
+
+void Register_Fp8ScaledDotProductAttentionOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("Fp8ScaledDotProductAttention");
+    TF_OpDefinitionBuilderAddInput(op_builder, "query: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "key: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "qk_scale: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "attention_mask: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dropout_mask: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "q_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "k_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "v_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "attn_amax: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "attn_scale: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "attn_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "z_amax: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "z_scale: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "z: int8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "softmax: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "attn: int8");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {float, bfloat16, half}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dropout_prob: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_q: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_k: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_v: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_attn: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_z: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_dtype: {'E4M3', 'E5M2'}");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "Fp8ScaledDotProductAttention op registration failed: ";
+  }
+}
+
+void Register_Fp8ScaledDotProductAttentionGradOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("Fp8ScaledDotProductAttentionGrad");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dz: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "query: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "key: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "qk_scale: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "softmax: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dropout_mask: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "attn: int8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dz_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "attn_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "q_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "k_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "v_scale_inv: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dp_amax: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dp_scale: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dp_scale_inv: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "dq: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "dk: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "dv: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {float, bfloat16, half}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dropout_prob: float");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_dz: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_attn: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_q: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_k: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_v: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "fp8_meta_index_dp: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "fp8_dtype_forward: {'E4M3', 'E5M2'}");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "fp8_dtype_backward: {'E4M3', 'E5M2'}");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "Fp8ScaledDotProductAttentionGrad op registration failed: ";
+  }
+}
