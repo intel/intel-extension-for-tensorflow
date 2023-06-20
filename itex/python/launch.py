@@ -15,6 +15,7 @@
 # ============================================================================
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+import math
 import sys
 import platform
 import subprocess
@@ -277,7 +278,6 @@ class Launcher():
     '''
     self.set_memory_allocator(
         enable_tcmalloc, enable_jemalloc, use_default_allocator)
-    self.set_env("OMP_NUM_THREADS", str(ncore_per_instance))
     if set_kmp_affinity:
       if len(self.cpuinfo.get_node_logical_cores(0)) > len(
           self.cpuinfo.get_node_physical_cores(0)):
@@ -292,6 +292,7 @@ class Launcher():
     self.set_env("KMP_BLOCKTIME", "1")
     if num_inter is None:
       self.set_env("TF_NUM_INTEROP_THREADS", "1")
+      self.set_env("OMP_NUM_THREADS", str(ncore_per_instance))
     else:
       try:
         num = int(num_inter)
@@ -301,6 +302,7 @@ class Launcher():
             "tf_num_interop_threads should be an integer >= -1, "
             "but input is %s.", 'num_inter')
         sys.exit(-1)
+      self.set_env("OMP_NUM_THREADS", str(ncore_per_instance // num))
       self.set_env("TF_NUM_INTEROP_THREADS", num_inter)
     if num_intra is None:
       self.set_env("TF_NUM_INTRAOP_THREADS", str(ncore_per_instance))
@@ -332,6 +334,7 @@ class MultiInstanceLauncher(Launcher):
 
   def launch(self, args):
     processes = []
+    processes_tune = []
     cores = []
     set_kmp_affinity = True
     enable_taskset = False
@@ -486,7 +489,9 @@ class MultiInstanceLauncher(Launcher):
                                         args.enable_jemalloc,
                                         args.use_default_allocator)
     self.set_itex(args.enable_itex_amp, args.enable_itex_layout_opt)
-    os.environ["LAUNCH_CMD"] = "#"
+    # os.environ["LAUNCH_CMD"] = "#"
+    cmd_run = []
+    cmd_tune = []
     for i in range(args.ninstances):
       cmd = []
       cur_process_cores = ""
@@ -539,20 +544,75 @@ class MultiInstanceLauncher(Launcher):
               i) + cur_process_cores.replace(',', '_') + ".log"
       log_name = os.path.join(args.log_path, log_name)
       cmd.extend(args.program_args)
-      os.environ["LAUNCH_CMD"] += " ".join(cmd) + ",#"
+      # os.environ["LAUNCH_CMD"] += " ".join(cmd) + ",#"
       cmd_s = " ".join(cmd)
-      if args.log_path:
-        cmd_s = "{} 2>&1 | tee {}".format(cmd_s, log_name)
-      logger.info(cmd_s)
       if not args.disable_numactl:
-        process = subprocess.Popen(cmd_s, env=os.environ, shell=True)
+        cmd_tune.append("{} > tmp_itex_launcher_tune_result_{}.log 2>&1".format(cmd_s, i))
       elif enable_taskset:
-        process = subprocess.Popen(cmd, env=os.environ)
+        cmd_tune.append("{} > tmp_itex_launcher_tune_result_{}.log 2>&1".format(cmd, i))
+      if args.log_path:
+        cmd_s = "{} > {} 2>&1".format(cmd_s, log_name)
+      if not args.disable_numactl:
+        cmd_run.append(cmd_s)
+      elif enable_taskset:
+        cmd_run.append(cmd)
+
+    if args.tune:
+      candidates = [1]
+      while (True):
+        if args.ncore_per_instance % (2 * candidates[-1]) == 0:
+          candidates.append(2 * candidates[-1])
+        else:
+          break
+      if candidates[-1] != args.ncore_per_instance:
+        candidates.append(args.ncore_per_instance)
+      tune_time = [-1 for i in range(len(candidates))]
+      logger.info("Start to tune TF_NUM_INTEROP_THREADS, candidates are {}".format(candidates))
+      loop = len(candidates) // args.ninstances + (1 if len(candidates) % args.ninstances > 0 else 0)
+      for l in range(loop):
+        for i in range(args.ninstances):
+          if l * args.ninstances + i >= len(candidates):
+            break
+          candidate = candidates[l * args.ninstances + i]
+          logger.info(candidate)
+          timer = "/usr/bin/time -o tmp_itex_launcher_tune_inter_op_{}_time.log -f \"%e\" ".format(candidate)
+          os.environ["TF_NUM_INTEROP_THREADS"] = str(candidate)
+          os.environ["OMP_NUM_THREADS"] = str(args.ncore_per_instance // candidate)
+          process = subprocess.Popen(timer + cmd_tune[i], env=os.environ, shell=True)
+          processes_tune.append(process)
+        for i in range(len(processes_tune)):
+          processes_tune[i].wait()
+          if processes_tune[i].returncode != 0:
+            raise subprocess.CalledProcessError(
+              returncode=processes_tune[i].returncode, cmd=cmd_tune[i])
+        processes_tune = []
+
+      for i in range(len(candidates)):
+        with open("tmp_itex_launcher_tune_inter_op_{}_time.log".format(candidates[i])) as file:
+          content = file.readline()
+          tune_time[i] = float(content)
+        os.remove("tmp_itex_launcher_tune_inter_op_{}_time.log".format(candidates[i]))
+      for i in range(min(len(candidates),args.ninstances)):
+        os.remove("tmp_itex_launcher_tune_result_{}.log".format(i))
+      if -1 in tune_time:
+        logger.error("--tune failed")
+        sys.exit()
+      best_config = candidates[tune_time.index(min(tune_time))]
+      os.environ["TF_NUM_INTEROP_THREADS"] = str(best_config)
+      os.environ["OMP_NUM_THREADS"] = str(args.ncore_per_instance // best_config)
+      logger.info("launcher tune result: TF_NUM_INTEROP_THREADS={}".format(best_config))
+
+    for i in range(args.ninstances):
+      logger.info(cmd_run[i])
+      if not args.disable_numactl:
+        process = subprocess.Popen(cmd_run[i], env=os.environ, shell=True)
+      elif enable_taskset:
+        process = subprocess.Popen(cmd_run[i], env=os.environ)
       processes.append(process)
 
       if args.instance_idx != -1:  # launches single instance, instance_idx, only
         break
-    os.environ["LAUNCH_CMD"] = os.environ["LAUNCH_CMD"][:-2]
+    # os.environ["LAUNCH_CMD"] = os.environ["LAUNCH_CMD"][:-2]
     for process in processes:
       process.wait()
       if process.returncode != 0:
@@ -569,6 +629,9 @@ def add_itex_params(parser):
   group.add_argument("--enable_itex_layout_opt", action='store_true', \
                       default=False,
                      help="Enable ITEX layout opt")
+  group.add_argument("--enable_op_parallelism", action='store_true', \
+                      default=False,
+                     help="If true, set TF_NUM_INTEROP_THREADS=2, by default it is 1.")
 
 
 def add_memory_allocator_params(parser):
@@ -681,7 +744,8 @@ def parse_args():
                             with \"python\" - just exec "
                            "it directly. Useful when the script is \
                             not a Python script.")
-
+  parser.add_argument("--tune", default=False, action="store_true",
+                      help="tune the inter num threads and run a py script.")
   add_memory_allocator_params(parser)
   add_itex_params(parser)
   add_multi_instance_params(parser)
@@ -720,10 +784,28 @@ def main():
     raise RuntimeError(
         "Either args.latency_mode or args.throughput_mode should be set")
 
-  if not args.no_python and not args.program.endswith(".py"):
+  if not args.no_python and not (args.program.endswith(".py") or args.module):
     logger.error(
         "For non Python script, you should use '--no_python' parameter.")
     sys.exit()
+  if args.no_python and args.tune:
+    logger.error(
+        "For non Python script, you should not use '--tune' parameter.")
+    sys.exit()
+  if args.tune and (args.tf_num_interop_threads is not None or
+    "TF_NUM_INTEROP_THREADS" in os.environ):
+    logger.error(
+        "You should not use '--tune' parameter when number of interop threads "
+        "is set")
+    sys.exit()
+  if args.enable_op_parallelism and (
+    args.tf_num_interop_threads is not None or "TF_NUM_INTEROP_THREADS" in os.environ):
+    logger.error(
+        "You should not use '--enable_op_parallelism' parameter when number of interop threads "
+        "is set")
+    sys.exit()
+  if args.enable_op_parallelism:
+    args.tf_num_interop_threads = "2"
 
   # Verify LD_PRELOAD
   if "LD_PRELOAD" in os.environ:
