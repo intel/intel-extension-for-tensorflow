@@ -33,8 +33,14 @@ template <typename Device, typename T>
 class TopK : public OpKernel {
  public:
   explicit TopK(OpKernelConstruction* context) : OpKernel(context) {
-    OP_REQUIRES_OK(context, context->GetAttr("sorted", &sorted_));
-    k_ = -1;
+    auto status = context->GetAttr("sorted", &sorted_);
+    if (!status.ok()) {
+      sorted_ = true;  // Default to sorted, as required by ApproxTopK.
+    }
+    auto status_k = context->GetAttr("k", &k_);
+    if (!status_k.ok()) {
+      k_ = -1;
+    }
   }
 
   void Compute(OpKernelContext* context) override {
@@ -120,5 +126,20 @@ TF_CALL_double(REGISTER_TOPK_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 */
 #undef REGISTER_TOPK_KERNELS
+
+#define REGISTER_APPROXTOPK_KERNELS(type)                              \
+  REGISTER_KERNEL_BUILDER(                                             \
+      Name("ApproxTopK").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      TopK<GPUDevice, type>)
+
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_APPROXTOPK_KERNELS);
+// TODO(itex): Enable following code after fix the topk kernel bug caused by
+// double
+/*
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_APPROXTOPK_KERNELS);
+#endif  // ITEX_ENABLE_DOUBLE
+*/
+#undef REGISTER_APPROXTOPK_KERNELS
 
 }  // namespace itex
