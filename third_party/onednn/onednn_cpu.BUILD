@@ -229,10 +229,12 @@ _GRAPH_COPTS_CPU_LIST = [
     "-DDNNL_ENABLE_COMPILER_BACKEND",
     "-DSC_BUILTIN_JIT_ENABLED=1",
     "-DSC_CFAKE_JIT_ENABLED=1",
-    "-DSC_LLVM_BACKEND=13",
-    "-DSC_CPU_THREADPOOL=1",
+    "-DSC_LLVM_BACKEND=16",
     "-fopenmp",
-])
+]) + select({
+    "@intel_extension_for_tensorflow//third_party/onednn:build_with_tbb": ["-DSC_CPU_THREADPOOL=2"],
+    "//conditions:default": ["-DSC_CPU_THREADPOOL=1"],
+})
 
 _GRAPH_SRCS_LIST = glob(
     [
@@ -285,14 +287,14 @@ _GRAPH_DEPS_LIST = [
     ":onednn_cpu",
 ] + if_graph_compiler(
     [
-        "@llvm-project-13//llvm:Core",
-        "@llvm-project-13//llvm:Support",
-        "@llvm-project-13//llvm:Target",
-        "@llvm-project-13//llvm:ExecutionEngine",
-        "@llvm-project-13//llvm:MCJIT",
-        "@llvm-project-13//llvm:X86CodeGen",
-        "@llvm-project-13//llvm:AsmParser",
-        "@llvm-project-13//llvm:AllTargetsAsmParsers",
+        "@llvm-project-16//llvm:Core",
+        "@llvm-project-16//llvm:Support",
+        "@llvm-project-16//llvm:Target",
+        "@llvm-project-16//llvm:ExecutionEngine",
+        "@llvm-project-16//llvm:MCJIT",
+        "@llvm-project-16//llvm:X86CodeGen",
+        "@llvm-project-16//llvm:AsmParser",
+        "@llvm-project-16//llvm:AllTargetsAsmParsers",
     ],
 )
 

@@ -1,7 +1,7 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("//third_party/llvm_project:workspace.bzl", llvm = "repo")
-load("//third_party/llvm_project:workspace.bzl", llvm_13 = "repo_13")
+load("//third_party/llvm_project:workspace.bzl", llvm_16 = "repo_16")
 
 def workspace():
     # https://github.com/bazelbuild/bazel-skylib/releases
@@ -26,6 +26,6 @@ def workspace():
     # Load the raw llvm-project.  llvm does not have build rules set up by default,
     # but provides a script for setting up build rules via overlays.
     llvm("llvm-raw")
-    llvm_13("llvm-raw-13")
+    llvm_16("llvm-raw-16")
 
 itex_workspace1 = workspace
