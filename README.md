@@ -94,6 +94,19 @@ Sanity check instructions:
 python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
 ```
 
+### Install for weekly binaries
+
+GPU weekly binaries are available for testing, CPU weekly binaries will be coming soon.
+#### Install for GPU weekly
+```
+pip install --upgrade intel-extension-for-tensorflow-weekly[gpu] -f https://developer.intel.com/itex-whl-weekly
+```
+
+Environment check instructions for GPU weekly:
+
+```bash
+bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+```
 
 ## Documentation 
 

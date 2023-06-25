@@ -127,6 +127,12 @@ To install a GPU-only version in virtual environment, which depends on Intel GPU
 (tf)$ pip install --upgrade intel-extension-for-tensorflow[gpu]
 ```
 
+Or install a `weekly` GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
+
+```bash
+(tf)$ pip install --upgrade intel-extension-for-tensorflow-weekly[gpu] -f https://developer.intel.com/itex-whl-weekly
+```
+
 ##### Check the Environment for GPU
 ```bash
 (tf)$ bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
