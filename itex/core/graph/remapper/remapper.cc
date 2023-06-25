@@ -2854,9 +2854,6 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
   // Only check control fanin for output node is enough.
   if (HasControlFanin(*node_view)) return false;
 
-  // Only support on GPU.
-  if (NodeIsOnCpu(node_def)) return false;
-
   // Only support Add/Mul/Sub now because they satisfy the commutative law.
   if (!IsAdd(*node_def) && !IsMul(*node_def) && !IsSub(*node_def)) return false;
 
@@ -2864,7 +2861,7 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
       !HasDataType(node_def, DT_HALF))
     return false;
 
-  // Returns true iff the node is a compatible FusedBatchNorm node.
+  // Returns true iff all the nodes have valid shape.
   const auto valid_shape = [&](const utils::MutableNodeView& binary) -> bool {
     const auto* binary_def = binary.node();
     std::vector<OpInfo_TensorProperties> props;
@@ -2877,6 +2874,9 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
     bool has_scalar =
         Rank(props[0].shape()) == 0 || Rank(props[1].shape()) == 0;
     if (!(same_input || has_scalar)) return false;
+    // Disable scalar fusion on CPU due to performance issue.
+    // TODO(itex): Support scalar fusion on CPU.
+    if (has_scalar && NodeIsOnCpu(binary_def)) return false;
     return true;
   };
 

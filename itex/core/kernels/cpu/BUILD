@@ -57,6 +57,23 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "fused_binary_op",
+    srcs = ["fused_binary_op.cc"],
+    hdrs = [
+        "fused_binary_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:cwise_ops_lib",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "matmul_op",
     srcs = ["matmul_op.cc"],
     hdrs = [
@@ -406,6 +423,7 @@ CPU_KERNELS = [
     ":dequantize_op",
     ":einsum_op",
     ":fused_batch_norm_op",
+    ":fused_binary_op",
     ":fused_random_op",
     ":gru_ops",
     ":instance_norm_ops",

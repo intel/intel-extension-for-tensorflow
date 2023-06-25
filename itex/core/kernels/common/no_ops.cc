@@ -22,7 +22,5 @@ namespace itex {
 
 REGISTER_KERNEL_BUILDER(Name("NoOp").Device(DEVICE_GPU), NoOp);
 REGISTER_KERNEL_BUILDER(Name("NoOp").Device(DEVICE_CPU), NoOp);
-REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBinary").Device(DEVICE_CPU),
-                        NoImplementOp);
 
 }  // namespace itex

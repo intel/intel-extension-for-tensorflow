@@ -40,7 +40,7 @@ from tensorflow.python.ops import nn_impl
 from tensorflow.python.ops import nn_ops
 
 # Test plain format.
-os.environ['ITEX_ENABLE_ONEDNN_LAYOUT_OPT']="0"
+os.environ['ITEX_LAYOUT_OPT']="0"
 
 class BatchNormalizationTest(test.TestCase):
 
