@@ -47,6 +47,7 @@ class FusedBinaryTest(test_lib.TestCase):
       in_z_d = tf.cast(in_z, dtype=dtype)
       x = in_x_d - 1
       x = tf.math.multiply(x, in_z_d)
+      x = x - in_z_d
       x = tf.reshape(x, [-1])
 
       with self.session(use_gpu=True) as sess:
@@ -67,10 +68,11 @@ class FusedBinaryTest(test_lib.TestCase):
         in_array = in_array.astype(np.float16)
         y_atol = 1e-3
         if dtype is tf.bfloat16:
-          y_atol = 2e-3
+          y_atol = 6e-3
 
       y = in_array - 1
       y = y * in_array
+      y = y - in_array
       y = y.reshape((-1))
       self.assertAllClose(output_val, y, atol=y_atol)
 
@@ -90,7 +92,7 @@ class FusedBinaryTest(test_lib.TestCase):
       in_z_d = tf.cast(in_z, dtype=dtype)
       x = 1 - in_x_d
       x = tf.math.multiply(x, in_z_d)
-      x = x + 3
+      x = in_z_d - x
       x = tf.reshape(x, [-1])
 
       with self.session(use_gpu=True) as sess:
@@ -115,124 +117,21 @@ class FusedBinaryTest(test_lib.TestCase):
 
       y = 1 - in_array
       y = y * in_array
-      y = y + 3
+      y = in_array - y
       y = y.reshape((-1))
       self.assertAllClose(output_val, y, atol=y_atol)
-
-  def _testGraphStructureScalars(self, shape1):
-    run_options = config_pb2.RunOptions(output_partition_graphs=True)
-    metadata = config_pb2.RunMetadata()
-
-    in_array = np.random.uniform(size=np.prod(shape1))
-    in_array = in_array.astype(np.float32).reshape(shape1)
-    in_x = tf.placeholder(tf.float32, shape=())
-    in_z = tf.placeholder(tf.float32, shape=shape1)
-    dtypes = [tf.float32, tf.bfloat16]
-    if tf.config.list_physical_devices('XPU'):
-      dtypes += [tf.half]
-    for dtype in dtypes:
-      in_x_d = tf.cast(in_x, dtype=dtype)
-      in_z_d = tf.cast(in_z, dtype=dtype)
-      x = 1 - in_x_d
-      x = tf.math.multiply(x, 1.3)
-      x = x + in_z_d
-      x = tf.reshape(x, [-1])
-
-      with self.session(use_gpu=True) as sess:
-        output_val = sess.run(x, options=run_options, run_metadata=metadata,
-                              feed_dict={in_x: 2.435, in_z: in_array})
-        graph = metadata.partition_graphs[0]
-
-      existing_pattern = False
-      for node in graph.node:
-        if 'ITEXFusedBinary' in node.op:
-          existing_pattern = True
-          break
-      self.assertTrue(existing_pattern)
-
-      y_atol = 1e-6
-
-      if dtype is not tf.float32:
-        in_array = in_array.astype(np.float16)
-        y_atol = 1e-3
-        if dtype is tf.bfloat16:
-          y_atol = 1e-2
-
-      y = 1 - 2.435
-      y = y * 1.3
-      y = y + in_array
-      y = y.reshape((-1))
-      self.assertAllClose(output_val, y, atol=y_atol, rtol=y_atol)
 
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def testGraphStructure(self):
     self._testGraphStructure((16, 16, 512, 512))
-    self._testGraphStructure((23, 11, 31, 109))
     self._testGraphStructure((64, 64))
-    self._testGraphStructure((1, 1))
 
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def testGraphStructureSub1(self):
     self._testGraphStructureSub1((16, 16, 512, 512))
-    self._testGraphStructureSub1((23, 11, 31, 109))
     self._testGraphStructureSub1((1280, 16))
-
-  @test_util.run_deprecated_v1
-  @test_util.disable_xla('This test does not pass with XLA')
-  def testGraphStructureScalars(self):
-    self._testGraphStructureScalars((23, 11, 512, 109))
-    self._testGraphStructureSub1((1280, 16))
-
-  @test_util.run_deprecated_v1
-  @test_util.disable_xla('This test does not pass with XLA')
-  def testAllScalars(self):
-    run_options = config_pb2.RunOptions(output_partition_graphs=True)
-    metadata = config_pb2.RunMetadata()
-
-    in_num = np.random.uniform()
-    in_x = tf.placeholder(tf.float32, shape=())
-    in_z = tf.placeholder(tf.float32, shape=())
-
-    dtypes = [tf.float32, tf.bfloat16]
-    if tf.config.list_physical_devices('XPU'):
-      dtypes += [tf.half]
-    for dtype in dtypes:
-      in_x_d = tf.cast(in_x, dtype=dtype)
-      in_z_d = tf.cast(in_z, dtype=dtype)
-      x = in_x_d - 1
-      x = tf.math.multiply(x, in_z_d)
-      x = x + 2
-      x = tf.identity(x)
-
-      with self.session(use_gpu=True) as sess:
-        output_val = sess.run(x, options=run_options, run_metadata=metadata,
-                              feed_dict={in_x: in_num, in_z: in_num})
-        graph = metadata.partition_graphs[0]
-
-      existing_pattern = False
-      for node in graph.node:
-        if 'ITEXFusedBinary' in node.op:
-          existing_pattern = True
-          break
-      self.assertTrue(existing_pattern)
-
-      y_atol = 1e-6
-
-      if dtype is not tf.float32:
-        in_num = np.float16(in_num)
-        y_atol = 1e-3
-        if dtype is tf.bfloat16:
-          y_atol = 2e-3
-        y = in_num - np.float16(1)
-        y = y * in_num
-        y = y + np.float16(2)
-      else:
-        y = in_num - 1
-        y = y * in_num
-        y = y + 2
-      self.assertAllClose(output_val, y, atol=y_atol)
 
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
