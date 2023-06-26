@@ -44,7 +44,6 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
        AlwaysRewrite},
       {"BatchMatMulV2", "_ITEXBatchMatMulV2", CopyAttrsAllCheckConstFilter,
        AlwaysRewrite},
-      {"Cast", "_ITEXCast", CopyAttrsCast, RewriteNativeCast},
       {"Conv2D", "_ITEXConv2D", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
       {"Conv2DBackpropFilter", "_ITEXConv2DBackpropFilter", CopyAttrsAll,
        RewriteBackwardDataType},
@@ -330,7 +329,6 @@ const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
 // Rewrite non-oneDNN op which is optimized in a customized manner.
 const std::vector<NativeFormatInfo>* GetCustomNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
-      {"Cast", "_ITEXCast", CopyAttrsCast, RewriteNativeCast},
       {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll, AlwaysRewrite},
   };
   return &rinfo;
