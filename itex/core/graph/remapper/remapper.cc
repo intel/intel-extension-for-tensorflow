@@ -3717,94 +3717,55 @@ Status AddKerasDenseLayerFwd(RemapperContext* ctx,
                              std::vector<bool>* invalidated_nodes,
                              std::vector<bool>* nodes_to_delete) {
   const GraphDef* graph = ctx->graph_view.graph();
-  const NodeDef& matmul = graph->node(matched.matmul_);
   const NodeDef& reshape = graph->node(matched.reshape_);
   const NodeDef& bias = graph->node(matched.bias_);
-  NodeDef new_shape;
+
   NodeDef fused_node;
+  fused_node.set_op(kBiasAdd);
+  fused_node.set_device(bias.device());
+  fused_node.set_name(reshape.name());
+  fused_node.add_input(reshape.input(0));
+  fused_node.add_input(bias.input(1));
+  CopyAllAttrs(bias, &fused_node);
+
+  NodeDef new_reshape;
+  new_reshape.set_op(kReshape);
+  new_reshape.set_device(reshape.device());
   if (matched.activation_ != kMissingIndex) {
     const NodeDef& activation = graph->node(matched.activation_);
-    fused_node.set_op(kFusedMatMul);
-    fused_node.set_name(bias.name());
-    fused_node.set_device(matmul.device());
-    fused_node.add_input(matmul.input(0));
-    fused_node.add_input(matmul.input(1));
-    fused_node.add_input(bias.input(1));
-    CopyAllAttrs(matmul, &fused_node);
-    SetFusedOpAttributesWithActivation(&fused_node, &activation, {"BiasAdd"});
-    NodeDef new_reshape;
-    new_reshape.set_op(kReshape);
-    new_reshape.set_device(reshape.device());
     new_reshape.set_name(activation.name());
-    new_reshape.add_input(bias.name());
-    new_reshape.add_input(reshape.input(1));
-    CopyAllAttrs(reshape, &new_reshape);
-
-    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
-    Status status;
-
-    if (matched.shape_ != kMissingIndex) {
-      const NodeDef& shape = graph->node(matched.shape_);
-      new_shape.set_op(kShape);
-      new_shape.set_device(shape.device());
-      new_shape.set_name(shape.name());
-      new_shape.add_input(bias.name());
-      CopyAllAttrs(shape, &new_shape);
-      mutation->AddNode(std::move(new_shape), &status);
-      (*invalidated_nodes)[matched.shape_] = true;
-    }
-
-    mutation->AddNode(std::move(fused_node), &status);
-    mutation->AddNode(std::move(new_reshape), &status);
-    (*invalidated_nodes)[matched.activation_] = true;
-    (*invalidated_nodes)[matched.bias_] = true;
-    (*nodes_to_delete)[matched.reshape_] = true;
-    (*nodes_to_delete)[matched.matmul_] = true;
-
-    TF_ABORT_IF_ERROR(status);
-    TF_ABORT_IF_ERROR(mutation->Apply());
-    return Status::OK();
+    new_reshape.add_input(activation.input(0));
   } else {
-    fused_node.set_op(kFusedMatMul);
-    fused_node.set_name(reshape.name());
-    fused_node.set_device(matmul.device());
-    fused_node.add_input(matmul.input(0));
-    fused_node.add_input(matmul.input(1));
-    fused_node.add_input(bias.input(1));
-    CopyAllAttrs(matmul, &fused_node);
-    SetFusedOpAttributes(&fused_node, {"BiasAdd"});
-    NodeDef new_reshape;
-    new_reshape.set_op(kReshape);
-    new_reshape.set_device(reshape.device());
     new_reshape.set_name(bias.name());
-    new_reshape.add_input(reshape.name());
-    new_reshape.add_input(reshape.input(1));
-    CopyAllAttrs(reshape, &new_reshape);
-
-    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
-    Status status;
-
-    if (matched.shape_ != kMissingIndex) {
-      const NodeDef& shape = graph->node(matched.shape_);
-      new_shape.set_op(kShape);
-      new_shape.set_device(shape.device());
-      new_shape.set_name(shape.name());
-      new_shape.add_input(reshape.name());
-      CopyAllAttrs(shape, &new_shape);
-      mutation->AddNode(std::move(new_shape), &status);
-      (*invalidated_nodes)[matched.shape_] = true;
-    }
-
-    mutation->AddNode(std::move(fused_node), &status);
-    mutation->AddNode(std::move(new_reshape), &status);
-    (*invalidated_nodes)[matched.bias_] = true;
-    (*invalidated_nodes)[matched.reshape_] = true;
-    (*nodes_to_delete)[matched.matmul_] = true;
-
-    TF_ABORT_IF_ERROR(status);
-    TF_ABORT_IF_ERROR(mutation->Apply());
-    return Status::OK();
+    new_reshape.add_input(bias.input(0));
   }
+  new_reshape.add_input(reshape.input(1));
+  CopyAllAttrs(reshape, &new_reshape);
+
+  NodeDef new_activation;
+  if (matched.activation_ != kMissingIndex) {
+    const NodeDef& activation = graph->node(matched.activation_);
+    new_activation.set_op(activation.op());
+    new_activation.set_device(activation.device());
+    new_activation.set_name(bias.name());
+    new_activation.add_input(bias.input(0));
+    CopyAllAttrs(activation, &new_activation);
+  }
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(fused_node), &status);
+  mutation->AddNode(std::move(new_reshape), &status);
+  (*invalidated_nodes)[matched.bias_] = true;
+  (*invalidated_nodes)[matched.reshape_] = true;
+  if (matched.activation_ != kMissingIndex) {
+    mutation->AddNode(std::move(new_activation), &status);
+    (*invalidated_nodes)[matched.activation_] = true;
+  }
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
 }
 
 Status AddMatmulReshapeBiasadd(RemapperContext* ctx,
