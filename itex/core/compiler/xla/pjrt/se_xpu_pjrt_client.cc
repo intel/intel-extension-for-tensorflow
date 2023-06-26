@@ -99,8 +99,8 @@ StreamExecutorXpuDevice::StreamExecutorXpuDevice(
   attributes_ = {
       {"device_vendor", "Intel"},
   };
-  to_string_ = absl::StrFormat(
-      "StreamExecutorXpuDevice(id=%i, process_index=%i)", id, process_index());
+  to_string_ = absl::StrFormat("IntelXpuDevice(id=%i, process_index=%i)", id,
+                               process_index());
 }
 
 absl::string_view StreamExecutorXpuDevice::device_vendor() {
