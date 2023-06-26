@@ -1381,6 +1381,22 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "fill_empty_rows_functor",
+    srcs = ["fill_empty_rows_functor.cc"],
+    hdrs = [
+        "fill_empty_rows_functor.h",
+        "full_reduction_kernels.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_fill_empty_rows_op",
     srcs = ["sparse_fill_empty_rows_op.cc"],
     hdrs = [
@@ -1390,10 +1406,10 @@ itex_xpu_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
+        ":fill_empty_rows_functor",
         "//itex:core",
         "//itex/core/kernels/common:fill_functor",
         "//itex/core/kernels/gpu:scan_ops",
-        "//itex/core/kernels/gpu:topk_op",
         "//itex/core/kernels/gpu:unique_op",
     ],
     alwayslink = True,

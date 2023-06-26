@@ -19,6 +19,7 @@ limitations under the License.
 #include <limits>
 
 #include "itex/core/kernels/common/fill_functor.h"
+#include "itex/core/kernels/gpu/fill_empty_rows_functor.h"
 #include "itex/core/kernels/gpu/scan_ops_gpu.h"
 #include "itex/core/kernels/gpu/unique_op.h"
 #include "itex/core/utils/bits.h"
@@ -306,10 +307,65 @@ class SparseFillEmptyRowsGPUOp : public OpKernel {
                           SparseFillEmptyRowsGPUOp<T, Tindex>)
 
 #define REGISTER_KERNELS_TINDEX(T) REGISTER_KERNELS(T, int64)
-TF_CALL_INTEGRAL_TYPES(REGISTER_KERNELS_TINDEX)
-TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNELS_TINDEX)
-TF_CALL_bool(REGISTER_KERNELS_TINDEX)
-
+TF_CALL_INTEGRAL_TYPES(REGISTER_KERNELS_TINDEX);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNELS_TINDEX);
+TF_CALL_bool(REGISTER_KERNELS_TINDEX);
 #undef REGISTER_KERNELS_TINDEX
 #undef REGISTER_KERNELS
+
+template <typename Device, typename T, typename Tindex>
+class SparseFillEmptyRowsGradOp : public OpKernel {
+ public:
+  explicit SparseFillEmptyRowsGradOp(OpKernelConstruction* context)
+      : OpKernel(context) {}
+
+  void Compute(OpKernelContext* context) override {
+    const Tensor* reverse_index_map_t;
+    const Tensor* grad_values_t;
+    OP_REQUIRES_OK(context,
+                   context->input("reverse_index_map", &reverse_index_map_t));
+    OP_REQUIRES_OK(context, context->input("grad_values", &grad_values_t));
+
+    OP_REQUIRES(
+        context, TensorShapeUtils::IsVector(reverse_index_map_t->shape()),
+        errors::InvalidArgument("reverse_index_map must be a vector, saw: ",
+                                reverse_index_map_t->shape().DebugString()));
+    OP_REQUIRES(context, TensorShapeUtils::IsVector(grad_values_t->shape()),
+                errors::InvalidArgument("grad_values must be a vector, saw: ",
+                                        grad_values_t->shape().DebugString()));
+
+    const auto reverse_index_map = reverse_index_map_t->vec<Tindex>();
+    const auto grad_values = grad_values_t->vec<T>();
+
+    const Tindex N = reverse_index_map_t->shape().dim_size(0);
+
+    Tensor* d_values_t;
+    OP_REQUIRES_OK(context,
+                   context->allocate_output(0, TensorShape({N}), &d_values_t));
+    auto d_values = d_values_t->vec<T>();
+    Tensor* d_default_value_t;
+    OP_REQUIRES_OK(context, context->allocate_output(1, TensorShape({}),
+                                                     &d_default_value_t));
+    auto d_default_value = d_default_value_t->scalar<T>();
+
+    OP_REQUIRES_OK(context, functor::FillEmptyRowsGrad<Device, T, Tindex>()(
+                                context, reverse_index_map, grad_values,
+                                d_values, d_default_value));
+  }
+};
+
+#define REGISTER_KERNELS(D, T, Tindex)                    \
+  REGISTER_KERNEL_BUILDER(Name("SparseFillEmptyRowsGrad") \
+                              .Device(DEVICE_##D)         \
+                              .TypeConstraint<T>("T"),    \
+                          SparseFillEmptyRowsGradOp<D##Device, T, Tindex>)
+
+#define REGISTER_GPU_KERNELS(T) REGISTER_KERNELS(GPU, T, int64)
+// TODO(itex): add bf16/fp16 back when eigen::vec is ready
+TF_CALL_INTEGRAL_TYPES(REGISTER_GPU_KERNELS);
+TF_CALL_float(REGISTER_GPU_KERNELS);
+TF_CALL_double(REGISTER_GPU_KERNELS);
+#undef REGISTER_GPU_KERNELS
+#undef REGISTER_KERNELS
+
 }  // namespace itex
