@@ -329,7 +329,8 @@ const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
 // Rewrite non-oneDNN op which is optimized in a customized manner.
 const std::vector<NativeFormatInfo>* GetCustomNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
-      {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll, AlwaysRewrite},
+      {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll,
+       RewriteRandomUniform},
   };
   return &rinfo;
 }
