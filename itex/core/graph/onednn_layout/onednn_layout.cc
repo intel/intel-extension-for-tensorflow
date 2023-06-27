@@ -185,7 +185,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
       {"_ITEXFusedMatMul", "_OneDnnFusedMatMul", CopyAttrsAllCheckConstFilter,
        RewriteMatMul},
       {"_ITEXFusedMatMulGrad", "_OneDnnFusedMatMulGrad", CopyAttrsAll,
-       RewriteFusedMatMulGrad},
+       AlwaysRewrite},
       {"_ITEXFusedMatMulWithSum", "_OneDnnFusedMatMul",
        CopyAttrsAllCheckConstFilter, RewriteMatMul},
       {"_ITEXInstanceNorm", "_OneDnnInstanceNorm", CopyAttrsAll,

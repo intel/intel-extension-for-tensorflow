@@ -76,9 +76,6 @@ bool RewriteBackwardDataType(const utils::MutableNodeView& node_view);
 // Conv op is rewritten only if there are OneDnn ops in its input or output.
 bool RewriteOneDnnConv(const utils::MutableNodeView& node_view);
 
-// Only rewrite GPU nodes.
-bool RewriteForGPU(const utils::MutableNodeView& node_view);
-
 bool RewriteLayerNorm(const utils::MutableNodeView& node_view);
 
 bool RewriteLayerNormGrad(const utils::MutableNodeView& node_view);
@@ -97,9 +94,6 @@ bool RewriteOneDnnFusedConv(const utils::MutableNodeView& node_view);
 
 // MatMul is not rewritten when trans_a/trans_b = True.
 bool RewriteMatMul(const utils::MutableNodeView& node_view);
-
-// _FusedMatMulGrad is not rewritten when trans_a/trans_b is true.
-bool RewriteFusedMatMulGrad(const utils::MutableNodeView& node_view);
 
 // Rewrite rule for Conv2DBackprop.
 // @return - true if `padding` and data type are supported.

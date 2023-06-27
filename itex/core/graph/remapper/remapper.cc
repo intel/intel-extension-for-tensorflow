@@ -1255,6 +1255,7 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
   const auto* node_def = node_view->node();
   if (!IsBiasAddGrad(*node_def)) return false;
 
+  // FP16 is not supported by oneDNN backward primitive.
   if (!(HasDataType(node_def, DT_FLOAT) || HasDataType(node_def, DT_BFLOAT16)))
     return false;
 

@@ -50,7 +50,7 @@ bool RewriteWithBlockInput(const utils::MutableNodeView& node_view) {
 
 // Rewrite rule for binary ops
 bool RewriteBinary(const utils::MutableNodeView& node_view) {
-  return RewriteForGPU(node_view) && RewriteWithBlockInput(node_view);
+  return NodeIsOnGpu(node_view.node()) && RewriteWithBlockInput(node_view);
 }
 
 // Rewrite rule for Cast op:
@@ -86,11 +86,6 @@ bool RewriteBackwardDataType(const utils::MutableNodeView& node_view) {
     return false;
   else
     return true;
-}
-
-bool RewriteForGPU(const utils::MutableNodeView& node_view) {
-  const NodeDef* node_def = node_view.node();
-  return NodeIsOnGpu(node_def) ? true : false;
 }
 
 bool RewriteLayerNorm(const utils::MutableNodeView& node_view) {
@@ -225,16 +220,6 @@ bool RewriteMatMul(const utils::MutableNodeView& node_view) {
   bool trans_b;
   ITEX_CHECK_OK(GetNodeAttr(node_def, "transpose_b", &trans_b));
   if (trans_b) return false;
-
-  return true;
-}
-
-// _FusedMatMulGrad is not rewritten when trans_a/trans_b is true.
-bool RewriteFusedMatMulGrad(const utils::MutableNodeView& node_view) {
-  if (!RewriteBackwardDataType(node_view)) return false;
-
-  // Disable GPU rewrite for better perf.
-  if (RewriteForGPU(node_view)) return false;
 
   return true;
 }
