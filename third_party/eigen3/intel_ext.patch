@@ -1848,10 +1848,10 @@ index 000000000..135b1b9c8
 +#endif // EIGEN_HALF_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/InteropHeaders.h b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
 new file mode 100644
-index 000000000..0632da9e1
+index 000000000..6b0cc530c
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
-@@ -0,0 +1,518 @@
+@@ -0,0 +1,530 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -1876,6 +1876,18 @@ index 000000000..0632da9e1
 +#define EIGEN_INTEROP_HEADERS_DPCPP_H
 +
 +namespace Eigen {
++
++// This funciton is to back compatible with old DPCPP compiler
++template <typename T, int Dims = 1>
++inline T* SYCLGetLocalAccPointer(
++    const sycl::local_accessor<T, Dims>& accessor) {
++  if constexpr (std::is_same_v<decltype(accessor.get_pointer()),
++                               sycl::local_ptr<T>>) {
++    return accessor.get_pointer().get();
++  } else {
++    return accessor.get_pointer();
++  }
++}
 +
 +#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +
@@ -6907,7 +6919,7 @@ index 5968ff4b7..b4e8d6564 100644
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h
 new file mode 100644
-index 000000000..14c2454a5
+index 000000000..85c9fec84
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h
 @@ -0,0 +1,1631 @@
@@ -7538,7 +7550,7 @@ index 000000000..14c2454a5
 +        ThreadProperties<StorageIndex>(linearLocalThreadId, kGroupId, mGroupOffset, nGroupOffset, kGroupOffset,
 +                                       mLocalOffset, nLocalOffset, mGlobalOffset, nGlobalOffset, kSize, is_internal);
 +
-+    auto out_ptr = out_res.get_pointer() + (IsFinal ? 0 : thread_properties.kGroupId * triple_dim.M * triple_dim.N);
++    auto out_ptr = SYCLGetLocalAccPointer(out_res) + (IsFinal ? 0 : thread_properties.kGroupId * triple_dim.M * triple_dim.N);
 +
 +    (thread_properties.is_internal) ? compute_panel<true>(itemID, thread_properties, out_ptr)
 +                                    : compute_panel<false>(itemID, thread_properties, out_ptr);
@@ -7783,7 +7795,7 @@ index 000000000..14c2454a5
 +  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void compute_panel(const sycl::nd_item<1> &itemID,
 +                                                           ThreadProperties<StorageIndex> &thread_properties,
 +                                                           OutPtr out_ptr) {
-+    auto tiled_input_block = TiledMemory{thread_properties, scratch.get_pointer()};
++    auto tiled_input_block = TiledMemory{thread_properties, SYCLGetLocalAccPointer(scratch)};
 +    // Allocate register space
 +    PacketReturnType privateRes[Properties::WorkLoadPerThreadM * Properties::WorkLoadPerThreadN / PacketSize] = {
 +        PacketReturnType{0}};
@@ -7947,7 +7959,7 @@ index 000000000..14c2454a5
 +        contractDim(contractDim_) {}
 +
 +  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(sycl::nd_item<1> itemID) {
-+    auto scratch_ptr = scratch.get_pointer();
++    auto scratch_ptr = SYCLGetLocalAccPointer(scratch);
 +    const StorageIndex linearLocalThreadId = itemID.get_local_id(0);
 +    StorageIndex nonContractId = is_lhs_vec ? linearLocalThreadId / Properties::LocalThreadSizeC
 +                                            : linearLocalThreadId % Properties::LocalThreadSizeNC;
@@ -7958,7 +7970,7 @@ index 000000000..14c2454a5
 +        is_lhs_vec ? itemID.get_group(0) / cGroupSize : itemID.get_group(0) % nonContractGroupSize;
 +    const StorageIndex contractGroupId =
 +        is_lhs_vec ? itemID.get_group(0) % cGroupSize : itemID.get_group(0) / nonContractGroupSize;
-+    auto out_ptr = out_res.get_pointer() + (IsFinal ? 0 : contractGroupId * nonContractDim);
++    auto out_ptr = SYCLGetLocalAccPointer(out_res) + (IsFinal ? 0 : contractGroupId * nonContractDim);
 +
 +    const StorageIndex nonContractGroupOffset = nonContractGroupId * Properties::TileSizeDimNC;
 +    const StorageIndex contractGroupOffset = contractGroupId * Properties::TileSizeDimC;
@@ -8164,8 +8176,8 @@ index 000000000..14c2454a5
 +      : scratch(scratch_), lhs(lhs_), rhs(rhs_), out_res(out_res_), rng(rng_) {}
 +
 +  EIGEN_DEVICE_FUNC void operator()(sycl::nd_item<1> itemID) {
-+    auto out_ptr = out_res.get_pointer();
-+    auto scratch_ptr = scratch.get_pointer().get();
++    auto out_ptr = SYCLGetLocalAccPointer(out_res);
++    auto scratch_ptr = SYCLGetLocalAccPointer(scratch);
 +
 +    StorageIndex globalid = itemID.get_global_id(0);
 +    StorageIndex localid = itemID.get_local_id(0);
@@ -11812,7 +11824,7 @@ index 9b0eb3e2f..4a2167be0 100644
  : public TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>, Eigen::SyclDevice> {
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h
 new file mode 100644
-index 000000000..264565283
+index 000000000..50062efd2
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h
 @@ -0,0 +1,575 @@
@@ -11904,7 +11916,7 @@ index 000000000..264565283
 +    const Index localid = itemID.get_local_id(0);
 +    auto aInPtr = aI + localid;
 +    auto aOutPtr = outAcc;
-+    CoeffReturnType *scratchptr = scratch.get_pointer();
++    CoeffReturnType *scratchptr = SYCLGetLocalAccPointer(scratch);
 +    CoeffReturnType accumulator = *aInPtr;
 +
 +    scratchptr[localid] = op.finalize(accumulator);
@@ -12122,7 +12134,7 @@ index 000000000..264565283
 +
 +    Index globalPId = pGroupId * PannelParameters::LocalThreadSizeP + pLocalThreadId;
 +    const Index globalRId = rGroupId * PannelParameters::LocalThreadSizeR + rLocalThreadId;
-+    auto scratchPtr = scratch.get_pointer().get();
++    auto scratchPtr = SYCLGetLocalAccPointer(scratch);
 +    auto outPtr =
 +        output_accessor + (reduce_elements_num_groups > 1 ? rGroupId * num_coeffs_to_preserve : 0);
 +    CoeffReturnType accumulator = op.initialize();
@@ -12608,7 +12620,7 @@ index 9e3b1a0b9..5782cc585 100644
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h
 new file mode 100644
-index 000000000..29d32dea6
+index 000000000..7bf777a4c
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h
 @@ -0,0 +1,513 @@
@@ -12747,7 +12759,7 @@ index 000000000..29d32dea6
 +  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(sycl::nd_item<1> itemID) const {
 +    auto out_ptr = out_accessor;
 +    auto tmp_ptr = temp_accessor;
-+    auto scratch_ptr = scratch.get_pointer().get();
++    auto scratch_ptr = SYCLGetLocalAccPointer(scratch);
 +
 +    for (Index loop_offset = 0; loop_offset < scanParameters.loop_range; loop_offset++) {
 +      Index data_offset = (itemID.get_global_id(0) + (itemID.get_global_range(0) * loop_offset));
