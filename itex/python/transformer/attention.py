@@ -11,9 +11,12 @@ from intel_extension_for_tensorflow.python.transformer.common import (
   cast_if_needed,
   fp8_matmul,
 )
-from load_ops_library import (
-  fp8_scaled_dot_product_attention,
-  fp8_scaled_dot_product_attention_grad,
+
+fp8_scaled_dot_product_attention = (
+  load_ops_library.fp8_scaled_dot_product_attention
+)
+fp8_scaled_dot_product_attention_grad = (
+  load_ops_library.fp8_scaled_dot_product_attention_grad
 )
 
 """ Only support self-attention now. """
@@ -110,7 +113,7 @@ class MultiHeadAttention(BaseModule, layers.Layer):
     )
 
     self.built = True
-        
+ 
   def _fp8_mha_forward(
     self,
     inputs,
@@ -568,18 +571,21 @@ class MultiHeadAttention(BaseModule, layers.Layer):
     inputs_shape = inputs.shape
     self.seq_len = inputs_shape[1]
     inputs_feature = inputs_shape[-1]
-    qk_scale = tf.cast(1.0 / tf.math.sqrt(float(self.head_size)), dtype=self.activation_dtype)
+    inputs = tf.reshape(
+      inputs, [-1, inputs_feature])
+    qk_scale = tf.cast(
+      1.0 / tf.math.sqrt(float(self.head_size)),
+      dtype=self.activation_dtype)
 
     if self.fp8:
       assert is_training
-      inputs_shape = inputs.shape
-      inputs_feature = inputs_shape[-1]
       self.batch = inputs_shape[0]
-      inputs = tf.reshape(inputs, [self.batch * self.seq_len, inputs_feature])
-      random_tensor = random_ops.random_uniform(shape=[self.batch, self.num_attention_heads,
-                                                     self.seq_len, self.seq_len],
-                                              dtype=self.activation_dtype)
-      dropout_mask = tf.cast(random_tensor >= self.attention_dropout, dtype=self.activation_dtype)
+      random_tensor = random_ops.random_uniform(
+        shape=[self.batch, self.num_attention_heads,
+               self.seq_len, self.seq_len],
+        dtype=self.activation_dtype)
+      dropout_mask = tf.cast(
+        random_tensor >= self.attention_dropout, dtype=self.activation_dtype)
       attention_mask = (1.0 - attention_mask) * -10000.0
       output = self._fp8_mha_forward(
         inputs,

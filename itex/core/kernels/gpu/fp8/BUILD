@@ -102,6 +102,7 @@ itex_xpu_library(
         "//itex/core/kernels/common:cwise_ops_lib",
         "//itex/core/kernels/common:fill_functor",
         "//itex/core/kernels/gpu:reduction_ops",
+        "//itex/core/kernels/gpu:softmax_op",
     ],
     alwayslink = True,
 )

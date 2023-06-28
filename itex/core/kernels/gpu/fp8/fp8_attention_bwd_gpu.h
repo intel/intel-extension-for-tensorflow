@@ -181,8 +181,7 @@ void Fp8ScaledDotProductAttentionBwd(
   softmax_bcast0[0] = softmax_bcast0[1] = softmax_bcast1[0] = 1;
   softmax_bcast1[1] = seq_len;
   functor::BinaryFunctor<GPUDevice, functor::sub<activate_t>, 2, false>().BCast(
-      ctx->eigen_device<GPUDevice>(),
-      softmax_workspace0.tensor<activate_t, 2>(),
+      ctx->eigen_device<GPUDevice>(), dp.tensor<activate_t, 2>(),
       (const_cast<const Tensor&>(dp)).tensor<activate_t, 2>(), softmax_bcast0,
       (const_cast<const Tensor&>(softmax_workspace1)).tensor<activate_t, 2>(),
       softmax_bcast1, nullptr);

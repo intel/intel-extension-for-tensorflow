@@ -20,6 +20,7 @@ limitations under the License.
 
 #include "itex/core/kernels/common/cwise_ops_common.h"
 #include "itex/core/kernels/gpu/fp8/fp8_quantize_gpu.h"
+#include "itex/core/kernels/gpu/softmax_op_functor.h"
 #include "itex/core/utils/onednn/onednn_util.h"
 
 namespace itex {
@@ -112,55 +113,10 @@ void Fp8ScaledDotProductAttentionFwd(
       (const_cast<const Tensor*>(softmax))->flat<activate_t>(),
       qk_scale.scalar<activate_t>(), nullptr);
 
-  // Attention mask
-  memory::dims mask_src_0_dims =
-      memory::dims({batch, num_attention_heads, seq_len, seq_len});
-  memory::dims mask_src_1_dims = memory::dims({batch, 1, seq_len, seq_len});
-
-  memory::dims mask_src_0_strides = {num_attention_heads * seq_len * seq_len,
-                                     seq_len * seq_len, seq_len, 1};
-  memory::dims mask_src_1_strides = {seq_len * seq_len, seq_len * seq_len,
-                                     seq_len, 1};
-
-  auto mask_src_0_md = memory::desc(mask_src_0_dims, OneDnnType<activate_t>(),
-                                    mask_src_0_strides);
-  auto mask_src_1_md = memory::desc(mask_src_1_dims, OneDnnType<activate_t>(),
-                                    mask_src_1_strides);
-
-  auto mask_src_0_mem = CreateDnnlMemory(mask_src_0_md, dnnl_engine,
-                                         GetTensorBuffer<activate_t>(softmax));
-  auto mask_src_1_mem = CreateDnnlMemory(
-      mask_src_1_md, dnnl_engine, GetTensorBuffer<activate_t>(&attention_mask));
-  auto mask_dst_mem = CreateDnnlMemory(mask_src_0_md, dnnl_engine,
-                                       GetTensorBuffer<activate_t>(softmax));
-  auto mask_pd =
-      dnnl::binary::primitive_desc(dnnl_engine, dnnl::algorithm::binary_add,
-                                   mask_src_0_md, mask_src_1_md, mask_src_0_md);
-  auto mask_prim = dnnl::binary(mask_pd);
-  mask_prim.execute(dnnl_stream, {{DNNL_ARG_SRC_0, mask_src_0_mem},
-                                  {DNNL_ARG_SRC_1, mask_src_1_mem},
-                                  {DNNL_ARG_DST, mask_dst_mem}});
-
-  // Softmax input is mask output.
-  dnnl::primitive_attr softmax_attr;
-  softmax_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-  auto softmax_pd = dnnl::softmax_forward::primitive_desc(
-      dnnl_engine, dnnl::prop_kind::forward_training,
-      dnnl::algorithm::softmax_accurate, mask_src_0_md, mask_src_0_md,
-      3 /*axis*/, softmax_attr);
-  Tensor scratchpad_tensor;
-  int scratchpad_size =
-      softmax_pd.scratchpad_desc().get_size() / sizeof(activate_t);
-  OP_REQUIRES_OK(ctx, ctx->allocate_temp(DataTypeToEnum<activate_t>::v(),
-                                         TensorShape({scratchpad_size}),
-                                         &scratchpad_tensor));
-  auto scratchpad_mem =
-      CreateDnnlMemory(softmax_pd.scratchpad_desc(), dnnl_engine,
-                       GetTensorBuffer<activate_t>(&scratchpad_tensor));
-  auto softmax_prim = dnnl::softmax_forward(softmax_pd);
-  softmax_prim.execute(dnnl_stream, {{DNNL_ARG_SRC, mask_dst_mem},
-                                     {DNNL_ARG_DST, mask_dst_mem},
-                                     {DNNL_ARG_SCRATCHPAD, scratchpad_mem}});
+  // Masked softmax
+  AddV2WithSoftmaxFunctor<GPUDevice, activate_t>()(
+      ctx->eigen_gpu_device(), const_cast<const Tensor&>(*softmax),
+      attention_mask, softmax, false);
 
   // Dropout
   int softmax_size = softmax->NumElements();
