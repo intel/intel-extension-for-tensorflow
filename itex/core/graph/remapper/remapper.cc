@@ -6325,6 +6325,10 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
       if (FindKerasDenseLayerFwd(ctx, i, &keras_dense_layer_fwd)) {
         TF_ABORT_IF_ERROR(AddKerasDenseLayerFwd(
             &ctx, keras_dense_layer_fwd, &invalidated_nodes, &nodes_to_delete));
+        if (keras_dense_layer_fwd.activation_ != kMissingIndex) {
+          i = keras_dense_layer_fwd.activation_;
+          ITEX_VLOG(2) << "revisit index: " << i;
+        }
         continue;
       }
     }
