@@ -455,18 +455,20 @@ struct PadConvFwdBwd {
 struct KerasDenseLayerFwd {
   KerasDenseLayerFwd() = default;
   KerasDenseLayerFwd(int matmul, int reshape, int bias, int activation,
-                     int shape)
+                     int shape, int reshape_0)
       : matmul_(matmul),
         reshape_(reshape),
         bias_(bias),
         activation_(activation),
-        shape_(shape) {}
+        shape_(shape),
+        reshape_0_(reshape_0) {}
 
   int matmul_ = kMissingIndex;
   int reshape_ = kMissingIndex;
   int bias_ = kMissingIndex;
   int activation_ = kMissingIndex;
   int shape_ = kMissingIndex;  // for training
+  int reshape_0_ = kMissingIndex;
 };
 
 struct MatmulReshapeBiasadd {
@@ -881,6 +883,7 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
 
   int bias_dim = 0;
   int weight_dim = 0;
+  int src_dim = 0;
   if (biasadd->NumRegularFanins() != 2) return false;
   auto* readvariable = biasadd->GetRegularFanin(1).node_view();
   // if pb is frozen
@@ -927,6 +930,7 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
     const TensorShape weight_shape =
         GetTensorShapeFromConstant(readvariable2->node());
     weight_dim = weight_shape.dim_size(1);
+    src_dim = weight_shape.dim_size(0);
   }
 
   if (weight_dim == 0) {
@@ -942,6 +946,7 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
       const TensorShapeProto& wshape_proto = attr_wshape.list().shape(0);
       if (!Is2D(wshape_proto)) return false;
       weight_dim = TensorShape(wshape_proto).dim_size(1);
+      src_dim = TensorShape(wshape_proto).dim_size(0);
     } else if (IsVarHandle(*arg_weight)) {
       const AttrValue attr_wshape = arg_weight->attr().at("shape");
       const TensorShapeProto& wshape_proto = attr_wshape.shape();
@@ -949,6 +954,7 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
       if (IsUnknown(wshape_proto.dim(wshape_proto.dim_size() - 1)))
         return false;
       weight_dim = TensorShape(wshape_proto).dim_size(1);
+      src_dim = TensorShape(wshape_proto).dim_size(0);
     } else {
       return false;
     }
@@ -966,10 +972,29 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
       shape_index = matmul->GetRegularFanouts()[0][1].node_view()->node_index();
     }
   }
+  int reshape_0_index = kMissingIndex;
 
-  const KerasDenseLayerFwd pattern{matmul->node_index(),
-                                   node_view->node_index(), bias_index,
-                                   activation_index, shape_index};
+  // Input 0 of Matmul is reshape_0
+  auto* reshape_0 = matmul->GetRegularFanin(0).node_view();
+  if (IsReshape(*reshape_0->node())) {
+    std::vector<OpInfo_TensorProperties> reshape_props;
+    TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+        reshape_0->node()->name(), &reshape_props));
+    const TensorShapeProto& reshape_input = reshape_props[0].shape();
+    if (!reshape_input.unknown_rank()) {
+      const auto& reshape_input_last_dim =
+          reshape_input.dim(reshape_input.dim_size() - 1);
+      if (!IsUnknown(reshape_input_last_dim)) {
+        if (reshape_input_last_dim.size() == src_dim)
+          reshape_0_index = reshape_0->node_index();
+      }
+    }
+  }
+
+  const KerasDenseLayerFwd pattern{
+      matmul->node_index(), node_view->node_index(),
+      bias_index,           activation_index,
+      shape_index,          reshape_0_index};
   *matched = pattern;
   return true;
 }
@@ -3713,6 +3738,101 @@ Status AddGroupConv2DNode(RemapperContext* ctx, const GroupConv2DBlock& matched,
   return Status::OK();
 }
 
+Status AddKerasDenseLayerFwdBMM(RemapperContext* ctx,
+                                const KerasDenseLayerFwd& matched,
+                                std::vector<bool>* invalidated_nodes,
+                                std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& matmul = graph->node(matched.matmul_);
+  const NodeDef& reshape = graph->node(matched.reshape_);
+  const NodeDef& bias = graph->node(matched.bias_);
+  const NodeDef& reshape_0 = graph->node(matched.reshape_0_);
+  // We can simply fuse reshape + matmul + reshape into batchmatmul
+  if (matched.shape_ == kMissingIndex) {
+    NodeDef new_bmm;
+    new_bmm.set_op(kBatchMatMulV2);
+    new_bmm.set_name(reshape.name());
+    new_bmm.set_device(matmul.device());
+    new_bmm.add_input(reshape_0.input(0));
+    new_bmm.add_input(matmul.input(1));
+    CopyAllAttrs(matmul, &new_bmm);
+
+    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+    Status status;
+
+    mutation->AddNode(std::move(new_bmm), &status);
+
+    (*nodes_to_delete)[matched.reshape_0_] = true;
+    (*nodes_to_delete)[matched.matmul_] = true;
+    (*invalidated_nodes)[matched.reshape_] = true;
+
+    TF_ABORT_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+
+    return Status::OK();
+  }
+  NodeDef new_activation;
+  NodeDef new_shape;
+  NodeDef new_bias;
+  new_bias.set_op(kBiasAdd);
+  new_bias.set_name(reshape.name());
+  new_bias.set_device(bias.device());
+  new_bias.add_input(matmul.name());
+  new_bias.add_input(bias.input(1));
+  CopyAllAttrs(bias, &new_bias);
+
+  NodeDef new_reshape;
+  new_reshape.set_op(kReshape);
+  new_reshape.set_device(reshape.device());
+
+  if (matched.activation_ != kMissingIndex) {
+    const NodeDef& activation = graph->node(matched.activation_);
+    new_activation.set_op(activation.op());
+    new_activation.set_name(bias.name());
+    new_activation.set_device(activation.device());
+    new_activation.add_input(reshape.name());
+    CopyAllAttrs(activation, &new_activation);
+
+    new_reshape.set_name(activation.name());
+    new_reshape.add_input(new_activation.name());
+
+  } else {
+    new_reshape.set_name(bias.name());
+    new_reshape.add_input(reshape.name());
+  }
+  new_reshape.add_input(reshape.input(1));
+  CopyAllAttrs(reshape, &new_reshape);
+
+  const NodeDef& shape = graph->node(matched.shape_);
+  new_shape.set_op(kShape);
+  new_shape.set_device(shape.device());
+  new_shape.set_name(shape.name());
+  if (matched.activation_ != kMissingIndex) {
+    new_shape.add_input(new_activation.name());
+  } else {
+    new_shape.add_input(new_bias.name());
+  }
+  CopyAllAttrs(shape, &new_shape);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(new_reshape), &status);
+  mutation->AddNode(std::move(new_bias), &status);
+  if (matched.activation_ != kMissingIndex) {
+    mutation->AddNode(std::move(new_activation), &status);
+    (*invalidated_nodes)[matched.activation_] = true;
+  }
+  mutation->AddNode(std::move(new_shape), &status);
+  (*invalidated_nodes)[matched.shape_] = true;
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.reshape_] = true;
+  (*invalidated_nodes)[matched.bias_] = true;
+  return Status::OK();
+}
+
 Status AddKerasDenseLayerFwd(RemapperContext* ctx,
                              const KerasDenseLayerFwd& matched,
                              std::vector<bool>* invalidated_nodes,
@@ -6323,12 +6443,20 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
       // keras Dense layer fwd
       KerasDenseLayerFwd keras_dense_layer_fwd;
       if (FindKerasDenseLayerFwd(ctx, i, &keras_dense_layer_fwd)) {
-        TF_ABORT_IF_ERROR(AddKerasDenseLayerFwd(
-            &ctx, keras_dense_layer_fwd, &invalidated_nodes, &nodes_to_delete));
-        if (keras_dense_layer_fwd.activation_ != kMissingIndex) {
-          i = keras_dense_layer_fwd.activation_;
-          ITEX_VLOG(2) << "revisit index: " << i;
+        if (keras_dense_layer_fwd.reshape_0_ == kMissingIndex) {
+          TF_ABORT_IF_ERROR(AddKerasDenseLayerFwd(&ctx, keras_dense_layer_fwd,
+                                                  &invalidated_nodes,
+                                                  &nodes_to_delete));
+          if (keras_dense_layer_fwd.activation_ != kMissingIndex) {
+            i = keras_dense_layer_fwd.activation_;
+            ITEX_VLOG(2) << "revisit index: " << i;
+          }
+        } else {
+          TF_ABORT_IF_ERROR(
+              AddKerasDenseLayerFwdBMM(&ctx, keras_dense_layer_fwd,
+                                       &invalidated_nodes, &nodes_to_delete));
         }
+
         continue;
       }
     }
