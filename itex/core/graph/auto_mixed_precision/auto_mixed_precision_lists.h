@@ -381,10 +381,6 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
     for (auto op : add_list_ops) {
       allow_list_ops.insert(op);
     }
-    // Add some ops used in P0 models into allow list
-    for (auto op : special_list_ops) {
-      allow_list_ops.insert(op);
-    }
 
     UpdateList("ALLOWLIST", &allow_list_ops);
     return allow_list_ops;
@@ -410,19 +406,8 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
   gtl::FlatSet<string> ClearList() override {
     AddTensorListOps(&clear_list_ops);
     UpdateList("CLEARLIST", &clear_list_ops);
-
-    for (auto op : special_list_ops) {
-      clear_list_ops.erase(op);
-    }
-
     return clear_list_ops;
   }
-
- private:
-  // The special list for GPU FP16 only
-  gtl::FlatSet<string> special_list_ops =
-      gtl::FlatSet<string>{"Tile", "ConcatV2", "Reshape", "Transpose",
-                           "Pack", "Unpack",   "Squeeze", "Slice"};
 };
 
 class AutoMixedPrecisionListsCPU : public AutoMixedPrecisionLists {
