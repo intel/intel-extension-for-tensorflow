@@ -44,6 +44,7 @@ _CMAKE_COMMON_LIST = {
     "#cmakedefine01 BUILD_CONVOLUTION": "#define BUILD_CONVOLUTION 0",
     "#cmakedefine01 BUILD_DECONVOLUTION": "#define BUILD_DECONVOLUTION 0",
     "#cmakedefine01 BUILD_ELTWISE": "#define BUILD_ELTWISE 0",
+    "#cmakedefine01 BUILD_GROUP_NORMALIZATION": "#define BUILD_GROUP_NORMALIZATION 0",
     "#cmakedefine01 BUILD_INNER_PRODUCT": "#define BUILD_INNER_PRODUCT 0",
     "#cmakedefine01 BUILD_LAYER_NORMALIZATION": "#define BUILD_LAYER_NORMALIZATION 0",
     "#cmakedefine01 BUILD_LRN": "#define BUILD_LRN 0",
@@ -69,6 +70,11 @@ _CMAKE_COMMON_LIST = {
     "#cmakedefine01 BUILD_XEHPG": "#define BUILD_XEHPG 0",
     "#cmakedefine01 BUILD_XEHPC": "#define BUILD_XEHPC 0",
     "#cmakedefine01 BUILD_XEHP": "#define BUILD_XEHP 0",
+    "#cmakedefine01 BUILD_GEMM_KERNELS_ALL": "#define BUILD_GEMM_KERNELS_ALL 1",
+    "#cmakedefine01 BUILD_GEMM_KERNELS_NONE": "#define BUILD_GEMM_KERNELS_NONE 0",
+    "#cmakedefine01 BUILD_GEMM_SSE41": "#define BUILD_GEMM_SSE41 0",
+    "#cmakedefine01 BUILD_GEMM_AVX2": "#define BUILD_GEMM_AVX2 0",
+    "#cmakedefine01 BUILD_GEMM_AVX512": "#define BUILD_GEMM_AVX512 0",
 }
 
 _CMAKE_ONEDNN_GRAPH_LIST = {
