@@ -267,7 +267,7 @@ Status UpdateVariableAndFill(
     }
     alg = Algorithm(var_tensor_flat(0));
   }
-  if (alg == RNG_ALG_PHILOX) {
+  if (alg == RNG_ALG_PHILOX || alg == RNG_ALG_AUTO_SELECT) {
     TF_RETURN_IF_ERROR(CheckPhiloxState(var_tensor, alg_tag_skip));
     UpdateVariableAndFill_Philox<Device, Distribution>()(
         ctx, ctx->eigen_device<Device>(), dist, output_size, alg_tag_skip,
