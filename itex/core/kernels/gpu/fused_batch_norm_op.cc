@@ -43,28 +43,23 @@ REGISTER_FUSED_BATCHNORM_GPU(Eigen::bfloat16);
 REGISTER_FUSED_BATCHNORM_GPU(Eigen::half);
 #undef REGISTER_FUSED_BATCHNORM_GPU
 
-#define REGISTER_FUSED_BATCHNORM_GPU(T, U)                                     \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("FusedBatchNormV2")                                                 \
-          .Device(DEVICE_GPU)                                                  \
-          .TypeConstraint<T>("T")                                              \
-          .TypeConstraint<U>("U"),                                             \
-      CustomFusedBatchNormOp<GPUDevice, T, U, false, false>)                   \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("FusedBatchNormV3")                                                 \
-          .Device(DEVICE_GPU)                                                  \
-          .TypeConstraint<T>("T")                                              \
-          .TypeConstraint<U>("U"),                                             \
-      CustomFusedBatchNormOp<GPUDevice, T, U, true, false>)                    \
-  REGISTER_KERNEL_BUILDER(Name("_FusedBatchNormEx")                            \
-                              .Device(DEVICE_GPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<U>("U"),                         \
-                          CustomFusedBatchNormOp<GPUDevice, T, U, true, true>) \
-  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBatchNormEx")                        \
-                              .Device(DEVICE_GPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<U>("U"),                         \
+#define REGISTER_FUSED_BATCHNORM_GPU(T, U)                   \
+  REGISTER_KERNEL_BUILDER(                                   \
+      Name("FusedBatchNormV2")                               \
+          .Device(DEVICE_GPU)                                \
+          .TypeConstraint<T>("T")                            \
+          .TypeConstraint<U>("U"),                           \
+      CustomFusedBatchNormOp<GPUDevice, T, U, false, false>) \
+  REGISTER_KERNEL_BUILDER(                                   \
+      Name("FusedBatchNormV3")                               \
+          .Device(DEVICE_GPU)                                \
+          .TypeConstraint<T>("T")                            \
+          .TypeConstraint<U>("U"),                           \
+      CustomFusedBatchNormOp<GPUDevice, T, U, true, false>)  \
+  REGISTER_KERNEL_BUILDER(Name("_FusedBatchNormEx")          \
+                              .Device(DEVICE_GPU)            \
+                              .TypeConstraint<T>("T")        \
+                              .TypeConstraint<U>("U"),       \
                           CustomFusedBatchNormOp<GPUDevice, T, U, true, true>)
 
 REGISTER_FUSED_BATCHNORM_GPU(float, float);

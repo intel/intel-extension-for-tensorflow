@@ -115,33 +115,6 @@ class BatchNormalizationTest(test.TestCase):
           is_training=True))
     return y, mean, var
 
-  def _call_fused_batch_norm_relu_functor(self,
-                                     x,
-                                     scale,
-                                     offset,
-                                     mean,
-                                     variance,
-                                     epsilon,
-                                     exponential_avg_factor=1.0,
-                                     data_format='NHWC',
-                                     is_training=True,
-                                     version=3):
-
-    fused_batch_norm_functor = gen_nn_ops.fused_batch_norm_v3
-    y, mean, var, _, _, _ = fused_batch_norm_functor(
-        x,
-        scale,
-        offset,
-        mean=mean,
-        variance=variance,
-        epsilon=epsilon,
-        exponential_avg_factor=exponential_avg_factor,
-        data_format=data_format,
-        is_training=True)
-      
-    y = array_ops.identity(nn_ops.relu(y))
-    return y, mean, var
-
   def _test_training(self,
                      x_shape,
                      x_dtype,
@@ -179,49 +152,11 @@ class BatchNormalizationTest(test.TestCase):
           is_training=True,
           version=version))
       return y, mean, var
-    
-  def _test_training_bn_relu(self,
-                     x_shape,
-                     x_dtype,
-                     scale_shape,
-                     scale_dtype,
-                     use_gpu,
-                     exponential_avg_factor=1.0,
-                     data_format='NHWC',
-                     version=3):
-    np.random.seed(1)
-    x_val = np.random.random_sample(x_shape).astype(x_dtype)
-    scale_val = np.random.random_sample(scale_shape).astype(scale_dtype)
-    offset_val = np.random.random_sample(scale_shape).astype(scale_dtype)
-    if exponential_avg_factor == 1.0:
-      old_mean_val = constant_op.constant([])
-      old_var_val = constant_op.constant([])
-    else:
-      old_mean_val = np.random.random_sample(scale_shape).astype(scale_dtype)
-      old_var_val = np.random.random_sample(scale_shape).astype(scale_dtype)
-    device_str = "xpu" if use_gpu else "cpu"
-    with tf.device(device_str):
-      x = constant_op.constant(x_val, name='x')
-      scale = constant_op.constant(scale_val, name='scale')
-      offset = constant_op.constant(offset_val, name='offset')
-      epsilon = 0.001
-      y, mean, var = array_ops.identity_n(self._call_fused_batch_norm_relu_functor(
-          x,
-          scale,
-          offset,
-          mean=old_mean_val,
-          variance=old_var_val,
-          epsilon=epsilon,
-          exponential_avg_factor=exponential_avg_factor,
-          data_format=data_format,
-          is_training=True,
-          version=version))
-      return y, mean, var
 
   # only test on GPU
   def testShapeInRN50(self):
     if not test.is_gpu_available():
-      return
+      return;
     bs_lst = [1]
     h_lst = [112, 7, 14, 28]
     c_lst = [16, 64, 128, 256]
@@ -258,7 +193,7 @@ class BatchNormalizationTest(test.TestCase):
   # only test on GPU
   def testShapeInRN50BWD(self):
     if not test.is_gpu_available():
-      return
+      return;
     bs_lst = [1]
     h_lst = [7, 14, 28, 56, 112]
     c_lst = [16, 64, 128, 256, 512]
@@ -292,30 +227,6 @@ class BatchNormalizationTest(test.TestCase):
               self.assertAllCloseAccordingToType(ref_doffset[-10:], doffset[-10:], float_rtol=1e-3, float_atol=1e-3)
               self.assertAllCloseAccordingToType(ref_dx[0, 0, 0, -10:], dx[0, 0, 0, -10:], float_rtol=1e-3, float_atol=1e-3)
 
-  # test bn + relu fusion.
-  @test_util.run_deprecated_v1
-  def testBNRelu(self):
-    bs_lst = [1]
-    h_lst = [73]
-    c_lst = [80]
-    version_lst = [3]
-    for ver in version_lst:
-      dtype_lst = [np.float32, tf.dtypes.bfloat16.as_numpy_dtype]
-      for dtype in dtype_lst:
-        for bs in bs_lst:
-          for h in h_lst:
-            for c in c_lst:
-              x_shape=[bs, h, h, c]
-              y, mean, var = self._test_training_bn_relu(
-                            x_shape,
-                            dtype,
-                            [c],
-                            np.float32,
-                            use_gpu=False,
-                            exponential_avg_factor=1.0,
-                            data_format='NHWC',
-                            version=ver)
-              self.evaluate(y)
 
 if __name__ == '__main__':
   test.main()

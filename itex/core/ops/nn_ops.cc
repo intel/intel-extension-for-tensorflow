@@ -2248,7 +2248,7 @@ void Register_ITEXFusedBatchNormExOp() {
   TF_OpDefinitionBuilderAddOutput(op_builder, "batch_variance: U");
   TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_1: U");
   TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_2: U");
-  TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_3: uint8");
+  TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_3: U");
   TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
   TF_OpDefinitionBuilderAddAttr(op_builder, "U: {float}");
   TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
@@ -2369,7 +2369,7 @@ void Register_ITEXFusedBatchNormGradExOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "scale: float");
     TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_1: U");
     TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_2: U");
-    TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_3: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "reserve_space_3: U");
     TF_OpDefinitionBuilderAddInput(op_builder, "offset: float");
     TF_OpDefinitionBuilderAddInput(op_builder, "y: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "x_backprop: T");

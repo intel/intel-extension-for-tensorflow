@@ -215,7 +215,11 @@ class FusedBatchNormOp : public OpKernel {
       if (is_batch_norm_ex_) {
         dnnl::memory::desc workspace_md = bn_fwd_pd.workspace_desc();
         size_t workspace_bytes = workspace_md.get_size();
-        workspace_tf_shape.AddDim(workspace_bytes / sizeof(uint8));
+        // Notice we need use ceiling here, since the required bytes may not
+        // divisible by 4
+        int num_elem = std::ceil(static_cast<float>(workspace_bytes) /
+                                 static_cast<float>(sizeof(U)));
+        workspace_tf_shape.AddDim(num_elem);
 
         AllocateTFOutputs(context, scale_tensor.shape(), workspace_tf_shape,
                           &batch_mean_tensor, &batch_variance_tensor,
@@ -233,10 +237,7 @@ class FusedBatchNormOp : public OpKernel {
       void* src_data = GetTensorBuffer<T>(&src_tensor);
       void* dst_data = GetTensorBuffer<T>(dst_tensor);
       void* ws_op_data =
-          reserved_space ? is_batch_norm_ex
-                               ? GetTensorBuffer<uint8>(reserved_space_tensor)
-                               : GetTensorBuffer<U>(reserved_space_tensor)
-                         : nullptr;
+          reserved_space ? GetTensorBuffer<U>(reserved_space_tensor) : nullptr;
 
       void *scale_data, *shift_data;
       Tensor quantized_scaled_shift_tensor;
@@ -826,7 +827,7 @@ class FusedBatchNormGradOp : public OpKernel {
       void* diff_shift_data = GetTensorBuffer<U>(diff_shift_tensor);
 
       void* res_space_data = is_batch_norm_ex_
-                                 ? GetTensorBuffer<uint8>(reserved_space_tensor)
+                                 ? GetTensorBuffer<U>(reserved_space_tensor)
                                  : nullptr;
       auto src_mem =
           CreateDnnlMemory(bn_bwd_pd.src_desc(), onednn_engine, src_data);
