@@ -179,6 +179,14 @@ def itex_xpu_binary(name, set_target = None, srcs = [], deps = [], *argc, **kwar
         **kwargs
     )
 
+def native_cc_library(name, srcs = [], deps = [], *argc, **kwargs):
+    native.cc_library(
+        name = name,
+        srcs = srcs,
+        deps = deps,
+        **kwargs
+    )
+
 def _get_transitive_headers(hdrs, deps):
     return depset(
         hdrs,
