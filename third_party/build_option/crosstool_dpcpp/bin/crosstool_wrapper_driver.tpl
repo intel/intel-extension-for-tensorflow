@@ -138,12 +138,12 @@ def call_compiler(argv, link = False, dpcpp = True, cpu_only = False, gpu_only =
 
   def is_valid_flag(f, pure_host=False, gpu_build=True):
     if not gpu_build:
-      _INVALID_FLAG = ['linux_prod', r'%{dpcpp_compiler_root}/lib/clang', r'%{dpcpp_compiler_root}/compiler/include', 'ITEX_USE_MKL', 'EIGEN_USE_DPCPP_BUILD', 'EIGEN_USE_DPCPP', 'EIGEN_USE_GPU']
+      _INVALID_FLAG = ['linux_prod', r'%{dpcpp_compiler_root}/lib/clang', r'%{dpcpp_compiler_root}/compiler/include', r'%{dpcpp_compiler_root}/opt/compiler/include', 'ITEX_USE_MKL', 'EIGEN_USE_DPCPP_BUILD', 'EIGEN_USE_DPCPP', 'EIGEN_USE_GPU']
     elif not pure_host:
       # filter out 'linux_prod' 'lib/clang' for host can't use std include files of DPC++ compiler
       _INVALID_FLAG = ['linux_prod', 'fsycl', 'fhonor', r'.cpp', r'.cc', r'.hpp', r'.h', '-o', 'EIGEN_USE_DPCPP_BUILD', 'ffp', r'%{dpcpp_compiler_root}/lib/clang']
     else:
-      _INVALID_FLAG = [r'%{dpcpp_compiler_root}/lib/clang', r'%{dpcpp_compiler_root}/compiler/include', 'EIGEN_USE_DPCPP_BUILD']
+      _INVALID_FLAG = [r'%{dpcpp_compiler_root}/lib/clang', r'%{dpcpp_compiler_root}/compiler/include', r'%{dpcpp_compiler_root}/opt/compiler/include', 'EIGEN_USE_DPCPP_BUILD']
     flag = True
     for i in _INVALID_FLAG:
       if i[0] == '-':
