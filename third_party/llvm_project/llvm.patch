@@ -1,0 +1,135 @@
+diff --git a/.gitignore b/.gitignore
+index 20c4f52cd378..4d8ce4ea9bdc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -27,7 +27,7 @@
+ /*/CMakeUserPresets.json
+ 
+ # Nested build directory
+-/build*
++# /build*
+ 
+ #==============================================================================#
+ # Explicit files to ignore (only matches one).
+diff --git a/llvm/include/llvm/Support/MathExtras.h b/llvm/include/llvm/Support/MathExtras.h
+index ff136ba2a884..919302e4214c 100644
+--- a/llvm/include/llvm/Support/MathExtras.h
++++ b/llvm/include/llvm/Support/MathExtras.h
+@@ -17,6 +17,7 @@
+ #include "llvm/Support/Compiler.h"
+ #include <cassert>
+ #include <climits>
++#include <cmath>
+ #include <cstdint>
+ #include <cstring>
+ #include <limits>
+diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+index b01f0474862d..c9791659f9e0 100644
+--- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+@@ -19,6 +19,30 @@ licenses(["notice"])
+ 
+ exports_files(["LICENSE.TXT"])
+ 
++config_setting(
++    name = "macos_arm64",
++    values = {
++        "apple_platform_type": "macos",
++        "cpu": "darwin_arm64",
++    },
++)
++
++config_setting(
++    name = "macos_x86_64_default",
++    values = {
++        "apple_platform_type": "macos",
++        "cpu": "darwin",
++    },
++)
++
++config_setting(
++    name = "macos_x86_64",
++    values = {
++        "apple_platform_type": "macos",
++        "cpu": "darwin_x86_64",
++    },
++)
++
+ # It may be tempting to add compiler flags here, but that should be avoided.
+ # The necessary warnings and other compile flags should be provided by the
+ # toolchain or the `.bazelrc` file. This is just a workaround until we have a
+@@ -204,15 +228,17 @@ cc_library(
+         "lib/Support/BLAKE3/blake3.c",
+         "lib/Support/BLAKE3/blake3_dispatch.c",
+         "lib/Support/BLAKE3/blake3_portable.c",
++        "lib/Support/BLAKE3/llvm_blake3_prefix.h",
+     ] + select({
+         "@platforms//cpu:aarch64": [
+-            "lib/Support/BLAKE3/blake3_neon.c",
++            # TODO(b/234415414): temporary disabled
++            #            "lib/Support/BLAKE3/blake3_neon.c",
+         ],
+         "@platforms//cpu:x86_64": [
+-            "lib/Support/BLAKE3/blake3_sse2_x86-64_unix.S",
+-            "lib/Support/BLAKE3/blake3_sse41_x86-64_unix.S",
+-            "lib/Support/BLAKE3/blake3_avx2_x86-64_unix.S",
+-            "lib/Support/BLAKE3/blake3_avx512_x86-64_unix.S",
++            # "lib/Support/BLAKE3/blake3_sse2_x86-64_unix.S",
++            # "lib/Support/BLAKE3/blake3_sse41_x86-64_unix.S",
++            # "lib/Support/BLAKE3/blake3_avx2_x86-64_unix.S",
++            # "lib/Support/BLAKE3/blake3_avx512_x86-64_unix.S",
+         ],
+         "//conditions:default": [
+         ],
+@@ -237,14 +263,16 @@ cc_library(
+     ],
+     copts = llvm_copts,
+     defines = select({
+-        "@platforms//cpu:aarch64": [
+-        ],
++        # TODO(b/234415414): temporary disabled
++        #"@platforms//cpu:aarch64": [
++        #],
+         "//conditions:default": [
+             "BLAKE3_USE_NEON=0",
+         ],
+     }) + select({
+-        "@platforms//cpu:x86_64": [
+-        ],
++        # TODO(b/234415414): temporary disabled
++        # "@platforms//cpu:x86_64": [
++        # ],
+         "//conditions:default": [
+             "BLAKE3_NO_AVX2",
+             "BLAKE3_NO_AVX512",
+@@ -278,10 +306,10 @@ cc_library(
+         # will both provide the necessary dependencies and configuration
+         # defines.
+         "@llvm_terminfo//:terminfo",
+-        # We unconditionally depend on the custom LLVM zlib wrapper. This will
+-        # be an empty library unless zlib is enabled, in which case it will
+-        # both provide the necessary dependencies and configuration defines.
+-        "@llvm_zlib//:zlib",
++        # # We unconditionally depend on the custom LLVM zlib wrapper. This will
++        # # be an empty library unless zlib is enabled, in which case it will
++        # # both provide the necessary dependencies and configuration defines.
++        # "@llvm_zlib//:zlib",
+     ],
+ )
+ 
+diff --git a/utils/bazel/llvm-project-overlay/llvm/config.bzl b/utils/bazel/llvm-project-overlay/llvm/config.bzl
+index 5507f80efa0b..656a7253c514 100644
+--- a/utils/bazel/llvm-project-overlay/llvm/config.bzl
++++ b/utils/bazel/llvm-project-overlay/llvm/config.bzl
+@@ -90,8 +90,9 @@ os_defines = select({
+ # TODO: We should split out host vs. target here.
+ llvm_config_defines = os_defines + select({
+     "@bazel_tools//src/conditions:windows": native_arch_defines("X86", "x86_64-pc-win32"),
+-    "@bazel_tools//src/conditions:darwin_arm64": native_arch_defines("AArch64", "arm64-apple-darwin"),
+-    "@bazel_tools//src/conditions:darwin_x86_64": native_arch_defines("X86", "x86_64-unknown-darwin"),
++    "//llvm:macos_arm64": native_arch_defines("AArch64", "arm64-apple-darwin"),
++    "//llvm:macos_x86_64": native_arch_defines("X86", "x86_64-unknown-darwin"),
++    "//llvm:macos_x86_64_default": native_arch_defines("X86", "x86_64-unknown-darwin"),
+     "@bazel_tools//src/conditions:linux_aarch64": native_arch_defines("AArch64", "aarch64-unknown-linux-gnu"),
+     "@bazel_tools//src/conditions:linux_ppc64le": native_arch_defines("PowerPC", "powerpc64le-unknown-linux-gnu"),
+     "@bazel_tools//src/conditions:linux_s390x": native_arch_defines("SystemZ", "systemz-unknown-linux_gnu"),
