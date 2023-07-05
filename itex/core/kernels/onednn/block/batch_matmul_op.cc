@@ -172,8 +172,8 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
         bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
                                params->bias_strides);
         // create bias memory
-        memory bias_mem = CreateDnnlMemory(
-            bias_md, onednn_engine, GetTensorBuffer<Toutput>(&bias_tensor));
+        bias_mem = CreateDnnlMemory(bias_md, onednn_engine,
+                                    GetTensorBuffer<Toutput>(&bias_tensor));
       }
 
       // Create matmul forward primitive

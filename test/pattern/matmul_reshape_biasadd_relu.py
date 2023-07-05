@@ -97,9 +97,9 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         with self.session(use_gpu=True) as sess:
             tf.compat.v1.keras.backend.set_session(sess)
             model = kerasmodel()
-            model.predict(np.array([[1.,2.,3.],[4.,5.,6.]]).astype(np.float32))
+            model.predict(np.array([[[[1.,2.,3.],[4.,5.,6.]]]]).astype(np.float32))
             start_time = time.time()
-            ret_gpu = sess.run("kerasmodel/Identity", feed_dict={"input_1:0": np.array([[1.,2.,3.],[4.,5.,6.]]).astype(np.float32)},options=run_options, run_metadata=metadata)
+            ret_gpu = sess.run("kerasmodel/Identity", feed_dict={"input_1:0": np.array([[[[1.,2.,3.],[4.,5.,6.]]]]).astype(np.float32)},options=run_options, run_metadata=metadata)
             duration = time.time() - start_time
             print("end to end duration is : {}".format(duration))
             # Graph should contain fused op.

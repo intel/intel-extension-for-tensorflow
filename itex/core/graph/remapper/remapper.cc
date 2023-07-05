@@ -981,7 +981,10 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
     TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
         reshape_0->node()->name(), &reshape_props));
     const TensorShapeProto& reshape_input = reshape_props[0].shape();
-    if (!reshape_input.unknown_rank()) {
+    // special case: (2,3)->reshape(-1,2,3)->transpose(0,1,2)->reshape(2,3)
+    // reshape input dim size == 2 indicate that shape == input shape, this node
+    // cannot be replaced
+    if (!reshape_input.unknown_rank() && reshape_input.dim_size() != 2) {
       const auto& reshape_input_last_dim =
           reshape_input.dim(reshape_input.dim_size() - 1);
       if (!IsUnknown(reshape_input_last_dim)) {
@@ -4343,7 +4346,7 @@ Status AddFusedContractionNode(
     fused_node.set_op(kFusedMatMulWithSum);
   else if (IsAccMatMul(contraction))
     fused_node.set_op(kFusedAccMatMulWithSum);
-  else if (IsAccMatMul(contraction))
+  else if (IsAnyBatchMatMul(contraction))
     fused_node.set_op(kFusedBatchMatMul);
   else
     ITEX_CHECK(false);
@@ -4400,7 +4403,7 @@ Status AddFusedContractionNode(
     fused_node.set_op(kFusedMatMulWithSum);
   else if (IsAccMatMul(contraction))
     fused_node.set_op(kFusedAccMatMulWithSum);
-  else if (IsAccMatMul(contraction))
+  else if (IsAnyBatchMatMul(contraction))
     fused_node.set_op(kFusedBatchMatMul);
   else
     ITEX_CHECK(false);
