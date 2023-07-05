@@ -80,8 +80,10 @@ class FusedBinaryOpCPU : public OpKernel {
 
       inputs.push_back(
           const_cast<Tensor&>(context->input(num_inputs - 1 - i)).flat<T>());
-      ITEX_CHECK(!TensorShapeUtils::IsScalar(shape))
-          << "Unsupported shape in FusedBinary: " << shape.DebugString();
+      OP_REQUIRES(context, !TensorShapeUtils::IsScalar(shape),
+                  errors::Unimplemented(this->name(), " ",
+                                        "Unsupported shape in FusedBinary: ",
+                                        shape.DebugString()));
 
       if (i < input_order_.size()) {
         if (fused_ops_[i] == "Add" || fused_ops_[i] == "AddV2") {
