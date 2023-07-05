@@ -60,6 +60,9 @@ class PostOpUtil {
   // Set alpha for `LeakyRelu`.
   // Will report error if no `LeakyRelu` in post ops.
   void SetLeakyReluAlpha(float alpha);
+  // Set alpha/beta for `Linear`.
+  // Will report error if no `Linear` in post ops.
+  void SetLinearAlphaBeta(float alpha, float beta);
 
   // Set scale for post op. Sometimes the scale is only available during node
   // execution, so we need to set scale to the post op which is created in node
@@ -87,6 +90,7 @@ class PostOpUtil {
   inline bool HasBias() { return has_bias_; }
   inline bool HasBinary() { return binary_num_ != 0; }
   inline bool HasLeakyRelu() { return has_leaky_relu_; }
+  inline bool HasLinear() { return has_linear_; }
 
   inline bool HasOutputScales() { return has_output_scales_; }
   inline bool HasRequantize() { return has_requantize_; }
@@ -125,6 +129,8 @@ class PostOpUtil {
   bool has_bias_ = false;
   // Use this flag to check whether need to set alpha for `LeakyRelu`.
   bool has_leaky_relu_ = false;
+  // Use this flag to check whether has linear post op
+  bool has_linear_ = false;
 
   // Flags for INT8.
   bool has_output_scales_ = false;
@@ -134,6 +140,8 @@ class PostOpUtil {
   int binary_num_ = 0;
   // Helper vars for post op execution.
   float leaky_relu_alpha_ = NAN;
+  float linear_alpha_ = NAN;
+  float linear_beta_ = NAN;
 };
 
 }  // namespace itex

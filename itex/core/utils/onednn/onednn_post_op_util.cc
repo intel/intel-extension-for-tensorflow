@@ -51,6 +51,8 @@ const std::vector<PostOpInfo>& PostOpUtil::GetAllPostOpInfo() {
        kBetaZero},
       {"LeakyRelu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero,
        kBetaZero},
+      {"Linear", kind::eltwise, algorithm::eltwise_linear, kAlphaOne,
+       kBetaZero},
       {"_ITEXMish", kind::eltwise, algorithm::eltwise_mish, kAlphaZero,
        kBetaZero},
       {"Relu", kind::eltwise, algorithm::eltwise_relu, kAlphaZero, kBetaZero},
@@ -83,6 +85,7 @@ bool PostOpUtil::AddOps(const std::vector<string>& fused_ops) {
       if (op_kind == kind::eltwise) {
         this->has_activation_ = true;
         if (name == "LeakyRelu") this->has_leaky_relu_ = true;
+        if (name == "Linear") this->has_linear_ = true;
         postop_scale_list_.push_back(std::make_pair(name, scale_default));
       } else if (op_kind == kind::sum) {
         this->has_add_ = true;
@@ -126,6 +129,13 @@ void PostOpUtil::SetLeakyReluAlpha(float alpha) {
   ITEX_CHECK(this->has_leaky_relu_)
       << "PostOpUtil: can't find LeakyRelu when set alpha";
   this->leaky_relu_alpha_ = alpha;
+}
+
+void PostOpUtil::SetLinearAlphaBeta(float alpha, float beta) {
+  ITEX_CHECK(this->has_linear_)
+      << "PostOpUtil: can't find Linear when set alpha/beta";
+  this->linear_alpha_ = alpha;
+  this->linear_beta_ = beta;
 }
 
 void PostOpUtil::SetPostOpScale(const absl::string_view name, float scale) {
@@ -186,15 +196,23 @@ void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops,
     kind op_kind = info->kind;
     if (op_kind == kind::eltwise) {
       float alpha = info->alpha;
+      float beta = info->beta;
       if (this->has_leaky_relu_) {
         alpha = this->leaky_relu_alpha_;
         ITEX_CHECK(!std::isnan(alpha))
             << "PostOpUtil: LeakyRelu alpha is never set";
       }
+      if (this->has_linear_) {
+        alpha = this->linear_alpha_;
+        ITEX_CHECK(!std::isnan(alpha))
+            << "PostOpUtil: Linear alpha is never set";
+        beta = this->linear_beta_;
+        ITEX_CHECK(!std::isnan(beta)) << "PostOpUtil: Linear beta is never set";
+      }
 #ifdef ITEX_ONEDNN_3_0
-      post_ops->append_eltwise(info->alg, alpha, info->beta);
+      post_ops->append_eltwise(info->alg, alpha, beta);
 #else
-      post_ops->append_eltwise(scale, info->alg, alpha, info->beta);
+      post_ops->append_eltwise(scale, info->alg, alpha, beta);
 #endif
     } else if (op_kind == kind::sum) {
       post_ops->append_sum(scale);

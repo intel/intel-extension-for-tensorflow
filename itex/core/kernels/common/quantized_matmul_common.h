@@ -78,6 +78,8 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
       const float max_input =
           context->input(kSrcMaxRangeIndex).flat<float>()(0);
 
+      // TODO(itex): check whether we need to allocate different output min/max
+      // with different output scaled mode
       AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
           context, min_input, max_input, kFilterMinRangeIndex,
           kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
@@ -794,6 +796,8 @@ class LegacyQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32, Toutput>
       const float max_input =
           context->input(kSrcMaxRangeIndex).flat<float>()(0);
 
+      // TODO(itex): check whether we need to allocate different output min/max
+      // with different output scaled mode
       AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
           context, min_input, max_input, kFilterMinRangeIndex,
           kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
@@ -1764,9 +1768,6 @@ class QuantizedFusedMatMulV2Op
     }
     OP_REQUIRES_OK(context,
                    context->GetAttr("output_quant_mode", &output_quant_mode_));
-    OP_REQUIRES(
-        context, output_quant_mode_ == "SCALED",
-        errors::Unimplemented("Requantize is supported for SCALED mode only."));
     OP_REQUIRES_OK(
         context, context->GetAttr("is_weight_const", &this->is_weight_const_));
     OP_REQUIRES_OK(context,
@@ -1775,6 +1776,14 @@ class QuantizedFusedMatMulV2Op
     // Extract activation info and canonicalize activation types to
     // common name "Activation" in the fused_ops attribute.
     OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops_));
+    // If we have min_first output quantization mode, we have to set zeropoint,
+    // so output scale here is not sufficient here. We use linear eltwise post
+    // op to set both scale & shift
+    if (std::find(fused_ops_.begin(), fused_ops_.end(), "Requantize") !=
+            fused_ops_.end() &&
+        output_quant_mode_ == "MIN_FIRST") {
+      fused_ops_.push_back("Linear");
+    }
     OP_REQUIRES(context, this->post_op_util_.AddOps(fused_ops_),
                 errors::InvalidArgument(
                     "Found unsupported fusion in _QuantizedMatMul."));
@@ -1865,7 +1874,8 @@ class QuantizedFusedMatMulV2Op
         // Update output_scale for Requantize fusion without Activation.
         // Activation scale will be handled later.
         if (this->post_op_util_.HasRequantize() &&
-            !this->post_op_util_.HasActivation()) {
+            !this->post_op_util_.HasActivation() &&
+            !this->post_op_util_.HasLinear()) {
           const float min_output =
               context->input(kOutputMinIdx).template flat<float>()(0);
           const float max_output =
@@ -1884,7 +1894,8 @@ class QuantizedFusedMatMulV2Op
       }
 
       if (this->post_op_util_.HasActivation()) {
-        if (this->post_op_util_.HasRequantize()) {
+        if (this->post_op_util_.HasRequantize() &&
+            !this->post_op_util_.HasLinear()) {
           // Update scale for requantize fusion.
           const float min_output =
               context->input(kOutputMinIdx).template flat<float>()(0);
@@ -1900,6 +1911,21 @@ class QuantizedFusedMatMulV2Op
           string activation_type = fused_ops_[1];
           this->post_op_util_.SetPostOpScale(activation_type, scale);
         }
+      }
+
+      if (this->post_op_util_.HasLinear()) {
+        // Update output_scale for requantize fusion.
+        const float min_output =
+            context->input(kOutputMinIdx).template flat<float>()(0);
+        const float max_output =
+            context->input(kOutputMaxIdx).template flat<float>()(0);
+        const float max_int8_output =
+            (std::is_same<Toutput, quint8>::value) ? 255.0f : 127.0f;
+        const float range_output = max_output - min_output;
+        float req_scale = max_int8_output / range_output;
+        float req_shift = -min_output * max_int8_output / range_output;
+
+        this->post_op_util_.SetLinearAlphaBeta(req_scale, req_shift);
       }
 
       if (this->post_op_util_.HasAdd()) {
