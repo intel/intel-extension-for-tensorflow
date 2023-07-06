@@ -1,6 +1,9 @@
+load("//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "remapper",
     srcs = [
+        "activation_pattern.cc",
         "batch_matmul_pattern.cc",
         "cast_fused_matmul_cast_pattern.cc",
         "cast_matmul_cast_pattern.cc",
@@ -9,12 +12,11 @@ cc_library(
         "gru_pattern.cc",
         "instance_norm_pattern.cc",
         "layer_norm_pattern.cc",
-        "pad_conv3d_pattern.cc",
         "pad_conv3d_with_cast_pattern.cc",
+        "pad_conv_pattern.cc",
         "remapper.cc",
         "resize_image_pattern.cc",
         "rmsprop_pattern.cc",
-        "swish_pattern.cc",
     ],
     hdrs = [
         "constant_names.h",

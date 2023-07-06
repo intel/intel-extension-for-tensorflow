@@ -16,7 +16,7 @@
 
 import numpy as np
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import nn_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 import tensorflow as tf
@@ -34,13 +34,15 @@ class DataFormatVecPermuteTest(test.TestCase):
         x = np.random.randint(1000, size = (m))
         x = tf.constant(x, dtype=dtype)
         flush_cache()
-        out_gpu = tf.raw_ops.DataFormatVecPermute(x=x, src_format='NHWC', dst_format='NCHW', name=None)
+        out_gpu = nn_ops.data_format_vec_permute(
+            x=x, src_format='NHWC', dst_format='NCHW')
 
     def _test_2D(self, m, n, dtype):
         x = np.random.randint(1000, size = (m,n))
         x = tf.constant(x, dtype=dtype)
         flush_cache()
-        out_gpu = tf.raw_ops.DataFormatVecPermute(x=x, src_format='NDHWC', dst_format='NCDHW', name=None)
+        out_gpu = nn_ops.data_format_vec_permute(
+            x=x, src_format='NHWC', dst_format='NCHW')
 
     @add_profiling
     @multi_run(ITERATION)

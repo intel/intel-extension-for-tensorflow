@@ -20,7 +20,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 
-#include "itex/core/kernels/gpu/cast_op.h"
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/gpu_device_functions.h"
 #include "itex/core/utils/logging.h"
@@ -273,7 +273,7 @@ class CropAndResizeGradImageOp : public OpKernel {
       const int image_width = internal::SubtleMustCopy(image_size_vec(2));
       const int depth = internal::SubtleMustCopy(image_size_vec(3));
 
-      bool status;
+      bool status = false;
 
       if (std::is_same<T, float>::value) {
         status = functor::CropAndResizeBackpropImage<Device, float>()(
@@ -613,42 +613,41 @@ struct CropAndResizeBackpropImageKernelTask {
       const float x_lerp = in_x - left_x_index;
 
       const float dtop = (1 - y_lerp) * grads_ptr[out_idx];
-      DpcppAtomicAdd(grads_image_ptr +
-                         ((b_in * image_height + top_y_index) * image_width +
-                          left_x_index) *
-                             depth +
-                         d,
-                     static_cast<T>((1 - x_lerp) * dtop));
-      DpcppAtomicAdd(grads_image_ptr +
-                         ((b_in * image_height + top_y_index) * image_width +
-                          right_x_index) *
-                             depth +
-                         d,
-                     static_cast<T>(x_lerp * dtop));
+      ItexAtomicAdd(grads_image_ptr +
+                        ((b_in * image_height + top_y_index) * image_width +
+                         left_x_index) *
+                            depth +
+                        d,
+                    static_cast<T>((1 - x_lerp) * dtop));
+      ItexAtomicAdd(grads_image_ptr +
+                        ((b_in * image_height + top_y_index) * image_width +
+                         right_x_index) *
+                            depth +
+                        d,
+                    static_cast<T>(x_lerp * dtop));
 
       const float dbottom = y_lerp * grads_ptr[out_idx];
-      DpcppAtomicAdd(grads_image_ptr +
-                         ((b_in * image_height + bottom_y_index) * image_width +
-                          left_x_index) *
-                             depth +
-                         d,
-                     static_cast<T>((1 - x_lerp) * dbottom));
-      DpcppAtomicAdd(grads_image_ptr +
-                         ((b_in * image_height + bottom_y_index) * image_width +
-                          right_x_index) *
-                             depth +
-                         d,
-                     static_cast<T>(x_lerp * dbottom));
+      ItexAtomicAdd(grads_image_ptr +
+                        ((b_in * image_height + bottom_y_index) * image_width +
+                         left_x_index) *
+                            depth +
+                        d,
+                    static_cast<T>((1 - x_lerp) * dbottom));
+      ItexAtomicAdd(grads_image_ptr +
+                        ((b_in * image_height + bottom_y_index) * image_width +
+                         right_x_index) *
+                            depth +
+                        d,
+                    static_cast<T>(x_lerp * dbottom));
     } else {  // method_id == NEAREST
       const int closest_x_index = sycl::round(in_x);
       const int closest_y_index = sycl::round(in_y);
-      DpcppAtomicAdd(
-          grads_image_ptr +
-              ((b_in * image_height + closest_y_index) * image_width +
-               closest_x_index) *
-                  depth +
-              d,
-          static_cast<T>(grads_ptr[out_idx]));
+      ItexAtomicAdd(grads_image_ptr +
+                        ((b_in * image_height + closest_y_index) * image_width +
+                         closest_x_index) *
+                            depth +
+                        d,
+                    static_cast<T>(grads_ptr[out_idx]));
     }
   }
 
@@ -796,10 +795,10 @@ struct CropAndResizeBackpropBoxesKernelTask {
       dx2 = image_grad_x * 0.5 * (image_width - 1);
     }
 
-    DpcppAtomicAdd(grads_boxes_ptr + b * 4 + 0, dy1);
-    DpcppAtomicAdd(grads_boxes_ptr + b * 4 + 1, dx1);
-    DpcppAtomicAdd(grads_boxes_ptr + b * 4 + 2, dy2);
-    DpcppAtomicAdd(grads_boxes_ptr + b * 4 + 3, dx2);
+    ItexAtomicAdd(grads_boxes_ptr + b * 4 + 0, dy1);
+    ItexAtomicAdd(grads_boxes_ptr + b * 4 + 1, dx1);
+    ItexAtomicAdd(grads_boxes_ptr + b * 4 + 2, dy2);
+    ItexAtomicAdd(grads_boxes_ptr + b * 4 + 3, dx2);
   }
 
  private:

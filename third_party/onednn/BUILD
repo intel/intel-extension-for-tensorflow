@@ -1,4 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 exports_files(["LICENSE"])
 
@@ -18,9 +20,67 @@ config_setting(
 )
 
 config_setting(
+    name = "build_with_onednn_graph",
+    define_values = {
+        "build_with_onednn_graph": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
     name = "build_with_tbb",
     define_values = {
         "build_with_tbb": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v3",
+    define_values = {
+        "onednn_version": "3",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v2",
+    define_values = {
+        "onednn_version": "2",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v3_and_gpu",
+    define_values = {
+        "device": "gpu",
+        "onednn_version": "3",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v2_and_gpu",
+    define_values = {
+        "device": "gpu",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v3_and_cpu",
+    define_values = {
+        "device": "cpu",
+        "onednn_version": "3",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "onednn_v2_and_cpu",
+    define_values = {
+        "device": "cpu",
     },
     visibility = ["//visibility:public"],
 )
@@ -59,4 +119,28 @@ py_binary(
         "@onednn_cpu//:__subpackages__",
         "@onednn_gpu//:__subpackages__",
     ],
+)
+
+config_setting(
+    name = "build_with_llga_debug",
+    define_values = {
+        "build_with_llga_debug": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "build_with_graph_compiler_flag",
+    define_values = {
+        "build_with_graph_compiler": "true",
+    },
+)
+
+selects.config_setting_group(
+    name = "build_with_graph_compiler",
+    match_all = [
+        "@intel_extension_for_tensorflow//itex:cpu_build",
+        ":build_with_graph_compiler_flag",
+    ],
+    visibility = ["//visibility:public"],
 )

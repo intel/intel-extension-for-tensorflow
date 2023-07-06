@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/graph/graph_view/graph_view.h"
+
 #include "itex/core/graph/utils/utils.h"
 #include "protos/attr_value.pb.h"
 

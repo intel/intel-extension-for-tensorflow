@@ -79,7 +79,9 @@ class HistogramFixedWidthOp : public OpKernel {
                               .TypeConstraint<int32>("dtype"), \
                           HistogramFixedWidthOp<GPUDevice, type, int32>)
 
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNELS);
 TF_CALL_int32(REGISTER_KERNELS);
+TF_CALL_int64(REGISTER_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
 TF_CALL_double(REGISTER_KERNELS);
 #endif

@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "itex_xpu_library", "tf_copts")
 
 package(
     licenses = ["notice"],  # Apache 2.0
@@ -9,7 +9,7 @@ itex_xpu_library(
     srcs = ["aggregate_ops.cc"],
     hdrs = [
         "aggregate_ops.h",
-        "reduction_dpcpp_kernels.h",
+        "full_reduction_kernels.h",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -83,20 +83,6 @@ itex_xpu_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "//itex:core",
-    ],
-    alwayslink = True,
-)
-
-itex_xpu_library(
-    name = "argmin_op",
-    srcs = ["argmin_op.cc"],
-    hdrs = ["argmin_op.h"],
-    copts = tf_copts(),
-    linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        ":reduction_utils",
         "//itex:core",
     ],
     alwayslink = True,
@@ -231,8 +217,10 @@ itex_xpu_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
+        ":reduction_ops",
         "//itex:core",
         "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/common:transpose_functor",
     ],
     alwayslink = True,
 )
@@ -339,8 +327,8 @@ itex_xpu_library(
         "cast_op_impl.cc",
     ],
     hdrs = [
-        "cast_op.h",
         "cast_op_impl.h",
+        "//itex/core/kernels/common:cast_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -489,8 +477,8 @@ itex_xpu_library(
         "dilation_ops_gpu.cc",
     ],
     hdrs = [
-        "cast_op.h",
         "dilation_ops.h",
+        "//itex/core/kernels/common:cast_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -530,11 +518,18 @@ itex_xpu_library(
 itex_xpu_library(
     name = "dynamic_partition_op",
     srcs = ["dynamic_partition_op.cc"],
+    hdrs = [
+        "gather_functor.h",
+        "topk_op.h",
+        "unique_op.h",
+        "unique_op_helpers.h",
+    ],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
     ],
     alwayslink = True,
 )
@@ -603,6 +598,8 @@ itex_xpu_library(
     name = "fused_batch_norm_op",
     srcs = ["fused_batch_norm_op.cc"],
     hdrs = [
+        "custom_fused_batch_norm_functor.h",
+        "custom_fused_batch_norm_op.h",
         "//itex/core/kernels/common:fused_batch_norm_hdrs",
     ],
     copts = tf_copts(),
@@ -672,9 +669,11 @@ itex_xpu_library(
         "in_topk_op_gpu.cc",
     ],
     hdrs = [
+        "col_reduction_kernels.h",
+        "full_reduction_kernels.h",
         "in_topk_op.h",
-        "reduction_dpcpp_kernels.h",
         "reduction_ops.h",
+        "row_reduction_kernels.h",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -704,7 +703,7 @@ itex_xpu_library(
 itex_xpu_library(
     name = "l2loss_op",
     srcs = ["l2loss_op.cc"],
-    hdrs = ["reduction_dpcpp_kernels.h"],
+    hdrs = ["full_reduction_kernels.h"],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
@@ -760,7 +759,6 @@ itex_xpu_library(
     srcs = ["matmul_op.cc"],
     hdrs = [
         "//itex/core/kernels/common:batch_matmul_hdrs",
-        "//itex/core/kernels/common:matmul_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -773,6 +771,7 @@ itex_xpu_library(
     name = "quantized_matmul",
     srcs = ["quantized_matmul.cc"],
     hdrs = [
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/common:quantized_matmul_common_hdrs",
         "//itex/core/kernels/onednn/block:quantized_hdrs",
@@ -821,6 +820,7 @@ itex_xpu_library(
     name = "quantized_conv",
     srcs = ["quantized_conv_ops.cc"],
     hdrs = [
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:conv_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/common:quantized_conv_hdrs",
@@ -916,9 +916,11 @@ itex_xpu_library(
         "reduction_ops_sum.cc",
     ],
     hdrs = [
-        "reduction_dpcpp_kernels.h",
+        "col_reduction_kernels.h",
+        "full_reduction_kernels.h",
         "reduction_ops.h",
         "reduction_ops_common.h",
+        "row_reduction_kernels.h",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -951,9 +953,10 @@ itex_xpu_library(
         "rnn_ops_gpu.cc",
     ],
     hdrs = [
-        "reduction_dpcpp_kernels.h",
+        "col_reduction_kernels.h",
         "rnn_ops.h",
         "rnn_ops_gpu.h",
+        "//itex/core/kernels/common:matmul_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -1228,7 +1231,11 @@ itex_xpu_library(
 
 itex_xpu_library(
     name = "scan_ops",
-    srcs = ["scan_ops.cc"],
+    srcs = [
+        "scan_ops_1.cc",
+        "scan_ops_2.cc",
+        "scan_ops_3.cc",
+    ],
     hdrs = [
         "scan_ops.h",
         "scan_ops_gpu.h",
@@ -1274,6 +1281,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
     ],
     alwayslink = True,
 )
@@ -1356,6 +1364,141 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_concat_op",
+    srcs = ["sparse_concat_op.cc"],
+    hdrs = [
+        "gpu_device_array.h",
+        "sparse_concat_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "fill_empty_rows_functor",
+    srcs = ["fill_empty_rows_functor.cc"],
+    hdrs = [
+        "fill_empty_rows_functor.h",
+        "full_reduction_kernels.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "sparse_fill_empty_rows_op",
+    srcs = ["sparse_fill_empty_rows_op.cc"],
+    hdrs = [
+        "sparse_fill_empty_rows_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":fill_empty_rows_functor",
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/gpu:scan_ops",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "ragged_fill_empty_rows_op",
+    srcs = ["ragged_fill_empty_rows_op.cc"],
+    hdrs = [
+        "ragged_fill_empty_rows_op.h",
+        "sparse_fill_empty_rows_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":fill_empty_rows_functor",
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/gpu:scan_ops",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "sparse_reorder_op",
+    srcs = ["sparse_reorder_op.cc"],
+    hdrs = ["sparse_reorder_op.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "sparse_slice_grad_op",
+    srcs = ["sparse_slice_grad_op.cc"],
+    hdrs = [
+        "sparse_slice_grad_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "sparse_slice_op",
+    srcs = ["sparse_slice_op.cc"],
+    hdrs = [
+        "sparse_slice_op.h",
+        "where_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "sparse_split_op",
+    srcs = ["sparse_split_op.cc"],
+    hdrs = [
+        "sparse_split_op.h",
+        "topk_op.h",
+        "unique_op.h",
+        "unique_op_helpers.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_tensor_dense_mat_mul_op",
     srcs = ["sparse_tensor_dense_mat_mul_op.cc"],
     hdrs = ["sparse_tensor_dense_mat_mul_op.h"],
@@ -1364,6 +1507,32 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "sparse_math_ops",
+    srcs = [
+        "sparse_reshape_op.cc",
+        "sparse_segment_reduction_ops.cc",
+        "sparse_segment_reduction_util.cc",
+    ],
+    hdrs = [
+        "segment_reduction_ops.h",
+        "sparse_segment_reduction_ops.h",
+        "sparse_segment_reduction_util.h",
+        "topk_op.h",
+        "unique_op.h",
+        "unique_op_helpers.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/common:sparse_math_lib",
     ],
     alwayslink = True,
 )
@@ -1603,6 +1772,7 @@ itex_xpu_library(
         "training_op_power_sign.cc",
         "training_op_proximal_adagrad.cc",
         "training_op_rmsprop.cc",
+        "training_op_sparse_apply_adadelta.cc",
     ],
     hdrs = [
         "dense_update_functor.h",
@@ -1692,9 +1862,9 @@ itex_xpu_library(
     name = "resize_bilinear_ops",
     srcs = ["resize_bilinear_op.cc"],
     hdrs = [
-        "cast_op.h",
         "image_resizer_state.h",
         "resize_bilinear_op.h",
+        "//itex/core/kernels/common:cast_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -1821,6 +1991,7 @@ itex_xpu_library(
     name = "unique_op",
     srcs = ["unique_op.cc"],
     hdrs = [
+        "topk_op.h",
         "unique_op.h",
         "unique_op_helpers.h",
     ],
@@ -1884,12 +2055,85 @@ itex_xpu_library(
     alwayslink = True,
 )
 
+itex_xpu_library(
+    name = "group_norm_ops",
+    srcs = [
+        "group_norm_op.cc",
+        "group_norm_op_gpu.cc",
+    ],
+    hdrs = [
+        "col_reduction_kernels.h",
+        "group_norm_op.h",
+        "group_norm_op_gpu.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "tensorarray_ops",
+    srcs = [
+        "concat_lib.cc",
+        "split_lib.cc",
+        "tensor_array.cc",
+        "tensor_array_ops.cc",
+    ],
+    hdrs = [
+        "aggregate_ops.h",
+        "concat_lib.h",
+        "gpu_device_array.h",
+        "split_lib.h",
+        "tensor_array.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "isTensorFloat32Enabled_op",
+    srcs = ["isTensorFloat32Enabled_op.cc"],
+    hdrs = ["isTensorFloat32Enabled_op.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
+    name = "test_ops",
+    srcs = ["test_ops.cc"],
+    hdrs = ["test_ops.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
 GPU_KERNELS = [
     ":aggregate_ops",
     ":argmax_op",
-    ":argmin_op",
     ":batchtospace_op",
     ":batch_norm_ops",
+    ":group_norm_ops",
     ":betainc_op",
     ":spacetodepth_op",
     ":bucketize_op",
@@ -1915,8 +2159,7 @@ GPU_KERNELS = [
     ":dilation_op",
     ":diag_op",
     ":dynamic_stitch_op",
-    # TODO(itex): Temporarily disable DynamicPartition op as its gpu implementation needs refactor.
-    # ":dynamic_partition_op"
+    ":dynamic_partition_op",
     ":extract_image_patches_op",
     ":extract_volume_patches_op",
     ":fft_ops",
@@ -1972,6 +2215,14 @@ GPU_KERNELS = [
     ":softplus_op",
     ":softsign_op",
     ":spacetobatch_op",
+    ":sparse_concat_op",
+    ":sparse_fill_empty_rows_op",
+    ":ragged_fill_empty_rows_op",
+    ":sparse_math_ops",
+    ":sparse_reorder_op",
+    ":sparse_slice_grad_op",
+    ":sparse_slice_op",
+    ":sparse_split_op",
     ":sparse_tensor_dense_mat_mul_op",
     ":sparse_xent_op",
     ":split_op",
@@ -1990,6 +2241,9 @@ GPU_KERNELS = [
     ":unpack_op",
     ":where_op",
     ":xent_op",
+    ":tensorarray_ops",
+    ":isTensorFloat32Enabled_op",
+    ":test_ops",
 ]
 
 itex_xpu_library(
@@ -2003,13 +2257,16 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
-        "//itex/core/kernels/legacy:legacy_kernels",
-        "//itex/core/kernels/onednn_graph:onednn_graph_op",
-        "//itex/core/kernels/onednn:onednn_kernels",
-        "//itex/core/kernels/gpu/linalg:linalg",
-        "//itex/core/kernels/gpu/special_math:special_math_op",
+        "//itex/core/kernels/gpu/fp8:fp8_op",
+        "//itex/core/kernels/gpu/image",
         "//itex/core/kernels/gpu/image:crop_and_resize_op",
-        "//itex/core/kernels/gpu/image:image",
-    ] + GPU_KERNELS,
+        "//itex/core/kernels/gpu/linalg",
+        "//itex/core/kernels/gpu/special_math:special_math_op",
+        "//itex/core/kernels/legacy:legacy_kernels",
+        "//itex/core/kernels/onednn:onednn_kernels",
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["//itex/core/kernels/onednn_graph:onednn_graph_op"],
+        "//conditions:default": [],
+    }) + GPU_KERNELS,
     alwayslink = True,
 )

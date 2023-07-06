@@ -19,7 +19,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test_util, test
 
 import itertools
 
@@ -34,6 +34,10 @@ from intel_extension_for_tensorflow.python.test_func.test_util import TensorFlow
 # Import resource_variable_ops for the variables-to-tensor implicit conversion.
 from tensorflow.python.ops import resource_variable_ops  # pylint: disable=unused-import
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.variable_v1 import VariableV1
 from tensorflow.python.platform import googletest
 from tensorflow.python.training import training_ops
 
@@ -57,7 +61,7 @@ class TrainingOpsTest(TensorFlowTestCase):
   def _testTypes(self, x, alpha, delta, use_gpu=None):
     self.setUp()
     with self.session(use_gpu=use_gpu):
-      var = variables.VariableV1(x)
+      var = VariableV1(x)
       self.evaluate(variables.global_variables_initializer())
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
       apply_sgd = training_ops.apply_gradient_descent(var, alpha, delta)
@@ -78,8 +82,8 @@ class TrainingOpsTest(TensorFlowTestCase):
   def _testTypesForAdagrad(self, x, y, lr, grad, use_gpu=None):
     self.setUp()
     with self.session(use_gpu=use_gpu):
-      var = variables.VariableV1(x)
-      accum = variables.VariableV1(y)
+      var = VariableV1(x)
+      accum = VariableV1(y)
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
@@ -88,6 +92,21 @@ class TrainingOpsTest(TensorFlowTestCase):
       self.assertShapeEqual(out, apply_adagrad)
       self.assertAllCloseAccordingToType(x - lr * grad * (y + grad * grad)**
                                          (-0.5), out)
+      self.assertAllCloseAccordingToType(y + grad * grad, self.evaluate(accum))
+
+  def _testTypesForAdagradV2(self, x, y, lr, epsilon, grad, use_gpu=None):
+    self.setUp()
+    with self.session(use_gpu=use_gpu):
+      var = VariableV1(x)
+      accum = VariableV1(y)
+      self.evaluate(variables.global_variables_initializer())
+
+      self.assertAllCloseAccordingToType(x, self.evaluate(var))
+      apply_adagrad = training_ops.apply_adagrad_v2(var, accum, lr, epsilon, grad)
+      out = self.evaluate(apply_adagrad)
+      self.assertShapeEqual(out, apply_adagrad)
+      self.assertAllCloseAccordingToType(x - lr * grad * (((y + grad * grad)**
+                                        (0.5) + epsilon)**(-1)), out)
       self.assertAllCloseAccordingToType(y + grad * grad, self.evaluate(accum))
 
   def _testTypesForFtrl(self,
@@ -99,17 +118,22 @@ class TrainingOpsTest(TensorFlowTestCase):
                         use_gpu=None,
                         l1=0.0,
                         l2=0.0,
-                        lr_power=-0.5):
+                        lr_power=-0.5,
+                        version=1):
     self.setUp()
     with self.session(use_gpu=use_gpu):
-      var = variables.VariableV1(x)
-      accum = variables.VariableV1(y)
-      linear = variables.VariableV1(z)
+      var = VariableV1(x)
+      accum = VariableV1(y)
+      linear = VariableV1(z)
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
-      apply_ftrl = training_ops.apply_ftrl(var, accum, linear, grad, lr, l1, l2,
-                                           lr_power)
+      if version == 1:
+        apply_ftrl = training_ops.apply_ftrl(var, accum, linear, grad, lr, l1, l2,
+                                            lr_power)
+      elif version == 2:
+        apply_ftrl = training_ops.apply_ftrl_v2(var, accum, linear, grad, lr, l1, l2,
+                                              lr_power=lr_power, l2_shrinkage=0)
       out = self.evaluate(apply_ftrl)
       self.assertShapeEqual(out, apply_ftrl)
       accum_update = y + grad * grad
@@ -147,9 +171,9 @@ class TrainingOpsTest(TensorFlowTestCase):
                                           lr_power=-0.5):
     self.setUp()
     with self.session(use_gpu=use_gpu):
-      var = variables.VariableV1(x)
-      accum = variables.VariableV1(y)
-      linear = variables.VariableV1(z)
+      var = VariableV1(x)
+      accum = VariableV1(y)
+      linear = VariableV1(z)
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
@@ -201,6 +225,18 @@ class TrainingOpsTest(TensorFlowTestCase):
       grad = np.arange(100).astype(dtype)
       self._testTypesForAdagrad(x, y, lr, grad, use_gpu)
 
+  @test_util.run_v1_only("ApplyAdagradV2 op returns a ref, so it is not "
+                         "supported in eager mode.")
+  def testApplyAdagradV2(self):
+    for (dtype, use_gpu) in itertools.product(
+        [np.float16, np.float32, np.float64], [False, True]):
+      x = np.arange(100).astype(dtype)
+      y = np.arange(1, 101).astype(dtype)
+      lr = np.array(2.0).astype(dtype)
+      epsilon = np.array(1.0).astype(dtype)
+      grad = np.arange(100).astype(dtype)
+      self._testTypesForAdagradV2(x, y, lr, epsilon, grad, use_gpu)
+
   @test_util.run_v1_only("ApplyFtrl op returns a ref, so it is not "
                          "supported in eager mode.")
   def testApplyFtrl(self):
@@ -212,7 +248,12 @@ class TrainingOpsTest(TensorFlowTestCase):
       l1 = np.array(3.0).astype(dtype)
       l2 = np.array(4.0).astype(dtype)
       grad = np.arange(100).astype(dtype)
-      self._testTypesForFtrl(x, y, z, lr, grad, use_gpu=False, l1=l1, l2=l2)
+      if test.is_gpu_available():
+        use_gpu = True
+      else:
+        use_gpu = False
+      for version in (1, 2):
+        self._testTypesForFtrl(x, y, z, lr, grad, use_gpu=use_gpu, l1=l1, l2=l2, version=version)
 
   @test_util.run_v1_only("ApplyFtrlMultiplyLinearByLr op returns a ref, so it "
                          "is not supported in eager mode.")
@@ -228,17 +269,22 @@ class TrainingOpsTest(TensorFlowTestCase):
       self._testTypesForFtrlMultiplyLinearByLr(
           x, y, z, lr, grad, use_gpu=False, l1=l1, l2=l2)
 
-  def _testTypesForSparseAdagrad(self, x, y, lr, grad, indices):
+  def _testTypesForSparseAdagrad(self, x, y, lr, grad, epsicon, indices, use_gpu, version=1):
     self.setUp()
-    with self.session(use_gpu=False):
-      var = variables.VariableV1(x)
-      accum = variables.VariableV1(y)
+    with self.session(use_gpu=use_gpu):
+      var = VariableV1(x)
+      accum = VariableV1(y)
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
-      sparse_apply_adagrad = training_ops.sparse_apply_adagrad(
-          var, accum, lr, grad,
-          constant_op.constant(indices, self._toType(indices.dtype)))
+      if version == 1:
+        sparse_apply_adagrad = training_ops.sparse_apply_adagrad(
+            var, accum, lr, grad,
+            constant_op.constant(indices, self._toType(indices.dtype)))
+      else:
+        sparse_apply_adagrad = training_ops.sparse_apply_adagrad_v2(
+            var, accum, lr, epsicon, grad,
+            constant_op.constant(indices, self._toType(indices.dtype)))
       out = self.evaluate(sparse_apply_adagrad)
       self.assertShapeEqual(out, sparse_apply_adagrad)
 
@@ -256,27 +302,30 @@ class TrainingOpsTest(TensorFlowTestCase):
                               lr,
                               grad,
                               indices,
+                              use_gpu,
                               l1=0.0,
                               l2=0.0,
-                              lr_power=-0.5):
+                              l2_shrinkage = 0.9,
+                              lr_power=-0.5,
+                              version = 1):
     self.setUp()
-    with self.session(use_gpu=False):
-      var = variables.VariableV1(x)
-      accum = variables.VariableV1(y)
-      linear = variables.VariableV1(z)
+    with self.session(use_gpu=use_gpu):
+      var = VariableV1(x)
+      accum = VariableV1(y)
+      linear = VariableV1(z)
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
-      sparse_apply_ftrl = training_ops.sparse_apply_ftrl(
-          var,
-          accum,
-          linear,
-          grad,
-          constant_op.constant(indices, self._toType(indices.dtype)),
-          lr,
-          l1,
-          l2,
-          lr_power=lr_power)
+      if version == 1:
+        sparse_apply_ftrl = training_ops.sparse_apply_ftrl(
+            var, accum, linear, grad,
+            constant_op.constant(indices, self._toType(indices.dtype)),
+            lr, l1, l2, lr_power=lr_power)
+      else:
+        sparse_apply_ftrl = training_ops.sparse_apply_ftrl_v2(
+            var, accum, linear, grad,
+            constant_op.constant(indices, self._toType(indices.dtype)),
+            lr, l1, l2, l2_shrinkage, lr_power=lr_power)
       out = self.evaluate(sparse_apply_ftrl)
       self.assertShapeEqual(out, sparse_apply_ftrl)
 
@@ -300,9 +349,9 @@ class TrainingOpsTest(TensorFlowTestCase):
                                                 lr_power=-0.5):
     self.setUp()
     with self.session(use_gpu=False):
-      var = variables.VariableV1(x)
-      accum = variables.VariableV1(y)
-      linear = variables.VariableV1(z)
+      var = VariableV1(x)
+      accum = VariableV1(y)
+      linear = VariableV1(z)
       self.evaluate(variables.global_variables_initializer())
 
       self.assertAllCloseAccordingToType(x, self.evaluate(var))
@@ -332,8 +381,9 @@ class TrainingOpsTest(TensorFlowTestCase):
   @test_util.run_v1_only("SparseApplyAdagrad op returns a ref, so it is not "
                          "supported in eager mode.")
   def testSparseApplyAdagrad(self):
-    for (dtype, index_type) in itertools.product(
-        [np.float16, np.float32, np.float64], [np.int32, np.int64]):
+    for (dtype, index_type,
+         use_gpu) in itertools.product([np.float16, np.float32, np.float64],
+                                       [np.int32, np.int64], [False, True]):
       x_val = [np.arange(10), np.arange(10, 20), np.arange(20, 30)]
       y_val = [np.arange(1, 11), np.arange(11, 21), np.arange(21, 31)]
       x = np.array(x_val).astype(dtype)
@@ -341,14 +391,25 @@ class TrainingOpsTest(TensorFlowTestCase):
       lr = np.array(2.0).astype(dtype)
       grad_val = [np.arange(10), np.arange(10)]
       grad = np.array(grad_val).astype(dtype)
+      epsicon = np.array(1e-6).astype(dtype)
       indices = np.array([0, 2]).astype(index_type)
-      self._testTypesForSparseAdagrad(x, y, lr, grad, indices)
+      # extend to SparseApplyAdagrad and SparseApplyAdagradV2
+      for version in (1, 2):
+        self._testTypesForSparseAdagrad(x, y, lr, grad, epsicon, indices,
+                                        use_gpu, version)
+      # Empty sparse gradients.
+      empty_grad = np.zeros([0, 10], dtype=dtype)
+      empty_indices = np.zeros([0], dtype=index_type)
+      for version in (1, 2):
+        self._testTypesForSparseAdagrad(x, y, lr, empty_grad, epsicon,
+                                        empty_indices,use_gpu, version)
 
   @test_util.run_v1_only("SparseApplyAdagrad op returns a ref, so it is not "
                          "supported in eager mode.")
   def testSparseApplyAdagradDim1(self):
-    for (dtype, index_type) in itertools.product(
-        [np.float16, np.float32, np.float64], [np.int32, np.int64]):
+    for (dtype, index_type,
+         use_gpu) in itertools.product([np.float16, np.float32, np.float64],
+                                       [np.int32, np.int64], [False, True]):
       x_val = [[1.0], [2.0], [3.0]]
       y_val = [[4.0], [5.0], [6.0]]
       x = np.array(x_val).astype(dtype)
@@ -356,14 +417,20 @@ class TrainingOpsTest(TensorFlowTestCase):
       lr = np.array(2.0).astype(dtype)
       grad_val = [[1.5], [2.5]]
       grad = np.array(grad_val).astype(dtype)
+      epsicon = np.array(1e-6).astype(dtype)
+      constant_op.constant(1e-6, shape=(3, 1), dtype=dtype)
       indices = np.array([0, 2]).astype(index_type)
-      self._testTypesForSparseAdagrad(x, y, lr, grad, indices)
+      # extend to SparseApplyAdagrad and SparseApplyAdagradV2
+      for version in (1, 2):
+        self._testTypesForSparseAdagrad(x, y, lr, grad, epsicon, indices,
+                                        use_gpu, version)
 
   @test_util.run_v1_only("SparseApplyFtrl op returns a ref, so it is not "
                          "supported in eager mode.")
   def testSparseApplyFtrlDim1(self):
-    for (dtype, index_type) in itertools.product(
-        [np.float16, np.float32, np.float64], [np.int32, np.int64]):
+    for (dtype, index_type,
+         use_gpu) in itertools.product([np.float16, np.float32, np.float64],
+                                       [np.int32, np.int64], [False, True]):
       x_val = [[0.0], [0.0], [0.0]]
       y_val = [[4.0], [5.0], [6.0]]
       z_val = [[0.0], [0.0], [0.0]]
@@ -374,7 +441,15 @@ class TrainingOpsTest(TensorFlowTestCase):
       grad_val = [[1.5], [2.5]]
       grad = np.array(grad_val).astype(dtype)
       indices = np.array([0, 2]).astype(index_type)
-      self._testTypesForSparseFtrl(x, y, z, lr, grad, indices)
+      # extend to SparseApplyFtrl and SparseApplyFtrlV2
+      for version in (1, 2):
+        self._testTypesForSparseFtrl(x, y, z, lr, grad, indices, use_gpu,
+                                     version=version)
+      # Empty sparse gradients.
+      # empty_grad = np.zeros([0, 1], dtype=dtype)
+      # empty_indices = np.zeros([0], dtype=index_type)
+      # self._testTypesForSparseFtrl(x, y, z, lr, empty_grad, empty_indices,
+      #                              use_gpu)
 
   @test_util.run_v1_only("SparseApplyFtrlMultiplyLinearByLr op returns a ref, "
                          "so it is not supported in eager mode.")
@@ -394,6 +469,102 @@ class TrainingOpsTest(TensorFlowTestCase):
       indices = np.array([0, 2]).astype(index_type)
       self._testTypesForSparseFtrlMultiplyLinearByLr(x, y, z, lr, grad, indices)
 
+  def resource_sparse_apply_proximal_adagrad_np(self, var, accum,
+                                                lr, l1, l2, grad, i, index):
+    accum[index] += grad[i] * grad[i]
+    lr_update = lr * (accum[index])**(-0.5)
+    prox_v = var[index]
+    prox_v -= grad[i] * lr_update
+    var = np.sign(prox_v) * np.max(np.abs(prox_v) - lr_update * l1, 0) * (
+          (1 + lr_update * l2)**(-1))
+    return var
+
+  def _testTypesForResourceSparseApplyProximalAdagrad(self, dtype, index_type,
+                                                      var_np, accum_np, lr_np,
+                                                      l1_np, l2_np, grad_np,
+                                                      indices_np, use_gpu):
+    self.setUp()
+    with self.session(use_gpu=use_gpu):
+      var = resource_variable_ops.ResourceVariable(var_np)
+      accum = resource_variable_ops.ResourceVariable(accum_np)
+      lr = constant_op.constant(lr_np, dtype=dtype)
+      l1 = constant_op.constant(l1_np, lr.dtype)
+      l2 = constant_op.constant(l2_np, lr.dtype)
+      grad = constant_op.constant(grad_np, lr.dtype)
+      indices = constant_op.constant(indices_np, index_type)
+      self.evaluate(variables.global_variables_initializer())
+
+      op = training_ops.resource_sparse_apply_proximal_adagrad(
+        var.handle, accum.handle, lr, l1, l2, grad, indices)
+      out = self.evaluate(op)
+
+      for (i, index) in enumerate(indices_np):
+        new_var = self.resource_sparse_apply_proximal_adagrad_np(
+          var_np, accum_np, lr_np, l1_np, l2_np, grad_np, i, index)
+        self.assertAllCloseAccordingToType(new_var, self.evaluate(var)[index])
+
+  def testResourceSparseApplyProximalAdagrad(self):
+    for (dtype, index_type, use_gpu) in itertools.product(
+                                        [dtypes.float32, dtypes.float64],
+                                        [dtypes.int32], [False, True]):
+      var = np.array([2.0, 2.0], dtype=dtype.as_numpy_dtype)
+      accum = np.array([1.0, 1.0], dtype=dtype.as_numpy_dtype)
+      lr = np.array(3.0).astype(dtype.as_numpy_dtype)
+      l1 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      l2 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      grad = np.array([0.0, 0.0], dtype=dtype.as_numpy_dtype)
+      indices = np.array([0, 1]).astype(index_type.as_numpy_dtype)
+      self._testTypesForResourceSparseApplyProximalAdagrad(dtype, index_type,
+        var, accum, lr, l1, l2, grad, indices, use_gpu)
+
+  def sparse_apply_proximal_adagrad_np(self, var, accum, lr, l1,
+                                       l2, grad, i, index):
+    accum[index] += grad[i] * grad[i]
+    lr_update = lr * (accum[index])**(-0.5)
+    prox_v = var[index]
+    prox_v -= grad[i] * lr_update
+    var = np.sign(prox_v) * np.max(np.abs(prox_v) - lr_update * l1, 0) * (
+          (1 + lr_update * l2)**(-1))
+    return var
+
+  def _testTypesForSparseApplyProximalAdagrad(self, dtype, index_type,
+    var_np, accum_np, lr_np, l1_np, l2_np, grad_np, indices_np, use_gpu):
+    self.setUp()
+    with self.session(use_gpu=use_gpu):
+      var = VariableV1(var_np)
+      accum = VariableV1(accum_np)
+      lr = constant_op.constant(lr_np, dtype=dtype)
+      l1 = constant_op.constant(l1_np, lr.dtype)
+      l2 = constant_op.constant(l2_np, lr.dtype)
+      grad = constant_op.constant(grad_np, lr.dtype)
+      indices = constant_op.constant(indices_np, index_type)
+      self.evaluate(variables.global_variables_initializer())
+
+      op = training_ops.sparse_apply_proximal_adagrad(var, accum, lr, l1, l2,
+                                                      grad, indices)
+      out = self.evaluate(op)
+
+      for (i, index) in enumerate(indices_np):
+        new_var = self.sparse_apply_proximal_adagrad_np(var_np,
+        accum_np, lr_np, l1_np, l2_np, grad_np, i, index)
+        self.assertAllCloseAccordingToType(new_var, self.evaluate(var)[index])
+
+  @test_util.run_v1_only("SparseApplyProximalAdagrad op returns a ref, so it is not "
+                         "supported in eager mode.")
+  def testSparseApplyProximalAdagrad(self):
+    for (dtype, index_type, use_gpu) in itertools.product(
+         [dtypes.float32, dtypes.float64],
+         [dtypes.int32], [False, True]):
+      var = np.array([2.0, 2.0], dtype=dtype.as_numpy_dtype)
+      accum = np.array([1.0, 1.0], dtype=dtype.as_numpy_dtype)
+      lr = np.array(3.0).astype(dtype.as_numpy_dtype)
+      l1 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      l2 = np.array(0.1).astype(dtype.as_numpy_dtype)
+      grad = np.array([0.0, 0.0], dtype=dtype.as_numpy_dtype)
+      indices = np.array([0, 1]).astype(index_type.as_numpy_dtype)
+      self._testTypesForSparseApplyProximalAdagrad(dtype, index_type,
+        var, accum, lr, l1, l2, grad, indices, use_gpu)
+
   @test_util.run_v1_only("ApplyAdam op returns a ref, so it is not "
                          "supported in eager mode.")
   def testApplyAdam(self):
@@ -408,9 +579,9 @@ class TrainingOpsTest(TensorFlowTestCase):
   def _testTypesForAdam(self, var, m, v, grad, use_gpu):
     self.setUp()
     with self.session(use_gpu=use_gpu):
-      var_t = variables.VariableV1(var)
-      m_t = variables.VariableV1(m)
-      v_t = variables.VariableV1(v)
+      var_t = VariableV1(var)
+      m_t = VariableV1(m)
+      v_t = VariableV1(v)
 
       t = 1
       beta1 = np.array(0.9, dtype=var.dtype)
@@ -421,8 +592,8 @@ class TrainingOpsTest(TensorFlowTestCase):
       epsilon = np.array(1e-8, dtype=var.dtype)
       beta1_t = constant_op.constant(beta1, self._toType(var.dtype), [])
       beta2_t = constant_op.constant(beta2, self._toType(var.dtype), [])
-      beta1_power_t = variables.VariableV1(beta1_power)
-      beta2_power_t = variables.VariableV1(beta2_power)
+      beta1_power_t = VariableV1(beta1_power)
+      beta2_power_t = VariableV1(beta2_power)
       lr_t = constant_op.constant(lr, self._toType(var.dtype), [])
       epsilon_t = constant_op.constant(epsilon, self._toType(var.dtype), [])
       self.evaluate(variables.global_variables_initializer())
@@ -474,8 +645,8 @@ class TrainingOpsTest(TensorFlowTestCase):
       epsilon = np.array(1e-8, dtype=var.dtype)
       beta1_t = constant_op.constant(beta1, self._toType(var.dtype), [])
       beta2_t = constant_op.constant(beta2, self._toType(var.dtype), [])
-      beta1_power_t = variables.VariableV1(beta1_power)
-      beta2_power_t = variables.VariableV1(beta2_power)
+      beta1_power_t = VariableV1(beta1_power)
+      beta2_power_t = VariableV1(beta2_power)
       lr_t = constant_op.constant(lr, self._toType(var.dtype), [])
       epsilon_t = constant_op.constant(epsilon, self._toType(var.dtype), [])
       self.evaluate(variables.global_variables_initializer())

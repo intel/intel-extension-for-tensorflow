@@ -16,12 +16,13 @@
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test as test_lib
 import re
+import sys
 import time
 import unittest
 
 from absl.testing import parameterized
 import numpy as np
-
+import tensorflow as tf
 from tensorflow.python.client import session
 from tensorflow.python.eager import backprop
 from tensorflow.python.eager import context
@@ -48,6 +49,10 @@ from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variable_scope
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.variable_v1 import VariableV1
 from tensorflow.python.ops.ragged.ragged_tensor import RaggedTensor
 
 
@@ -666,6 +671,8 @@ class StridedSliceTest(test_util.TensorFlowTestCase):
   @test_util.assert_no_new_pyobjects_executing_eagerly
   @test_util.assert_no_garbage_created
   def testVariableSliceEagerMemory(self):
+    if sys.version_info.major == 3 and sys.version_info.minor == 11:
+      self.skipTest("Not working in Python 3.11")
     with context.eager_mode():
       v = variables.Variable([1., 2.])
       v[0]  # pylint: disable=pointless-statement
@@ -1277,7 +1284,7 @@ class SliceAssignTest(test_util.TensorFlowTestCase, parameterized.TestCase):
     init_val = constant_op.constant([1, 2], dtype=dtypes.int32)
     too_small_val = constant_op.constant([3, 4], dtype=dtypes.int8)
     too_large_val = constant_op.constant([3, 4], dtype=dtypes.int64)
-    v = variables.VariableV1(init_val)
+    v = VariableV1(init_val)
     with self.assertRaises((ValueError, TypeError)):
       self.evaluate(v[:].assign(too_small_val))
     with self.assertRaises((ValueError, TypeError)):
@@ -1486,7 +1493,7 @@ class ConcatSliceResourceTest(test_util.TensorFlowTestCase):
   def testConcatSlice(self):
     r1 = test_ops.stub_resource_handle_op(container="a", shared_name="b")
     r2 = test_ops.stub_resource_handle_op(container="a", shared_name="c")
-    c = array_ops.stack([r1, r2])
+    c = tf.stack([r1, r2])
     s = array_ops.strided_slice(c, [1], [2])
     self.evaluate(test_ops.resource_create_op(s))
     with self.assertRaises(errors.AlreadyExistsError):
@@ -1782,6 +1789,55 @@ class QuantizeAndDequantizeTest(test_util.TensorFlowTestCase):
               max_range=input_max,
               axis=2**31 - 1))
 
+
+  def testQuantizeandDequantizeV3(self):
+      shape = np.array([2, 3, 4, 5])
+      values = np.array([-1, -0.5, 0, 0.3, 0.8, 0.555, 0.5], dtype=np.float32)
+      quant_values = np.array(
+          [-1, -0.5, 0, 38.0 / 128, 102.0 / 128, 71.0 / 128, 0.5],
+          dtype=np.float32)
+      for axis in [None, 0, 1, 2, 3]:
+        with self.subTest(axis=axis):
+          inputs = constant_op.constant(
+              self._scale_per_slice(shape, axis, values))
+          expected = self._scale_per_slice(shape, axis, quant_values)
+          unused_minmax_value = 0 if axis is None else [0] * shape[axis]
+          fake_quantized = self.evaluate(
+           tf.raw_ops.QuantizeAndDequantizeV3(
+            input=inputs,
+            input_min=unused_minmax_value,
+            input_max=unused_minmax_value,
+            num_bits=8,
+            signed_input=True,
+            range_given=False,
+            narrow_range=False,
+            axis=axis))
+          self.assertAllEqual(fake_quantized, expected)
+
+
+  def testQuantizeandDequantizeV2(self):
+      shape = np.array([2, 3, 4, 5])
+      values = np.array([-1, -0.5, 0, 0.3, 0.8, 0.555, 0.5], dtype=np.float32)
+      quant_values = np.array(
+          [-1, -0.5, 0, 38.0 / 128, 102.0 / 128, 71.0 / 128, 0.5],
+          dtype=np.float32)
+      for axis in [None, 0, 1, 2, 3]:
+        with self.subTest(axis=axis):
+          inputs = constant_op.constant(
+              self._scale_per_slice(shape, axis, values))
+          expected = self._scale_per_slice(shape, axis, quant_values)
+          unused_minmax_value = 0 if axis is None else [0] * shape[axis]
+          fake_quantized = self.evaluate(
+           tf.raw_ops.QuantizeAndDequantizeV2(
+            input=inputs,
+            input_min=unused_minmax_value,
+            input_max=unused_minmax_value,
+            range_given=False,
+            round_mode="HALF_UP",
+            axis=axis))
+          self.assertAllEqual(fake_quantized, expected)
+
+  
 
 @test_util.run_all_in_graph_and_eager_modes
 class SortedSearchTest(test_util.TensorFlowTestCase):

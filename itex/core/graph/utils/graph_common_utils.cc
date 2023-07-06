@@ -41,6 +41,22 @@ bool Is1D(const TensorShapeProto& proto) {
   return (tensor_shape.dims() == 1);
 }
 
+bool Is2D(const TensorShapeProto& proto) {
+  // Note: Returns false when rank is unknown
+  if (proto.unknown_rank()) {
+    return false;
+  }
+  // Returns false when dimension is unknown
+  for (const auto& dim : proto.dim()) {
+    if (dim.size() < 0) {
+      return false;
+    }
+  }
+
+  auto tensor_shape = TensorShape(proto);
+  return (tensor_shape.dims() == 2);
+}
+
 // Returns true if it is a scalar
 bool IsScalar(const TensorShapeProto& proto) {
   // Note: Returns false when rank is unknown

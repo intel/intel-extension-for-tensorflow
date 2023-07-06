@@ -1,0 +1,264 @@
+diff --git a/absl/BUILD.bazel b/absl/BUILD.bazel
+index 7cccbbba..c5ce6846 100644
+--- a/absl/BUILD.bazel
++++ b/absl/BUILD.bazel
+@@ -14,6 +14,7 @@
+ # limitations under the License.
+ 
+ load("@bazel_skylib//lib:selects.bzl", "selects")
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/algorithm/BUILD.bazel b/absl/algorithm/BUILD.bazel
+index f6d74714..4993cbf0 100644
+--- a/absl/algorithm/BUILD.bazel
++++ b/absl/algorithm/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/base/BUILD.bazel b/absl/base/BUILD.bazel
+index bd023ad8..4e41edb2 100644
+--- a/absl/base/BUILD.bazel
++++ b/absl/base/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/cleanup/BUILD.bazel b/absl/cleanup/BUILD.bazel
+index 2154d9f1..d7b7595c 100644
+--- a/absl/cleanup/BUILD.bazel
++++ b/absl/cleanup/BUILD.bazel
+@@ -18,6 +18,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/container/BUILD.bazel b/absl/container/BUILD.bazel
+index d01d78e5..32610de2 100644
+--- a/absl/container/BUILD.bazel
++++ b/absl/container/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/debugging/BUILD.bazel b/absl/debugging/BUILD.bazel
+index 932a8e9f..421643c8 100644
+--- a/absl/debugging/BUILD.bazel
++++ b/absl/debugging/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(
+     default_visibility = ["//visibility:public"],
+diff --git a/absl/flags/BUILD.bazel b/absl/flags/BUILD.bazel
+index 4ca687ee..7ffc41b5 100644
+--- a/absl/flags/BUILD.bazel
++++ b/absl/flags/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/functional/BUILD.bazel b/absl/functional/BUILD.bazel
+index c4fbce98..2666c909 100644
+--- a/absl/functional/BUILD.bazel
++++ b/absl/functional/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/hash/BUILD.bazel b/absl/hash/BUILD.bazel
+index bcc316f9..f005f910 100644
+--- a/absl/hash/BUILD.bazel
++++ b/absl/hash/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/memory/BUILD.bazel b/absl/memory/BUILD.bazel
+index 389aedf3..60f27082 100644
+--- a/absl/memory/BUILD.bazel
++++ b/absl/memory/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/meta/BUILD.bazel b/absl/meta/BUILD.bazel
+index fb379251..07e31a6d 100644
+--- a/absl/meta/BUILD.bazel
++++ b/absl/meta/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/numeric/BUILD.bazel b/absl/numeric/BUILD.bazel
+index eaa27dfd..e003a977 100644
+--- a/absl/numeric/BUILD.bazel
++++ b/absl/numeric/BUILD.bazel
+@@ -18,6 +18,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/profiling/BUILD.bazel b/absl/profiling/BUILD.bazel
+index 3392c96c..b4d6cbf4 100644
+--- a/absl/profiling/BUILD.bazel
++++ b/absl/profiling/BUILD.bazel
+@@ -18,6 +18,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:private"])
+ 
+diff --git a/absl/random/BUILD.bazel b/absl/random/BUILD.bazel
+index 08ecd197..52ae1072 100644
+--- a/absl/random/BUILD.bazel
++++ b/absl/random/BUILD.bazel
+@@ -22,6 +22,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/random/internal/BUILD.bazel b/absl/random/internal/BUILD.bazel
+index fd5b6195..7cf92058 100644
+--- a/absl/random/internal/BUILD.bazel
++++ b/absl/random/internal/BUILD.bazel
+@@ -23,6 +23,7 @@ load(
+     "ABSL_TEST_COPTS",
+     "absl_random_randen_copts_init",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = [
+     "//absl/random:__pkg__",
+diff --git a/absl/status/BUILD.bazel b/absl/status/BUILD.bazel
+index ce0ea70c..5ccb145d 100644
+--- a/absl/status/BUILD.bazel
++++ b/absl/status/BUILD.bazel
+@@ -23,6 +23,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/strings/BUILD.bazel b/absl/strings/BUILD.bazel
+index 3f51252f..8805dc60 100644
+--- a/absl/strings/BUILD.bazel
++++ b/absl/strings/BUILD.bazel
+@@ -19,6 +19,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(
+     default_visibility = ["//visibility:public"],
+diff --git a/absl/synchronization/BUILD.bazel b/absl/synchronization/BUILD.bazel
+index 64d3b929..22ec1322 100644
+--- a/absl/synchronization/BUILD.bazel
++++ b/absl/synchronization/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/time/BUILD.bazel b/absl/time/BUILD.bazel
+index aa07df3d..df9d95c5 100644
+--- a/absl/time/BUILD.bazel
++++ b/absl/time/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/time/internal/cctz/BUILD.bazel b/absl/time/internal/cctz/BUILD.bazel
+index 7304d40d..7a86e3db 100644
+--- a/absl/time/internal/cctz/BUILD.bazel
++++ b/absl/time/internal/cctz/BUILD.bazel
+@@ -20,6 +20,7 @@ filegroup(
+     name = "zoneinfo",
+     srcs = glob(["testdata/zoneinfo/**"]),
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ config_setting(
+     name = "osx",
+diff --git a/absl/types/BUILD.bazel b/absl/types/BUILD.bazel
+index bb801012..e095e00b 100644
+--- a/absl/types/BUILD.bazel
++++ b/absl/types/BUILD.bazel
+@@ -19,6 +19,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+diff --git a/absl/utility/BUILD.bazel b/absl/utility/BUILD.bazel
+index ca4bc0a6..4ee7031d 100644
+--- a/absl/utility/BUILD.bazel
++++ b/absl/utility/BUILD.bazel
+@@ -20,6 +20,7 @@ load(
+     "ABSL_DEFAULT_LINKOPTS",
+     "ABSL_TEST_COPTS",
+ )
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 

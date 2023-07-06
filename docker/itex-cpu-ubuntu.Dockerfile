@@ -19,6 +19,9 @@ FROM ubuntu:${UBUNTU_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+HEALTHCHECK NONE
+RUN useradd -d /home/itex -m -s /bin/bash itex
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --fix-missing \
     apt-utils \
@@ -56,7 +59,10 @@ RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python3
 
-ARG TF_VER="2.10"
+RUN  sed -i "/if util.abstract_sockets_supported:/d"  /usr/lib/python3.9/multiprocessing/connection.py && \
+     sed -i  "/{next(_mmap_counter)}/d"  /usr/lib/python3.9/multiprocessing/connection.py
+
+ARG TF_VER="2.12"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 

@@ -51,7 +51,7 @@ class ResizeBilinearGradTest(test.TestCase):
     @add_profiling
     @multi_run(ITERATION)
     def testResizeBilinearGrad(self):
-        image_input_size = [[1, 1080, 1920, 3], [3, 768, 1024, 3]] # NHWC
+        image_input_size = [[1, 1080, 1920, 3], [3, 768, 1024, 3], [16, 90, 120, 256], [16, 23, 30, 64]] # NHWC
         target_size = [1, 540, 960, 3]
         for dtype in FLOAT_COMPUTE_TYPE:
             for in_size in image_input_size:

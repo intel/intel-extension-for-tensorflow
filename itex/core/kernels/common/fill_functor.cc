@@ -13,10 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/kernels/common/fill_functor.h"
+
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"
-
-#include "itex/core/kernels/common/fill_functor.h"
 
 namespace itex {
 namespace functor {

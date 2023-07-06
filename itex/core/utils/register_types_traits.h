@@ -93,7 +93,7 @@ struct proxy_type<GPUDevice, ::itex::int64> {
 #define TF_CALL_GPU_PROXY_TYPES(m)                                    \
   TF_CALL_double(m) TF_CALL_float(m) TF_CALL_half(m) TF_CALL_int32(m) \
       TF_CALL_int8(m)
-#define TF_CALL_DPCPP_PROXY_TYPES(m) \
+#define TF_CALL_ITEX_GPU_PROXY_TYPES(m) \
   TF_CALL_double(m) TF_CALL_float(m) TF_CALL_int32(m)
 }  // namespace itex
 

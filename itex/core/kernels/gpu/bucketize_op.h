@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_KERNELS_GPU_BUCKETIZE_OP_H_
 
 #include <vector>
+
 #include "itex/core/utils/onednn/onednn_util.h"
 #include "itex/core/utils/tensor_shape.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"

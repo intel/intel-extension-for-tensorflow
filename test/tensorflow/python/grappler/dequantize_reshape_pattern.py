@@ -28,7 +28,9 @@ from tensorflow.python.framework import test_util
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import variables
 from tensorflow.core.protobuf import config_pb2
+import os
 
+os.environ['ITEX_LAYOUT_OPT'] = '1'
 @test_util.run_all_in_graph_and_eager_modes
 class DequantizeWithReshapeTest(test_lib.TestCase):
   @test_util.run_deprecated_v1

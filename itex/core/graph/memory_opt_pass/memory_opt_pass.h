@@ -25,6 +25,7 @@ limitations under the License.
 #include "itex/core/graph/utils/grappler_item.h"
 #include "itex/core/graph/utils/layout_utils.h"
 #include "itex/core/graph/utils/node_type_attr_map.h"
+#include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/node_def_util.h"
 #include "protos/graph.pb.h"
 
@@ -80,7 +81,7 @@ void InplaceInference(MemoryOptContext* ctx, const MutableNodeView* node_view);
 
 void StaticInplaceOpt(MemoryOptContext* ctx, const char* device_name);
 
-Status RunMemoryOptPass(const char* device_name, const GrapplerItem& item,
+Status RunMemoryOptPass(OptimizerContext* opt_ctx, const GrapplerItem& item,
                         const GraphDef& graph_def, GraphDef* optimized_graph);
 
 }  // namespace graph

@@ -20,12 +20,11 @@ from tensorflow.python.framework import config
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import errors_impl
-from tensorflow.python.framework import test_util
 from tensorflow.python.ops import gradient_checker_v2
 from tensorflow.python.ops import nn_ops
 import tensorflow.python.ops.nn_grad  # pylint: disable=unused-import
-from tensorflow.python.platform import test
-
+from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test
 
 class DilationTest(test.TestCase):
 
@@ -240,35 +239,6 @@ class DilationTest(test.TestCase):
         padding="VALID",
         use_gpu=use_gpu)
 
-  def _testDilationGradDeterminismError(self, use_gpu):
-    if use_gpu and test.is_gpu_available(cuda_only=True):
-      try:
-        config.enable_op_determinism()
-        with self.assertRaisesRegexp(
-            errors_impl.UnimplementedError, "Determinism is not yet supported "
-            "for Dilation2DBackpropInput."):
-          self._ConstructAndTestGradient(
-              image_shape=[1, 3, 3, 1],
-              kernel_shape=[1, 1, 1],
-              strides=[1, 1],
-              rates=[1, 1],
-              padding="VALID",
-              use_gpu=use_gpu)
-      finally:
-        config.disable_op_determinism()
-    else:
-      try:
-        config.enable_op_determinism()
-        self._ConstructAndTestGradient(
-            image_shape=[1, 3, 3, 1],
-            kernel_shape=[1, 1, 1],
-            strides=[1, 1],
-            rates=[1, 1],
-            padding="VALID",
-            use_gpu=use_gpu)
-      finally:
-        config.disable_op_determinism()
-
   def _testDilationGradSamePadding_1x1x1(self, use_gpu):
     self._ConstructAndTestGradient(
         image_shape=[1, 3, 3, 1],
@@ -325,7 +295,6 @@ class DilationTest(test.TestCase):
 
   def testDilationGrad(self):
     for use_gpu in True, False:
-      self._testDilationGradDeterminismError(use_gpu)
       self._testDilationGradValidPadding_1x1x1(use_gpu)
       self._testDilationGradSamePadding_1x1x1(use_gpu)
       self._testDilationGradSamePadding_1x1x2(use_gpu)

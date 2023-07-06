@@ -18,35 +18,19 @@ limitations under the License.
 
 #include <string>
 
+#include "itex/core/devices/device_backend_util.h"
 #include "itex/core/utils/env_var.h"
-#include "itex/core/utils/protobuf/config.pb.h"
 #include "itex/core/utils/types.h"
 
-constexpr char DEVICE_XPU_NAME[] = "XPU";
-
-enum ITEX_BACKEND {
-  ITEX_BACKEND_GPU,
-  ITEX_BACKEND_CPU,
-  ITEX_BACKEND_AUTO,
-  ITEX_BACKEND_DEFAULT = ITEX_BACKEND_GPU
-};
-
 namespace itex {
-
-ITEX_BACKEND itex_get_backend();
-ConfigProto itex_get_config();
-void itex_set_backend(const char* backend, const ConfigProto& config);
-void itex_backend_to_string(ITEX_BACKEND backend, std::string* backend_string);
-void itex_freeze_backend(const char* backend, const ConfigProto& config);
-void itex_freeze_backend(ITEX_BACKEND backend, const ConfigProto& config);
 
 template <typename Device, typename T>
 void DeviceFill(T* ptr, const T& pattern, size_t count, void* stream) {
 #ifndef INTEL_CPU_ONLY
   if (Eigen::internal::is_same<Device, Eigen::GpuDevice>::value) {
-    DPCPPStream* dpcpp_stream = static_cast<DPCPPStream*>(stream);
+    ITEX_GPUStream* ITEX_GPU_stream = static_cast<ITEX_GPUStream*>(stream);
     // pattern must be trivially copyable
-    dpcpp_stream->fill<T>(ptr, pattern, count);
+    ITEX_GPU_stream->fill<T>(ptr, pattern, count);
     return;
   }
 #else
@@ -63,8 +47,8 @@ template <typename Device>
 void DeviceMemset(void* dst, int value, size_t size, void* stream) {
 #ifndef INTEL_CPU_ONLY
   if (Eigen::internal::is_same<Device, Eigen::GpuDevice>::value) {
-    DPCPPStream* dpcpp_stream = static_cast<DPCPPStream*>(stream);
-    dpcpp_stream->memset(dst, value, size);
+    ITEX_GPUStream* ITEX_GPU_stream = static_cast<ITEX_GPUStream*>(stream);
+    ITEX_GPU_stream->memset(dst, value, size);
     return;
   }
 #else
@@ -81,8 +65,8 @@ template <typename Device>
 void DeviceMemcpy(void* dst, const void* src, size_t size, void* stream) {
 #ifndef INTEL_CPU_ONLY
   if (Eigen::internal::is_same<Device, Eigen::GpuDevice>::value) {
-    DPCPPStream* dpcpp_stream = static_cast<DPCPPStream*>(stream);
-    dpcpp_stream->memcpy(dst, src, size);
+    ITEX_GPUStream* ITEX_GPU_stream = static_cast<ITEX_GPUStream*>(stream);
+    ITEX_GPU_stream->memcpy(dst, src, size);
     return;
   }
 #else
@@ -94,15 +78,6 @@ void DeviceMemcpy(void* dst, const void* src, size_t size, void* stream) {
 
   ITEX_CHECK(false) << "Undefined device for memcpy!";
 }
-
-// Get the real backend name of given device.
-// @return:
-//   1) CPU: DEVICE_CPU;
-//   2) GPU: DEVICE_GPU;
-//   3) XPU with GPU backend: DEVICE_GPU;
-//   4) TODO(itex): XPU with other backend
-// Return value will never be nullptr.
-const char* GetDeviceBackendName(const std::string& device_name);
 
 }  // namespace itex
 

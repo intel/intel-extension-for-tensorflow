@@ -20,7 +20,7 @@ limitations under the License.
 
 #include <cstdint>
 
-#include "itex/core/utils/types.h"
+#include "itex/core/utils/integral_types.h"
 
 namespace itex {
 

@@ -30,11 +30,11 @@ class PadWithConvBackpropFilterFusion : public Fusion {
     using utils::OpTypePattern;
 
     // It supports multiple types of conv.
-    std::string conv_repr =
-        absl::StrJoin({kConv2DBackpropFilter, kConv2DBackpropFilterWithBias,
-                       kConv3DBackpropFilter, kConv3DBackpropFilterV2,
-                       kConv3DBackpropFilterWithBias},
-                      "|");
+    std::vector<std::string> conv_str{
+        kConv2DBackpropFilter, kConv2DBackpropFilterWithBias,
+        kConv3DBackpropFilter, kConv3DBackpropFilterV2,
+        kConv3DBackpropFilterWithBias};
+    std::string conv_repr = absl::StrJoin(conv_str, "|");
 
     // Note. We do not delete the pad here. Due to the pad will be used as the
     // input for conv forward.
@@ -55,6 +55,10 @@ class PadWithConvBackpropFilterFusion : public Fusion {
   MatchedProperties Check(RemapperContext* ctx,
                           const int node_index) const override {
     MatchedProperties ret;
+    if (ctx->remap_level == RemapperLevel::BASIC) {
+      // Only work in second remapper iteration.
+      return ret;
+    }
     auto& graph_view = ctx->graph_view;
 
     ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
@@ -82,8 +86,14 @@ class PadWithConvBackpropFilterFusion : public Fusion {
     const NodeDef* pad = properties.GetNode(&graph_view, "pad");
     const NodeDef* conv = properties.GetNode(&graph_view, "conv");
 
+    std::string conv_op_name = conv->op();
+    int is_itex_prefix = conv_op_name.find("_ITEX");
+    if (is_itex_prefix != -1) {
+      conv_op_name = conv_op_name.substr(5);
+    }
+
     // All the new conv has a prefix of PadWith, the others are the same.
-    std::string op = "_ITEXPadWith" + conv->op();
+    std::string op = "_ITEXPadWith" + conv_op_name;
 
     NodeDef fused_op;
     fused_op.set_name(conv->name());

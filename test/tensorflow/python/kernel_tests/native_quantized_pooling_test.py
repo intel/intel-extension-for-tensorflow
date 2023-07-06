@@ -56,6 +56,21 @@ class QuantizedPoolingTest(test.TestCase):
                      testcase_args[8]
         )
 
+      for testcase_args in self.TestCaseArgs:
+        self._Verify(nn_ops.avg_pool, 
+                     load_ops_library.ITEXQuantizedAvgPool, 
+                     dtypes.qint8, 
+                     testcase_args[0], 
+                     testcase_args[1], 
+                     testcase_args[2], 
+                     testcase_args[3],
+                     testcase_args[4],
+                     testcase_args[5],
+                     testcase_args[6],
+                     testcase_args[7],
+                     testcase_args[8]
+        )
+
   # TODO(itex): turn on this flag, once GPU asymmetric quantization is supported
   # @test_util.run_deprecated_v1
   # def testQuantizedAvgPool_quint8(self):

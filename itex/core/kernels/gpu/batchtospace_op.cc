@@ -244,7 +244,7 @@ class BatchToSpaceOp : public OpKernel {
 
  private:
   void initBlockShape(OpKernelContext* context) {
-    if (block_shape_.NumElements() == 0) {
+    if (!block_shape_.IsInitialized()) {
       // We don't use context->allocate_persistent because the allocation must
       // happen on the CPU regardless of Device.
       AllocatorAttributes alloc_attrs;

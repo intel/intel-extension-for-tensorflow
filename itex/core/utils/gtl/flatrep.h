@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <cstring>
 #include <utility>
+
 #include "itex/core/utils/prefetch.h"
 #include "itex/core/utils/types.h"
 

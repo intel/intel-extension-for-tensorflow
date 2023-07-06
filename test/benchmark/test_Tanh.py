@@ -19,7 +19,7 @@ import tensorflow as tf
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import math_ops
 from tensorflow.python.framework import constant_op
-from utils import multi_run, add_profiling, flush_cache, tailed_no_tailed_size
+from utils import multi_run, add_profiling, flush_cache, tailed_no_tailed_size, common_2d_input_size
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
@@ -44,6 +44,9 @@ class TanhTest(test.TestCase):
             # test tailed_no_tailed_size
             for in_size in tailed_no_tailed_size:
                 self._test_impl([in_size], dtype)
+            for in_size in common_2d_input_size:
+                self._test_impl(in_size, dtype)
+                
             
 if __name__ == '__main__':
     test.main()    

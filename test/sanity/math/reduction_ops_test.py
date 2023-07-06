@@ -125,6 +125,43 @@ class SumReductionTest(BaseReductionTest):
                                                           np.ndarray):
             reduction_axes = tuple(reduction_axes)
         return np.sum(x, axis=reduction_axes, keepdims=keepdims)
+        
+    @test_util.run_deprecated_v1
+    def testVecColReduciton(self):
+        arr = np.ones([2, 128 * 128 * 128, 32], dtype=np.float32)
+        row_sum = np.sum(arr, axis=1)
+
+        with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+            tf_row_sum = self._tf_reduce(arr, 1, False)
+            tf_out_row = self.evaluate(tf_row_sum)
+        self.assertAllClose(row_sum, tf_out_row)        
+
+    @test_util.run_deprecated_v1
+    def testRowReduciton(self):
+      for size in [32, 33, 256 * 8 * 4, 256 * 8 * 4 + 1]:
+        arr = np.ones([2, size], dtype=np.float32)
+        row_sum = np.sum(arr, axis=1)
+
+        with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+            tf_row_sum = self._tf_reduce(arr, 1, False)
+            tf_out_row = self.evaluate(tf_row_sum)
+        self.assertAllClose(row_sum, tf_out_row)      
+        
+    @test_util.run_deprecated_v1
+    def testReducitonBF16(self):
+        shapes = [[8 * 8 * 8, 320], [2 * 64, 64], [4 * 4 * 4, 320]]
+        axis = 0
+        for shape in shapes:
+            arr = np.random.uniform(low=-1, high=1, size=shape).astype(
+                dtypes.bfloat16.as_numpy_dtype)
+            row_sum = np.sum(arr.astype(np.float32), axis=axis)
+            row_sum_bf16 = row_sum.astype(dtypes.bfloat16.as_numpy_dtype)
+
+            with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+                tf_row_sum = self._tf_reduce(arr, axis, False)
+                tf_out_row = self.evaluate(tf_row_sum)
+            self.assertAllClose(row_sum_bf16, tf_out_row, 1e-3, 1e-3)
+           
 
     @test_util.run_deprecated_v1
     def testFloat32(self):
@@ -237,9 +274,15 @@ class MeanReductionTest(BaseReductionTest):
 
     @test_util.run_deprecated_v1
     def testFloat32(self):
-        for rank in range(1, _MAX_RANK + 1):
-            np_arr = self._makeIncremental((2,) * rank, dtypes.float32)
-            self._compareAllAxes(np_arr)
+        shape1 = [[256,4,4,512],  [80,4,4,512]]
+        shape2 = [[256], [80]]
+        for shape in shape1:
+          array = np.random.random(size=shape).astype(np.float32)          
+          self._compare(array, [1,2], False)
+        
+        for shape in shape2:
+          array = np.random.random(size=shape).astype(np.float32)
+          self._compare(array, [0], False)
 
     @test_util.run_deprecated_v1
     def testGradient(self):
@@ -247,8 +290,31 @@ class MeanReductionTest(BaseReductionTest):
         for dtype in [dtypes.float32]:
             x = self._makeIncremental(s, dtype)
             self._compareGradientAxes(x, rtol=1e-3, atol=1e-3)
+            
+class MinReductionTest(test.TestCase):
+  def _tf_reduce(self, x, reduction_axes, keepdims):
+      return math_ops.reduce_min(x, reduction_axes, keepdims)  
+        
+  @test_util.run_deprecated_v1
+  def testReducitonBF16(self):
+      shapes = [[256,32,32,3], [32]]
+      axis = None
+      for shape in shapes:
+          arr = np.random.random( size=shape).astype(
+              dtypes.bfloat16.as_numpy_dtype)
+          result = np.amin(arr.astype(np.float32), axis=axis)
+          result_bf16 = result.astype(dtypes.bfloat16.as_numpy_dtype)
+
+          with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+              tf_result = self._tf_reduce(arr, axis, False)
+              tf_result_numpy = self.evaluate(tf_result)
+          self.assertAllClose(result_bf16, tf_result_numpy, 1e-3, 1e-3)
+           
 
 class MaxReductionTest(test.TestCase):
+  
+  def _tf_reduce(self, x, reduction_axes, keepdims):
+      return math_ops.reduce_max(x, reduction_axes, keepdims)  
 
   def _compare(self, x, reduction_axes, keepdims, use_gpu=False):
     np_ans = x
@@ -264,6 +330,21 @@ class MaxReductionTest(test.TestCase):
       out = self.evaluate(tf_ans)
     self.assertAllClose(np_ans, out)
     self.assertShapeEqual(np_ans, tf_ans)
+
+  @test_util.run_deprecated_v1
+  def testReducitonBF16(self):
+      shapes = [[256,32,32,3], [32]]
+      axis = None
+      for shape in shapes:
+          arr = np.random.random( size=shape).astype(
+              dtypes.bfloat16.as_numpy_dtype)
+          result = np.amax(arr.astype(np.float32), axis=axis)
+          result_bf16 = result.astype(dtypes.bfloat16.as_numpy_dtype)
+
+          with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+              tf_result = self._tf_reduce(arr, axis, False)
+              tf_result_numpy = self.evaluate(tf_result)
+          self.assertAllClose(result_bf16, tf_result_numpy, 1e-3, 1e-3)
 
   def _compareAll(self, x, reduction_axes):
     self._compare(x, reduction_axes, False, use_gpu=True)
@@ -297,6 +378,22 @@ class MaxReductionTest(test.TestCase):
     self._compareAll(np_arr, [1, 2])
     self._compareAll(np_arr, [0, 2])
     self._compareAll(np_arr, [0, 1, 2])
+
+
+  @test_util.run_deprecated_v1
+  def testReducitonBF16(self):
+      shapes = [[256,32,32,3], [32]]
+      axis = None
+      for shape in shapes:
+          arr = np.random.uniform(low=-1, high=1, size=shape).astype(
+              dtypes.bfloat16.as_numpy_dtype)
+          result = np.amax(arr.astype(np.float32), axis=axis)
+          result_bf16 = result.astype(dtypes.bfloat16.as_numpy_dtype)
+
+          with self.session(graph=ops.Graph(), use_gpu=True) as sess:
+              tf_result = self._tf_reduce(arr, axis, False)
+              tf_result_numpy = self.evaluate(tf_result)
+          self.assertAllClose(result_bf16, tf_result_numpy, 1e-3, 1e-3)
 
   def testFloatReduce3D(self):
     # Create a 3D array of floats and reduce across all possible
@@ -450,6 +547,13 @@ class ProdReductionTest(BaseReductionTest):
     return np.prod(x, axis=reduction_axes, keepdims=keepdims)
 
   @test_util.run_deprecated_v1
+  def testInt64(self):
+    reduction_dims = [0]
+    np_arr = np.array([4096, 1, 3]).astype(np.int64)
+    for dim in reduction_dims:
+      self._compare(np_arr, dim, False)
+            
+  @test_util.run_deprecated_v1
   def testFloat32(self):
     for rank in range(1, _MAX_RANK + 1):
       np_arr = self._makeIncremental((2,) * rank, dtypes.float32)
@@ -486,6 +590,6 @@ class ArgMinTest(test_util.TensorFlowTestCase):
       np_min = np.argmin(np_array, axis=0)
       tf_min = math_ops.argmin(tf_values, axis=0)
       self.assertAllEqual(np_min, tf_min)
-  
+
 if __name__ == "__main__":
     test.main()

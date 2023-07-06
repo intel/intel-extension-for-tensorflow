@@ -24,6 +24,7 @@ limitations under the License.
 
 #include "itex/core/devices/xpu_device_util.h"
 #include "itex/core/kernels/common/matmul_op.h"
+#include "itex/core/kernels/common/transpose_functor.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_util.h"
 #include "itex/core/utils/op_kernel.h"
@@ -31,7 +32,6 @@ limitations under the License.
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"
-
 #include "mkl.h"  // NOLINT(build/include_subdir)
 #include "oneapi/mkl/lapack.hpp"
 
@@ -173,23 +173,34 @@ struct LaunchBatchMatrixTriangularSolve<GPUDevice, Scalar> {
         b_tmp_ptrs.push_back(b_base_ptr + i * m * n);
       }
       for (int64 i = 0; i < bcast.output_batch_size(); ++i) {
-        const Scalar* src_device_mem =
-            (const Scalar*)b_tmp_ptrs[b_batch_indices[i]];
+        const Scalar* src_device_mem = b_tmp_ptrs[b_batch_indices[i]];
         Scalar* dst_device_mem =
-            (const_cast<Scalar*>(out->flat<Scalar>().data()) + i * m * n);
+            const_cast<Scalar*>(out->flat<Scalar>().data()) + i * m * n;
         DeviceMemcpy<GPUDevice>(dst_device_mem, src_device_mem,
-                                bcast.y_batch_size() * m * n * sizeof(Scalar),
-                                stream);
+                                m * n * sizeof(Scalar), stream);
       }
     }
     if (out->NumElements() == 0) {
       return;
     }
 
-    const uint64 leading_dim_matrix = m;
-    const uint64 leading_dim_output = n;
-    const uint64 colmajor_rows = n;
-    const uint64 colmajor_cols = m;
+    // oneMKL assumes column-major, while TF uses row-major, and oneMKL does not
+    // support so called `CUBLAS_RIGHT_SIDE` mode as CUDA does in TensorFlow:
+    // https://docs.nvidia.com/cuda/cublas/index.html#cublas-t-trsm
+    Tensor out_trans;
+    TensorShape out_trans_shape(out->shape());
+    out_trans_shape.RemoveLastDims(2);
+    out_trans_shape.AddDim(n);
+    out_trans_shape.AddDim(m);
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<Scalar>::v(),
+                                          out_trans_shape, &out_trans));
+
+    const auto& device = context->eigen_device<GPUDevice>();
+    // for n == 1, we cannot use D2D memcpy since it do transpose only,
+    // instead of conjugate transpose for complext data types
+    OP_REQUIRES_OK(context,
+                   DoConjugateMatrixTranspose(device, *out, &out_trans));
 
     const int64 batch_size = bcast.output_batch_size();
     std::vector<const Scalar*> a_ptrs;
@@ -199,7 +210,7 @@ struct LaunchBatchMatrixTriangularSolve<GPUDevice, Scalar> {
     out_ptrs.reserve(batch_size);
     a_tmp_ptrs.reserve(bcast.x_batch_size());
     auto* a_base_ptr = const_cast<Scalar*>(in_x.flat<Scalar>().data());
-    auto* out_base_ptr = const_cast<Scalar*>(out->flat<Scalar>().data());
+    auto* out_base_ptr = const_cast<Scalar*>(out_trans.flat<Scalar>().data());
 
     if (!bcast.IsBroadcastingRequired()) {
       for (int64 i = 0; i < batch_size; ++i) {
@@ -217,29 +228,32 @@ struct LaunchBatchMatrixTriangularSolve<GPUDevice, Scalar> {
       }
     }
 
-    oneapi::mkl::uplo uplo =
-        lower ? oneapi::mkl::uplo::L : oneapi::mkl::uplo::U;
-    oneapi::mkl::transpose trans =
-        adjoint ? oneapi::mkl::transpose::T : oneapi::mkl::transpose::N;
-    oneapi::mkl::diag diag = oneapi::mkl::diag::N;
+    // set `mkl::uplo` and `mkl::transpose` to use a as columon-major directly
+    auto uplo = lower ? oneapi::mkl::uplo::upper : oneapi::mkl::uplo::lower;
+    auto trans = adjoint ? oneapi::mkl::transpose::nontrans
+                         : oneapi::mkl::transpose::conjtrans;
+    auto diag = oneapi::mkl::diag::nonunit;
+
+    int64_t nrhs = n;
+    int64_t lda = m;
+    int64_t ldb = m;
 
     int64_t info = 0;
     std::string err_msg;
     try {
       std::int64_t scratchpad_size =
           oneapi::mkl::lapack::trtrs_scratchpad_size<Scalar>(
-              *stream, uplo, trans, diag, colmajor_rows, colmajor_cols,
-              leading_dim_matrix /*lda*/, leading_dim_output /*ldb*/);
+              *stream, uplo, trans, diag, m, nrhs, lda, ldb);
       Tensor scratchpad;
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<Scalar>::v(),
                                             {scratchpad_size}, &scratchpad));
       for (int batch = 0; batch < batch_size; ++batch) {
-        oneapi::mkl::lapack::trtrs(
-            *stream, uplo, trans, diag, colmajor_rows, colmajor_cols,
-            const_cast<Scalar*>(a_ptrs[batch]), leading_dim_matrix /*lda*/,
-            const_cast<Scalar*>(out_ptrs[batch]), leading_dim_output /*ldb*/,
-            static_cast<Scalar*>(scratchpad.data()), scratchpad_size);
+        oneapi::mkl::lapack::trtrs(*stream, uplo, trans, diag, m, nrhs,
+                                   const_cast<Scalar*>(a_ptrs[batch]), lda,
+                                   const_cast<Scalar*>(out_ptrs[batch]), ldb,
+                                   static_cast<Scalar*>(scratchpad.data()),
+                                   scratchpad_size);
       }
     } catch (oneapi::mkl::lapack::exception const& e) {
       info = e.info();
@@ -249,6 +263,9 @@ struct LaunchBatchMatrixTriangularSolve<GPUDevice, Scalar> {
                 errors::Internal("Unexpected exception caught during call to "
                                  "LAPACK API, error message: ",
                                  err_msg));
+
+    // copy output back
+    OP_REQUIRES_OK(context, DoConjugateMatrixTranspose(device, out_trans, out));
   }
 };
 }  // namespace itex

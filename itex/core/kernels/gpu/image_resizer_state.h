@@ -30,7 +30,6 @@ limitations under the License.
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/tensor_shape.h"
 #include "itex/core/utils/types.h"
-
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
@@ -191,6 +190,9 @@ struct ImageResizerGradientState {
     resized_width = input.dim_size(2);
     original_height = original_image.dim_size(1);
     original_width = original_image.dim_size(2);
+
+    OP_REQUIRES(context, resized_height > 0 && resized_width > 0,
+                errors::InvalidArgument("resized dimensions must be positive"));
 
     OP_REQUIRES(
         context,

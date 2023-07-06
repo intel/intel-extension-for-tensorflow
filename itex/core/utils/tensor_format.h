@@ -485,6 +485,7 @@ inline int64 GetFilterDim(const TensorShape& tensor_shape,
                       tensor_filter_format, dimension);
 }
 
+#ifndef ITEX_BUILD_JAX
 // Return the size of the specified 'dimension' of 'tensor' according to
 // 'tensor_format'.
 inline int64 GetTensorDim(const Tensor& tensor, TensorFormat tensor_format,
@@ -499,6 +500,7 @@ inline int64 GetFilterDim(const Tensor& tensor,
                           char dimension) {
   return GetFilterDim(tensor.shape(), filter_tensor_format, dimension);
 }
+#endif
 
 inline void GetExplicitPaddingForDim(
     const std::vector<int64>& explicit_paddings, TensorFormat tensor_format,

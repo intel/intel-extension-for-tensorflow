@@ -47,6 +47,18 @@ struct ApplyAdadelta {
                   typename TTypes<T>::ConstFlat grad);
 };
 
+template <typename Device, typename T, typename Tindex>
+struct SparseApplyAdadelta {
+  void operator()(const Device& d, typename TTypes<T>::Matrix var,
+                  typename TTypes<T>::Matrix accum,
+                  typename TTypes<T>::Matrix accum_update,
+                  typename TTypes<T>::ConstScalar lr,
+                  typename TTypes<T>::ConstScalar rho,
+                  typename TTypes<T>::ConstScalar epsilon,
+                  typename TTypes<T>::ConstMatrix grad,
+                  typename TTypes<Tindex>::ConstFlat indices);
+};
+
 template <typename Device, typename T>
 struct ApplyAdagrad {
   void operator()(const Device& d, typename TTypes<T>::Flat var,
@@ -131,7 +143,7 @@ struct ApplyAdam {
 };
 
 template <typename Device, typename T>
-struct ApplyAdamWithWeightDecay {
+struct ITEXApplyAdamWithWeightDecay {
   void operator()(const Device& d, typename TTypes<T>::Flat var,
                   typename TTypes<T>::Flat m, typename TTypes<T>::Flat v,
                   typename TTypes<T>::ConstScalar beta1_power,

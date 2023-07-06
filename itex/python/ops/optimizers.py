@@ -65,6 +65,7 @@ class AdamWithWeightDecayOptimizer(optimizer.Optimizer): # pylint: disable=missi
               self._get_non_slot_variable("beta_2_power", graph=graph))
 
   def _create_slots(self, var_list):
+    """A dummy docstring."""
     # Create the beta_1 and beta_2 accumulators on the same device as the first
     # variable. Sort the var_list to make sure this device is consistent across
     # workers (these need to go on the same PS, otherwise some updates are
@@ -113,12 +114,13 @@ class AdamWithWeightDecayOptimizer(optimizer.Optimizer): # pylint: disable=missi
     return True
 
   def _apply_dense(self, grad, var):
+    """A dummy docstring."""
     m = self.get_slot(var, "m")
     v = self.get_slot(var, "v")
     beta_1_power, beta_2_power = self._get_beta_accumulators()
     param_name = self._get_variable_name(var.name)
     if self._do_use_weight_decay(param_name): # pylint: disable=no-else-return
-      return load_ops_library.apply_adam_with_weight_decay(
+      return load_ops_library.itex_apply_adam_with_weight_decay(
           var,
           m,
           v,
@@ -146,12 +148,13 @@ class AdamWithWeightDecayOptimizer(optimizer.Optimizer): # pylint: disable=missi
           use_locking=self._use_locking).op
 
   def _resource_apply_dense(self, grad, var): # pylint: disable=arguments-differ
+    """A dummy docstring."""
     m = self.get_slot(var, "m")
     v = self.get_slot(var, "v")
     beta_1_power, beta_2_power = self._get_beta_accumulators()
     param_name = self._get_variable_name(var.name)
     if self._do_use_weight_decay(param_name): # pylint: disable=no-else-return
-      return load_ops_library.resource_apply_adam_with_weight_decay(
+      return load_ops_library.itex_resource_apply_adam_with_weight_decay(
           var.handle,
           m.handle,
           v.handle,

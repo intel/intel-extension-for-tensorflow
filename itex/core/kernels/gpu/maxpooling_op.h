@@ -203,8 +203,8 @@ struct MaxPoolBackwardKernel {
     if (index >= nthreads) return;
     const int offset =
         include_batch_in_index ? 0 : (index / top_offset) * bottom_offset;
-    DpcppAtomicAdd<float, float>(bottom_diff + offset + mask[index],
-                                 top_diff[index]);
+    ItexAtomicAdd<float, float>(bottom_diff + offset + mask[index],
+                                top_diff[index]);
   }
 
  private:

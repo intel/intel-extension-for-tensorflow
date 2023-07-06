@@ -5,11 +5,14 @@ package(default_visibility = ["//visibility:private"])
 
 load(
     "//itex:itex.bzl",
+    "if_cpu_backend",
+    "if_gpu_backend",
     "transitive_hdrs",
 )
 load(
     "@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl",
     "if_cpu_onednn",
+    "omp_deps",
 )
 load(
     "@local_config_dpcpp//dpcpp:build_defs.bzl",
@@ -38,7 +41,7 @@ transitive_hdrs(
     deps = [
         "//itex/core:protos_all_cc",
     ] + if_dpcpp([
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
     ]),
 )
 
@@ -50,11 +53,14 @@ COMMON_PIP_DEPS = [
     "included_headers",
     "//itex/python:_pywrap_itex.so",
     "//itex/core:protos_all_py",
-] + if_dpcpp([
+] + if_gpu_backend([
     "//itex:libitex_gpu.so",
-]) + if_cpu_onednn([
+    "//itex:libitex_gpu_internal.so",
+]) + if_cpu_backend([
     # TODO(itex): need refine if_cpu_onednn
     "//itex:libitex_cpu.so",
+    "//itex:libitex_cpu_internal_avx512.so",
+    "//itex:libitex_cpu_internal_avx2.so",
 ])
 
 py_binary(
@@ -67,7 +73,5 @@ py_binary(
 sh_binary(
     name = "build_pip_package",
     srcs = ["build_pip_package.sh"],
-    data = ["simple_console"] + COMMON_PIP_DEPS + if_cpu_onednn([
-        "//third_party/onednn:intel_binary_blob",
-    ]),
+    data = ["simple_console"] + COMMON_PIP_DEPS + omp_deps(),
 )

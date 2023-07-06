@@ -1,0 +1,44 @@
+diff --git a/official/legacy/image_classification/resnet/resnet_ctl_imagenet_main.py b/official/legacy/image_classification/resnet/resnet_ctl_imagenet_main.py
+index 328d2890a..341e90835 100644
+--- a/official/legacy/image_classification/resnet/resnet_ctl_imagenet_main.py
++++ b/official/legacy/image_classification/resnet/resnet_ctl_imagenet_main.py
+@@ -31,6 +31,7 @@ from official.modeling import performance
+ from official.utils.flags import core as flags_core
+ from official.utils.misc import keras_utils
+ from official.utils.misc import model_helpers
++import intel_extension_for_tensorflow as itex
+ 
+ flags.DEFINE_boolean(name='use_tf_function', default=True,
+                      help='Wrap the train and test step inside a '
+@@ -38,7 +39,9 @@ flags.DEFINE_boolean(name='use_tf_function', default=True,
+ flags.DEFINE_boolean(name='single_l2_loss_op', default=False,
+                      help='Calculate L2_loss on concatenated weights, '
+                      'instead of using Keras per-layer L2 loss.')
+-
++flags.DEFINE_boolean(name='use_itex_sharding', default=False,
++                     help='Enable ITEX XPUAutoShard feature to split '
++                     'the data on devices.')
+ 
+ def build_stats(runnable, time_callback):
+   """Normalizes and returns dictionary of stats.
+@@ -97,6 +100,20 @@ def run(flags_obj):
+   Returns:
+     Dictionary of training and eval stats.
+   """
++  if flags_obj.use_itex_sharding:
++    config = itex.ShardingConfig()
++    config.auto_mode = False
++    device_gpu = config.devices.add()
++    device_gpu.device_type = "gpu"
++    device_gpu.device_num = 2
++    device_gpu.batch_size = 256
++    device_gpu.stage_num = 10
++    graph_opts = itex.GraphOptions(sharding=itex.ON, sharding_config = config)
++    itex_cfg = itex.ConfigProto(graph_options=graph_opts)
++    itex.set_config(itex_cfg)
++  else:
++    pass
++
+   keras_utils.set_session_config()
+   performance.set_mixed_precision_policy(flags_core.get_tf_dtype(flags_obj))
+ 

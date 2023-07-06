@@ -103,7 +103,7 @@ struct ApplyMomentumNoNesterovKernel {
 };
 
 template <typename T>
-struct ApplyMomentumDPCPP {
+struct ApplyMomentumITEX_GPU {
   void operator()(const GPUDevice& device, T* var_ptr, T* accum_ptr,
                   const T* lr_ptr, const T* grad_ptr, const T* momentum_ptr,
                   bool use_nesterov, const int work_items) {
@@ -225,7 +225,7 @@ struct FusedApplyMomentumNoNesterovKernel {
 };
 
 template <typename T>
-struct FusedApplyMomentumDPCPP {
+struct FusedApplyMomentumITEX_GPU {
   void operator()(const GPUDevice& device, T* var_ptr, T* accum_ptr,
                   const T* lr_ptr, const T* mul_left, const T* mul_right,
                   const T* addN_input, const T* momentum_ptr, bool use_nesterov,
@@ -332,7 +332,7 @@ class ApplyMomentumOp<GPUDevice, T> : public OpKernel {
                 errors::InvalidArgument("momentum is not a scalar: ",
                                         momentum.shape().DebugString()));
     auto& device = ctx->eigen_gpu_device();
-    functor::ApplyMomentumDPCPP<T>()(
+    functor::ApplyMomentumITEX_GPU<T>()(
         device, var.flat<T>().data(), accum.flat<T>().data(),
         lr.scalar<T>().data(), grad.flat<T>().data(),
         momentum.scalar<T>().data(), use_nesterov_, var.flat<T>().size());
@@ -442,7 +442,7 @@ class FusedApplyMomentumOp<GPUDevice, T> : public OpKernel {
                                 addN_input.shape().DebugString()));
 
     auto& device = ctx->eigen_gpu_device();
-    functor::FusedApplyMomentumDPCPP<T>()(
+    functor::FusedApplyMomentumITEX_GPU<T>()(
         device, var.flat<T>().data(), accum.flat<T>().data(),
         lr.scalar<T>().data(), mul_left.flat<T>().data(),
         mul_right.flat<T>().data(), addN_input.flat<T>().data(),
@@ -469,7 +469,7 @@ class FusedApplyMomentumOp<GPUDevice, T> : public OpKernel {
                               .TypeConstraint<T>("T"),                 \
                           ApplyMomentumOp<D##Device, T>);
 
-#define REGISTER_DPCPP_KERNELS(T)                                      \
+#define REGISTER_ITEX_GPU_KERNELS(T)                                   \
   REGISTER_KERNEL_BUILDER(                                             \
       Name("ApplyMomentum").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
       ApplyMomentumOp<GPUDevice, T>);                                  \
@@ -479,26 +479,27 @@ class FusedApplyMomentumOp<GPUDevice, T> : public OpKernel {
                               .HostMemory("accum")                     \
                               .TypeConstraint<T>("T"),                 \
                           ApplyMomentumOp<GPUDevice, T>);
-#define REGISTER_FUSED_DPCPP_KERNELS(T)                                      \
-  REGISTER_KERNEL_BUILDER(                                                   \
-      Name("_FusedApplyMomentum").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
-      FusedApplyMomentumOp<GPUDevice, T>);                                   \
-  REGISTER_KERNEL_BUILDER(Name("_FusedResourceApplyMomentum")                \
-                              .Device(DEVICE_GPU)                            \
-                              .HostMemory("var")                             \
-                              .HostMemory("accum")                           \
-                              .TypeConstraint<T>("T"),                       \
+#define REGISTER_FUSED_ITEX_GPU_KERNELS(T)                        \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedApplyMomentum")         \
+                              .Device(DEVICE_GPU)                 \
+                              .TypeConstraint<T>("T"),            \
+                          FusedApplyMomentumOp<GPUDevice, T>);    \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedResourceApplyMomentum") \
+                              .Device(DEVICE_GPU)                 \
+                              .HostMemory("var")                  \
+                              .HostMemory("accum")                \
+                              .TypeConstraint<T>("T"),            \
                           FusedApplyMomentumOp<GPUDevice, T>);
 
-TF_CALL_GPU_NUMBER_TYPES(REGISTER_DPCPP_KERNELS);
-TF_CALL_complex64(REGISTER_DPCPP_KERNELS);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_complex64(REGISTER_ITEX_GPU_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(REGISTER_DPCPP_KERNELS);
-TF_CALL_complex128(REGISTER_DPCPP_KERNELS);
+TF_CALL_double(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_complex128(REGISTER_ITEX_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
-TF_CALL_float(REGISTER_FUSED_DPCPP_KERNELS);
-#undef REGISTER_DPCPP_KERNELS
-#undef REGISTER_FUSED_DPCPP_KERNELS
+TF_CALL_float(REGISTER_FUSED_ITEX_GPU_KERNELS);
+#undef REGISTER_ITEX_GPU_KERNELS
+#undef REGISTER_FUSED_ITEX_GPU_KERNELS
 #undef REGISTER_KERNELS
 
 template <typename Device, typename T>

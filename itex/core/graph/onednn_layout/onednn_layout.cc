@@ -54,156 +54,34 @@ int OpDefOutputPorts(const NodeDef* node_def) {
   return num_output;
 }
 
-// Check whether opname with type T is registered as oneDNN operator
-// that can accept input tensors in oneDNN layout.
-//
-// @input: name of the op
-// @return: true if opname is registered as OneDNN-layout dependent op;
-// false otherwise
-
-/////////////////////////////////////////////////////////////////////
-//  OneDnnLayoutDependentOp:        Input:  Data Tensor + Meta Tensor
-//                                  Output: Data Tensor + Meta Tensor
-//  OneDnnLayoutPartialDependentOp  Input:  Data Tensor + Meta Tensor
-//                                  Output: Data Tensor
-//  PlainLayoutOp                   Input:  Data Tensor
-//                                  Output: Data Tensor
-////////////////////////////////////////////////////////////////////
-
-bool IsOneDnnLayoutPartialDependentOp(const string& op_name) {
-  // PartialDependent op means that op can have OneDnn layout input, but
-  // plain(Eigen) layout output only
-  static const std::unordered_set<string> PartialDependentOp = {
-      "_OneDnnFusedDequantizeWithReshape",
-      "_OneDnnQuantizedReshape",
-      "_OneDnnQuantizedTranspose",
-      "_OneDnnReshape",
-      "_OneDnnShape",
-      "_OneDnnToTf",
-      "_OneDnnTranspose"};
-  return PartialDependentOp.find(op_name) != PartialDependentOp.end();
-}
-
-// Dependent op means that op can have both OneDnn layout input and output
-bool IsOneDnnLayoutDependentOp(const string& op_name) {
-  return op_name.substr(0, 7) == "_OneDnn" &&
-         !IsOneDnnLayoutPartialDependentOp(op_name);
-}
-
-// PlainLayout op means normal Eigen op. Input and output don't have meta
-// tensor.
-bool IsPlainLayoutOp(const string& op_name) {
-  return !(op_name.substr(0, 7) == "_OneDnn");
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Rewrite functions
-//////////////////////////////////////////////////////////////////////////
-
-// Rewrite when inputs have block layout ops.
-bool RewriteWithBlockInput(const utils::MutableNodeView& node_view) {
-  // Check whether inputs have block ops
-  int num_inputs = node_view.NumRegularFanins();
-  for (int i = 0; i < num_inputs; ++i) {
-    const NodeDef* input_node_def =
-        node_view.GetRegularFanin(i).node_view()->node();
-    string input_node_op = input_node_def->op();
-    if (IsOneDnnLayoutDependentOp(input_node_op)) return true;
-  }
-
-  return false;
-}
-
-// Rewrite rule for binary ops
-bool RewriteBinary(const utils::MutableNodeView& node_view) {
-  return RewriteForGPU(node_view) && RewriteWithBlockInput(node_view);
-}
-
-// Rewrite rule for Cast op:
-//   1. Only rewrite if data type can be optimized by oneDNN
-//   2. Only rewrite if predecessor is oneDNN op for layout propagation
-bool RewriteCast(const utils::MutableNodeView& node_view) {
-  const NodeDef& node_def = *(node_view.node());
-
-  // Do not rewrite on GPU
-  if (NodeIsOnGpu(&node_def)) return false;
-
-  DataType T;
-
-  ITEX_CHECK_OK(GetNodeAttr(node_def, "SrcT", &T));
-  if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
-    return false;
-
-  ITEX_CHECK_OK(GetNodeAttr(node_def, "DstT", &T));
-  if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
-    return false;
-
-  return RewriteWithBlockInput(node_view);
-}
-
 /// Maintain info about nodes to rewrite.
 /// Add related info here if new rule is supported.
 static const std::vector<RewriteInfo>* GetRewriteInfo() {
   static std::vector<RewriteInfo> rinfo{
-      // nn ops
-      {"_FusedBatchMatMulV2", "_OneDnnFusedBatchMatMulV2",
-       CopyAttrsAllCheckConstFilter, RewriteWithBlockInput},
-      {"_FusedBatchNormEx", "_OneDnnFusedBatchNormEx", CopyAttrsAll,
-       RewriteFusedBatchNormEx},
-      {"_FusedBatchNormExGrad", "_OneDnnFusedBatchNormExGrad", CopyAttrsAll,
-       RewriteFusedBatchNormExGrad},
-      {"_FusedConv2DWithSum", "_OneDnnFusedConv2D",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
-      {"_FusedMatMulGrad", "_OneDnnFusedMatMulGrad", CopyAttrsAll,
-       RewriteFusedMatMulGrad},
-      {"_FusedMatMulWithSum", "_OneDnnFusedMatMul",
-       CopyAttrsAllCheckConstFilter, RewriteMatMul},
-      {"_ITEXFusedConv2D", "_OneDnnFusedConv2D", CopyAttrsAllCheckConstFilter,
-       RewriteFusedConv},
-      {"_ITEXFusedDepthwiseConv2dNative", "_OneDnnFusedDepthwiseConv2dNative",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
-      {"_ITEXFusedConv3D", "_OneDnnFusedConv3D", CopyAttrsAllCheckConstFilter,
-       RewriteFusedConv},
-      {"_ITEXFusedMatMul", "_OneDnnFusedMatMul", CopyAttrsAllCheckConstFilter,
-       RewriteMatMul},
-      {"_PadWithConv2D", "_OneDnnPadWithConv2D", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_PadWithConv3D", "_OneDnnPadWithConv3D", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_PadWithFusedConv2D", "_OneDnnPadWithFusedConv2D",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
-      {"_PadWithFusedConv3D", "_OneDnnPadWithFusedConv3D",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
-
-      {"AvgPool", "_OneDnnAvgPool", CopyAttrsAll, RewritePool},
-      {"AvgPool3D", "_OneDnnAvgPool3D", CopyAttrsAll, RewritePool},
-      {"AvgPoolGrad", "_OneDnnAvgPoolGrad", CopyAttrsAll, AlwaysRewrite},
+      // Proper OP
+      {"Add", "_OneDnnAdd", CopyAttrsAll, RewriteBinary},
+      {"AddN", "_OneDnnAddN", CopyAttrsAll, RewriteWithBlockInput},
+      {"AddV2", "_OneDnnAddV2", CopyAttrsAll, RewriteBinary},
+      {"AvgPool", "_OneDnnAvgPool", CopyAttrsAll, RewriteOneDnnPool},
+      {"AvgPool3D", "_OneDnnAvgPool3D", CopyAttrsAll, RewriteOneDnnPool},
       {"AvgPool3DGrad", "_OneDnnAvgPool3DGrad", CopyAttrsAll, AlwaysRewrite},
+      {"AvgPoolGrad", "_OneDnnAvgPoolGrad", CopyAttrsAll, AlwaysRewrite},
       {"BatchMatMulV2", "_OneDnnBatchMatMulV2", CopyAttrsAllCheckConstFilter,
        RewriteWithBlockInput},
       {"Cast", "_OneDnnCast", CopyAttrsCast, RewriteCast},
       {"Concat", "_OneDnnConcat", CopyAttrsAll, RewriteWithBlockInput},
       {"ConcatV2", "_OneDnnConcatV2", CopyAttrsAll, RewriteWithBlockInput},
-      {"Conv2D", "_OneDnnConv2D", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"Conv2D", "_OneDnnConv2D", CopyAttrsAllCheckConstFilter,
+       RewriteOneDnnConv},
       {"Conv2DBackpropFilter", "_OneDnnConv2DBackpropFilter", CopyAttrsAll,
        RewriteConv2DBackprop},
-      {"Conv2DBackpropFilterWithBias", "_OneDnnConv2DBackpropFilterWithBias",
-       CopyAttrsAll, RewriteConv2DBackprop},
       {"Conv2DBackpropInput", "_OneDnnConv2DBackpropInput", CopyAttrsAll,
        RewriteConv2DBackprop},
-      {"Conv2DBackpropInputWithSlice", "_OneDnnConv2DBackpropInputWithSlice",
-       CopyAttrsAll, RewriteConv2DBackprop},
-      {"Conv3D", "_OneDnnConv3D", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"Conv3D", "_OneDnnConv3D", CopyAttrsAllCheckConstFilter,
+       RewriteOneDnnConv},
       {"Conv3DBackpropFilterV2", "_OneDnnConv3DBackpropFilterV2", CopyAttrsAll,
        RewriteBackwardDataType},
-      {"Conv3DBackpropFilterWithBias", "_OneDnnConv3DBackpropFilterWithBias",
-       CopyAttrsAll, RewriteBackwardDataType},
       {"Conv3DBackpropInputV2", "_OneDnnConv3DBackpropInputV2", CopyAttrsAll,
-       RewriteBackwardDataType},
-      {"Conv3DBackpropInputV2WithSlice",
-       "_OneDnnConv3DBackpropInputV2WithSlice", CopyAttrsAll,
        RewriteBackwardDataType},
       {"DepthwiseConv2dNative", "_OneDnnDepthwiseConv2dNative",
        CopyAttrsAllCheckConstFilter, AlwaysRewrite},
@@ -214,24 +92,21 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        "_OneDnnDepthwiseConv2dNativeBackpropInput", CopyAttrsAll,
        RewriteBackwardDataType},
       {"Dequantize", "_OneDnnDequantize", CopyAttrsAll, RewriteQuantize},
-      {"FusedBatchNorm", "_OneDnnFusedBatchNorm", CopyAttrsAll, AlwaysRewrite},
-      {"FusedBatchNormV2", "_OneDnnFusedBatchNormV2", CopyAttrsAll,
-       AlwaysRewrite},
-      {"FusedBatchNormV3", "_OneDnnFusedBatchNormV3", CopyAttrsAll,
-       RewriteFusedBatchNormV3},
+      {"FusedBatchNorm", "_OneDnnFusedBatchNorm", CopyAttrsAll,
+       RewriteWithBlockInput},
       {"FusedBatchNormGrad", "_OneDnnFusedBatchNormGrad", CopyAttrsAll,
        RewriteBackwardDataType},
       {"FusedBatchNormGradV2", "_OneDnnFusedBatchNormGradV2", CopyAttrsAll,
        RewriteBackwardDataType},
       {"FusedBatchNormGradV3", "_OneDnnFusedBatchNormGradV3", CopyAttrsAll,
-       RewriteFusedBatchNormGradV3},
-      // TODO(itex): change rewrite rule to RewriteWithBlockInput once support
-      //             native format
-      {"FusedInstanceNorm", "_OneDnnFusedInstanceNorm", CopyAttrsAll,
-       AlwaysRewrite},
-      {"Gelu", "_OneDnnGelu", CopyAttrsAll, AlwaysRewrite},
+       RewriteBackwardDataType},
+      {"FusedBatchNormV2", "_OneDnnFusedBatchNormV2", CopyAttrsAll,
+       RewriteWithBlockInput},
+      {"FusedBatchNormV3", "_OneDnnFusedBatchNormV3", CopyAttrsAll,
+       RewriteWithBlockInput},
+      {"Gelu", "_OneDnnGelu", CopyAttrsAll, RewriteWithBlockInput},
       {"GeluGrad", "_OneDnnGeluGrad", CopyAttrsAll, RewriteBackwardDataType},
-      {"InstanceNorm", "_OneDnnInstanceNorm", CopyAttrsAll, AlwaysRewrite},
+      {"Identity", "_OneDnnIdentity", CopyAttrsAll, RewriteWithBlockInput},
       {"LayerNorm", "_OneDnnLayerNorm", CopyAttrsAll, RewriteLayerNorm},
       {"LayerNormGrad", "_OneDnnLayerNormGrad", CopyAttrsAll,
        RewriteLayerNormGrad},
@@ -239,39 +114,110 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
       {"LeakyReluGrad", "_OneDnnLeakyReluGrad", CopyAttrsAll,
        RewriteBackwardDataType},
       {"MatMul", "_OneDnnMatMul", CopyAttrsAllCheckConstFilter, RewriteMatMul},
-      {"MaxPool", "_OneDnnMaxPool", CopyAttrsAll, RewritePool},
-      {"MaxPool3D", "_OneDnnMaxPool3D", CopyAttrsAll, RewritePool},
-      {"MaxPoolGrad", "_OneDnnMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
+      {"MaxPool", "_OneDnnMaxPool", CopyAttrsAll, RewriteOneDnnPool},
+      {"MaxPool3D", "_OneDnnMaxPool3D", CopyAttrsAll, RewriteOneDnnPool},
       {"MaxPool3DGrad", "_OneDnnMaxPool3DGrad", CopyAttrsAll,
        RewriteMaxPoolGrad},
+      {"MaxPoolGrad", "_OneDnnMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
+      {"Mul", "_OneDnnMul", CopyAttrsAll, RewriteBinary},
       {"OneDnnGraph", "_OneDnnGraph", CopyAttrsOneDnnGraph, AlwaysRewrite},
       {"QuantizedConcatV2", "_OneDnnQuantizedConcatV2", CopyAttrsAll,
        AlwaysRewrite},
       {"Relu", "_OneDnnRelu", CopyAttrsAll, RewriteWithBlockInput},
       {"ReluGrad", "_OneDnnReluGrad", CopyAttrsAll, RewriteBackwardDataType},
-      {"Reshape", "_OneDnnReshape", CopyAttrsAll, AlwaysRewrite},
+      {"Reshape", "_OneDnnReshape", CopyAttrsAll, RewriteWithBlockInput},
+      {"ResizeBilinear", "_OneDnnResizeBilinear", CopyAttrsAll, RewriteResize},
+      {"ResizeBilinearGrad", "_OneDnnResizeBilinearGrad", CopyAttrsAll,
+       RewriteResize},
+      {"ResizeNearestNeighbor", "_OneDnnResizeNearestNeighbor", CopyAttrsAll,
+       RewriteResize},
+      {"ResizeNearestNeighborGrad", "_OneDnnResizeNearestNeighborGrad",
+       CopyAttrsAll, RewriteResize},
       {"Shape", "_OneDnnShape", CopyAttrsAll, RewriteWithBlockInput},
-      {"Slice", "_OneDnnSlice", CopyAttrsAll, AlwaysRewrite},
+      {"Slice", "_OneDnnSlice", CopyAttrsAll, RewriteWithBlockInput},
       {"Softmax", "_OneDnnSoftmax", CopyAttrsAll, RewriteWithBlockInput},
-      {"Swish", "_OneDnnSwish", CopyAttrsAll, RewriteWithBlockInput},
-      {"Transpose", "_OneDnnTranspose", CopyAttrsAll, AlwaysRewrite},
+      {"Sub", "_OneDnnSub", CopyAttrsAll, RewriteBinary},
+      {"Transpose", "_OneDnnTranspose", CopyAttrsAll, RewriteWithBlockInput},
+      {"_FusedBatchNormEx", "_OneDnnFusedBatchNormEx", CopyAttrsAll,
+       RewriteFusedBatchNormEx},
+      // Intel-TF ops. Usually these ops should always be rewritten.
+      // This part is for compatibility of legacy Intel-TF models, it will be
+      // removed in future.
+      {"_FusedMatMul", "_OneDnnFusedMatMul", CopyAttrsAllCheckConstFilter,
+       RewriteMatMul},
+      {"_MklFusedBatchMatMulV2", "_OneDnnFusedBatchMatMulV2",
+       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"_MklLayerNorm", "_OneDnnMklLayerNorm", CopyAttrsAll, AlwaysRewrite},
 
-      // Old conv and matmul INT8 op
+      // ITEX OP
+      {"ITEXGelu", "_OneDnnGelu", CopyAttrsAll, RewriteWithBlockInput},
+      {"ITEXGeluGrad", "_OneDnnGeluGrad", CopyAttrsAll,
+       RewriteBackwardDataType},
+      {"ITEXLayerNorm", "_OneDnnLayerNorm", CopyAttrsAll, RewriteLayerNorm},
+      {"ITEXLayerNormGrad", "_OneDnnLayerNormGrad", CopyAttrsAll,
+       RewriteLayerNormGrad},
+      {"_ITEXConv2DBackpropFilterWithBias",
+       "_OneDnnConv2DBackpropFilterWithBias", CopyAttrsAll,
+       RewriteConv2DBackprop},
+      {"_ITEXConv2DBackpropInputWithSlice",
+       "_OneDnnConv2DBackpropInputWithSlice", CopyAttrsAll,
+       RewriteConv2DBackprop},
+      {"_ITEXConv3DBackpropFilterWithBias",
+       "_OneDnnConv3DBackpropFilterWithBias", CopyAttrsAll,
+       RewriteBackwardDataType},
+      {"_ITEXConv3DBackpropInputV2WithSlice",
+       "_OneDnnConv3DBackpropInputV2WithSlice", CopyAttrsAll,
+       RewriteBackwardDataType},
+      {"_ITEXFusedBatchMatMulV2", "_OneDnnFusedBatchMatMulV2",
+       CopyAttrsAllCheckConstFilter, RewriteWithBlockInput},
+      {"_ITEXFusedBatchNormGradEx", "_OneDnnFusedBatchNormGradEx", CopyAttrsAll,
+       RewriteFusedBatchNormExGrad},
+      {"_ITEXFusedConv2D", "_OneDnnFusedConv2D", CopyAttrsAllCheckConstFilter,
+       RewriteOneDnnFusedConv},
+      {"_ITEXFusedConv2DWithSum", "_OneDnnFusedConv2D",
+       CopyAttrsAllCheckConstFilter, RewriteOneDnnFusedConv},
+      {"_ITEXFusedConv3D", "_OneDnnFusedConv3D", CopyAttrsAllCheckConstFilter,
+       RewriteOneDnnFusedConv},
+      {"_ITEXFusedDepthwiseConv2dNative", "_OneDnnFusedDepthwiseConv2dNative",
+       CopyAttrsAllCheckConstFilter, RewriteOneDnnFusedConv},
+      {"_ITEXFusedInstanceNorm", "_OneDnnFusedInstanceNorm", CopyAttrsAll,
+       RewriteWithBlockInput},
+      {"_ITEXFusedMatMul", "_OneDnnFusedMatMul", CopyAttrsAllCheckConstFilter,
+       RewriteMatMul},
+      {"_ITEXFusedMatMulGrad", "_OneDnnFusedMatMulGrad", CopyAttrsAll,
+       AlwaysRewrite},
+      {"_ITEXFusedMatMulWithSum", "_OneDnnFusedMatMul",
+       CopyAttrsAllCheckConstFilter, RewriteMatMul},
+      {"_ITEXInstanceNorm", "_OneDnnInstanceNorm", CopyAttrsAll,
+       RewriteWithBlockInput},
+      {"_ITEXMish", "_OneDnnMish", CopyAttrsAll, RewriteWithBlockInput},
+      {"_ITEXPadWithConv2D", "_OneDnnPadWithConv2D",
+       CopyAttrsAllCheckConstFilter, RewriteOneDnnConv},
+      {"_ITEXPadWithConv3D", "_OneDnnPadWithConv3D",
+       CopyAttrsAllCheckConstFilter, RewriteOneDnnConv},
+      {"_ITEXPadWithFusedConv2D", "_OneDnnPadWithFusedConv2D",
+       CopyAttrsAllCheckConstFilter, RewriteOneDnnFusedConv},
+      {"_ITEXPadWithFusedConv3D", "_OneDnnPadWithFusedConv3D",
+       CopyAttrsAllCheckConstFilter, RewriteOneDnnFusedConv},
+      {"_ITEXSwish", "_OneDnnSwish", CopyAttrsAll, RewriteWithBlockInput},
+
+      // INT8 OP
+      // Old Conv and MatMul OP
       {"QuantizedConv2D", "_OneDnnQuantizedConv2D", CopyAttrsQuantizedConv2D,
        AlwaysRewrite},
       {"QuantizedConv2DAndRequantize", "_OneDnnQuantizedConv2DAndRequantize",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
       {"QuantizedConv2DWithBias", "_OneDnnQuantizedConv2DWithBias",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
-      {"QuantizedConv2DWithBiasAndRequantize",
-       "_OneDnnQuantizedConv2DWithBiasAndRequantize", CopyAttrsQuantizedConv2D,
-       AlwaysRewrite},
       {"QuantizedConv2DWithBiasAndRelu",
        "_OneDnnQuantizedConv2DWithBiasAndRelu", CopyAttrsQuantizedConv2D,
        AlwaysRewrite},
       {"QuantizedConv2DWithBiasAndReluAndRequantize",
        "_OneDnnQuantizedConv2DWithBiasAndReluAndRequantize",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
+      {"QuantizedConv2DWithBiasAndRequantize",
+       "_OneDnnQuantizedConv2DWithBiasAndRequantize", CopyAttrsQuantizedConv2D,
+       AlwaysRewrite},
       {"QuantizedConv2DWithBiasSignedSumAndReluAndRequantize",
        "_OneDnnQuantizedConv2DWithBiasSignedSumAndReluAndRequantize",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
@@ -294,6 +240,9 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
       {"QuantizedMatMulWithBias", "_OneDnnQuantizedMatMulWithBias",
        CopyAttrsQuantizedMatMul, AlwaysRewrite},
+      {"QuantizedMatMulWithBiasAndDequantize",
+       "_OneDnnQuantizedMatMulWithBiasAndDequantize", CopyAttrsQuantizedMatMul,
+       AlwaysRewrite},
       {"QuantizedMatMulWithBiasAndRelu",
        "_OneDnnQuantizedMatMulWithBiasAndRelu", CopyAttrsQuantizedMatMul,
        AlwaysRewrite},
@@ -303,66 +252,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
       {"QuantizedMatMulWithBiasAndRequantize",
        "_OneDnnQuantizedMatMulWithBiasAndRequantize", CopyAttrsQuantizedMatMul,
        AlwaysRewrite},
-      {"QuantizedMatMulWithBiasAndDequantize",
-       "_OneDnnQuantizedMatMulWithBiasAndDequantize", CopyAttrsQuantizedMatMul,
-       AlwaysRewrite},
-
-      // New conv and matmul INT8 op
-      {"_QuantizedBatchMatMulV2AndDequantize",
-       "_OneDnnQuantizedBatchMatMulV2AndDequantize", CopyAttrsAll,
-       AlwaysRewrite},
-      {"_QuantizedFusedBatchMatMulV2AndDequantize",
-       "_OneDnnQuantizedFusedBatchMatMulV2AndDequantize", CopyAttrsAll,
-       AlwaysRewrite},
-      {"_QuantizedFusedMatMul", "_OneDnnQuantizedFusedMatMul", CopyAttrsAll,
-       AlwaysRewrite},
-      {"_QuantizedFusedMatMulAndRequantize",
-       "_OneDnnQuantizedFusedMatMulAndRequantize", CopyAttrsAll, AlwaysRewrite},
-      {"_QuantizedFusedMatMulAndDequantize",
-       "_OneDnnQuantizedFusedMatMulAndDequantize", CopyAttrsAll, AlwaysRewrite},
-      {"_ITEXQuantizeV2WithQuantizedConv2D",
-       "_OneDnnQuantizeV2WithQuantizedConv2D", CopyAttrsAll, AlwaysRewrite},
-
-      // Other new INT8 op
-      {"_QuantizedTranspose", "_OneDnnQuantizedTranspose", CopyAttrsAll,
-       AlwaysRewrite},
-      {"QuantizedAvgPool", "_OneDnnQuantizedAvgPool", CopyAttrsAll,
-       AlwaysRewrite},
-      {"QuantizedMaxPool", "_OneDnnQuantizedMaxPool", CopyAttrsAll,
-       AlwaysRewrite},
-      {"ITEXQuantizedAvgPool", "_OneDnnQuantizedAvgPool", CopyAttrsAll,
-       AlwaysRewrite},
-      {"QuantizedReshape", "_OneDnnQuantizedReshape", CopyAttrsAll,
-       AlwaysRewrite},
-      {"QuantizeV2", "_OneDnnQuantizeV2", CopyAttrsQuantize, RewriteQuantize},
-
-      // math ops
-      {"Add", "_OneDnnAdd", CopyAttrsAll, RewriteBinary},
-      {"AddN", "_OneDnnAddN", CopyAttrsAll, AlwaysRewrite},
-      {"AddV2", "_OneDnnAddV2", CopyAttrsAll, RewriteBinary},
-      {"Identity", "_OneDnnIdentity", CopyAttrsAll, RewriteWithBlockInput},
-      {"Mul", "_OneDnnMul", CopyAttrsAll, RewriteBinary},
-      {"ResizeBilinear", "_OneDnnResizeBilinear", CopyAttrsAll, RewriteResize},
-      {"ResizeBilinearGrad", "_OneDnnResizeBilinearGrad", CopyAttrsAll,
-       RewriteResize},
-      {"ResizeNearestNeighbor", "_OneDnnResizeNearestNeighbor", CopyAttrsAll,
-       RewriteResize},
-      {"ResizeNearestNeighborGrad", "_OneDnnResizeNearestNeighborGrad",
-       CopyAttrsAll, RewriteResize},
-      {"Sub", "_OneDnnSub", CopyAttrsAll, RewriteBinary},
-
-      // Intel-TF ops. Usually these ops should always be rewritten.
-      // This part is for compatibility of legacy Intel-TF models, it will be
-      // removed in future.
-      {"_FusedMatMul", "_OneDnnFusedMatMul", CopyAttrsAllCheckConstFilter,
-       RewriteMatMul},
-      {"_MklFusedBatchMatMulV2", "_OneDnnFusedBatchMatMulV2",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
-      {"_MklLayerNorm", "_OneDnnMklLayerNorm", CopyAttrsAll, AlwaysRewrite},
-
-      // Op definition is different between Intel TF and public TF. Since ITEX
-      // uses public TF as backend. We need to create a new op to align with
-      // Intel TF semantics.
+      // New Conv and MatMul OP
       {"_ITEXQuantizedConv2D", "_OneDnnQuantizedConv2D",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
       {"_ITEXQuantizedConv2DAndRequantize",
@@ -370,15 +260,15 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        AlwaysRewrite},
       {"_ITEXQuantizedConv2DWithBias", "_OneDnnQuantizedConv2DWithBias",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
-      {"_ITEXQuantizedConv2DWithBiasAndRequantize",
-       "_OneDnnQuantizedConv2DWithBiasAndRequantize", CopyAttrsQuantizedConv2D,
-       AlwaysRewrite},
       {"_ITEXQuantizedConv2DWithBiasAndRelu",
        "_OneDnnQuantizedConv2DWithBiasAndRelu", CopyAttrsQuantizedConv2D,
        AlwaysRewrite},
       {"_ITEXQuantizedConv2DWithBiasAndReluAndRequantize",
        "_OneDnnQuantizedConv2DWithBiasAndReluAndRequantize",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
+      {"_ITEXQuantizedConv2DWithBiasAndRequantize",
+       "_OneDnnQuantizedConv2DWithBiasAndRequantize", CopyAttrsQuantizedConv2D,
+       AlwaysRewrite},
       {"_ITEXQuantizedConv2DWithBiasSignedSumAndReluAndRequantize",
        "_OneDnnQuantizedConv2DWithBiasSignedSumAndReluAndRequantize",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
@@ -388,26 +278,48 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
       {"_ITEXQuantizedConv2DWithBiasSumAndReluAndRequantize",
        "_OneDnnQuantizedConv2DWithBiasSumAndReluAndRequantize",
        CopyAttrsQuantizedConv2D, AlwaysRewrite},
+      {"_ITEXQuantizedConv2DWithCast", "_OneDnnQuantizedConv2DWithCast",
+       CopyAttrsAll, AlwaysRewrite},
+      {"_ITEXQuantizedConv2DWithDequantize",
+       "_OneDnnQuantizedConv2DWithDequantize", CopyAttrsAll, AlwaysRewrite},
       {"_ITEXQuantizedMatMulWithBiasAndDequantize",
        "_OneDnnQuantizedMatMulWithBiasAndDequantize", CopyAttrsQuantizedMatMul,
        AlwaysRewrite},
+      {"_ITEXQuantizeV2WithQuantizedConv2D",
+       "_OneDnnQuantizeV2WithQuantizedConv2D", CopyAttrsAll, AlwaysRewrite},
+      {"_QuantizedBatchMatMulV2AndDequantize",
+       "_OneDnnQuantizedBatchMatMulV2AndDequantize", CopyAttrsAll,
+       AlwaysRewrite},
+      {"_QuantizedFusedBatchMatMulV2AndDequantize",
+       "_OneDnnQuantizedFusedBatchMatMulV2AndDequantize", CopyAttrsAll,
+       AlwaysRewrite},
+      {"_QuantizedFusedMatMul", "_OneDnnQuantizedFusedMatMul", CopyAttrsAll,
+       AlwaysRewrite},
+      {"_QuantizedFusedMatMulAndDequantize",
+       "_OneDnnQuantizedFusedMatMulAndDequantize", CopyAttrsAll, AlwaysRewrite},
+      {"_QuantizedFusedMatMulAndRequantize",
+       "_OneDnnQuantizedFusedMatMulAndRequantize", CopyAttrsAll, AlwaysRewrite},
+      // Other new INT8 op
+      {"ITEXQuantizedAvgPool", "_OneDnnQuantizedAvgPool", CopyAttrsAll,
+       AlwaysRewrite},
+      {"QuantizedAvgPool", "_OneDnnQuantizedAvgPool", CopyAttrsAll,
+       AlwaysRewrite},
+      {"QuantizedMaxPool", "_OneDnnQuantizedMaxPool", CopyAttrsAll,
+       AlwaysRewrite},
+      {"QuantizedReshape", "_OneDnnQuantizedReshape", CopyAttrsAll,
+       AlwaysRewrite},
+      {"QuantizeV2", "_OneDnnQuantizeV2", CopyAttrsQuantize, RewriteQuantize},
+      {"_ITEXFusedDequantizeWithReshape", "_OneDnnFusedDequantizeWithReshape",
+       CopyAttrsAll, AlwaysRewrite},
       {"_ITEXQuantizeV2", "_OneDnnQuantizeV2", CopyAttrsQuantize,
        RewriteQuantize},
-
-      // array ops
-      {"_FusedDequantizeWithReshape", "_OneDnnFusedDequantizeWithReshape",
-       CopyAttrsAll, AlwaysRewrite},
+      {"_QuantizedTranspose", "_OneDnnQuantizedTranspose", CopyAttrsAll,
+       AlwaysRewrite},
   };
 
   return &rinfo;
-}  // namespace
+}  // GetRewriteInfo
 
-/// Maintain info about nodes to add workspace edge
-static const std::vector<WorkSpaceInfo>* GetWorkspaceInfo() {
-  static std::vector<WorkSpaceInfo> wsinfo{{"MaxPoolGrad", 1, 1},
-                                           {"MaxPool3DGrad", 1, 1}};
-  return &wsinfo;
-}
 }  // namespace
 
 void GetDummyOneDnnTensorNode(const NodeDef& input, NodeDef* dummy) {
@@ -476,13 +388,6 @@ void UpdateDummyOneDnnNode(utils::Mutation* mutation, const NodeDef& input,
   TF_ABORT_IF_ERROR(status);
 }
 
-string GetInputName(const NodeDef* input, const int out_slot) {
-  if (out_slot == 0)
-    return input->name();
-  else
-    return input->name() + ":" + std::to_string(out_slot);
-}
-
 // Rewrites input node to a new node specified by its matching rewrite info.
 //
 // Method first searches matching rewrite info for input node and then
@@ -501,18 +406,12 @@ Status RewriteNode(OneDnnLayoutContext* ctx, const int node_index,
     new_node_def.add_input(node_def->input(idx));
   }
 
+  new_node_def.set_name(node_def->name());
+  new_node_def.set_op(ri->new_name);
+  new_node_def.set_device(node_def->device());
+
   // Add workspace inputs if needed.
-  const NodeDef* ws_node_def = nullptr;
-  const std::vector<WorkSpaceInfo>* wsinfo = GetWorkspaceInfo();
-  for (auto it = wsinfo->cbegin(); it != wsinfo->cend(); ++it) {
-    if (node_def->op().compare(it->bwd_op) == 0) {
-      const auto* input_node_view =
-          node_view->GetRegularFanin(it->bwd_slot).node_view();
-      ws_node_def = input_node_view->node();
-      new_node_def.add_input(GetInputName(ws_node_def, it->ws_fwd_slot));
-      break;
-    }
-  }
+  NodeDef* ws_input_node_def = AddWorkspace(node_view, &new_node_def);
 
   // Let's now setup all OneDNN inputs to a new node.
   // Number of OneDNN inputs must be same as number of TF inputs.
@@ -538,13 +437,12 @@ Status RewriteNode(OneDnnLayoutContext* ctx, const int node_index,
   }
 
   // Set up ws meta tensor.
-  if (ws_node_def != nullptr) {
-    AddDummyOneDnnNode(mutation, *ws_node_def, &new_node_def);
+  if (ws_input_node_def != nullptr) {
+    AddDummyOneDnnNode(mutation, *ws_input_node_def, &new_node_def);
+    ITEX_VLOG(3) << "Workspace: Add workspace OneDnn meta tensor between ["
+                 << ws_input_node_def->op() << "] and [" << new_node_def.op()
+                 << "], while rewriting [" << node_def->op() << "]";
   }
-
-  new_node_def.set_name(node_def->name());
-  new_node_def.set_op(ri->new_name);
-  new_node_def.set_device(node_def->device());
 
   ri->copy_attrs(node_view, &new_node_def);
   SetConstFilterAttr(node_view, &new_node_def, ctx->nodes_to_preserve);
@@ -927,7 +825,7 @@ Status MarkOneDnnGraphEndNode(OneDnnLayoutContext* ctx, const int node_index) {
 ///////////////////////////////////////////////////////////////////////////////
 //              Run function for the pass
 ///////////////////////////////////////////////////////////////////////////////
-Status RunOneDnnLayout(const char* device_name, const GrapplerItem& item,
+Status RunOneDnnLayout(OptimizerContext* opt_ctx, const GrapplerItem& item,
                        const GraphDef& graph_def, GraphDef* optimized_graph) {
   Status status;
   GraphDef multable_graph_def = graph_def;
@@ -948,8 +846,16 @@ Status RunOneDnnLayout(const char* device_name, const GrapplerItem& item,
     const auto* node_def = node_view->node();
 
     // Check if node can run on current optimizer device.
-    if (!NodeIsOnDevice(device_name, node_def)) continue;
+    if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) continue;
 
+    // Check if node is fp16 and supported on device.
+    if (NodeIsOnCpu(node_def) &&
+        GetDataTypeFromAttr(*node_def, "T") == DT_HALF &&
+        !port::HasCpuFP16Support())
+      continue;
+
+    // Don't rewrite fetch node because layout will insert `OneDnnToTf` op
+    // behind it and break the fetch node dependency.
     // TODO(itex): Rewrite fetch nodes if meeting performance regression.
     if (ctx.nodes_to_preserve.count(node_def->name()) > 0) continue;
 
@@ -958,7 +864,6 @@ Status RunOneDnnLayout(const char* device_name, const GrapplerItem& item,
     if ((ri = CheckForNodeRewrite(*node_view)) != nullptr) {
       string node_name = node_def->name();
       string op_name = node_def->op();
-
       ITEX_VLOG(1) << "OneDnnLayoutPass: Scheduled node " << node_name
                    << " with OP " << op_name << " for rewrite using"
                    << " layout optimization.";

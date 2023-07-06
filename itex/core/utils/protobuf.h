@@ -43,6 +43,7 @@ limitations under the License.
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/json_util.h"
+#include "google/protobuf/util/message_differencer.h"
 #include "google/protobuf/util/type_resolver_util.h"
 
 namespace itex {

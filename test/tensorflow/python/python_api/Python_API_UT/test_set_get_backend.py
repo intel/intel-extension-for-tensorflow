@@ -28,8 +28,7 @@ class SetGetBackendTest(test_util.TensorFlowTestCase):
     @test_util.run_deprecated_v1
     def testSetGetBackend_gpu(self):
         current_backend = 0.0
-        backend_cfg=itex.ConfigProto()
-        itex.set_backend(GPU_BACKEND, backend_cfg)
+        itex.set_backend(GPU_BACKEND)
         if(itex.get_backend() == GPU_BACKEND.encode('utf-8')):
             current_backend = backend_gpuflag
         else:

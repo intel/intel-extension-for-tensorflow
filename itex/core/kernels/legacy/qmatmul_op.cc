@@ -140,6 +140,8 @@ class OneDnnQuantizedMatMulOp
     if (context->HasAttr("is_weight_const")) {
       OP_REQUIRES_OK(context, context->GetAttr("is_weight_const",
                                                &(this->is_weight_const_)));
+    } else {
+      this->is_weight_const_ = true;
     }
     this->is_bias_const_ = true;
 

@@ -22,28 +22,28 @@ limitations under the License.
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "absl/container/flat_hash_set.h"
 
+#include "absl/container/flat_hash_set.h"
 #include "itex/core/devices/allocator.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/mutex.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 
 // Currently, the default strategy of itex custom device allocator is BFC
 class BFCAllocator : public Allocator {
  public:
-  explicit BFCAllocator(DPCPPDevice* device);
+  explicit BFCAllocator(ITEX_GPUDevice* device);
   ~BFCAllocator() override;
   void* AllocateRaw(size_t num_bytes) override;
   void DeallocateRaw(void* ptr) override;
   string Name() override { return "itex_device_bfc"; }
 
  private:
-  DPCPPDevice* device_;
+  ITEX_GPUDevice* device_;
   size_t memory_limit_;
   static constexpr size_t kMinAllocationBits = 8;
   static constexpr size_t kMinAllocationSize = 1 << kMinAllocationBits;
@@ -362,6 +362,11 @@ class BFCAllocator : public Allocator {
   // failure.
   bool Extend(size_t rounded_bytes) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
+  // Extend a large memory(almost all device memory)
+  bool ExtendLarge(size_t rounded_bytes) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  // Extend size near the required.
+  bool ExtendSmall(size_t rounded_bytes) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
   ChunkHandle TryToCoalesce(ChunkHandle h) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
   // Removes a free chunk from the bin.
@@ -373,6 +378,8 @@ class BFCAllocator : public Allocator {
 
   // Removes the chunk metadata represented by 'h'.
   void DeleteChunk(ChunkHandle h) TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
+  int64 AllocMode();
 
   char bins_space_[sizeof(Bin) * kNumBins];
   mutable mutex lock_;

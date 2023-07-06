@@ -16,6 +16,7 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_TF_BUFFER_H_
 #define ITEX_CORE_UTILS_TF_BUFFER_H_
 
+#ifndef ITEX_BUILD_JAX
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/status.h"
 #include "tensorflow/c/c_api.h"
@@ -52,4 +53,5 @@ Status BufferToMessage(
     itex::protobuf::MessageLite& out);  // NOLINT(runtime/references)
 }  // namespace itex
 
+#endif
 #endif  // ITEX_CORE_UTILS_TF_BUFFER_H_

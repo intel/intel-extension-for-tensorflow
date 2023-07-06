@@ -108,6 +108,7 @@ class OneDnnConvBackpropFilterOp
           bias_dims;
       memory::dims dst_dims_tf, dst_dims_onednn;
 
+      bool is_grouped_convolution = false;
       OneDnnConvUtil conv_util(context, this->data_format_, this->strides_,
                                this->dilations_, this->padding_,
                                this->explicit_paddings_, this->is_conv2d_,
@@ -116,7 +117,7 @@ class OneDnnConvBackpropFilterOp
       conv_util.InitFwdDimensions(
           src_shape, filter_shape, &fwd_src_dims, &fwd_filter_dims,
           &stride_dims, &dilation_dims, &dst_dims_tf, &dst_dims_onednn,
-          &pad_left_dims, &pad_right_dims);
+          &pad_left_dims, &pad_right_dims, &is_grouped_convolution);
       conv_util.GetInputDimension(diff_dst_shape, &diff_dst_dims);
 
       if (is_depthwise) {
@@ -133,8 +134,9 @@ class OneDnnConvBackpropFilterOp
       OP_REQUIRES(context, data_layout != memory::format_tag::undef,
                   errors::InvalidArgument("Invalid data format"));
       memory::format_tag filter_layout =
-          this->is_conv2d_ ? (is_depthwise ? memory::format_tag::hwigo
-                                           : memory::format_tag::hwio)
+          this->is_conv2d_ ? (is_depthwise || is_grouped_convolution
+                                  ? memory::format_tag::hwigo
+                                  : memory::format_tag::hwio)
                            : memory::format_tag::dhwio;
 
       memory::dims diff_bias_dims = {};
@@ -172,7 +174,7 @@ class OneDnnConvBackpropFilterOp
       for (int i = 0; i < dilation_dims.size(); ++i) {
         --dilation_dims[i];
       }
-
+#ifndef ITEX_ONEDNN_3_0
       ConvFwdDesc fwd_desc = ConvFwdDesc(
           prop_kind::forward, dnnl::algorithm::convolution_direct,
           fwd_src_md_prefer, diff_filter_md_prefer, diff_dst_md_prefer,
@@ -198,28 +200,48 @@ class OneDnnConvBackpropFilterOp
             diff_filter_md_prefer, diff_bias_md, diff_dst_md_prefer,
             stride_dims, dilation_dims, pad_left_dims, pad_right_dims);
       }
-
+#endif
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(this->fp32_math_mode_);
       }
-
+#ifdef ITEX_ONEDNN_3_0
+      ConvFwdPd fwd_pd;
+      ConvBwdFilterPd bwd_filter_pd;
+      if (bias_enabled) {
+        fwd_pd = ConvFwdPd(onednn_engine, prop_kind::forward,
+                           dnnl::algorithm::convolution_direct,
+                           fwd_src_md_prefer, diff_filter_md_prefer,
+                           diff_bias_md, diff_dst_md_prefer, stride_dims,
+                           dilation_dims, pad_left_dims, pad_right_dims, attr);
+        bwd_filter_pd = ConvBwdFilterPd(
+            onednn_engine, dnnl::algorithm::convolution_direct,
+            fwd_src_md_prefer, diff_filter_md_prefer, diff_bias_md,
+            diff_dst_md_prefer, stride_dims, dilation_dims, pad_left_dims,
+            pad_right_dims, fwd_pd, attr);
+      } else {
+        fwd_pd =
+            ConvFwdPd(onednn_engine, prop_kind::forward,
+                      dnnl::algorithm::convolution_direct, fwd_src_md_prefer,
+                      diff_filter_md_prefer, diff_dst_md_prefer, stride_dims,
+                      dilation_dims, pad_left_dims, pad_right_dims, attr);
+        bwd_filter_pd =
+            ConvBwdFilterPd(onednn_engine, dnnl::algorithm::convolution_direct,
+                            fwd_src_md_prefer, diff_filter_md_prefer,
+                            diff_dst_md_prefer, stride_dims, dilation_dims,
+                            pad_left_dims, pad_right_dims, fwd_pd, attr);
+      }
+#else
       ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, attr, onednn_engine);
       ConvBwdFilterPd bwd_filter_pd =
           ConvBwdFilterPd(bwd_filter_desc, attr, onednn_engine, fwd_pd);
+#endif
 
       // Allocate output tensors: diff_fitler.
       TensorShape diff_filter_shape;
       if (this->is_conv2d_) {
-        if (!is_depthwise) {
-          diff_filter_shape =
-              TensorShape({diff_filter_dims[DimensionIndex::Dim_H],
-                           diff_filter_dims[DimensionIndex::Dim_W],
-                           diff_filter_dims[DimensionIndex::Dim_I],
-                           diff_filter_dims[DimensionIndex::Dim_O]});
-
-        } else {
+        if (is_depthwise) {
           // Depthwise Conv2d: diff_filter_dims is GOIHW format.
           //                  | TensorFlow       | oneDNN
           // ----------------------------------------------------------------
@@ -236,6 +258,24 @@ class OneDnnConvBackpropFilterOp
                diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_W],
                diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_G],
                diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_O]});
+        } else if (is_grouped_convolution) {
+          // For group convolution, we have group_count == in_depth /
+          // filter_in_depth. So here G = in_depth / filter_in_depth, and
+          // O = original O / group_count.
+          // And the GOIHW is mkldnn format, here we try to extract the TF
+          // format, TF format is HWIO, here O is O * G.
+          TensorShape diff_filter_tf_shape(
+              {diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_H],
+               diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_W],
+               diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_I],
+               diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_O] *
+                   diff_filter_dims[FilterGroupDims::GROUP_FILTER_DIM_G]});
+        } else {
+          diff_filter_shape =
+              TensorShape({diff_filter_dims[DimensionIndex::Dim_H],
+                           diff_filter_dims[DimensionIndex::Dim_W],
+                           diff_filter_dims[DimensionIndex::Dim_I],
+                           diff_filter_dims[DimensionIndex::Dim_O]});
         }
       } else {
         diff_filter_shape =

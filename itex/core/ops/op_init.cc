@@ -15,12 +15,13 @@ limitations under the License.
 
 #include "itex/core/ops/op_init.h"
 
+#include <functional>
 #include <map>
 #include <string>
 
 #include "itex/core/ops/utils/logging.h"
-#include "itex/core/utils/tf_version.h"
 #include "protos/op_def.pb.h"
+#include "tensorflow/c/c_api.h"
 
 // Some ops currently are available only in spr-base branch, not in TF master
 // branch. We will register those ops in ITEX, before they are upstreamed to TF
@@ -44,6 +45,7 @@ void Register_TFLegacyOp() {
       {"_QuantizedFusedMatMulAndDequantize",
        Register_QuantizedFusedMatMulAndDequantizeOp},
       {"_QuantizedMatMul", Register_QuantizedMatMulOp},
+      {"_QuantizedMaxPool3D", Register_QuantizedMaxPool3DOp},
       {"_QuantizedTranspose", Register_QuantizedTransposeOp}};
 
   for (auto register_pair : op_register_map) {
@@ -70,54 +72,78 @@ void RegisterOps() {
   Register_ITEXQuantizedMatMulWithBiasAndDequantizeOp();
 
   // Training kernels
-  Register_ApplyAdamWithWeightDecayOp();
-  Register_ResourceApplyAdamWithWeightDecayOp();
-  Register_FusedApplyMomentumOp();
-  Register_FusedResourceApplyMomentumOp();
-  Register_FusedApplyAdamOp();
-  Register_FusedResourceApplyAdamOp();
-  Register_FusedApplyAdamWithWeightDecayOp();
-  Register_FusedResourceApplyAdamWithWeightDecayOp();
+  Register_ITEXApplyAdamWithWeightDecayOp();
+  Register_ITEXApplyRMSPropComputeRMSOp();
+  Register_ITEXApplyRMSPropVarUpdateOp();
+  Register_ITEXFusedApplyAdamOp();
+  Register_ITEXFusedApplyAdamWithWeightDecayOp();
+  Register_ITEXResourceApplyAdamWithWeightDecayOp();
+  Register_ITEXFusedApplyMomentumOp();
+  Register_ITEXFusedResourceApplyAdamOp();
+  Register_ITEXFusedResourceApplyAdamWithWeightDecayOp();
+  Register_ITEXFusedResourceApplyMomentumOp();
 
   Register_QuantizedConv2DV2Op();
   Register_QuantizedConv3DV2Op();
   Register_QuantizedDepthwiseConv2DV2Op();
 
   // Custom kernels
-  Register_Conv2DBackpropFilterWithBiasOp();
-  Register_Conv2DBackpropInputWithSliceOp();
-  Register_Conv3DBackpropFilterWithBiasOp();
-  Register_Conv3DBackpropInputV2WithSliceOp();
-  Register_FusedBatchNormExGradOp();
-  Register_FusedBatchMatMulV2Op();
-  Register_FusedConv2DWithSumOp();
-  Register_FusedDequantizeWithReshapeOp();
   Register_ITEXFusedAddV2WithSoftmaxOp();
-  Register_FusedMatMulGradOp();
-  Register_FusedMatMulWithSumOp();
-  Register_FusedInstanceNormOp();
-  Register_InstanceNormOp();
+  Register_ITEXTensorArray();
+  Register_ITEXTensorArrayGrad();
+  Register_ITEXTensorArrayGradWithShape();
+  Register_ITEXTensorArrayWrite();
+  Register_ITEXTensorArrayRead();
+  Register_ITEXTensorArrayGather();
+  Register_ITEXTensorArrayPack();
+  Register_ITEXTensorArrayUnpack();
+  Register_ITEXTensorArrayScatter();
+  Register_ITEXTensorArrayConcat();
+  Register_ITEXTensorArraySplit();
+  Register_ITEXTensorArraySize();
+  Register_ITEXTensorArrayClose();
   Register_GeluOp();
   Register_GeluGradOp();
+  Register_ITEXConv2DBackpropFilterWithBiasOp();
+  Register_ITEXConv2DBackpropInputWithSliceOp();
+  Register_ITEXConv3DBackpropFilterWithBiasOp();
+  Register_ITEXConv3DBackpropInputV2WithSliceOp();
+  Register_ITEXEqualWithCastOp();
+  Register_ITEXFusedAddNOp();
+  Register_ITEXFusedBatchNormGradExOp();
+  Register_ITEXFusedBatchMatMulV2Op();
   Register_ITEXFusedConv2DOp();
+  Register_ITEXFusedConv2DWithSumOp();
   Register_ITEXFusedConv3DOp();
   Register_ITEXFusedDepthwiseConv2dNativeOp();
+  Register_ITEXFusedDequantizeWithReshapeOp();
+  Register_ITEXFusedInstanceNormOp();
   Register_ITEXFusedMatMulOp();
+  Register_ITEXFusedMatMulGradOp();
+  Register_ITEXFusedMatMulWithSumOp();
   Register_ITEXFusedQuantizeV2WithQuantizedConv2DOp();
+  Register_ITEXFusedQuantizedConv2DWithDequantizeOp();
+  Register_ITEXFusedQuantizedConv2DWithCastOp();
+  Register_ITEXFusedRandomOP();
   Register_ITEXFusedBinaryOp();
+  Register_ITEXGreaterEqualWithCastOp();
+  Register_ITEXGreaterWithCastOp();
+  Register_ITEXInstanceNormOp();
+  Register_ITEXLessEqualWithCastOp();
+  Register_ITEXLessWithCastOp();
+  Register_ITEXMishOp();
+  Register_ITEXNotEqualWithCastOp();
+  Register_ITEXPadWithConv2DOp();
+  Register_ITEXPadWithConv3DOp();
+  Register_ITEXPadWithFusedConv2DOp();
+  Register_ITEXPadWithFusedConv3DOp();
   Register_ITEXRandomUniformOp();
+  Register_ITEXSwishOp();
   Register_LayerNormOp();
   Register_LayerNormGradOp();
   Register_ITEXRnnOp();
   Register_ITEXRnnGradOp();
   Register_OneDnnGraphOp();
-  Register_PadWithConv2DOp();
-  Register_PadWithConv3DOp();
-  Register_PadWithFusedConv2DOp();
-  Register_PadWithFusedConv3DOp();
-  RegisterRMSPropComputeRMSOp();
-  RegisterRMSPropVarUpdateOp();
-  Register_SwishOp();
 
   // Native kernels
   Register_ITEXAddNOp();
@@ -130,42 +156,34 @@ void RegisterOps() {
   Register_ITEXBatchMatMulV2Op();
   Register_ITEXCastOp();
   Register_ITEXConv2DBackpropFilterOp();
-  Register_ITEXConv2DBackpropFilterWithBiasOp();
   Register_ITEXConv2DBackpropInputOp();
-  Register_ITEXConv2DBackpropInputWithSliceOp();
   Register_ITEXConv2DOp();
   Register_ITEXConv3DBackpropFilterV2Op();
-  Register_ITEXConv3DBackpropFilterWithBiasOp();
   Register_ITEXConv3DBackpropInputOp();
   Register_ITEXConv3DBackpropInputV2Op();
-  Register_ITEXConv3DBackpropInputV2WithSliceOp();
   Register_ITEXConv3DOp();
   Register_ITEXDepthwiseConv2dNativeBackpropFilterOp();
   Register_ITEXDepthwiseConv2dNativeBackpropInputOp();
   Register_ITEXDepthwiseConv2dNativeOp();
   Register_ITEXDequantizeOp();
+  Register_ITEXEinsum();
   Register_ITEXEluGradOp();
   Register_ITEXEluOp();
   Register_ITEXForwardAUGRUOp();
   Register_ITEXForwardGRUOp();
-  Register_ITEXFusedBatchMatMulV2Op();
   Register_ITEXFusedBatchNormExOp();
-  Register_ITEXFusedBatchNormExGradOp();
   Register_ITEXFusedBatchNormGradOp();
   Register_ITEXFusedBatchNormGradV2Op();
   Register_ITEXFusedBatchNormGradV3Op();
   Register_ITEXFusedBatchNormOp();
   Register_ITEXFusedBatchNormV2Op();
   Register_ITEXFusedBatchNormV3Op();
-  Register_ITEXFusedConv2DWithSumOp();
-  Register_ITEXFusedMatMulWithSumOp();
-  Register_ITEXFusedInstanceNormOp();
   Register_ITEXGeluGradOp();
   Register_ITEXGeluOp();
   Register_ITEXGRUOp();
-  Register_ITEXInstanceNormOp();
   Register_ITEXLayerNormOp();
   Register_ITEXLayerNormGradOp();
+  Register_ITEXGroupNormOp();
   Register_ITEXLeakyReluGradOp();
   Register_ITEXLeakyReluOp();
   Register_ITEXMatMul();
@@ -173,11 +191,9 @@ void RegisterOps() {
   Register_ITEXMaxPool3DOp();
   Register_ITEXMaxPoolGradOp();
   Register_ITEXMaxPoolOp();
+  Register_ITEXMaxPoolGradV2Op();
+  Register_ITEXMaxPoolV2Op();
   Register_ITEXMklLayerNormOp();
-  Register_ITEXPadWithConv2DOp();
-  Register_ITEXPadWithConv3DOp();
-  Register_ITEXPadWithFusedConv2DOp();
-  Register_ITEXPadWithFusedConv3DOp();
   Register_ITEXPadWithConv2DBackpropFilterOp();
   Register_ITEXPadWithConv2DBackpropFilterWithBiasOp();
   Register_ITEXPadWithConv3DBackpropFilterV2Op();
@@ -195,6 +211,7 @@ void RegisterOps() {
   Register_ITEXQuantizedMatMulWithBiasAndReluAndRequantizeOp();
   Register_ITEXQuantizedMatMulWithBiasAndRequantizeOp();
   Register_ITEXQuantizedMaxPoolOp();
+  Register_ITEXQuantizedMaxPool3DOp();
   Register_ITEXQuantizedReshapeOp();
   Register_ITEXQuantizedTransposeOp();
   Register_ITEXQuantizedConv2DOp();
@@ -212,14 +229,11 @@ void RegisterOps() {
   Register_ITEXQuantizedDepthwiseConv2DOp();
   Register_ITEXQuantizedDepthwiseConv2DWithBiasAndReluAndRequantizeOp();
   Register_ITEXRelu6GradOp();
-  Register_ITEXRelu6Op();
   Register_ITEXReluGradOp();
-  Register_ITEXReluOp();
   Register_ITEXResizeBilinearOp();
   Register_ITEXResizeBilinearGradOp();
   Register_ITEXSliceOp();
   Register_ITEXSoftmaxOp();
-  Register_ITEXSwishOp();
   Register_ITEXTransposeOp();
 
   Register_ITEXQuantizedConcatV2Op();
@@ -235,12 +249,15 @@ void RegisterOps() {
   Register_ITEXFusedAccMatMulWithSumOp();
 
   // OneDnn kernels
+  Register_OneDnnAddOp();
   Register_OneDnnAddNOp();
+  Register_OneDnnAddV2Op();
   Register_OneDnnAvgPoolOp();
   Register_OneDnnAvgPoolGradOp();
   Register_OneDnnAvgPool3DOp();
   Register_OneDnnAvgPool3DGradOp();
   Register_OneDnnBatchMatMulV2Op();
+  Register_OneDnnCastOp();
   Register_OneDnnConcatOp();
   Register_OneDnnConcatV2Op();
   Register_OneDnnQuantizedConcatV2Op();
@@ -267,7 +284,7 @@ void RegisterOps() {
   Register_OneDnnFusedBatchNormGradOp();
   Register_OneDnnFusedBatchNormGradV2Op();
   Register_OneDnnFusedBatchNormGradV3Op();
-  Register_OneDnnFusedBatchNormExGradOp();
+  Register_OneDnnFusedBatchNormGradExOp();
   Register_OneDnnFusedConv2DOp();
   Register_OneDnnFusedConv3DOp();
   Register_OneDnnFusedDepthwiseConv2dNativeOp();
@@ -287,7 +304,9 @@ void RegisterOps() {
   Register_OneDnnMaxPoolGradOp();
   Register_OneDnnMaxPool3DOp();
   Register_OneDnnMaxPool3DGradOp();
+  Register_OneDnnMishOp();
   Register_OneDnnMklLayerNormOp();
+  Register_OneDnnMulOp();
   Register_OneDnnQuantizedBatchMatMulV2AndDequantizeOp();
   Register_OneDnnQuantizedConv2DOp();
   Register_OneDnnQuantizedConv2DAndRequantizeOp();
@@ -317,6 +336,8 @@ void RegisterOps() {
   Register_OneDnnQuantizedTransposeOp();
   Register_OneDnnQuantizeV2Op();
   Register_OneDnnQuantizeV2WithQuantizedConv2DOp();
+  Register_OneDnnQuantizedConv2DWithDequantizeOp();
+  Register_OneDnnQuantizedConv2DWithCastOp();
   Register_OneDnnPadWithConv2DOp();
   Register_OneDnnPadWithConv3DOp();
   Register_OneDnnPadWithFusedConv2DOp();
@@ -331,24 +352,20 @@ void RegisterOps() {
   Register_OneDnnShapeOp();
   Register_OneDnnSliceOp();
   Register_OneDnnSoftmaxOp();
+  Register_OneDnnSubOp();
   Register_OneDnnSwishOp();
   Register_OneDnnToTfOp();
   Register_OneDnnTransposeOp();
 
-  // Math ops
-  Register_EqualWithCastOp();
-  Register_NotEqualWithCastOp();
-  Register_GreaterWithCastOp();
-  Register_GreaterEqualWithCastOp();
-  Register_LessWithCastOp();
-  Register_LessEqualWithCastOp();
-  Register_FusedAddNOp();
-  Register_FusedRandomOP();
-
-  // OneDnn math kernels
-  Register_OneDnnAddOp();
-  Register_OneDnnAddV2Op();
-  Register_OneDnnCastOp();
-  Register_OneDnnMulOp();
-  Register_OneDnnSubOp();
+  // FP8 kernels
+  Register_Fp8QuantizeOp();
+  Register_Fp8DequantizeOp();
+  Register_Fp8LayerNormOp();
+  Register_Fp8LayerNormGradOp();
+  Register_Fp8GeluOp();
+  Register_Fp8QuantizeDbiasOp();
+  Register_Fp8QuantizeDbiasDgeluOp();
+  Register_Fp8MatmulOp();
+  Register_Fp8ScaledDotProductAttentionOp();
+  Register_Fp8ScaledDotProductAttentionGradOp();
 }

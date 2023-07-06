@@ -28,8 +28,8 @@ REGISTER4(BinaryOp, GPU, "Equal", functor::equal_to, float, Eigen::half,
 REGISTER2(BinaryOp, GPU, "Equal", functor::equal_to, double, complex128);
 #endif  // ITEX_ENABLE_DOUBLE
 
-REGISTER3(BinaryOp, GPU, "_EqualWithCast", functor::equal_to_with_cast, float,
-          Eigen::half, Eigen::bfloat16);
+REGISTER3(BinaryOp, GPU, "_ITEXEqualWithCast", functor::equal_to_with_cast,
+          float, Eigen::half, Eigen::bfloat16);
 
 REGISTER_KERNEL_BUILDER(Name("Equal")
                             .Device(DEVICE_GPU)

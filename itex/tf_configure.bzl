@@ -2,6 +2,7 @@
 
 _TF_HEADER_DIR = "TF_HEADER_DIR"
 _TF_SHARED_LIBRARY_DIR = "TF_SHARED_LIBRARY_DIR"
+_JAX_SHARED_LIBRARY_DIR = "JAX_SHARED_LIBRARY_DIR"
 
 def _tpl(repository_ctx, tpl, substitutions = {}, out = None):
     if not out:
@@ -88,6 +89,12 @@ def _read_dir(repository_ctx, src_dir):
         )
         result = find_result.stdout
     return result
+
+def _dir_exists(repository_ctx, src_dir):
+    result = repository_ctx.execute(
+        ["ls", src_dir],
+    )
+    return result.stdout
 
 def _genrule(genrule_name, command, outs):
     """Returns a string with a genrule.
@@ -191,37 +198,65 @@ def _symlink_genrule_for_dir(
 
 def _tf_pip_impl(repository_ctx):
     tf_header_dir = repository_ctx.os.environ[_TF_HEADER_DIR]
-    tf_header_rule = _symlink_genrule_for_dir(
-        repository_ctx,
-        tf_header_dir,
-        "include",
-        "tf_header_include",
-        tf_pip_dir_rename_pair = ["tensorflow_core", "tensorflow"],
-    )
+    tf_header_rule = ""
 
-    tf_shared_library_dir = repository_ctx.os.environ[_TF_SHARED_LIBRARY_DIR]
-    tf_shared_library_name = "_pywrap_tensorflow_internal.so"
-    tf_shared_library_path = "%s/python/%s" % (
-        tf_shared_library_dir,
-        tf_shared_library_name,
-    )
+    # Empty name string is not allowed, so we set "dummy" here. It won't be used.
+    tf_shared_library_name = "dummy"
+    tf_shared_library_rule = ""
+    if _dir_exists(repository_ctx, tf_header_dir):
+        tf_header_rule = _symlink_genrule_for_dir(
+            repository_ctx,
+            tf_header_dir,
+            "include",
+            "tf_header_include",
+            tf_pip_dir_rename_pair = ["tensorflow_core", "tensorflow"],
+        )
 
-    """A symbol rename of `_pywrap_tensorflow_internal.so` to link it with
-       bazel's rule. It will be replaced to `libtensorflow_framework.so`
-       in future after Google moving C API.
-    """
-    tf_shared_library_rule = _symlink_genrule_for_dir(
-        repository_ctx,
-        None,
-        "",
-        tf_shared_library_name,
-        [tf_shared_library_path],
-        ["lib_tensorflow_internal.so"],
-    )
+        tf_shared_library_dir = repository_ctx.os.environ[_TF_SHARED_LIBRARY_DIR]
+        tf_shared_library_name = "_pywrap_tensorflow_internal.so"
+        tf_shared_library_path = "%s/python/%s" % (
+            tf_shared_library_dir,
+            tf_shared_library_name,
+        )
+
+        """A symbol rename of `_pywrap_tensorflow_internal.so` to link it with
+           bazel's rule. It will be replaced to `libtensorflow_framework.so`
+           in future after Google moving C API.
+        """
+        tf_shared_library_rule = _symlink_genrule_for_dir(
+            repository_ctx,
+            None,
+            "",
+            tf_shared_library_name,
+            [tf_shared_library_path],
+            ["lib_tensorflow_internal.so"],
+        )
+
+    jax_shared_library_dir = "dummy"
+    if repository_ctx.os.environ.get(_JAX_SHARED_LIBRARY_DIR) != None:
+        jax_shared_library_dir = repository_ctx.os.environ[_JAX_SHARED_LIBRARY_DIR]
+    jax_shared_library_name = "dummy"
+    jax_shared_library_rule = ""
+    if _dir_exists(repository_ctx, jax_shared_library_dir):
+        jax_shared_library_name = "xla_extension.so"
+        jax_shared_library_path = "%s/%s" % (
+            jax_shared_library_dir,
+            jax_shared_library_name,
+        )
+        jax_shared_library_rule = _symlink_genrule_for_dir(
+            repository_ctx,
+            None,
+            "",
+            jax_shared_library_name,
+            [jax_shared_library_path],
+            [jax_shared_library_name],
+        )
     _tpl(repository_ctx, "BUILD", {
         "%{TF_HEADER_GENRULE}": tf_header_rule,
         "%{TF_SHARED_LIBRARY_GENRULE}": tf_shared_library_rule,
         "%{TF_SHARED_LIBRARY_NAME}": tf_shared_library_name,
+        "%{JAX_SHARED_LIBRARY_GENRULE}": jax_shared_library_rule,
+        "%{JAX_SHARED_LIBRARY_NAME}": jax_shared_library_name,
     })
 
 tf_configure = repository_rule(

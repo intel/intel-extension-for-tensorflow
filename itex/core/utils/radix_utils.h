@@ -16,9 +16,10 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_RADIX_UTILS_H_
 #define ITEX_CORE_UTILS_RADIX_UTILS_H_
 
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/types.h"
 // ------------------------------------------------------------------
-
+namespace itex {
 // Type selection
 template <bool IF, typename ThenType, typename ElseType>
 struct If {
@@ -28,13 +29,6 @@ struct If {
 template <typename ThenType, typename ElseType>
 struct If<false, ThenType, ElseType> {
   using Type = ElseType;
-};
-
-// Allows for the treatment of an integral constant
-// as a type at compile-time
-template <int VAL>
-struct Int2Type {
-  enum { VALUE = VAL };
 };
 
 // Base type for local memory management
@@ -189,4 +183,5 @@ class RadixExtractor {
   const uint32_t begin_bit;
   const uint32_t bit_mask;
 };
+}  // namespace itex
 #endif  // ITEX_CORE_UTILS_RADIX_UTILS_H_

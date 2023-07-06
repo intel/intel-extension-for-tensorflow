@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/nextafter_op.h"
+
 #include "itex/core/kernels/common/cwise_ops_common.h"
 
 namespace itex {

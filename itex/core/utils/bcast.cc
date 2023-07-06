@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/utils/bcast.h"
+
 #include "itex/core/utils/logging.h"
 
 namespace itex {

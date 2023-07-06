@@ -166,12 +166,17 @@ class OneDnnLayerNormOp : public OpKernel {
       auto flags = dnnl::normalization_flags::use_scale |
                    dnnl::normalization_flags::use_shift;
 
-      dnnl::layer_normalization_forward::desc ln_fwd_desc(propagation, src_md,
-                                                          epsilon_, flags);
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::layer_normalization_forward::primitive_desc ln_fwd_pd(
+          onednn_engine, propagation, src_md, src_md, epsilon_, flags, attr);
+#else
+      dnnl::layer_normalization_forward::desc ln_fwd_desc(propagation, src_md,
+                                                          epsilon_, flags);
       dnnl::layer_normalization_forward::primitive_desc ln_fwd_pd(
           ln_fwd_desc, attr, onednn_engine);
+#endif
       dnnl::layer_normalization_forward ln_fwd_primitive(ln_fwd_pd);
 
       // Allocate output dst tensor.
@@ -481,16 +486,24 @@ class OneDnnLayerNormGradOp : public OpKernel {
       auto propagation_bwd = dnnl::prop_kind::backward;
       auto flags = dnnl::normalization_flags::use_scale |
                    dnnl::normalization_flags::use_shift;
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::layer_normalization_forward::primitive_desc ln_fwd_pd(
+          onednn_engine, propagation_fwd, src_md, src_md, epsilon_, flags);
+      dnnl::layer_normalization_backward::primitive_desc ln_bwd_pd(
+          onednn_engine, propagation_bwd, diff_dst_md_any, diff_dst_md_any,
+          src_md, epsilon_, flags, ln_fwd_pd, attr);
+#else
       dnnl::layer_normalization_forward::desc ln_fwd_desc(
           propagation_fwd, src_md, epsilon_, flags);
       dnnl::layer_normalization_forward::primitive_desc ln_fwd_pd(
           ln_fwd_desc, onednn_engine);
       dnnl::layer_normalization_backward::desc ln_bwd_desc(
           propagation_bwd, diff_dst_md_any, src_md, epsilon_, flags);
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       dnnl::layer_normalization_backward::primitive_desc ln_bwd_pd(
           ln_bwd_desc, attr, onednn_engine, ln_fwd_pd);
+#endif
       dnnl::layer_normalization_backward ln_bwd_primitive(ln_bwd_pd);
 
       bool set_onednn_tensor = true;
@@ -713,6 +726,7 @@ REGISTER_MKLLAYERNORM_GPU(Eigen::half);
                           OneDnnLayerNormOp<CPUDevice, T, U>);
 REGISTER_LAYERNORM_CPU(float, float);
 REGISTER_LAYERNORM_CPU(Eigen::bfloat16, float);
+REGISTER_LAYERNORM_CPU(Eigen::half, float);
 #undef REGISTER_LAYERNORM_CPU
 
 #define REGISTER_LAYERNORM_GRAD_CPU(T, U)              \
@@ -731,6 +745,7 @@ REGISTER_LAYERNORM_GRAD_CPU(Eigen::bfloat16, float);
       OneDnnLayerNormOp<CPUDevice, T, T, true>);
 REGISTER_MKLLAYERNORM_CPU(float);
 REGISTER_MKLLAYERNORM_CPU(Eigen::bfloat16);
+REGISTER_MKLLAYERNORM_CPU(Eigen::half);
 #undef REGISTER_MKLLAYERNORM_CPU
 
 #endif

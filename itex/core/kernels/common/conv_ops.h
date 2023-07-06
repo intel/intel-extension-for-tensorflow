@@ -17,10 +17,12 @@ limitations under the License.
 #define ITEX_CORE_KERNELS_COMMON_CONV_OPS_H_
 
 #include <limits>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/common_shape_fns.h"
 #include "itex/core/utils/errors.h"
@@ -31,14 +33,15 @@ limitations under the License.
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/padding.h"
 #include "itex/core/utils/tensor_format.h"
-
 namespace itex {
 
 using dnnl::convolution_forward;
 using dnnl::memory;
 using dnnl::primitive;
 using dnnl::prop_kind;
+#ifndef ITEX_ONEDNN_3_0
 using ConvFwdDesc = dnnl::convolution_forward::desc;
+#endif
 using ConvFwdPd = dnnl::convolution_forward::primitive_desc;
 
 #define DNNL_SIZE_DTYPE int64_t
@@ -53,12 +56,14 @@ class OneDnnConvUtil {
   std::vector<int64_t> explicit_paddings_;
   bool is_conv2d_;
   bool is_depthwise_;
+  bool is_grouped_convolution_;
 
  public:
   OneDnnConvUtil(OpKernelContext* context, TensorFormat data_format,
                  std::vector<int32_t> strides, std::vector<int32_t> dilations,
                  Padding padding, std::vector<int64_t> explicit_paddings,
-                 bool is_conv2d, bool is_depthwise)
+                 bool is_conv2d, bool is_depthwise,
+                 bool is_grouped_convolution = false)
       : context_(context),
         data_format_(data_format),
         strides_(strides),
@@ -66,7 +71,8 @@ class OneDnnConvUtil {
         padding_(padding),
         explicit_paddings_(explicit_paddings),
         is_conv2d_(is_conv2d),
-        is_depthwise_(is_depthwise) {}
+        is_depthwise_(is_depthwise),
+        is_grouped_convolution_(is_grouped_convolution) {}
 
   virtual ~OneDnnConvUtil() { context_ = nullptr; }
 
@@ -202,11 +208,6 @@ class OneDnnConvUtil {
     int input_depth = GetTensorDim(input_shape, data_format_, 'C');
 
     if (is_conv2d_) {  // Conv2D
-      OP_REQUIRES(context_, input_depth == filter_shape.dim_size(2),
-                  errors::InvalidArgument(
-                      "input and filter must have the same depth: ",
-                      input_depth, " vs ", filter_shape.dim_size(2)));
-
       // TF filter is always in (rows, cols, in_depth, out_depth) order.
       int filter_rows =
           static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_H));
@@ -216,6 +217,12 @@ class OneDnnConvUtil {
           static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_I));
       int filter_out_depth =
           static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_O));
+      OP_REQUIRES(context_, input_depth % filter_in_depth == 0,
+                  errors::InvalidArgument(
+                      "input depth must be evenly divisible by filter depth: ",
+                      input_depth, " vs ", filter_in_depth));
+      is_grouped_convolution_ = filter_in_depth != input_depth;
+      int group_count = input_depth / filter_in_depth;
       // OneDNN always needs filter in OIHW format for regular convolutions
       // and GOIHW for grouped/depthwise convolutions,
       // OIHW = (out_depth, in_depth, rows, cols)
@@ -226,6 +233,16 @@ class OneDnnConvUtil {
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_G] = filter_in_depth;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_O] = filter_out_depth;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_I] = 1;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_H] = filter_rows;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_W] = filter_cols;
+        *filter_dims = filter_dims_tmp;
+      } else if (is_grouped_convolution_) {
+        // TODO(intel-tf): Directly set filter_dims. Same for other places.
+        std::vector<DNNL_SIZE_DTYPE> filter_dims_tmp(5, -1);
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_G] = group_count;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_O] =
+            filter_out_depth / group_count;
+        filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_I] = filter_in_depth;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_H] = filter_rows;
         filter_dims_tmp[FilterGroupDims::GROUP_FILTER_DIM_W] = filter_cols;
         *filter_dims = filter_dims_tmp;
@@ -371,6 +388,8 @@ class OneDnnConvUtil {
     if (is_depthwise_) {
       out_depth = (filter_shape.dim_size(TF_2DFILTER_DIM_I) *
                    filter_shape.dim_size(TF_2DFILTER_DIM_O));
+    } else if (is_grouped_convolution_) {
+      out_depth = filter_shape.dim_size(TF_2DFILTER_DIM_O);
     } else {
       out_depth = filter_shape.dim_size(
           is_conv2d_ ? static_cast<int>(TF_2DFILTER_DIM_O)
@@ -446,6 +465,17 @@ class OneDnnConvUtil {
                               {{out_planes, out_rows, out_cols}}, out_depth);
     *output_dims_tf_order = TFShapeToOneDnnDims(out_shape);
 
+    if (is_grouped_convolution_) {
+      int input_depth = GetTensorDim(input_shape, data_format_, 'C');
+      int filter_in_depth =
+          static_cast<int>(filter_shape.dim_size(TF_2DFILTER_DIM_I));
+      int num_groups = input_depth / filter_in_depth;
+      OP_REQUIRES(
+          context_, out_depth % num_groups == 0 && out_depth >= num_groups,
+          errors::InvalidArgument(
+              "output depth must be evenly divisible by number of groups: ",
+              out_depth, " vs ", num_groups));
+    }
     if (is_conv2d_) {
       // For Conv2D, OneDNN always needs output in NCHW format.
       std::vector<DNNL_SIZE_DTYPE> output_dims_onednn_tmp(4, -1);
@@ -484,7 +514,7 @@ class OneDnnConvUtil {
       dnnl::memory::dims* strides, dnnl::memory::dims* dilations,
       dnnl::memory::dims* output_dims_tf_order,
       dnnl::memory::dims* output_dims_onednn, dnnl::memory::dims* pad_left_dims,
-      dnnl::memory::dims* pad_right_dims) {
+      dnnl::memory::dims* pad_right_dims, bool* is_grouped_convolution) {
     GetInputDimension(input_shape, input_dims);
     GetFilterDimension(input_shape, filter_shape, filter_dims);
     GetStrideDimension(strides);
@@ -492,6 +522,7 @@ class OneDnnConvUtil {
     GetOutputAndPadDimension(input_shape, filter_shape, *strides, *dilations,
                              output_dims_tf_order, output_dims_onednn,
                              pad_left_dims, pad_right_dims);
+    *is_grouped_convolution = is_grouped_convolution_;
   }
 
   // Helper function for Pad fusion. It will set fused Pad tensor to
@@ -712,6 +743,14 @@ class ConvOpBase : public OpKernel {
       bias_mem_.set_data_handle(bias_data);
     }
 
+    // Reallocate scratchpad memory.
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
+
     Tensor dst_tensor_opt;
     AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_, dst_tensor_shape_,
                          &dst_tensor_, &dst_tensor_opt);
@@ -729,14 +768,19 @@ class ConvOpBase : public OpKernel {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (is_filter_zero_ || is_input_zero_) return;
+    if (is_filter_zero_ || is_input_zero_) {
+      scratchpad_tensor_.reset();
+      return;
+    }
 
     if (!is_format_reordered_) {
       fwd_primitive_.execute(onednn_stream_, fwd_primitives_args_);
     }
+    scratchpad_tensor_.reset();
   }
 
   void Init(OpKernelContext* context) {
@@ -782,10 +826,11 @@ class ConvOpBase : public OpKernel {
         conv_util.InitPadWithFusion(kPadIndex, true);
       }
 
+      bool is_grouped_convolution;
       conv_util.InitFwdDimensions(
           src_tensor_shape, filter_tensor_shape, &src_dims, &filter_dims,
           &stride_dims, &dilation_dims, &dst_dims_tf, &dst_dims_onednn_,
-          &pad_left_dims, &pad_right_dims);
+          &pad_left_dims, &pad_right_dims, &is_grouped_convolution);
 
       // OneDNN dilations start from 0.
       for (int i = 0; i < dilation_dims.size(); ++i) {
@@ -811,39 +856,61 @@ class ConvOpBase : public OpKernel {
           OneDnnTensorFormatToTag(data_format_onednn_);
       memory::desc src_md =
           memory::desc({src_dims}, OneDnnType<Tinput>(), data_layout);
-      auto filter_format = is_conv2d_
-                               ? (is_depthwise ? memory::format_tag::hwigo
-                                               : memory::format_tag::hwio)
-                               : memory::format_tag::dhwio;
+      auto filter_format = is_conv2d_ ? (is_depthwise || is_grouped_convolution
+                                             ? memory::format_tag::hwigo
+                                             : memory::format_tag::hwio)
+                                      : memory::format_tag::dhwio;
       memory::desc filter_md =
           memory::desc({filter_dims}, OneDnnType<Tfilter>(), filter_format);
       memory::desc filter_md_prefer = memory::desc(
           {filter_dims}, OneDnnType<Tfilter>(), memory::format_tag::any);
-      dst_md_ =
-          memory::desc({dst_dims_onednn_}, OneDnnType<Tbias>(), data_layout);
       // the convolution primitive is optimized for NHWC
       memory::format_tag tag_opt =
           is_conv2d_ ? memory::format_tag::nhwc : memory::format_tag::ndhwc;
       memory::desc src_md_opt =
           memory::desc({src_dims}, OneDnnType<Tinput>(), tag_opt);
-      memory::desc dst_md_opt;
 
       // TODO(itex): redesign the code for Tsummand
       // The reason for using Tsummand is to deal with the situation for int8
       // fusion conv + bias + add + relu fusion. Two inputs for add op may be
       // respectively quint8 and qint8.
-
       dst_md_ =
           memory::desc({dst_dims_onednn_}, OneDnnType<Tsummand>(), data_layout);
-      dst_md_opt =
+      auto dst_md_opt =
           memory::desc({dst_dims_onednn_}, OneDnnType<Tsummand>(), tag_opt);
+      // Handle INT8 fusion, where Tsummand s8 and Toutput u8
+      add_dst_md_ =
+          memory::desc({dst_dims_onednn_}, OneDnnType<Toutput>(), tag_opt);
 
       this->ExtendInt8PostOps(context);
+      // Set post op attribution.
+      dnnl::primitive_attr post_ops_attr;
+      post_op_util_.SetPostOpAttr(&post_ops_attr);
+      post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+      if (std::is_same<Tinput, float>::value) {
+        post_ops_attr.set_fpmath_mode(fp32_math_mode_);
+      }
+#ifdef ITEX_ONEDNN_3_0
+      if (this->post_op_util_.HasOutputScales() &&
+          post_op_util_.GetOutputScale().size() > 1 && is_depthwise) {
+        // For depthwise convolution mask should be 1<<0 + 1<<1 in onednn3.0
+        post_ops_attr.set_scales_mask(DNNL_ARG_WEIGHTS, 3);
+      }
+#endif
 
+#ifndef ITEX_ONEDNN_3_0
       ConvFwdDesc fwd_desc =
           ConvFwdDesc(prop_kind::forward, dnnl::algorithm::convolution_direct,
                       src_md_opt, filter_md_prefer, dst_md_opt, stride_dims,
                       dilation_dims, pad_left_dims, pad_right_dims);
+      fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, onednn_engine_);
+#else
+      fwd_pd_ =
+          ConvFwdPd(onednn_engine_, prop_kind::forward,
+                    dnnl::algorithm::convolution_direct, src_md_opt,
+                    filter_md_prefer, dst_md_opt, stride_dims, dilation_dims,
+                    pad_left_dims, pad_right_dims, post_ops_attr);
+#endif
 
       if (post_op_util_.HasBias()) {
         const Tensor& bias_tensor = context->input(kBiasIndex_);
@@ -854,23 +921,38 @@ class ConvOpBase : public OpKernel {
         // GetBiasHandle is needed for INT8 kernels, where bias scaling is
         // required.
         Tbias* bias_data = this->GetBiasHandle(context, bias_tensor);
+
+#ifdef ITEX_ONEDNN_3_0
+        // OneDNN 3.0 requires float Bias for bias in INT8 model, will have an
+        // internal conversion when bias is INT8.
+        if (std::is_same<Tbias, qint32>::value &&
+            !std::is_same<Toutput, qint32>::value) {
+          bias_md = memory::desc(bias_dims, OneDnnType<float>(),
+                                 memory::format_tag::x);
+          bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_,
+                                       static_cast<void*>(bias_data));
+        } else {
+          bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_, bias_data);
+        }
+#else
         bias_mem_ = CreateDnnlMemory(bias_md, onednn_engine_, bias_data);
+#endif
 
         fwd_primitives_args_.insert({DNNL_ARG_BIAS, bias_mem_});
+#ifndef ITEX_ONEDNN_3_0
         fwd_desc = ConvFwdDesc(
             prop_kind::forward, dnnl::algorithm::convolution_direct, src_md_opt,
             filter_md_prefer, bias_md, dst_md_opt, stride_dims, dilation_dims,
             pad_left_dims, pad_right_dims);
+        fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, onednn_engine_);
+#else
+        fwd_pd_ = ConvFwdPd(onednn_engine_, prop_kind::forward,
+                            dnnl::algorithm::convolution_direct, src_md_opt,
+                            filter_md_prefer, bias_md, dst_md_opt, stride_dims,
+                            dilation_dims, pad_left_dims, pad_right_dims,
+                            post_ops_attr);
+#endif
       }
-
-      // Set post op attribution.
-      dnnl::primitive_attr post_ops_attr;
-      post_op_util_.SetPostOpAttr(&post_ops_attr);
-      post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-      if (std::is_same<Tinput, float>::value) {
-        post_ops_attr.set_fpmath_mode(fp32_math_mode_);
-      }
-      fwd_pd_ = ConvFwdPd(fwd_desc, post_ops_attr, onednn_engine_);
 
       // keep tensor out of if block to avoid of being deallocated
       is_format_reordered_ = data_layout != tag_opt;
@@ -895,15 +977,14 @@ class ConvOpBase : public OpKernel {
 
       AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_,
                            dst_tensor_shape_, &dst_tensor_, &dst_tensor_opt);
-      int64 scratchpad_size =
-          fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<Tinput>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
-                       GetTensorBuffer<Tinput>(&scratchpad_tensor_));
+                       GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
 
       fwd_primitive_ = convolution_forward(fwd_pd_);
 
@@ -958,7 +1039,8 @@ class ConvOpBase : public OpKernel {
             filter_mem_ = CreateDnnlMemory(filter_md_prefer, onednn_engine_,
                                            filter_cached_data);
           }
-        } else {
+        }
+        if (filter_cached_data == nullptr) {
           // allocate temporay tensor for reordering filter
           int64_t reorder_filter_data_size =
               fwd_pd_.weights_desc().get_size() / sizeof(Tfilter);
@@ -984,6 +1066,20 @@ class ConvOpBase : public OpKernel {
       fwd_primitives_args_.insert({DNNL_ARG_WEIGHTS, filter_mem_});
       fwd_primitives_args_.insert({DNNL_ARG_DST, dst_mem_opt_});
       fwd_primitives_args_.insert({DNNL_ARG_SCRATCHPAD, scratchpad_mem_});
+#ifdef ITEX_ONEDNN_3_0
+      if (this->post_op_util_.HasOutputScales()) {
+        float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
+            context, this->post_op_util_.GetOutputScale().data(),
+            this->post_op_util_.GetOutputScale().size());
+        dnnl::memory output_scales_mem(
+            {{static_cast<dnnl_dim_t>(post_op_util_.GetOutputScale().size())},
+             memory::data_type::f32,
+             memory::format_tag::x},
+            onednn_engine_, reinterpret_cast<void*>(output_scale_ptr));
+        fwd_primitives_args_.insert(
+            {DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS, output_scales_mem});
+      }
+#endif
 
       // reorder back if needed
       if (is_format_reordered_) {
@@ -1016,6 +1112,9 @@ class ConvOpBase : public OpKernel {
   WeightCacheManager<Tfilter> weight_cache_manager_;
 
   mutex mu_compute_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 
  protected:
   std::vector<int64_t> explicit_paddings_;
@@ -1048,6 +1147,8 @@ class ConvOpBase : public OpKernel {
   dnnl::memory::dims dst_dims_onednn_;
 
   memory::desc dst_md_;
+  // This one for dnnl sum fusion.
+  memory::desc add_dst_md_;
 
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;
@@ -1066,7 +1167,8 @@ class ConvOpBase : public OpKernel {
   Tensor* dst_tensor_ = nullptr;
   // This one for dnnl primitive weight when weight need reorder.
   Tensor tmp_weight_;
-  Tensor scratchpad_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
 
   bool enable_cache_ = false;
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
@@ -1080,12 +1182,6 @@ class ConvOpBase : public OpKernel {
       const memory::dims& dst_dims_onednn, TensorShape dst_tensor_shape,
       Tensor** dst_tensor, Tensor* dst_tensor_opt) {
     ITEX_DCHECK(dst_tensor);
-    auto dst_md_opt = conv_pd.dst_desc();
-
-    // Handle INT8 fusion, where Tsummand s8 and Toutput u8
-    if (!std::is_same<Tsummand, Toutput>::value) {
-      dst_md_opt.data.data_type = memory::convert_to_c(OneDnnType<Toutput>());
-    }
 
     if (post_op_util_.HasAdd() &&
         (std::is_same<Toutput, float>::value ||
@@ -1122,13 +1218,13 @@ class ConvOpBase : public OpKernel {
             CreateDnnlMemory(this->dst_md_, this->onednn_engine_,
                              GetTensorBuffer<Toutput>(&add_tensor));
         auto fuse_add_dst =
-            CreateDnnlMemory(dst_md_opt, this->onednn_engine_,
+            CreateDnnlMemory(this->add_dst_md_, this->onednn_engine_,
                              GetTensorBuffer<Toutput>(*dst_tensor));
 
+        // Reset data handle to tmp tensor if the dst needs to be reordered.
         if (this->is_format_reordered_) {
-          fuse_add_dst =
-              CreateDnnlMemory(dst_md_opt, this->onednn_engine_,
-                               GetTensorBuffer<Tsummand>(dst_tensor_opt));
+          fuse_add_dst.set_data_handle(
+              GetTensorBuffer<Tsummand>(dst_tensor_opt));
         }
         ReorderMemory(*context, &fuse_add_src, &fuse_add_dst,
                       this->onednn_engine_);
@@ -1137,9 +1233,9 @@ class ConvOpBase : public OpKernel {
       OP_REQUIRES(
           context,
           (!post_op_util_.HasAdd() ||
-           (post_op_util_.HasAdd() && (std::is_same<Toutput, int8>::value ||
-                                       std::is_same<Toutput, uint8>::value ||
-                                       std::is_same<Toutput, int>::value))),
+           (post_op_util_.HasAdd() && (std::is_same<Toutput, qint8>::value ||
+                                       std::is_same<Toutput, quint8>::value ||
+                                       std::is_same<Toutput, qint32>::value))),
           errors::InvalidArgument("ConvOp: Invalid data type in AddN fusion."));
 
       OP_REQUIRES_OK(

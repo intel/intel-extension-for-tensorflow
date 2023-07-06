@@ -22,13 +22,25 @@ REGISTER2(BinaryOp, GPU, "NotEqual", functor::not_equal_to, itex::uint8, bool);
 REGISTER3(BinaryOp, GPU, "NotEqual", functor::not_equal_to, float, Eigen::half,
           Eigen::bfloat16);
 
-REGISTER3(BinaryOp, GPU, "NotEqual", functor::not_equal_to, itex::int32,
-          itex::int64, itex::complex64);
+REGISTER2(BinaryOp, GPU, "NotEqual", functor::not_equal_to, itex::int64,
+          itex::complex64);
+
+// A special GPU kernel for int32.
+// TODO(b/25387198): Also enable int32 in device memory. This kernel
+// registration requires all int32 inputs and outputs to be in host memory.
+REGISTER_KERNEL_BUILDER(Name("NotEqual")
+                            .Device(DEVICE_GPU)
+                            .HostMemory("x")
+                            .HostMemory("y")
+                            .HostMemory("z")
+                            .TypeConstraint<int32>("T"),
+                        BinaryOp<CPUDevice, functor::not_equal_to<int32>>);
+
 #ifdef ITEX_ENABLE_DOUBLE
 REGISTER2(BinaryOp, GPU, "NotEqual", functor::not_equal_to, double,
           itex::complex128);
 #endif  // ITEX_ENABLE_DOUBLE
 
-REGISTER3(BinaryOp, GPU, "_NotEqualWithCast", functor::not_equal_to_with_cast,
-          float, Eigen::half, Eigen::bfloat16);
+REGISTER3(BinaryOp, GPU, "_ITEXNotEqualWithCast",
+          functor::not_equal_to_with_cast, float, Eigen::half, Eigen::bfloat16);
 }  // namespace itex

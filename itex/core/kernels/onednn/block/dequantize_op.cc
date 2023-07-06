@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/no_ops.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
@@ -120,16 +121,43 @@ class OneDnnDequantizeOp : public OpKernel {
       memory::dims dst_dims = src_dims;
       memory::desc dst_md;
       if (src_onednn_shape.IsOneDnnTensor()) {
-        dst_md = src_onednn_shape.GetOneDnnLayout();
-        // There is no API in OneDnn v1.x to construct memory descriptor with
-        // same .data field but different type.
-        dst_md.data.data_type = memory::convert_to_c(OneDnnType<float>());
+        // OneDNN 3.0 doesn't support format::any as dst format in Reorder,
+        // so simply set src TF format to it.
+        // FIXME(itex): Change it to format::any to propagate block format
+        //              to next op once oneDNN has suppported it.
+        dst_md = memory::desc(dst_dims, OneDnnType<float>(),
+                              src_onednn_shape.GetFormatTag());
       } else {
         dst_md = CreatePlainMemDescWithFormatTag<float>(dst_dims);
       }
 
       // Set the scale factor for quantize
       primitive_attr post_ops_attr;
+#ifdef ITEX_ONEDNN_3_0
+      float* scale_factor_ptr = output_scale_cache_.GetCachedPtr(
+          context, scale_factor.data(), num_slices);
+      int32* zero_point_ptr = zero_point_cache_.GetCachedPtr(
+          context, zero_points.data(), num_slices);
+      memory output_scales_mem(
+          {{num_slices}, memory::data_type::f32, memory::format_tag::x},
+          onednn_engine, reinterpret_cast<void*>(scale_factor_ptr));
+      memory zero_points_mem(
+          {{num_slices}, memory::data_type::s32, memory::format_tag::x},
+          onednn_engine, reinterpret_cast<void*>(zero_point_ptr));
+
+      if (num_slices == 1) {
+        post_ops_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+        if (mode_ == QuantizeMode::MIN_FIRST) {
+          post_ops_attr.set_zero_points_mask(DNNL_ARG_SRC, 0);
+        }
+      } else {
+        int mask = static_cast<int>(std::pow(2, axis_));
+        post_ops_attr.set_scales_mask(DNNL_ARG_SRC, mask);
+        if (mode_ == QuantizeMode::MIN_FIRST) {
+          post_ops_attr.set_zero_points_mask(DNNL_ARG_SRC, mask);
+        }
+      }
+#else
       if (num_slices == 1) {
         post_ops_attr.set_output_scales(0, scale_factor);
         if (mode_ == QuantizeMode::MIN_FIRST) {
@@ -142,7 +170,7 @@ class OneDnnDequantizeOp : public OpKernel {
           post_ops_attr.set_zero_points(DNNL_ARG_SRC, mask, zero_points);
         }
       }
-
+#endif
       // Create Reorder primitive
       auto fwd_pd = reorder::primitive_desc(
           onednn_engine, src_md, onednn_engine, dst_md, post_ops_attr);
@@ -170,7 +198,13 @@ class OneDnnDequantizeOp : public OpKernel {
       // Execute Reorder primitive
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
       std::unordered_map<int, memory> fwd_primitive_args = {
-          {DNNL_ARG_SRC, src_mem}, {DNNL_ARG_DST, dst_mem}};
+          {DNNL_ARG_SRC, src_mem},
+          {DNNL_ARG_DST, dst_mem},
+#ifdef ITEX_ONEDNN_3_0
+          {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, output_scales_mem},
+          {DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC, zero_points_mem},
+#endif
+      };
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
@@ -186,6 +220,10 @@ class OneDnnDequantizeOp : public OpKernel {
   QuantizeMode mode_;
   int axis_;
   bool narrow_range_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, int32> zero_point_cache_;
+#endif
 };
 
 #ifndef INTEL_CPU_ONLY

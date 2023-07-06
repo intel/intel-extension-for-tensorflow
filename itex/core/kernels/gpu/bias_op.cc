@@ -33,6 +33,20 @@ namespace itex {
 
 typedef Eigen::GpuDevice GPUDevice;
 
+template <typename Device>
+struct Constants {
+  // Derive Index type. int (32-bit) or long (64-bit) depending on the
+  // compile-time configuration. "float" here is not relevant.
+  typedef TTypes<float>::Tensor::Index Index;
+  Eigen::array<Index, 1> kZero;
+  Eigen::array<Index, 1> kOne;
+
+  Constants() {
+    kZero[0] = 0;
+    kOne[0] = 1;
+  }
+};
+
 void GetBiasValueDims(const Tensor& value_tensor, TensorFormat data_format,
                       int32* batch, int32* height, int32* width, int32* depth,
                       int32* channel) {
@@ -227,6 +241,10 @@ class BiasGradOp : public OpKernel {
 
   void Compute(OpKernelContext* context) override {
     const Tensor& output_backprop = context->input(0);
+    typedef Eigen::internal::SumReducer<T> SumReducer;
+    typedef functor::ReduceFunctor<SumReducer> SumFunctor;
+    SumReducer reducer;
+    Constants<GPUDevice> constants;
 
     OP_REQUIRES(context,
                 TensorShapeUtils::IsMatrixOrHigher(output_backprop.shape()),
@@ -256,36 +274,39 @@ class BiasGradOp : public OpKernel {
       // Added by intel_tf to support NCHW on CPU regardless of oneDNN used or
       // not.
       if (data_format_ == FORMAT_NCHW) {
-        Eigen::DSizes<Eigen::Index, 3> three_dims(batch, channel,
-                                                  height * width * depth);
+        TensorShape three_dims_shape{batch, channel, height * width * depth};
+        TensorShape shuffled_shape{channel, batch, height * width * depth};
+        const int64_t num_reduced = batch * height * width * depth;
 
-#ifdef EIGEN_HAS_INDEX_LIST
-        using idx0 = Eigen::type2index<0>;
-        using idx2 = Eigen::type2index<2>;
-        Eigen::IndexList<idx0, idx2> reduction_axes;
-#else
-        Eigen::array<Eigen::Index, 2> reduction_axes = {0, 2};
-#endif
-        output->template flat<T>().device(context->eigen_gpu_device()) =
-            output_backprop.flat<T>()
-                .template cast<typename AccumulatorType<T>::type>()
-                .reshape(three_dims)
-                .sum(reduction_axes)
-                .template cast<T>();  // End of code by intel_tf.
+        Tensor backprop_reshaped;
+        OP_REQUIRES(
+            context,
+            backprop_reshaped.CopyFrom(output_backprop, three_dims_shape),
+            errors::Internal("Error during reduction copy."));
+        Tensor shuffled;
+        gtl::InlinedVector<int32, 8> perm({1, 0, 2});
+        OP_REQUIRES_OK(context,
+                       context->allocate_temp(DataTypeToEnum<T>::value,
+                                              shuffled_shape, &shuffled));
+        OP_REQUIRES_OK(
+            context, DoTranspose(context->eigen_gpu_device(), backprop_reshaped,
+                                 perm, &shuffled));
+        const Tensor& const_shuffled = shuffled;
+        SumFunctor::Reduce(context, output->flat<T>(),
+                           const_shuffled.shaped<T, 2>({channel, num_reduced}),
+                           constants.kOne, reducer);
       } else {
-        Eigen::DSizes<Eigen::Index, 2> two_dims(batch * height * width * depth,
-                                                channel);
-#ifdef EIGEN_HAS_INDEX_LIST
-        Eigen::IndexList<Eigen::type2index<0> > reduction_axis;
-#else
-        Eigen::array<Eigen::Index, 1> reduction_axis = {0};
-#endif
-        output->template flat<T>().device(context->eigen_gpu_device()) =
-            output_backprop.flat<T>()
-                .template cast<typename AccumulatorType<T>::type>()
-                .reshape(two_dims)
-                .sum(reduction_axis)
-                .template cast<T>();
+        const int64_t num_reduced = batch * height * width * depth;
+        TensorShape two_dims_shape{num_reduced, channel};
+
+        Tensor backprop_reshaped;
+        OP_REQUIRES(context,
+                    backprop_reshaped.CopyFrom(output_backprop, two_dims_shape),
+                    errors::Internal("Error during reduction copy."));
+        SumFunctor::Reduce(
+            context, output->flat<T>(),
+            backprop_reshaped.shaped<T, 2>({num_reduced, channel}),
+            constants.kZero, reducer);
       }
     }
   }

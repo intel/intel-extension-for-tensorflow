@@ -15,6 +15,7 @@
 """Tests for stateless random ops."""
 
 import functools
+import tensorflow as tf
 
 from absl.testing import parameterized
 import numpy as np
@@ -370,7 +371,7 @@ class StatelessOpsTest(test.TestCase, parameterized.TestCase):
     new_seed = stateless.split(seed, 3)
     self.assertEqual(new_seed.shape, [3, 2])
     self.assertDTypeEqual(new_seed.dtype, dtype)
-    self.assertNoEqualPair([seed] + array_ops.unstack(new_seed))
+    self.assertNoEqualPair([seed] + tf.unstack(new_seed))
 
   @parameterized.parameters(['int32', 'int64'])
   @test_util.run_v2_only

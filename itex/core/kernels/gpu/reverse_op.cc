@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/reverse_op.h"
+
 #include "itex/core/utils/bounds_check.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/op_kernel.h"

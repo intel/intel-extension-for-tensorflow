@@ -32,7 +32,7 @@ struct ResizeNearestNeighbor {
 };
 
 template <typename Device, typename T, bool half_pixel_centers,
-          bool align_corners, typename Enable = void>
+          bool align_corners>
 struct ResizeNearestNeighborGrad {
   bool operator()(OpKernelContext* ctx, const Device& d,
                   typename TTypes<T, 4>::ConstTensor input_grad,

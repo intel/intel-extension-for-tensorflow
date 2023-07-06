@@ -1,8 +1,8 @@
-load("//itex:itex.bzl", "tf_copts")
-
 package(
     licenses = ["notice"],  # Apache 2.0
 )
+
+load("//itex:itex.bzl", "cc_library", "tf_copts")
 
 cc_library(
     name = "grappler_item",
@@ -36,19 +36,6 @@ cc_library(
     srcs = ["symbolic_shapes.cc"],
     hdrs = [
         "symbolic_shapes.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//itex/core/utils:common_utils",
-        "@local_config_tf//:tf_header_lib",
-    ],
-)
-
-cc_library(
-    name = "function",
-    srcs = ["function.cc"],
-    hdrs = [
-        "function.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -120,7 +107,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":function",
         ":utils",
         "//itex/core/utils:common_utils",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -146,7 +132,7 @@ cc_library(
     hdrs = ["layout_utils.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core/graph/utils:function",
+        "//itex/core/graph:optimizer_config",
         "//itex/core/graph/utils:graph_view",
         "//itex/core/utils/onednn:onednn_util",
     ],

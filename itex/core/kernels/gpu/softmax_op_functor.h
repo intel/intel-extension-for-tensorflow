@@ -71,8 +71,7 @@ T Log(T x) {
 constexpr int kSubGroupSize = 32;
 
 template <typename T>
-using __shared__ = sycl::accessor<T, 1, sycl::access_mode::read_write,
-                                  sycl::access::target::local>;
+using __shared__ = sycl::local_accessor<T, 1>;
 
 template <typename T>
 struct SumOp {
@@ -108,7 +107,8 @@ struct SoftmaxSubGroupImplKernel {
         device_store(device_store),
         rows(rows),
         cols(cols) {}
-  void operator()(sycl::nd_item<2> id) const {
+  [[intel::reqd_sub_group_size(kSubGroupSize)]] void operator()(
+      sycl::nd_item<2> id) const {
     const int workgroup_idx = id.get_group(1);
     const int localrange_y = id.get_local_range(0);
     const int workitem_y = id.get_local_id(0);
@@ -164,6 +164,7 @@ struct SoftmaxSubGroupImplKernel {
         ComputeType* row_buf = buf[row_id];
 #pragma unroll
         for (int i = 0; i < cols_per_workitem; ++i) {
+          if (row_buf[i] == -Inf<ComputeType>()) break;
           if (algorithm == Algorithm::kSoftmax) {
             row_buf[i] = Exp(row_buf[i] - warp_max[row_id]);
             workitem_sum[row_id] += row_buf[i];
@@ -185,6 +186,7 @@ struct SoftmaxSubGroupImplKernel {
         ComputeType* row_buf = buf[row_id];
 #pragma unroll
         for (int i = 0; i < cols_per_workitem; ++i) {
+          if (row_buf[i] == -Inf<ComputeType>()) break;
           if (algorithm == Algorithm::kSoftmax) {
             row_buf[i] = Div(row_buf[i], warp_sum[row_id]);
           } else if (algorithm == Algorithm::kLogSoftmax) {
@@ -457,7 +459,8 @@ struct SoftmaxWorkgroupSMemImplKernel {
         device_load(device_load),
         device_store(device_store) {}
   void operator()(sycl::nd_item<1> id) const {
-    auto* buf = reinterpret_cast<ComputeType*>(scratch.get_pointer().get());
+    auto* buf = reinterpret_cast<ComputeType*>(
+        ITEXGetLocalAccPointer<unsigned char>(scratch));
     const int local_id = id.get_local_id(0);
     for (int32 row = id.get_group(0); row < rows;
          row += id.get_group_range(0)) {
@@ -549,14 +552,17 @@ inline Status LaunchSoftmaxWorkGroupSMemImpl(const GPUDevice& device,
                                              STORE device_store,
                                              const int32 rows,
                                              const int32 cols) {
-  int max_group_size = 128;
-  sycl::range<1> local_range(max_group_size);
-  sycl::range<1> global_range(rows * max_group_size);
+  int workgroup_size = 128;
+  sycl::range<1> local_range(workgroup_size);
+  int num_wg;
+  GetNumWorkGroups(device.stream()->get_device(), workgroup_size, rows, 32,
+                   &num_wg);
+  sycl::range<1> global_range(num_wg * workgroup_size);
 
   return SoftmaxWorkgroupSMemImpl<LOAD, STORE, ComputeType, pack_size,
                                   algorithm>(device, device_load, device_store,
                                              rows, cols, global_range,
-                                             local_range, max_group_size);
+                                             local_range, workgroup_size);
 }
 
 template <typename LOAD, typename STORE, typename ComputeType,
@@ -690,7 +696,10 @@ inline Status LaunchSoftmaxWorkGroupUncachedImpl(const GPUDevice& device,
           ->get_device()
           .template get_info<sycl::info::device::max_work_group_size>();
   sycl::range<1> local_range(max_group_size);
-  sycl::range<1> global_range(rows * max_group_size);
+  int num_wg;
+  GetNumWorkGroups(device.stream()->get_device(), max_group_size, rows, 32,
+                   &num_wg);
+  sycl::range<1> global_range(num_wg * max_group_size);
 
   return SoftmaxWorkGroupUncachedImpl<LOAD, STORE, ComputeType, pack_size,
                                       algorithm>(

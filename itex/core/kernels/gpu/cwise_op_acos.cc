@@ -18,7 +18,8 @@ limitations under the License.
 #include "itex/core/kernels/common/cwise_ops_common.h"
 
 namespace itex {
-REGISTER(UnaryOp, GPU, "Acos", functor::acos, float);
+REGISTER3(UnaryOp, GPU, "Acos", functor::acos, float, Eigen::half,
+          Eigen::bfloat16);
 #ifdef ITEX_ENABLE_DOUBLE
 REGISTER(UnaryOp, GPU, "Acos", functor::acos, double);
 #endif  // ITEX_ENABLE_DOUBLE

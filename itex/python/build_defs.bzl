@@ -43,10 +43,7 @@ def pybind_extension(
         name = name + ".so",
         copts = copts + PYBIND_COPTS + ["-fvisibility=hidden"],
         features = features + PYBIND_FEATURES,
-        linkopts = ["-Wl,-Bsymbolic"] + linkopts + select({
-            "@local_config_dpcpp//dpcpp:using_dpcpp": _rpath_linkopts("//itex:libitex_gpu.so"),
-            "//conditions:default": _rpath_linkopts("//itex:libitex_cpu.so"),
-        }),
+        linkopts = ["-Wl,-Bsymbolic"] + linkopts + ["-Wl,-rpath,$$ORIGIN/../"],
         linkshared = 1,
         tags = tags + ["local"],
         deps = deps + PYBIND_DEPS,
@@ -68,5 +65,18 @@ def pybind_library(
         features = features + PYBIND_FEATURES,
         tags = tags,
         deps = deps + PYBIND_DEPS,
+        **kwargs
+    )
+
+def gen_itex_version(name, header_in, header_out, **kwargs):
+    tool = "//itex/python:gen_itex_version"
+
+    native.genrule(
+        name = name,
+        srcs = [header_in],
+        outs = [header_out],
+        tools = [tool],
+        cmd = "$(location {}) ".format(tool) + "--in=$< " + "--out=$@",
+        stamp = True,
         **kwargs
     )

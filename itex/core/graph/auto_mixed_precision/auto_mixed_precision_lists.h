@@ -20,7 +20,7 @@ limitations under the License.
 
 #include <string>
 
-#include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/graph/config_util.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/gtl/flatset.h"
 #include "itex/core/utils/protobuf/config.pb.h"
@@ -129,13 +129,20 @@ class AutoMixedPrecisionLists {
     // IsTensorListReaderOp or IsTensorListWriterOp may need to be modified
     // LINT.IfChange
     constexpr const char* tensor_list_ops[] = {
-        "TensorListConcat",     "TensorListConcatLists",
-        "TensorListConcatV2",   "TensorListGather",
-        "TensorListGetItem",    "TensorListPopBack",
-        "TensorListPushBack",   "TensorListPushBackBatch",
-        "TensorListFromTensor", "TensorListScatter",
-        "TensorListScatterV2",  "TensorListScatterIntoExistingList",
-        "TensorListSetItem",    "TensorListSplit",
+        "TensorListConcat",
+        "TensorListConcatLists",
+        "TensorListConcatV2",
+        "TensorListFromTensor",
+        "TensorListGather",
+        "TensorListGetItem",
+        "TensorListPopBack",
+        "TensorListPushBack",
+        "TensorListPushBackBatch",
+        "TensorListScatter",
+        "TensorListScatterIntoExistingList",
+        "TensorListScatterV2",
+        "TensorListSetItem",
+        "TensorListSplit",
         "TensorListStack"};
     // LINT.ThenChange(//tensorflow/core/grappler/optimizers/auto_mixed_precision.cc)
     for (auto op : tensor_list_ops) {
@@ -146,6 +153,8 @@ class AutoMixedPrecisionLists {
   // such as _FusedApplyAdam or _FusedApplyMomentum.
   // The default Allow list of FP16 and BF16.
   gtl::FlatSet<string> allow_list_ops = gtl::FlatSet<string>{
+      "BatchMatMul",
+      "BatchMatMulV2",
       "Conv2D",
       "Conv2DBackpropFilter",
       "Conv2DBackpropInput",
@@ -157,32 +166,33 @@ class AutoMixedPrecisionLists {
       "DepthwiseConv2dNative",
       "DepthwiseConv2dNativeBackpropFilter",
       "DepthwiseConv2dNativeBackpropInput",
+      "Einsum",
       "MatMul",
-      "BatchMatMul",
-      "BatchMatMulV2",
-      /*Below ops are fusion ops.*/
-      "Conv2DBackpropFilterWithBias",
-      "Conv3DBackpropFilterWithBias",
-      "Conv2DBackpropInputWithSlice",
-      "Conv3DBackpropInputV2WithSlice",
-      "_FusedConv2DWithSum",
-      "_FusedMatMulWithSum",
-      "_FusedMatMulGrad",
-      "_FusedBatchMatMulV2",
-      "_ITEXForwardGRU",
+      // TODO(hfang): The following ops is from Intel-TF DIEN ops.
+      // Should be remove in future.
+      "MklAUGRU",
+      "MklGRU",
+      // Below ops are fusion ops.
+      "_ITEXConv2DBackpropFilterWithBias",
+      "_ITEXConv2DBackpropInputWithSlice",
+      "_ITEXConv3DBackpropFilterWithBias",
+      "_ITEXConv3DBackpropInputV2WithSlice",
       "_ITEXForwardAUGRU",
+      "_ITEXForwardGRU",
+      "_ITEXFusedBatchMatMulV2",
       "_ITEXFusedConv2D",
+      "_ITEXFusedConv2DWithSum",
       "_ITEXFusedConv3D",
       "_ITEXFusedDepthwiseConv2dNative",
       "_ITEXFusedMatMul",
-      "_PadWithConv2D",
-      "_PadWithFusedConv2D",
-      "_PadWithConv3D",
-      "_PadWithFusedConv3D",
-      // TODO(hfang): The following ops is from Intel-TF DIEN ops.
-      // Should be remove in future.
-      "MklGRU",
-      "MklAUGRU",
+      "_ITEXFusedMatMulGrad",
+      "_ITEXFusedMatMulWithSum",
+      "_ITEXPadWithConv2D",
+      "_ITEXPadWithConv3D",
+      "_ITEXPadWithFusedConv2D",
+      "_ITEXPadWithFusedConv3D",
+      /*Below ops have more attrs compared to original TF ops.*/
+      "_ITEXConv3D",
   };
 
   // The default Infer list of FP16 and BF16.
@@ -206,14 +216,15 @@ class AutoMixedPrecisionLists {
       "FusedBatchNormGradV2",
       "FusedBatchNormV3",
       "FusedBatchNormGradV3",
-      "FusedInstanceNorm",
-      "_FusedBatchNormEx",
-      "_FusedBatchNormExGrad",
       "Gelu",
       "GeluGrad",
-      "InstanceNorm",
       "Inv",
+      "ITEXGelu",
+      "ITEXGeluGrad",
+      "ITEXLayerNorm",
+      "ITEXLayerNormGrad",
       "LayerNorm",
+      "LayerNormGrad",
       "LeakyRelu",
       "LeakyReluGrad",
       "Log",
@@ -227,8 +238,6 @@ class AutoMixedPrecisionLists {
       "SeluGrad",
       "Sigmoid",
       "SigmoidGrad",
-      "Swish",
-      "SwishGrad",
       "Softmax",
       "Softplus",
       "SoftplusGrad",
@@ -236,8 +245,17 @@ class AutoMixedPrecisionLists {
       "SoftsignGrad",
       "Sqrt",
       "Sub",
+      "SwishGrad",
       "Tanh",
       "TanhGrad",
+      "_FusedBatchNormEx",
+      "_ITEXFusedBatchNormGradEx",
+      "_ITEXFusedBinary",
+      "_ITEXFusedInstanceNorm",
+      "_ITEXInstanceNorm",
+      "_ITEXMish",
+      "_ITEXSwish",
+      "_MklLayerNorm",
   };
 
   // The default Deny list of FP16 and BF16.
@@ -269,8 +287,8 @@ class AutoMixedPrecisionLists {
       "DepthToSpace",
       "DynamicPartition",
       "DynamicStitch",
-      "Enter",
       "EnsureShape",
+      "Enter",
       "Equal",
       "Exit",
       "ExpandDims",
@@ -359,11 +377,7 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
 
   gtl::FlatSet<string> AllowList() override {
     // Add ops supported only by GPU devices.
-    auto add_list_ops = gtl::FlatSet<string>{
-        "Einsum",
-        "_ITEXFusedAddV2WithSoftmax",
-        "Mean",
-    };
+    auto add_list_ops = gtl::FlatSet<string>{"_ITEXFusedAddV2WithSoftmax"};
     for (auto op : add_list_ops) {
       allow_list_ops.insert(op);
     }
@@ -379,17 +393,10 @@ class AutoMixedPrecisionListsGPU : public AutoMixedPrecisionLists {
 
   gtl::FlatSet<string> DenyList() override {
     auto add_list_ops = gtl::FlatSet<string>{
-        "_FusedAddN",
+        "_ITEXFusedAddN",
     };
     for (auto op : add_list_ops) {
       deny_list_ops.insert(op);
-    }
-
-    auto remove_list_ops = gtl::FlatSet<string>{
-        "Mean",
-    };
-    for (auto op : remove_list_ops) {
-      deny_list_ops.erase(op);
     }
 
     UpdateList("DENYLIST", &deny_list_ops);
@@ -413,11 +420,19 @@ class AutoMixedPrecisionListsCPU : public AutoMixedPrecisionLists {
   }
 
   gtl::FlatSet<string> InferList() override {
+    auto add_ops = gtl::FlatSet<string>{"Sum", "Square"};
+    for (auto op : add_ops) {
+      infer_list_ops.insert(op);
+    }
     UpdateList("INFERLIST", &infer_list_ops);
     return infer_list_ops;
   }
 
   gtl::FlatSet<string> DenyList() override {
+    auto remove_ops = gtl::FlatSet<string>{"Sum"};
+    for (auto op : remove_ops) {
+      deny_list_ops.erase(op);
+    }
     UpdateList("DENYLIST", &deny_list_ops);
     return deny_list_ops;
   }

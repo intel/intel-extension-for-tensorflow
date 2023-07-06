@@ -22,12 +22,15 @@ from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 try:
   from intel_extension_for_tensorflow.python.test_func import test
-  FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
+  FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16, dtypes.int32]
 except ImportError:
   from tensorflow.python.platform import test
-  FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
+  FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.int32]  # BF16 is not supported by CUDA
 
 ITERATION = 5
+
+gather_shape_x = [[4,128,91,28,28], [16,4,300,512], [16,8,1,512], [17451,80]]
+gather_shape_y = [[4,128,3], [16,8,2], [16,4,2], [24000,2]]
 
 class GatherNdTest(test.TestCase):
   def _test_impl(self, input_size, indices_size, dtype):
@@ -49,7 +52,8 @@ class GatherNdTest(test.TestCase):
   @multi_run(ITERATION)
   def testGatherNd(self):
     for dtype in FLOAT_COMPUTE_TYPE:
-      self._test_impl([4,128,91,28,28], [4,128,3], dtype)
+      for i in range(len(gather_shape_x)):
+        self._test_impl(gather_shape_x[i], gather_shape_y[i], dtype)
 
 if __name__ == '__main__':
   test.main()

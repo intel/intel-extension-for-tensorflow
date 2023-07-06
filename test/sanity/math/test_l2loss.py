@@ -19,6 +19,7 @@ from intel_extension_for_tensorflow.python.test_func import test
 import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import nn_ops
+from numpy import prod
 
 
 class L2lossTest(test_util.TensorFlowTestCase):
@@ -30,7 +31,25 @@ class L2lossTest(test_util.TensorFlowTestCase):
             return self.evaluate(y)
 
     def testL2lossFp32(self):
-        for size in [1, 4096, 1 << 18, 1 << 18 + 3]:
+        shapes = [[[1,1,128,256]] ,
+                [[1,1,256,512]],
+                [[1,1,64,128]],
+                [[100]],
+                [[128]],
+                [[256]],
+                [[3,3,128,128]],
+                [[3,3,128,256]],
+                [[3,3,256,256]],
+                [[3,3,256,512]],
+                [[3,3,3,64]],
+                [[3,3,512,512]],
+                [[3,3,64,128]],
+                [[3,3,64,64]],
+                [[512,100]],
+                [[512]],
+                [[64]]]
+        for shape in shapes:
+            size = prod(shape)
             feature = np.random.normal(size=[size])
             np_res = 0.5 * np.sum(np.square(feature))
             gpu_res = self._testHelper(feature, True, tf.float32)

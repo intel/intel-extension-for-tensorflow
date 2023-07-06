@@ -18,7 +18,7 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_CAST_OP_IMPL_H_
 #define ITEX_CORE_KERNELS_GPU_CAST_OP_IMPL_H_
 
-#include "itex/core/kernels/gpu/cast_op.h"
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/utils/types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 

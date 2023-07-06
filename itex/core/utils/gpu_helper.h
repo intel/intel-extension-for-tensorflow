@@ -16,13 +16,40 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_GPU_HELPER_H_
 #define ITEX_CORE_UTILS_GPU_HELPER_H_
 
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+#elif __has_include(<CL/sycl.hpp>)
+#include <CL/sycl.hpp>
+#else
+#error "Unsupported compiler"
+#endif
+
 #include <algorithm>
 #include <cstdint>
 #include <utility>
+
+#include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/logging.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
+
+namespace reduciton_helper {
+template <typename T>
+using LocalAcc = sycl::accessor<T, 1, sycl::access::mode::read_write,
+                                sycl::access::target::local>;
+
+template <typename T>
+struct Identity {
+  inline T operator()(T x) const { return x; }
+};
+}  // namespace reduciton_helper
+
+// return the ceil of log2, requiring x>0
+inline unsigned int ceil_log2(unsigned int x) {
+  int t = 32u - __builtin_clz(x);
+  return x == (1 << (t - 1)) ? t - 1 : t;
+}
 
 template <typename T>
 struct DefaultComputeType {
@@ -82,7 +109,7 @@ template <typename SRC, typename DST>
 struct AddMaskLoad {
   AddMaskLoad(const SRC* src, const SRC* mask, SoftmaxInputShape input_dims,
               int32 row_size)
-      : src(src), mask(mask), input_dims(input_dims), row_size(row_size) {}
+      : src(src), mask(mask), row_size(row_size), input_dims(input_dims) {}
   template <int N>
   void Load(DST* dst, const int32& row, const int32& col) const {
     Pack<SRC, N> pack;
@@ -123,6 +150,24 @@ struct DirectStore {
   int32 row_size;
 };
 
+inline void GetNumWorkGroups(sycl::device xpu_device, int32 workgroup_size,
+                             int max_workgroups, int waves,
+                             int* num_workgroups) {
+  const int hw_concurrent_work_group = xpu_device.template get_info<
+      sycl::ext::intel::info::device::gpu_subslices_per_slice>();
+
+  int subslices_count = IsXeHPC(&xpu_device) ? hw_concurrent_work_group
+                                             : hw_concurrent_work_group * 2;
+
+  const int32_t hw_max_workgroup_size =
+      xpu_device.template get_info<sycl::info::device::max_work_group_size>();
+
+  *num_workgroups = std::max<int>(
+      1, std::min<int32_t>(
+             max_workgroups,
+             subslices_count * hw_max_workgroup_size / workgroup_size * waves));
+}
+
 template <typename T>
 inline T DivUp(T a, T b) {
   return (a + b - 1) / b;
@@ -133,9 +178,11 @@ inline T RoundUp(T val, T rounding) {
   return DivUp(val, rounding) * rounding;
 }
 
-template <int Data>
+// Allows for the treatment of an integral constant
+// as a type at compile-time
+template <int VAL>
 struct Int2Type {
-  enum { VALUE = Data };
+  enum { VALUE = VAL };
 };
 
 template <typename T>
@@ -243,6 +290,21 @@ class alignas(alignof(T) * N) AlignedVector {
 
 #undef UNROLL_ON_DEVICE
 
+template <typename T, int vec_size>
+struct BaseTypeVectorize {
+  typedef AlignedVector<T, vec_size> type;
+  typedef T scalar;
+};
+
+template <int vec_size>
+struct BaseTypeVectorize<Eigen::half, vec_size> {
+  typedef typename Eigen::internal::conditional<
+      (vec_size >= 2), sycl::vec<sycl::half, vec_size>,
+      AlignedVector<Eigen::half, vec_size>>::type type;
+  typedef typename Eigen::internal::conditional<(vec_size >= 2), sycl::half,
+                                                Eigen::half>::type scalar;
+};
+
 // Returns the maximum power-of-two alignment (in units of elements, not bytes)
 // of a stride or pointer value.
 inline int64_t alignment_of(int64_t element_stride) {
@@ -287,6 +349,17 @@ void DispatchToVectorized(int64_t max_vec_size, Args&&... args) {
   }
 }
 
+// This funciton is to back compatible with old DPCPP compiler
+template <typename T, int Dims = 1>
+inline T* ITEXGetLocalAccPointer(
+    const sycl::local_accessor<T, Dims>& accessor) {
+  if constexpr (std::is_same_v<decltype(accessor.get_pointer()),
+                               sycl::local_ptr<T>>) {
+    return accessor.get_pointer().get();
+  } else {
+    return accessor.get_pointer();
+  }
+}
 }  // namespace  itex
 
 #endif  //  ITEX_CORE_UTILS_GPU_HELPER_H_

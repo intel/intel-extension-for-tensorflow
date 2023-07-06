@@ -11,6 +11,7 @@ from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import errors
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.ops import gradient_checker
@@ -155,11 +156,11 @@ class ClipTest(test.TestCase):
       indices = constant_op.constant(indices)
       shape = constant_op.constant(shape)
       # IndexedSlices mode
-      indexed_slices = ops.IndexedSlices(values, indices, shape)
-      clipped = clip_ops.clip_by_value(indexed_slices, clip_value_min,
+      indexed_slices_val = indexed_slices.IndexedSlices(values, indices, shape)
+      clipped = clip_ops.clip_by_value(indexed_slices_val, clip_value_min,
                                        clip_value_max)
       # clipped should be IndexedSlices
-      self.assertIsInstance(clipped, ops.IndexedSlices)
+      self.assertIsInstance(clipped, indexed_slices.IndexedSlices)
 
     self.assertAllClose(clipped.values, expected)
 

@@ -23,10 +23,10 @@ from utils import multi_run, add_profiling, flush_cache
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16, dtypes.int32]
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.int32]  # BF16 is not supported by CUDA
     
 ITERATION = 5
 
@@ -34,7 +34,10 @@ class FloorDivTest(test.TestCase):
     def _test_impl(self, size, dtype):
         x = np.random.normal(size=[size])
         x = constant_op.constant(x, dtype=dtype)
-        y = np.random.normal(size=[size])
+        if(dtype==dtypes.int32):
+            y = tf.ones([size], dtype=dtype)
+        else:
+            y = np.random.normal(size=[size])
         y = constant_op.constant(y, dtype=dtype)
         flush_cache()
         out_gpu = math_ops.floordiv(x, y)

@@ -18,9 +18,12 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_SEGMENT_REDUCTION_OPS_H_
 #define ITEX_CORE_KERNELS_GPU_SEGMENT_REDUCTION_OPS_H_
 
+#include <algorithm>
+
 #include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/utils/gpu_device_functions.h"
 #include "itex/core/utils/op_kernel.h"
+#include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
@@ -65,7 +68,7 @@ struct SegmentReductionFunctor {
   void operator()(OpKernelContext* ctx, const Index output_rows,
                   const TensorShape& segment_ids_shape,
                   typename TTypes<Index>::ConstFlat segment_ids,
-                  const Index data_size, const T* data,
+                  const bool is_mean, const Index data_size, const T* data,
                   typename TTypes<T, 2>::Tensor output,
                   typename TTypes<float, 2>::Tensor output_fp32);
 };
@@ -76,7 +79,7 @@ template <typename T>
 struct SumOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicAdd(dest, *value);
+    ItexAtomicAdd(dest, *value);
   }
   static constexpr bool is_associative = std::is_integral<T>::value;
 };
@@ -86,8 +89,8 @@ struct SumOpGpu<std::complex<T>> {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(
       std::complex<T>* dest, const std::complex<T>* value) {
     T* ptr = reinterpret_cast<T*>(dest);
-    DpcppAtomicAdd(ptr, value->real());
-    DpcppAtomicAdd(ptr + 1, value->imag());
+    ItexAtomicAdd(ptr, value->real());
+    ItexAtomicAdd(ptr + 1, value->imag());
   }
   static constexpr bool is_associative = std::is_integral<T>::value;
 };
@@ -96,7 +99,7 @@ template <typename T>
 struct ProdOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicMul(dest, *value);
+    ItexAtomicMul(dest, *value);
   }
   static constexpr bool is_associative = std::is_integral<T>::value;
 };
@@ -105,7 +108,7 @@ template <typename T>
 struct MaxOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicMax(dest, *value);
+    ItexAtomicMax(dest, *value);
   }
   static constexpr bool is_associative = true;
 };
@@ -114,7 +117,7 @@ template <typename T>
 struct MinOpGpu {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(T* dest,
                                                         const T* value) {
-    DpcppAtomicMin(dest, *value);
+    ItexAtomicMin(dest, *value);
   }
   static constexpr bool is_associative = true;
 };
@@ -354,12 +357,15 @@ template <typename T, typename Index, typename ReductionF,
 struct SortedKernel {
   SortedKernel(Index input_outer_dim_size, Index inner_dim_size,
                Index output_outer_dim_size, const Index* segment_ids,
-               const T* input, T* output, float* output_fp32,
-               Index total_stripe_count, T initial_value)
+               const Index* segment_offsets, const bool is_mean, const T* input,
+               T* output, float* output_fp32, Index total_stripe_count,
+               T initial_value)
       : input_outer_dim_size(input_outer_dim_size),
         inner_dim_size(inner_dim_size),
         output_outer_dim_size(output_outer_dim_size),
         segment_ids(segment_ids),
+        segment_offsets(segment_offsets),
+        is_mean(is_mean),
         input(input),
         output(output),
         output_fp32(output_fp32),
@@ -385,6 +391,14 @@ struct SortedKernel {
       Index current_output_segment_id =
           segment_ids[input_outer_dim_index_base + j];
       if (current_output_segment_id > last_output_segment_id) {
+        if (is_mean) {
+          const Index total_segment_number =
+              segment_offsets[last_output_segment_id + 1] -
+              segment_offsets[last_output_segment_id];
+          if (total_segment_number) {
+            reduce_res /= total_segment_number;
+          }
+        }
         auto output_index =
             last_output_segment_id * inner_dim_size + segment_offset;
         if (last_output_segment_id == first_segment_id) {
@@ -401,6 +415,16 @@ struct SortedKernel {
     }
     auto output_index =
         last_output_segment_id * inner_dim_size + segment_offset;
+
+    if (is_mean) {
+      const Index total_segment_number =
+          segment_offsets[last_output_segment_id + 1] -
+          segment_offsets[last_output_segment_id];
+
+      if (total_segment_number) {
+        reduce_res /= total_segment_number;
+      }
+    }
     atom_reduction_op(output + output_index, &reduce_res);
   }
 
@@ -409,6 +433,8 @@ struct SortedKernel {
   Index inner_dim_size;
   Index output_outer_dim_size;
   const Index* segment_ids;
+  const Index* segment_offsets;
+  const bool is_mean;
   const T* input;
   T* output;
   float* output_fp32;
@@ -425,12 +451,15 @@ struct SortedKernel<T, Index, ReductionF, AtomicReductionF, OuterDimTileSize,
                                      void>> {
   SortedKernel(Index input_outer_dim_size, Index inner_dim_size,
                Index output_outer_dim_size, const Index* segment_ids,
-               const T* input, T* output, float* output_fp32,
-               Index total_stripe_count, T initial_value)
+               const Index* segment_offsets, const bool is_mean, const T* input,
+               T* output, float* output_fp32, Index total_stripe_count,
+               T initial_value)
       : input_outer_dim_size(input_outer_dim_size),
         inner_dim_size(inner_dim_size),
         output_outer_dim_size(output_outer_dim_size),
         segment_ids(segment_ids),
+        segment_offsets(segment_offsets),
+        is_mean(is_mean),
         input(input),
         output(output),
         output_fp32(output_fp32),
@@ -456,6 +485,14 @@ struct SortedKernel<T, Index, ReductionF, AtomicReductionF, OuterDimTileSize,
       Index current_output_segment_id =
           segment_ids[input_outer_dim_index_base + j];
       if (current_output_segment_id > last_output_segment_id) {
+        const Index total_segment_number =
+            segment_offsets[last_output_segment_id + 1] -
+            segment_offsets[last_output_segment_id];
+        if (total_segment_number) {
+          if (is_mean) {
+            reduce_res /= total_segment_number;
+          }
+        }
         auto output_index =
             last_output_segment_id * inner_dim_size + segment_offset;
         if (last_output_segment_id == first_segment_id) {
@@ -473,6 +510,15 @@ struct SortedKernel<T, Index, ReductionF, AtomicReductionF, OuterDimTileSize,
     }
     auto output_index =
         last_output_segment_id * inner_dim_size + segment_offset;
+    const Index total_segment_number =
+        segment_offsets[last_output_segment_id + 1] -
+        segment_offsets[last_output_segment_id];
+
+    if (total_segment_number) {
+      if (is_mean) {
+        reduce_res /= total_segment_number;
+      }
+    }
     atom_reduction_op(output_fp32 + output_index, &reduce_res);
   }
 
@@ -481,6 +527,8 @@ struct SortedKernel<T, Index, ReductionF, AtomicReductionF, OuterDimTileSize,
   Index inner_dim_size;
   Index output_outer_dim_size;
   const Index* segment_ids;
+  const Index* segment_offsets;
+  const bool is_mean;
   const T* input;
   T* output;
   float* output_fp32;
@@ -494,6 +542,7 @@ struct SortedSegmentCustomKernel {
   Status operator()(const GPUDevice& device, const Index input_outer_dim_size,
                     const Index inner_dim_size,
                     const Index output_outer_dim_size, const Index* segment_ids,
+                    const Index* segment_offsets, const bool is_mean,
                     const T* input, T* output, float* output_fp32,
                     const Index total_stripe_count, const T initial_value) {
     auto stream = device.stream();
@@ -509,8 +558,8 @@ struct SortedSegmentCustomKernel {
     stream->submit([&](sycl::handler& cgh) {
       SortedKernel<T, Index, ReductionF, AtomicReductionF, OuterDimTileSize>
           task(input_outer_dim_size, inner_dim_size, output_outer_dim_size,
-               segment_ids, input, output, output_fp32, total_stripe_count,
-               initial_value);
+               segment_ids, segment_offsets, is_mean, input, output,
+               output_fp32, total_stripe_count, initial_value);
       cgh.parallel_for<SortedKernel<T, Index, ReductionF, AtomicReductionF,
                                     OuterDimTileSize>>(
           sycl::nd_range<1>(global_size, local_size), task);
@@ -526,6 +575,7 @@ struct SortedSegmentCustomKernel<Eigen::bfloat16, Index, OuterDimTileSize,
   Status operator()(const GPUDevice& device, const Index input_outer_dim_size,
                     const Index inner_dim_size,
                     const Index output_outer_dim_size, const Index* segment_ids,
+                    const Index* segment_offsets, const bool is_mean,
                     const Eigen::bfloat16* input, Eigen::bfloat16* output,
                     float* output_fp32, const Index total_stripe_count,
                     const Eigen::bfloat16 initial_value) {
@@ -544,8 +594,8 @@ struct SortedSegmentCustomKernel<Eigen::bfloat16, Index, OuterDimTileSize,
       SortedKernel<Eigen::bfloat16, Index, ReductionF, AtomicReductionF,
                    OuterDimTileSize>
           task(input_outer_dim_size, inner_dim_size, output_outer_dim_size,
-               segment_ids, input, output, output_fp32, total_stripe_count,
-               initial_value);
+               segment_ids, segment_offsets, is_mean, input, output,
+               output_fp32, total_stripe_count, initial_value);
 
       cgh.parallel_for<SortedKernel<Eigen::bfloat16, Index, ReductionF,
                                     AtomicReductionF, OuterDimTileSize>>(
@@ -564,6 +614,7 @@ struct SortedSegmentCustomKernel<Eigen::half, Index, OuterDimTileSize,
   Status operator()(const GPUDevice& device, const Index input_outer_dim_size,
                     const Index inner_dim_size,
                     const Index output_outer_dim_size, const Index* segment_ids,
+                    const Index* segment_offsets, const bool is_mean,
                     const Eigen::half* input, Eigen::half* output,
                     float* output_fp32, const Index total_stripe_count,
                     const Eigen::half initial_value) {
@@ -582,8 +633,8 @@ struct SortedSegmentCustomKernel<Eigen::half, Index, OuterDimTileSize,
       SortedKernel<Eigen::half, Index, ReductionF, AtomicReductionF,
                    OuterDimTileSize>
           task(input_outer_dim_size, inner_dim_size, output_outer_dim_size,
-               segment_ids, input, output, output_fp32, total_stripe_count,
-               initial_value);
+               segment_ids, segment_offsets, is_mean, input, output,
+               output_fp32, total_stripe_count, initial_value);
       cgh.parallel_for<SortedKernel<Eigen::half, Index, ReductionF,
                                     AtomicReductionF, OuterDimTileSize>>(
           sycl::nd_range<1>(global_size, local_size), task);
@@ -601,6 +652,7 @@ struct SortedSegmentCustomKernel<double, Index, OuterDimTileSize, ReductionF,
   Status operator()(const GPUDevice& device, const Index input_outer_dim_size,
                     const Index inner_dim_size,
                     const Index output_outer_dim_size, const Index* segment_ids,
+                    const Index* segment_offsets, const bool is_mean,
                     const double* input, double* output, float* output_fp32,
                     const Index total_stripe_count,
                     const double initial_value) {
@@ -619,8 +671,8 @@ struct SortedSegmentCustomKernel<double, Index, OuterDimTileSize, ReductionF,
       SortedKernel<double, Index, ReductionF, AtomicReductionF,
                    OuterDimTileSize>
           task(input_outer_dim_size, inner_dim_size, output_outer_dim_size,
-               segment_ids, input, output, output_fp32, total_stripe_count,
-               initial_value);
+               segment_ids, segment_offsets, is_mean, input, output,
+               output_fp32, total_stripe_count, initial_value);
       cgh.parallel_for<SortedKernel<double, Index, ReductionF, AtomicReductionF,
                                     OuterDimTileSize>>(
           sycl::nd_range<1>(global_size, local_size), task);
@@ -629,6 +681,40 @@ struct SortedSegmentCustomKernel<double, Index, OuterDimTileSize, ReductionF,
                                        output);
     return Status::OK();
   }
+};
+
+template <typename Tindex, typename Tsegmentids>
+struct SegmentOffsetsKernel {
+  SegmentOffsetsKernel(Tindex size, Tsegmentids nsegments,
+                       const Tsegmentids* segment_ids, Tindex* segment_offsets)
+      : size_(size),
+        nsegments_(nsegments),
+        segment_ids_(segment_ids),
+        segment_offsets_(segment_offsets) {}
+  void operator()(sycl::nd_item<1> item) const {
+    auto i = item.get_global_linear_id();
+    if (i >= size_ + 1) return;
+    // IDs are clipped to [-1, nsegments] so that out-of-bounds IDs are ignored.
+    // Note that we can't report invalid IDs from the GPU without incurring
+    // additional overhead.
+    auto clip = [&](Tsegmentids id) {
+      return sycl::min(sycl::max(Tsegmentids(-1), id), nsegments_);
+    };
+    const Tsegmentids cur_id = (i < size_) ? clip(segment_ids_[i]) : nsegments_;
+    const Tsegmentids prev_id =
+        (i == 0) ? Tsegmentids(-1) : clip(segment_ids_[i - 1]);
+    // At segment boundaries, write the offset for this ID and any missing IDs
+    // since the previous one.
+    for (Tsegmentids id = prev_id + 1; id <= cur_id; ++id) {
+      segment_offsets_[id] = i;
+    }
+  }
+
+ private:
+  Tindex size_;
+  Tsegmentids nsegments_;
+  const Tsegmentids* segment_ids_;
+  Tindex* segment_offsets_;
 };
 
 }  // end namespace impl
@@ -859,14 +945,40 @@ TF_CALL_int32(DEFINE_SUM_GPU_SPECS);
 #undef DEFINE_SUM_GPU_SPECS_BF16
 #undef DEFINE_SUM_GPU_SPECS_HALF
 
+template <typename Tindex, typename Tsegmentids>
+struct LaunchSegmentOffsetsKernel {
+  Status operator()(const Eigen::GpuDevice& d, Tindex size, Tindex nsegments,
+                    const Tsegmentids* segment_ids, Tindex* segment_offsets) {
+    auto stream = d.stream();
+    auto work_group_size =
+        (*stream)
+            .get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    auto total_size = size + 1;
+    auto num_work_group = (total_size + work_group_size - 1) / work_group_size;
+
+    sycl::range<1> local_size(work_group_size);
+    sycl::range<1> global_size(num_work_group * work_group_size);
+    stream->submit([&](sycl::handler& cgh) {
+      functor::impl::SegmentOffsetsKernel<Tindex, Tsegmentids> task(
+          size, nsegments, segment_ids, segment_offsets);
+      cgh.parallel_for<
+          functor::impl::SegmentOffsetsKernel<Tindex, Tsegmentids>>(
+          sycl::nd_range<1>(global_size, local_size), task);
+    });
+    return Status::OK();
+  }
+};
+
 template <typename T, typename Index, typename InitialValueF,
           typename ReductionF, typename AtomicReductionF>
 void SegmentReductionFunctor<T, Index, InitialValueF, ReductionF,
                              AtomicReductionF>::
 operator()(OpKernelContext* ctx, const Index output_rows,
            const TensorShape& segment_ids_shape,
-           typename TTypes<Index>::ConstFlat segment_ids, const Index data_size,
-           const T* data, typename TTypes<T, 2>::Tensor output,
+           typename TTypes<Index>::ConstFlat segment_ids, const bool is_mean,
+           const Index data_size, const T* data,
+           typename TTypes<T, 2>::Tensor output,
            typename TTypes<float, 2>::Tensor output_fp32) {
   if (output.size() == 0) {
     return;
@@ -883,6 +995,18 @@ operator()(OpKernelContext* ctx, const Index output_rows,
   }
   if (data_size == 0 || segment_ids_shape.num_elements() == 0) {
     return;
+  }
+
+  // Allocate and compute segment_offsets.
+  Tensor segment_offsets;
+  auto num_indices = segment_ids_shape.num_elements();
+  if (is_mean) {
+    OP_REQUIRES_OK(ctx, ctx->allocate_temp(DataTypeToEnum<Index>::value,
+                                           TensorShape({output_rows + 1}),
+                                           &segment_offsets));
+    Status s = functor::LaunchSegmentOffsetsKernel<Index, Index>()(
+        d, num_indices, output_rows, segment_ids.data(),
+        static_cast<Index*>(segment_offsets.data()));
   }
 
   // Launch kernel to compute sorted segment reduction.
@@ -905,8 +1029,9 @@ operator()(OpKernelContext* ctx, const Index output_rows,
   auto status = impl::SortedSegmentCustomKernel<T, Index, OuterDimTileSize,
                                                 ReductionF, AtomicReductionF>()(
       d, input_outer_dim_size, input_inner_dim_size, output_rows,
-      segment_ids.data(), data, output.data(), output_fp32.data(),
-      total_stripe_count, static_cast<T>(init));
+      segment_ids.data(), static_cast<Index*>(segment_offsets.data()), is_mean,
+      data, output.data(), output_fp32.data(), total_stripe_count,
+      static_cast<T>(init));
 }
 
 #define DEFINE_SORTED_GPU_SPECS_INDEX(T, T_Reduction, Index) \

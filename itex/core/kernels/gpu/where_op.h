@@ -30,9 +30,10 @@ namespace functor {
 
 template <typename T, typename TIndex>
 struct InputCumSum {
-  EIGEN_ALWAYS_INLINE static Status Compute(
-      OpKernelContext* context, typename TTypes<T>::ConstFlat input,
-      typename TTypes<TIndex>::Vec input_cumsum, TIndex num_elems);
+  static Status Compute(OpKernelContext* context,
+                        typename TTypes<T>::ConstFlat input,
+                        typename TTypes<TIndex>::Vec input_cumsum,
+                        TIndex num_elems);
 };
 
 template <typename Device, int NDIM, typename T, typename TIndex>

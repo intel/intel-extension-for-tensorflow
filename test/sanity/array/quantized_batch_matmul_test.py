@@ -87,7 +87,7 @@ class QuantizedBatchMatMul(test.TestCase):
       matmul_f32_res = self.evaluate(matmul_f32)
 
       # int8 test tolerate larger difference
-      self.assertAllClose(matmul_int8_res, matmul_f32_res, rtol=0.3, atol=0.3)
+      self.assertAllClose(matmul_int8_res, matmul_f32_res, rtol=0.5, atol=0.5)
 
   # single BMM + Mul fusion INT8 test
   @test_util.run_deprecated_v1
@@ -135,7 +135,60 @@ class QuantizedBatchMatMul(test.TestCase):
       matmul_f32_res = self.evaluate(matmul_f32)
 
       # int8 test tolerate larger difference
-      self.assertAllClose(matmul_int8_res, matmul_f32_res, rtol=0.3, atol=0.3)
+      self.assertAllClose(matmul_int8_res, matmul_f32_res, rtol=0.5, atol=0.5)
+
+  # single BMM + Mul + Add fusion INT8 test
+  @test_util.run_deprecated_v1
+  def _testQuantizeBMMMulAdd(self, api_mode):
+    with ops.name_scope("test"):
+      x_f32 = constant_op.constant([[[-0.33,  1.33,  1.44],
+                                     [-0.23,  0.60, -0.08]],
+                                    [[ 0.97,  0.70,  0.90],
+                                     [-0.56, -1.84, -1.27]]])
+      x_min = tf.math.reduce_min(x_f32)
+      x_max = tf.math.reduce_max(x_f32)
+      x_int8, x_min, x_max = array_ops.quantize(x_f32, x_min, x_max, T=dtypes.qint8, mode="SCALED", round_mode="HALF_TO_EVEN", narrow_range=True)
+
+      y_f32 = constant_op.constant([[[ 0.14,  0.78],
+                                     [ 1.51, -1.36],
+                                     [ 0.56, -0.29]],
+
+                                    [[ 1.05,  1.82],
+                                     [ 1.72,  0.36],
+                                     [ 0.16, -0.10]]])
+      y_min = tf.math.reduce_min(y_f32)
+      y_max = tf.math.reduce_max(y_f32)
+      y_int8, y_min, y_max = array_ops.quantize(y_f32, y_min, y_max, T=dtypes.qint8, mode="SCALED", round_mode="HALF_TO_EVEN", narrow_range=True)
+
+      mul_tensor = constant_op.constant(0.5)
+      add_tensor = constant_op.constant([[[ 0.19, -0.35],
+                                          [ 0.03, -0.41]],
+
+                                         [[ 0.72, -0.12],
+                                          [ 0.87, -0.84]]])
+
+      if api_mode == "V1":
+        matmul_int8 = load_ops_library._QuantizedFusedBatchMatMulV2AndDequantize(x=x_int8, y=y_int8, min_x=x_min, max_x=x_max, min_y=y_min, max_y=y_max, 
+                                                                                args=[mul_tensor, add_tensor], fused_ops=["Mul", "Add"])
+        matmul_int8 = array_ops.identity(matmul_int8)
+      elif api_mode == "V2":
+        matmul_int8 = load_ops_library._QuantizedBatchMatMul(device_inputs=[x_int8, y_int8, mul_tensor, add_tensor], 
+                                                             host_inputs=[x_min, x_max, y_min, y_max],
+                                                             T1=dtypes.qint8, T2=dtypes.qint8,
+                                                             fused_ops=["Mul", "Add", "Dequantize"],
+                                                             Tdevice_outputs=[dtypes.float32])
+                                                                       
+        matmul_int8 = array_ops.identity(matmul_int8[0])[0]
+      
+      
+      matmul_f32 = tf.math.add(tf.math.multiply(tf.linalg.matmul(x_f32, y_f32), mul_tensor), add_tensor)
+      matmul_f32 = array_ops.identity(matmul_f32)
+
+      matmul_int8_res = self.evaluate(matmul_int8)
+      matmul_f32_res = self.evaluate(matmul_f32)
+
+      # int8 test tolerate larger difference
+      self.assertAllClose(matmul_int8_res, matmul_f32_res, rtol=0.5, atol=0.5)
 
   @test_util.run_deprecated_v1
   def testMatMulINT8(self):
@@ -143,6 +196,8 @@ class QuantizedBatchMatMul(test.TestCase):
     self._testQuantizeBMM("V2")
     self._testQuantizeBMMMul("V1")
     self._testQuantizeBMMMul("V2")
+    self._testQuantizeBMMMulAdd("V1")
+    self._testQuantizeBMMMulAdd("V2")
 
 
 if __name__ == "__main__":

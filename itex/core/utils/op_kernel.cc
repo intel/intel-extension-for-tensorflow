@@ -15,12 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef ITEX_BUILD_JAX
 #include "itex/core/utils/op_kernel.h"
 
 #include <iostream>
 #include <string>
 
-#include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/graph/config_util.h"
+#ifndef INTEL_CPU_ONLY
+#include "itex/core/utils/gpu_resource_mgr_pool.h"
+#endif
 #include "itex/core/utils/kernel_def_util.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/padding.h"
@@ -70,8 +74,12 @@ void EmptyCopyFunctor(TF_OpKernelContext* tf_ctx, TF_Tensor* tf_source,
 
 int OpKernelContext::num_inputs() const { return TF_NumInputs(ctx_); }
 
+bool OpKernelContext::input_is_ref(int index) const {
+  return TF_IsRefInput(ctx_, index, status_);
+}
+
 DataType OpKernelContext::input_dtype(int index) const {
-  if (inputs_ != nullptr) {
+  if (inputs_ != nullptr && inputs_->at(index) != nullptr) {
     return inputs_->at(index)->dtype();
   } else {
     ITEX_CHECK(false)
@@ -116,6 +124,19 @@ const Tensor& OpKernelContext::input(int index) const {
   ITEX_CHECK_NE(inputs_, nullptr);
   return *inputs_->at(index);
 }
+
+#ifndef INTEL_CPU_ONLY
+ResourceMgr* OpKernelContext::resource_manager() {
+  ITEX_GPUStream* itex_gpu_stream = OpKernelContext::GetDeviceStream();
+  auto error = GetResourceMgr(itex_gpu_stream, &resource_mgr);
+  if (error != ITEX_GPU_SUCCESS) {
+    CtxFailure(__FILE__, __LINE__,
+               errors::Internal("Error to call GetResourceMgr with error ",
+                                ITEX_GPUGetErrorName(error)));
+  }
+  return resource_mgr;
+}
+#endif
 
 Status OpKernelContext::input(StringPiece name, const Tensor** tensor) {
   TF_Status* status = TF_NewStatus();
@@ -163,6 +184,8 @@ bool OpKernelContext::is_input_same(int index, std::vector<int64> shape) {
   TF_DeleteTensor(tensor);
   return true;
 }
+
+int64_t OpKernelContext::step_id() const { return TF_StepId(ctx_); }
 
 // Status OpKernelContext::set_output(StringPiece name, const Tensor& tensor) {
 //   TF_Status* status = TF_NewStatus();
@@ -471,6 +494,7 @@ Status OpKernelConstruction::GetAttr<std::vector<int32_t>>(
                                            list_size, status_);
   return StatusFromTF_Status(status_);
 }
+
 template <>
 Status OpKernelConstruction::GetAttr<std::vector<DataType>>(
     StringPiece attr_name, std::vector<DataType>* value) const {
@@ -541,9 +565,9 @@ Status OpKernelConstruction::GetAttr<TensorShape>(StringPiece attr_name,
 
   TF_OpKernelConstruction_GetAttrSize(ctx_, "shape", &list_size, &total_size,
                                       status_);
-  shape_list.resize(list_size);
-  TF_OpKernelConstruction_GetAttrInt64List(ctx_, "shape", shape_list.data(),
-                                           list_size, status_);
+  shape_list.resize(total_size);
+  TF_OpKernelConstruction_GetAttrTensorShape(ctx_, "shape", shape_list.data(),
+                                             total_size, status_);
   for (auto dim : shape_list) {
     shape->AddDim(dim);
   }
@@ -591,7 +615,7 @@ string OpKernel::ShapeTraceString(const OpKernelContext& ctx) const {
   std::vector<string> tensor_shapes;
   tensor_shapes.reserve(num_inputs);
   for (int i = 0; i < num_inputs; i++) {
-    if (ctx.input(i).GetTFTensor() == nullptr) {
+    if (ctx.input_is_ref(i) || ctx.input(i).GetTFTensor() == nullptr) {
       tensor_shapes.emplace_back();  // Placeholder
       continue;
     }
@@ -773,6 +797,18 @@ bool IsSyncExecEnabled() {
 
 namespace {
 
+// Label defaults to empty if not found in NodeDef.
+const string& GetKernelLabelAttr(const AttrSlice& node_attrs) {
+  static const string& kKernelAttr = *new string("_kernel");
+  static const string& kEmptyString = *new string("");
+
+  const AttrValue* attr_value = node_attrs.FindByString(kKernelAttr);
+  if (attr_value == nullptr || attr_value->value_case() != AttrValue::kS)
+    return kEmptyString;
+  else
+    return attr_value->s();
+}
+
 // TODO(itex): Replace with const Node& version below.
 Status FindKernelRegistration(
     const DeviceType& device_type, StringPiece node_name,
@@ -804,6 +840,8 @@ Status FindKernelRegistration(
     bool match;
 
     if (kernel_def.device_type() != DeviceTypeString(device_type)) continue;
+    const string& label = GetKernelLabelAttr(node_attrs);
+    if (label != kernel_def.label()) continue;
 
     TF_RETURN_IF_ERROR(KernelAttrsMatch(kernel_def, node_attrs, &match));
     if (match) {
@@ -958,3 +996,4 @@ const Eigen::GpuDevice& OpKernelContext::eigen_device() const {
 #endif  // INTEL_CPU_ONLY
 
 }  // namespace itex
+#endif  // ITEX_BUILD_JAX

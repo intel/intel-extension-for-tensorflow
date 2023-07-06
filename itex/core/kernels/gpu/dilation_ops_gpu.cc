@@ -169,7 +169,7 @@ struct DilationBackpropInputKernel {
         }
       }
     }
-    DpcppAtomicAdd(
+    ItexAtomicAdd(
         in_backprop_ptr_ + d +
             depth_ * (w_in_max + input_cols_ * (h_in_max + input_rows_ * b)),
         static_cast<OutT>(out_backprop_ptr_[out_idx]));
@@ -188,8 +188,7 @@ struct DilationBackpropInputKernel {
 
 template <typename T, bool enable_slm, typename OutT = float>
 struct DilationBackpropFilterKernel {
-  using LocalMem = sycl::accessor<OutT, 1, sycl::access::mode::read_write,
-                                  sycl::access::target::local>;
+  using LocalMem = sycl::local_accessor<OutT, 1>;
   DilationBackpropFilterKernel(const T* input_ptr, const T* filter_ptr,
                                const T* out_backprop_ptr, int total_count,
                                int batch, int input_rows, int input_cols,
@@ -279,12 +278,12 @@ struct DilationBackpropFilterKernel {
       }
       item.barrier(sycl::access::fence_space::local_space);
       for (int i = local_id; i < mem_size_; i += item.get_local_range(0)) {
-        DpcppAtomicAdd<OutT>(filter_backprop_ptr_ + i, scratch_[i]);
+        ItexAtomicAdd<OutT>(filter_backprop_ptr_ + i, scratch_[i]);
       }
     } else {
       if (out_idx < total_count_) {
-        DpcppAtomicAdd<OutT>(filter_backprop_ptr_ + offset,
-                             static_cast<OutT>(out_backprop_ptr_[out_idx]));
+        ItexAtomicAdd<OutT>(filter_backprop_ptr_ + offset,
+                            static_cast<OutT>(out_backprop_ptr_[out_idx]));
       }
     }
   }
@@ -447,9 +446,7 @@ struct DilationBackpropFilter<GPUDevice, T, OutT> {
 
 #define SubmitDilationBackPropFilterKernel(mem_size, use_slm)                 \
   stream->submit([&](sycl::handler& cgh) {                                    \
-    sycl::accessor<OutT, 1, sycl::access::mode::read_write,                   \
-                   sycl::access::target::local>                               \
-        scratch(mem_size, cgh);                                               \
+    sycl::local_accessor<OutT, 1> scratch(mem_size, cgh);                     \
     DilationBackpropFilterKernel<T, use_slm, OutT> task(                      \
         input_ptr, filter_ptr, out_backprop_ptr, total_count, batch,          \
         input_rows, input_cols, depth, filter_rows, filter_cols, output_rows, \

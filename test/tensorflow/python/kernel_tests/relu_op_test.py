@@ -472,13 +472,14 @@ class GeluTest(test.TestCase):
     self.assertAllCloseAccordingToType(expected_values, results)
 
   def testNumbers(self):
+    # onednn will set gelu result = 0 for input<=-5
     for approximate in [False, True]:
       for t in [dtypes.bfloat16.as_numpy_dtype, np.float32]:
         self._testGelu(
-            np.array([[-9, 7, -5, 3, -1], [1, -3, 5, -7, 9]]).astype(t),
+            np.array([[-9, 7, -6, 3, -1], [1, -3, 5, -7, 9]]).astype(t),
             approximate, use_gpu=False)
         self._testGelu(
-            np.array([[-9, 7, -5, 3, -1], [1, -3, 5, -7, 9]]).astype(t),
+            np.array([[-9, 7, -6, 3, -1], [1, -3, 5, -7, 9]]).astype(t),
             approximate, use_gpu=True)
 
   def testGradient(self):

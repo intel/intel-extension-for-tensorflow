@@ -5,6 +5,7 @@ load(
     "template_rule",
 )
 load("@intel_extension_for_tensorflow//itex/core/utils:build_config.bzl", "cc_proto")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 cc_library(
     name = "tf_header_lib",
@@ -107,6 +108,18 @@ template_rule(
 )
 
 template_rule(
+    name = "graph_debug_info_plugin",
+    src = select({
+        "@intel_extension_for_tensorflow//itex:tf_version_2_12": "include/tensorflow/core/protobuf/graph_debug_info.proto",
+        "//conditions:default": "include/tensorflow/core/framework/graph_debug_info.proto",
+    }),
+    out = "include/protos/graph_debug_info.proto",
+    substitutions = {
+        "package tensorflow;": "package itex;",
+    },
+)
+
+template_rule(
     name = "op_def_plugin",
     src = "include/tensorflow/core/framework/op_def.proto",
     out = "include/protos/op_def.proto",
@@ -148,6 +161,7 @@ template_rule(
     substitutions = {
         "package tensorflow;": "package itex;",
         "tensorflow/core/framework/function.proto": "function.proto",
+        "tensorflow/core/framework/graph_debug_info.proto": "graph_debug_info.proto",
         "tensorflow/core/framework/node_def.proto": "node_def.proto",
         "tensorflow/core/framework/versions.proto": "versions.proto",
     },
@@ -188,10 +202,22 @@ template_rule(
 
 template_rule(
     name = "xplane_plugin",
-    src = "include/tensorflow/core/profiler/protobuf/xplane.proto",
+    src = "include/tensorflow/tsl/profiler/protobuf/xplane.proto",
     out = "include/protos/xplane.proto",
     substitutions = {
         "package tensorflow.profiler;": "package itex;",
+    },
+)
+
+template_rule(
+    name = "summary_plugin",
+    src = "include/tensorflow/core/framework/summary.proto",
+    out = "include/protos/summary.proto",
+    substitutions = {
+        "package tensorflow;": "package itex;",
+        "tensorflow/core/framework/tensor.proto": "tensor.proto",
+        "import public \"tensorflow/tsl/protobuf/histogram.proto\";": "",
+        "HistogramProto histo = 5;": "",
     },
 )
 
@@ -259,6 +285,11 @@ cc_proto(
 )
 
 cc_proto(
+    name = "graph_debug_info",
+    src = "graph_debug_info.proto",
+)
+
+cc_proto(
     name = "op_def",
     src = "op_def.proto",
     deps = [
@@ -289,6 +320,7 @@ cc_proto(
     src = "graph.proto",
     deps = [
         ":function_proto",
+        ":graph_debug_info_proto",
         ":node_def_proto",
         ":versions_proto",
     ],
@@ -321,17 +353,26 @@ cc_proto(
     src = "xplane.proto",
 )
 
-
+cc_proto(
+    name = "summary",
+    src = "summary.proto",
+    deps = [
+        ":tensor_proto",
+    ],
+)
 
 cc_library(
     name = "protos_all",
     visibility = ["//visibility:public"],
     deps = [
         ":api_def_proto",
+        ":graph_debug_info_proto",
         ":graph_proto",
-        ":xplane_proto",
-        ":op_performance_data_proto",
         ":kernel_def_proto",
+        ":op_performance_data_proto",
+        ":summary_proto",
+        ":tensor_proto",
+        ":xplane_proto",
     ],
 )
 
@@ -341,5 +382,12 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "jax_internal",
+    srcs = ["%{JAX_SHARED_LIBRARY_NAME}"],
+    visibility = ["//visibility:public"],
+)
+
 %{TF_HEADER_GENRULE}
 %{TF_SHARED_LIBRARY_GENRULE}
+%{JAX_SHARED_LIBRARY_GENRULE}

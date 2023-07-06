@@ -27,6 +27,15 @@ def template_rule_impl(ctx):
         substitutions = ctx.attr.substitutions,
     )
 
+    # Sleep 1 second to WA file not found issue.
+    src_file = ctx.file.src
+    out_file = ctx.actions.declare_file("%s.exists" % src_file.short_path)
+    ctx.actions.run_shell(
+        inputs = [src_file],
+        outputs = [out_file],
+        command = "sleep 1",
+    )
+
 template_rule = rule(
     attrs = {
         "src": attr.label(

@@ -13,14 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-
+import os
 import numpy as np
 import tensorflow as tf
 
 common_2d_input_size = [[32, 8192], [33, 8193]]
 tailed_no_tailed_size = [8192, 16384 * 16384, 8193, 16385 * 16385]
-broadcast_binary_size_x = [[32,16,512,512], [32,16,512,512], [32,16,512,513]]
-broadcast_binary_size_y = [[32,1,512,512], [1,1,1,1], [32,16,512,513]]
+broadcast_binary_size_x = [[32,16,512,512], [32,16,512,512], [32,16,512,513], [16,256,32,32,32]]
+broadcast_binary_size_y = [[32,1,512,512], [1,1,1,1], [32,16,512,513], [1,256,1,1,1]]
 reduction_size = [[32,16,512,512], [32,1,512,513], [1,16,513,512], [1,1,1,1]]
 reduction_axis = [0, 1, 2, 3]
 reduction_keepdims = [False, True]
@@ -38,7 +38,9 @@ def add_profiling(func):
     options = tf.profiler.experimental.ProfilerOptions(host_tracer_level = 3,
                                          python_tracer_level = 1,
                                          device_tracer_level = 1)
-    tf.profiler.experimental.start('/tmp/profile_data', options = options)
+    if not os.path.exists("../../profile_data"):
+        os.mkdir("../../profile_data")
+    tf.profiler.experimental.start('../../profile_data', options = options)
     func(*args, **kwargs)
     tf.profiler.experimental.stop()
   return wrap_func

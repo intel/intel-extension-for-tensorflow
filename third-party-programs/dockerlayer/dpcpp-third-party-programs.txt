@@ -1,4 +1,4 @@
-Intel(R) 2022.1 oneAPI DPC++/C++/Fortran Compiler Third Party Programs File
+Intel(R) 2023.0 oneAPI DPC++/C++/Fortran Compiler Third Party Programs File
 
 This file is the "third-party-programs.txt" file specified in the associated Intel end user license agreement for the Intel software you are licensing. 
 
@@ -588,7 +588,7 @@ These additional third party program files can be found as follows:
 
 -----------------------------------------------------------------
 
-Intel(R) 2021.6 C/C++/Fortran Compiler Classic Third Party Programs File
+Intel(R) 2021.8 C/C++/Fortran Compiler Classic Third Party Programs File
 
 This file is the "third-party-programs.txt" file specified in the associated Intel end user license agreement for the Intel software you are licensing. 
 

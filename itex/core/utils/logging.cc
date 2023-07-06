@@ -17,10 +17,10 @@ limitations under the License.
 
 #include "itex/core/utils/logging.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-
 #include <string>
 #include <unordered_map>
 
@@ -168,6 +168,10 @@ int64 MinLogLevelFromEnv() {
 #endif
 }
 
+int64 MinIssueLogLevel() {
+  return std::max(MinLogLevelFromEnv(), static_cast<int64>(itex::ERROR));
+}
+
 int64 MinVLogLevelFromEnv() {
   // We don't want to print logs during fuzzing as that would slow fuzzing down
   // by almost 2x. So, if we are in fuzzing mode (not just running a test), we
@@ -200,7 +204,10 @@ LogMessage& LogMessage::AtLocation(const char* fname, int line) {
 
 LogMessage::~LogMessage() {
   // Read the min log level once during the first call to logging.
-  static int64 min_log_level = MinLogLevelFromEnv();
+  // TODO(itex): Temporarily ignore TF min log limitation, will fix later
+  //             after figured out where the limiation is.
+  // static int64 min_log_level = MinLogLevelFromEnv();
+  static int64 min_log_level = itex::INFO;
   if (severity_ >= min_log_level) {
     GenerateLogMessage();
   }
@@ -225,6 +232,17 @@ void LogMessage::GenerateLogMessage() {
   // TODO(jeff,sanjay): Replace this with something that logs through the env.
   fprintf(stderr, "%s.%06d: %c%s %s:%d] %s\n", time_buffer, micros_remainder,
           "IWEF"[severity_], tid_buffer, fname_, line_, str().c_str());
+  IssueLink();
+}
+
+void LogMessage::IssueLink() {
+  static int64 issue_log_level = MinIssueLogLevel();
+
+  if (severity_ >= issue_log_level) {
+    fprintf(stderr,
+            "If you need help, create an issue at "
+            "https://github.com/intel/intel-extension-for-tensorflow/issues\n");
+  }
 }
 
 int64 LogMessage::MinVLogLevel() {

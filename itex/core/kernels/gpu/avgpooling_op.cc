@@ -27,6 +27,9 @@ namespace itex {
       PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_avg_exclude_padding>)
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_POOL_KERNELS);
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_GPU_POOL_KERNELS);
+#endif
 #undef REGISTER_GPU_POOL_KERNELS
 
 #define REGISTER_GPU_POOL_GRAD_KERNELS(T)                             \
@@ -44,6 +47,9 @@ TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_POOL_KERNELS);
       AvgPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>)
 
 TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_GPU_POOL_GRAD_KERNELS);
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_GPU_POOL_GRAD_KERNELS);
+#endif
 #undef REGISTER_GPU_POOL_GRAD_KERNELS
 
 // Quantized Kernels

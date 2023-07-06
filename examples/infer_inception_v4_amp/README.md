@@ -3,7 +3,7 @@
 ## Introduction
 Advanced Automatic Mixed Precision (Advanced AMP) uses lower-precision data types (such as float16 or bfloat16) to make model run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption in CPU and GPU.
 
-For detailed info, please refer to [Advanced Automatic Mixed Precision](../../../docs/guide/advanced_auto_mixed_precision.md)
+For detailed info, please refer to [Advanced Automatic Mixed Precision](../../docs/guide/advanced_auto_mixed_precision.md)
 
 This example shows the acceleration of inference by Advanced AMP on Intel CPU or GPU.
 
@@ -61,7 +61,7 @@ There are two methods to enable Advanced AMP based on Intel® Extension for Tens
 
 1. Python API
 
-Add code in the beginning of python code:
+Add code in the beginning of Python code:
 
 For BF16:
 ```
@@ -76,8 +76,7 @@ graph_options = itex.GraphOptions(auto_mixed_precision_options=auto_mixed_precis
 graph_options.auto_mixed_precision = itex.ON
 
 config = itex.ConfigProto(graph_options=graph_options)
-#itex.set_backend("cpu", config)
-itex.set_backend("gpu", config)
+itex.set_config(config)
 ```
 
 For FP16, modify one line above:
@@ -139,17 +138,17 @@ python infer_fp32_vs_amp.py gpu fp16
 
 Run with CPU and BF16 data type:
 ```
-infer_fp32_vs_amp.sh cpu bf16
+./infer_fp32_vs_amp.sh cpu bf16
 ```
 
 Run with GPU and BF16 data type:
 ```
-infer_fp32_vs_amp.sh gpu bf16
+./infer_fp32_vs_amp.sh gpu bf16
 ```
 
 Run with GPU and FP16 data type:
 ```
-infer_fp32_vs_amp.sh gpu fp16
+./infer_fp32_vs_amp.sh gpu fp16
 ```
 
 ### Result
@@ -166,7 +165,7 @@ Latency Normalized              1                       X.6153628825864496
 Throughputs Normalized          1                       X.867908472383153
 ```
 
-**Note, if the data type (BF16, FP16) is not supported by the hardware, the training will be executed by converting to FP32. That will make the performance is worse than FP32 case.**
+**Note, if the data type (BF16, FP16) is not supported by the hardware, the training will be executed by converting to FP32. That will make the performance worse than FP32 case.**
 
 ## FAQ
 

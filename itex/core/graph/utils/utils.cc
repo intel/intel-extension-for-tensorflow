@@ -100,6 +100,18 @@ Status WriteTextProtoToUniqueFile(const itex::protobuf::Message& proto,
   return Status::OK();
 }
 
+Status WriteBinaryProtoToUniqueFile(const itex::protobuf::Message& proto,
+                                    std::ofstream* output) {
+  if (!proto.SerializeToOstream(output)) {
+    return errors::Internal("Unable to dump graph to file.");
+  }
+
+  output->close();
+  if (!output->good()) return errors::Internal("Unable to close dump file.");
+
+  return Status::OK();
+}
+
 Status CreateWritableFile(const string& dirname, const string& name,
                           const string& suffix, string* filepath,
                           std::ofstream* output) {
@@ -151,18 +163,47 @@ NodeMapInternal<const GraphDef, const NodeDef>::GetNodeDefFromGraph(
 }
 }  // namespace internal
 
+bool HaveComputeIntensiveNode(const GraphDef& graph_def) {
+  for (auto node : graph_def.node()) {
+    if (node.op().find("Conv") != std::string::npos ||
+        node.op().find("GRU") != std::string::npos ||
+        node.op().find("LSTM") != std::string::npos ||
+        node.op().find("MatMul") != std::string::npos ||
+        node.op().find("RNN") != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool HaveQuantizeDequantizeNode(const GraphDef& graph_def) {
+  for (auto node : graph_def.node()) {
+    if (node.op().find("QuantizeV2") != std::string::npos ||
+        node.op().find("Dequantize") != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
 string DumpGraphDefToFile(const string& name, GraphDef const& graph_def,
-                          const string& dirname) {
+                          const string& dirname, bool is_output_binary) {
   string filepath;
   std::ofstream output;
-  Status status =
-      CreateWritableFile(dirname, name, ".pbtxt", &filepath, &output);
+
+  string ext = is_output_binary ? ".pb" : "*.pbtxt";
+  Status status = CreateWritableFile(dirname, name, ext, &filepath, &output);
 
   if (!status.ok()) {
     return StrCat("(failed to create writable file: ", status.ToString(), ")");
   }
 
-  status = WriteTextProtoToUniqueFile(graph_def, &output);
+  if (is_output_binary) {
+    status = WriteBinaryProtoToUniqueFile(graph_def, &output);
+  } else {
+    status = WriteTextProtoToUniqueFile(graph_def, &output);
+  }
+
   if (!status.ok()) {
     return StrCat("(failed to dump Graph to '", filepath,
                   "': ", status.ToString(), ")");
@@ -226,13 +267,13 @@ bool NodeIsOnDevice(const char* device_name, const NodeDef* node) {
 bool NodeIsOnCpu(const NodeDef* node) {
   string task, device;
   return DeviceNameUtils::SplitDeviceName(node->device(), &task, &device) &&
-         absl::StartsWith(GetDeviceBackendName(device), DEVICE_CPU);
+         absl::StartsWith(GetDeviceBackendName(device.c_str()), DEVICE_CPU);
 }
 
 bool NodeIsOnGpu(const NodeDef* node) {
   string task, device;
   return DeviceNameUtils::SplitDeviceName(node->device(), &task, &device) &&
-         absl::StartsWith(GetDeviceBackendName(device), DEVICE_GPU);
+         absl::StartsWith(GetDeviceBackendName(device.c_str()), DEVICE_GPU);
 }
 
 bool HasControlInputs(const NodeDef& node) {

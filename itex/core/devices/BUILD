@@ -1,13 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
+load("//itex:itex.bzl", "cc_library")
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+
 cc_library(
     name = "xpu_device_util",
-    srcs = ["xpu_device_util.cc"],
     hdrs = ["xpu_device_util.h"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core:protos_all_cc",
+        ":device_backend_util_hdr",
         "//itex/core/utils:env_var",
         "//itex/core/utils:logging",
     ],
@@ -17,23 +19,41 @@ cc_library(
 cc_library(
     name = "xpu_device",
     srcs = ["xpu_device.cc"],
+    hdrs = ["xpu_device.h"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        ":xpu_device_util",
+        ":device_backend_util_hdr",
         "@local_config_tf//:tf_header_lib",
-    ] + select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": ["//itex/core/devices/gpu:gpu_device_impl"],
-        "//conditions:default": [],
-    }),
+    ] + if_dpcpp(
+        ["//itex/core/devices/gpu:gpu_device_impl"],
+    ),
     alwayslink = True,
 )
 
 cc_library(
-    name = "xpu_device_util_hdr",
-    hdrs = ["xpu_device_util.h"],
+    name = "device_backend_util",
+    srcs = ["device_backend_util.cc"],
+    hdrs = ["device_backend_util.h"],
+    linkstatic = 1,
     visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core:protos_all_cc",
+        "//itex/core/utils:device_types",
+        "//itex/core/utils:logging",
+    ],
     alwayslink = True,
+)
+
+cc_library(
+    name = "device_backend_util_hdr",
+    hdrs = ["device_backend_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core:protos_all_cc",
+        "//itex/core/utils:device_types",
+        "//itex/core/utils:logging",
+    ],
 )
 
 cc_library(
@@ -49,7 +69,7 @@ cc_library(
         "//itex/core/utils:hw_info",
         "//itex/core/utils:logging",
         "//itex/core/utils:mutex",
-        "//third_party/build_option/dpcpp:dpcpp_header",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
     alwayslink = True,

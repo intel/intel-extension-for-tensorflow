@@ -26,7 +26,7 @@ try:
 except ImportError:
     from tensorflow.python.platform import test
 
-FLOAT_COMPUTE_TYPE = [dtypes.float32]
+COMPUTE_TYPE = [dtypes.complex64]
 ITERATION = 5
 
 class AngleTest(test.TestCase):
@@ -39,7 +39,7 @@ class AngleTest(test.TestCase):
     @add_profiling
     @multi_run(ITERATION)
     def testAngle(self):
-        for dtype in FLOAT_COMPUTE_TYPE:
+        for dtype in COMPUTE_TYPE:
             self._test_impl(30523, dtype)
             
 if __name__ == '__main__':

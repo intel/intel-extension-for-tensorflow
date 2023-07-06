@@ -32,10 +32,15 @@ from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
 from tensorflow.python.training import rmsprop
 
 _DATA_TYPES = [dtypes.half, dtypes.float32, dtypes.float64, dtypes.complex64, dtypes.complex128]
@@ -106,8 +111,8 @@ class RMSPropOptimizerTest(test.TestCase):
           var0 = resource_variable_ops.ResourceVariable(var0_np)
           var1 = resource_variable_ops.ResourceVariable(var1_np)
         else:
-          var0 = variables.Variable(var0_np)
-          var1 = variables.Variable(var1_np)
+          var0 = RefVariable(var0_np)
+          var1 = RefVariable(var1_np)
         grads0 = constant_op.constant(grads0_np)
         grads1 = constant_op.constant(grads1_np)
         opt = rmsprop.RMSPropOptimizer(
@@ -229,11 +234,11 @@ class RMSPropOptimizerTest(test.TestCase):
         var0 = variables.Variable(var0_np)
         var1 = variables.Variable(var1_np)
         grads0_np_indices = np.array([0], dtype=np.int32)
-        grads0 = ops.IndexedSlices(
+        grads0 = indexed_slices.IndexedSlices(
             constant_op.constant(grads0_np),
             constant_op.constant(grads0_np_indices), constant_op.constant([1]))
         grads1_np_indices = np.array([1], dtype=np.int32)
-        grads1 = ops.IndexedSlices(
+        grads1 = indexed_slices.IndexedSlices(
             constant_op.constant(grads1_np),
             constant_op.constant(grads1_np_indices), constant_op.constant([1]))
         opt = rmsprop.RMSPropOptimizer(

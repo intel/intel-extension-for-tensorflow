@@ -20,6 +20,8 @@ limitations under the License.
 
 #include <sstream>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include "absl/strings/str_join.h"
 #include "itex/core/utils/logging.h"
@@ -58,11 +60,80 @@ inline const strings::AlphaNum& PrepareForStrCat(const strings::AlphaNum& a) {
 
 }  // namespace internal
 
+// Maps UNIX errors into a Status.
+Status IOError(const string& context, int err_number);
+
+// Returns all payloads from a Status as a key-value map.
+inline std::unordered_map<std::string, std::string> GetPayloads(
+    const ::itex::Status& status) {
+  std::unordered_map<std::string, std::string> payloads;
+  status.ForEachPayload(
+      [&payloads](itex::StringPiece key, itex::StringPiece value) {
+        payloads[std::string(key)] = std::string(value);
+      });
+  return payloads;
+}
+
+// Inserts all given payloads into the given status. Will overwrite existing
+// payloads if they exist with the same key.
+inline void InsertPayloads(
+    ::itex::Status& status,  // NOLINT
+    const std::unordered_map<std::string, std::string>& payloads) {
+  for (const auto& payload : payloads) {
+    status.SetPayload(payload.first, payload.second);
+  }
+}
+
+// Copies all payloads from one Status to another. Will overwrite existing
+// payloads in the destination if they exist with the same key.
+inline void CopyPayloads(const ::itex::Status& from,
+                         ::itex::Status& to) {  // NOLINT
+  from.ForEachPayload([&to](itex::StringPiece key, itex::StringPiece value) {
+    to.SetPayload(key, value);
+  });
+}
+
+// Creates a new status with the given code, message and payloads.
+inline ::itex::Status Create(
+    TF_Code code, ::itex::StringPiece message,
+    const std::unordered_map<std::string, std::string>& payloads) {
+  Status status(code, message);
+  InsertPayloads(status, payloads);
+  return status;
+}
+
+// Returns a new Status, replacing its message with the given.
+inline ::itex::Status CreateWithUpdatedMessage(const ::itex::Status& status,
+                                               ::itex::StringPiece message) {
+  return Create(status.code(), message, GetPayloads(status));
+}
+
+// Append some context to an error message.  Each time we append
+// context put it on a new line, since it is possible for there
+// to be several layers of additional context.
+template <typename... Args>
+void AppendToMessage(::itex::Status* status, Args... args) {
+  auto new_status = ::itex::Status(
+      status->code(),
+      ::itex::strings::StrCat(status->error_message(), "\n\t", args...));
+  CopyPayloads(*status, new_status);
+  *status = std::move(new_status);
+}
+
 // For propagating errors when calling a function.
 #define TF_RETURN_IF_ERROR(...)                            \
   do {                                                     \
     ::itex::Status _status(__VA_ARGS__);                   \
     if (ITEX_PREDICT_FALSE(!_status.ok())) return _status; \
+  } while (0)
+
+#define TF_RETURN_WITH_CONTEXT_IF_ERROR(expr, ...)            \
+  do {                                                        \
+    ::itex::Status _status = (expr);                          \
+    if (ITEX_PREDICT_FALSE(!_status.ok())) {                  \
+      ::itex::errors::AppendToMessage(&_status, __VA_ARGS__); \
+      return _status;                                         \
+    }                                                         \
   } while (0)
 
 // For setting tf_status and propagating errors when calling a function.
@@ -89,6 +160,37 @@ inline const strings::AlphaNum& PrepareForStrCat(const strings::AlphaNum& a) {
 //   if (errors::IsInvalidArgument(status)) { ... }
 //   switch (status.code()) { case error::INVALID_ARGUMENT: ... }
 
+#ifdef ITEX_BUILD_JAX
+#define DECLARE_ERROR(FUNC, CONST)                                        \
+  template <typename... Args>                                             \
+  ::itex::Status FUNC(Args... args) {                                     \
+    return ::itex::Status(                                                \
+        CONST, ::itex::strings::StrCat(                                   \
+                   ::itex::errors::internal::PrepareForStrCat(args)...)); \
+  }                                                                       \
+  inline bool Is##FUNC(const ::itex::Status& status) {                    \
+    return status.code() == CONST;                                        \
+  }
+
+DECLARE_ERROR(Cancelled, itex::error::Code::CANCELLED)
+DECLARE_ERROR(InvalidArgument, itex::error::Code::INVALID_ARGUMENT)
+DECLARE_ERROR(NotFound, itex::error::Code::NOT_FOUND)
+DECLARE_ERROR(AlreadyExists, itex::error::Code::ALREADY_EXISTS)
+DECLARE_ERROR(ResourceExhausted, itex::error::Code::RESOURCE_EXHAUSTED)
+DECLARE_ERROR(Unavailable, itex::error::Code::UNAVAILABLE)
+DECLARE_ERROR(FailedPrecondition, itex::error::Code::FAILED_PRECONDITION)
+DECLARE_ERROR(OutOfRange, itex::error::Code::OUT_OF_RANGE)
+DECLARE_ERROR(Unimplemented, itex::error::Code::UNIMPLEMENTED)
+DECLARE_ERROR(Internal, itex::error::Code::INTERNAL)
+DECLARE_ERROR(Aborted, itex::error::Code::ABORTED)
+DECLARE_ERROR(DeadlineExceeded, itex::error::Code::DEADLINE_EXCEEDED)
+DECLARE_ERROR(DataLoss, itex::error::Code::DATA_LOSS)
+DECLARE_ERROR(Unknown, itex::error::Code::UNKNOWN)
+DECLARE_ERROR(PermissionDenied, itex::error::Code::PERMISSION_DENIED)
+DECLARE_ERROR(Unauthenticated, itex::error::Code::UNAUTHENTICATED)
+
+#undef DECLARE_ERROR
+#else
 #define DECLARE_ERROR(FUNC, CONST)                                             \
   template <typename... Args>                                                  \
   ::itex::Status FUNC(Args... args) {                                          \
@@ -118,6 +220,7 @@ DECLARE_ERROR(PermissionDenied, PERMISSION_DENIED)
 DECLARE_ERROR(Unauthenticated, UNAUTHENTICATED)
 
 #undef DECLARE_ERROR
+#endif
 
 // Produces a formatted string pattern from the name which can uniquely identify
 // this node upstream to produce an informative error message. The pattern

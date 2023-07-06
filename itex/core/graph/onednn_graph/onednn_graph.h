@@ -25,7 +25,6 @@ limitations under the License.
 #include "itex/core/graph/utils/grappler_item.h"
 #include "itex/core/graph/utils/node_type_attr_map.h"
 #include "itex/core/utils/node_def_util.h"
-
 #include "protos/graph.pb.h"
 
 namespace itex {

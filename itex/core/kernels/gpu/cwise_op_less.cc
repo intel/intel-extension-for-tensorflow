@@ -27,7 +27,7 @@ REGISTER3(BinaryOp, GPU, "Less", functor::less, float, Eigen::half,
 REGISTER(BinaryOp, GPU, "Less", functor::less, double);
 #endif  // ITEX_ENABLE_DOUBLE
 
-REGISTER3(BinaryOp, GPU, "_LessWithCast", functor::less_with_cast, float,
+REGISTER3(BinaryOp, GPU, "_ITEXLessWithCast", functor::less_with_cast, float,
           Eigen::half, Eigen::bfloat16);
 
 // A special GPU kernel for int32.

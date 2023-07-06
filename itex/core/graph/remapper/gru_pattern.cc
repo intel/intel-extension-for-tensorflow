@@ -107,6 +107,13 @@ class GruFusion : public Fusion {
                           const int node_index) const override {
     MatchedProperties ret;
     auto& graph_view = ctx->graph_view;
+    const auto* node_view = graph_view.GetNode(node_index);
+    const auto* node_def = node_view->node();
+
+    // TODO(itex): Enable GPU fusion after fixing perf issue.
+    if (NodeIsOnGpu(node_def)) {
+      return ret.ToEmpty();
+    }
 
     ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
     if (!ret.Empty()) {
@@ -120,7 +127,7 @@ class GruFusion : public Fusion {
     auto& graph_view = ctx->graph_view;
     std::vector<string> attrs = {"T"};
 
-    ChangeFanoutPort(ctx, properties, "output", 3);
+    ITEX_CHECK_OK(ChangeFanoutPort(ctx, properties, "output", 3));
 
     const NodeDef* output =
         graph_view.GetNode(properties.map.at("output"))->node();
@@ -164,7 +171,7 @@ class GruFusion : public Fusion {
       const std::vector<std::string>& attr_names) const {
     auto* attr = fused_op->mutable_attr();
     auto& src_attr = orig_node.attr();
-    for (int i = 0; i < attr_names.size(); ++i) {
+    for (size_t i = 0; i < attr_names.size(); ++i) {
       (*attr)[attr_names[i]] = src_attr.at(attr_names[i]);
     }
   }
@@ -184,7 +191,7 @@ class GruFusion : public Fusion {
 
     utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
     std::string out_name = output->node()->name();
-    for (int i = 0; i < fouts.size(); ++i) {
+    for (size_t i = 0; i < fouts.size(); ++i) {
       auto fnode = fouts[i].node_view();
       int m_indx = -1;
       for (int j = 0; j < fnode->NumRegularFanins(); ++j) {
@@ -209,9 +216,9 @@ class GruFusion : public Fusion {
   inline bool IsValidTypes(RemapperContext* ctx,
                            const MatchedProperties& properties,
                            std::vector<DataType> valid_types) const {
-    for (int i = 0; i < valid_types.size(); ++i) {
+    for (size_t i = 0; i < valid_types.size(); ++i) {
       bool valid = true;
-      for (int j = 0; j < NodesWithType.size(); ++j) {
+      for (size_t j = 0; j < NodesWithType.size(); ++j) {
         NodeDef* nd =
             ctx->graph_view.GetNode(properties.map.at(NodesWithType[j]))
                 ->node();

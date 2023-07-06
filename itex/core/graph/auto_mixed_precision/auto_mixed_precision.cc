@@ -32,14 +32,15 @@ limitations under the License.
 #include "itex/core/graph/auto_mixed_precision/auto_mixed_precision_lists.h"
 #include "itex/core/graph/graph_view/mutable_graph_view.h"
 #include "itex/core/graph/optimizer_config.h"
-#include "itex/core/graph/utils/function.h"
 #include "itex/core/graph/utils/graph_properties.h"
 #include "itex/core/graph/utils/node_type_attr_map.h"
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/symbolic_shapes.h"
 #include "itex/core/graph/utils/utils.h"
+#include "itex/core/utils/cpu_info.h"
 #include "itex/core/utils/device_name_utils.h"
 #include "itex/core/utils/env_time.h"
+#include "itex/core/utils/function.h"
 #include "itex/core/utils/op_def_util.h"
 #include "itex/core/utils/path.h"
 #include "itex/core/utils/types.h"
@@ -83,14 +84,22 @@ Status GetAutoMixedPrecisionMode(const char* device_name,
     mode_type = absl::AsciiStrToUpper(mode_type);
   }
 
-  // Set AutoMixedPrecision mode on CPU device. CPU only support BF16.
+  // Set AutoMixedPrecision mode on CPU device. CPU support BF16 and FP16.
   if (device_name == DEVICE_CPU) {
-    if (mode_type == "BFLOAT16") {
+    if (mode_type == "FLOAT16") {
+      if (port::HasCpuFP16Support()) {
+        *model = AutoMixedPrecisionMode::CPU_FLOAT16;
+      } else {
+        return errors::InvalidArgument(
+            "Auto Mixed Precision data type should be set BFLOAT16, "
+            "Because user's CPU only support bfloat16 data type.");
+      }
+    } else if (mode_type == "BFLOAT16") {
       *model = AutoMixedPrecisionMode::CPU_BFLOAT16;
     } else {
       return errors::InvalidArgument(
-          "Auto Mixed Precision data type should be set BFLOAT16, "
-          "Because CPU only support bfloat16 data type.");
+          "Auto Mixed Precision data type should be set BFLOAT16 or "
+          "FLOAT16.");
     }
   }
   // Set AutoMixedPrecision mode on GPU device. GPUs support BF16 and FP16.
@@ -637,7 +646,8 @@ class AutoMixedPrecisionImpl {
         function_library_(*graph),
         graph_view_(graph),
         mode_(mode),
-        target_dtype_(mode_ == AutoMixedPrecisionMode::GPU_FLOAT16
+        target_dtype_((mode_ == AutoMixedPrecisionMode::GPU_FLOAT16 ||
+                       mode_ == AutoMixedPrecisionMode::CPU_FLOAT16)
                           ? DT_HALF
                           : DT_BFLOAT16) {}
 
@@ -651,6 +661,8 @@ class AutoMixedPrecisionImpl {
         return absl::make_unique<AutoMixedPrecisionListsGPU>();
       case AutoMixedPrecisionMode::GPU_BFLOAT16:
         return absl::make_unique<AutoMixedPrecisionListsGPU>();
+      case AutoMixedPrecisionMode::CPU_FLOAT16:
+        return absl::make_unique<AutoMixedPrecisionListsCPU>();
       case AutoMixedPrecisionMode::CPU_BFLOAT16:
         return absl::make_unique<AutoMixedPrecisionListsCPU>();
       default:
@@ -722,16 +734,20 @@ NodeDef AutoMixedPrecisionImpl::BuildCastNode(
     const string& device) const {
   DataType src_type = to_f16 ? DT_FLOAT : target_dtype_;
   DataType dst_type = to_f16 ? target_dtype_ : DT_FLOAT;
-  const char* cast_string =
-      !to_f16 ? kCastToFp32
-              : target_dtype_ == DT_HALF ? kCastToFp16 : kCastToBf16;
+  const char* cast_string = !to_f16                    ? kCastToFp32
+                            : target_dtype_ == DT_HALF ? kCastToFp16
+                                                       : kCastToBf16;
   string name = strings::StrCat(src.node->name(), "-", src.port_id, "-",
                                 cast_string, "-", kSuffix);
   NodeDef node;
   node.set_name(name);
   node.set_op("Cast");
   node.set_device(device);
-  node.add_input(strings::StrCat(src.node->name(), ":", src.port_id));
+  if (src.port_id == 0) {
+    node.add_input(src.node->name());
+  } else {
+    node.add_input(strings::StrCat(src.node->name(), ":", src.port_id));
+  }
   (*node.mutable_attr())["SrcT"].set_type(src_type);
   (*node.mutable_attr())["DstT"].set_type(dst_type);
   (*node.mutable_attr())["Truncate"].set_b(false);
@@ -993,6 +1009,9 @@ Status AutoMixedPrecisionImpl::Optimize() {
         break;
       case AutoMixedPrecisionMode::GPU_BFLOAT16:
         should_process = !MustPreserve(node) && IsOnDevice(node, DEVICE_XPU);
+        break;
+      case AutoMixedPrecisionMode::CPU_FLOAT16:
+        should_process = !MustPreserve(node) && IsOnDevice(node, DEVICE_CPU);
         break;
       case AutoMixedPrecisionMode::CPU_BFLOAT16:
         should_process = !MustPreserve(node) && IsOnDevice(node, DEVICE_CPU);
@@ -1728,10 +1747,11 @@ Status AutoMixedPrecisionImpl::ChangeTypeAttrsAndAddCasts(
 }
 
 }  // end namespace
-Status RunAutoMixedPrecision(const char* device_name, const GrapplerItem& item,
+Status RunAutoMixedPrecision(OptimizerContext* opt_ctx,
+                             const GrapplerItem& item,
                              const GraphDef& graph_def, GraphDef* output) {
   auto mode = AutoMixedPrecisionMode::GPU_FLOAT16;
-  Status status = GetAutoMixedPrecisionMode(device_name, &mode);
+  Status status = GetAutoMixedPrecisionMode(opt_ctx->device_name, &mode);
   // Start by copying input graph to output.
   *output = graph_def;
 

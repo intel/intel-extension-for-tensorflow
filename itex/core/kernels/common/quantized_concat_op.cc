@@ -172,8 +172,11 @@ class QuantizedConcatOp : public OpKernel {
         src_md = CreatePlainMemDescWithFormatTag<T>(dims);
         srcs_pd.push_back(src_md);
       }
-
+#ifdef ITEX_ONEDNN_3_0
+      dnnl::memory::dims dst_dims = srcs_pd[0].get_dims();
+#else
       dnnl::memory::dims dst_dims = srcs_pd[0].dims();
+#endif
       // Only difference between output dims and each input dims is the concat
       // dim
       dst_dims[axis_in_eigen] = output_concat_dim;
@@ -189,9 +192,13 @@ class QuantizedConcatOp : public OpKernel {
       // don't want. E.g. the inputs are all default format "abcd", the output
       // format chosen by OneDnn may be "acdb"
       dnnl::memory::desc dst_md = CreatePlainMemDescWithFormatTag<T>(dst_dims);
+#ifdef ITEX_ONEDNN_3_0
+      concat_pd = dnnl::concat::primitive_desc(onednn_engine, dst_md,
+                                               axis_in_eigen, srcs_pd, attr);
+#else
       concat_pd = dnnl::concat::primitive_desc(dst_md, axis_in_eigen, srcs_pd,
                                                onednn_engine, attr);
-
+#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
           concat_pd.scratchpad_desc().get_size() / sizeof(T);
@@ -243,8 +250,28 @@ class QuantizedConcatOp : public OpKernel {
   int axis_input_index_;
 };
 
-// TODO(itex): Bring QuantizedConcatV2 back for GPU with completed
-// implementation.
+// TODO(itex): Add completed implementation for GPU in the future
+#ifndef INTEL_CPU_ONLY
+REGISTER_KERNEL_BUILDER(Name("QuantizedConcatV2")
+                            .Device(DEVICE_GPU)
+                            .HostMemory("axis")
+                            .HostMemory("input_mins")
+                            .HostMemory("input_maxes")
+                            .HostMemory("output_min")
+                            .HostMemory("output_max")
+                            .TypeConstraint<quint8>("T"),
+                        QuantizedConcatOp<GPUDevice, quint8>);
+
+REGISTER_KERNEL_BUILDER(Name("QuantizedConcatV2")
+                            .Device(DEVICE_GPU)
+                            .HostMemory("axis")
+                            .HostMemory("input_mins")
+                            .HostMemory("input_maxes")
+                            .HostMemory("output_min")
+                            .HostMemory("output_max")
+                            .TypeConstraint<qint8>("T"),
+                        QuantizedConcatOp<GPUDevice, qint8>);
+#else
 REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConcatV2")
                             .Device(DEVICE_CPU)
                             .TypeConstraint<quint8>("T"),
@@ -254,4 +281,5 @@ REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConcatV2")
                             .Device(DEVICE_CPU)
                             .TypeConstraint<qint8>("T"),
                         QuantizedConcatOp<CPUDevice, qint8>);
+#endif
 }  // namespace itex

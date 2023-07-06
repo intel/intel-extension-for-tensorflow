@@ -149,8 +149,10 @@ class InstanceNormOp : public OpKernel {
       auto flags = dnnl::normalization_flags::use_scale |
                    dnnl::normalization_flags::use_shift;
 
+#ifndef ITEX_ONEDNN_3_0
       dnnl::batch_normalization_forward::desc bn_fwd_desc(propagation, src_md,
                                                           epsilon_, flags);
+#endif
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
@@ -158,15 +160,22 @@ class InstanceNormOp : public OpKernel {
 
       if (fuse_activation) {
         dnnl::post_ops post_ops;
+#ifdef ITEX_ONEDNN_3_0
+        post_ops.append_eltwise(dnnl::algorithm::eltwise_relu, leakyrelu_alpha_,
+                                0.0);
+#else
         post_ops.append_eltwise(1.0, dnnl::algorithm::eltwise_relu,
                                 leakyrelu_alpha_, 0.0);
+#endif
         attr.set_post_ops(post_ops);
-        bn_fwd_pd = dnnl::batch_normalization_forward::primitive_desc(
-            bn_fwd_desc, attr, onednn_engine);
-      } else {
-        bn_fwd_pd = dnnl::batch_normalization_forward::primitive_desc(
-            bn_fwd_desc, attr, onednn_engine);
       }
+#ifdef ITEX_ONEDNN_3_0
+      bn_fwd_pd = dnnl::batch_normalization_forward::primitive_desc(
+          onednn_engine, propagation, src_md, src_md, epsilon_, flags, attr);
+#else
+      bn_fwd_pd = dnnl::batch_normalization_forward::primitive_desc(
+          bn_fwd_desc, attr, onednn_engine);
+#endif
 
       dnnl::batch_normalization_forward bn_fwd_primitive(bn_fwd_pd);
 

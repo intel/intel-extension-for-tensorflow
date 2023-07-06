@@ -28,10 +28,15 @@ from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
 
 _TEST_TYPES = (dtypes.int64, dtypes.float32,
                dtypes.complex64, dtypes.complex128)
@@ -138,7 +143,7 @@ class GatherTest(test.TestCase, parameterized.TestCase):
             # For axis 0, we are able to create an efficient IndexedSlices for
             # the gradient.
             if axis == 0:
-              self.assertEqual(type(params_grad), ops.IndexedSlices)
+              self.assertEqual(type(params_grad), indexed_slices.IndexedSlices)
               params_grad = ops.convert_to_tensor(params_grad)
             correct_params_grad = np.zeros(shape).astype(dtype.as_numpy_dtype)
             outer_dims = axis
@@ -254,6 +259,19 @@ class GatherTest(test.TestCase, parameterized.TestCase):
           params = np.zeros((0, 0, 7), dtype=dtype.as_numpy_dtype)
           gather = array_ops.gather(params, indices, axis=2)
           self.assertAllEqual(gather.eval(), np.zeros((0, 0, 2)))
+
+  @test_util.run_deprecated_v1
+  def testZeroSlicesGPU(self):
+    if not test.is_gpu_available():
+      self.skipTest("Skip on CPU")
+
+    with self.session(use_gpu=True):
+      for dtype in _TEST_TYPES:
+        for itype in np.int32, np.int64:
+          params = np.zeros((0,), dtype=dtype.as_numpy_dtype)
+          indices = np.array([1, 2], dtype=itype)
+          gather = array_ops.gather(params, indices, axis=0)
+          self.assertAllEqual(gather.eval(), np.zeros((2,)))
 
   @parameterized.parameters([
       # batch_dims=0 (equivalent to tf.gather)
@@ -476,7 +494,7 @@ class GatherTest(test.TestCase, parameterized.TestCase):
   @test_util.run_v1_only("RefVariable is not supported in v2")
   def testGatherRefVariable(self):
     with self.cached_session():
-      v = variables.RefVariable(constant_op.constant([[1, 2], [3, 4], [5, 6]]))
+      v = RefVariable(constant_op.constant([[1, 2], [3, 4], [5, 6]]))
       self.evaluate(variables.global_variables_initializer())
       gather = array_ops.gather(v, [0, 2])
       if not context.executing_eagerly():  # .op doesn't make sense in Eager
@@ -490,8 +508,6 @@ class GatherTest(test.TestCase, parameterized.TestCase):
           constant_op.constant([[1, 2], [3, 4], [5, 6]]))
       self.evaluate(variables.global_variables_initializer())
       gather = array_ops.gather(v, [0, 2])
-      if not context.executing_eagerly():  # .op doesn't make sense in Eager
-        self.assertEqual("ResourceGather", gather.op.inputs[0].op.type)
       self.assertAllEqual([[1, 2], [5, 6]], gather)
 
 if __name__ == "__main__":

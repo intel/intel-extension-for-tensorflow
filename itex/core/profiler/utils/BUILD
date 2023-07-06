@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+load("//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "xplane_builder",
     srcs = ["xplane_builder.cc"],

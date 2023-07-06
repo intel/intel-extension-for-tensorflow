@@ -1,9 +1,20 @@
-load("//third_party:repo.bzl", "tf_http_archive", "third_party_http_archive")
+load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
 load("//third_party/build_option:dpcpp_configure.bzl", "dpcpp_configure")
 load("//third_party/systemlibs:syslibs_configure.bzl", "syslibs_configure")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("//third_party/llvm_project:setup.bzl", "llvm_setup")
+load("//third_party/llvm_project:setup_16.bzl", "llvm_setup_16")
+load("//third_party:tf_runtime/workspace.bzl", tf_runtime = "repo")
+load("//third_party/stablehlo:workspace.bzl", stablehlo = "repo")
+load(
+    "//third_party/farmhash:workspace.bzl",
+    farmhash = "repo",
+)
+load(
+    "//third_party/absl:workspace.bzl",
+    absl = "repo",
+)
 
 def clean_dep(dep):
     return str(Label(dep))
@@ -25,33 +36,49 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     """All external dependencies for TF builds"""
     dpcpp_configure(name = "local_config_dpcpp")
     syslibs_configure(name = "local_config_syslibs")
+    tf_runtime()
+    stablehlo()
+    farmhash()
+    absl()
 
     http_archive(
         name = "bazel_toolchains",
-        sha256 = "109a99384f9d08f9e75136d218ebaebc68cc810c56897aea2224c57932052d30",
-        strip_prefix = "bazel-toolchains-94d31935a2c94fe7e7c7379a0f3393e181928ff7",
+        sha256 = "294cdd859e57fcaf101d4301978c408c88683fbc46fbc1a3829da92afbea55fb",
+        strip_prefix = "bazel-toolchains-8c717f8258cd5f6c7a45b97d974292755852b658",
         urls = [
-            "http://mirror.tensorflow.org/github.com/bazelbuild/bazel-toolchains/archive/94d31935a2c94fe7e7c7379a0f3393e181928ff7.tar.gz",
-            "https://github.com/bazelbuild/bazel-toolchains/archive/94d31935a2c94fe7e7c7379a0f3393e181928ff7.tar.gz",
+            "http://mirror.tensorflow.org/github.com/bazelbuild/bazel-toolchains/archive/8c717f8258cd5f6c7a45b97d974292755852b658.tar.gz",
+            "https://github.com/bazelbuild/bazel-toolchains/archive/8c717f8258cd5f6c7a45b97d974292755852b658.tar.gz",
         ],
     )
 
     tf_http_archive(
         name = "pybind11",
         urls = [
-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/pybind/pybind11/archive/v2.6.0.tar.gz",
-            "https://github.com/pybind/pybind11/archive/v2.6.0.tar.gz",
+            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/pybind/pybind11/archive/v2.10.0.tar.gz",
+            "https://github.com/pybind/pybind11/archive/v2.10.0.tar.gz",
         ],
-        sha256 = "90b705137b69ee3b5fc655eaca66d0dc9862ea1759226f7ccd3098425ae69571",
-        strip_prefix = "pybind11-2.6.0",
+        sha256 = "eacf582fa8f696227988d08cfc46121770823839fe9e301a20fbce67e7cd70ec",
+        strip_prefix = "pybind11-2.10.0",
         build_file = clean_dep("//third_party:pybind11.BUILD"),
         system_build_file = clean_dep("//third_party/systemlibs:pybind11.BUILD"),
     )
 
     new_git_repository(
+        name = "onednn_cpu_v2",
+        # Align to SPR gold release.
+        commit = "b1ea77cdb7468ca334d50dbc19f72aed44435507",
+        remote = "https://github.com/oneapi-src/oneDNN.git",
+        build_file = clean_dep("//third_party/onednn_v2:onednn_cpu.BUILD"),
+        verbose = True,
+        patch_cmds = [
+            "git log -1 --format=%H > COMMIT",
+        ],
+    )
+
+    new_git_repository(
         name = "onednn_cpu",
-        # v2.7-rc
-        tag = "v2.7-rc",
+        # v3.2-rc
+        commit = "f7bceb51946ab3e8a9ceb93e17e1b2c81640fce4",
         remote = "https://github.com/oneapi-src/oneDNN.git",
         build_file = clean_dep("//third_party/onednn:onednn_cpu.BUILD"),
         verbose = True,
@@ -68,20 +95,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     )
 
     tf_http_archive(
-        name = "com_google_absl",
-        build_file = "//third_party/absl:com_google_absl.BUILD",
-        # TODO(itex): Remove the patch when https://github.com/abseil/abseil-cpp/issues/326 is resolved
-        patch_file = "//third_party/absl:com_google_absl_fix_mac_and_nvcc_build.patch",
-        sha256 = "35f22ef5cb286f09954b7cc4c85b5a3f6221c9d4df6b8c4a1e9d399555b366ee",
-        strip_prefix = "abseil-cpp-997aaf3a28308eba1b9156aa35ab7bca9688e9f6",
-        urls = [
-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/abseil/abseil-cpp/archive/997aaf3a28308eba1b9156aa35ab7bca9688e9f6.tar.gz",
-            "https://github.com/abseil/abseil-cpp/archive/997aaf3a28308eba1b9156aa35ab7bca9688e9f6.tar.gz",
-        ],
-    )
-
-    tf_http_archive(
         name = "com_googlesource_code_re2",
+        build_file = clean_dep("//third_party:re2.BUILD"),
         sha256 = "d070e2ffc5476c496a6a872a6f246bfddce8e7797d6ba605a7c8d72866743bf9",
         strip_prefix = "re2-506cfa4bffd060c06ec338ce50ea3468daa6c814",
         system_build_file = "//third_party/systemlibs:re2.BUILD",
@@ -116,23 +131,43 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     )
 
     tf_http_archive(
+        name = "rules_python",
+        sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
+        urls = [
+            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz",
+            "https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz",
+        ],
+    )
+
+    http_archive(
+        name = "rules_pkg",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.7.1/rules_pkg-0.7.1.tar.gz",
+            "https://github.com/bazelbuild/rules_pkg/releases/download/0.7.1/rules_pkg-0.7.1.tar.gz",
+        ],
+        sha256 = "451e08a4d78988c06fa3f9306ec813b836b1d076d0f055595444ba4ff22b867f",
+    )
+
+    tf_http_archive(
         name = "com_google_protobuf",
-        patch_file = clean_dep("//third_party/protobuf:protobuf.patch"),
+        patch_file = ["//third_party/protobuf:protobuf.patch"],
         #build_file = clean_dep("//third_party/systemlibs:protobuf.BUILD"),
-        sha256 = "cfcba2df10feec52a84208693937c17a4b5df7775e1635c1e3baffc487b24c9b",
-        strip_prefix = "protobuf-3.9.2",
+        sha256 = "f66073dee0bc159157b0bd7f502d7d1ee0bc76b3c1eac9836927511bdc4b3fc1",
+        strip_prefix = "protobuf-3.21.9",
         system_build_file = clean_dep("//third_party/systemlibs:protobuf.BUILD"),
         system_link_files = {
             "//third_party/systemlibs:protobuf.bzl": "protobuf.bzl",
+            "//third_party/systemlibs:protobuf_deps.bzl": "protobuf_deps.bzl",
         },
         urls = [
-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
-            "https://github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
+            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/v3.21.9.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.21.9.zip",
         ],
     )
 
     tf_http_archive(
         name = "nsync",
+        build_file = clean_dep("//third_party:nsync.BUILD"),
         sha256 = "caf32e6b3d478b78cff6c2ba009c3400f8251f646804bcb65465666a9cea93c4",
         strip_prefix = "nsync-1.22.0",
         system_build_file = clean_dep("//third_party/systemlibs:nsync.BUILD"),
@@ -142,10 +177,27 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         ],
     )
 
+    tf_http_archive(
+        name = "rules_python",
+        sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
+        urls = tf_mirror_urls("https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz"),
+    )
+
+    new_git_repository(
+        name = "onednn_gpu_v2",
+        commit = "5c7d2549efd4cde805931ef3214ffebff5ef1d1c",
+        remote = "https://github.com/oneapi-src/oneDNN.git",
+        build_file = clean_dep("//third_party/onednn_v2:onednn_gpu.BUILD"),
+        verbose = True,
+        patch_cmds = [
+            "git log -1 --format=%H > COMMIT",
+        ],
+    )
+
     new_git_repository(
         name = "onednn_gpu",
-	# v2.7
-        commit = "650085b2f3643aad05c629425983491d63b5c289",
+        # rls-v3.2
+        commit = "f88241a",
         remote = "https://github.com/oneapi-src/oneDNN.git",
         build_file = clean_dep("//third_party/onednn:onednn_gpu.BUILD"),
         verbose = True,
@@ -156,8 +208,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     new_git_repository(
         name = "onednn_graph",
-        # llga public dev-graph-beta-2 branch
-        commit = "19a62f17aff079536f54af6282d987e9c641840c",
+        # llga public dev-graph-beta-3 branch
+        commit = "147d9bcec306738be5f223028b181e0ba592caf7",
         remote = "https://github.com/oneapi-src/oneDNN.git",
         build_file = clean_dep("//third_party/onednn_graph:onednn_graph.BUILD"),
         verbose = True,
@@ -170,11 +222,14 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     # llvm built in bazel
     llvm_setup(name = "llvm-project")
 
+    # llvm built in bazel
+    llvm_setup_16(name = "llvm-project-16")
+
     EIGEN_COMMIT = "d10b27fe37736d2944630ecd7557cefa95cf87c9"
     tf_http_archive(
         name = "eigen_archive",
         build_file = clean_dep("//third_party:eigen.BUILD"),
-        patch_file = clean_dep("//third_party/eigen3:intel_ext.patch"),
+        patch_file = ["//third_party/eigen3:intel_ext.patch"],
         sha256 = "a3c10a8c14f55e9f09f98b0a0ac6874c21bda91f65b7469d9b1f6925990e867b",
         strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
         urls = [
@@ -205,6 +260,38 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
             "https://storage.googleapis.com/mirror.tensorflow.org/pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
             "https://pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
         ],
+    )
+
+    git_repository(
+        name = "mlir-hlo",
+        commit = "1b862a645b61b954c3353bca3469e51f3f3b1ca7",
+        remote = "https://github.com/tensorflow/mlir-hlo/",
+        verbose = True,
+        patches = ["//third_party/mlir_hlo:mlir_hlo.patch"],
+        patch_args = ["-p1"],
+        patch_cmds = [
+            "git log -1 --format=%H > COMMIT",
+        ],
+    )
+
+    git_repository(
+        name = "spir_headers",
+        commit = "93754d52d6cbbfd61f4e87571079e8a28e65f8ca",
+        remote = "https://github.com/KhronosGroup/SPIRV-Headers.git",
+        verbose = True,
+        patch_cmds = [
+            "git log -1 --format=%H > COMMIT",
+        ],
+    )
+
+    new_git_repository(
+        name = "llvm_spir",
+        commit = "a3b372cb2d0250fbd5e395c3d32613f1644dfeb5",
+        remote = "https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git",
+        build_file = "//third_party/llvm_spir:llvm_spir.BUILD",
+        verbose = True,
+        patches = ["//third_party/llvm_spir:llvm_spir.patch"],
+        patch_args = ["-p1"],
     )
 
     _itex_bind()

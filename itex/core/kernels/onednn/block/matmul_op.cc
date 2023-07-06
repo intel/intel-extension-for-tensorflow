@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "itex/core/kernels/onednn/block/matmul_op.h"
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -111,6 +112,13 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       // No reorder needed
       weight_mem_.set_data_handle(context->tensor_data(kWeightIndex_));
     }
+
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<T>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
     // Allocate output data tensor, whether the output layout is blocked or
     // not relies on the result of IsBlockedMd
@@ -237,13 +245,13 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       memory::dims dst_dims = {src_dims[0], weight_dims[1]};
 
       // Use any format if:
-      // 1. Input tensor is not oneDNN tensor, then it can be reordered to
-      //    blocked format anyway
-      // 2. Input tensor is oneDNN tensor, and it's not transposed
+      // 1. Input tensor is oneDNN tensor and it's not transposed
+      // 2. Input tensor is not oneDNN tensor and Weight is const
       bool is_src_any =
-          !(src_onednn_shape_.IsOneDnnTensor() && this->transpose_a_);
-      bool is_wei_any =
-          !(weight_onednn_shape_.IsOneDnnTensor() && this->transpose_b_);
+          src_onednn_shape_.IsOneDnnTensor() && !this->transpose_a_;
+      bool is_wei_any = weight_onednn_shape_.IsOneDnnTensor()
+                            ? !this->transpose_b_
+                            : this->is_filter_const_;
 
       auto src_exec_md =
           is_src_any
@@ -266,15 +274,27 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       if (this->post_op_util_.HasBias()) {
         memory::desc bias_any_md = memory::desc(
             {1, weight_dims[1]}, OneDnnType<T>(), memory::format_tag::ab);
+#ifdef ITEX_ONEDNN_3_0
+        fwd_pd_ =
+            matmul::primitive_desc(onednn_engine_, src_exec_md, weight_exec_md,
+                                   bias_any_md, dst_exec_md, post_op_attr);
+#else
         matmul::desc matmul_d =
             matmul::desc(src_exec_md, weight_exec_md, bias_any_md, dst_exec_md);
         fwd_pd_ =
             matmul::primitive_desc(matmul_d, post_op_attr, onednn_engine_);
+#endif
       } else {
+#ifdef ITEX_ONEDNN_3_0
+        fwd_pd_ =
+            matmul::primitive_desc(onednn_engine_, src_exec_md, weight_exec_md,
+                                   dst_exec_md, post_op_attr);
+#else
         matmul::desc matmul_d =
             matmul::desc(src_exec_md, weight_exec_md, dst_exec_md);
         fwd_pd_ =
             matmul::primitive_desc(matmul_d, post_op_attr, onednn_engine_);
+#endif
       }
       fwd_primitive_ = matmul(fwd_pd_);
       // Create src memory, check if src needs to be reordered
@@ -394,13 +414,14 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       dst_mem_ = CreateDnnlMemory(fwd_pd_.dst_desc(), onednn_engine_,
                                   static_cast<void*>(dst_data));
 
-      int64 scratchpad_size = fwd_pd_.scratchpad_desc().get_size() / sizeof(T);
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
-      scratchpad_mem_ = dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
-                                     GetTensorBuffer<T>(&scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_ =
+          dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
       // Execute MatMul
       onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
@@ -437,12 +458,18 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (is_input_zero_) return;
+    if (is_input_zero_) {
+      scratchpad_tensor_.reset();
+      return;
+    }
 
     fwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
   }
 
  private:
@@ -462,7 +489,9 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
   matmul fwd_primitive_;
   std::unordered_map<int, memory> fwd_primitive_args_;
   Tensor* dst_tensor_;
-  Tensor src_reorder_tensor_, weight_reorder_tensor_, scratchpad_tensor_;
+  Tensor src_reorder_tensor_, weight_reorder_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
   const Tensor* add_tensor_;
   bool is_input_zero_ = false;
   bool is_init_ = false;
@@ -476,17 +505,25 @@ class OneDnnFusedMatMulGradOp : public OpKernel {
  public:
   explicit OneDnnFusedMatMulGradOp(OpKernelConstruction* context)
       : OpKernel(context) {
-    OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops_));
-    OP_REQUIRES_OK(context, context->GetAttr("transpose_a", &transpose_a_));
-    OP_REQUIRES_OK(context, context->GetAttr("transpose_b", &transpose_b_));
+    bool transpose_b;
+    std::vector<string> fused_ops;
 
-    OP_REQUIRES(context, fused_ops_.size() == 1,
+    OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops));
+    OP_REQUIRES_OK(context, context->GetAttr("transpose_a", &transpose_a_));
+    OP_REQUIRES_OK(context, context->GetAttr("transpose_b", &transpose_b));
+    OP_REQUIRES(context, !transpose_b,
                 errors::InvalidArgument(
-                    "OneDnnFusedMatMul must have 1 post-arguments at most."));
-    OP_REQUIRES(
-        context, fused_ops_[0] == "BiasAddGrad",
-        errors::InvalidArgument(
-            "The 1st post-argument of OneDnnFusedMatMul must be BiasAddGrad."));
+                    "_OneDnnFusedMatMulGrad only supports transpose_b = "
+                    "false."));
+
+    OP_REQUIRES(context, fused_ops.size() == 1,
+                errors::InvalidArgument(
+                    "_OneDnnFusedMatMulGrad must have 1 post-arguments at "
+                    "most."));
+    OP_REQUIRES(context, fused_ops[0] == "BiasAddGrad",
+                errors::InvalidArgument(
+                    "The 1st post-argument of _OneDnnFusedMatMulGrad must be "
+                    "BiasAddGrad."));
     fp32_math_mode_ = GetFP32MathMode<Device>();
   }
 
@@ -514,12 +551,8 @@ class OneDnnFusedMatMulGradOp : public OpKernel {
 
       OP_REQUIRES(context, !(transpose_a_ && src_onednn_shape.IsOneDnnTensor()),
                   errors::InvalidArgument(
-                      "OneDnnFusedMatMulGrad only support transpose_a = "
+                      "_OneDnnFusedMatMulGrad only support transpose_a = "
                       "false, when has block layout input"));
-      OP_REQUIRES(context, !transpose_b_,
-                  errors::InvalidArgument(
-                      "OneDnnFusedMatMulGrad only support transpose_b = "
-                      "false, when has block layout weight"));
 
       const int batch = src_tf_shape.dim_size(0);
       const int k = src_tf_shape.dim_size(1);
@@ -562,21 +595,30 @@ class OneDnnFusedMatMulGradOp : public OpKernel {
           {diff_weight_dims}, OneDnnType<T>(), dnnl::memory::format_tag::any);
       auto diff_bias_md = memory::desc({diff_bias_dims}, OneDnnType<T>(),
                                        dnnl::memory::format_tag::x);
-      auto fwd_desc = dnnl::inner_product_forward::desc(
-          dnnl::prop_kind::forward, src_md_any, diff_weight_md_any,
-          diff_bias_md, diff_dst_md_any);
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(fp32_math_mode_);
       }
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = dnnl::inner_product_forward::primitive_desc(
+          onednn_engine, dnnl::prop_kind::forward, src_md_any,
+          diff_weight_md_any, diff_bias_md, diff_dst_md_any, attr);
+      auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
+          onednn_engine, src_md_any, diff_weight_md_any, diff_bias_md,
+          diff_dst_md_any, fwd_pd, attr);
+#else
+      auto fwd_desc = dnnl::inner_product_forward::desc(
+          dnnl::prop_kind::forward, src_md_any, diff_weight_md_any,
+          diff_bias_md, diff_dst_md_any);
       auto fwd_pd = dnnl::inner_product_forward::primitive_desc(fwd_desc, attr,
                                                                 onednn_engine);
       auto bwd_desc = dnnl::inner_product_backward_weights::desc(
           src_md_any, diff_weight_md_any, diff_bias_md, diff_dst_md_any);
       auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
           bwd_desc, attr, onednn_engine, fwd_pd);
+#endif
       auto matmul_bwd_primitive =
           dnnl::inner_product_backward_weights(matmul_bwd_pd);
 
@@ -651,15 +693,20 @@ class OneDnnFusedMatMulGradOp : public OpKernel {
 
       // Prepare tmp buffer for diff_weight.
       Tensor diff_weight_tmp;
-      int64 diff_weight_size_tmp =
-          matmul_bwd_pd.diff_weights_desc().get_size() / sizeof(T);
-      OP_REQUIRES_OK(context,
-                     context->allocate_temp(DataTypeToEnum<T>::v(),
+      dnnl::memory diff_weight_mem_tmp;
+      bool is_diff_weight_reordered =
+          (diff_weight_md != matmul_bwd_pd.diff_weights_desc());
+      if (is_diff_weight_reordered) {
+        int64 diff_weight_size_tmp =
+            matmul_bwd_pd.diff_weights_desc().get_size() / sizeof(T);
+        OP_REQUIRES_OK(
+            context, context->allocate_temp(DataTypeToEnum<T>::v(),
                                             TensorShape({diff_weight_size_tmp}),
                                             &diff_weight_tmp));
-      auto diff_weight_mem_tmp =
-          CreateDnnlMemory(matmul_bwd_pd.diff_weights_desc(), onednn_engine,
-                           GetTensorBuffer<T>(&diff_weight_tmp));
+        diff_weight_mem_tmp =
+            CreateDnnlMemory(matmul_bwd_pd.diff_weights_desc(), onednn_engine,
+                             GetTensorBuffer<T>(&diff_weight_tmp));
+      }
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
@@ -678,13 +725,16 @@ class OneDnnFusedMatMulGradOp : public OpKernel {
           {DNNL_ARG_SRC, is_src_reordered ? src_reorder_mem : src_mem},
           {DNNL_ARG_DIFF_DST,
            is_diff_dst_reordered ? diff_dst_reorder_mem : diff_dst_mem},
-          {DNNL_ARG_DIFF_WEIGHTS, diff_weight_mem_tmp},
+          {DNNL_ARG_DIFF_WEIGHTS,
+           is_diff_weight_reordered ? diff_weight_mem_tmp : diff_weight_mem},
           {DNNL_ARG_DIFF_BIAS, diff_bias_mem},
           {DNNL_ARG_SCRATCHPAD, scratchpad_mem}};
       matmul_bwd_primitive.execute(onednn_stream, bwd_primitive_args);
 
-      ReorderMemory(*context, &diff_weight_mem_tmp, &diff_weight_mem,
-                    onednn_engine);
+      if (is_diff_weight_reordered) {
+        ReorderMemory(*context, &diff_weight_mem_tmp, &diff_weight_mem,
+                      onednn_engine);
+      }
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
                          ", message: " + string(e.message) + ", in file " +
@@ -697,8 +747,6 @@ class OneDnnFusedMatMulGradOp : public OpKernel {
 
  private:
   bool transpose_a_;
-  bool transpose_b_;
-  std::vector<string> fused_ops_;
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
 };
 

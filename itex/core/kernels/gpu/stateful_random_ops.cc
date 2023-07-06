@@ -32,15 +32,11 @@ limitations under the License.
 #include "itex/core/utils/types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
-constexpr static auto global_space = sycl::access::address_space::global_space;
-
 namespace itex {
 
 template <typename Distribution>
 struct FillKernelTask {
-  FillKernelTask(sycl::accessor<char, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>
-                     local_philox_acc,
+  FillKernelTask(sycl::local_accessor<char, 1> local_philox_acc,
                  StateElementType* state_data,
                  typename Distribution::ResultElementType* output_data,
                  int64_t output_size, int* item_count_ptr, Distribution dist)
@@ -65,23 +61,24 @@ struct FillKernelTask {
 
     functor::FillPhiloxRandomKernel<Distribution,
                                     Distribution::kVariableSamplesPerOutput>
-    f(output_data, output_size, *philox, const_cast<Distribution&>(dist),
-      nullptr, nullptr);
+        f(output_data, output_size, *philox, const_cast<Distribution&>(dist),
+          nullptr, nullptr);
     f(myItem);
     // The last item updates the state.
     auto total_item_count = myItem.get_global_range()[0];
-    sycl::multi_ptr<int, global_space> ptr(item_count_ptr);
-    sycl::atomic<int> atomic_ptr(ptr);
-    auto old_counter_value = atomic_ptr.fetch_add(1);
+    auto atomic_val =
+        sycl::atomic_ref<int, sycl::memory_order::relaxed,
+                         sycl::memory_scope::device,
+                         sycl::access::address_space::global_space>(
+            *item_count_ptr);
+    auto old_counter_value = atomic_val.fetch_add(1);
     if (old_counter_value == total_item_count - 1) {
       UpdateMemWithPhiloxRandom(*philox, output_size, state_data);
     }
   }
 
  private:
-  sycl::accessor<char, 1, sycl::access::mode::read_write,
-                 sycl::access::target::local>
-      local_philox_acc;
+  sycl::local_accessor<char, 1> local_philox_acc;
   StateElementType* state_data;
   typename Distribution::ResultElementType* output_data;
   int64_t output_size;
@@ -111,9 +108,8 @@ void FillKernel(const GPUDevice& d, const int total_count, Distribution dist,
                               .get_access<sycl::access::mode::read_write,
                                           sycl::access::target::device>(cgh)
                               .get_pointer();
-    sycl::accessor<char, 1, sycl::access::mode::read_write,
-                   sycl::access::target::local>
-        local_philox_acc(sycl::range<1>(sizeof(PhiloxRandom)), cgh);
+    sycl::local_accessor<char, 1> local_philox_acc(
+        sycl::range<1>(sizeof(PhiloxRandom)), cgh);
     FillKernelTask<Distribution> task(local_philox_acc, state_data, output_data,
                                       output_size, item_count_ptr, dist);
     cgh.parallel_for<FillKernelTask<Distribution>>(
@@ -271,7 +267,7 @@ Status UpdateVariableAndFill(
     }
     alg = Algorithm(var_tensor_flat(0));
   }
-  if (alg == RNG_ALG_PHILOX) {
+  if (alg == RNG_ALG_PHILOX || alg == RNG_ALG_AUTO_SELECT) {
     TF_RETURN_IF_ERROR(CheckPhiloxState(var_tensor, alg_tag_skip));
     UpdateVariableAndFill_Philox<Device, Distribution>()(
         ctx, ctx->eigen_device<Device>(), dist, output_size, alg_tag_skip,

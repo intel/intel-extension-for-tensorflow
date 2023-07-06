@@ -173,7 +173,7 @@ class StatelessRandomUniformFullIntOp : public StatelessRandomOpBase {
   }
 };
 
-#define REGISTER_DPCPP(TYPE)                                                   \
+#define REGISTER_ITEX_GPU(TYPE)                                                \
   template struct functor::FillPhiloxRandom<                                   \
       GPUDevice, random::UniformDistribution<random::PhiloxRandom, TYPE>>;     \
   REGISTER_KERNEL_BUILDER(                                                     \
@@ -211,7 +211,7 @@ class StatelessRandomUniformFullIntOp : public StatelessRandomOpBase {
                               .TypeConstraint<TYPE>("dtype"),   \
                           StatelessRandomUniformFullIntOp<GPUDevice, TYPE>)
 
-#define REGISTER_INT_DPCPP(TYPE)                              \
+#define REGISTER_INT_ITEX_GPU(TYPE)                           \
   REGISTER_KERNEL_BUILDER(Name("StatelessRandomUniformInt")   \
                               .Device(DEVICE_GPU)             \
                               .HostMemory("shape")            \
@@ -221,14 +221,14 @@ class StatelessRandomUniformFullIntOp : public StatelessRandomOpBase {
                               .TypeConstraint<TYPE>("dtype"), \
                           StatelessRandomUniformIntOp<GPUDevice, TYPE>);
 
-TF_CALL_half(REGISTER_DPCPP);
-TF_CALL_bfloat16(REGISTER_DPCPP);
-TF_CALL_float(REGISTER_DPCPP);
+TF_CALL_half(REGISTER_ITEX_GPU);
+TF_CALL_bfloat16(REGISTER_ITEX_GPU);
+TF_CALL_float(REGISTER_ITEX_GPU);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(REGISTER_DPCPP);
+TF_CALL_double(REGISTER_ITEX_GPU);
 #endif
-TF_CALL_int32(REGISTER_INT_DPCPP);
-TF_CALL_int64(REGISTER_INT_DPCPP);
+TF_CALL_int32(REGISTER_INT_ITEX_GPU);
+TF_CALL_int64(REGISTER_INT_ITEX_GPU);
 TF_CALL_int32(REGISTER_FULL_INT);
 TF_CALL_int64(REGISTER_FULL_INT);
 

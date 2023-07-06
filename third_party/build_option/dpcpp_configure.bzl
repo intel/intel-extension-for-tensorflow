@@ -25,6 +25,8 @@ _PYTHON_LIB_PATH = "PYTHON_LIB_PATH"
 
 _TF_SHARED_LIBRARY_DIR = "TF_SHARED_LIBRARY_DIR"
 
+_JAX_SHARED_LIBRARY_DIR = "JAX_SHARED_LIBRARY_DIR"
+
 _PYTHON_LIB_DIR = "PYTHON_LIB_DIR"
 
 _PYTHON_BIN_PATH = "PYTHON_BIN_PATH"
@@ -78,10 +80,30 @@ def find_dpcpp_root(repository_ctx):
     """Find DPC++ compiler."""
     sycl_name = ""
     if _DPCPP_TOOLKIT_PATH in repository_ctx.os.environ:
-        sycl_name = repository_ctx.os.environ[_DPCPP_TOOLKIT_PATH].strip()
+        sycl_name = str(repository_ctx.path(repository_ctx.os.environ[_DPCPP_TOOLKIT_PATH].strip()).realpath)
     if sycl_name.startswith("/"):
         return sycl_name
     fail("Cannot find DPC++ compiler, please correct your path")
+
+def find_dpcpp_include_path(repository_ctx):
+    """Find DPC++ compiler."""
+    base_path = find_dpcpp_root(repository_ctx)
+    bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "dpcpp")
+    if not bin_path.exists:
+        bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "clang")
+        if not bin_path.exists:
+            fail("Cannot find DPC++ compiler, please correct your path")
+    gcc_path = repository_ctx.path("/usr/bin/gcc")
+    gcc_install_dir = repository_ctx.execute([gcc_path, "-print-libgcc-file-name"])
+    gcc_install_dir_opt = "--gcc-install-dir=" + str(repository_ctx.path(gcc_install_dir.stdout.strip()).dirname)
+    cmd_out = repository_ctx.execute([bin_path, gcc_install_dir_opt, "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null"])
+    outlist = cmd_out.stderr.split("\n")
+    real_base_path = str(repository_ctx.path(base_path).realpath).strip()
+    include_dirs = []
+    for l in outlist:
+        if l.startswith(" ") and l.strip().startswith("/") and str(repository_ctx.path(l.strip()).realpath) not in include_dirs:
+            include_dirs.append(str(repository_ctx.path(l.strip()).realpath))
+    return include_dirs
 
 def get_dpcpp_version(repository_ctx):
     """Get DPC++ compiler version yyyymmdd"""
@@ -123,20 +145,21 @@ def find_mkl_path(repository_ctx):
 
 def find_aot_config(repository_ctx):
     """Find AOT config."""
-    aot_config = " -Xs \'-options -cl-poison-unsupported-fp64-kernels\'"
-    device_tmp = " -fsycl-targets=spir64_gen,spir64 -Xs \'-device {}\'"
+    device_tmp = " -Xs \'-device {}\'"
     if _AOT_CONFIG in repository_ctx.os.environ:
         devices = repository_ctx.os.environ[_AOT_CONFIG].strip()
         device_list = []
         if devices:
             device_list = devices.split(",")
+        else:
+            return ""
         if device_list:
             # check for security purpose only here
             for d in device_list:
                 if len(d) > 20:
                     fail("Invalid AOT target: {}".format(d))
-            aot_config += device_tmp.format(devices)
-    return aot_config
+            device_tmp = device_tmp.format(devices)
+    return device_tmp
 
 def find_python_lib(repository_ctx):
     """Returns python path."""
@@ -344,11 +367,11 @@ def _sycl_autoconf_imp(repository_ctx):
         if repository_ctx.os.environ.get("CPATH") != None:
             for p in repository_ctx.os.environ["CPATH"].strip().split(":"):
                 if p != "":
-                    additional_inc += ["\'" + p + "\'"]
+                    additional_inc += [_normalize_include_path(repository_ctx, p)]
         if len(additional_inc) > 0:
             additional_inc = ",".join(additional_inc)
         else:
-            additional_inc = ""
+            additional_inc = "\"\""
 
         if _enable_mkl(repository_ctx) and repository_ctx.os.environ.get("ONEAPI_MKL_PATH") != None:
             dpcpp_defines["%{ONEAPI_MKL_PATH}"] = str(find_mkl_path(repository_ctx))
@@ -379,6 +402,23 @@ def _sycl_autoconf_imp(repository_ctx):
         dpcpp_defines["%{TF_SHARED_LIBRARY_DIR}"] = repository_ctx.os.environ[_TF_SHARED_LIBRARY_DIR]
         dpcpp_defines["%{DPCPP_COMPILER_VERSION}"] = str(get_dpcpp_version(repository_ctx))
         dpcpp_defines["%{PYTHON_LIB_PATH}"] = repository_ctx.os.environ[_PYTHON_LIB_PATH]
+        if repository_ctx.os.environ.get(_JAX_SHARED_LIBRARY_DIR) != None:
+            dpcpp_defines["%{JAX_SHARED_LIBRARY_DIR}"] = repository_ctx.os.environ[_JAX_SHARED_LIBRARY_DIR]
+        else:
+            dpcpp_defines["%{JAX_SHARED_LIBRARY_DIR}"] = "dummy"
+
+        dpcpp_internal_inc_dirs = find_dpcpp_include_path(repository_ctx)
+        dpcpp_internal_inc = "\", \"".join(dpcpp_internal_inc_dirs)
+        dpcpp_internal_isystem_inc = []
+        for d in dpcpp_internal_inc_dirs:
+            dpcpp_internal_isystem_inc.append("-isystem\", \"" + d)
+
+        if len(dpcpp_internal_inc_dirs) > 0:
+            dpcpp_defines["%{DPCPP_ISYSTEM_INC}"] = "\"]), \n\tflag_group(flags=[ \"".join(dpcpp_internal_isystem_inc)
+            dpcpp_defines["%{DPCPP_INTERNAL_INC}"] = dpcpp_internal_inc
+        else:
+            dpcpp_defines["%{DPCPP_ISYSTEM_INC}"] = ""
+            dpcpp_defines["%{DPCPP_INTERNAL_INC}"] = ""
 
         unfiltered_cxx_flags = "" if additional_cxxflags == [] else "unfiltered_cxx_flag: "
         unfiltered_cxx_flags += "\n  unfiltered_cxx_flag: ".join(additional_cxxflags)

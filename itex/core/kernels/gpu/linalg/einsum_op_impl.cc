@@ -15,29 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "itex/core/kernels/gpu/linalg/einsum_op_impl.h"
+#include "itex/core/kernels/common/einsum_op_impl.h"
 
 namespace itex {
-
-Status ParseEinsumEquation(const string& equation,
-                           gtl::InlinedVector<string, 2>* input_subscripts,
-                           string* output_subscript) {
-  gtl::InlinedVector<string, 2> inputs_and_output_subscripts =
-      absl::StrSplit(equation, "->");
-  if (inputs_and_output_subscripts.size() != 2) {
-    return errors::InvalidArgument(
-        "Expecting exactly one '->' in einsum equation: ", equation);
-  }
-  *output_subscript = std::move(inputs_and_output_subscripts[1]);
-  *input_subscripts =
-      absl::StrSplit(std::move(inputs_and_output_subscripts[0]), ',');
-  if (input_subscripts->size() != 1 && input_subscripts->size() != 2) {
-    return errors::InvalidArgument(
-        "Expecting 1 or 2 input subscripts in equation '", equation,
-        "' but got: ", input_subscripts->size());
-  }
-  return Status::OK();
-}
 
 #define REGISTER_EINSUM(D, TYPE)                                   \
   REGISTER_KERNEL_BUILDER(                                         \

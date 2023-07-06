@@ -1,0 +1,1355 @@
+diff --git a/modeling.py b/modeling.py
+index fed5259..0116e22 100644
+--- a/modeling.py
++++ b/modeling.py
+@@ -26,6 +26,9 @@ import re
+ import numpy as np
+ import six
+ import tensorflow as tf
++import generic_ops as bf
++from intel_extension_for_tensorflow.python.transformer.layer import LayerNormMLP
++from intel_extension_for_tensorflow.python.transformer.attention import MultiHeadAttention
+ 
+ 
+ class BertConfig(object):
+@@ -42,7 +45,9 @@ class BertConfig(object):
+                attention_probs_dropout_prob=0.1,
+                max_position_embeddings=512,
+                type_vocab_size=16,
+-               initializer_range=0.02):
++               initializer_range=0.02,
++               precision="fp32",
++               new_bf16_scope=True):
+     """Constructs BertConfig.
+ 
+     Args:
+@@ -66,6 +71,7 @@ class BertConfig(object):
+         `BertModel`.
+       initializer_range: The stdev of the truncated_normal_initializer for
+         initializing all weight matrices.
++      precision: To enable fp32 or bfloat16 based training
+     """
+     self.vocab_size = vocab_size
+     self.hidden_size = hidden_size
+@@ -78,6 +84,10 @@ class BertConfig(object):
+     self.max_position_embeddings = max_position_embeddings
+     self.type_vocab_size = type_vocab_size
+     self.initializer_range = initializer_range
++    self.precision = precision
++    self.new_bf16_scope = new_bf16_scope 
++    self.experimental_gelu = False
++    self.optimized_softmax = False
+ 
+   @classmethod
+   def from_dict(cls, json_object):
+@@ -90,7 +100,7 @@ class BertConfig(object):
+   @classmethod
+   def from_json_file(cls, json_file):
+     """Constructs a `BertConfig` from a json file of parameters."""
+-    with tf.gfile.GFile(json_file, "r") as reader:
++    with tf.io.gfile.GFile(json_file, "r") as reader:
+       text = reader.read()
+     return cls.from_dict(json.loads(text))
+ 
+@@ -103,6 +113,21 @@ class BertConfig(object):
+     """Serializes this instance to a JSON string."""
+     return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
+ 
++  def set_additional_options(self, precision, experimental_gelu, optimized_softmax):
++    if precision :
++      self.precision= precision
++    if experimental_gelu :
++      self.experimental_gelu = experimental_gelu
++      tf.compat.v1.logging.info("Experimental gelu enabled for model.") 
++      tf.compat.v1.logging.info("Set experimental gelu to false(default) if you see issues. ")
++    if optimized_softmax :
++      self.optimized_softmax = optimized_softmax
++      tf.compat.v1.logging.info("Optimized softmax enabled for model.")
++
++  def new_scope_settings(self, new_bf16_scope):
++    if new_bf16_scope:
++      self.new_bf16_scope = new_bf16_scope
++      tf.compat.v1.logging.info("Bfloat16 scope set for model..!")
+ 
+ class BertModel(object):
+   """BERT model ("Bidirectional Encoder Representations from Transformers").
+@@ -153,6 +178,16 @@ class BertModel(object):
+       ValueError: The config is invalid or one of the input tensor shapes
+         is invalid.
+     """
++    # Flags for BF16 CPU
++    self.bf16_scope = False
++    if config.precision == "bfloat16" :
++      bf.set_global_precision(tf.bfloat16)
++      if config.new_bf16_scope :
++        self.bf16_scope = True
++
++    bf.set_global_flags(optimized_softmax=config.optimized_softmax, 
++                        experimental_gelu=config.experimental_gelu)
++
+     config = copy.deepcopy(config)
+     if not is_training:
+       config.hidden_dropout_prob = 0.0
+@@ -168,8 +203,8 @@ class BertModel(object):
+     if token_type_ids is None:
+       token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
+ 
+-    with tf.variable_scope(scope, default_name="bert"):
+-      with tf.variable_scope("embeddings"):
++    with tf.compat.v1.variable_scope(scope, default_name="bert"):
++      with tf.compat.v1.variable_scope("embeddings"):
+         # Perform embedding lookup on the word ids.
+         (self.embedding_output, self.embedding_table) = embedding_lookup(
+             input_ids=input_ids,
+@@ -193,7 +228,7 @@ class BertModel(object):
+             max_position_embeddings=config.max_position_embeddings,
+             dropout_prob=config.hidden_dropout_prob)
+ 
+-      with tf.variable_scope("encoder"):
++      with tf.compat.v1.variable_scope("encoder"):
+         # This converts a 2D mask of shape [batch_size, seq_length] to a 3D
+         # mask of shape [batch_size, seq_length, seq_length] which is used
+         # for the attention scores.
+@@ -202,8 +237,10 @@ class BertModel(object):
+ 
+         # Run the stacked transformer.
+         # `sequence_output` shape = [batch_size, seq_length, hidden_size].
++        # Cast is used to cover bfloat16
++        input_tensor=bf.r_cast(self.embedding_output)
+         self.all_encoder_layers = transformer_model(
+-            input_tensor=self.embedding_output,
++            input_tensor=input_tensor,
+             attention_mask=attention_mask,
+             hidden_size=config.hidden_size,
+             num_hidden_layers=config.num_hidden_layers,
+@@ -221,18 +258,25 @@ class BertModel(object):
+       # [batch_size, hidden_size]. This is necessary for segment-level
+       # (or segment-pair-level) classification tasks where we need a fixed
+       # dimensional representation of the segment.
+-      with tf.variable_scope("pooler"):
++      with tf.compat.v1.variable_scope("pooler"):
+         # We "pool" the model by simply taking the hidden state corresponding
+         # to the first token. We assume that this has been pre-trained
+         first_token_tensor = tf.squeeze(self.sequence_output[:, 0:1, :], axis=1)
+-        self.pooled_output = tf.layers.dense(
++        self.pooled_output = tf.compat.v1.layers.dense(
+             first_token_tensor,
+             config.hidden_size,
+-            activation=tf.tanh,
++            activation=bf.tanh,
+             kernel_initializer=create_initializer(config.initializer_range))
+ 
+   def get_pooled_output(self):
+-    return self.pooled_output
++    """ 
++      In bfloat16 enabled execution, with only model covered in bfloat16 scope,
++      return the output in float32. Other cases return as is
++    """
++    if self.bf16_scope == True:
++      return  tf.cast(self.pooled_output, tf.float32)
++    else :
++      return self.pooled_output
+ 
+   def get_sequence_output(self):
+     """Gets final hidden layer of encoder.
+@@ -240,8 +284,14 @@ class BertModel(object):
+     Returns:
+       float Tensor of shape [batch_size, seq_length, hidden_size] corresponding
+       to the final hidden of the transformer encoder.
++
++      In bfloat16 enabled execution, with only model covered in bfloat16 scope,
++      return the output in float32. Other cases return as is
+     """
+-    return self.sequence_output
++    if self.bf16_scope == True:
++      return  tf.cast(self.sequence_output, tf.float32)
++    else :
++      return self.sequence_output
+ 
+   def get_all_encoder_layers(self):
+     return self.all_encoder_layers
+@@ -255,26 +305,16 @@ class BertModel(object):
+       embeddings with the positional embeddings and the token type embeddings,
+       then performing layer normalization. This is the input to the transformer.
+     """
+-    return self.embedding_output
++    if self.bf16_scope == True :
++      return (self.embedding_output) 
++    else :
++      return bf.r_cast(self.embedding_output)
+ 
+   def get_embedding_table(self):
+-    return self.embedding_table
+-
+-
+-def gelu(x):
+-  """Gaussian Error Linear Unit.
+-
+-  This is a smoother version of the RELU.
+-  Original paper: https://arxiv.org/abs/1606.08415
+-  Args:
+-    x: float Tensor to perform activation.
+-
+-  Returns:
+-    `x` with the GELU activation applied.
+-  """
+-  cdf = 0.5 * (1.0 + tf.tanh(
+-      (np.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3)))))
+-  return x * cdf
++    if self.bf16_scope == True :
++      return (self.embedding_table) 
++    else :
++      return bf.r_cast(self.embedding_table)
+ 
+ 
+ def get_activation(activation_string):
+@@ -307,18 +347,69 @@ def get_activation(activation_string):
+   elif act == "relu":
+     return tf.nn.relu
+   elif act == "gelu":
+-    return gelu
++    return bf.gelu
+   elif act == "tanh":
+-    return tf.tanh
++    return bf.tanh
+   else:
+     raise ValueError("Unsupported activation: %s" % act)
+ 
+ 
+-def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
++def get_remaps(task):
++  regex1 = re.compile(r"layer_normalization[_0-9]*")
++  regex2 = None 
++  if task=="SQuAD" :
++    regex2 = re.compile(r"squad")
++  elif task=="Classifier":
++    regex2 = re.compile(r"classifier")
++  else:
++    regex2 = None
++  maps = []
++  maps.append([re.compile(r"LayerNormMLP/gamma"), "attention/output/LayerNorm/gamma"])
++  maps.append([re.compile(r"LayerNormMLP/beta"), "attention/output/LayerNorm/beta"])
++  maps.append([re.compile(r"LayerNormMLP/fc1_kernel"), "intermediate/dense/kernel"])
++  maps.append([re.compile(r"LayerNormMLP/fc1_bias"), "intermediate/dense/bias"])
++  maps.append([re.compile(r"LayerNormMLP/fc2_kernel"), "output/dense/kernel"])
++  maps.append([re.compile(r"LayerNormMLP/fc2_bias"), "output/dense/bias"])
++  maps.append([re.compile(r"MultiHeadAttention/query_kernel"), "query/kernel"])
++  maps.append([re.compile(r"MultiHeadAttention/query_bias"), "query/bias"])
++  maps.append([re.compile(r"MultiHeadAttention/key_kernel"), "key/kernel"])
++  maps.append([re.compile(r"MultiHeadAttention/key_bias"), "key/bias"])
++  maps.append([re.compile(r"MultiHeadAttention/value_kernel"), "value/kernel"])
++  maps.append([re.compile(r"MultiHeadAttention/value_bias"), "value/bias"])
++  maps.append([re.compile(r"self/MultiHeadAttention/output_kernel"), "output/dense/kernel"])
++  maps.append([re.compile(r"self/MultiHeadAttention/output_bias"), "output/dense/bias"])
++
++  return regex1, regex2, maps
++
++def apply_remaps(name, map1, map2, maps):
++  if map1 != None:
++    name = map1.sub("LayerNorm", name)
++  if map2 != None:
++    name = map2.sub("seq_relationship", name)
++  for old_name, new_name in maps:
++    name = old_name.sub(new_name, name)
++  return name 
++
++def check_model_validity(tvars, assignment_map) :
++  # Check if all model vars have a mapping in checkpoint
++  missing_var=False
++  missed_vars=[]
++  for var in tvars:
++     if var not in assignment_map.values():
++       missed_vars.append(var)
++       missing_var=True
++  if missing_var :
++     for var in missed_vars:
++       tf.compat.v1.logging.info("Model Variable not in checkpoint", var)
++     raise ValueError("Error: Missing model variables in checkpoint!!")
++
++def get_assignment_map_from_checkpoint(tvars, init_checkpoint, task="Pretraining"):
+   """Compute the union of the current variables and checkpoint variables."""
+   assignment_map = {}
+   initialized_variable_names = {}
+ 
++  map1, map2, maps = get_remaps(task)
++
+   name_to_variable = collections.OrderedDict()
+   for var in tvars:
+     name = var.name
+@@ -326,6 +417,8 @@ def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
+     if m is not None:
+       name = m.group(1)
+     name_to_variable[name] = var
++    name = apply_remaps(name, map1, map2, maps)
++    name_to_variable[name] = var
+ 
+   init_vars = tf.train.list_variables(init_checkpoint)
+ 
+@@ -334,12 +427,17 @@ def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
+     (name, var) = (x[0], x[1])
+     if name not in name_to_variable:
+       continue
+-    assignment_map[name] = name
+-    initialized_variable_names[name] = 1
+-    initialized_variable_names[name + ":0"] = 1
++    assignment_map[name] = name_to_variable[name]
++    ivar = name_to_variable[name]
++    initialized_variable_names[ivar.name] = 1
++    initialized_variable_names[ivar.name + ":0"] = 1
+ 
+-  return (assignment_map, initialized_variable_names)
++  # Check if all model vars are loaded from Checkpoint
++  check_model_validity(tvars, assignment_map)
++  #for name, var in assignment_map.items():
++  #  print(name, "--->", var)
+ 
++  return (assignment_map, initialized_variable_names)
+ 
+ def dropout(input_tensor, dropout_prob):
+   """Perform dropout.
+@@ -355,13 +453,13 @@ def dropout(input_tensor, dropout_prob):
+   if dropout_prob is None or dropout_prob == 0.0:
+     return input_tensor
+ 
+-  output = tf.nn.dropout(input_tensor, 1.0 - dropout_prob)
++  output = tf.nn.dropout(input_tensor, rate=dropout_prob)
+   return output
+ 
+ 
+ def layer_norm(input_tensor, name=None):
+   """Run layer normalization on the last dimension of the tensor."""
+-  return tf.contrib.layers.layer_norm(
++  return bf.layer_norm(
+       inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
+ 
+ 
+@@ -374,7 +472,7 @@ def layer_norm_and_dropout(input_tensor, dropout_prob, name=None):
+ 
+ def create_initializer(initializer_range=0.02):
+   """Creates a `truncated_normal_initializer` with the given range."""
+-  return tf.truncated_normal_initializer(stddev=initializer_range)
++  return tf.compat.v1.truncated_normal_initializer(stddev=initializer_range)
+ 
+ 
+ def embedding_lookup(input_ids,
+@@ -406,7 +504,7 @@ def embedding_lookup(input_ids,
+   if input_ids.shape.ndims == 2:
+     input_ids = tf.expand_dims(input_ids, axis=[-1])
+ 
+-  embedding_table = tf.get_variable(
++  embedding_table = tf.compat.v1.get_variable(
+       name=word_embedding_name,
+       shape=[vocab_size, embedding_size],
+       initializer=create_initializer(initializer_range))
+@@ -473,7 +571,7 @@ def embedding_postprocessor(input_tensor,
+     if token_type_ids is None:
+       raise ValueError("`token_type_ids` must be specified if"
+                        "`use_token_type` is True.")
+-    token_type_table = tf.get_variable(
++    token_type_table = tf.compat.v1.get_variable(
+         name=token_type_embedding_name,
+         shape=[token_type_vocab_size, width],
+         initializer=create_initializer(initializer_range))
+@@ -487,9 +585,9 @@ def embedding_postprocessor(input_tensor,
+     output += token_type_embeddings
+ 
+   if use_position_embeddings:
+-    assert_op = tf.assert_less_equal(seq_length, max_position_embeddings)
++    assert_op = tf.compat.v1.assert_less_equal(seq_length, max_position_embeddings)
+     with tf.control_dependencies([assert_op]):
+-      full_position_embeddings = tf.get_variable(
++      full_position_embeddings = tf.compat.v1.get_variable(
+           name=position_embedding_name,
+           shape=[max_position_embeddings, width],
+           initializer=create_initializer(initializer_range))
+@@ -631,7 +729,7 @@ def attention_layer(from_tensor,
+     output_tensor = tf.reshape(
+         input_tensor, [batch_size, seq_length, num_attention_heads, width])
+ 
+-    output_tensor = tf.transpose(output_tensor, [0, 2, 1, 3])
++    output_tensor = tf.transpose(a=output_tensor, perm=[0, 2, 1, 3])
+     return output_tensor
+ 
+   from_shape = get_shape_list(from_tensor, expected_rank=[2, 3])
+@@ -663,7 +761,7 @@ def attention_layer(from_tensor,
+   to_tensor_2d = reshape_to_matrix(to_tensor)
+ 
+   # `query_layer` = [B*F, N*H]
+-  query_layer = tf.layers.dense(
++  query_layer = tf.compat.v1.layers.dense(
+       from_tensor_2d,
+       num_attention_heads * size_per_head,
+       activation=query_act,
+@@ -671,7 +769,7 @@ def attention_layer(from_tensor,
+       kernel_initializer=create_initializer(initializer_range))
+ 
+   # `key_layer` = [B*T, N*H]
+-  key_layer = tf.layers.dense(
++  key_layer = tf.compat.v1.layers.dense(
+       to_tensor_2d,
+       num_attention_heads * size_per_head,
+       activation=key_act,
+@@ -679,7 +777,7 @@ def attention_layer(from_tensor,
+       kernel_initializer=create_initializer(initializer_range))
+ 
+   # `value_layer` = [B*T, N*H]
+-  value_layer = tf.layers.dense(
++  value_layer = tf.compat.v1.layers.dense(
+       to_tensor_2d,
+       num_attention_heads * size_per_head,
+       activation=value_act,
+@@ -699,8 +797,8 @@ def attention_layer(from_tensor,
+   # attention scores.
+   # `attention_scores` = [B, N, F, T]
+   attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
+-  attention_scores = tf.multiply(attention_scores,
+-                                 1.0 / math.sqrt(float(size_per_head)))
++  attention_scores = tf.multiply(attention_scores, bf.r_cast(
++                                 1.0 / math.sqrt(float(size_per_head))))
+ 
+   if attention_mask is not None:
+     # `attention_mask` = [B, 1, F, T]
+@@ -709,7 +807,7 @@ def attention_layer(from_tensor,
+     # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
+     # masked positions, this operation will create a tensor which is 0.0 for
+     # positions we want to attend and -10000.0 for masked positions.
+-    adder = (1.0 - tf.cast(attention_mask, tf.float32)) * -10000.0
++    adder = (1.0 - tf.cast(attention_mask, from_tensor.dtype)) * -10000.0
+ 
+     # Since we are adding it to the raw scores before the softmax, this is
+     # effectively the same as removing these entirely.
+@@ -717,7 +815,7 @@ def attention_layer(from_tensor,
+ 
+   # Normalize the attention scores to probabilities.
+   # `attention_probs` = [B, N, F, T]
+-  attention_probs = tf.nn.softmax(attention_scores)
++  attention_probs = bf.softmax(attention_scores)
+ 
+   # This is actually dropping out entire tokens to attend to, which might
+   # seem a bit unusual, but is taken from the original Transformer paper.
+@@ -729,13 +827,13 @@ def attention_layer(from_tensor,
+       [batch_size, to_seq_length, num_attention_heads, size_per_head])
+ 
+   # `value_layer` = [B, N, T, H]
+-  value_layer = tf.transpose(value_layer, [0, 2, 1, 3])
++  value_layer = tf.transpose(a=value_layer, perm=[0, 2, 1, 3])
+ 
+   # `context_layer` = [B, N, F, H]
+   context_layer = tf.matmul(attention_probs, value_layer)
+ 
+   # `context_layer` = [B, F, N, H]
+-  context_layer = tf.transpose(context_layer, [0, 2, 1, 3])
++  context_layer = tf.transpose(a=context_layer, perm=[0, 2, 1, 3])
+ 
+   if do_return_2d_tensor:
+     # `context_layer` = [B*F, N*H]
+@@ -757,7 +855,7 @@ def transformer_model(input_tensor,
+                       num_hidden_layers=12,
+                       num_attention_heads=12,
+                       intermediate_size=3072,
+-                      intermediate_act_fn=gelu,
++                      intermediate_act_fn=bf.gelu,
+                       hidden_dropout_prob=0.1,
+                       attention_probs_dropout_prob=0.1,
+                       initializer_range=0.02,
+@@ -824,24 +922,18 @@ def transformer_model(input_tensor,
+ 
+   all_layer_outputs = []
+   for layer_idx in range(num_hidden_layers):
+-    with tf.variable_scope("layer_%d" % layer_idx):
++    with tf.compat.v1.variable_scope("layer_%d" % layer_idx):
+       layer_input = prev_output
+-
+-      with tf.variable_scope("attention"):
++      with tf.compat.v1.variable_scope("attention"):
+         attention_heads = []
+-        with tf.variable_scope("self"):
+-          attention_head = attention_layer(
+-              from_tensor=layer_input,
+-              to_tensor=layer_input,
+-              attention_mask=attention_mask,
+-              num_attention_heads=num_attention_heads,
+-              size_per_head=attention_head_size,
+-              attention_probs_dropout_prob=attention_probs_dropout_prob,
+-              initializer_range=initializer_range,
+-              do_return_2d_tensor=True,
+-              batch_size=batch_size,
+-              from_seq_length=seq_length,
+-              to_seq_length=seq_length)
++        with tf.compat.v1.variable_scope("self"):
++          layer_input = tf.reshape(layer_input, [batch_size, seq_length, input_width])
++          attention_head = MultiHeadAttention(
++            hidden_size=hidden_size,
++            head_size=attention_head_size,
++            attention_dropout=attention_probs_dropout_prob,
++            name="MultiHeadAttention")(layer_input, attention_mask)
++          layer_input = tf.reshape(layer_input, [batch_size * seq_length, input_width])
+           attention_heads.append(attention_head)
+ 
+         attention_output = None
+@@ -852,34 +944,22 @@ def transformer_model(input_tensor,
+           # them to the self-attention head before the projection.
+           attention_output = tf.concat(attention_heads, axis=-1)
+ 
+-        # Run a linear projection of `hidden_size` then add a residual
+-        # with `layer_input`.
+-        with tf.variable_scope("output"):
+-          attention_output = tf.layers.dense(
+-              attention_output,
+-              hidden_size,
+-              kernel_initializer=create_initializer(initializer_range))
++        # Run a linear projection of `hidden_size`
++        with tf.compat.v1.variable_scope("output"):
+           attention_output = dropout(attention_output, hidden_dropout_prob)
+-          attention_output = layer_norm(attention_output + layer_input)
+-
+-      # The activation is only applied to the "intermediate" hidden layer.
+-      with tf.variable_scope("intermediate"):
+-        intermediate_output = tf.layers.dense(
+-            attention_output,
+-            intermediate_size,
+-            activation=intermediate_act_fn,
+-            kernel_initializer=create_initializer(initializer_range))
+-
+-      # Down-project back to `hidden_size` then add the residual.
+-      with tf.variable_scope("output"):
+-        layer_output = tf.layers.dense(
+-            intermediate_output,
+-            hidden_size,
+-            kernel_initializer=create_initializer(initializer_range))
++
++      layer_output, attention_output = LayerNormMLP(
++        fc1_units=intermediate_size,
++        fc2_units=hidden_size,
++        return_layernorm_output=True,
++        name="LayerNormMLP")(attention_output + layer_input)
++
++      with tf.compat.v1.variable_scope("output"):
+         layer_output = dropout(layer_output, hidden_dropout_prob)
+         layer_output = layer_norm(layer_output + attention_output)
+-        prev_output = layer_output
+-        all_layer_outputs.append(layer_output)
++        
++      prev_output = layer_output
++      all_layer_outputs.append(layer_output)
+ 
+   if do_return_all_layers:
+     final_outputs = []
+@@ -923,7 +1003,7 @@ def get_shape_list(tensor, expected_rank=None, name=None):
+   if not non_static_indexes:
+     return shape
+ 
+-  dyn_shape = tf.shape(tensor)
++  dyn_shape = tf.shape(input=tensor)
+   for index in non_static_indexes:
+     shape[index] = dyn_shape[index]
+   return shape
+@@ -979,7 +1059,7 @@ def assert_rank(tensor, expected_rank, name=None):
+ 
+   actual_rank = tensor.shape.ndims
+   if actual_rank not in expected_rank_dict:
+-    scope_name = tf.get_variable_scope().name
++    scope_name = tf.compat.v1.get_variable_scope().name
+     raise ValueError(
+         "For the tensor `%s` in scope `%s`, the actual rank "
+         "`%d` (shape = %s) is not equal to the expected rank `%s`" %
+diff --git a/optimization.py b/optimization.py
+index d33dabd..d101ab4 100644
+--- a/optimization.py
++++ b/optimization.py
+@@ -20,16 +20,17 @@ from __future__ import print_function
+ 
+ import re
+ import tensorflow as tf
++import intel_extension_for_tensorflow as itex
+ 
+ 
+-def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu):
++def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, accum_steps=1, use_tpu=False, use_multi_cpu=0):
+   """Creates an optimizer training op."""
+-  global_step = tf.train.get_or_create_global_step()
++  global_step = tf.compat.v1.train.get_or_create_global_step()
+ 
+   learning_rate = tf.constant(value=init_lr, shape=[], dtype=tf.float32)
+ 
+   # Implements linear decay of the learning rate.
+-  learning_rate = tf.train.polynomial_decay(
++  learning_rate = tf.compat.v1.train.polynomial_decay(
+       learning_rate,
+       global_step,
+       num_train_steps,
+@@ -53,10 +54,11 @@ def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu):
+     learning_rate = (
+         (1.0 - is_warmup) * learning_rate + is_warmup * warmup_learning_rate)
+ 
++
+   # It is recommended that you use this optimizer for fine tuning, since this
+   # is how the model was trained (note that the Adam m/v variables are NOT
+   # loaded from init_checkpoint.)
+-  optimizer = AdamWeightDecayOptimizer(
++  optimizer = itex.ops.AdamWithWeightDecayOptimizer(
+       learning_rate=learning_rate,
+       weight_decay_rate=0.01,
+       beta_1=0.9,
+@@ -64,27 +66,88 @@ def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu):
+       epsilon=1e-6,
+       exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+ 
++  if use_multi_cpu and (accum_steps == 1):
++    import horovod.tensorflow as hvd
++    optimizer = hvd.DistributedOptimizer(optimizer, sparse_as_dense=True)
++
+   if use_tpu:
+-    optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
++    optimizer = tf.compat.v1.tpu.CrossShardOptimizer(optimizer)
++
++  tvars = tf.compat.v1.trainable_variables()
+ 
+-  tvars = tf.trainable_variables()
+-  grads = tf.gradients(loss, tvars)
+ 
+-  # This is how the model was pre-trained.
+-  (grads, _) = tf.clip_by_global_norm(grads, clip_norm=1.0)
++  if accum_steps > 1 :
++    #tf.compat.v1.logging.info("Accumulation Steps....")
++    grads_and_vars = optimizer.compute_gradients(loss * 1.0 / accum_steps, tvars)
+ 
+-  train_op = optimizer.apply_gradients(
+-      zip(grads, tvars), global_step=global_step)
++    current_step = tf.compat.v1.get_variable(name="current_step", shape=[], dtype=tf.int32, 
++                                   trainable=False,
++                                   initializer=tf.zeros_initializer)
++    accum_vars = [tf.compat.v1.get_variable(
++          name=tvar.name.split(":")[0] + "/agrads",
++          shape=tvar.shape.as_list(),
++          dtype=tf.float32,
++          trainable=False,
++          initializer=tf.zeros_initializer()) for tvar in tvars]
++
++    apply_grads = tf.cast(tf.math.equal(current_step % accum_steps, 0), dtype=tf.bool)
++    current_step = tf.cond(apply_grads, 
++                           lambda:current_step.assign(tf.ones_like(current_step)), 
++                           lambda:current_step.assign_add(1))
++                           #lambda:inc_current_step(current_step, "Apply Grads:"), 
++                           #lambda:inc_current_step(current_step, "Step:"))
++
++    grads_and_vars_and_accums = [(gv[0],gv[1],accum_vars[i]) for i, gv in enumerate(grads_and_vars) if gv[0] is not None]
++    grads, tvars, accum_vars = list(zip(*grads_and_vars_and_accums))
++
++    (cgrads, _) = tf.clip_by_global_norm(grads, clip_norm=1.0)
++
++    #accum_vars = update_accum_vars(accum_vars, apply_grads, cgrads, current_step)
++    accum_vars = tf.cond(apply_grads,
++              lambda: [accum_vars[i].assign(grad) for i, grad in enumerate(cgrads)],
++              lambda: [accum_vars[i].assign_add(grad) for i, grad in enumerate(cgrads)])
++
++    def applyGrads(accum_vars, current_step):
++          # if 1 or 0 MPI process, skip allreduce; otherwise do allreduce of the accum_var
++          if use_multi_cpu > 1:
++             import horovod.tensorflow as hvd
++             accum_vars = [hvd.allreduce(tf.convert_to_tensor(accum_var)) if isinstance(accum_var, tf.IndexedSlices)
++                                                             else hvd.allreduce(accum_var) for accum_var in accum_vars]
++          #tf.compat.v1.logging.info("\t\t APPLYING GRADIENTS....:", global_step)
++          return optimizer.apply_gradients(list(zip(accum_vars, tvars)), global_step=global_step)
++
++    apply_step = tf.identity(tf.cast(tf.math.equal(current_step % accum_steps, 0), dtype=tf.bool), name="apply_step")
++    update_op = tf.cond(apply_step, lambda: applyGrads(accum_vars, current_step), lambda: tf.no_op())
++
++    new_global_step = tf.cond(apply_step, lambda: global_step+1, lambda: global_step)
++    new_global_step = tf.identity(new_global_step, name='global_step_update')
++    train_op = tf.group(update_op, [global_step.assign(new_global_step)])
++  else :
++    if use_multi_cpu:
++      grads_and_vars = optimizer.compute_gradients(
++          loss, tvars, gate_gradients=tf.compat.v1.train.Optimizer.GATE_NONE)
++      grads = [grad for grad, var in grads_and_vars]
++      tvars = [var for grad, var in grads_and_vars]
++    else:
++      grads = tf.gradients(loss, tvars)
++
++    # This is how the model was pre-trained.
++    (grads, _) = tf.clip_by_global_norm(grads, clip_norm=1.0)
++
++    train_op = optimizer.apply_gradients(
++        zip(grads, tvars), global_step=global_step)
++
++    # # Normally the global step update is done inside of `apply_gradients`.
++    # # However, `AdamWeightDecayOptimizer` doesn't do this. But if you use
++    # # a different optimizer, you should probably take this line out.
++    # new_global_step = global_step + 1
++    # new_global_step = tf.identity(new_global_step, name='global_step_update')
++    # train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+ 
+-  # Normally the global step update is done inside of `apply_gradients`.
+-  # However, `AdamWeightDecayOptimizer` doesn't do this. But if you use
+-  # a different optimizer, you should probably take this line out.
+-  new_global_step = global_step + 1
+-  train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+   return train_op
+ 
+ 
+-class AdamWeightDecayOptimizer(tf.train.Optimizer):
++class AdamWeightDecayOptimizer(tf.compat.v1.train.Optimizer):
+   """A basic Adam optimizer that includes "correct" L2 weight decay."""
+ 
+   def __init__(self,
+@@ -114,18 +177,18 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
+ 
+       param_name = self._get_variable_name(param.name)
+ 
+-      m = tf.get_variable(
++      m = tf.compat.v1.get_variable(
+           name=param_name + "/adam_m",
+           shape=param.shape.as_list(),
+           dtype=tf.float32,
+           trainable=False,
+-          initializer=tf.zeros_initializer())
+-      v = tf.get_variable(
++          initializer=tf.compat.v1.zeros_initializer())
++      v = tf.compat.v1.get_variable(
+           name=param_name + "/adam_v",
+           shape=param.shape.as_list(),
+           dtype=tf.float32,
+           trainable=False,
+-          initializer=tf.zeros_initializer())
++          initializer=tf.compat.v1.zeros_initializer())
+ 
+       # Standard Adam update.
+       next_m = (
+@@ -154,6 +217,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
+           [param.assign(next_param),
+            m.assign(next_m),
+            v.assign(next_v)])
++
+     return tf.group(*assignments, name=name)
+ 
+   def _do_use_weight_decay(self, param_name):
+diff --git a/run_squad.py b/run_squad.py
+index edd4c3e..fe214e9 100644
+--- a/run_squad.py
++++ b/run_squad.py
+@@ -28,8 +28,23 @@ import optimization
+ import tokenization
+ import six
+ import tensorflow as tf
+-
+-flags = tf.flags
++import generic_ops as bf
++from intel_extension_for_tensorflow.python.fp8.autocast import fp8_autocast
++from intel_extension_for_tensorflow.python.fp8.recipe import DelayedScaling
++
++global is_mpi
++try:
++  import horovod.tensorflow as hvd
++  hvd.init()
++  is_mpi = hvd.size()
++except ImportError:
++  is_mpi = 0
++  print("No MPI horovod support, this is running in no-MPI mode!")
++
++from absl import app
++#from absl import flags
++from absl import logging
++flags = tf.compat.v1.flags
+ 
+ FLAGS = flags.FLAGS
+ 
+@@ -85,6 +100,8 @@ flags.DEFINE_bool("do_predict", False, "Whether to run eval on the dev set.")
+ 
+ flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
+ 
++flags.DEFINE_integer("accum_steps", 1, "Accumulation steps for batch size greater than 32.")
++
+ flags.DEFINE_integer("predict_batch_size", 8,
+                      "Total batch size for predictions.")
+ 
+@@ -116,25 +133,26 @@ flags.DEFINE_integer(
+ 
+ flags.DEFINE_bool("use_tpu", False, "Whether to use TPU or GPU/CPU.")
+ 
+-tf.flags.DEFINE_string(
++flags.DEFINE_string(
+     "tpu_name", None,
+     "The Cloud TPU to use for training. This should be either the name "
+     "used when creating the Cloud TPU, or a grpc://ip.address.of.tpu:8470 "
+     "url.")
+ 
+-tf.flags.DEFINE_string(
++flags.DEFINE_string(
+     "tpu_zone", None,
+     "[Optional] GCE zone where the Cloud TPU is located in. If not "
+     "specified, we will attempt to automatically detect the GCE project from "
+     "metadata.")
+ 
+-tf.flags.DEFINE_string(
++flags.DEFINE_string(
+     "gcp_project", None,
+     "[Optional] Project name for the Cloud TPU-enabled project. If not "
+     "specified, we will attempt to automatically detect the GCE project from "
+     "metadata.")
+ 
+-tf.flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
++flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
++flags.DEFINE_string("precision", "fp32", "[Optional] TensorFlow training precision.")
+ 
+ flags.DEFINE_integer(
+     "num_tpu_cores", 8,
+@@ -153,6 +171,32 @@ flags.DEFINE_float(
+     "null_score_diff_threshold", 0.0,
+     "If null_score - best_non_null is greater than the threshold predict null.")
+ 
++flags.DEFINE_integer( "inter_op_parallelism_threads", 2,
++                      "Setting inter op for the model")
++
++flags.DEFINE_integer("intra_op_parallelism_threads", 20,
++                     "Setting intra op for the model")
++
++flags.DEFINE_bool("profile", False, "[Optional] To enable Tensorflow profile hook."
++                                    "The profile output will be generated in the output_dir")
++
++flags.DEFINE_bool(
++    "disable_v2_bevior", False, "If true, disable the new features in TF 2.x.")
++
++flags.DEFINE_bool(
++    "optimized_softmax", False,
++    "[Optional] If true, use experimental bf16 softmax for internal softmaxes inside each layer."
++    "           Be careful this flag will crash model with incompatible TF.")
++
++flags.DEFINE_bool(
++    "experimental_gelu", False,
++    "[Optional] If true, use experimental op(gelu) in model."
++    "           Be careful this flag will crash model with incompatible TF.")
++
++flags.DEFINE_bool(
++    "mpi_workers_sync_gradients", False,
++    "If true, turns on gradient synchronization via horovod."
++    "Default is False as it gives better accuracy.")
+ 
+ class SquadExample(object):
+   """A single training/test example for simple sequence classification.
+@@ -226,7 +270,7 @@ class InputFeatures(object):
+ 
+ def read_squad_examples(input_file, is_training):
+   """Read a SQuAD json file into a list of SquadExample."""
+-  with tf.gfile.Open(input_file, "r") as reader:
++  with tf.io.gfile.GFile(input_file, "r") as reader:
+     input_data = json.load(reader)["data"]
+ 
+   def is_whitespace(c):
+@@ -285,7 +329,7 @@ def read_squad_examples(input_file, is_training):
+             cleaned_answer_text = " ".join(
+                 tokenization.whitespace_tokenize(orig_answer_text))
+             if actual_text.find(cleaned_answer_text) == -1:
+-              tf.logging.warning("Could not find answer: '%s' vs. '%s'",
++              tf.compat.v1.logging.warning("Could not find answer: '%s' vs. '%s'",
+                                  actual_text, cleaned_answer_text)
+               continue
+           else:
+@@ -428,29 +472,29 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
+         end_position = 0
+ 
+       if example_index < 20:
+-        tf.logging.info("*** Example ***")
+-        tf.logging.info("unique_id: %s" % (unique_id))
+-        tf.logging.info("example_index: %s" % (example_index))
+-        tf.logging.info("doc_span_index: %s" % (doc_span_index))
+-        tf.logging.info("tokens: %s" % " ".join(
++        tf.compat.v1.logging.info("*** Example ***")
++        tf.compat.v1.logging.info("unique_id: %s" % (unique_id))
++        tf.compat.v1.logging.info("example_index: %s" % (example_index))
++        tf.compat.v1.logging.info("doc_span_index: %s" % (doc_span_index))
++        tf.compat.v1.logging.info("tokens: %s" % " ".join(
+             [tokenization.printable_text(x) for x in tokens]))
+-        tf.logging.info("token_to_orig_map: %s" % " ".join(
++        tf.compat.v1.logging.info("token_to_orig_map: %s" % " ".join(
+             ["%d:%d" % (x, y) for (x, y) in six.iteritems(token_to_orig_map)]))
+-        tf.logging.info("token_is_max_context: %s" % " ".join([
++        tf.compat.v1.logging.info("token_is_max_context: %s" % " ".join([
+             "%d:%s" % (x, y) for (x, y) in six.iteritems(token_is_max_context)
+         ]))
+-        tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+-        tf.logging.info(
++        tf.compat.v1.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
++        tf.compat.v1.logging.info(
+             "input_mask: %s" % " ".join([str(x) for x in input_mask]))
+-        tf.logging.info(
++        tf.compat.v1.logging.info(
+             "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+         if is_training and example.is_impossible:
+-          tf.logging.info("impossible example")
++          tf.compat.v1.logging.info("impossible example")
+         if is_training and not example.is_impossible:
+           answer_text = " ".join(tokens[start_position:(end_position + 1)])
+-          tf.logging.info("start_position: %d" % (start_position))
+-          tf.logging.info("end_position: %d" % (end_position))
+-          tf.logging.info(
++          tf.compat.v1.logging.info("start_position: %d" % (start_position))
++          tf.compat.v1.logging.info("end_position: %d" % (end_position))
++          tf.compat.v1.logging.info(
+               "answer: %s" % (tokenization.printable_text(answer_text)))
+ 
+       feature = InputFeatures(
+@@ -565,12 +609,12 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
+   seq_length = final_hidden_shape[1]
+   hidden_size = final_hidden_shape[2]
+ 
+-  output_weights = tf.get_variable(
++  output_weights = tf.compat.v1.get_variable(
+       "cls/squad/output_weights", [2, hidden_size],
+-      initializer=tf.truncated_normal_initializer(stddev=0.02))
++      initializer=tf.compat.v1.truncated_normal_initializer(stddev=0.02))
+ 
+-  output_bias = tf.get_variable(
+-      "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
++  output_bias = tf.compat.v1.get_variable(
++      "cls/squad/output_bias", [2], initializer=tf.compat.v1.zeros_initializer())
+ 
+   final_hidden_matrix = tf.reshape(final_hidden,
+                                    [batch_size * seq_length, hidden_size])
+@@ -578,7 +622,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
+   logits = tf.nn.bias_add(logits, output_bias)
+ 
+   logits = tf.reshape(logits, [batch_size, seq_length, 2])
+-  logits = tf.transpose(logits, [2, 0, 1])
++  logits = tf.transpose(a=logits, perm=[2, 0, 1])
+ 
+   unstacked_logits = tf.unstack(logits, axis=0)
+ 
+@@ -589,15 +633,15 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
+ 
+ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
+                      num_train_steps, num_warmup_steps, use_tpu,
+-                     use_one_hot_embeddings):
++                     use_one_hot_embeddings, use_multi_cpu=is_mpi):
+   """Returns `model_fn` closure for TPUEstimator."""
+ 
+   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
+     """The `model_fn` for TPUEstimator."""
+ 
+-    tf.logging.info("*** Features ***")
++    tf.compat.v1.logging.info("*** Features ***")
+     for name in sorted(features.keys()):
+-      tf.logging.info("  name = %s, shape = %s" % (name, features[name].shape))
++      tf.compat.v1.logging.info("  name = %s, shape = %s" % (name, features[name].shape))
+ 
+     unique_ids = features["unique_ids"]
+     input_ids = features["input_ids"]
+@@ -606,37 +650,49 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
+ 
+     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+ 
+-    (start_logits, end_logits) = create_model(
+-        bert_config=bert_config,
+-        is_training=is_training,
+-        input_ids=input_ids,
+-        input_mask=input_mask,
+-        segment_ids=segment_ids,
+-        use_one_hot_embeddings=use_one_hot_embeddings)
+-
+-    tvars = tf.trainable_variables()
++    if bert_config.precision == "bfloat16" :
++      with tf.compat.v1.tpu.bfloat16_scope():
++        (start_logits, end_logits) = create_model(
++            bert_config=bert_config,
++            is_training=is_training,
++            input_ids=input_ids,
++            input_mask=input_mask,
++            segment_ids=segment_ids,
++            use_one_hot_embeddings=use_one_hot_embeddings)
++      start_logits = tf.cast(start_logits, tf.float32)
++      end_logits = tf.cast(end_logits, tf.float32)
++    else :
++        (start_logits, end_logits) = create_model(
++            bert_config=bert_config,
++            is_training=is_training,
++            input_ids=input_ids,
++            input_mask=input_mask,
++            segment_ids=segment_ids,
++            use_one_hot_embeddings=use_one_hot_embeddings)
++
++    tvars = tf.compat.v1.trainable_variables()
+ 
+     initialized_variable_names = {}
+     scaffold_fn = None
+     if init_checkpoint:
+       (assignment_map, initialized_variable_names
+-      ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
++      ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint, "SQuAD")
+       if use_tpu:
+ 
+         def tpu_scaffold():
+-          tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
+-          return tf.train.Scaffold()
++          tf.compat.v1.train.init_from_checkpoint(init_checkpoint, assignment_map)
++          return tf.compat.v1.train.Scaffold()
+ 
+         scaffold_fn = tpu_scaffold
+       else:
+-        tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
++        tf.compat.v1.train.init_from_checkpoint(init_checkpoint, assignment_map)
+ 
+-    tf.logging.info("**** Trainable Variables ****")
++    tf.compat.v1.logging.info("**** Trainable Variables ****")
+     for var in tvars:
+       init_string = ""
+       if var.name in initialized_variable_names:
+         init_string = ", *INIT_FROM_CKPT*"
+-      tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
++      tf.compat.v1.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
+                       init_string)
+ 
+     output_spec = None
+@@ -648,7 +704,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
+             positions, depth=seq_length, dtype=tf.float32)
+         log_probs = tf.nn.log_softmax(logits, axis=-1)
+         loss = -tf.reduce_mean(
+-            tf.reduce_sum(one_hot_positions * log_probs, axis=-1))
++            input_tensor=tf.reduce_sum(input_tensor=one_hot_positions * log_probs, axis=-1))
+         return loss
+ 
+       start_positions = features["start_positions"]
+@@ -660,12 +716,14 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
+       total_loss = (start_loss + end_loss) / 2.0
+ 
+       train_op = optimization.create_optimizer(
+-          total_loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
++          total_loss, learning_rate, num_train_steps, num_warmup_steps, accum_steps=1, use_tpu=False, use_multi_cpu=(is_mpi if FLAGS.mpi_workers_sync_gradients else 0))
+ 
+-      output_spec = tf.contrib.tpu.TPUEstimatorSpec(
++      log_hook = bf.logTheLossHook(total_loss, n=3)
++      output_spec = tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
+           mode=mode,
+           loss=total_loss,
+           train_op=train_op,
++          training_hooks=[log_hook],
+           scaffold_fn=scaffold_fn)
+     elif mode == tf.estimator.ModeKeys.PREDICT:
+       predictions = {
+@@ -673,7 +731,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
+           "start_logits": start_logits,
+           "end_logits": end_logits,
+       }
+-      output_spec = tf.contrib.tpu.TPUEstimatorSpec(
++      output_spec = tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
+           mode=mode, predictions=predictions, scaffold_fn=scaffold_fn)
+     else:
+       raise ValueError(
+@@ -688,26 +746,26 @@ def input_fn_builder(input_file, seq_length, is_training, drop_remainder):
+   """Creates an `input_fn` closure to be passed to TPUEstimator."""
+ 
+   name_to_features = {
+-      "unique_ids": tf.FixedLenFeature([], tf.int64),
+-      "input_ids": tf.FixedLenFeature([seq_length], tf.int64),
+-      "input_mask": tf.FixedLenFeature([seq_length], tf.int64),
+-      "segment_ids": tf.FixedLenFeature([seq_length], tf.int64),
++      "unique_ids": tf.io.FixedLenFeature([], tf.int64),
++      "input_ids": tf.io.FixedLenFeature([seq_length], tf.int64),
++      "input_mask": tf.io.FixedLenFeature([seq_length], tf.int64),
++      "segment_ids": tf.io.FixedLenFeature([seq_length], tf.int64),
+   }
+ 
+   if is_training:
+-    name_to_features["start_positions"] = tf.FixedLenFeature([], tf.int64)
+-    name_to_features["end_positions"] = tf.FixedLenFeature([], tf.int64)
++    name_to_features["start_positions"] = tf.io.FixedLenFeature([], tf.int64)
++    name_to_features["end_positions"] = tf.io.FixedLenFeature([], tf.int64)
+ 
+   def _decode_record(record, name_to_features):
+     """Decodes a record to a TensorFlow example."""
+-    example = tf.parse_single_example(record, name_to_features)
++    example = tf.io.parse_single_example(serialized=record, features=name_to_features)
+ 
+     # tf.Example only supports tf.int64, but the TPU only supports tf.int32.
+     # So cast all int64 to int32.
+     for name in list(example.keys()):
+       t = example[name]
+       if t.dtype == tf.int64:
+-        t = tf.to_int32(t)
++        t = tf.cast(t, dtype=tf.int32)
+       example[name] = t
+ 
+     return example
+@@ -724,7 +782,7 @@ def input_fn_builder(input_file, seq_length, is_training, drop_remainder):
+       d = d.shuffle(buffer_size=100)
+ 
+     d = d.apply(
+-        tf.contrib.data.map_and_batch(
++        tf.data.experimental.map_and_batch(
+             lambda record: _decode_record(record, name_to_features),
+             batch_size=batch_size,
+             drop_remainder=drop_remainder))
+@@ -742,8 +800,8 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
+                       max_answer_length, do_lower_case, output_prediction_file,
+                       output_nbest_file, output_null_log_odds_file):
+   """Write final predictions to the json file and log-odds of null if needed."""
+-  tf.logging.info("Writing predictions to: %s" % (output_prediction_file))
+-  tf.logging.info("Writing nbest to: %s" % (output_nbest_file))
++  tf.compat.v1.logging.info("Writing predictions to: %s" % (output_prediction_file))
++  tf.compat.v1.logging.info("Writing nbest to: %s" % (output_nbest_file))
+ 
+   example_index_to_features = collections.defaultdict(list)
+   for feature in all_features:
+@@ -913,14 +971,14 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
+ 
+     all_nbest_json[example.qas_id] = nbest_json
+ 
+-  with tf.gfile.GFile(output_prediction_file, "w") as writer:
++  with tf.io.gfile.GFile(output_prediction_file, "w") as writer:
+     writer.write(json.dumps(all_predictions, indent=4) + "\n")
+ 
+-  with tf.gfile.GFile(output_nbest_file, "w") as writer:
++  with tf.io.gfile.GFile(output_nbest_file, "w") as writer:
+     writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
+ 
+   if FLAGS.version_2_with_negative:
+-    with tf.gfile.GFile(output_null_log_odds_file, "w") as writer:
++    with tf.io.gfile.GFile(output_null_log_odds_file, "w") as writer:
+       writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
+ 
+ 
+@@ -974,7 +1032,7 @@ def get_final_text(pred_text, orig_text, do_lower_case):
+   start_position = tok_text.find(pred_text)
+   if start_position == -1:
+     if FLAGS.verbose_logging:
+-      tf.logging.info(
++      tf.compat.v1.logging.info(
+           "Unable to find text: '%s' in '%s'" % (pred_text, orig_text))
+     return orig_text
+   end_position = start_position + len(pred_text) - 1
+@@ -984,7 +1042,7 @@ def get_final_text(pred_text, orig_text, do_lower_case):
+ 
+   if len(orig_ns_text) != len(tok_ns_text):
+     if FLAGS.verbose_logging:
+-      tf.logging.info("Length not equal after stripping spaces: '%s' vs '%s'",
++      tf.compat.v1.logging.info("Length not equal after stripping spaces: '%s' vs '%s'",
+                       orig_ns_text, tok_ns_text)
+     return orig_text
+ 
+@@ -1002,7 +1060,7 @@ def get_final_text(pred_text, orig_text, do_lower_case):
+ 
+   if orig_start_position is None:
+     if FLAGS.verbose_logging:
+-      tf.logging.info("Couldn't map start position")
++      tf.compat.v1.logging.info("Couldn't map start position")
+     return orig_text
+ 
+   orig_end_position = None
+@@ -1013,7 +1071,7 @@ def get_final_text(pred_text, orig_text, do_lower_case):
+ 
+   if orig_end_position is None:
+     if FLAGS.verbose_logging:
+-      tf.logging.info("Couldn't map end position")
++      tf.compat.v1.logging.info("Couldn't map end position")
+     return orig_text
+ 
+   output_text = orig_text[orig_start_position:(orig_end_position + 1)]
+@@ -1062,7 +1120,7 @@ class FeatureWriter(object):
+     self.filename = filename
+     self.is_training = is_training
+     self.num_features = 0
+-    self._writer = tf.python_io.TFRecordWriter(filename)
++    self._writer = tf.io.TFRecordWriter(filename)
+ 
+   def process_feature(self, feature):
+     """Write a InputFeature to the TFRecordWriter as a tf.train.Example."""
+@@ -1098,6 +1156,8 @@ def validate_flags_or_throw(bert_config):
+   """Validate the input FLAGS or throw an exception."""
+   tokenization.validate_case_matches_checkpoint(FLAGS.do_lower_case,
+                                                 FLAGS.init_checkpoint)
++  if FLAGS.disable_v2_bevior:
++    tf.compat.v1.disable_v2_behavior()
+ 
+   if not FLAGS.do_train and not FLAGS.do_predict:
+     raise ValueError("At least one of `do_train` or `do_predict` must be True.")
+@@ -1111,6 +1171,10 @@ def validate_flags_or_throw(bert_config):
+       raise ValueError(
+           "If `do_predict` is True, then `predict_file` must be specified.")
+ 
++  bert_config.set_additional_options(FLAGS.precision, 
++                                     FLAGS.experimental_gelu, 
++                                     FLAGS.optimized_softmax)
++
+   if FLAGS.max_seq_length > bert_config.max_position_embeddings:
+     raise ValueError(
+         "Cannot use sequence length %d because the BERT model "
+@@ -1124,29 +1188,47 @@ def validate_flags_or_throw(bert_config):
+ 
+ 
+ def main(_):
+-  tf.logging.set_verbosity(tf.logging.INFO)
++  # Horovod import successful
++  if is_mpi:
++    FLAGS.output_dir = FLAGS.output_dir if hvd.rank() == 0 else os.path.join(FLAGS.output_dir, str(hvd.rank()))
++    
++  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
++
++
++  if (FLAGS.accum_steps >1 ):
++    tf.compat.v1.logging.info(" Accum steps not yet supported in SQuAD")
++    exit(0)
++
++  if FLAGS.profile:
++    tf.compat.v1.disable_eager_execution()
+ 
+   bert_config = modeling.BertConfig.from_json_file(FLAGS.bert_config_file)
+ 
+   validate_flags_or_throw(bert_config)
+ 
+-  tf.gfile.MakeDirs(FLAGS.output_dir)
++  tf.io.gfile.makedirs(FLAGS.output_dir)
+ 
+   tokenizer = tokenization.FullTokenizer(
+       vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
+ 
+   tpu_cluster_resolver = None
+   if FLAGS.use_tpu and FLAGS.tpu_name:
+-    tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
++    tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
+         FLAGS.tpu_name, zone=FLAGS.tpu_zone, project=FLAGS.gcp_project)
+ 
+-  is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
+-  run_config = tf.contrib.tpu.RunConfig(
++  session_config = tf.compat.v1.ConfigProto(
++      inter_op_parallelism_threads=FLAGS.inter_op_parallelism_threads,
++      intra_op_parallelism_threads=FLAGS.intra_op_parallelism_threads,
++      allow_soft_placement=True)
++
++  is_per_host = tf.compat.v1.estimator.tpu.InputPipelineConfig.PER_HOST_V2
++  run_config = tf.compat.v1.estimator.tpu.RunConfig(
+       cluster=tpu_cluster_resolver,
+       master=FLAGS.master,
+       model_dir=FLAGS.output_dir,
+       save_checkpoints_steps=FLAGS.save_checkpoints_steps,
+-      tpu_config=tf.contrib.tpu.TPUConfig(
++      session_config=session_config,
++      tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(
+           iterations_per_loop=FLAGS.iterations_per_loop,
+           num_shards=FLAGS.num_tpu_cores,
+           per_host_input_for_training=is_per_host))
+@@ -1154,6 +1236,7 @@ def main(_):
+   train_examples = None
+   num_train_steps = None
+   num_warmup_steps = None
++  learning_rate = FLAGS.learning_rate
+   if FLAGS.do_train:
+     train_examples = read_squad_examples(
+         input_file=FLAGS.train_file, is_training=True)
+@@ -1166,18 +1249,25 @@ def main(_):
+     rng = random.Random(12345)
+     rng.shuffle(train_examples)
+ 
++    # Horovod: adjust number of steps based on number of CPUs.
++    if is_mpi:
++      num_train_steps = num_train_steps // hvd.size()
++      num_warmup_steps = num_warmup_steps // hvd.size()
++      learning_rate = learning_rate * math.sqrt(hvd.size())
++
+   model_fn = model_fn_builder(
+       bert_config=bert_config,
+       init_checkpoint=FLAGS.init_checkpoint,
+-      learning_rate=FLAGS.learning_rate,
++      learning_rate=learning_rate,
+       num_train_steps=num_train_steps,
+       num_warmup_steps=num_warmup_steps,
+       use_tpu=FLAGS.use_tpu,
+-      use_one_hot_embeddings=FLAGS.use_tpu)
++      use_one_hot_embeddings=FLAGS.use_tpu,
++      use_multi_cpu=is_mpi)
+ 
+   # If TPU is not available, this will fall back to normal Estimator on CPU
+   # or GPU.
+-  estimator = tf.contrib.tpu.TPUEstimator(
++  estimator = tf.compat.v1.estimator.tpu.TPUEstimator(
+       use_tpu=FLAGS.use_tpu,
+       model_fn=model_fn,
+       config=run_config,
+@@ -1200,11 +1290,11 @@ def main(_):
+         output_fn=train_writer.process_feature)
+     train_writer.close()
+ 
+-    tf.logging.info("***** Running training *****")
+-    tf.logging.info("  Num orig examples = %d", len(train_examples))
+-    tf.logging.info("  Num split examples = %d", train_writer.num_features)
+-    tf.logging.info("  Batch size = %d", FLAGS.train_batch_size)
+-    tf.logging.info("  Num steps = %d", num_train_steps)
++    tf.compat.v1.logging.info("***** Running training *****")
++    tf.compat.v1.logging.info("  Num orig examples = %d", len(train_examples))
++    tf.compat.v1.logging.info("  Num split examples = %d", train_writer.num_features)
++    tf.compat.v1.logging.info("  Batch size = %d", FLAGS.train_batch_size)
++    tf.compat.v1.logging.info("  Num steps = %d", num_train_steps)
+     del train_examples
+ 
+     train_input_fn = input_fn_builder(
+@@ -1212,7 +1302,28 @@ def main(_):
+         seq_length=FLAGS.max_seq_length,
+         is_training=True,
+         drop_remainder=True)
+-    estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
++
++    # Added to profile the run
++    #hooks = [tf.estimator.ProfilerHook(save_steps=1, output_dir=FLAGS.output_dir)]
++    #estimator.train(input_fn=train_input_fn, max_steps=num_train_steps, hooks=hooks)
++
++    # Horovod: In the case of multi CPU training with Horovod, adding
++    # hvd.BroadcastGlobalVariablesHook(0) hook, broadcasts the initial variable
++    # states from rank 0 to all other processes. This is necessary to ensure
++    # consistent initialization of all workers when training is started with
++    # random weights or restored from a checkpoint.
++    if is_mpi:
++        hooks = [hvd.BroadcastGlobalVariablesHook(0)]
++    else:
++        hooks = []
++
++    if FLAGS.profile ==True :
++      tf.compat.v1.logging.info("***** Running training with profiler*****")
++      hooks.append(tf.compat.v1.train.ProfilerHook(save_steps=3, output_dir=FLAGS.output_dir,
++                                                   show_memory=False))
++    with fp8_autocast(enabled=True, fp8_recipe=DelayedScaling()):
++      estimator.train(input_fn=train_input_fn, max_steps=num_train_steps,
++                      hooks=hooks)
+ 
+   if FLAGS.do_predict:
+     eval_examples = read_squad_examples(
+@@ -1237,10 +1348,10 @@ def main(_):
+         output_fn=append_feature)
+     eval_writer.close()
+ 
+-    tf.logging.info("***** Running predictions *****")
+-    tf.logging.info("  Num orig examples = %d", len(eval_examples))
+-    tf.logging.info("  Num split examples = %d", len(eval_features))
+-    tf.logging.info("  Batch size = %d", FLAGS.predict_batch_size)
++    tf.compat.v1.logging.info("***** Running predictions *****")
++    tf.compat.v1.logging.info("  Num orig examples = %d", len(eval_examples))
++    tf.compat.v1.logging.info("  Num split examples = %d", len(eval_features))
++    tf.compat.v1.logging.info("  Batch size = %d", FLAGS.predict_batch_size)
+ 
+     all_results = []
+ 
+@@ -1256,7 +1367,7 @@ def main(_):
+     for result in estimator.predict(
+         predict_input_fn, yield_single_examples=True):
+       if len(all_results) % 1000 == 0:
+-        tf.logging.info("Processing example: %d" % (len(all_results)))
++        tf.compat.v1.logging.info("Processing example: %d" % (len(all_results)))
+       unique_id = int(result["unique_ids"])
+       start_logits = [float(x) for x in result["start_logits"].flat]
+       end_logits = [float(x) for x in result["end_logits"].flat]
+@@ -1280,4 +1391,4 @@ if __name__ == "__main__":
+   flags.mark_flag_as_required("vocab_file")
+   flags.mark_flag_as_required("bert_config_file")
+   flags.mark_flag_as_required("output_dir")
+-  tf.app.run()
++  tf.compat.v1.app.run()
+diff --git a/tokenization.py b/tokenization.py
+index 0ee1359..52c92ad 100644
+--- a/tokenization.py
++++ b/tokenization.py
+@@ -122,7 +122,7 @@ def load_vocab(vocab_file):
+   """Loads a vocabulary file into a dictionary."""
+   vocab = collections.OrderedDict()
+   index = 0
+-  with tf.gfile.GFile(vocab_file, "r") as reader:
++  with tf.io.gfile.GFile(vocab_file, "r") as reader:
+     while True:
+       token = convert_to_unicode(reader.readline())
+       if not token:

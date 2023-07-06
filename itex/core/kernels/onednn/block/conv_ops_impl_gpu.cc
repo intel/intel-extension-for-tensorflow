@@ -771,6 +771,211 @@ REGISTER_KERNEL_BUILDER(
         .HostMemory("max_output_meta"),
     OneDnnQuantizeV2WithQuantizedConv2DOp<GPUDevice, float, qint32, quint8,
                                           quint8, true, false>);
+
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithDequantize")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<qint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<float>("Tbias")
+        .TypeConstraint<float>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, float, float, qint8,
+                                          true, false>);
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithDequantize")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<quint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<float>("Tbias")
+        .TypeConstraint<float>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, float, float,
+                                          qint8, true, false>);
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithDequantize")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<qint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<qint32>("Tbias")
+        .TypeConstraint<float>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, qint32, float,
+                                          qint8, true, false>);
+
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithDequantize")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<quint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<qint32>("Tbias")
+        .TypeConstraint<float>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, qint32, float,
+                                          qint8, true, false>);
+
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithCast")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<qint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<float>("Tbias")
+        .TypeConstraint<Eigen::half>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, float, Eigen::half,
+                                          qint8, true, false>);
+
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithCast")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<quint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<float>("Tbias")
+        .TypeConstraint<Eigen::half>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, float, Eigen::half,
+                                          qint8, true, false>);
+
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithCast")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<qint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<qint32>("Tbias")
+        .TypeConstraint<Eigen::half>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, qint8, qint32, Eigen::half,
+                                          qint8, true, false>);
+REGISTER_KERNEL_BUILDER(
+    Name("_OneDnnQuantizedConv2DWithCast")
+        .Device(DEVICE_GPU)
+        .TypeConstraint<quint8>("Tinput")
+        .TypeConstraint<qint8>("Tfilter")
+        .TypeConstraint<qint32>("Tbias")
+        .TypeConstraint<Eigen::half>("out_type")
+        .HostMemory("min_input")
+        .HostMemory("max_input")
+        .HostMemory("min_filter")
+        .HostMemory("max_filter")
+        .HostMemory("min_freezed_output")
+        .HostMemory("max_freezed_output")
+        .HostMemory("input_meta")
+        .HostMemory("filter_meta")
+        .HostMemory("bias_meta")
+        .HostMemory("min_input_meta")
+        .HostMemory("max_input_meta")
+        .HostMemory("min_filter_meta")
+        .HostMemory("max_filter_meta")
+        .HostMemory("min_freezed_output_meta")
+        .HostMemory("max_freezed_output_meta")
+        .HostMemory("output_meta"),
+    OneDnnQuantizedConv2DWithDequantizeOp<GPUDevice, quint8, qint32,
+                                          Eigen::half, qint8, true, false>);
 #endif
 
 }  // namespace itex

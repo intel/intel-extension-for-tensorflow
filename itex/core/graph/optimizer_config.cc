@@ -18,7 +18,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 
-#include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/graph/config_util.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/protobuf/config.pb.h"
@@ -42,16 +42,32 @@ void HelperSetEnvOptimzerConfig(std::string new_name, std::string old_name,
 }  // namespace
 
 void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
+  bool sharding_flag;
   bool onednn_graph_flag;
+  bool onednn_graph_all_type_flag;
+  bool onednn_graph_compiler_backend_flag;
+  bool onednn_graph_dnnl_backend_flag;
+  bool tf_constant_folding_flag;
+  bool optimize_aggressive_flag;
   bool remapper_flag;
   bool auto_mixed_precision_flag;
-  bool native_format_flag;
   bool layout_opt_flag;
+  bool test_mode_flag;
 
   auto cfg_ = itex::itex_get_config();
 #define USER_IS_ON(CFG) cfg_.graph_options().CFG() == itex::Toggle::ON
 #define USER_IS_OFF(CFG) cfg_.graph_options().CFG() == itex::Toggle::OFF
 #define USER_IS_SET(CFG) cfg_.graph_options().CFG()
+
+  if (USER_IS_SET(sharding)) {
+    sharding_flag = false;
+    if (USER_IS_ON(sharding)) {
+      sharding_flag = true;
+    }
+  } else {
+    ITEX_CHECK_OK(itex::ReadBoolFromEnvVar(
+        "ITEX_SHARDING", enable_itex_sharding, &sharding_flag));
+  }
 
   if (USER_IS_SET(onednn_graph)) {
     onednn_graph_flag = false;
@@ -62,6 +78,20 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
     HelperSetEnvOptimzerConfig("ITEX_ONEDNN_GRAPH", "ITEX_ENABLE_ONEDNN_GRAPH",
                                enable_itex_onednn_graph, &onednn_graph_flag);
   }
+
+  HelperSetEnvOptimzerConfig(
+      "_ITEX_ONEDNN_GRAPH_ALL_TYPE", "_ITEX_ENABLE_ONEDNN_GRAPH_ALL_TYPE",
+      enable_itex_onednn_graph_all_type, &onednn_graph_all_type_flag);
+
+  HelperSetEnvOptimzerConfig("_ITEX_ONEDNN_GRAPH_COMPILER_BACKEND",
+                             "_ITEX_ENABLE_ONEDNN_GRAPH_COMPILER_BACKEND",
+                             enable_itex_onednn_graph_compiler_backend,
+                             &onednn_graph_compiler_backend_flag);
+
+  HelperSetEnvOptimzerConfig("_ITEX_ONEDNN_GRAPH_DNNL_BACKEND",
+                             "_ITEX_ENABLE_ONEDNN_GRAPH_DNNL_BACKEND",
+                             enable_itex_onednn_graph_dnnl_backend,
+                             &onednn_graph_dnnl_backend_flag);
 
   if (USER_IS_SET(remapper)) {
     remapper_flag = true;
@@ -97,16 +127,13 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
     }
   }
 
-  if (USER_IS_SET(native_format)) {
-    native_format_flag = false;
-    if (USER_IS_ON(native_format)) {
-      native_format_flag = true;
-    }
-  } else {
-    HelperSetEnvOptimzerConfig("ITEX_NATIVE_FORMAT",
-                               "ITEX_ENABLE_NATIVE_FORMAT",
-                               enable_itex_native_format, &native_format_flag);
-  }
+  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("ITEX_TF_CONSTANT_FOLDING",
+                                         enable_itex_tf_constant_folding,
+                                         &tf_constant_folding_flag));
+
+  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("_ITEX_OPTIMIZE_AGGRESSIVE",
+                                         enable_itex_optimize_aggressive,
+                                         &optimize_aggressive_flag));
 
   if (USER_IS_SET(auto_mixed_precision)) {
     auto_mixed_precision_flag = false;
@@ -119,16 +146,27 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
                                            &auto_mixed_precision_flag));
   }
 
+  ITEX_CHECK_OK(itex::ReadBoolFromEnvVar(
+      "_ITEX_TEST_MODE", enable_itex_test_mode, &test_mode_flag));
+
 #undef USER_IS_ON
 #undef USER_IS_OFF
 #undef USER_IS_SET
 
   // Set OptimizerConfigFlags.
+  opt_config_flags->enable_sharding = sharding_flag;
   opt_config_flags->enable_onednn_graph = onednn_graph_flag;
+  opt_config_flags->enable_onednn_graph_all_type = onednn_graph_all_type_flag;
+  opt_config_flags->enable_onednn_graph_compiler_backend =
+      onednn_graph_compiler_backend_flag;
+  opt_config_flags->enable_onednn_graph_dnnl_backend =
+      onednn_graph_dnnl_backend_flag;
+  opt_config_flags->enable_tf_constant_folding = tf_constant_folding_flag;
+  opt_config_flags->enable_optimize_aggressive = optimize_aggressive_flag;
   opt_config_flags->enable_remapper = remapper_flag;
   opt_config_flags->enable_auto_mixed_precision = auto_mixed_precision_flag;
-  opt_config_flags->enable_native_format = native_format_flag;
   opt_config_flags->enable_layout_opt = layout_opt_flag;
+  opt_config_flags->enable_test_mode = test_mode_flag;
   opt_config_flags->remapper_run_pass = remapper_run_pass;
 }
 

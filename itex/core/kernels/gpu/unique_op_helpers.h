@@ -18,6 +18,7 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_UNIQUE_OP_HELPERS_H_
 #define ITEX_CORE_KERNELS_GPU_UNIQUE_OP_HELPERS_H_
 
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/tensor_types.h"
@@ -28,8 +29,7 @@ namespace itex {
 namespace impl {
 
 template <typename T>
-using LocalAcc = sycl::accessor<T, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<T, 1>;
 
 template <bool IsReverse>
 inline int MapReversedIndex(int dim_size, int index);
@@ -59,11 +59,9 @@ struct GroupScan {
         N_(N){};
 
   void operator()(sycl::nd_item<1> item) const {
-    auto group_id = item.get_group_linear_id();
     auto group = item.get_group();
-    auto sg_group = item.get_sub_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to SLM
     auto end = GroupSize * ElemsPerWorkItem;
@@ -107,7 +105,7 @@ struct GroupScan {
 
     sycl::group_barrier(group);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; i < end; i += GroupSize) {
       if (i < N_)
@@ -143,9 +141,8 @@ struct DeviceScanFirstStep {
   void operator()(sycl::nd_item<1> item) const {
     auto group_id = item.get_group_linear_id();
     auto group = item.get_group();
-    auto sg_group = item.get_sub_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to slm
     auto start = group_id * GroupSize * ElemsPerWorkItem;
@@ -189,7 +186,7 @@ struct DeviceScanFirstStep {
     }
     sycl::group_barrier(group);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; start + i < end; i += GroupSize) {
       if (start + i < N_)
@@ -220,7 +217,6 @@ struct DeviceScanSecondStep {
       : in_data_(in_data), out_data_(out_data), binary_op_(binary_op), N_(N) {}
   void operator()(sycl::nd_item<1> item) const {
     auto group_id = item.get_group_linear_id();
-    auto num_work_group = item.get_group_range(0);
     auto lid = item.get_local_linear_id();
     auto start = group_id * GroupSize * ElemsPerWorkItem;
     auto end = (group_id + 1) * GroupSize * ElemsPerWorkItem;
@@ -238,8 +234,8 @@ struct DeviceScanSecondStep {
  private:
   InputIteratorT in_data_;
   OutputIteratorT out_data_;
-  size_t N_;
   BinaryOp binary_op_;
+  size_t N_;
 };
 
 template <typename InputIteratorT, typename OutputIteratorT, typename BinaryOp,

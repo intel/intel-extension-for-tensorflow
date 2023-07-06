@@ -19,15 +19,22 @@ limitations under the License.
 #define ITEX_CORE_GRAPH_AUTO_MIXED_PRECISION_AUTO_MIXED_PRECISION_H_
 
 #include "itex/core/graph/utils/grappler_item.h"
+#include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/tf_buffer.h"
 #include "protos/graph.pb.h"
 
 namespace itex {
 namespace graph {
 
-enum class AutoMixedPrecisionMode { GPU_FLOAT16, GPU_BFLOAT16, CPU_BFLOAT16 };
+enum class AutoMixedPrecisionMode {
+  GPU_FLOAT16,
+  GPU_BFLOAT16,
+  CPU_FLOAT16,
+  CPU_BFLOAT16
+};
 
-Status RunAutoMixedPrecision(const char* device_name, const GrapplerItem& item,
+Status RunAutoMixedPrecision(OptimizerContext* opt_ctx,
+                             const GrapplerItem& item,
                              const GraphDef& graph_def, GraphDef* output);
 
 }  // namespace graph

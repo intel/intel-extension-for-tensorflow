@@ -14,7 +14,7 @@
 # ==============================================================================
 
 
-"""Tests for SoftplusGrad."""
+"""Tests for IgammaGradA"""
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import constant_op
@@ -33,7 +33,7 @@ try:
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float64] # FP16 and BF16 are not supported
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float64]
     
 ITERATION = 5
 

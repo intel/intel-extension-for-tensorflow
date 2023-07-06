@@ -19,20 +19,32 @@ limitations under the License.
 
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
-constexpr static bool enable_itex_onednn_graph = false;
+constexpr static bool enable_itex_sharding = false;
+constexpr static bool enable_itex_onednn_graph = true;
+constexpr static bool enable_itex_onednn_graph_all_type = false;
+constexpr static bool enable_itex_onednn_graph_compiler_backend = false;
+constexpr static bool enable_itex_onednn_graph_dnnl_backend = true;
+constexpr static bool enable_itex_tf_constant_folding = true;
+constexpr static bool enable_itex_optimize_aggressive = false;
 constexpr static bool enable_itex_remapper = true;
 constexpr static bool enable_itex_auto_mixed_precision = false;
-constexpr static bool enable_itex_native_format = false;
 constexpr static bool enable_itex_layout_opt = true;
+constexpr static bool enable_itex_test_mode = false;
 constexpr static int32_t remapper_run_pass = 2;
 
 typedef struct _OptimizerConfigFlags {
+  bool enable_sharding;
   bool enable_onednn_graph;
+  bool enable_onednn_graph_all_type;
+  bool enable_onednn_graph_compiler_backend;
+  bool enable_onednn_graph_dnnl_backend;
+  bool enable_tf_constant_folding;
+  bool enable_optimize_aggressive;
   bool enable_remapper;
   bool enable_auto_mixed_precision;
   // TODO(itex): To integrate DOC & GraphOptions
-  bool enable_native_format;
   bool enable_layout_opt;
+  bool enable_test_mode;
   int32_t remapper_run_pass;
 } OptimizerConfigFlags;
 

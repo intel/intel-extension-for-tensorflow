@@ -257,6 +257,33 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL)
 #endif  // INTEL_CPU_ONLY
 
 template <typename Device, typename T>
+class OneDnnMishOp : public OneDnnEltwiseBaseOp<Device, T> {
+ public:
+  explicit OneDnnMishOp(OpKernelConstruction* context)
+      : OneDnnEltwiseBaseOp<Device, T>(context, dnnl::algorithm::eltwise_mish,
+                                       0.0f, 0.0f) {}
+};
+
+#ifndef INTEL_CPU_ONLY
+#define REGISTER_KERNEL(TYPE)                                  \
+  REGISTER_KERNEL_BUILDER(Name("_OneDnnMish")                  \
+                              .Device(DEVICE_GPU)              \
+                              .TypeConstraint<TYPE>("T")       \
+                              .HostMemory("features_meta")     \
+                              .HostMemory("activations_meta"), \
+                          OneDnnMishOp<GPUDevice, TYPE>)
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNEL);
+#undef REGISTER_KERNEL
+#else
+#define REGISTER_KERNEL(TYPE)                                           \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("_OneDnnMish").Device(DEVICE_CPU).TypeConstraint<TYPE>("T"), \
+      OneDnnMishOp<CPUDevice, TYPE>)
+TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL);
+#undef REGISTER_KERNEL
+#endif  // INTEL_CPU_ONLY
+
+template <typename Device, typename T>
 class OneDnnSwishOp : public OneDnnEltwiseBaseOp<Device, T> {
  public:
   explicit OneDnnSwishOp(OpKernelConstruction* context)

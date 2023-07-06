@@ -17,51 +17,54 @@ limitations under the License.
 #define ITEX_CORE_DEVICES_GPU_GPU_POOL_ALLOCATOR_H_
 
 #include <map>
-
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include <memory>
 
 #include "itex/core/devices/bfc_allocator.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 
 class AllocatorPool {
  public:
-  static dpcppError_t getAllocator(DPCPPDevice* device, BFCAllocator** alloc) {
+  static ITEX_GPUError_t getAllocator(ITEX_GPUDevice* device,
+                                      std::shared_ptr<BFCAllocator>* alloc) {
     auto allocs = AllocatorPool::GetAllocatorPool();
-    for (auto& [key, value] : allocs) {
+    for (const auto& [key, value] : allocs) {
       if (key == device) {
         *alloc = value;
-        return DPCPP_SUCCESS;
+        return ITEX_GPU_SUCCESS;
       }
     }
-    return DPCPP_ERROR_INVALID_DEVICE;
+    return ITEX_GPU_ERROR_INVALID_DEVICE;
   }
 
  private:
-  static std::map<DPCPPDevice*, BFCAllocator*>& GetAllocatorPool() {
+  static std::map<ITEX_GPUDevice*, std::shared_ptr<BFCAllocator>>&
+  GetAllocatorPool() {
     static std::once_flag init_alloc_flag;
-    static std::map<DPCPPDevice*, BFCAllocator*> allocators;
+    // TODO(itex): try impl without objects with static storage duration:
+    // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
+    static auto* allocators =
+        new std::map<ITEX_GPUDevice*, std::shared_ptr<BFCAllocator>>;
 
     std::call_once(init_alloc_flag, []() {
       int device_count = 0;
-      dpcppGetDeviceCount(&device_count);
-      DPCPPDevice* device = nullptr;
+      ITEX_GPUGetDeviceCount(&device_count);
+      ITEX_GPUDevice* device = nullptr;
       for (int i = 0; i < device_count; ++i) {
-        dpcppGetDevice(&device, i);
-        allocators.insert({device, new BFCAllocator(device)});
+        ITEX_GPUGetDevice(&device, i);
+        allocators->insert({device, std::make_shared<BFCAllocator>(device)});
       }
     });
 
-    return allocators;
+    return *allocators;
   }
 };  // class AllocatorPool
 
-// clang-format off
-inline dpcppError_t dpcppGetAllocator(DPCPPDevice* device,
-                                      BFCAllocator** alloc) {
+inline ITEX_GPUError_t ITEX_GPUGetAllocator(
+    ITEX_GPUDevice* device, std::shared_ptr<BFCAllocator>* alloc) {
   return AllocatorPool::getAllocator(device, alloc);
 }
-// clang-format on
 
 }  // namespace itex
 #endif  // ITEX_CORE_DEVICES_GPU_GPU_POOL_ALLOCATOR_H_

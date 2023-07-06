@@ -17,12 +17,11 @@
 import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import constant_op
-from tensorflow.python.ops import image_ops
-from tensorflow.python.ops import gradient_checker_v2
+from tensorflow.python.ops import gen_image_ops
 from utils import multi_run, add_profiling, flush_cache
 
 try:
-    from intel_extension_for_tensorflow.python.test_func import test, test_util
+    from intel_extension_for_tensorflow.python.test_func import test
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
 except ImportError:
     from tensorflow.python.platform import test
@@ -31,24 +30,22 @@ except ImportError:
 ITERATION = 5
 
 class ResizeNearestNeighborGradTest(test.TestCase):
-    def _test_impl(self, in_size, out_size, dtype):
-        input_tensor = np.random.normal(size=in_size)
-        input_tensor = constant_op.constant(input_tensor, dtype=dtype)
-        def resize_nn(t, shape=out_size):
-            return image_ops.resize_nearest_neighbor(t, shape[1:3])
+    def _test_impl(self, in_size, original_size, dtype):
+        grad = np.random.normal(size=in_size)
+        grad = constant_op.constant(grad, dtype=dtype)
+        original_shape = constant_op.constant(original_size, dtype=dtypes.int32)
         flush_cache()
-        with self.cached_session():
-            err = gradient_checker_v2.max_error(
-            *gradient_checker_v2.compute_gradient(
-                resize_nn, [input_tensor], delta=1 / 8))
+        gen_image_ops.resize_nearest_neighbor_grad(grad, original_shape)
 
     @add_profiling
     @multi_run(ITERATION)
-    @test_util.run_deprecated_v1
     def testResizeNearestNeighborGrad(self):
+        cases = [[[512,32,32,3], [64,64]],
+                 [[256,64,64,3], [256,256]],
+                 [[32,128,128,3], [512,512]],
+                 [[64,9,9,91], [38,38]]]
         for dtype in FLOAT_COMPUTE_TYPE:
-            # should not use too large size, otherwise it will fail to allocate memory
-            for in_size in zip([[1,4,6,1], [5,7,9,1]], [[1,2,3,1], [5,4,6,5]]):
+            for in_size in cases:
                 self._test_impl(in_size[0], in_size[1], dtype)
 
 if __name__ == '__main__':

@@ -29,20 +29,25 @@ except ImportError:
 
 ITERATION = 5
 
+concat_shape_x = [[8192, 8192], [16,28,28,168], [16,256,32,32,32], [16,256,256,64]]
+concat_shape_y = [[8192, 8192], [16,28,28,160], [16,128,32,32,32], [16,256,256,64]]
+concat_axis = [0, -1, 1, 2]
+
 class ConcatV2Test(test.TestCase):
-    def _test_impl(self, x_size, y_size, dtype):
+    def _test_impl(self, x_size, y_size, axis, dtype):
         x_array = np.random.normal(size=x_size)
         x_tensor = constant_op.constant(x_array, dtype=dtype)
         y_array = np.random.normal(size=y_size)
         y_tensor = constant_op.constant(y_array, dtype=dtype)
         flush_cache()
-        out_gpu = gen_array_ops.concat_v2([x_tensor, y_tensor],0)
+        out_gpu = gen_array_ops.concat_v2([x_tensor, y_tensor],axis)
 
     @add_profiling
     @multi_run(ITERATION)
     def testConcatV2(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            self._test_impl([8192, 8192], [8192, 8192], dtype)
+            for i in range(len(concat_shape_x)):
+                self._test_impl(concat_shape_x[i], concat_shape_y[i], concat_axis[i], dtype)
 
 if __name__ == '__main__':
     test.main()  

@@ -117,7 +117,6 @@ class ConcatBaseOp : public OpKernel {
       inputs_flat_dim0 *= input_shape.dim_size(d);
     }
     int64 output_concat_dim = 0;
-    bool one_size_input = true;
     for (int i = 0; i < N; ++i) {
       const auto& in = c->input(values_input_start_index_ + i);
       OP_REQUIRES(
@@ -128,8 +127,6 @@ class ConcatBaseOp : public OpKernel {
               "] = ", in.shape().DebugString()));
       for (int j = 0; j < input_dims; ++j) {
         if (j == axis) {
-          one_size_input =
-              one_size_input && (in.dim_size(j) == input_shape.dim_size(j));
           continue;
         }
         OP_REQUIRES(
@@ -158,7 +155,7 @@ class ConcatBaseOp : public OpKernel {
     if (output->NumElements() > 0) {
       int64 output_dim1 = output->NumElements() / inputs_flat_dim0;
       auto output_flat = output->shaped<T, 2>({inputs_flat_dim0, output_dim1});
-      Concat<T>(c, inputs_flat, &output_flat, one_size_input);
+      Concat<T>(c, inputs_flat, &output_flat);
     }
   }
 

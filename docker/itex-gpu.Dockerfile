@@ -1,3 +1,4 @@
+# Copyright (c) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +19,9 @@ FROM ubuntu:${UBUNTU_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+HEALTHCHECK NONE
+RUN useradd -d /home/itex -m -s /bin/bash itex
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --fix-missing \
     apt-utils \
@@ -37,8 +41,8 @@ RUN apt-get update && \
 
 RUN no_proxy=$no_proxy wget -qO - https://repositories.intel.com/graphics/intel-graphics.key | \
     gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-RUN echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu focal main' | \
-    tee  /etc/apt/sources.list.d/intel.gpu.focal.list
+RUN echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy flex' | \
+    tee  /etc/apt/sources.list.d/intel.gpu.jammy.list
 
 ARG ICD_VER
 ARG LEVEL_ZERO_GPU_VER
@@ -70,7 +74,7 @@ RUN apt-get update && \
 RUN echo "intelpython=exclude" > $HOME/cfg.txt
 
 ENV LANG=C.UTF-8
-ARG PYTHON=python3.9
+ARG PYTHON=python3.10
 
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     ${PYTHON} lib${PYTHON} python3-pip && \
@@ -86,7 +90,7 @@ RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python3
 
-ARG TF_VER="2.10"
+ARG TF_VER="2.12"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 
@@ -98,7 +102,6 @@ RUN pip install /tmp/tf_whls/* && \
     rm -rf /tmp/tf_whls
 
 ENV LD_LIBRARY_PATH=/opt/intel/oneapi/lib:/opt/intel/oneapi/lib/intel64:$LD_LIBRARY_PATH
-ENV LD_PRELOAD=/opt/intel/oneapi/lib/intel64/libmkl_rt.so
 
 ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/THIRD-PARTY-PROGRAMS.txt /licenses/
 ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/dpcpp-third-party-programs.txt /licenses/

@@ -1,4 +1,5 @@
 load("@intel_extension_for_tensorflow//third_party/onednn_graph:build_defs.bzl", "if_graph_compiler", "if_llga_debug")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 _COPTS_CPU_LIST = [
     "-Wall",
@@ -12,10 +13,12 @@ _COPTS_CPU_LIST = [
     "-DDNNL_GRAPH_LAYOUT_DEBUG",
 ]) + if_graph_compiler([
     "-DDNNL_GRAPH_ENABLE_COMPILER_BACKEND",
-    "-DSC_LLVM_BACKEND=13",
-    "-DSC_CPU_THREADPOOL=1",
+    "-DSC_LLVM_BACKEND=16",
     "-fopenmp",
-])
+]) + select({
+    "@intel_extension_for_tensorflow//third_party/onednn:build_with_tbb": ["-DSC_CPU_THREADPOOL=2"],
+    "//conditions:default": ["-DSC_CPU_THREADPOOL=1"],
+})
 
 _COPTS_GPU_LIST = [
     "-DDNNL_GRAPH_ENABLE_COMPILED_PARTITION_CACHE",
@@ -100,17 +103,17 @@ _INCLUDES_LIST = [
 ])
 
 _DEPS_LIST = [
-    "@onednn_cpu",
+    "@onednn_cpu_v2//:onednn_cpu",
 ] + if_graph_compiler(
     [
-        "@llvm-project//llvm:Core",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:Target",
-        "@llvm-project//llvm:ExecutionEngine",
-        "@llvm-project//llvm:MCJIT",
-        "@llvm-project//llvm:X86CodeGen",
-        "@llvm-project//llvm:AsmParser",
-        "@llvm-project//llvm:AllTargetsAsmParsers",
+        "@llvm-project-16//llvm:Core",
+        "@llvm-project-16//llvm:Support",
+        "@llvm-project-16//llvm:Target",
+        "@llvm-project-16//llvm:ExecutionEngine",
+        "@llvm-project-16//llvm:MCJIT",
+        "@llvm-project-16//llvm:X86CodeGen",
+        "@llvm-project-16//llvm:AsmParser",
+        "@llvm-project-16//llvm:AllTargetsAsmParsers",
     ],
 )
 
@@ -119,7 +122,7 @@ cc_library(
     srcs = _SRCS_LIST,
     hdrs = _HDRS_LIST,
     # TODO(itex): find better way to include xbyak.h within onednn
-    copts = _COPTS_CPU_LIST + ["-I external/onednn_cpu/src/cpu/x64"],
+    copts = _COPTS_CPU_LIST + ["-I external/onednn_cpu_v2/src/cpu/x64"],
     includes = _INCLUDES_LIST,
     visibility = ["//visibility:public"],
     deps = _DEPS_LIST + if_graph_compiler([":onednn_graph_cpu_special"]),
@@ -133,7 +136,7 @@ cc_library(
     hdrs = _HDRS_LIST,
     copts = _COPTS_CPU_LIST + [
         "-fno-rtti",  # special build option for llvm_jit_resolver.cpp
-    ] + ["-I external/onednn_cpu/src/cpu/x64"],
+    ] + ["-I external/onednn_cpu_v2/src/cpu/x64"],
     includes = _INCLUDES_LIST,
     visibility = ["//visibility:public"],
     deps = _DEPS_LIST,
@@ -146,6 +149,6 @@ cc_library(
     copts = _COPTS_GPU_LIST,
     includes = _INCLUDES_LIST,
     visibility = ["//visibility:public"],
-    deps = ["@onednn_gpu"],
+    deps = ["@onednn_gpu_v2//:onednn_gpu"],
     alwayslink = True,
 )

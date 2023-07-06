@@ -16,7 +16,7 @@ limitations under the License.
 #ifndef ITEX_CORE_DEVICES_GPU_GPU_INFO_H_
 #define ITEX_CORE_DEVICES_GPU_GPU_INFO_H_
 
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
@@ -42,7 +42,7 @@ struct DeviceInfo {
   int max_work_group_size_;
 };
 
-DeviceInfo* GetDeviceInfo(DPCPPStream* stream);
+DeviceInfo* GetDeviceInfo(ITEX_GPUStream* stream);
 
 #endif
 

@@ -312,6 +312,17 @@ DEFINE_TRY_GET_ATTR(
 DEFINE_GET_ATTR(PartialTensorShape, shape, "shape", emplace_back,
                 PartialTensorShape(v),
                 TF_RETURN_IF_ERROR(PartialTensorShape::IsValidShape(v));)
+DEFINE_TRY_GET_ATTR(
+    PartialTensorShape, shape, "shape", emplace_back, PartialTensorShape(v),
+    if (!PartialTensorShape::IsValidShape(v).ok()) {
+      static int log_counter = 0;
+      if (log_counter < 10) {
+        log_counter++;
+        ITEX_LOG(WARNING) << "Attr " << attr_name << " has invalid shape value "
+                          << v.DebugString();
+      }
+      return false;
+    })
 // DEFINE_GET_ATTR(
 //     Tensor, tensor, "tensor", emplace_back, t, Tensor t; if (!t.FromProto(v))
 //     {

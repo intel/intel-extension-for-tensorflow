@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/remapper/constant_names.h"
 #include "itex/core/graph/remapper/fusion.h"
 #include "itex/core/graph/remapper/remapper.h"
@@ -30,7 +31,16 @@ namespace graph {
 class InstanceNormFusion : public Fusion {
  public:
   InstanceNormFusion() : Fusion() {
-    is_partial = true;
+    // bring it back once we find gc instance norm has bad performance.
+    bool onednn_graph_all_type_flag =
+        GetOptimizerConfigFlags().enable_onednn_graph_all_type;
+    bool onednn_graph_compiler_backend_flag =
+        GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
+    if (onednn_graph_all_type_flag && onednn_graph_compiler_backend_flag) {
+      is_partial_ = false;
+    } else {
+      is_partial_ = true;
+    }
     using utils::NodeStatus;
     using utils::OpTypePattern;
     OpTypePattern input = {kAny, "input", NodeStatus::kRemain};
@@ -331,8 +341,6 @@ class InstanceNormLeakyRelu : public InstanceNormFusion {
                 const MatchedProperties& properties) const override {
     NodeDef* output_node =
         ctx->graph_view.GetNode(properties.map.at("output"))->node();
-    NodeDef* add2_node =
-        ctx->graph_view.GetNode(properties.map.at("add2"))->node();
     NodeDef* input_node =
         ctx->graph_view.GetNode(properties.map.at("input"))->node();
     NodeDef* gamma_node =
@@ -410,8 +418,7 @@ class InstanceNormLeakyRelu : public InstanceNormFusion {
         return ret.ToEmpty();
       if (!HasDataType(activation_node, DT_FLOAT) &&
           !HasDataType(activation_node, DT_BFLOAT16) &&
-          !(HasDataType(activation_node, DT_HALF) &&
-            NodeIsOnGpu(activation_node)))
+          !HasDataType(activation_node, DT_HALF))
         return ret.ToEmpty();
     }
     return ret;

@@ -41,7 +41,7 @@ typedef struct HsvTuple {
   float v;
 } HsvTuple;
 
-inline HsvTuple rgb2hsv_dpcpp(const float r, const float g, const float b) {
+inline HsvTuple rgb2hsv_itex_gpu(const float r, const float g, const float b) {
   HsvTuple tuple;
   const float M = sycl::fmax(r, sycl::fmax(g, b));
   const float m = sycl::fmin(r, sycl::fmin(g, b));
@@ -74,7 +74,7 @@ inline HsvTuple rgb2hsv_dpcpp(const float r, const float g, const float b) {
   return tuple;
 }
 
-inline RgbTuple hsv2rgb_dpcpp(const float h, const float s, const float v) {
+inline RgbTuple hsv2rgb_itex_gpu(const float h, const float s, const float v) {
   RgbTuple tuple;
   const float new_h = h * 6.0f;
   const float chroma = v * s;
@@ -124,9 +124,9 @@ struct AdjustHsvNHWC {
       return;
     }
 
-    const HsvTuple hsv = rgb2hsv_dpcpp(static_cast<float>(input_[idx]),
-                                       static_cast<float>(input_[idx + 1]),
-                                       static_cast<float>(input_[idx + 2]));
+    const HsvTuple hsv = rgb2hsv_itex_gpu(static_cast<float>(input_[idx]),
+                                          static_cast<float>(input_[idx + 1]),
+                                          static_cast<float>(input_[idx + 2]));
     float new_h = hsv.h;
     float new_s = hsv.s;
     float new_v = hsv.v;
@@ -150,7 +150,7 @@ struct AdjustHsvNHWC {
       new_v = hsv.v * scale;
     }
 
-    const RgbTuple rgb = hsv2rgb_dpcpp(new_h, new_s, new_v);
+    const RgbTuple rgb = hsv2rgb_itex_gpu(new_h, new_s, new_v);
     output_[idx] = static_cast<T>(rgb.r);
     output_[idx + 1] = static_cast<T>(rgb.g);
     output_[idx + 2] = static_cast<T>(rgb.b);

@@ -130,7 +130,7 @@ Status LaunchPatternMatcher(RemapperContext* ctx, int index,
   auto* node = ctx->graph_view.GetNode(index)->node();
 
   for (auto const& fusion : FusionMgr::GetInstance().GetFusions(node->op())) {
-    if (!is_full && !fusion->is_partial) continue;
+    if (!is_full && !fusion->IsPartial()) continue;
     ITEX_VLOG(3) << "Start to run fusion pass: " << fusion->Name();
     auto properties = fusion->Check(ctx, index);
     if (!properties.Empty()) {
@@ -141,6 +141,7 @@ Status LaunchPatternMatcher(RemapperContext* ctx, int index,
       }
 
       for (auto const& index : properties.deleted) {
+        RemoveAllRegularFanin(ctx, index);
         deleted->at(index) = true;
       }
 

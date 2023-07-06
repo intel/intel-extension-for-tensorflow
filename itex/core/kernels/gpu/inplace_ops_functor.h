@@ -76,6 +76,19 @@ void DoParallelConcat(const Device& d, const Tensor& value, int32 loc,
   auto num_wg = (nelem + group_size - 1) / group_size;
 
   const T* src = value.flat<T>().data();
+
+  if (nelem == 0) {
+    // When params_size is 0, the data pointer of params tensor maybe a host
+    // pointer. If we use a host pointer in dpcpp kernel even if the code is
+    // in impossible condition branch, we will get an error -50
+    // (CL_INVALID_ARG_VALUE). Here we workaround this case. All indices will
+    // be out of range in this condition, so the output value will be zero
+    // according to definition of GatherV2.
+
+    d.stream()->memset(output->flat<T>().data(), 0,
+                       output->NumElements() * sizeof(T));
+    return;
+  }
   T* dst = output->flat<T>().data();
 
   stream->submit([&](sycl::handler& cgh) {

@@ -20,12 +20,11 @@ limitations under the License.
 #include <algorithm>
 #include <string>
 
-#include "tensorflow/c/c_api_experimental.h"
-
 #include "itex/core/utils/gtl/flatset.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/str_util.h"
 #include "protos/attr_value.pb.h"
+#include "tensorflow/c/c_api_experimental.h"
 
 namespace itex {
 namespace graph {
@@ -44,6 +43,8 @@ bool IsAdd(const NodeDef& node) {
 }
 
 bool IsAddN(const NodeDef& node) { return node.op() == "AddN"; }
+
+bool IsAddV2(const NodeDef& node) { return node.op() == "AddV2"; }
 
 bool IsAll(const NodeDef& node) { return node.op() == "All"; }
 
@@ -95,14 +96,13 @@ bool IsAnySparseSegmentReduction(const NodeDef& node) {
 }
 
 bool IsAnyOneDnnGraph(const NodeDef& node) {
-  const auto& op = node.op();
   return IsBlockOneDnnGraph(node) || IsNativeOneDnnGraph(node);
 }
 
 bool IsApplyAdam(const NodeDef& node) { return node.op() == "ApplyAdam"; }
 
 bool IsApplyAdamWithWeightDecay(const NodeDef& node) {
-  return node.op() == "ApplyAdamWithWeightDecay";
+  return node.op() == "ITEXApplyAdamWithWeightDecay";
 }
 
 bool IsL2Loss(const NodeDef& node) { return node.op() == "L2Loss"; }
@@ -133,6 +133,10 @@ bool IsAssert(const NodeDef& node) { return node.op() == "Assert"; }
 
 bool IsAtan2(const NodeDef& node) { return node.op() == "Atan2"; }
 
+bool IsBatchToSpaceND(const NodeDef& node) {
+  return node.op() == "BatchToSpaceND";
+}
+
 bool IsBetainc(const NodeDef& node) { return node.op() == "Betainc"; }
 
 bool IsBiasAdd(const NodeDef& node) {
@@ -147,6 +151,10 @@ bool IsBitcast(const NodeDef& node) { return node.op() == "Bitcast"; }
 
 bool IsBlockOneDnnGraph(const NodeDef& node) {
   return node.op() == "_OneDnnGraph";
+}
+
+bool IsBroadcastGradientArgs(const NodeDef& node) {
+  return node.op() == "BroadcastGradientArgs";
 }
 
 bool IsBroadcastTo(const NodeDef& node) { return node.op() == "BroadcastTo"; }
@@ -191,6 +199,8 @@ bool IsComplexAbs(const NodeDef& node) { return node.op() == "ComplexAbs"; }
 bool IsConcat(const NodeDef& node) {
   return node.op() == "Concat" || node.op() == "ConcatV2";
 }
+
+bool IsConcatV2(const NodeDef& node) { return node.op() == "ConcatV2"; }
 
 bool IsConcatOffset(const NodeDef& node) { return node.op() == "ConcatOffset"; }
 
@@ -339,17 +349,17 @@ bool IsFusedBatchNormGrad(const NodeDef& node) {
 
 bool IsFusedMatmul(const NodeDef& node) {
   const auto& op = node.op();
-  return op == "_ITEXFusedMatMul" || op == "_FusedMatMulWithSum";
+  return op == "_ITEXFusedMatMul" || op == "_ITEXFusedMatMulWithSum";
 }
 
 bool IsFusedMatmulGrad(const NodeDef& node) {
   const auto& op = node.op();
-  return op == "_FusedMatMulGrad";
+  return op == "_ITEXFusedMatMulGrad";
 }
 
 bool IsFusedMatmulWithSum(const NodeDef& node) {
   const auto& op = node.op();
-  return op == "_FusedMatMulWithSum";
+  return op == "_ITEXFusedMatMulWithSum";
 }
 
 bool IsGather(const NodeDef& node) {
@@ -357,7 +367,10 @@ bool IsGather(const NodeDef& node) {
   return op == "Gather" || op == "GatherV2";
 }
 
-bool IsGelu(const NodeDef& node) { return node.op() == "Gelu"; }
+bool IsGelu(const NodeDef& node) {
+  const auto& op = node.op();
+  return op == "Gelu" || op == "ITEXGelu";
+}
 
 bool IsGreater(const NodeDef& node) { return node.op() == "Greater"; }
 
@@ -401,7 +414,9 @@ bool IsImmutableConst(const NodeDef& node) {
 
 bool IsInvGrad(const NodeDef& node) { return node.op() == "InvGrad"; }
 
-bool IsInstanceNorm(const NodeDef& node) { return node.op() == "InstanceNorm"; }
+bool IsInstanceNorm(const NodeDef& node) {
+  return node.op() == "_ITEXInstanceNorm";
+}
 
 bool IsLeakyRelu(const NodeDef& node) { return node.op() == "LeakyRelu"; }
 
@@ -428,6 +443,8 @@ bool IsMatMul(const NodeDef& node) { return node.op() == "MatMul"; }
 bool IsMax(const NodeDef& node) { return node.op() == "Max"; }
 
 bool IsMaximum(const NodeDef& node) { return node.op() == "Maximum"; }
+
+bool IsMaxPool3D(const NodeDef& node) { return node.op() == "MaxPool3D"; }
 
 bool IsMaxPoolGrad(const NodeDef& node) { return node.op() == "MaxPoolGrad"; }
 
@@ -504,8 +521,16 @@ bool IsQuantizedMatMul(const NodeDef& node) {
 
 bool IsQuantizeV2(const NodeDef& node) { return node.op() == "QuantizeV2"; }
 
-bool IsQuantizedConv2DWithPostOps(const NodeDef& node) {
+bool IsQuantizedConv2DWithBiasAndReluAndRequantize(const NodeDef& node) {
   return node.op() == "QuantizedConv2DWithBiasAndReluAndRequantize";
+}
+
+bool IsQuantizedConv2DWithBiasAndRequantize(const NodeDef& node) {
+  return node.op() == "QuantizedConv2DWithBiasAndRequantize";
+}
+
+bool IsQuantizedConv2DWithDequantize(const NodeDef& node) {
+  return node.op() == "_ITEXQuantizedConv2DWithDequantize";
 }
 
 bool IsQueue(const NodeDef& node) {
@@ -517,7 +542,7 @@ bool IsRandomShuffle(const NodeDef& node) {
 }
 
 bool IsRandomUniform(const NodeDef& node) {
-  return node.op() == "RandomUniform";
+  return node.op() == "RandomUniform" || node.op() == "_ITEXRandomUniform";
 }
 
 bool IsRank(const NodeDef& node) { return node.op() == "Rank"; }
@@ -563,7 +588,7 @@ bool IsResourceApplyAdam(const NodeDef& node) {
 }
 
 bool IsResourceApplyAdamWithWeightDecay(const NodeDef& node) {
-  return node.op() == "ResourceApplyAdamWithWeightDecay";
+  return node.op() == "ITEXResourceApplyAdamWithWeightDecay";
 }
 
 bool IsResourceApplyMomentum(const NodeDef& node) {
@@ -618,6 +643,10 @@ bool IsSoftmax(const NodeDef& node) { return node.op() == "Softmax"; }
 bool IsSoftplusGrad(const NodeDef& node) { return node.op() == "SoftplusGrad"; }
 
 bool IsSoftsignGrad(const NodeDef& node) { return node.op() == "SoftsignGrad"; }
+
+bool IsSpaceToBatchND(const NodeDef& node) {
+  return node.op() == "SpaceToBatchND";
+}
 
 bool IsSplit(const NodeDef& node) { return node.op() == "Split"; }
 
@@ -706,9 +735,17 @@ bool IsTensorArray(const NodeDef& node) {
       "TensorArrayRead",
       "TensorArrayReadV2",
       "TensorArrayReadV3",
+      "TensorArraypack",
+      "TensorArrayGather",
+      "TensorArrayGatherV2",
+      "TensorArrayGatherV3",
       "TensorArrayConcat",
       "TensorArrayConcatV2",
       "TensorArrayConcatV3",
+      "TensorArrayUnpack",
+      "TensorArrayScatter",
+      "TensorArrayScatterV2",
+      "TensorArrayScatterV3",
       "TensorArraySplit",
       "TensorArraySplitV2",
       "TensorArraySplitV3",
@@ -742,6 +779,11 @@ bool IsVariable(const NodeDef& node) {
   return op == "Variable" || op == "VariableV2" || op == "AutoReloadVariable" ||
          op == "VarHandleOp" || op == "ReadVariableOp" ||
          op == "_VarHandlesOp" || op == "_ReadVariablesOp";
+}
+
+bool IsVarHandle(const NodeDef& node) {
+  const auto& op = node.op();
+  return op == "VarHandleOp";
 }
 
 bool IsWhile(const NodeDef& node) {

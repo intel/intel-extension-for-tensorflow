@@ -31,7 +31,6 @@ except ImportError:
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
 
 ITERATION = 5
-tf.compat.v1.disable_eager_execution()
 
 class CheckNumericsTest(test.TestCase):
     def _test_impl(self, size, dtype):

@@ -18,16 +18,16 @@ limitations under the License.
 
 #include "itex/core/utils/logging.h"
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 struct SP_Stream_st {
-  explicit SP_Stream_st(DPCPPStream* stream_h) : stream_handle(stream_h) {}
-  DPCPPStream* stream_handle;
+  explicit SP_Stream_st(ITEX_GPUStream* stream_h) : stream_handle(stream_h) {}
+  ITEX_GPUStream* stream_handle;
 };
 
 struct SP_Event_st {
-  explicit SP_Event_st(DPCPPEvent* event_h) : event_handle(event_h) {}
-  DPCPPEvent* event_handle;
+  explicit SP_Event_st(ITEX_GPUEvent event_h) : event_handle(event_h) {}
+  ITEX_GPUEvent event_handle;
 };
 
 struct SP_Timer_st {

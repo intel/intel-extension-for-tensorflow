@@ -284,7 +284,8 @@ class DynamicPartitionTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testErrorIndexOutOfRange(self):
-    with self.cached_session():
+    # GPU kernels don't throw exceptions.
+    with self.cached_session(use_gpu=False):
       data = constant_op.constant([[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11],
                                    [12, 13, 14]])
       indices = constant_op.constant([0, 2, 99, 2, 2])

@@ -10,17 +10,16 @@ Stock [TensorFlow](https://pypi.org/project/tensorflow/) and [Intel® Optimizati
 ## Hardware Requirements
 
 Verified Hardware Platforms:
-- Cascade Lake
-- Cooper Lake
-- Ice Lake
-- Sapphire Rapids
- 
+- 2nd Generation Intel® Xeon® Scalable Processors.
+- 3rd Generation Intel® Xeon® Scalable Processors.
+- 4th Generation Intel® Xeon® Scalable Processors.
+
 ## Software Requirements
 
-- Ubuntu 20.04 (64-bit), Ubuntu 22.04 (64-bit) or CentOS Linux 8 (64-bit), and Sapphire Rapids requires Ubuntu 22.04 or CentOS Linux 8.
-- Python 3.7-3.10
+- Ubuntu 20.04 (64-bit), Ubuntu 22.04 (64-bit) or CentOS Linux 8 (64-bit), and Sapphire Rapids requires Ubuntu 22.04 or CentOS Linux 8 with kernel version >= 5.16
+- Python 3.8-3.10
 - pip 19.0 or later (requires manylinux2014 support)
-  
+
 ## Install via Docker container
 
 #### Build Docker container from Dockerfile
@@ -30,7 +29,7 @@ Run the following [Dockerfile build procedure](./../../../docker/README.md) to b
 #### Get docker container from dockerhub
 
 Pre-built docker images are available at [DockerHub](https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags).
-Please run the following command to pull the CPU Docker container image to your local machine.
+Run the following command to pull the CPU Docker container image to your local machine.
 
 ```
 $ docker pull intel/intel-extension-for-tensorflow:cpu
@@ -44,7 +43,7 @@ Then go to your browser on http://localhost:8888/
 
 The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.
 
-The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.10.0. 
+The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.12.0.
 
 
 ##### Virtual environment install 
@@ -58,15 +57,15 @@ On Linux, it is often necessary to first update pip to a version that supports m
 
 To install in virtual environment, you can run 
 ```bash
-(tf)$ pip install tensorflow==2.10.0
+(tf)$ pip install tensorflow==2.12.0
 ```
 
 ##### System environment install 
-If want to system install in $HOME, append `--user` to the commands.
+If you prefer install tensorflow in $HOME, append `--user` to the commands.
 ```bash
-$ pip3 install --user tensorflow==2.10.0
+$ pip3 install --user tensorflow==2.12.0
 ``` 
-And the following system environment install for Intel® Extension for TensorFlow* will use the same practice. 
+And the following system environment install for Intel® Extension for TensorFlow* will also append `--user` to the command. 
 
 #### Install Intel® Extension for TensorFlow*
 

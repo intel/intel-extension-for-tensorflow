@@ -21,7 +21,6 @@ limitations under the License.
 
 #include "itex/core/devices/gpu/eigen_stream_device.h"
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
-
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/plugin_tensor.h"
@@ -29,7 +28,6 @@ limitations under the License.
 #include "itex/core/utils/str_util.h"
 #include "itex/core/utils/tensor_types.h"
 #include "itex/core/utils/types.h"
-
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
@@ -105,7 +103,7 @@ class UniqueOp : public OpKernel {
                 errors::InvalidArgument("unique expects a 1D vector."));
 
     int64_t input_size = input.NumElements();
-    bool has_count_output = context->num_outputs();
+    bool has_count_output = (context->num_outputs() == 3);
 
     if (input_size == 0) {
       // Early exit for trivial case.
@@ -140,8 +138,7 @@ class UniqueOp : public OpKernel {
             /*keys_in = */ input_ptr,
             /*indices_in = */ static_cast<ValueT*>(nullptr),
             /*keys_out = */ sorted_input_ptr,
-            /*indices_out = */ sorted_input_inds_ptr,
-            /*num_bits = */ 30));
+            /*indices_out = */ sorted_input_inds_ptr));
 
     Tensor sorted_input_unique_ids;
     OP_REQUIRES_OK(
@@ -161,7 +158,12 @@ class UniqueOp : public OpKernel {
         context, input_size, segment_indicator_iter,
         sorted_input_unique_ids_ptr, (const KeyT)0, false, false, BinaryOp());
 
-    int uniq_size = sorted_input_unique_ids_ptr[input_size - 1] + 1;
+    int uniq_size;
+    stream
+        ->memcpy(&uniq_size, &(sorted_input_unique_ids_ptr[input_size - 1]),
+                 sizeof(int))
+        .wait();
+    uniq_size += 1;
 
     Tensor unique_input_inds;
     OP_REQUIRES_OK(context, context->allocate_temp(
@@ -205,7 +207,7 @@ class UniqueOp : public OpKernel {
                                 /*GROUP_SIZE*/ 256, /*SUBGROUP_SIZE*/ 16>(
             context, uniq_size, unique_input_inds_ptr,
             static_cast<ValueT*>(nullptr), sorted_unique_input_inds_ptr,
-            sorted_unique_perm_ptr, impl::Log2Ceiling(input_size)));
+            sorted_unique_perm_ptr));
 
     Tensor* output = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(
@@ -262,6 +264,10 @@ class UniqueOp : public OpKernel {
                           UniqueOp<type, int32>)
 
 TF_CALL_float(REGISTER_UNIQUE_GPU);
+TF_CALL_int32(REGISTER_UNIQUE_GPU);
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER_UNIQUE_GPU);
+#endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_UNIQUE_GPU
 
 }  // namespace itex

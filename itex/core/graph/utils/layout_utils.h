@@ -19,12 +19,32 @@ limitations under the License.
 #include <string>
 #include <unordered_set>
 
-#include "itex/core/graph/utils/function.h"
 #include "itex/core/graph/utils/graph_view.h"
+#include "itex/core/utils/cpu_info.h"
+#include "itex/core/utils/function.h"
 #include "itex/core/utils/op_def_util.h"
 
 namespace itex {
 namespace graph {
+
+// Structure to specify a forward op, a backward op, and the slot numbers
+// in the forward and backward ops where we will add a workspace edge.
+typedef struct {
+  string bwd_op;  // Name of a backward op in the graph
+
+  int bwd_slot;     // Input slot in the backward op node where actual
+                    // Input tensor resides
+  int ws_fwd_slot;  // Output slot in the forward op node where workspace
+                    // edge is added
+} WorkSpaceInfo;
+
+string GetInputName(const NodeDef* input, int out_slot);
+
+// Check whether output_node in wsinfo, find input_node, add workspace edge
+// between input and output, return input_node.
+NodeDef* AddWorkspace(
+    const itex::graph::utils::MutableNodeView* ori_output_node_view,
+    NodeDef* new_output_node_def);
 
 //////////////////////////////////////////////////////////////////////////
 // DataType Check
@@ -35,6 +55,12 @@ bool IsQuantizedOp(const string& op_name);
 bool IsDataTypeExemptOp(const string& op_name);
 
 bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def);
+
+bool IsOneDnnLayoutPartialDependentOp(const string& op_name);
+
+bool IsOneDnnLayoutDependentOp(const string& op_name);
+
+bool IsPlainLayoutOp(const string& op_name);
 
 //////////////////////////////////////////////////////////////////////////
 // Rewrite functions
@@ -47,11 +73,8 @@ bool AlwaysRewrite(const utils::MutableNodeView& node_view);
 // Backward only supports FP32, BF16
 bool RewriteBackwardDataType(const utils::MutableNodeView& node_view);
 
-// Only rewrite GPU nodes.
-bool RewriteForGPU(const utils::MutableNodeView& node_view);
-
-// FusedBatchNormV3 is rewritten when input is 4D tensor
-bool RewriteFusedBatchNormV3(const utils::MutableNodeView& node_view);
+// Conv op is rewritten only if there are OneDnn ops in its input or output.
+bool RewriteOneDnnConv(const utils::MutableNodeView& node_view);
 
 bool RewriteLayerNorm(const utils::MutableNodeView& node_view);
 
@@ -61,20 +84,16 @@ bool RewriteLayerNormGrad(const utils::MutableNodeView& node_view);
 // side_input
 bool RewriteFusedBatchNormEx(const utils::MutableNodeView& node_view);
 
-// FusedBatchNormV3 is rewritten when input is 4D tensor
-bool RewriteFusedBatchNormGradV3(const utils::MutableNodeView& node_view);
-
 // FusedBatchNormExGrad is rewritten when input is 4D tensor and only one
 // ReluGrad side_input
 bool RewriteFusedBatchNormExGrad(const utils::MutableNodeView& node_view);
 
 bool RewriteFusedConv(const utils::MutableNodeView& node_view);
 
+bool RewriteOneDnnFusedConv(const utils::MutableNodeView& node_view);
+
 // MatMul is not rewritten when trans_a/trans_b = True.
 bool RewriteMatMul(const utils::MutableNodeView& node_view);
-
-// _FusedMatMulGrad is not rewritten when trans_a/trans_b is true.
-bool RewriteFusedMatMulGrad(const utils::MutableNodeView& node_view);
 
 // Rewrite rule for Conv2DBackprop.
 // @return - true if `padding` and data type are supported.
@@ -85,17 +104,26 @@ bool RewriteConv2DBackprop(const utils::MutableNodeView& node_view);
 //   1) Padding type is not `EXPLICIT`.
 //   2) Not perform pooling on depth(C) or batch(N).
 bool RewritePool(const utils::MutableNodeView& node_view);
+bool RewriteOneDnnPool(const utils::MutableNodeView& node_view);
 
 // Rewrite only if there is _OneDnnMaxpool
 // Only MaxPoolGrad requires the input from MaxPool. AvgPool doesn't have such
 // input tensor.
 bool RewriteMaxPoolGrad(const utils::MutableNodeView& node_view);
 
+bool RewriteRandomUniform(const utils::MutableNodeView& node_view);
+
 bool RewriteQuantize(const utils::MutableNodeView& node_view);
 
 bool RewriteResize(const utils::MutableNodeView& node_view);
 
 bool RewriteNativeCast(const utils::MutableNodeView& node_view);
+
+bool RewriteWithBlockInput(const utils::MutableNodeView& node_view);
+
+bool RewriteBinary(const utils::MutableNodeView& node_view);
+
+bool RewriteCast(const utils::MutableNodeView& node_view);
 
 // Only rewrite for s8 datatype which TF proper doesn't support
 bool RewriteQuantizeReshape(const utils::MutableNodeView& node_view);
@@ -115,6 +143,9 @@ void CopyAttrsAll(const utils::MutableNodeView* orig_node_view,
 // Generic function to copy all attributes and check if filter is const.
 void CopyAttrsAllCheckConstFilter(const utils::MutableNodeView* orig_node_view,
                                   NodeDef* new_node);
+
+void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
+                             NodeDef* new_node);
 
 // Function to copy attributes of OneDnnGraph
 void CopyAttrsOneDnnGraph(const utils::MutableNodeView* orig_node_view,

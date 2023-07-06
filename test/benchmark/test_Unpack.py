@@ -29,17 +29,20 @@ except ImportError:
 ITERATION = 5
 
 class UnPackTest(test.TestCase):
-    def _test_impl(self, x_size, dtype):
+    def _test_impl(self, x_size, num, axis, dtype):
         x_array = np.random.normal(size=x_size)
         x_tensor = constant_op.constant(x_array, dtype=dtype)
         flush_cache()
-        out_gpu1 = array_ops.unpack(x_tensor, 2, axis=0)
+        out_gpu1 = array_ops.unpack(x_tensor, num, axis)
 
     @add_profiling
     @multi_run(ITERATION)
     def testUnPack(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            self._test_impl([2, 8192, 8192], dtype)
+            self._test_impl([2, 8192, 8192], 2, 0, dtype)
+            self._test_impl([16,3,224,224], 3, 1, dtype)
+            self._test_impl([4,19200], 4, 0, dtype)
+            self._test_impl([1,300,300,3], 1, 0, dtype)
             
 if __name__ == '__main__':
     test.main() 

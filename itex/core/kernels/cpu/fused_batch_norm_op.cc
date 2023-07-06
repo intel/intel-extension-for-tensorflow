@@ -56,6 +56,7 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_FUSED_BATCHNORM_CPU)
 
 REGISTER_FUSED_BATCHNORM_CPU(float, float);
 REGISTER_FUSED_BATCHNORM_CPU(Eigen::bfloat16, float);
+REGISTER_FUSED_BATCHNORM_CPU(Eigen::half, float);
 #undef REGISTER_FUSED_BATCHNORM_CPU
 
 #define REGISTER_FUSED_BATCHNORM_GRAD_CPU(T, U)                                \
@@ -73,12 +74,7 @@ REGISTER_FUSED_BATCHNORM_CPU(Eigen::bfloat16, float);
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<U>("U"),                         \
                           FusedBatchNormGradOp<CPUDevice, T, U, true, false>)  \
-  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBatchNormExGrad")                    \
-                              .Device(DEVICE_CPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<U>("U"),                         \
-                          FusedBatchNormGradOp<CPUDevice, T, U, true, true>)   \
-  REGISTER_KERNEL_BUILDER(Name("_FusedBatchNormExGrad")                        \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBatchNormGradEx")                    \
                               .Device(DEVICE_CPU)                              \
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<U>("U"),                         \
@@ -86,6 +82,7 @@ REGISTER_FUSED_BATCHNORM_CPU(Eigen::bfloat16, float);
 
 REGISTER_FUSED_BATCHNORM_GRAD_CPU(float, float);
 REGISTER_FUSED_BATCHNORM_GRAD_CPU(Eigen::bfloat16, float);
+REGISTER_FUSED_BATCHNORM_GRAD_CPU(Eigen::half, float);
 #undef REGISTER_FUSED_BATCHNORM_GRAD_CPU
 
 REGISTER_KERNEL_BUILDER(

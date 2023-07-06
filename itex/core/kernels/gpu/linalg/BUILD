@@ -41,8 +41,7 @@ itex_xpu_library(
     name = "einsum_op_impl",
     srcs = ["einsum_op_impl.cc"],
     hdrs = [
-        "einsum_op.h",
-        "einsum_op_impl.h",
+        "//itex/core/kernels/common:einsum_hdrs",
     ],
     copts = tf_copts(),
     linkstatic = 1,
@@ -151,6 +150,7 @@ itex_xpu_library(
     deps = [
         "//itex/core/devices:xpu_device_util",
         "//itex/core/kernels/gpu:matmul_op",
+        "//itex/core/kernels/gpu:transpose_op",
     ],
     alwayslink = True,
 )

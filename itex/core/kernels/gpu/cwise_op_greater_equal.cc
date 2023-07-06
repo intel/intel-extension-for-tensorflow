@@ -28,7 +28,7 @@ REGISTER3(BinaryOp, GPU, "GreaterEqual", functor::greater_equal, float,
 REGISTER(BinaryOp, GPU, "GreaterEqual", functor::greater_equal, double);
 #endif
 
-REGISTER3(BinaryOp, GPU, "_GreaterEqualWithCast",
+REGISTER3(BinaryOp, GPU, "_ITEXGreaterEqualWithCast",
           functor::greater_equal_with_cast, float, Eigen::half,
           Eigen::bfloat16);
 

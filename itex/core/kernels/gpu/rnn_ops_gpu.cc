@@ -21,7 +21,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "itex/core/kernels/gpu/reduction_dpcpp_kernels.h"
+#include "itex/core/kernels/gpu/col_reduction_kernels.h"
 #include "itex/core/kernels/gpu/rnn_ops.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"
@@ -97,7 +97,9 @@ void AssignStorage(const RnnModelConfig& rmc, T* workspace, T* scratch,
 
 template <typename T>
 struct LSTMCell {
-  LSTMCell(const RnnModelConfig& rmc, const T* params, T* hgates)
+  LSTMCell(const RnnModelConfig& rmc,
+           MatMulFunctor<GPUDevice, T, T, T, true>* h_gemm, const T* params,
+           T* hgates)
       : num_gates_(rmc.num_gates),
         batch_size_(rmc.batch_size),
         output_size_(rmc.output_size),
@@ -105,20 +107,24 @@ struct LSTMCell {
         is_training_(rmc.is_training),
         w_hh_(params + rmc.input_size * rmc.output_size * rmc.num_gates),
         bias_(w_hh_ + rmc.output_size * rmc.output_size * rmc.num_gates),
-        hgates_(hgates) {}
+        hgates_(hgates),
+        h_gemm_(h_gemm) {}
 
   void operator()(const GPUDevice& d, const T* input, const T* h_prev,
                   const T* c_prev, const T* igates, T* h_next, T* c_next,
                   T* gates) const {
     // compute hgates
     if (has_rec_dropout_) {
-      LstmGemm<T, false, true, false, false>(d, h_prev, w_hh_, hgates_,
-                                             num_gates_, batch_size_,
-                                             output_size_, output_size_);
+      h_gemm_->Compute(const_cast<T*>(h_prev),
+                       {num_gates_, batch_size_, output_size_}, false,
+                       const_cast<T*>(w_hh_),
+                       {num_gates_, output_size_, output_size_}, true,
+                       !is_training_, hgates_);
     } else {
-      LstmGemm<T, false, true, true, false>(d, h_prev, w_hh_, hgates_,
-                                            num_gates_, batch_size_,
-                                            output_size_, output_size_);
+      h_gemm_->Compute(const_cast<T*>(h_prev), {1, batch_size_, output_size_},
+                       false, const_cast<T*>(w_hh_),
+                       {num_gates_, output_size_, output_size_}, true,
+                       !is_training_, hgates_);
     }
 
     // compute h_next and c_next
@@ -140,6 +146,7 @@ struct LSTMCell {
   const T* w_hh_;
   const T* bias_;
   T* hgates_;
+  MatMulFunctor<GPUDevice, T, T, T, true>* h_gemm_;
 };
 
 // ------------------------------------------------------------------
@@ -149,7 +156,8 @@ template <typename T>
 void LstmImpl(const GPUDevice& d, const RnnModelConfig& rmc, const T* input,
               const T* hx, const T* cx, const T* params, const T* dp_mask,
               const T* rec_dp_mask, T* output, T* hy, T* cy, T* workspace,
-              T* scratch) {
+              T* scratch, MatMulFunctor<GPUDevice, T, T, T, true>* input_gemm,
+              MatMulFunctor<GPUDevice, T, T, T, true>* h_gemm) {
   // Assign workspace and scratch
   T* gates = nullptr;          // in workspace or null
   T* masked_input = nullptr;   // in workspace (training) or scratch
@@ -166,7 +174,7 @@ void LstmImpl(const GPUDevice& d, const RnnModelConfig& rmc, const T* input,
   int input_stride = rmc.batch_size * rmc.input_size;
 
   // Initialize LSTM cell and arguments of its functor
-  LSTMCell<T> lstm_cell{rmc, params, hgates_t};
+  LSTMCell<T> lstm_cell{rmc, h_gemm, params, hgates_t};
 
   const T* input_t = input;
   const T* h_prev = hx;
@@ -184,18 +192,22 @@ void LstmImpl(const GPUDevice& d, const RnnModelConfig& rmc, const T* input,
               rmc.max_seq_length, rmc.batch_size, rmc.input_size);
 
     // Compute the igates of input at all timesteps
-    InputGemm<T, false, true, false>(
-        d, masked_input, params, igates, rmc.max_seq_length, rmc.num_gates,
-        rmc.batch_size, rmc.input_size, rmc.output_size);
-
+    input_gemm->Compute(
+        const_cast<T*>(masked_input),
+        {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.input_size},
+        false, const_cast<T*>(params),
+        {1, rmc.num_gates, rmc.output_size, rmc.input_size}, true,
+        !rmc.is_training, igates);
     input_t = masked_input;
     input_stride *= rmc.num_gates;  // update input stride
   } else {
     // There is no dropout for input
     // Compute the igates of input at all timesteps
-    InputGemm<T, false, true, true>(
-        d, input, params, igates, rmc.max_seq_length, rmc.num_gates,
-        rmc.batch_size, rmc.input_size, rmc.output_size);
+    input_gemm->Compute(const_cast<T*>(input),
+                        {rmc.max_seq_length, 1, rmc.batch_size, rmc.input_size},
+                        false, const_cast<T*>(params),
+                        {1, rmc.num_gates, rmc.output_size, rmc.input_size},
+                        true, !rmc.is_training, igates);
   }
 
   // Iterate all the time steps
@@ -255,7 +267,9 @@ struct RnnFunctor<GPUDevice, T> {
                   const Tensor* input_c, const Tensor* params,
                   const Tensor* seq_lengths, const Tensor* dp_mask,
                   const Tensor* rec_dp_mask, Tensor* output, Tensor* output_h,
-                  Tensor* output_c, Tensor* workspace) {
+                  Tensor* output_c, Tensor* workspace,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* input_gemm,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* h_gemm) {
     // Inputs data
     auto input_data = input->template flat<T>().data();
     auto input_h_data = input_h->template flat<T>().data();
@@ -264,12 +278,6 @@ struct RnnFunctor<GPUDevice, T> {
     const T* input_c_data = nullptr;
     if (rmc.HasInputC()) {
       input_c_data = input_c->template flat<T>().data();
-    }
-
-    // TODO(itex): support variable sequence in the future
-    const int32* seq_lengths_data = nullptr;
-    if (rmc.var_seq_length) {
-      seq_lengths_data = seq_lengths->template flat<int32>().data();
     }
 
     const T* dp_mask_data = nullptr;
@@ -328,7 +336,7 @@ struct RnnFunctor<GPUDevice, T> {
                            input_h_data, input_c_data, params_data,
                            dp_mask_data, rec_dp_mask_data, output_data,
                            output_h_data, output_c_data, workspace_data,
-                           scratch_data);
+                           scratch_data, input_gemm, h_gemm);
       }
     }
   }
@@ -452,15 +460,17 @@ struct LSTMCellGrad {
 
   void operator()(const GPUDevice& d, const T* c_next, const T* c_prev,
                   const T* gates, const T* output_grad, const T* c_next_grad,
-                  T* c_prev_grad, T* gates_grad) const {
+                  T* c_prev_grad, T* gates_grad,
+                  MatMulFunctor<GPUDevice, T, T, T, false>* hidden_gemm) const {
     // compute LSTM gates gradients
     LstmGradEltwise(d, c_prev, c_next, output_grad, h_prev_grad_, c_next_grad,
                     gates, c_prev_grad, gates_grad, batch_size_, output_size_);
 
     // compute dh_prev_grad
-    LstmGemm<T, false, false, false, false>(d, gates_grad, w_hh_, dh_prev_grad_,
-                                            num_gates_, batch_size_,
-                                            output_size_, output_size_);
+    hidden_gemm->Compute(gates_grad, {num_gates_, batch_size_, output_size_},
+                         false, const_cast<T*>(w_hh_),
+                         {num_gates_, output_size_, output_size_}, false, false,
+                         dh_prev_grad_);
     // compute h_prev_grad
     if (has_rec_dropout_) {
       ApplyMaskThenReduce<T, true>(d, dh_prev_grad_, rec_dp_mask_, h_prev_grad_,
@@ -492,7 +502,11 @@ void LstmGradImpl(OpKernelContext* context, const RnnModelConfig& rmc,
                   const T* dp_mask, const T* rec_dp_mask, const T* output,
                   const T* workspace, const T* output_grad, T* input_grad,
                   T* hx_grad, T* cx_grad, T* params_grad, T* scratch1,
-                  T* scratch2) {
+                  T* scratch2,
+                  MatMulFunctor<GPUDevice, T, T, T, false>* hidden_gemm,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* input_gemm,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* params_wei_ih_gemm,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* params_wei_hh_gemm) {
   auto d = context->eigen_device<GPUDevice>();
   auto stream = d.stream();
 
@@ -533,7 +547,7 @@ void LstmGradImpl(OpKernelContext* context, const RnnModelConfig& rmc,
     T* gates_grad_t = gates_grad + i * gate_stride;
 
     lstm_cell_grad(d, c_next, c_prev, gates_t, output_grad_t, c_next_grad,
-                   c_prev_grad, gates_grad_t);
+                   c_prev_grad, gates_grad_t, hidden_gemm);
 
     std::swap(c_prev_grad, c_next_grad);
   }
@@ -558,9 +572,12 @@ void LstmGradImpl(OpKernelContext* context, const RnnModelConfig& rmc,
 
   // Compute input gradient deltas (dx_grad)
   const T* w_ih = params;
-  InputGemm<T, false, false, false>(
-      d, gates_grad, w_ih, dx_grad, rmc.max_seq_length, rmc.num_gates,
-      rmc.batch_size, rmc.output_size, rmc.input_size);
+  input_gemm->Compute(
+      gates_grad,
+      {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.output_size},
+      false, const_cast<T*>(w_ih),
+      {1, rmc.num_gates, rmc.output_size, rmc.input_size}, false, false,
+      dx_grad);
   if (rmc.HasDpMask()) {
     ApplyMaskThenReduce<T, true>(d, dx_grad, dp_mask, input_grad,
                                  rmc.max_seq_length, rmc.num_gates,
@@ -577,13 +594,19 @@ void LstmGradImpl(OpKernelContext* context, const RnnModelConfig& rmc,
 
   // Compute w_ih gradient deltas (dw_ih_grad)
   if (rmc.HasDpMask()) {
-    ParamsGemm<T, true, false, false>(
-        d, gates_grad, masked_input_ws, dw_ih_grad, rmc.max_seq_length,
-        rmc.num_gates, rmc.output_size, rmc.batch_size, rmc.input_size);
+    params_wei_ih_gemm->Compute(
+        gates_grad,
+        {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.output_size},
+        true, const_cast<T*>(masked_input_ws),
+        {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.input_size},
+        false, false, dw_ih_grad);
   } else {
-    ParamsGemm<T, true, false, true>(
-        d, gates_grad, input, dw_ih_grad, rmc.max_seq_length, rmc.num_gates,
-        rmc.output_size, rmc.batch_size, rmc.input_size);
+    params_wei_ih_gemm->Compute(
+        gates_grad,
+        {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.output_size},
+        true, const_cast<T*>(input),
+        {rmc.max_seq_length, 1, rmc.batch_size, rmc.input_size}, false, false,
+        dw_ih_grad);
   }
   // always using float as an internal computation type
   LaunchColReduction<T, T, float, sycl::plus<float>>(
@@ -596,16 +619,22 @@ void LstmGradImpl(OpKernelContext* context, const RnnModelConfig& rmc,
 
   // Compute w_hh gradient deltas (dw_hh_grad)
   if (rmc.HasRecDpMask()) {
-    ParamsGemm<T, true, false, false>(
-        d, gates_grad, masked_h_prev_ws, dw_hh_grad, rmc.max_seq_length,
-        rmc.num_gates, rmc.output_size, rmc.batch_size, rmc.output_size);
+    params_wei_hh_gemm->Compute(
+        gates_grad,
+        {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.output_size},
+        true, const_cast<T*>(masked_h_prev_ws),
+        {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.output_size},
+        false, false, dw_hh_grad);
   } else {
     stream->memcpy(h_states, hx, hidden_stride * sizeof(T));
     stream->memcpy(h_states + hidden_stride, output,
                    (rmc.max_seq_length - 1) * hidden_stride * sizeof(T));
-    ParamsGemm<T, true, false, true>(
-        d, gates_grad, h_states, dw_hh_grad, rmc.max_seq_length, rmc.num_gates,
-        rmc.output_size, rmc.batch_size, rmc.output_size);
+    params_wei_hh_gemm->Compute(
+        gates_grad,
+        {rmc.max_seq_length, rmc.num_gates, rmc.batch_size, rmc.output_size},
+        true, h_states,
+        {rmc.max_seq_length, 1, rmc.batch_size, rmc.output_size}, false, false,
+        dw_hh_grad);
   }
   // always using float as an internal computation type
   LaunchColReduction<T, T, float, sycl::plus<float>>(
@@ -643,13 +672,16 @@ struct RnnGradFunctor<GPUDevice, T> {
                   const Tensor* output_h_backprop,
                   const Tensor* output_c_backprop, Tensor* input_backprop,
                   Tensor* input_h_backprop, Tensor* input_c_backprop,
-                  Tensor* params_backprop) {
+                  Tensor* params_backprop,
+                  MatMulFunctor<GPUDevice, T, T, T, false>* hidden_gemm,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* input_gemm,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* params_wei_ih_gemm,
+                  MatMulFunctor<GPUDevice, T, T, T, true>* params_wei_hh_gemm) {
     // Inputs data
     auto input_data = input->template flat<T>().data();
     auto input_h_data = input_h->template flat<T>().data();
     auto params_data = params->template flat<T>().data();
     auto output_data = output->template flat<T>().data();
-    auto output_h_data = output_h->template flat<T>().data();
     auto workspace_data = workspace->template flat<T>().data();
     auto output_backprop_data = output_backprop->template flat<T>().data();
 
@@ -658,11 +690,6 @@ struct RnnGradFunctor<GPUDevice, T> {
     if (rmc.HasInputC()) {
       input_c_data = input_c->template flat<T>().data();
       output_c_data = output_c->template flat<T>().data();
-    }
-
-    const int32* seq_lengths_data = nullptr;
-    if (rmc.var_seq_length) {
-      seq_lengths_data = seq_lengths->template flat<int32>().data();
     }
 
     const T* dp_mask_data = nullptr;
@@ -738,7 +765,8 @@ struct RnnGradFunctor<GPUDevice, T> {
             dp_mask_data, rec_dp_mask_data, output_data, workspace_data,
             output_backprop_data, input_backprop_data, input_h_backprop_data,
             input_c_backprop_data, params_backprop_data, scratch1_data,
-            scratch2_data);
+            scratch2_data, hidden_gemm, input_gemm, params_wei_ih_gemm,
+            params_wei_hh_gemm);
       }
     }
   }

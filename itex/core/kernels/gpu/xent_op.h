@@ -493,7 +493,8 @@ template <typename LOAD, typename LABEL_LOAD, typename STORE,
           typename ComputeType, int pack_size, int wg_array_size>
 struct XentWorkGroupKernel {
   XentWorkGroupKernel(LOAD device_load, LABEL_LOAD device_label_load,
-                      STORE device_store, const int32_t rows, const int32_t col)
+                      STORE device_store, const int32_t rows,
+                      const int32_t cols)
       : device_load(device_load),
         device_label_load(device_label_load),
         device_store(device_store),
@@ -562,9 +563,10 @@ inline Status LaunchXentWorkGroupImpl(const GPUDevice& device, LOAD device_load,
                                       STORE device_store, const int32_t rows,
                                       const int32_t cols) {
   const int workgroup_size = 128;
-  const int num_wg =
-      std::min((rows + workgroup_size - 1) / workgroup_size, 8192);
   sycl::range<1> local_range(workgroup_size);
+  int num_wg;
+  GetNumWorkGroups(device.stream()->get_device(), workgroup_size, rows, 32,
+                   &num_wg);
   sycl::range<1> global_range(num_wg * workgroup_size);
   //  wg_array_size is equal to rows/id.get_global_ranges(0),
   //  in this pass, the max value of wg_array_size is 1

@@ -1,14 +1,15 @@
-load("//itex:itex.bzl", "itex_xpu_library", "tf_copts")
-
 package(
     licenses = ["notice"],  # Apache 2.0
 )
+
+load("//itex:itex.bzl", "cc_library", "itex_xpu_library", "tf_copts")
 
 cc_library(
     name = "qmatmul_op",
     srcs = ["qmatmul_op.cc"],
     hdrs = [
         "matmul_common.h",
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:matmul_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/onednn/block:quantized_hdrs",
@@ -28,6 +29,7 @@ cc_library(
     srcs = ["quantized_fused_matmul.cc"],
     hdrs = [
         "matmul_common.h",
+        "//itex/core/kernels/common:cast_hdrs",
         "//itex/core/kernels/common:matmul_hdrs",
         "//itex/core/kernels/common:noop_hdrs",
         "//itex/core/kernels/onednn/block:quantized_hdrs",

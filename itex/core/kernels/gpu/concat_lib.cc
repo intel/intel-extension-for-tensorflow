@@ -27,24 +27,6 @@ limitations under the License.
 
 namespace itex {
 
-namespace {
-template <typename T, int vec_size>
-struct BaseTypeVectorize {
-  typedef AlignedVector<T, vec_size> type;
-  typedef T Scalar;
-};
-
-template <int vec_size>
-struct BaseTypeVectorize<Eigen::half, vec_size> {
-  typedef typename Eigen::internal::conditional<
-      (vec_size >= 4), sycl::vec<sycl::half, vec_size>,
-      AlignedVector<Eigen::half, vec_size>>::type type;
-  typedef typename Eigen::internal::conditional<(vec_size >= 4), sycl::half,
-                                                Eigen::half>::type Scalar;
-};
-
-};  // namespace
-
 template <typename T, typename IntType>
 struct ConcatFixedKernel {
   ConcatFixedKernel(size_t num_work_items, size_t total_cols, IntType col_size,
@@ -149,13 +131,11 @@ struct ConcatVariableKernel {
 
 template <typename T, typename IntType>
 struct ConcatVariableKernelSLM {
-  ConcatVariableKernelSLM(
-      size_t num_work_items, size_t total_cols, size_t input_size,
-      size_t cache_count, const IntType* col_scan,
-      const T* const* input_ptrs_ptr, T* output_ptr,
-      sycl::accessor<IntType, 1, sycl::access::mode::read_write,
-                     sycl::access::target::local>
-          scratch)
+  ConcatVariableKernelSLM(size_t num_work_items, size_t total_cols,
+                          size_t input_size, size_t cache_count,
+                          const IntType* col_scan,
+                          const T* const* input_ptrs_ptr, T* output_ptr,
+                          sycl::local_accessor<IntType, 1> scratch)
       : num_work_items(num_work_items),
         total_cols(total_cols),
         input_size(input_size),
@@ -178,7 +158,7 @@ struct ConcatVariableKernelSLM {
     // do an initial binary search and then scan linearly from there
     // works well when there are many small segments and when the
     // segments are much longer
-    auto scratch_ptr = scratch.get_pointer().get();
+    IntType* scratch_ptr = ITEXGetLocalAccPointer<IntType>(scratch);
     const int segment =
         std::upper_bound(scratch_ptr, scratch_ptr + input_size, col_id) -
         scratch_ptr - 1;
@@ -206,9 +186,7 @@ struct ConcatVariableKernelSLM {
   const IntType* col_scan;
   const T* const* input_ptrs_ptr;
   T* output_ptr;
-  sycl::accessor<IntType, 1, sycl::access::mode::read_write,
-                 sycl::access::target::local>
-      scratch;
+  sycl::local_accessor<IntType, 1> scratch;
 };
 
 template <typename T, typename IntType>
@@ -237,9 +215,7 @@ void ConcatVariable(OpKernelContext* c, const size_t& total_rows,
   if (slm_used < slm_size) {
     auto cache_count = output_scan.size;
     stream->submit([&](sycl::handler& cgh) {
-      sycl::accessor<IntType, 1, sycl::access::mode::read_write,
-                     sycl::access::target::local>
-          scratch(cache_count, cgh);
+      sycl::local_accessor<IntType, 1> scratch(cache_count, cgh);
       ConcatVariableKernelSLM<T, IntType> task(
           num_work_items, total_cols, input_ptr_data.size, cache_count,
           col_scan, input_ptrs_ptr, output_ptr, scratch);
@@ -258,7 +234,7 @@ void ConcatVariable(OpKernelContext* c, const size_t& total_rows,
 template <typename T, typename IntType, int vec_size>
 struct InlinedConcatFixedKernel {
   using Tvec = typename BaseTypeVectorize<T, vec_size>::type;
-  using Tscalar = typename BaseTypeVectorize<T, vec_size>::Scalar;
+  using Tscalar = typename BaseTypeVectorize<T, vec_size>::scalar;
   using FastDivisor = Eigen::internal::TensorIntDivisor<IntType>;
   InlinedConcatFixedKernel(size_t num_work_items, size_t total_cols,
                            IntType per_concat_elements, IntType col_size,
@@ -490,7 +466,14 @@ void Concat(
     OpKernelContext* c,
     const std::vector<std::unique_ptr<typename TTypes<T, 2>::ConstMatrix>>&
         inputs_flat,
-    typename TTypes<T, 2>::Matrix* output, bool one_size_input) {
+    typename TTypes<T, 2>::Matrix* output) {
+  bool one_size_input = true;
+  for (int i = 1; i < inputs_flat.size(); ++i) {
+    if (inputs_flat[i]->dimension(1) != inputs_flat[i - 1]->dimension(1)) {
+      one_size_input = false;
+      break;
+    }
+  }
   if (one_size_input) {
     if (output->size() < std::numeric_limits<int32>::max()) {
       ConcatFixedImpl<T, int32>(c, inputs_flat, output);
@@ -514,21 +497,21 @@ void Concat(
   }
 }
 
-#define REGISTER_DPCPP(T)                                                     \
+#define REGISTER_ITEX_GPU(T)                                                  \
   template void Concat<T>(                                                    \
       OpKernelContext * ctx,                                                  \
       const std::vector<std::unique_ptr<typename TTypes<T, 2>::ConstMatrix>>& \
           inputs,                                                             \
-      typename TTypes<T, 2>::Matrix* output, bool one_size_input);
+      typename TTypes<T, 2>::Matrix* output);
 
-TF_CALL_GPU_NUMBER_TYPES(REGISTER_DPCPP);
-REGISTER_DPCPP(int32);
-REGISTER_DPCPP(int64);
-REGISTER_DPCPP(bool);
-REGISTER_DPCPP(complex64);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU);
+REGISTER_ITEX_GPU(int32);
+REGISTER_ITEX_GPU(int64);
+REGISTER_ITEX_GPU(bool);
+REGISTER_ITEX_GPU(complex64);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_DPCPP(double);
-REGISTER_DPCPP(complex128);
+REGISTER_ITEX_GPU(double);
+REGISTER_ITEX_GPU(complex128);
 #endif  // ITEX_ENABLE_DOUBLE
-#undef REGISTER_DPCPP
+#undef REGISTER_ITEX_GPU
 }  // namespace itex

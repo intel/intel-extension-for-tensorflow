@@ -20,13 +20,53 @@ from tensorflow.python.ops import nn_ops
 
 import tensorflow as tf
 
-os.environ["ITEX_ENABLE_ONEDNN_LAYOUT_OPT"] = "0"
+os.environ["ITEX_LAYOUT_OPT"] = "0"
 os.environ["ITEX_NATIVE_FORMAT"] = "1"
 
 class QuantizedConvOldAPI(test.TestCase):
 
   def __init__(self, method_name="runTest"):
     super(QuantizedConvOldAPI, self).__init__(method_name)
+
+  # Quantize + Conv2D + Relu + Requantize u8s8 test
+  @test_util.run_deprecated_v1
+  def testQuantizedConv2DAndReluAndRequantize(self):
+    # ITEX does not write QuantizedConv2DAndReluAndRequantize on CPU
+    # so that this op would run into official tensorflow's implementation, which have difference input arguments.
+    if not test.is_gpu_available():
+      self.skipTest("Skip on CPU")
+
+    with ops.name_scope("test"):
+      x_f32_np = np.random.uniform(low=-0.0, high=5.0, size=(1, 6, 6, 4)).astype(np.float32)
+      x_f32 = constant_op.constant(x_f32_np)
+      x_min = tf.math.reduce_min(x_f32)
+      x_max = tf.math.reduce_max(x_f32)
+      x_int8, x_min, x_max = array_ops.quantize(x_f32, x_min, x_max, T=dtypes.quint8, mode="SCALED", round_mode="HALF_TO_EVEN", narrow_range=True)
+      
+      y_f32_np = np.random.uniform(low=-2.0, high=2.0, size=(3, 3, 4, 4)).astype(np.float32)
+      y_f32 = constant_op.constant(y_f32_np)
+      y_min = tf.math.reduce_min(y_f32, axis=(0, 1, 2))
+      y_max = tf.math.reduce_max(y_f32, axis=(0, 1, 2))
+      y_int8, y_min, y_max = array_ops.quantize(y_f32, y_min, y_max, T=dtypes.qint8, mode="SCALED", round_mode="HALF_TO_EVEN", narrow_range=True, axis=3)
+
+      conv_f32 = tf.nn.relu(tf.nn.conv2d(x_f32, y_f32, [1,1,1,1], padding="SAME"))
+      z_freezed_min = tf.math.reduce_min(conv_f32)
+      z_freezed_max = tf.math.reduce_max(conv_f32)
+
+      conv_int8_req, conv_freezed_min, conv_freezed_max = load_ops_library.QuantizedConv2DAndReluAndRequantize(input=x_int8, filter=y_int8, 
+                                                                               min_input=x_min, max_input=x_max, min_filter=y_min, max_filter=y_max, 
+                                                                               min_freezed_output=z_freezed_min, max_freezed_output=z_freezed_max,
+                                                                               strides=[1, 1, 1, 1], padding="SAME", out_type=dtypes.quint8) 
+      conv_int8 = array_ops.dequantize(conv_int8_req, conv_freezed_min, conv_freezed_max, mode="SCALED", narrow_range=True)
+
+      conv_f32 = array_ops.identity(conv_f32)
+      conv_int8 = array_ops.identity(conv_int8)
+      
+      conv_int8_res = self.evaluate(conv_int8)
+      conv_f32_res = self.evaluate(conv_f32)
+
+      # int8 test tolerate larger difference
+      self.assertAllClose(conv_int8_res, conv_f32_res, rtol=0.3, atol=0.3)
 
   #  conv + bias + requantize s8s8s8 test
   @test_util.run_deprecated_v1

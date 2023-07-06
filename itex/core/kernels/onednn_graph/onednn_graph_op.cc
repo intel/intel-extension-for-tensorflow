@@ -16,17 +16,81 @@ limitations under the License.
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/devices/bfc_allocator.h"
 #include "itex/core/devices/gpu/gpu_pool_allocator.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 #endif  // INTEL_CPU_ONLY
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_graph_util.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
+#include "itex/core/utils/onednn/onednn_util.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/types.h"
 
 namespace itex {
 
+#ifdef ITEX_ONEDNN_3_0
+// oneDNN Graph prefer use make_engine_with_allocator to create oneDNN engine.
+// Thus here engine creation is different from onednn_util.h. For oneDNN stream,
+// oneDNN Graph & oneDNN uses the same function.
+template <typename Device>
+dnnl::engine CreateDnnlEngine(OpKernelContext* ctx);
+
+// Spicialization for CPU
+template <>
+dnnl::engine CreateDnnlEngine<CPUDevice>(OpKernelContext* ctx) {
+  static dnnl::graph::allocator alloc{};
+  static dnnl::engine cpu_engine =
+      make_engine_with_allocator(dnnl::engine::kind::cpu, 0, alloc);
+  return cpu_engine;
+}
+
+#ifndef INTEL_CPU_ONLY
+void* sycl_malloc_wrapper(size_t n, size_t alignment, const void* device,
+                          const void* ctx) {
+  // TODO(itex): Currently, we ignore the alignment argument. The default
+  // alignment in ITEX is 256.
+  auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+  ITEX_GPUDevice* device_handle;
+  DeviceOrdinal device_ordinal;
+  ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal);
+  std::shared_ptr<BFCAllocator> alloc;
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
+  return alloc->AllocateRaw(n);
+}
+
+void sycl_free_wrapper(void* ptr, const void* device, const void* context,
+                       void* e) {
+  auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+  ITEX_GPUDevice* device_handle;
+  DeviceOrdinal device_ordinal;
+  ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal);
+  std::shared_ptr<BFCAllocator> alloc;
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
+  alloc->DeallocateRaw(ptr);
+}
+
+// Spicialization for GPU
+template <>
+dnnl::engine CreateDnnlEngine<GPUDevice>(OpKernelContext* ctx) {
+  auto* queue = ctx->GetDeviceStream();
+  static dnnl::graph::allocator allocator =
+      dnnl::graph::sycl_interop::make_allocator(sycl_malloc_wrapper,
+                                                sycl_free_wrapper);
+  static dnnl::engine gpu_engine =
+      dnnl::graph::sycl_interop::make_engine_with_allocator(
+          queue->get_device(), queue->get_context(), allocator);
+  return gpu_engine;
+}
+
+#endif
+
+#else
 template <typename Device>
 dnnl::graph::engine CreateDnnlEngine(OpKernelContext* ctx);
 template <typename Device>
@@ -53,25 +117,28 @@ void* sycl_malloc_wrapper(size_t n, size_t alignment, const void* device,
                           const void* ctx) {
   // TODO(itex): Currently, we ignore the alignment argument. The default
   // alignment in ITEX is 256.
-  auto& device_ptr = *static_cast<const DPCPPDevice*>(device);
-  DPCPPDevice* device_handle;
+  auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+  ITEX_GPUDevice* device_handle;
   DeviceOrdinal device_ordinal;
-  dpcppGetDeviceOrdinal(device_ptr, &device_ordinal);
-  dpcppGetDevice(&device_handle, device_ordinal);
-  BFCAllocator* alloc = nullptr;
-  dpcppGetAllocator(device_handle, &alloc);
+  ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal);
+  std::shared_ptr<BFCAllocator> alloc;
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
   return alloc->AllocateRaw(n);
 }
-
 void sycl_free_wrapper(void* ptr, const void* device, const void* context,
                        void* e) {
-  auto& device_ptr = *static_cast<const DPCPPDevice*>(device);
-  DPCPPDevice* device_handle;
+  auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+  ITEX_GPUDevice* device_handle;
   DeviceOrdinal device_ordinal;
-  dpcppGetDeviceOrdinal(device_ptr, &device_ordinal);
-  dpcppGetDevice(&device_handle, device_ordinal);
-  BFCAllocator* alloc = nullptr;
-  dpcppGetAllocator(device_handle, &alloc);
+  ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+  ITEX_GPUGetDevice(&device_handle, device_ordinal);
+  std::shared_ptr<BFCAllocator> alloc;
+  auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+  ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+      << "Failed to get device allocator, device handle: " << device_handle;
   alloc->DeallocateRaw(ptr);
 }
 
@@ -97,6 +164,7 @@ dnnl::graph::stream CreateDnnlStream<GPUDevice>(
   return gpu_stream;
 }
 #endif
+#endif  // ITEX_ONEDNN_3_0
 
 // TODO(itex): Add UT to verify the LLGA inplace
 // Collect the output/input pair of OneDnn Graph Inplace
@@ -155,9 +223,14 @@ class OneDnnGraphOp : public OpKernel {
     std::vector<dnnl::graph::tensor> l_input_tensor;
     std::vector<dnnl::graph::tensor> l_output_tensor;
 
+#ifdef ITEX_ONEDNN_3_0
+    dnnl::engine onednn_engine = CreateDnnlEngine<Device>(ctx);
+    dnnl::stream onednn_stream = CreateDnnlStream(*ctx, onednn_engine);
+#else
     dnnl::graph::engine onednn_engine = CreateDnnlEngine<Device>(ctx);
     dnnl::graph::stream onednn_stream =
         CreateDnnlStream<Device>(ctx, onednn_engine);
+#endif
     auto partition = std::make_shared<dnnl::graph::partition>(
         graph::GetOneDnnGraphPartition(partition_id_));
 
@@ -179,10 +252,11 @@ class OneDnnGraphOp : public OpKernel {
 
       auto tf_input_shape = ctx->input(index).shape();
       if (tf_input_shape.dims() == 0) {
-        // Workaround here, since LLGA not support scalar tensor. So treat
-        // scalar tensor's shape = {1}
+#ifdef ITEX_ONEDNN_3_0
+        onednn_graph_input_shape = {};
+#else
         onednn_graph_input_shape = {1};
-
+#endif
       } else {
         for (int i = 0; i < tf_input_shape.dims(); i++)
           onednn_graph_input_shape.push_back(tf_input_shape.dim_size(i));
@@ -319,9 +393,14 @@ class OneDnnGraphWithLayoutOp : public OpKernel {
     std::vector<dnnl::graph::tensor> l_input_tensor;
     std::vector<dnnl::graph::tensor> l_output_tensor;
 
+#ifdef ITEX_ONEDNN_3_0
+    dnnl::engine onednn_engine = CreateDnnlEngine<Device>(ctx);
+    dnnl::stream onednn_stream = CreateDnnlStream(*ctx, onednn_engine);
+#else
     dnnl::graph::engine onednn_engine = CreateDnnlEngine<Device>(ctx);
     dnnl::graph::stream onednn_stream =
         CreateDnnlStream<Device>(ctx, onednn_engine);
+#endif
     auto partition = std::make_shared<dnnl::graph::partition>(
         graph::GetOneDnnGraphPartition(partition_id_));
 
@@ -356,9 +435,11 @@ class OneDnnGraphWithLayoutOp : public OpKernel {
       } else {
         auto tf_input_shape = ctx->input(index).shape();
         if (tf_input_shape.dims() == 0) {
-          // Workaround here, since LLGA not support scalar tensor. So treat
-          // scalar tensor's shape = {1}
+#ifdef ITEX_ONEDNN_3_0
+          onednn_graph_input_shape = {};
+#else
           onednn_graph_input_shape = {1};
+#endif
           l_input_logical_tensor.push_back(dnnl::graph::logical_tensor(
               input_edge_ids_[index], input_data_type, onednn_graph_input_shape,
               dnnl::graph::logical_tensor::layout_type::strided,
@@ -454,7 +535,16 @@ class OneDnnGraphWithLayoutOp : public OpKernel {
                        mutable_input_tensor.shape()));
         }
 
-        ctx->set_output(index, ctx->input(input_index));
+        const Tensor& src_tensor = ctx->input(input_index);
+        TensorShape src_shape = src_tensor.shape();
+
+        if (tf_shape != src_shape) {
+          Tensor dst_tensor;
+          ITEX_CHECK(dst_tensor.CopyFrom(src_tensor, tf_shape));
+          ctx->set_output(index, dst_tensor);
+        } else {
+          ctx->set_output(index, src_tensor);
+        }
 
         AllocateMetaData(ctx, index, dnn_shape_dst);
         l_output_tensor.emplace_back(

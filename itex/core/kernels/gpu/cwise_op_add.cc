@@ -89,10 +89,16 @@ class DnnBinaryOp : public BinaryOp<Device, Functor> {
         // create dnnl binary primitive
         dnnl::primitive_attr attr;
         attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+        auto binary_pd = dnnl::binary::primitive_desc(
+            onednn_engine, alg_kind, src_mds[kFirst], src_mds[kSecond],
+            dst_md_prefer, attr);
+#else
         auto binary_d = dnnl::binary::desc(alg_kind, src_mds[kFirst],
                                            src_mds[kSecond], dst_md_prefer);
         auto binary_pd =
             dnnl::binary::primitive_desc(binary_d, attr, onednn_engine);
+#endif
         auto binary_prim = dnnl::binary(binary_pd);
 
         Tensor scratchpad_tensor;
@@ -129,9 +135,9 @@ class DnnBinaryOp : public BinaryOp<Device, Functor> {
  private:
   inline bool UnsupportShape(const TensorShape& shape0,
                              const TensorShape& shape1) {
-    // Bi-bcast like 8x1 * 1x4 isn't supported in oneDNN. Compare output
-    // shape(8x4) with input shapes, and fall back to Eigen if output has more
-    // elements than all inputs.
+// Bi-bcast like 8x1 * 1x4 isn't supported in oneDNN. Compare output
+// shape(8x4) with input shapes, and fall back to Eigen if output has more
+// elements than all inputs.
 #define MAX_NDIMS 6
     if ((shape0.dims() > MAX_NDIMS) || (shape1.dims()) > MAX_NDIMS) return true;
 #undef MAX_NDIMS

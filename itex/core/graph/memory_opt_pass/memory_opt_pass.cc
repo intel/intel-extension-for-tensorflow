@@ -22,6 +22,7 @@ limitations under the License.
 
 #include "google/protobuf/text_format.h"
 #include "itex/core/graph/utils/graph_properties.h"
+#include "itex/core/graph/utils/layout_utils.h"
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/attr_value_util.h"
@@ -41,17 +42,11 @@ const auto regular_inplace_rule = gtl::FlatSet<string>{
 };
 
 const auto add_inplace_rule = gtl::FlatSet<string>{
-    "_FusedConv2DWithSum",     "_FusedMatMulWithSum",
     "_ITEXFusedConv2DWithSum", "_ITEXFusedAccMatMulWithSum",
-    "_ITEXFusedMatMulWithSum", "_OneDnnFusedConv2D",
-    "_OneDnnFusedMatMul"};
+    "_ITEXFusedMatMulWithSum", "_OneDnnFusedConv2D", "_OneDnnFusedMatMul"};
 
 const auto onednngraph_inplace_rule =
     gtl::FlatSet<string>{"_OneDnnGraph", "OneDnnGraph"};
-
-bool IsOneDnnLayoutDependentOp(const string& op_name) {
-  return op_name.substr(0, 7) == "_OneDnn";
-}
 
 static constexpr int MAX_LLGA_SEARCH_NODES = 50;
 
@@ -295,7 +290,8 @@ void DetectUnvisitedNode(MemoryOptContext* ctx,
     const auto* tgt_node_def = tgt_node_view->node();
 
     // Const and fetch nodes should not be forwarded.
-    if (IsInPreserveSet(ctx, tgt_node_def)) continue;
+    if (IsInPreserveSet(ctx, tgt_node_def) || IsAnyConst(*tgt_node_def))
+      continue;
 
     // Current node and target node must be on the same device.
     if (!IsOnSameDevice(node_view, tgt_node_view)) continue;
@@ -359,7 +355,7 @@ void StaticInplaceOpt(MemoryOptContext* ctx, const char* device_name) {
   }
 }
 
-Status RunMemoryOptPass(const char* device_name, const GrapplerItem& item,
+Status RunMemoryOptPass(OptimizerContext* opt_ctx, const GrapplerItem& item,
                         const GraphDef& graph_def, GraphDef* optimized_graph) {
   Status status;
   GraphDef mutable_graph_def = graph_def;
@@ -370,7 +366,7 @@ Status RunMemoryOptPass(const char* device_name, const GrapplerItem& item,
   TF_ABORT_IF_ERROR(
       ctx.graph_view.SortTopologically(/*ignore_cycles=*/false, {}));
 
-  StaticInplaceOpt(&ctx, device_name);
+  StaticInplaceOpt(&ctx, opt_ctx->device_name);
 
   // Introduce more optimization if needed.
 

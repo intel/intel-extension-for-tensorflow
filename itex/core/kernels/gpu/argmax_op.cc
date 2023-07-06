@@ -35,7 +35,9 @@ typedef Eigen::GpuDevice GPUDevice;
 
 #define DEFINE_GPU_SPEC(T)                            \
   template struct ArgMaxFunctor<GPUDevice, T, int64>; \
-  template struct ArgMaxFunctor<GPUDevice, T, int32>
+  template struct ArgMaxFunctor<GPUDevice, T, int32>; \
+  template struct ArgMinFunctor<GPUDevice, T, int64>; \
+  template struct ArgMinFunctor<GPUDevice, T, int32>;
 
 DEFINE_GPU_SPEC(float);
 DEFINE_GPU_SPEC(Eigen::half);
@@ -185,8 +187,9 @@ void ConsumRange(sycl::nd_item<1> item, InputT* in_data,
   int group_start = group_id * elems_per_group;
   if (group_start >= in_size) return;
 
+  int group_end = std::min(group_start + elems_per_group, in_size);
   InitValueT sum = init;
-  for (int index = group_start + lid; index < in_size; index += group_size) {
+  for (int index = group_start + lid; index < group_end; index += group_size) {
     sum = op(sum, InitValueT(in_data[index], index));
   }
 
@@ -521,8 +524,8 @@ struct SubGroupRowReduction {
         extend_y_(extend_y),
         init_(init),
         op_(op) {}
-
-  void operator()(sycl::nd_item<1> item) const {
+  [[intel::reqd_sub_group_size(32)]] void operator()(
+      sycl::nd_item<1> item) const {
     auto group_id = item.get_group(0);
     auto sg = item.get_sub_group();
     auto group_size = item.get_local_range(0);
@@ -549,7 +552,7 @@ struct SubGroupRowReduction {
 
     sycl::group_barrier(sg, sycl::memory_scope::sub_group);
 
-    if (lane_id == 0) {
+    if (lane_id == 0 && x_index < extend_x_) {
       for (int i = 1; i < sub_group_size; i++) {
         local_data_[local_start] =
             op_(local_data_[local_start], local_data_[local_start + i]);
@@ -599,22 +602,19 @@ void LaunchRowReduction(OpKernelContext* context, InputT* in_data,
     int num_wg = DivUp(extend_x, static_cast<int>(group_size));
     sycl::nd_range<1> range(num_wg * group_size, group_size);
 
-    auto event = stream->submit([&](sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       SimpleReduction task(in_unqualified, out_data, extend_x, extend_y, init,
                            op);
       cgh.parallel_for<SimpleReduction>(range, task);
     });
   } else if (extend_y <= 1024) {
-    int max_sub_group_size =
-        (stream->get_device())
-            .template get_info<sycl::info::device::sub_group_sizes>()
-            .back();
+    constexpr int max_sub_group_size = 32;
     int num_sub_groups_in_group = group_size / max_sub_group_size;
     int num_wg = DivUp(extend_x, num_sub_groups_in_group);
 
     sycl::range<1> local(group_size);
     sycl::range<1> global(num_wg * group_size);
-    auto event = stream->submit([&](sycl::handler& cgh) {
+    stream->submit([&](sycl::handler& cgh) {
       __slm__<InitValueT> local_data(group_size, cgh);
       SubGroupReduction task(in_unqualified, local_data, out_data, extend_x,
                              extend_y, init, op);
@@ -624,8 +624,7 @@ void LaunchRowReduction(OpKernelContext* context, InputT* in_data,
   } else {
     sycl::range<1> local(group_size);
     sycl::range<1> global(extend_x * local[0]);
-    auto event = stream->submit([&](sycl::handler &
-                                    cgh) [[intel::reqd_sub_group_size(32)]] {
+    stream->submit([&](sycl::handler& cgh) {
       __slm__<InitValueT> local_data(group_size, cgh);
       GroupReduction task(in_unqualified, local_data, out_data, extend_x,
                           extend_y, init, op);
@@ -744,19 +743,18 @@ struct SubGroupColReduction {
     item.barrier(sycl::access::fence_space::local_space);
 
     // slm reduce and write output
-    if (lane_id == 0) {
-      int local_start = subgroup_id * num_sub_group_;
+    if (subgroup_id == 0) {
+      int local_start = lane_id * num_sub_group_;
 #pragma unroll
-      for (int i = 1; i < SubGroupSize; i++) {
+      for (int i = 1; i < MaxGroupSize / SubGroupSize; i++) {
         scratch_[local_start] =
             op_(scratch_[local_start], scratch_[local_start + i]);
       }
 
-      z_offset = z_group_id * SubGroupSize + subgroup_id;
+      z_offset = z_group_id * SubGroupSize + lane_id;
       if (z_offset < extend_z_) {
         int offset = x_group_id * extend_z_ * num_segments_y_ +
-                     y_group_id * extend_z_ + z_group_id * SubGroupSize +
-                     subgroup_id;
+                     y_group_id * extend_z_ + z_offset;
 
         InitValueT result = ConvertColIndex<InitValueT, OutputT>(
             scratch_[local_start], extend_x_, extend_y_, extend_z_);
@@ -906,7 +904,9 @@ void LaunchColReduction(OpKernelContext* context, InputT* in_data,
 
 template <typename T>
 struct MaxTupleReducer {
-  static Tuple<T> init() { return Tuple<T>(std::numeric_limits<T>::min(), 0); }
+  static Tuple<T> init() {
+    return Tuple<T>(std::numeric_limits<T>::lowest(), 0);
+  }
 
   Tuple<T> operator()(const Tuple<T>& x, const Tuple<T>& y) const {
     if (x.value > y.value) {
@@ -928,7 +928,7 @@ struct MaxTupleReducer {
 template <>
 struct MaxTupleReducer<Eigen::half> {
   static Tuple<float> init() {
-    return Tuple<float>(std::numeric_limits<float>::min(), 0);
+    return Tuple<float>(std::numeric_limits<float>::lowest(), 0);
   }
 
   Tuple<float> operator()(const Tuple<float>& x, const Tuple<float>& y) const {
@@ -951,7 +951,7 @@ struct MaxTupleReducer<Eigen::half> {
 template <>
 struct MaxTupleReducer<Eigen::bfloat16> {
   static Tuple<float> init() {
-    return Tuple<float>(std::numeric_limits<float>::min(), 0);
+    return Tuple<float>(std::numeric_limits<float>::lowest(), 0);
   }
 
   Tuple<float> operator()(const Tuple<float>& x, const Tuple<float>& y) const {
@@ -972,6 +972,72 @@ struct MaxTupleReducer<Eigen::bfloat16> {
 };
 
 template <typename T>
+struct MinTupleReducer {
+  static Tuple<T> init() { return Tuple<T>(std::numeric_limits<T>::max(), 0); }
+
+  Tuple<T> operator()(const Tuple<T>& x, const Tuple<T>& y) const {
+    if (x.value < y.value) {
+      return x;
+    } else if (x.value == y.value) {
+      if (x.index < y.index) {
+        return x;
+      } else {
+        return y;
+      }
+    } else {
+      return y;
+    }
+  }
+
+  using MapType = T;
+};
+
+template <>
+struct MinTupleReducer<Eigen::half> {
+  static Tuple<float> init() {
+    return Tuple<float>(std::numeric_limits<float>::max(), 0);
+  }
+
+  Tuple<float> operator()(const Tuple<float>& x, const Tuple<float>& y) const {
+    if (x.value < y.value) {
+      return x;
+    } else if (x.value == y.value) {
+      if (x.index < y.index) {
+        return x;
+      } else {
+        return y;
+      }
+    } else {
+      return y;
+    }
+  }
+
+  using MapType = sycl::half;
+};
+
+template <>
+struct MinTupleReducer<Eigen::bfloat16> {
+  static Tuple<float> init() {
+    return Tuple<float>(std::numeric_limits<float>::max(), 0);
+  }
+
+  Tuple<float> operator()(const Tuple<float>& x, const Tuple<float>& y) const {
+    if (x.value < y.value) {
+      return x;
+    } else if (x.value == y.value) {
+      if (x.index < y.index) {
+        return x;
+      } else {
+        return y;
+      }
+    } else {
+      return y;
+    }
+  }
+
+  using MapType = Eigen::bfloat16;
+};
+
 struct ReduceFunctor {
   template <typename InputT, typename OutputT, typename Reducer>
   static void Reduce(OpKernelContext* context, InputT in, OutputT out,
@@ -1055,34 +1121,145 @@ class ArgMaxOp : public OpKernel {
       return;
     }
 
+    const Eigen::GpuDevice& device = context->eigen_gpu_device();
+    // when reduced axis' dimension size equal to 1, result must be tensor of
+    // zeros.
+    if (input_shape.dim_size(axis) == 1) {
+      auto out = output->template flat<Tout>();
+      out.device(device) = out.constant(Tout(0));
+      return;
+    }
+
     MaxTupleReducer<T> reducer;
 
     if (helper.ndims() == 1 && helper.reduce_first_axis()) {
-      ReduceFunctor<T>::Reduce(context, helper.in<T, 1>(input),
-                               helper.out<Tout, 0>(output), reducer,
-                               helper.reduce_first_axis());
+      ReduceFunctor::Reduce(context, helper.in<T, 1>(input),
+                            helper.out<Tout, 0>(output), reducer,
+                            helper.reduce_first_axis());
       return;
     } else if (helper.ndims() == 2 && !helper.reduce_first_axis()) {
-      ReduceFunctor<T>::Reduce(context, helper.in<T, 2>(input),
-                               helper.out<Tout, 1>(output), reducer,
-                               helper.reduce_first_axis());
+      ReduceFunctor::Reduce(context, helper.in<T, 2>(input),
+                            helper.out<Tout, 1>(output), reducer,
+                            helper.reduce_first_axis());
       return;
     } else if ((helper.ndims() == 2) && helper.reduce_first_axis()) {
-      ReduceFunctor<T>::Reduce(context, helper.in<T, 2>(input),
-                               helper.out<Tout, 1>(output), reducer,
-                               helper.reduce_first_axis());
+      ReduceFunctor::Reduce(context, helper.in<T, 2>(input),
+                            helper.out<Tout, 1>(output), reducer,
+                            helper.reduce_first_axis());
       return;
     } else if ((helper.ndims() == 3) && !helper.reduce_first_axis()) {
-      ReduceFunctor<T>::Reduce(context, helper.in<T, 3>(input),
-                               helper.out<Tout, 2>(output), reducer,
-                               helper.reduce_first_axis());
+      ReduceFunctor::Reduce(context, helper.in<T, 3>(input),
+                            helper.out<Tout, 2>(output), reducer,
+                            helper.reduce_first_axis());
+      return;
+    }
+
+#define HANDLE_DIM(NDIM)                             \
+  case NDIM:                                         \
+    ArgMaxFunctor<GPUDevice, T, Tout>::Reduce##NDIM( \
+        device, input.tensor<T, NDIM>(), axis,       \
+        output->tensor<Tout, NDIM - 1>());           \
+    break;
+
+    switch (input_dims) {
+      HANDLE_DIM(1);
+      HANDLE_DIM(2);
+      HANDLE_DIM(3);
+      HANDLE_DIM(4);
+      HANDLE_DIM(5);
+      HANDLE_DIM(6);
+      HANDLE_DIM(7);
+
+      default:
+        OP_REQUIRES(context, false,
+                    errors::InvalidArgument("Argmax and Argmin only support up "
+                                            "to 7 input dimensions, but got ",
+                                            input_dims, ". Inputs shape: ",
+                                            input.shape().DebugString()));
+    }
+  }
+#undef HANDLE_DIM
+};
+
+template <typename Device, typename T, typename Tout>
+class ArgMinOp : public OpKernel {
+ public:
+  explicit ArgMinOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* context) override {
+    const Tensor& input = context->input(0);
+    const Tensor& dimension = context->input(1);
+    OP_REQUIRES(context, TensorShapeUtils::IsScalar(dimension.shape()),
+                errors::InvalidArgument(
+                    "dim must be a scalar, but received tensor of shape: ",
+                    dimension.shape().DebugString()));
+    const int32 dim = internal::SubtleMustCopy(dimension.scalar<int32>()());
+    const int input_dims = input.dims();
+    int axis = dim < 0 ? dim + input_dims : dim;
+    OP_REQUIRES(context, FastBoundsCheck(axis, input_dims),
+                errors::InvalidArgument("Expected dimension in the range [",
+                                        -input_dims, ", ", input_dims,
+                                        "), but got ", dim));
+    OP_REQUIRES(
+        context, input.dim_size(axis) > 0,
+        errors::InvalidArgument("Reduction axis ", dim, " is empty in shape ",
+                                input.shape().DebugString()));
+
+    TensorShape output_shape;
+    const TensorShape& input_shape = input.shape();
+
+    for (int d = 0; d < input_dims - 1; ++d) {
+      output_shape.AddDim(input_shape.dim_size((d < axis) ? d : d + 1));
+    }
+
+    ReductionHelper helper;
+    OP_REQUIRES_OK(context, helper.Simplify(input, dimension, false));
+    ITEX_CHECK_GE(helper.ndims(), 0);
+
+    Tensor* output;
+    OP_REQUIRES_OK(context,
+                   context->allocate_output(0, helper.out_shape(), &output));
+
+    if (output_shape.num_elements() == 0) {
       return;
     }
 
     const Eigen::GpuDevice& device = context->eigen_gpu_device();
+    // when reduced axis' dimension size equal to 1, result must be tensor of
+    // zeros.
+    if (input_shape.dim_size(axis) == 1) {
+      auto out = output->template flat<Tout>();
+      out.device(device) = out.constant(Tout(0));
+      return;
+    }
+
+    MinTupleReducer<T> reducer;
+
+    if (helper.ndims() == 1 && helper.reduce_first_axis()) {
+      ReduceFunctor::Reduce(context, helper.in<T, 1>(input),
+                            helper.out<Tout, 0>(output), reducer,
+                            helper.reduce_first_axis());
+      return;
+    } else if (helper.ndims() == 2 && !helper.reduce_first_axis()) {
+      ReduceFunctor::Reduce(context, helper.in<T, 2>(input),
+                            helper.out<Tout, 1>(output), reducer,
+                            helper.reduce_first_axis());
+      return;
+    } else if ((helper.ndims() == 2) && helper.reduce_first_axis()) {
+      ReduceFunctor::Reduce(context, helper.in<T, 2>(input),
+                            helper.out<Tout, 1>(output), reducer,
+                            helper.reduce_first_axis());
+      return;
+    } else if ((helper.ndims() == 3) && !helper.reduce_first_axis()) {
+      ReduceFunctor::Reduce(context, helper.in<T, 3>(input),
+                            helper.out<Tout, 2>(output), reducer,
+                            helper.reduce_first_axis());
+      return;
+    }
+
 #define HANDLE_DIM(NDIM)                             \
   case NDIM:                                         \
-    ArgMaxFunctor<GPUDevice, T, Tout>::Reduce##NDIM( \
+    ArgMinFunctor<GPUDevice, T, Tout>::Reduce##NDIM( \
         device, input.tensor<T, NDIM>(), axis,       \
         output->tensor<Tout, NDIM - 1>());           \
     break;
@@ -1121,7 +1298,21 @@ class ArgMaxOp : public OpKernel {
                               .TypeConstraint<int32>("output_type")   \
                               .TypeConstraint<int32>("Tidx")          \
                               .HostMemory("dimension"),               \
-                          ArgMaxOp<GPUDevice, type, int32>);
+                          ArgMaxOp<GPUDevice, type, int32>);          \
+  REGISTER_KERNEL_BUILDER(Name("ArgMin")                              \
+                              .Device(DEVICE_GPU)                     \
+                              .TypeConstraint<type>("T")              \
+                              .TypeConstraint<int64_t>("output_type") \
+                              .TypeConstraint<int32>("Tidx")          \
+                              .HostMemory("dimension"),               \
+                          ArgMinOp<GPUDevice, type, int64>);          \
+  REGISTER_KERNEL_BUILDER(Name("ArgMin")                              \
+                              .Device(DEVICE_GPU)                     \
+                              .TypeConstraint<type>("T")              \
+                              .TypeConstraint<int32>("output_type")   \
+                              .TypeConstraint<int32>("Tidx")          \
+                              .HostMemory("dimension"),               \
+                          ArgMinOp<GPUDevice, type, int32>);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_ARGMAX_GPU);
 TF_CALL_bool(REGISTER_ARGMAX_GPU);

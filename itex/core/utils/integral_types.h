@@ -18,6 +18,8 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_INTEGRAL_TYPES_H_
 #define ITEX_CORE_UTILS_INTEGRAL_TYPES_H_
 
+#include <cstdint>
+
 namespace itex {
 
 typedef signed char int8;
@@ -25,12 +27,12 @@ typedef short int16;  // NOLINT(runtime/int)
 typedef int int32;
 
 // for compatible with int64_t
-typedef long int64;  // NOLINT(runtime/int)
+typedef std::int64_t int64;
 
 typedef unsigned char uint8;
 typedef unsigned short uint16;  // NOLINT(runtime/int)
 typedef unsigned int uint32;
-typedef unsigned long long uint64;  // NOLINT(runtime/int)
+typedef std::uint64_t uint64;
 
 }  // namespace itex
 

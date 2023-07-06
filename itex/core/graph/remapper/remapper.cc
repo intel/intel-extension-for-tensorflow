@@ -26,6 +26,7 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/graph/optimizer_config.h"
+#include "itex/core/graph/remapper/constant_names.h"
 #include "itex/core/graph/remapper/fusion.h"
 #include "itex/core/graph/utils/graph_common_utils.h"
 #include "itex/core/graph/utils/graph_properties.h"
@@ -34,8 +35,6 @@ limitations under the License.
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/pattern_utils.h"
 #include "itex/core/graph/utils/symbolic_shapes.h"
-#include "itex/core/graph/utils/utils.h"
-#include "itex/core/utils/onednn/onednn_post_op_util.h"
 #include "itex/core/utils/op_kernel.h"
 
 namespace itex {
@@ -55,52 +54,67 @@ void SetFusedOpAttributes(NodeDef* fused,
   SetAttrValue(num_args, &(*attr)["num_args"]);
 }
 
+// Helper function to remove all regular Fanin from given node.
+void RemoveAllRegularFanin(RemapperContext* ctx, int node_idx) {
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  auto* deleted_node_view = ctx->graph_view.GetNode(node_idx);
+
+  for (int i = 0; i < deleted_node_view->NumRegularFanins(); ++i)
+    mutation->RemoveRegularFanin(deleted_node_view, i);
+
+  TF_ABORT_IF_ERROR(mutation->Apply());
+}
+
+Status GetTensorFromConstant(const NodeDef* node_def, Tensor* dst) {
+  if (!dst->FromProto(node_def->attr().at("value").tensor())) {
+    ITEX_CHECK_OK(errors::InvalidArgument(
+        "Could not construct Tensor from TensorProto in node: ",
+        node_def->name()));
+  }
+
+  return Status::OK();
+}
+
+TensorShape GetTensorShapeFromConstant(const NodeDef* node_def) {
+  return TensorShape(node_def->attr().at("value").tensor().tensor_shape());
+}
+
 namespace {
 
-constexpr char kAccMatMul[] = "_ITEXAccMatMul";
-constexpr char kConv2DBackpropFilterWithBias[] = "Conv2DBackpropFilterWithBias";
-constexpr char kConv3DBackpropFilterWithBias[] = "Conv3DBackpropFilterWithBias";
-constexpr char kConv2DBackpropInputWithSlice[] = "Conv2DBackpropInputWithSlice";
-constexpr char kConv3DBackpropInputWithSlice[] =
-    "Conv3DBackpropInputV2WithSlice";
-constexpr char kFusedAccMatMul[] = "_ITEXFusedAccMatMul";
-constexpr char kFusedAccMatMulGrad[] = "_ITEXFusedAccMatMulGrad";
-constexpr char kFusedAccMatMulWithSum[] = "_ITEXFusedAccMatMulWithSum";
-constexpr char kFusedConv2D[] = "_ITEXFusedConv2D";
-constexpr char kFusedConv2DWithSum[] = "_FusedConv2DWithSum";
-constexpr char kFusedConv3D[] = "_ITEXFusedConv3D";
-constexpr char kFusedMatMul[] = "_ITEXFusedMatMul";
-constexpr char kAddV2WithSoftmax[] = "_ITEXFusedAddV2WithSoftmax";
-constexpr char kFusedMatMulWithSum[] = "_FusedMatMulWithSum";
-constexpr char kFusedMatMulGrad[] = "_FusedMatMulGrad";
-constexpr char kFusedBatchMatMul[] = "_FusedBatchMatMulV2";
-constexpr char kFusedDepthwiseConv2dNative[] =
-    "_ITEXFusedDepthwiseConv2dNative";
-constexpr char kFusedBatchNormEx[] = "_FusedBatchNormEx";
-constexpr char kFusedBatchNormGradEx[] = "_FusedBatchNormExGrad";
-constexpr char kPadWithConv2D[] = "_PadWithConv2D";
-constexpr char kPadWithFusedConv2D[] = "_PadWithFusedConv2D";
-constexpr char kPadWithConv3D[] = "_PadWithConv3D";
-constexpr char kPadWithFusedConv3D[] = "_PadWithFusedConv3D";
-constexpr char kDequantizeReshape[] = "_FusedDequantizeWithReshape";
-constexpr char kQuantizeV2WithQuantizedConv2D[] =
-    "_ITEXQuantizeV2WithQuantizedConv2D";
-constexpr char kFusedApplyAdam[] = "_FusedApplyAdam";
-constexpr char kFusedResourceApplyAdam[] = "_FusedResourceApplyAdam";
-constexpr char kFusedApplyAdamWithWeightDecay[] =
-    "_FusedApplyAdamWithWeightDecay";
-constexpr char kFusedResourceApplyAdamWithWeightDecay[] =
-    "_FusedResourceApplyAdamWithWeightDecay";
-constexpr char kFusedApplyMomentum[] = "_FusedApplyMomentum";
-constexpr char kFusedResourceApplyMomentum[] = "_FusedResourceApplyMomentum";
-constexpr char kFusedAddN[] = "_FusedAddN";
-constexpr char kFusedBinary[] = "_ITEXFusedBinary";
-constexpr char kFusedRandom[] = "_ITEXFusedRandom";
-constexpr char kLeakyRelu[] = "LeakyRelu";
+// Forward controled fanouts of old nodes to a new fused node
+void ForwardControledFanouts(RemapperContext* ctx, utils::Mutation* mutation,
+                             std::vector<int> old_node_indexes_,
+                             std::string fused_node_name) {
+  std::string& from_name_after_fusion = fused_node_name;
+  for (size_t i = 0; i < old_node_indexes_.size(); ++i) {
+    auto* old_node_view = ctx->graph_view.GetNode(old_node_indexes_[i]);
+    std::string from_name = old_node_view->node()->name();
+    if (from_name == from_name_after_fusion) continue;
+    const auto& controlled_fanouts = old_node_view->GetControlledFanouts();
+    for (size_t j = 0; j < controlled_fanouts.size(); ++j) {
+      auto* cur_fanout_view = controlled_fanouts[j].node_view();
+      mutation->RemoveControllingFanin(cur_fanout_view, from_name);
+      mutation->AddControllingFanin(cur_fanout_view, from_name_after_fusion);
+    }
+  }
+}
 
-constexpr int kMissingIndex = -1;
-constexpr char kDataFormat[] = "data_format";
-constexpr char kIsTraining[] = "is_training";
+// Optimize the Sum if it can be replaced to BiasAddGrad or removed.
+struct ReplaceableSum {
+  ReplaceableSum() = default;
+  explicit ReplaceableSum(int sum, int successor)
+      : sum(sum), successor(successor) {}
+
+  enum Kind {
+    kUndecide = 0,
+    kRemove,
+    kBiasAddGrad,
+  };
+
+  int sum = kMissingIndex;
+  int successor = kMissingIndex;
+  enum Kind kind = Kind::kUndecide;
+};
 
 // Fuse l2loss + addN
 struct FusedAddN {
@@ -139,7 +153,7 @@ struct ComparisonWithCast {
 
   int comparison = kMissingIndex;
   int cast = kMissingIndex;
-  string fused_op = "_";
+  string fused_op = "_ITEX";
 };
 
 // Random op followed by Comparison and cast.
@@ -159,7 +173,6 @@ struct RandomWithComparisonAndCast {
 struct MulWithMaximum {
   MulWithMaximum() = default;
 
-  int constant = kMissingIndex;
   int input = kMissingIndex;
   int mul = kMissingIndex;
   int maximum = kMissingIndex;
@@ -183,6 +196,24 @@ struct ContractionWithBiasAdd {
   int contraction = kMissingIndex;
   int bias_add = kMissingIndex;
   int bias_port = kMissingIndex;
+};
+
+struct QuantizedConv2DWithDequantize {
+  QuantizedConv2DWithDequantize() = default;
+  QuantizedConv2DWithDequantize(int conv2dIndex, int dequantizeIndex)
+      : conv2dIndex_(conv2dIndex), dequantizeIndex_(dequantizeIndex) {}
+
+  int conv2dIndex_ = kMissingIndex;
+  int dequantizeIndex_ = kMissingIndex;
+};
+
+struct QuantizedConv2DWithCast {
+  QuantizedConv2DWithCast() = default;
+  QuantizedConv2DWithCast(int conv2dIndex, int castIndex)
+      : conv2dIndex_(conv2dIndex), castIndex_(castIndex) {}
+
+  int conv2dIndex_ = kMissingIndex;
+  int castIndex_ = kMissingIndex;
 };
 
 struct DequantizeWithShape {
@@ -269,6 +300,26 @@ struct ContractionWithBiasAndAddActivation {
   int bias_port = kMissingIndex;
 };
 
+struct ContractionWithBiasAndActivationAdd {
+  ContractionWithBiasAndActivationAdd() = default;
+  ContractionWithBiasAndActivationAdd(int contraction, int bias_add,
+                                      int activation, int add, int port_id,
+                                      int bias_port)
+      : contraction(contraction),
+        bias_add(bias_add),
+        activation(activation),
+        add(add),
+        port_id(port_id),
+        bias_port(bias_port) {}
+
+  int contraction = kMissingIndex;
+  int bias_add = kMissingIndex;
+  int activation = kMissingIndex;
+  int add = kMissingIndex;
+  int port_id = 0;
+  int bias_port = kMissingIndex;
+};
+
 // BatchMatMul + Mul fusion
 struct ContractionWithMul {
   ContractionWithMul() = default;
@@ -307,6 +358,15 @@ struct PadWithContraction {
   PadWithContraction(int pad, int contraction)
       : pad(pad), contraction(contraction) {}
 
+  int pad = kMissingIndex;
+  int contraction = kMissingIndex;
+};
+
+struct PadWithContractionFwdBwd {
+  PadWithContractionFwdBwd() = default;
+  PadWithContractionFwdBwd(int contraction_bwd, int pad, int contraction)
+      : contraction_bwd(contraction_bwd), pad(pad), contraction(contraction) {}
+  int contraction_bwd = kMissingIndex;
   int pad = kMissingIndex;
   int contraction = kMissingIndex;
 };
@@ -350,6 +410,16 @@ struct FusedBinary {
   int num_ = kMissingIndex;
 };
 
+struct Dropout {
+  Dropout() = default;
+
+  int select_0 = kMissingIndex;
+  int select_1 = kMissingIndex;
+  int greater_equal = kMissingIndex;
+  int const_node_0 = kMissingIndex;
+  int const_node_1 = kMissingIndex;
+};
+
 struct AddV2WithSoftmax {
   AddV2WithSoftmax() = default;
   AddV2WithSoftmax(int addv2Index, int softmaxIndex)
@@ -359,43 +429,95 @@ struct AddV2WithSoftmax {
   int softmaxIndex_ = kMissingIndex;
 };
 
-bool IsInPreserveSet(const RemapperContext& ctx, const NodeDef* node) {
-  return ctx.nodes_to_preserve.count(node->name()) > 0;
-}
+struct GroupConv2DBlock {
+  GroupConv2DBlock() = default;
+  GroupConv2DBlock(int inputSplitIndex, std::vector<int> convIndexs,
+                   int concatIndex)
+      : inputSplitIndex_(inputSplitIndex),
+        convIndexs_(convIndexs),
+        concatIndex_(concatIndex) {}
 
-bool HaveSameDataType(const NodeDef* lhs, const NodeDef* rhs,
-                      const string& type_attr = "T") {
-  DataType lhs_attr = GetDataTypeFromAttr(*lhs, type_attr);
-  DataType rhs_attr = GetDataTypeFromAttr(*rhs, type_attr);
+  int inputSplitIndex_ = kMissingIndex;
+  std::vector<int> convIndexs_;
+  int concatIndex_ = kMissingIndex;
+};
 
-  return lhs_attr != DT_INVALID && rhs_attr != DT_INVALID &&
-         lhs_attr == rhs_attr;
-}
+struct PadConvFwdBwd {
+  int input_bn = kMissingIndex;
+  int input_pad_val = kMissingIndex;
+  int pad = kMissingIndex;
+  int conv2d = kMissingIndex;
+  int conv2d_bwd_filter = kMissingIndex;
+  int const_shape_0 = kMissingIndex;
+  int const_shape_1 = kMissingIndex;
+};
 
-// Returns true if the given pattern is supported on the assigned device.
-// TODO(itex): Add device check for CPU/GPU/XPU
-template <typename Pattern>
-bool IsDeviceCompatible(const RemapperContext& ctx, const Pattern& matched) {
-  return true;
-}
+struct KerasDenseLayerFwd {
+  KerasDenseLayerFwd() = default;
+  KerasDenseLayerFwd(int matmul, int reshape, int bias, int activation,
+                     int shape, int reshape_0)
+      : matmul_(matmul),
+        reshape_(reshape),
+        bias_(bias),
+        activation_(activation),
+        shape_(shape),
+        reshape_0_(reshape_0) {}
 
-bool IsSupportedActivation(const NodeDef& node) {
-  return PostOpUtil::IsSupportedActivation(node.op());
-}
+  int matmul_ = kMissingIndex;
+  int reshape_ = kMissingIndex;
+  int bias_ = kMissingIndex;
+  int activation_ = kMissingIndex;
+  int shape_ = kMissingIndex;  // for training
+  int reshape_0_ = kMissingIndex;
+};
 
-inline bool HasControlFanin(const utils::MutableNodeView& node_view) {
-  return node_view.NumControllingFanins() > 0;
-}
+struct MatmulReshapeBiasadd {
+  MatmulReshapeBiasadd() = default;
+  MatmulReshapeBiasadd(int matmul, int reshape, int bias, int activation)
+      : matmul_(matmul),
+        reshape_(reshape),
+        bias_(bias),
+        activation_(activation) {}
 
-inline bool HasControlFaninOrFanout(const utils::MutableNodeView& node_view) {
-  return node_view.NumControllingFanins() > 0 ||
-         node_view.NumControlledFanouts() > 0;
-}
+  int matmul_ = kMissingIndex;
+  int reshape_ = kMissingIndex;
+  int bias_ = kMissingIndex;
+  int activation_ = kMissingIndex;
+};
 
-// Returns true if at most one fanout reads output at port 0 (output used once).
-inline bool HasAtMostOneFanoutAtPort0(const utils::MutableNodeView& node_view) {
-  return node_view.GetRegularFanout(0).size() <= 1;
-}
+struct StridedSliceGrad {
+  StridedSliceGrad() = default;
+  StridedSliceGrad(int stridedslicegrad, int dy)
+      : stridedslicegrad_(stridedslicegrad), dy_(dy) {}
+
+  int stridedslicegrad_ = kMissingIndex;
+  int dy_ = kMissingIndex;
+  absl::InlinedVector<int64_t, 4> dims;
+  absl::InlinedVector<int64_t, 4> begin;
+  absl::InlinedVector<int64_t, 4> end;
+  absl::InlinedVector<int64_t, 4> shrinks;
+};
+
+// Contraction node wrapped by SpaceToBatchND and BatchToSpaceND.
+struct DilatedContraction {
+  DilatedContraction() = default;
+  DilatedContraction(int stob, int contraction, int btos)
+      : stob(stob), contraction(contraction), btos(btos) {}
+
+  int stob = kMissingIndex;
+  int contraction = kMissingIndex;
+  int btos = kMissingIndex;
+};
+
+struct ContractionWithReshapeAndBiasAddGrad {
+  ContractionWithReshapeAndBiasAddGrad() = default;
+  ContractionWithReshapeAndBiasAddGrad(int root, int reshape, int biasaddgrad)
+      : root_(root), reshape_(reshape), biasaddgrad_(biasaddgrad) {}
+
+  int root_ = kMissingIndex;
+  int reshape_ = kMissingIndex;
+  int biasaddgrad_ = kMissingIndex;
+};
 
 bool IsAddWithNoBroadcast(const RemapperContext& ctx, const NodeDef& node) {
   if (!IsAdd(node)) return false;
@@ -530,7 +652,8 @@ int FindFusedTrainingOpInPort(const utils::MutableNodeView& mul_node_view,
 //   (3) Conv2D -> Add or Conv2D -> BiasAdd -> Add.
 //   (4) BatchMatMul + Mul
 //   (5) Mul+ (AddN) + TrainingOp
-bool RequiresInferredShapes(const RemapperContext& ctx, int node_index) {
+[[maybe_unused]] bool RequiresInferredShapes(const RemapperContext& ctx,
+                                             int node_index) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   const auto* node_def = node_view->node();
 
@@ -724,6 +847,344 @@ const auto IsLegalMatMulGrad = [](const RemapperContext& ctx, int node_index,
   return true;
 };
 
+bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
+                            KerasDenseLayerFwd* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // Root of the pattern must be a Reshape.
+  // find reshape + biasadd + activation
+  int bias_index = kMissingIndex;
+  int activation_index = kMissingIndex;
+  int shape_index = kMissingIndex;
+  const auto* reshape = node_view->node();
+  if (!reshape || !IsReshape(*reshape) || HasControlFaninOrFanout(*node_view) ||
+      IsInPreserveSet(ctx, node_view->node()))
+    return false;
+
+  if (node_view->NumRegularFanouts() != 1) return false;
+  const auto& reshape_fanout_0 = node_view->GetRegularFanouts()[0];
+  if (reshape_fanout_0.size() != 1) return false;
+
+  const auto* biasadd = reshape_fanout_0[0].node_view();
+  if (!IsBiasAdd(*biasadd->node()) || HasControlFaninOrFanout(*biasadd) ||
+      IsInPreserveSet(ctx, biasadd->node()))
+    return false;
+  bias_index = biasadd->node_index();
+  if (biasadd->NumRegularFanouts() == 1) {
+    const auto& biasadd_fanout_0 = biasadd->GetRegularFanouts()[0];
+    if (biasadd_fanout_0.size() == 1) {
+      const auto* relu = biasadd_fanout_0[0].node_view();
+      if (IsSupportedActivation(*relu->node()) &&
+          !HasControlFaninOrFanout(*relu) &&
+          !IsInPreserveSet(ctx, relu->node())) {
+        activation_index = relu->node_index();
+      }
+    }
+  }
+
+  int bias_dim = 0;
+  int weight_dim = 0;
+  int src_dim = 0;
+  if (biasadd->NumRegularFanins() != 2) return false;
+  auto* readvariable = biasadd->GetRegularFanin(1).node_view();
+  // if pb is frozen
+  if (IsConstant(*readvariable->node())) {
+    const TensorShape bias_shape =
+        GetTensorShapeFromConstant(readvariable->node());
+    bias_dim = bias_shape.num_elements();
+  }
+
+  // _Arg -> ReadVariableOp -> (Cast) ->BiasAdd
+  if (bias_dim == 0) {
+    if (IsCast(*readvariable->node())) {
+      readvariable = readvariable->GetRegularFanin(0).node_view();
+    }
+    if (!IsReadVariableOp(*readvariable->node())) return false;
+    const auto* arg_bias = readvariable->GetRegularFanin(0).node_view()->node();
+
+    if (IsArg(*arg_bias)) {
+      const AttrValue attr_bshape = arg_bias->attr().at("_handle_shapes");
+      if (attr_bshape.list().shape().empty()) return false;
+      const TensorShapeProto& bshape_proto = attr_bshape.list().shape(0);
+      if (bshape_proto.unknown_rank()) return false;
+      bias_dim = TensorShape(bshape_proto).dim_size(0);
+    } else if (IsVarHandle(*arg_bias)) {
+      const AttrValue attr_bshape = arg_bias->attr().at("shape");
+
+      const TensorShapeProto& bshape_proto = attr_bshape.shape();
+      if (bshape_proto.unknown_rank() ||
+          IsUnknown(bshape_proto.dim(bshape_proto.dim_size() - 1)))
+        return false;
+      bias_dim = TensorShape(bshape_proto).dim_size(0);
+    } else {
+      return false;
+    }
+  }
+  // Arg -> ReadVariableOp -> (Cast) ->MatMul -> reshape
+  if (node_view->NumRegularFanins() != 2) return false;
+  const auto* matmul = node_view->GetRegularFanin(0).node_view();
+  if (!IsMatMul(*matmul->node())) return false;
+  auto* readvariable2 = matmul->GetRegularFanin(1).node_view();
+
+  // if pb is frozen
+  if (IsConstant(*readvariable2->node())) {
+    const TensorShape weight_shape =
+        GetTensorShapeFromConstant(readvariable2->node());
+    weight_dim = weight_shape.dim_size(1);
+    src_dim = weight_shape.dim_size(0);
+  }
+
+  if (weight_dim == 0) {
+    if (IsCast(*readvariable2->node())) {
+      readvariable2 = readvariable2->GetRegularFanin(0).node_view();
+    }
+    if (!IsReadVariableOp(*readvariable2->node())) return false;
+    const auto* arg_weight =
+        readvariable2->GetRegularFanin(0).node_view()->node();
+    if (IsArg(*arg_weight)) {
+      const AttrValue attr_wshape = arg_weight->attr().at("_handle_shapes");
+      if (attr_wshape.list().shape().empty()) return false;
+      const TensorShapeProto& wshape_proto = attr_wshape.list().shape(0);
+      if (!Is2D(wshape_proto)) return false;
+      weight_dim = TensorShape(wshape_proto).dim_size(1);
+      src_dim = TensorShape(wshape_proto).dim_size(0);
+    } else if (IsVarHandle(*arg_weight)) {
+      const AttrValue attr_wshape = arg_weight->attr().at("shape");
+      const TensorShapeProto& wshape_proto = attr_wshape.shape();
+      if (!Is2D(wshape_proto)) return false;
+      if (IsUnknown(wshape_proto.dim(wshape_proto.dim_size() - 1)))
+        return false;
+      weight_dim = TensorShape(wshape_proto).dim_size(1);
+      src_dim = TensorShape(wshape_proto).dim_size(0);
+    } else {
+      return false;
+    }
+  }
+
+  if (bias_dim != weight_dim) return false;
+
+  // For keras training, matmul will output to both reshape and shape (gradient)
+  // We move the shape to BiasAdd or relu.
+  if (matmul->GetRegularFanouts()[0].size() == 2) {
+    if (IsShape(*matmul->GetRegularFanouts()[0][0].node_view()->node())) {
+      shape_index = matmul->GetRegularFanouts()[0][0].node_view()->node_index();
+    }
+    if (IsShape(*matmul->GetRegularFanouts()[0][1].node_view()->node())) {
+      shape_index = matmul->GetRegularFanouts()[0][1].node_view()->node_index();
+    }
+  }
+  int reshape_0_index = kMissingIndex;
+
+  // Input 0 of Matmul is reshape_0
+  auto* reshape_0 = matmul->GetRegularFanin(0).node_view();
+  if (IsReshape(*reshape_0->node()) && !HasControlFaninOrFanout(*reshape_0) &&
+      !IsInPreserveSet(ctx, reshape_0->node()) &&
+      reshape_0->NumRegularFanouts() == 1) {
+    std::vector<OpInfo_TensorProperties> reshape_props;
+    TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+        reshape_0->node()->name(), &reshape_props));
+    const TensorShapeProto& reshape_input = reshape_props[0].shape();
+    // special case: (2,3)->reshape(-1,2,3)->transpose(0,1,2)->reshape(2,3)
+    // reshape input dim size == 2 indicate that shape == input shape, this node
+    // cannot be replaced
+    if (!reshape_input.unknown_rank() && reshape_input.dim_size() != 2) {
+      const auto& reshape_input_last_dim =
+          reshape_input.dim(reshape_input.dim_size() - 1);
+      if (!IsUnknown(reshape_input_last_dim)) {
+        if (reshape_input_last_dim.size() == src_dim)
+          reshape_0_index = reshape_0->node_index();
+      }
+    }
+  }
+
+  const KerasDenseLayerFwd pattern{
+      matmul->node_index(), node_view->node_index(),
+      bias_index,           activation_index,
+      shape_index,          reshape_0_index};
+  *matched = pattern;
+  return true;
+}
+
+bool FindMatmulReshapeBiasadd(const RemapperContext& ctx, int node_index,
+                              MatmulReshapeBiasadd* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // Root of the pattern must be a Reshape.
+  // find reshape + biasadd + activation
+  int bias_index = kMissingIndex;
+  int activation_index = kMissingIndex;
+  const auto* reshape = node_view->node();
+  if (!reshape || !IsReshape(*reshape) || HasControlFaninOrFanout(*node_view) ||
+      IsInPreserveSet(ctx, node_view->node()))
+    return false;
+
+  if (node_view->NumRegularFanouts() != 1) return false;
+  const auto& reshape_fanout_0 = node_view->GetRegularFanouts()[0];
+  if (reshape_fanout_0.size() != 1) return false;
+
+  const auto* biasadd = reshape_fanout_0[0].node_view();
+  if (!IsBiasAdd(*biasadd->node()) || HasControlFaninOrFanout(*biasadd) ||
+      IsInPreserveSet(ctx, biasadd->node()))
+    return false;
+
+  bias_index = biasadd->node_index();
+  if (biasadd->NumRegularFanouts() == 1) {
+    const auto& biasadd_fanout_0 = biasadd->GetRegularFanouts()[0];
+    if (biasadd_fanout_0.size() == 1) {
+      const auto* gelu = biasadd_fanout_0[0].node_view();
+      if (IsSupportedActivation(*gelu->node()) &&
+          !HasControlFaninOrFanout(*gelu) &&
+          !IsInPreserveSet(ctx, gelu->node())) {
+        activation_index = gelu->node_index();
+      }
+    }
+  }
+
+  if (biasadd->NumRegularFanins() != 2) return false;
+  auto* constant_b = biasadd->GetRegularFanin(1).node_view();
+  if (!IsConstant(*constant_b->node())) return false;
+
+  // Qdq -> MatMul -> reshape
+  if (node_view->NumRegularFanins() != 2) return false;
+  auto* matmul = node_view->GetRegularFanin(0).node_view();
+  if (!IsMatMul(*matmul->node())) return false;
+  auto* dequantize = matmul->GetRegularFanin(1).node_view();
+  if (!IsDequantize(*dequantize->node())) return false;
+  int bias_dim = 0;
+  int weight_dim = 0;
+
+  std::vector<OpInfo_TensorProperties> props_bias;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+      biasadd->node()->name(), &props_bias));
+  if (props_bias.empty() || Rank(props_bias[1].shape()) < 1) return false;
+  bias_dim = props_bias[1].shape().dim(0).size();
+
+  std::vector<OpInfo_TensorProperties> props_weight;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+      matmul->node()->name(), &props_weight));
+  if (props_weight.empty() || Rank(props_weight[1].shape()) < 2) return false;
+  weight_dim = props_weight[1].shape().dim(1).size();
+
+  if (bias_dim != weight_dim) return false;
+
+  const MatmulReshapeBiasadd pattern{matmul->node_index(),
+                                     node_view->node_index(), bias_index,
+                                     activation_index};
+  *matched = pattern;
+  return true;
+}
+
+bool FindAddV2(const RemapperContext& ctx, int node_index, int* matched_index) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // Root of the pattern must be a AddN.
+  const auto* addN = node_view->node();
+  if (IsInPreserveSet(ctx, addN)) return false;
+  if (!addN || !IsAddN(*addN)) return false;
+
+  int num = addN->attr().at("N").i();
+  if (num != 2) return false;
+  if (!HasDataType(addN, DT_FLOAT) && !HasDataType(addN, DT_HALF) &&
+      !HasDataType(addN, DT_BFLOAT16))
+    return false;  // AddN may have dtype DT_VARIANT
+  *matched_index = node_index;
+  return true;
+}
+
+// Find Sum if the reduction is:
+//   * On last dim, then it's BiasAddGrad
+//   * On no dims (input shape is same as output shape), then it's redundant
+//
+//     Successor
+//         |
+//        Sum
+//       /   \(port)
+//   input   BroadcastGradientArgs
+//             \(port)
+//             Const/Shape
+bool FindSum(const RemapperContext& ctx, int node_index,
+             ReplaceableSum* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* sum = node_view->node();
+
+  if (!IsSum(*sum) || HasControlFaninOrFanout(*node_view)) return false;
+
+  // Only find Sum generated by AddGrad with BroadcastGradientArgs.
+  // TODO(itex): Relax the limitation to optimize all possible Sum.
+  const auto* broadcast_view = node_view->GetRegularFanin(1).node_view();
+  const auto* broadcast = broadcast_view->node();
+  if (!IsBroadcastGradientArgs(*broadcast)) return false;
+
+  // Find the port of BroadcastGradientArgs to Sum.
+  int port = kMissingIndex;
+  for (int i = 0; i < broadcast_view->GetRegularFanouts().size(); ++i) {
+    for (const auto& fanout_i : broadcast_view->GetRegularFanout(i)) {
+      if (fanout_i.node_view() == node_view) {
+        port = i;
+        break;
+      }
+    }
+  }
+  ITEX_CHECK(port != kMissingIndex);
+
+  // Find `reduction_indices` of Sum throughput port of BroadcastGradientArgs.
+  int reduction_indices = kMissingIndex;
+  const auto* shape_view = broadcast_view->GetRegularFanin(port).node_view();
+  const auto* shape = shape_view->node();
+  std::vector<OpInfo_TensorProperties> props;
+
+  if (IsAnyConst(*shape)) {
+    Tensor bias_shape_tensor;
+    ITEX_CHECK_OK(GetTensorFromConstant(shape, &bias_shape_tensor));
+    if (bias_shape_tensor.NumElements() != 1) return false;
+    reduction_indices = bias_shape_tensor.flat<int32>()(0);
+    matched->kind = ReplaceableSum::Kind::kBiasAddGrad;
+  } else if (IsShape(*shape)) {
+    TF_ABORT_IF_ERROR(
+        ctx.graph_properties.GetInputProperties(shape->name(), &props));
+
+    if (props.size() < 1) return false;
+    const TensorShapeProto& reduction_shape = props[0].shape();
+
+    if (reduction_shape.dim_size() == 1 && !IsUnknown(reduction_shape.dim(0))) {
+      reduction_indices = reduction_shape.dim(0).size();
+      matched->kind = ReplaceableSum::Kind::kBiasAddGrad;
+    } else if (reduction_shape.dim_size() > 1) {
+      // Remove this Sum iff it has 1 fanout and is the 1st fanin of successor.
+      // TODO(itex): Relax the limitation to optimize all possible Sum.
+      if (node_view->NumRegularFanouts() != 1) return false;
+      const auto& fanout_0 = node_view->GetRegularFanout(0);
+      const auto* successor_view = fanout_0[0].node_view();
+      if (successor_view->GetRegularFanin(0).node_view() != node_view)
+        return false;
+
+      matched->successor = successor_view->node_index();
+      matched->kind = ReplaceableSum::Kind::kRemove;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  // Get and check the input shape of Sum.
+  std::vector<OpInfo_TensorProperties> input_props;
+  TF_ABORT_IF_ERROR(
+      ctx.graph_properties.GetInputProperties(sum->name(), &input_props));
+
+  if (input_props.size() < 2) return false;
+  const TensorShapeProto& input_shape = input_props[0].shape();
+  // BiasAddGrad doesn't support 1-D.
+  if (input_shape.dim_size() <= 1) return false;
+  if (matched->kind == ReplaceableSum::Kind::kBiasAddGrad &&
+      input_shape.dim(input_shape.dim_size() - 1).size() != reduction_indices)
+    return false;
+  if (matched->kind == ReplaceableSum::Kind::kRemove &&
+      !ShapesSymbolicallyEqualExceptBatch(input_shape, props[0].shape()))
+    return false;
+
+  matched->sum = node_index;
+
+  return true;
+}
+
 bool FindFusedAddN(const RemapperContext& ctx, int node_index,
                    FusedAddN* matched) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
@@ -731,13 +1192,13 @@ bool FindFusedAddN(const RemapperContext& ctx, int node_index,
   if (HasControlFaninOrFanout(*node_view)) return false;
 
   const auto* addN = node_view->node();
-  if (!addN || !IsAddN(*addN)) return false;
+  if (!addN || !(IsAddN(*addN) || IsAddV2(*addN))) return false;
 
   // TODO(itex): only support AddN+L2Loss fusion on GPU for now, will remove
   // this limitation once supported
   if (!NodeIsOnGpu(addN)) return false;
-
-  int num = addN->attr().at("N").i();
+  int num = 2;
+  if (IsAddN(*addN)) num = addN->attr().at("N").i();
   std::vector<int> inputs;
   for (int i = 0; i < num; ++i) {
     const auto* l2loss = node_view->GetRegularFanin(i).node_view();
@@ -758,9 +1219,9 @@ bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
                              ContractionWithBiasAdd* matched,
                              bool check_device_compatible = true) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
-  // Root of the pattern must be a BiasAdd.
-  // TODO(lyandy): Forward controls for patterns with control dependencies.
-  if (HasControlFaninOrFanout(*node_view)) return false;
+
+  // verify the output node has control fanin edge or not.
+  if (HasControlFanin(*node_view)) return false;
 
   const auto* node_def = node_view->node();
   int bias_port = 1;
@@ -773,9 +1234,11 @@ bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
   const auto* contraction_node_view = regular_fanin_0.node_view();
   const auto* contraction_node_def = contraction_node_view->node();
 
+  // verify the input node has a control fanout edge or not.
+  if (HasControlFanout(*contraction_node_view)) return false;
+
   if (IsAccMatMul(*contraction_node_def) &&
       GetDataTypeFromAttr(*node_def, "T") == DT_FLOAT &&
-      !HasControlFaninOrFanout(*contraction_node_view) &&
       HasAtMostOneFanoutAtPort0(*contraction_node_view) &&
       !IsInPreserveSet(ctx, contraction_node_def)) {
     const ContractionWithBiasAdd pattern{contraction_node_view->node_index(),
@@ -788,15 +1251,14 @@ bool FindContractionWithBias(const RemapperContext& ctx, int node_index,
 
     return true;
   }
-
   // Conv, MatMul or DepthwiseConv2D.
-  bool is_contraction = IsConvOrMatMul(*contraction_node_def);
+  bool is_contraction = IsConvOrMatMul(*contraction_node_def) ||
+                        IsAnyBatchMatMul(*contraction_node_def);
   // TODO(itex): oneDNN does not support double dtype currently
   if (is_contraction && HasDataType(contraction_node_def, DT_DOUBLE))
     return false;
 
   if (!is_contraction || !HaveSameDataType(node_def, contraction_node_def) ||
-      HasControlFaninOrFanout(*contraction_node_view) ||
       !HasAtMostOneFanoutAtPort0(*contraction_node_view) ||
       IsInPreserveSet(ctx, contraction_node_def))
     return false;
@@ -823,12 +1285,16 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
   const auto* node_def = node_view->node();
   if (!IsBiasAddGrad(*node_def)) return false;
 
+  // FP16 is not supported by oneDNN backward primitive.
   if (!(HasDataType(node_def, DT_FLOAT) || HasDataType(node_def, DT_BFLOAT16)))
     return false;
 
+  // Don't do this fusion on GPU since OneDNN impl has a poor performance.
+  if (NodeIsOnGpu(node_def)) return false;
+
   // Don't do FP32 fusion on CPU since it has lower perf.
   // TODO(itex): Remove this limitation once oneDNN fixes it.
-  if (HasDataType(node_def, DT_FLOAT) && NodeIsOnCpu(node_def)) return false;
+  if (NodeIsOnCpu(node_def) && HasDataType(node_def, DT_FLOAT)) return false;
 
   // BiasAddGrad, MatMulGradFilter and MatMulGradInput use the same input.
   //
@@ -856,8 +1322,8 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
 
   // Limit this patter that dz only has 3 output, BiasAddGrad, MatMulGradFilter
   // and MatMulGradInput.
-  if (dz->NumRegularFanouts() != 3) return false;
-
+  if (dz->NumRegularFanouts() != 3 && dz->NumRegularFanouts() != 2)
+    return false;
   std::vector<int> matmuls;
   for (const auto& dz_fanout_i : dz->GetRegularFanouts()) {
     for (const auto dz_fanout : dz_fanout_i) {
@@ -867,11 +1333,37 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
     }
   }
 
-  if (matmuls.size() != 2) return false;
-  if (IsLegalMatMulGrad(ctx, matmuls.at(0), dz->node_index())) {
-    matmul_grad_filter_idx = matmuls.at(0);
-  } else if (IsLegalMatMulGrad(ctx, matmuls.at(1), dz->node_index())) {
-    matmul_grad_filter_idx = matmuls.at(1);
+  if (dz->NumRegularFanouts() == 3) {
+    if (matmuls.size() != 2) return false;
+    if (IsLegalMatMulGrad(ctx, matmuls.at(0), dz->node_index())) {
+      matmul_grad_filter_idx = matmuls.at(0);
+    } else if (IsLegalMatMulGrad(ctx, matmuls.at(1), dz->node_index())) {
+      matmul_grad_filter_idx = matmuls.at(1);
+    }
+  } else if (dz->NumRegularFanouts() == 2) {
+    // root has 3 children, BMM(dx), shape, dz (reshape),
+    // dz has 2 children, MatMul(dy) and BiasAddGrad
+    if (!IsReshape(*(dz->node()))) return false;
+    const auto* root = dz->GetRegularFanin(0).node_view();
+    if (root == nullptr) return false;
+    if (root->NumRegularFanouts() != 3) return false;
+    bool has_shape_node = false;
+    bool has_BMM_node = false;
+    for (const auto& root_fanout_i : root->GetRegularFanouts()) {
+      for (const auto root_fanout : root_fanout_i) {
+        if (IsAnyBatchMatMul(*(root_fanout.node_view()->node()))) {
+          has_BMM_node = true;
+        }
+        if (IsShape(*(root_fanout.node_view()->node()))) {
+          has_shape_node = true;
+        }
+      }
+    }
+    if (!(has_BMM_node && has_shape_node)) return false;
+    if (matmuls.size() != 1) return false;
+    if (IsLegalMatMulGrad(ctx, matmuls.at(0), dz->node_index())) {
+      matmul_grad_filter_idx = matmuls.at(0);
+    }
   }
 
   if (matmul_grad_filter_idx < 0) return false;
@@ -882,8 +1374,13 @@ bool FindContractionWithBiasAddGrad(const RemapperContext& ctx, int node_index,
 
   for (auto const& bias_out : node_view->GetRegularFanouts()) {
     for (auto const bias_out_i : bias_out) {
-      matched->bias_add_grad_outs.push_back(
-          bias_out_i.node_view()->node_index());
+      if (find(matched->bias_add_grad_outs.begin(),
+               matched->bias_add_grad_outs.end(),
+               bias_out_i.node_view()->node_index()) ==
+          matched->bias_add_grad_outs.end()) {
+        matched->bias_add_grad_outs.push_back(
+            bias_out_i.node_view()->node_index());
+      }
     }
   }
   return true;
@@ -942,8 +1439,13 @@ bool FindConvContractionWithBiasAddGrad(const RemapperContext& ctx,
 
   for (auto const& bias_out : node_view->GetRegularFanouts()) {
     for (auto const bias_out_i : bias_out) {
-      matched->bias_add_grad_outs.push_back(
-          bias_out_i.node_view()->node_index());
+      if (find(matched->bias_add_grad_outs.begin(),
+               matched->bias_add_grad_outs.end(),
+               bias_out_i.node_view()->node_index()) ==
+          matched->bias_add_grad_outs.end()) {
+        matched->bias_add_grad_outs.push_back(
+            bias_out_i.node_view()->node_index());
+      }
     }
   }
   return true;
@@ -986,9 +1488,8 @@ bool FindContractionWithBiasAddAndAdd(const RemapperContext& ctx,
 
   if (!IsAddN(*node_def) && !IsAddWithNoBroadcast(ctx, *node_def)) return false;
 
-  // OneDnn AddN ops only support float, float16 and bfloat16 data types on GPU.
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   ContractionWithBiasAdd base;
@@ -1018,10 +1519,11 @@ bool FindContractionWithBiasAndActivation(
     ContractionWithBiasAddAndActivation* matched) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   // Root of the pattern must be an activation node.
-  if (HasControlFaninOrFanout(*node_view)) return false;
-
   const auto* node_def = node_view->node();
   if (!IsSupportedActivation(*node_def)) return false;
+
+  // verify the output node has control fanin edge or not.
+  if (HasControlFanin(*node_view)) return false;
 
   // And input to the activation node must match ContractionWithBiasAdd pattern.
   if (node_view->NumRegularFanins() < 1) return false;
@@ -1041,18 +1543,28 @@ bool FindContractionWithBiasAndActivation(
 
   // TODO(itex): Public TF doesn't have MatMul + LeakyRelu fusion, remove this
   //       limitation once it's supported.
-  const auto* contraction_def =
-      ctx.graph_view.GetNode(base.contraction)->node();
+  const auto* contraction_node_view = ctx.graph_view.GetNode(base.contraction);
+  const auto* contraction_def = contraction_node_view->node();
+
+  // verify the inter node has control fanin&fanout or not.
+  if (HasControlFaninOrFanout(*bias_add_node_view)) {
+    return false;
+  }
+
   // TODO(itex): oneDNN does not support double dtype currently
   if (HasDataType(contraction_def, DT_DOUBLE)) return false;
   if (IsLeakyRelu(*node_def) &&
-      (IsMatMul(*contraction_def) || IsAccMatMul(*contraction_def)))
+      (IsMatMul(*contraction_def) || IsAccMatMul(*contraction_def) ||
+       IsAnyBatchMatMul(*contraction_def)))
     return false;
 
   // Check that data type and data format are supported on assigned device.
   const ContractionWithBiasAddAndActivation pattern{
       base.contraction, base.bias_add, node_index, base.bias_port};
   if (!IsDeviceCompatible(ctx, pattern)) return false;
+
+  // verify the input node has a control fanout edge or not.
+  if (HasControlFanout(*contraction_node_view)) return false;
 
   // We successfully found a {Conv2D, MatMul}+BiasAdd+Activation pattern.
   *matched = pattern;
@@ -1075,7 +1587,7 @@ bool FindContractionWithBiasAndAddActivation(
   // OneDnn activation op only supports float, float16 and bfloat16 data types
   // on GPU.
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
   // And input to activation must match ContractionWithBiasAddAndAdd pattern.
@@ -1105,6 +1617,73 @@ bool FindContractionWithBiasAndAddActivation(
   const ContractionWithBiasAndAddActivation pattern{
       base.contraction, base.bias_add, base.add,
       base.port_id,     node_index,    base.bias_port};
+  *matched = pattern;
+
+  return true;
+}
+
+bool FindContractionWithBiasAndActivationInPort(
+    const RemapperContext& ctx, const utils::MutableNodeView& add_node_view,
+    const NodeDef& add_node_def, int port_id) {
+  if (add_node_view.NumRegularFanins() < port_id + 1) return false;
+
+  const auto& act_node_view =
+      add_node_view.GetRegularFanin(port_id).node_view();
+  if (act_node_view == nullptr) return false;
+  const auto* act_node_def = act_node_view->node();
+
+  if (!IsSupportedActivation(*act_node_def)) {
+    return false;
+  }
+  if (!HasAtMostOneFanoutAtPort0(*act_node_view)) {
+    return false;
+  }
+  return true;
+}
+
+bool FindContractionWithBiasAndActivationAdd(
+    const RemapperContext& ctx, int node_index,
+    ContractionWithBiasAndActivationAdd* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+
+  if (HasControlFaninOrFanout(*node_view)) return false;
+
+  // Root of the pattern must be an activation node.
+  const auto* node_def = node_view->node();
+  if (!IsAdd(*node_def)) return false;
+  // OneDnn activation op only supports float, float16 and bfloat16 data types
+  // on GPU.
+  if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
+      !HasDataType(node_def, DT_HALF))
+    return false;
+
+  ContractionWithBiasAddAndActivation base;
+  if (!FindContractionWithBiasAndActivationInPort(ctx, *node_view, *node_def,
+                                                  matched->port_id)) {
+    matched->port_id = 1;
+    if (!FindContractionWithBiasAndActivationInPort(ctx, *node_view, *node_def,
+                                                    matched->port_id)) {
+      return false;
+    }
+  }
+  const auto& act_node_view =
+      node_view->GetRegularFanin(matched->port_id).node_view();
+  if (!FindContractionWithBiasAndActivation(ctx, act_node_view->node_index(),
+                                            &base)) {
+    return false;
+  }
+
+  const auto* contraction_def =
+      ctx.graph_view.GetNode(base.contraction)->node();
+  if (IsLeakyRelu(*node_def) &&
+      (IsMatMul(*contraction_def) || IsAccMatMul(*contraction_def) ||
+       IsAnyBatchMatMul(*contraction_def)))
+    return false;
+
+  // We successfully found a Conv2D+BiasAdd+AddN+activation pattern.
+  const ContractionWithBiasAndActivationAdd pattern{
+      base.contraction, base.bias_add,    base.activation,
+      node_index,       matched->port_id, base.bias_port};
   *matched = pattern;
 
   return true;
@@ -1245,6 +1824,16 @@ bool FindDequantizeWithReshape(const RemapperContext& ctx, int node_index,
 
   if (!IsDequantize(*dequantize_node_def)) return false;
 
+  // diable this pattern when the father node of dequantize is quantizedConv2D
+  auto* conv2d_node_view = dequantize_node_view->GetRegularFanin(0).node_view();
+  auto* conv2d_node_def = conv2d_node_view->node();
+
+  if (IsQuantizedConv2DWithBiasAndRequantize(*conv2d_node_def)) {
+    ITEX_VLOG(2) << "Found QuantizedConv2D + Dequantize + Reshape pattern, but "
+                    "can't be fused now";
+    return false;
+  }
+
   if (HasControlFaninOrFanout(*dequantize_node_view) ||
       !HasAtMostOneFanoutAtPort0(*dequantize_node_view) ||
       IsInPreserveSet(ctx, dequantize_node_def)) {
@@ -1265,7 +1854,7 @@ bool FindQuantizeV2WithQuantizedConv2D(const RemapperContext& ctx,
   const auto* node_def = node_view->node();
 
   // TODO(itex): will support more QuantizedConv2D-based ops
-  if (!IsQuantizedConv2DWithPostOps(*node_def)) return false;
+  if (!IsQuantizedConv2DWithBiasAndReluAndRequantize(*node_def)) return false;
   auto* quantizev2_node_view = node_view->GetRegularFanin(0).node_view();
   auto* quantizev2_node_def = quantizev2_node_view->node();
 
@@ -1288,7 +1877,7 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
                           AddV2WithSoftmax* matched) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   const auto* node_def = node_view->node();
-
+  if (HasControlFaninOrFanout(*node_view)) return false;
   if (!NodeIsOnGpu(node_def)) return false;
 
   if (!IsSoftmax(*node_def)) return false;
@@ -1296,6 +1885,33 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
   auto* addv2_node_def = addv2_node_view->node();
 
   if (!IsAdd(*addv2_node_def)) return false;
+
+  // check the shape of input nodes of AddV2
+  std::vector<OpInfo_TensorProperties> props;
+  TF_ABORT_IF_ERROR(
+      ctx.graph_properties.GetInputProperties(addv2_node_def->name(), &props));
+
+  if (props.size() < 2) return false;
+  const TensorShapeProto& left_shape = props[0].shape();
+  const TensorShapeProto& right_shape = props[1].shape();
+
+  bool is_non_supported_shape =
+      (left_shape.dim_size() != 4) ||
+      (left_shape.dim_size() != right_shape.dim_size()) ||
+      (left_shape.dim(2).size() != right_shape.dim(2).size()) ||
+      (left_shape.dim(3).size() != right_shape.dim(3).size());
+  if (is_non_supported_shape) {
+    return false;
+  }
+
+  // veirfy broadcast case
+  if (right_shape.dim(1).size() != left_shape.dim(1).size() &&
+      right_shape.dim(1).size() != 1 && left_shape.dim(1).size() != 1)
+    return false;
+
+  if (left_shape.dim(0).size() > 0 &&
+      right_shape.dim(0).size() != left_shape.dim(0).size())
+    return false;
 
   if (HasControlFaninOrFanout(*addv2_node_view) ||
       !HasAtMostOneFanoutAtPort0(*addv2_node_view) ||
@@ -1307,6 +1923,68 @@ bool FindAddV2WithSoftmax(const RemapperContext& ctx, int node_index,
                                  node_view->node_index()};
   *matched = pattern;
 
+  return true;
+}
+
+bool FindQuantizedConv2DWithDequantize(const RemapperContext& ctx,
+                                       int node_index,
+                                       QuantizedConv2DWithDequantize* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  // TODO(itex): only support this fusion on GPU for now, will
+  // remove this limitation once supported
+  if (!NodeIsOnGpu(node_def)) return false;
+
+  if (!IsDequantize(*node_def)) {
+    return false;
+  }
+  auto* conv2d_node_view = node_view->GetRegularFanin(0).node_view();
+  auto* conv2d_node_def = conv2d_node_view->node();
+
+  if (!IsQuantizedConv2DWithBiasAndRequantize(*conv2d_node_def)) return false;
+
+  if (HasControlFaninOrFanout(*conv2d_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*conv2d_node_view) ||
+      IsInPreserveSet(ctx, conv2d_node_def)) {
+    return false;
+  }
+
+  const QuantizedConv2DWithDequantize pattern{conv2d_node_view->node_index(),
+                                              node_view->node_index()};
+  *matched = pattern;
+  return true;
+}
+
+bool FindQuantizedConv2DWithCast(const RemapperContext& ctx, int node_index,
+                                 QuantizedConv2DWithCast* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  // TODO(itex): only support this fusion on GPU for now, will
+  // remove this limitation once supported
+  if (!NodeIsOnGpu(node_def)) return false;
+
+  if (!IsCast(*node_def)) return false;
+  auto* conv2d_node_view = node_view->GetRegularFanin(0).node_view();
+  auto* conv2d_node_def = conv2d_node_view->node();
+  if (!IsQuantizedConv2DWithDequantize(*conv2d_node_def)) {
+    return false;
+  }
+
+  if (HasControlFaninOrFanout(*conv2d_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*conv2d_node_view) ||
+      IsInPreserveSet(ctx, conv2d_node_def)) {
+    return false;
+  }
+
+  const QuantizedConv2DWithCast pattern{conv2d_node_view->node_index(),
+                                        node_view->node_index()};
+  *matched = pattern;
+
+  ITEX_VLOG(2) << "Found QuantizedConv2DWithDequantize pattern: "
+               << " QuantizedConv2DWithDequantize=" << conv2d_node_def->name()
+               << " Cast=" << node_def->name();
   return true;
 }
 
@@ -1420,8 +2098,8 @@ bool FindPadWithContraction(const RemapperContext& ctx, int node_index,
                             bool check_device_compatible = true) {
   const auto* node_view = ctx.graph_view.GetNode(node_index);
   // Root of the pattern must be a Conv or FusedConv.
-  // TODO(itex): Forward controls for patterns with control dependencies.
-  if (HasControlFaninOrFanout(*node_view)) return false;
+  // TODO(itex): Forward controls for patterns with control in dependencies.
+  if (HasControlFanin(*node_view)) return false;
 
   // Root node must be Conv2D/_FusedITEXConv2D.
   const auto* node_def = node_view->node();
@@ -1458,7 +2136,7 @@ bool FindPadWithContraction(const RemapperContext& ctx, int node_index,
   }
 
   if (!HaveSameDataType(node_def, pad_node_def) ||
-      HasControlFaninOrFanout(*pad_node_view) ||
+      HasControlFanin(*pad_node_view) ||
       !HasAtMostOneFanoutAtPort0(*pad_node_view) ||
       IsInPreserveSet(ctx, pad_node_def))
     return false;
@@ -1502,6 +2180,110 @@ bool FindConvBackpropInputWithSlice(const RemapperContext& ctx, int node_index,
 
   if (!HaveSameDataType(node_def, conv_node_def) ||
       HasControlFaninOrFanout(*conv_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*conv_node_view) ||
+      IsInPreserveSet(ctx, conv_node_def))
+    return false;
+
+  // Check that data type and data format are supported on assigned device.
+  const ConvBackpropInputWithSlice pattern{node_index,
+                                           conv_node_view->node_index()};
+  if (check_device_compatible && !IsDeviceCompatible(ctx, pattern))
+    return false;
+
+  *matched = pattern;
+
+  return true;
+}
+
+// Optimize:
+/*
+    Conv2DBackpropInput (padding valid)  Const (0,1,1,0)  Const
+          \              |     /
+                       Slice         ------->   Conv2DBackpropInput
+*/
+
+bool FindConv2DBackpropInputWithSliceLLGA(const RemapperContext& ctx,
+                                          int node_index,
+                                          ConvBackpropInputWithSlice* matched,
+                                          bool check_device_compatible = true) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+
+  const auto* node_def = node_view->node();
+  if (!IsSlice(*node_def)) return false;
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* conv_node_view = regular_fanin_0.node_view();
+  const auto* conv_node_def = conv_node_view->node();
+  // TODO(itex): Add support for Conv3DBackpropInput
+  bool is_ok = IsConv2DBackpropInput(*conv_node_def);
+  is_ok = is_ok && conv_node_view->NumRegularFanouts() == 1;
+
+  if (!is_ok) {
+    return false;
+  }
+
+  const auto* slice_start_node_view = node_view->GetRegularFanin(1).node_view();
+  const auto* slice_start_node = slice_start_node_view->node();
+  if (!IsAnyConst(*slice_start_node)) return false;
+
+  Tensor slice_start_tensor;
+  std::vector<int> slice_start_value;
+  if (slice_start_node->op() == "Const") {
+    ITEX_CHECK_OK(GetTensorFromConstant(slice_start_node, &slice_start_tensor));
+    int length = slice_start_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      slice_start_value.push_back(slice_start_tensor.flat<int32>()(i));
+    }
+  }
+
+  // Specialized version for RN50 training
+  // TODO(itex): Implement fusion with more relaxed shape checking
+  if (slice_start_value != std::vector<int>{0, 1, 1, 0}) {
+    return false;
+  }
+
+  const auto* slice_size_node_view = node_view->GetRegularFanin(2).node_view();
+  const auto* slice_size_node = slice_size_node_view->node();
+  if (!IsAnyConst(*slice_size_node)) return false;
+
+  Tensor slice_size_tensor;
+  std::vector<int> slice_size_value;
+  if (slice_size_node->op() == "Const") {
+    ITEX_CHECK_OK(GetTensorFromConstant(slice_size_node, &slice_size_tensor));
+    int length = slice_size_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      slice_size_value.push_back(slice_size_tensor.flat<int32>()(i));
+    }
+  }
+
+  const auto* input_size_node_view =
+      conv_node_view->GetRegularFanin(0).node_view();
+  const auto* input_size_node = input_size_node_view->node();
+  if (!IsAnyConst(*input_size_node)) return false;
+
+  Tensor input_size_tensor;
+  std::vector<int> input_size_value;
+  if (input_size_node->op() == "Const") {
+    ITEX_CHECK_OK(GetTensorFromConstant(input_size_node, &input_size_tensor));
+    int length = input_size_tensor.NumElements();
+    for (int i = 0; i < length; i++) {
+      input_size_value.push_back(input_size_tensor.flat<int32>()(i));
+    }
+  }
+
+  int length = input_size_tensor.NumElements();
+  for (int i = 0; i < length; i++) {
+    if (slice_start_value[i] * 2 + slice_size_value[i] != input_size_value[i])
+      return false;
+  }
+
+  // Only fuse contraction with `VALID` padding.
+  // TODO(itex): Support more padding type in future.
+  string padding_str;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*conv_node_def, "padding", &padding_str));
+  if (padding_str != "VALID") return false;
+
+  if (!HaveSameDataType(node_def, conv_node_def) ||
       !HasAtMostOneFanoutAtPort0(*conv_node_view) ||
       IsInPreserveSet(ctx, conv_node_def))
     return false;
@@ -1690,7 +2472,7 @@ bool FindContractionWithMul(const RemapperContext& ctx, int node_index,
   bool hasValidType = false;
   hasValidType =
       (HasDataType(node_def, DT_FLOAT) || HasDataType(node_def, DT_BFLOAT16) ||
-       (HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)));
+       HasDataType(node_def, DT_HALF));
 
   if (!hasValidType) return false;
 
@@ -1863,6 +2645,7 @@ bool FindRandomWithComparisonAndCast(const RemapperContext& ctx, int node_index,
   TF_ABORT_IF_ERROR(
       ctx.graph_properties.GetInputProperties(node_def->name(), &props));
 
+  if (props.size() != 2) return false;
   const auto HasRandom = [&](int direction) -> bool {
     const auto& regular_fanin = node_view->GetRegularFanin(direction);
     const auto* random = regular_fanin.node_view();
@@ -1881,15 +2664,13 @@ bool FindRandomWithComparisonAndCast(const RemapperContext& ctx, int node_index,
   const auto* random = regular_fanin.node_view();
   const auto* random_node_def = random->node();
 
-  // TODO(itex) Add CPU support
-  if (NodeIsOnCpu(random_node_def)) return false;
-
   if (HasControlFaninOrFanout(*random)) return false;
 
   DataType random_dtype = GetDataTypeFromAttr(*random_node_def, "dtype");
 
   if ((random_dtype != DT_FLOAT) && (random_dtype != DT_BFLOAT16) &&
-      (random_dtype != DT_HALF))
+      // CPU _ITEXFusedRandom doesn't support fp16.
+      !(random_dtype == DT_HALF && NodeIsOnGpu(random_node_def)))
     return false;
 
   // Check that only one node consumes the 0-th output of a random.
@@ -1924,7 +2705,6 @@ bool FindMulWithMaximum(const RemapperContext& ctx, int node_index,
 
   // Check Mul node has a scalar const fanin and the same input fanin with
   // Maximum.
-  int mul_fanin = -1, scalar_fanin = -1;
   for (int attempt_mul_fanin = 0; attempt_mul_fanin <= 1; ++attempt_mul_fanin) {
     const auto* mul_view =
         maximum_view->GetRegularFanin(attempt_mul_fanin).node_view();
@@ -1940,15 +2720,14 @@ bool FindMulWithMaximum(const RemapperContext& ctx, int node_index,
     auto* const_view =
         mul_view->GetRegularFanin(attempt_scalar_fanin).node_view();
     auto* const_node = const_view->node();
-    if (!IsAnyConst(*const_node) || const_view->NumRegularFanouts() != 1 ||
-        HasControlFaninOrFanout(*const_view))
+    if (!IsAnyConst(*const_node) || HasControlFaninOrFanout(*const_view))
       continue;
 
     // Check float datatype and value < 1
     float alpha_value = -1;
     DataType const_dtype = GetDataTypeFromAttr(*const_node, "dtype");
     Tensor const_tensor;
-    const_tensor.FromProto(const_node->attr().at("value").tensor());
+    ITEX_CHECK_OK(GetTensorFromConstant(const_node, &const_tensor));
     if (const_dtype == DT_BFLOAT16) {
       alpha_value = static_cast<float>(const_tensor.flat<Eigen::bfloat16>()(0));
     } else if (const_dtype == DT_HALF) {
@@ -1973,7 +2752,6 @@ bool FindMulWithMaximum(const RemapperContext& ctx, int node_index,
 
     matched->maximum = node_index;
     matched->mul = mul_view->node_index();
-    matched->constant = const_view->node_index();
     matched->input =
         maximum_view->GetRegularFanin(1 - attempt_mul_fanin).node_index();
     matched->alpha = alpha_value;
@@ -1994,7 +2772,7 @@ bool FindConstWithCast(const RemapperContext& ctx, int node_index,
   const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
   const auto* constant = regular_fanin_0.node_view();
   const auto* constant_node_def = constant->node();
-  if (!IsConstant(*constant_node_def) || HasControlFaninOrFanout(*constant))
+  if (!IsConstant(*constant_node_def) || HasControlFanout(*constant))
     return false;
 
   DataType constant_dtype = GetDataTypeFromAttr(*constant_node_def, "dtype");
@@ -2010,8 +2788,7 @@ bool FindConstWithCast(const RemapperContext& ctx, int node_index,
 
   // As Const + Cast fusion will create a new tensor, it requires the tensor
   // size is valid
-  const TensorProto& raw_val = constant_node_def->attr().at("value").tensor();
-  const TensorShape shape(raw_val.tensor_shape());
+  const TensorShape shape = GetTensorShapeFromConstant(constant_node_def);
   const int64_t num_tensor_values = shape.num_elements();
 
   if (num_tensor_values <= 0) return false;
@@ -2027,6 +2804,78 @@ bool FindConstWithCast(const RemapperContext& ctx, int node_index,
   return true;
 }
 
+/*                         before fusion
+                  BN
+                  |
+                 Pad
+      /           |              \                       \
+  Conv       ConvBwdFilter    Const0 (control input)   Const1 (control input)
+
+                        after fusion
+                 BN
+      /           |              \                        \
+  Conv       ConvBwdFilter    Const0 (control input)   Const1 (control input)
+*/
+
+// Pad with Conv Fwd and Bwd Fusion
+bool FindPadConvFwdBwd(const RemapperContext& ctx, int node_index,
+                       PadConvFwdBwd* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+  if (!IsConv2DBackpropFilter(*node_def) || HasControlFanin(*node_view))
+    return false;
+
+  matched->conv2d_bwd_filter = node_view->node_index();
+
+  const auto& pad_node_view = node_view->GetRegularFanin(0).node_view();
+  const auto* pad_node_def = pad_node_view->node();
+  if (!IsPad(*pad_node_def) || HasControlFanin(*pad_node_view)) return false;
+
+  matched->pad = pad_node_view->node_index();
+
+  const auto& bn_node_view = pad_node_view->GetRegularFanin(0).node_view();
+  if (HasControlFanout(*bn_node_view)) return false;
+
+  matched->input_bn = bn_node_view->node_index();
+
+  const auto& const_pad_val_node_view =
+      pad_node_view->GetRegularFanin(1).node_view();
+  const auto* const_pad_val_node_def = const_pad_val_node_view->node();
+  if (!IsAnyConst(*const_pad_val_node_def) ||
+      HasControlFaninOrFanout(*const_pad_val_node_view))
+    return false;
+
+  matched->input_pad_val = const_pad_val_node_view->node_index();
+
+  for (auto const& pad_out : pad_node_view->GetRegularFanout(0)) {
+    auto* pad_out_node_view = pad_out.node_view();
+    if (pad_out_node_view->node_index() == node_view->node_index()) {
+      continue;
+    } else if (IsConv2D(*(pad_out_node_view->node()))) {
+      if (HasControlFanin(*pad_out_node_view)) {
+        return false;
+      }
+      matched->conv2d = pad_out_node_view->node_index();
+    } else {
+      return false;
+    }
+  }
+
+  if (pad_node_view->GetControlledFanouts().size() != 2) return false;
+
+  auto* const_shape_0_node_view =
+      pad_node_view->GetControlledFanouts()[0].node_view();
+  if (!IsAnyConst(*const_shape_0_node_view->node())) return false;
+  matched->const_shape_0 = const_shape_0_node_view->node_index();
+
+  auto* const_shape_1_node_view =
+      pad_node_view->GetControlledFanouts()[1].node_view();
+  if (!IsAnyConst(*const_shape_1_node_view->node())) return false;
+  matched->const_shape_1 = const_shape_1_node_view->node_index();
+
+  return true;
+}
+
 // Find sequatial binary ops.
 bool FindFusedBinary(const RemapperContext& ctx, int node_index,
                      FusedBinary* matched) {
@@ -2036,17 +2885,14 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
   // Only check control fanin for output node is enough.
   if (HasControlFanin(*node_view)) return false;
 
-  // Only support on GPU.
-  if (NodeIsOnCpu(node_def)) return false;
-
   // Only support Add/Mul/Sub now because they satisfy the commutative law.
   if (!IsAdd(*node_def) && !IsMul(*node_def) && !IsSub(*node_def)) return false;
 
   if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
-      !(HasDataType(node_def, DT_HALF) && NodeIsOnGpu(node_def)))
+      !HasDataType(node_def, DT_HALF))
     return false;
 
-  // Returns true iff the node is a compatible FusedBatchNorm node.
+  // Returns true iff all the nodes have valid shape.
   const auto valid_shape = [&](const utils::MutableNodeView& binary) -> bool {
     const auto* binary_def = binary.node();
     std::vector<OpInfo_TensorProperties> props;
@@ -2059,6 +2905,9 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
     bool has_scalar =
         Rank(props[0].shape()) == 0 || Rank(props[1].shape()) == 0;
     if (!(same_input || has_scalar)) return false;
+    // Disable scalar fusion on CPU due to performance issue.
+    // TODO(itex): Support scalar fusion on CPU.
+    if (has_scalar && NodeIsOnCpu(binary_def)) return false;
     return true;
   };
 
@@ -2090,8 +2939,7 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
 
       if (!HasDataType(input_node_def, DT_FLOAT) &&
           !HasDataType(input_node_def, DT_BFLOAT16) &&
-          !(HasDataType(input_node_def, DT_HALF) &&
-            NodeIsOnGpu(input_node_def)))
+          !HasDataType(input_node_def, DT_HALF))
         continue;
 
       if (HasControlFaninOrFanout(*input_node_view) ||
@@ -2114,6 +2962,617 @@ bool FindFusedBinary(const RemapperContext& ctx, int node_index,
 
   // Reture `true` if find more than 1 sequatial Bianry ops.
   return matched->num_ > 1;
+}
+
+// Find dropout pattern in TF2.11 and remaper to TF2.10 to reuse the optimzaiton
+// in TF2.10.
+bool FindDropout(const RemapperContext& ctx, int node_index, Dropout* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  if (!IsSelect(*node_def) || HasControlFanin(*node_view)) return false;
+
+  if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
+      !HasDataType(node_def, DT_HALF))
+    return false;
+
+  // SelectOp has 3 input, condition, t and e
+  if (node_view->NumRegularFanins() != 3) return false;
+
+  // Returns true iff the select is meet dropout op shape.
+  const auto valid_shape = [&](const utils::MutableNodeView& select) -> bool {
+    const auto* select_ref = select.node();
+    std::vector<OpInfo_TensorProperties> props;
+    TF_ABORT_IF_ERROR(
+        ctx.graph_properties.GetInputProperties(select_ref->name(), &props));
+
+    if (props.size() < 3) return false;
+    // Make sure the condition and t has same shape.
+    bool same_input =
+        ShapesSymbolicallyEqual(props[0].shape(), props[1].shape());
+    // Make sure the e is a scalar.
+    bool has_scalar = Rank(props[2].shape()) == 0;
+    if (same_input && has_scalar) return true;
+    return false;
+  };
+
+  if (!valid_shape(*node_view)) return false;
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* greater_equal = regular_fanin_0.node_view();
+  const auto* greater_equal_node_def = greater_equal->node();
+  if (!IsGreaterEqual(*greater_equal_node_def) ||
+      HasControlFanout(*greater_equal))
+    return false;
+
+  const auto& regular_fanin_2 = node_view->GetRegularFanin(2);
+  const auto* constant = regular_fanin_2.node_view();
+  const auto* constant_node_def = constant->node();
+  if (!IsConstant(*constant_node_def) || HasControlFaninOrFanout(*constant))
+    return false;
+
+  // Returns true iff the const value is 0.
+  const auto valid_value = [&](const utils::MutableNodeView& constant) -> bool {
+    const auto* constant_ref = constant.node();
+
+    Tensor const_tensor;
+    ITEX_CHECK_OK(GetTensorFromConstant(constant_ref, &const_tensor));
+
+    DataType const_dtype = GetDataTypeFromAttr(*constant_ref, "dtype");
+    float const_value = 1;
+
+    if (const_dtype == DT_BFLOAT16) {
+      const_value = static_cast<float>(const_tensor.flat<Eigen::bfloat16>()(0));
+    } else if (const_dtype == DT_HALF) {
+      const_value = static_cast<float>(const_tensor.flat<Eigen::half>()(0));
+    } else if (const_dtype == DT_FLOAT) {
+      const_value = const_tensor.flat<float>()(0);
+    } else {
+      return false;
+    }
+
+    if ((const_value - 1e-2) > 0) return false;
+    return true;
+  };
+
+  if (!valid_value(*constant)) return false;
+
+  // GreaterEqual has 2 output, fwd and bwd select
+  if (!(greater_equal->GetRegularFanout(0).size() == 2)) return false;
+
+  int select_1_index =
+      greater_equal->GetRegularFanout(0)[0].node_index() == node_index
+          ? greater_equal->GetRegularFanout(0)[1].node_index()
+          : greater_equal->GetRegularFanout(0)[0].node_index();
+
+  const auto* select_1_node_view = ctx.graph_view.GetNode(select_1_index);
+  const auto* select_1_node_def = select_1_node_view->node();
+  if (!IsSelect(*select_1_node_def) || HasControlFanin(*select_1_node_view))
+    return false;
+  if (!HasDataType(select_1_node_def, DT_FLOAT) &&
+      !HasDataType(select_1_node_def, DT_BFLOAT16) &&
+      !HasDataType(select_1_node_def, DT_HALF))
+    return false;
+
+  // SelectOp has 3 input, condition, t and e
+  if (select_1_node_view->NumRegularFanins() != 3) return false;
+  if (!valid_shape(*select_1_node_view)) return false;
+
+  if (!valid_value(*(select_1_node_view->GetRegularFanin(2).node_view())))
+    return false;
+
+  matched->select_0 = node_index;
+  matched->select_1 = select_1_index;
+  matched->greater_equal = regular_fanin_0.node_index();
+  matched->const_node_0 = regular_fanin_2.node_index();
+  matched->const_node_1 = select_1_node_view->GetRegularFanin(2).node_index();
+  return true;
+}
+
+template <typename T>
+bool InitStridedSliceGradData(Tensor* input_shape_tensor, Tensor* begin_tensor,
+                              Tensor* end_tensor, Tensor* strides_tensor,
+                              StridedSliceGrad* matched) {
+  const T* const input_shape_flat = input_shape_tensor->vec<T>().data();
+  const T* const begin_flat = begin_tensor->vec<T>().data();
+  const T* const end_flat = end_tensor->vec<T>().data();
+  const T* const strides_flat = strides_tensor->vec<T>().data();
+  if (input_shape_flat == nullptr || begin_flat == nullptr ||
+      end_flat == nullptr || strides_flat == nullptr)
+    return false;
+  int num_dims = input_shape_tensor->NumElements();
+  matched->dims.resize(num_dims);
+  matched->begin.resize(num_dims);
+  matched->end.resize(num_dims);
+  for (int i = 0; i < num_dims; i++) {
+    if (strides_flat[i] != 1) return false;
+    if (input_shape_flat[i] < 0) return false;
+    matched->dims[i] = input_shape_flat[i];
+    matched->begin[i] = begin_flat[i];
+    matched->end[i] = end_flat[i];
+  }
+  return true;
+}
+
+// When strides are equal to one the StridedSlice acts as a Slice and
+// StridedSliceGrad acts as a Pad. In this circumstances we remap
+// StridedSliceGrad to Pad.
+bool FindStridedSliceGrad(const RemapperContext& ctx, int node_index,
+                          StridedSliceGrad* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+
+  if (!IsStridedSliceGrad(*node_def) || HasControlFanin(*node_view))
+    return false;
+
+  if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
+      !HasDataType(node_def, DT_HALF))
+    return false;
+
+  if (node_view->NumRegularFanins() != 5) return false;
+
+  const auto& regular_fanin_4 = node_view->GetRegularFanin(4);
+  matched->dy_ = regular_fanin_4.node_index();
+
+  int32 begin_mask, end_mask;
+  int32 ellipsis_mask, new_axis_mask, shrink_axis_mask;
+
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "begin_mask", &begin_mask));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "end_mask", &end_mask));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "ellipsis_mask", &ellipsis_mask));
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "new_axis_mask", &new_axis_mask));
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*node_def, "shrink_axis_mask", &shrink_axis_mask));
+
+  // We do not consider the ellipsis axis and new axis case.
+  if (ellipsis_mask != 0 || new_axis_mask != 0) return false;
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* input_shape_node_view = regular_fanin_0.node_view();
+  const auto* input_shape_node_def = input_shape_node_view->node();
+
+  const auto& regular_fanin_1 = node_view->GetRegularFanin(1);
+  const auto* begin_node_view = regular_fanin_1.node_view();
+  const auto* begin_node_def = begin_node_view->node();
+
+  const auto& regular_fanin_2 = node_view->GetRegularFanin(2);
+  const auto* end_node_view = regular_fanin_2.node_view();
+  const auto* end_node_def = end_node_view->node();
+
+  const auto& regular_fanin_3 = node_view->GetRegularFanin(3);
+  const auto* strides_node_view = regular_fanin_3.node_view();
+  const auto* strides_node_def = strides_node_view->node();
+
+  if (!(IsConstant(*input_shape_node_def) && IsConstant(*begin_node_def) &&
+        IsConstant(*end_node_def) && IsConstant(*strides_node_def)))
+    return false;
+
+  Tensor input_shape_tensor, begin_tensor, end_tensor, strides_tensor;
+  ITEX_CHECK_OK(
+      GetTensorFromConstant(input_shape_node_def, &input_shape_tensor));
+  ITEX_CHECK_OK(GetTensorFromConstant(begin_node_def, &begin_tensor));
+  ITEX_CHECK_OK(GetTensorFromConstant(end_node_def, &end_tensor));
+  ITEX_CHECK_OK(GetTensorFromConstant(strides_node_def, &strides_tensor));
+
+  auto shape_is_wrong = [](const Tensor& lt, const Tensor& rt) {
+    return !(TensorShapeUtils::IsVector(lt.shape()) &&
+             lt.NumElements() == rt.NumElements());
+  };
+  if (!(TensorShapeUtils::IsVector(strides_tensor.shape()) &&
+        strides_tensor.NumElements() < 32 /* using 32 bit masks */))
+    return false;
+  if (shape_is_wrong(input_shape_tensor, strides_tensor) ||
+      shape_is_wrong(begin_tensor, strides_tensor) ||
+      shape_is_wrong(end_tensor, strides_tensor)) {
+    return false;
+  }
+  bool init_stats = true;
+  if (input_shape_tensor.dtype() == DT_INT32) {
+    init_stats =
+        InitStridedSliceGradData<int32>(&input_shape_tensor, &begin_tensor,
+                                        &end_tensor, &strides_tensor, matched);
+  } else if (input_shape_tensor.dtype() == DT_INT64) {
+    init_stats = InitStridedSliceGradData<int64_t>(&input_shape_tensor,
+                                                   &begin_tensor, &end_tensor,
+                                                   &strides_tensor, matched);
+  } else {
+    return false;
+  }
+  if (!init_stats) return false;
+
+  int num_dims = input_shape_tensor.NumElements();
+  bool is_identity = true;
+  for (int i = 0; i < num_dims; ++i) {
+    int64_t& dim_i = matched->dims[i];
+    int64_t& begin_i = matched->begin[i];
+    int64_t& end_i = matched->end[i];
+
+    bool shrink_i = (shrink_axis_mask & (1 << i));
+    bool begin_masked = (begin_mask & (1 << i));
+    bool end_masked = (end_mask & (1 << i));
+    int64_t begin_fwd = begin_i < 0 ? dim_i + begin_i : begin_i;
+    int64_t end_fwd = end_i < 0 ? dim_i + end_i : end_i;
+
+    if (shrink_i) {
+      // When the slice index for some dim is just a number, this dim will be
+      // shrinked. For example, Tensor[2, 1:4, :], the first dim of this tensor
+      // will be squeezed. Dims to be shrinked will be specified in the
+      // shrink_mask. In this case the end_i is invalid.
+      matched->shrinks.push_back(i);
+      begin_i = begin_fwd;
+      end_i = begin_i + 1;
+      if (begin_fwd < 0 || begin_fwd >= dim_i) {
+        return false;
+      }
+    } else {
+      if (begin_masked) {
+        begin_i = 0;
+      } else {
+        begin_i = begin_fwd < 0 ? 0 : begin_fwd > dim_i ? dim_i : begin_fwd;
+      }
+      if (end_masked) {
+        end_i = dim_i;
+      } else {
+        end_i = end_fwd < 0 ? 0 : end_fwd > dim_i ? dim_i : end_fwd;
+      }
+    }
+    if (begin_i >= end_i) return false;
+    is_identity &= (begin_i == 0 && end_i == dim_i);
+  }
+  if (is_identity) return false;
+
+  matched->stridedslicegrad_ = node_index;
+  return true;
+}
+
+// @brief: Replace Aggregated residual transformations with Grouped Conv
+// @pattern:
+/*
+          Split
+            |
+  /    /    |   \    \
+Conv Conv  ... Conv Conv    ---->    GroupedConv
+  \    \    |   /    /
+            |
+        ConcatV2
+*/
+// @reference https://arxiv.org/pdf/1611.05431.pdf
+bool FindResNeXtGroupConv2DBlock(const RemapperContext& ctx, int node_index,
+                                 GroupConv2DBlock* matched) {
+  auto* concat_node_view = ctx.graph_view.GetNode(node_index);
+  auto* concat_node_def = concat_node_view->node();
+  if (!IsConcatV2(*concat_node_def)) return false;
+  if (!HasDataType(concat_node_def, DT_FLOAT) &&
+      !HasDataType(concat_node_def, DT_BFLOAT16) &&
+      !HasDataType(concat_node_def, DT_HALF))
+    return false;
+
+  int64 N;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*concat_node_view->node(), "N", &N));
+  const auto getAxis = [&](const utils::MutableNodeView& concat,
+                           int64 index) -> int32_t {
+    auto* const_node_view = concat.GetRegularFanin(index).node_view();
+    NodeDef* const_node_def = const_node_view->node();
+    Tensor axis_tensor;
+    int32_t axis_value = 0;
+    if (!IsConstant(*const_node_def)) {
+      return axis_value;
+    }
+
+    ITEX_CHECK_OK(GetTensorFromConstant(const_node_def, &axis_tensor));
+    axis_value = axis_tensor.flat<int32_t>()(0);
+    return axis_value;
+  };
+  int32_t concat_axis = getAxis(*concat_node_view, N);
+  auto& concat_fanin_0 = concat_node_view->GetRegularFanin(0);
+
+  // Do simple pre-check for Conv & Split first.
+  auto* conv0_node_view = concat_fanin_0.node_view();
+  NodeDef* conv0_node = conv0_node_view->node();
+  if (!IsConv2D(*conv0_node)) {
+    return false;
+  }
+
+  std::string data_format_0;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*conv0_node, "data_format", &data_format_0));
+  const auto& conv_fanin_0 = conv0_node_view->GetRegularFanin(0);
+  auto* split0_node_view = conv_fanin_0.node_view();
+  auto* split0_node_def = split0_node_view->node();
+  int split0_index = split0_node_view->node_index();
+  int64 num_split;
+  if (!IsSplit(*split0_node_def)) {
+    return false;
+  }
+  TF_ABORT_IF_ERROR(GetNodeAttr(*split0_node_def, "num_split", &num_split));
+  int32 split_axis = getAxis(*split0_node_view, 0);
+
+  if (num_split != N || split_axis != concat_axis) {
+    return false;
+  }
+
+  if (HasControlFaninOrFanout(*split0_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*split0_node_view) ||
+      IsInPreserveSet(ctx, split0_node_def))
+    return false;
+
+  if (data_format_0 == "NCHW") {
+    if (split_axis != 1) return false;
+  } else if (data_format_0 == "NHWC") {
+    bool wrong_nhwc_axis = (split_axis != -1 && split_axis != 3);
+    if (wrong_nhwc_axis) return false;
+  } else {
+    ITEX_CHECK(false) << "Unsupported format in GroupConv fusion";
+  }
+
+  const auto getWeightShape =
+      [&](const utils::MutableNodeView& conv) -> TensorShape {
+    // conv filter
+    auto* const_node_view = conv.GetRegularFanin(1).node_view();
+    NodeDef* const_node_def = const_node_view->node();
+    Tensor shape_tensor;
+    if (!IsConstant(*const_node_def)) {
+      return shape_tensor.shape();
+    }
+
+    ITEX_CHECK_OK(GetTensorFromConstant(const_node_def, &shape_tensor));
+
+    return shape_tensor.shape();
+  };
+  TensorShape first_conv_shape = getWeightShape(*conv0_node_view);
+
+  if (!TensorShapeUtils::IsVector(first_conv_shape) ||
+      !first_conv_shape.IsValid()) {
+    return false;
+  }
+  // Finished simple check, process N * Conv.
+  std::vector<int> conv_indexs;
+  for (int i = 0; i < N; i++) {
+    const auto& concat_fanin = concat_node_view->GetRegularFanin(i);
+    auto* conv_node_view = concat_fanin.node_view();
+    NodeDef* conv_node_def = conv_node_view->node();
+    string data_format;
+
+    if (!IsConv2D(*conv_node_def)) {
+      return false;
+    }
+
+    TF_ABORT_IF_ERROR(GetNodeAttr(*conv_node_def, "data_format", &data_format));
+    if (data_format != data_format_0) {
+      return false;
+    }
+
+    conv_indexs.push_back(conv_node_view->node_index());
+
+    if (HasControlFaninOrFanout(*conv_node_view) ||
+        IsInPreserveSet(ctx, conv_node_def)) {
+      return false;
+    }
+
+    TensorShape conv_shape = getWeightShape(*conv_node_view);
+    if (first_conv_shape != conv_shape) {
+      return false;
+    }
+    const auto& conv_fanin_0 = conv_node_view->GetRegularFanin(0);
+    const auto* split_node_view = conv_fanin_0.node_view();
+    const auto* split_node_def = split_node_view->node();
+    if (!IsSplit(*split_node_def)) {
+      return false;
+    }
+    int splitx_index = split_node_view->node_index();
+    if (splitx_index != split0_index) {
+      return false;
+    }
+  }
+
+  const GroupConv2DBlock pattern{split0_node_view->node_index(), conv_indexs,
+                                 concat_node_view->node_index()};
+  *matched = pattern;
+  return true;
+}
+
+bool FindDilatedContraction(const RemapperContext& ctx, int node_index,
+                            DilatedContraction* matched) {
+  const auto* btos_node_view = ctx.graph_view.GetNode(node_index);
+  const auto* btos_node_def = btos_node_view->node();
+
+  // Root of the pattern must be a BatchToSpaceND
+  if (!IsBatchToSpaceND(*btos_node_def) || HasControlFanin(*btos_node_view))
+    return false;
+
+  if (btos_node_view->NumRegularFanins() < 3) return false;
+
+  if (btos_node_view->NumRegularFanouts() != 1) return false;
+
+  // TODO(itex): Support INT64 in the future.
+  if (!HasDataType(btos_node_def, DT_INT32, "Tblock_shape") ||
+      !HasDataType(btos_node_def, DT_INT32, "Tcrops"))
+    return false;
+
+  const auto* block_shape_node_def =
+      btos_node_view->GetRegularFanin(1).node_view()->node();
+  const auto* crops_node_def =
+      btos_node_view->GetRegularFanin(2).node_view()->node();
+
+  if (!IsConstant(*block_shape_node_def) || !IsConstant(*crops_node_def))
+    return false;
+
+  Tensor block_shape;
+  ITEX_CHECK_OK(GetTensorFromConstant(block_shape_node_def, &block_shape));
+
+  if (block_shape.NumElements() != 2) return false;
+
+  const auto* contraction_node_view =
+      btos_node_view->GetRegularFanin(0).node_view();
+  const auto* contraction_node_def = contraction_node_view->node();
+
+  if (contraction_node_view->NumRegularFanouts() != 1) return false;
+
+  bool is_valid_contraction = IsConv2D(*contraction_node_def) ||
+                              IsDepthwiseConv2dNative(*contraction_node_def);
+
+  if (!is_valid_contraction ||
+      !HaveSameDataType(btos_node_def, contraction_node_def) ||
+      HasControlFaninOrFanout(*contraction_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*contraction_node_view) ||
+      IsInPreserveSet(ctx, contraction_node_def))
+    return false;
+
+  string data_format;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_node_def, "data_format", &data_format));
+  // TODO(itex): Support NCHW in the future.
+  if (data_format != "NHWC") return false;
+
+  // In dilated Conv pattern from API, the padding type must be VALID and each
+  // element of dilations must be 1.
+  string padding_str;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_node_def, "padding", &padding_str));
+  if (padding_str != "VALID") return false;
+
+  std::vector<int> dilations;
+  TF_ABORT_IF_ERROR(
+      GetNodeAttr(*contraction_node_def, "dilations", &dilations));
+  for (int i = 0; i < dilations.size(); i++) {
+    if (dilations[i] != 1) return false;
+  }
+
+  const auto* stob_node_view =
+      contraction_node_view->GetRegularFanin(0).node_view();
+  const auto* stob_node_def = stob_node_view->node();
+
+  if (HasControlFaninOrFanout(*stob_node_view)) return false;
+
+  // The end of pattern must be a SpaceToBatchND
+  if (!IsSpaceToBatchND(*stob_node_def)) return false;
+
+  if (stob_node_view->NumRegularFanins() < 3) return false;
+
+  if (stob_node_view->NumRegularFanouts() != 1) return false;
+
+  // TODO(itex): Support INT64 in the future.
+  if (!HasDataType(stob_node_def, DT_INT32, "Tpaddings")) return false;
+
+  const auto* paddings_node_def =
+      stob_node_view->GetRegularFanin(2).node_view()->node();
+
+  if (!IsConstant(*paddings_node_def)) return false;
+
+  DilatedContraction pattern = {stob_node_view->node_index(),
+                                contraction_node_view->node_index(),
+                                node_index};
+
+  *matched = pattern;
+
+  return true;
+}
+
+/*          before fusion
+                 root
+                  |               \
+                Reshape      BiasAddGrad
+      /           |
+Contraction   Contraction
+            After fusion
+                 root
+                  |
+                reshape
+      /           |               \
+Contraction   Contraction     BiasAddGrad
+
+BiasAddGrad is reduce sum on last dim (only check NHWC case). If the reshape
+does not change the size of the last dim, it is safe to move BiasAddGrad after
+reshape. So that the Contraction(MatMul and Conv2DBackpropFilter) can be fused
+with BiasAddGrad in the later remap stage.
+*/
+bool FindContractionWithReshapeAndBiasAddGrad(
+    const RemapperContext& ctx, int node_index,
+    ContractionWithReshapeAndBiasAddGrad* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // BiasAddGrad should have 1 input
+  const auto* bias_add_grad = node_view->node();
+
+  if (!bias_add_grad || !IsBiasAddGrad(*bias_add_grad) ||
+      HasControlFaninOrFanout(*node_view) ||
+      IsInPreserveSet(ctx, node_view->node()) ||
+      node_view->NumRegularFanins() != 1)
+    return false;
+  const auto* root_node_view = node_view->GetRegularFanin(0).node_view();
+  const auto* root = root_node_view->node();
+  if (!root || HasControlFaninOrFanout(*root_node_view) ||
+      IsInPreserveSet(ctx, root))
+    return false;
+  if (root_node_view->NumRegularFanouts() != 2) return false;
+  int reshape_position = 0;
+  // Root node should have at least 2 children. reshape and biasaddgrad
+  // TODO(itex): consider >2 children or on fanout_1
+  if (root_node_view->GetRegularFanout(0).size() != 2) return false;
+  if (IsBiasAddGrad(
+          *root_node_view->GetRegularFanout(0)[0].node_view()->node()))
+    reshape_position = 1;
+
+  const auto* reshape =
+      root_node_view->GetRegularFanout(0)[reshape_position].node_view();
+  if (!IsReshape(*reshape->node())) return false;
+
+  auto find_contraction_bwd_patterns = [reshape]() {
+    bool can_fuse_conv_filter = false;
+    bool can_fuse_matmul = false;
+    const auto& reshape_fanout_0 = reshape->GetRegularFanout(0);
+    // Make sure the Reshape is ConvBackpropFilter's 3rd input (dy), in which
+    // case it can be fused with BiasaddGrad. A typical negative example is
+    // deconv, which is implemented by ConvBackpropFilter.
+    for (const auto& fanout : reshape_fanout_0) {
+      if (IsConv2DBackpropFilter(*(fanout.node_view()->node())) ||
+          IsConv3DBackpropFilterV2(*(fanout.node_view()->node()))) {
+        if (reshape->node() !=
+            fanout.node_view()->GetRegularFanin(2).node_view()->node())
+          continue;
+        can_fuse_conv_filter = true;
+        break;
+      }
+    }
+    if (reshape->NumRegularFanouts() == 2 &&
+        IsMatMul(*reshape_fanout_0[0].node_view()->node()) &&
+        IsMatMul(*reshape_fanout_0[1].node_view()->node())) {
+      can_fuse_matmul = true;
+    }
+    return can_fuse_conv_filter || can_fuse_matmul;
+  };
+  if (!find_contraction_bwd_patterns()) return false;
+
+  const string& data_format = bias_add_grad->attr().at("data_format").s();
+  if (data_format != "NHWC") return false;
+
+  std::vector<OpInfo_TensorProperties> bias_props;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
+      bias_add_grad->name(), &bias_props));
+
+  std::vector<OpInfo_TensorProperties> reshape_props;
+  TF_ABORT_IF_ERROR(ctx.graph_properties.GetOutputProperties(reshape->GetName(),
+                                                             &reshape_props));
+
+  // In NHWC case, as long as the channel dimensions of these two shapes are
+  // equal, the biasaddgrad can be moved under the reshape.
+  const TensorShapeProto& bias_input = bias_props[0].shape();
+  const TensorShapeProto& reshape_output = reshape_props[0].shape();
+  if (bias_input.unknown_rank() || reshape_output.unknown_rank()) {
+    return false;
+  }
+
+  const auto& bias_input_last_dim = bias_input.dim(bias_input.dim_size() - 1);
+  const auto& reshape_output_last_dim =
+      reshape_output.dim(reshape_output.dim_size() - 1);
+  if (IsUnknown(bias_input_last_dim) || IsUnknown(reshape_output_last_dim))
+    return false;
+  if (bias_input_last_dim.size() != reshape_output_last_dim.size())
+    return false;
+
+  const ContractionWithReshapeAndBiasAddGrad pattern{
+      root_node_view->node_index(), reshape->node_index(),
+      node_view->node_index()};
+  *matched = pattern;
+  return true;
 }
 
 void CopyFusedBatchNormAttributes(const NodeDef& fused_batch_norm,
@@ -2188,6 +3647,8 @@ Status AddFusedContractionNode(RemapperContext* ctx,
     fused_op.set_op(kFusedMatMul);
   } else if (IsAccMatMul(contraction)) {
     fused_op.set_op(kFusedAccMatMul);
+  } else if (IsAnyBatchMatMul(contraction)) {
+    fused_op.set_op(kFusedBatchMatMul);
   } else {
     ITEX_CHECK(false);
   }
@@ -2207,6 +3668,403 @@ Status AddFusedContractionNode(RemapperContext* ctx,
   return Status::OK();
 }
 
+Status AddGroupConv2DNode(RemapperContext* ctx, const GroupConv2DBlock& matched,
+                          std::vector<bool>* invalidated_nodes,
+                          std::vector<bool>* nodes_to_delete) {
+  ITEX_DCHECK(IsDeviceCompatible(*ctx, matched))
+      << "Unsupported fusion pattern";
+
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& input_split = graph->node(matched.inputSplitIndex_);
+  const NodeDef& first_conv = graph->node(matched.convIndexs_[0]);
+  const NodeDef& gconv_concat = graph->node(matched.concatIndex_);
+  ITEX_VLOG(2) << "Fuse " << input_split.name() << " with Concat: "
+               << " concat=" << gconv_concat.name();
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  int32 axis_value = -1;
+  DataType axis_dtype = DT_INT32;
+  Tensor axis_value_tensor(axis_dtype, TensorShape());
+  axis_value_tensor.scalar<int32>()() = axis_value;
+  const std::string axis_name =
+      AddPrefixToNodeName("weights/axis", first_conv.name());
+
+  NodeDef concat_axis;
+  concat_axis.set_name(axis_name);
+  concat_axis.set_op(kConst);
+  concat_axis.set_device(gconv_concat.device());
+
+  AttrValue attr_type;
+  attr_type.set_type(axis_dtype);
+  concat_axis.mutable_attr()->insert({"dtype", attr_type});
+
+  AttrValue attr_tensor;
+  TensorProto* t = attr_tensor.mutable_tensor();
+  axis_value_tensor.AsProtoTensorContent(t);
+  concat_axis.mutable_attr()->insert({"value", attr_tensor});
+  mutation->AddNode(std::move(concat_axis), &status);
+  TF_RETURN_IF_ERROR(status);
+
+  NodeDef gconv_weight_concat;
+  const string gconv_weight_concat_name =
+      AddPrefixToNodeName("weights", first_conv.name());
+  gconv_weight_concat.set_name(gconv_weight_concat_name);
+  gconv_weight_concat.set_device(gconv_concat.device());
+
+  for (int i = 0; i < matched.convIndexs_.size(); i++) {
+    gconv_weight_concat.add_input(graph->node(matched.convIndexs_[i]).input(1));
+  }
+  gconv_weight_concat.add_input(axis_name);
+
+  gconv_weight_concat.set_op(kConcatV2);
+  CopyAllAttrs(gconv_concat, &gconv_weight_concat);
+  mutation->AddNode(std::move(gconv_weight_concat), &status);
+  TF_RETURN_IF_ERROR(status);
+
+  NodeDef fused_op;
+  fused_op.set_name(gconv_concat.name());
+  fused_op.set_device(gconv_concat.device());
+  fused_op.add_input(input_split.input(1));      // 0: input
+  fused_op.add_input(gconv_weight_concat_name);  // 1: filter
+  fused_op.set_op(kConv2D);
+
+  CopyAllAttrs(first_conv, &fused_op);
+  mutation->AddNode(std::move(fused_op), &status);
+
+  (*invalidated_nodes)[matched.concatIndex_] = true;
+  (*nodes_to_delete)[matched.inputSplitIndex_] = true;
+  for (int i = 0; i < matched.convIndexs_.size(); i++) {
+    (*nodes_to_delete)[(matched.convIndexs_[i])] = true;
+  }
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
+}
+
+Status AddKerasDenseLayerFwdBMM(RemapperContext* ctx,
+                                const KerasDenseLayerFwd& matched,
+                                std::vector<bool>* invalidated_nodes,
+                                std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& matmul = graph->node(matched.matmul_);
+  const NodeDef& reshape = graph->node(matched.reshape_);
+  const NodeDef& bias = graph->node(matched.bias_);
+  const NodeDef& reshape_0 = graph->node(matched.reshape_0_);
+  // We can simply fuse reshape + matmul + reshape into batchmatmul
+  if (matched.shape_ == kMissingIndex) {
+    NodeDef new_bmm;
+    new_bmm.set_op(kBatchMatMulV2);
+    new_bmm.set_name(reshape.name());
+    new_bmm.set_device(matmul.device());
+    new_bmm.add_input(reshape_0.input(0));
+    new_bmm.add_input(matmul.input(1));
+    CopyAllAttrs(matmul, &new_bmm);
+
+    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+    Status status;
+
+    mutation->AddNode(std::move(new_bmm), &status);
+
+    (*nodes_to_delete)[matched.reshape_0_] = true;
+    (*nodes_to_delete)[matched.matmul_] = true;
+    (*invalidated_nodes)[matched.reshape_] = true;
+
+    TF_ABORT_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+
+    return Status::OK();
+  }
+  NodeDef new_activation;
+  NodeDef new_shape;
+  NodeDef new_bias;
+  new_bias.set_op(kBiasAdd);
+  new_bias.set_name(reshape.name());
+  new_bias.set_device(bias.device());
+  new_bias.add_input(matmul.name());
+  new_bias.add_input(bias.input(1));
+  CopyAllAttrs(bias, &new_bias);
+
+  NodeDef new_reshape;
+  new_reshape.set_op(kReshape);
+  new_reshape.set_device(reshape.device());
+
+  if (matched.activation_ != kMissingIndex) {
+    const NodeDef& activation = graph->node(matched.activation_);
+    new_activation.set_op(activation.op());
+    new_activation.set_name(bias.name());
+    new_activation.set_device(activation.device());
+    new_activation.add_input(reshape.name());
+    CopyAllAttrs(activation, &new_activation);
+
+    new_reshape.set_name(activation.name());
+    new_reshape.add_input(new_activation.name());
+
+  } else {
+    new_reshape.set_name(bias.name());
+    new_reshape.add_input(reshape.name());
+  }
+  new_reshape.add_input(reshape.input(1));
+  CopyAllAttrs(reshape, &new_reshape);
+
+  const NodeDef& shape = graph->node(matched.shape_);
+  new_shape.set_op(kShape);
+  new_shape.set_device(shape.device());
+  new_shape.set_name(shape.name());
+  if (matched.activation_ != kMissingIndex) {
+    new_shape.add_input(new_activation.name());
+  } else {
+    new_shape.add_input(new_bias.name());
+  }
+  CopyAllAttrs(shape, &new_shape);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(new_reshape), &status);
+  mutation->AddNode(std::move(new_bias), &status);
+  if (matched.activation_ != kMissingIndex) {
+    mutation->AddNode(std::move(new_activation), &status);
+    (*invalidated_nodes)[matched.activation_] = true;
+  }
+  mutation->AddNode(std::move(new_shape), &status);
+  (*invalidated_nodes)[matched.shape_] = true;
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.reshape_] = true;
+  (*invalidated_nodes)[matched.bias_] = true;
+  return Status::OK();
+}
+
+Status AddKerasDenseLayerFwd(RemapperContext* ctx,
+                             const KerasDenseLayerFwd& matched,
+                             std::vector<bool>* invalidated_nodes,
+                             std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& reshape = graph->node(matched.reshape_);
+  const NodeDef& bias = graph->node(matched.bias_);
+
+  NodeDef fused_node;
+  fused_node.set_op(kBiasAdd);
+  fused_node.set_device(bias.device());
+  fused_node.set_name(reshape.name());
+  fused_node.add_input(reshape.input(0));
+  fused_node.add_input(bias.input(1));
+  CopyAllAttrs(bias, &fused_node);
+
+  NodeDef new_reshape;
+  new_reshape.set_op(kReshape);
+  new_reshape.set_device(reshape.device());
+  if (matched.activation_ != kMissingIndex) {
+    const NodeDef& activation = graph->node(matched.activation_);
+    new_reshape.set_name(activation.name());
+    new_reshape.add_input(activation.input(0));
+  } else {
+    new_reshape.set_name(bias.name());
+    new_reshape.add_input(bias.input(0));
+  }
+  new_reshape.add_input(reshape.input(1));
+  CopyAllAttrs(reshape, &new_reshape);
+
+  NodeDef new_activation;
+  if (matched.activation_ != kMissingIndex) {
+    const NodeDef& activation = graph->node(matched.activation_);
+    new_activation.set_op(activation.op());
+    new_activation.set_device(activation.device());
+    new_activation.set_name(bias.name());
+    new_activation.add_input(bias.input(0));
+    CopyAllAttrs(activation, &new_activation);
+  }
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(fused_node), &status);
+  mutation->AddNode(std::move(new_reshape), &status);
+  (*invalidated_nodes)[matched.bias_] = true;
+  (*invalidated_nodes)[matched.reshape_] = true;
+  if (matched.activation_ != kMissingIndex) {
+    mutation->AddNode(std::move(new_activation), &status);
+    (*invalidated_nodes)[matched.activation_] = true;
+  }
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
+}
+
+Status AddMatmulReshapeBiasadd(RemapperContext* ctx,
+                               const MatmulReshapeBiasadd& matched,
+                               std::vector<bool>* invalidated_nodes,
+                               std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& reshape = graph->node(matched.reshape_);
+  const NodeDef& bias = graph->node(matched.bias_);
+
+  if (matched.activation_ != kMissingIndex) {
+    const NodeDef& activation = graph->node(matched.activation_);
+    NodeDef fused_node;
+    fused_node.set_op(kBiasAdd);
+    fused_node.set_device(bias.device());
+    fused_node.set_name(reshape.name());
+    fused_node.add_input(reshape.input(0));
+    fused_node.add_input(bias.input(1));
+    CopyAllAttrs(bias, &fused_node);
+
+    NodeDef new_activation;
+    new_activation.set_op(activation.op());
+    new_activation.set_device(activation.device());
+    new_activation.set_name(bias.name());
+    new_activation.add_input(bias.input(0));
+    CopyAllAttrs(activation, &new_activation);
+
+    NodeDef new_reshape;
+    new_reshape.set_op(kReshape);
+    new_reshape.set_device(reshape.device());
+    new_reshape.set_name(activation.name());
+    new_reshape.add_input(activation.input(0));
+    new_reshape.add_input(reshape.input(1));
+    CopyAllAttrs(reshape, &new_reshape);
+
+    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+    Status status;
+
+    mutation->AddNode(std::move(fused_node), &status);
+    mutation->AddNode(std::move(new_reshape), &status);
+    mutation->AddNode(std::move(new_activation), &status);
+    (*invalidated_nodes)[matched.bias_] = true;
+    (*invalidated_nodes)[matched.reshape_] = true;
+    (*invalidated_nodes)[matched.activation_] = true;
+
+    TF_ABORT_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+    return Status::OK();
+  } else {
+    NodeDef fused_node;
+    fused_node.set_op(kBiasAdd);
+    fused_node.set_name(reshape.name());
+    fused_node.set_device(bias.device());
+    fused_node.add_input(reshape.input(0));
+    fused_node.add_input(bias.input(1));
+    CopyAllAttrs(bias, &fused_node);
+
+    NodeDef new_reshape;
+    new_reshape.set_op(kReshape);
+    new_reshape.set_device(reshape.device());
+    new_reshape.set_name(bias.name());
+    new_reshape.add_input(bias.input(0));
+    new_reshape.add_input(reshape.input(1));
+    CopyAllAttrs(reshape, &new_reshape);
+
+    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+    Status status;
+
+    mutation->AddNode(std::move(fused_node), &status);
+    mutation->AddNode(std::move(new_reshape), &status);
+    (*invalidated_nodes)[matched.bias_] = true;
+    (*invalidated_nodes)[matched.reshape_] = true;
+
+    TF_ABORT_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+    return Status::OK();
+  }
+}
+
+Status ReplaceAddN(RemapperContext* ctx, const int& matched_index,
+                   std::vector<bool>* invalidated_nodes,
+                   std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& addN = graph->node(matched_index);
+
+  ITEX_DCHECK(IsAddN(addN));
+
+  NodeDef addv2;
+  addv2.set_op(kAddV2);
+  addv2.set_name(addN.name());
+  addv2.set_device(addN.device());
+  addv2.add_input(addN.input(0));
+  addv2.add_input(addN.input(1));
+  AddNodeAttr("T", addN.attr().at("T"), &addv2);
+
+  auto control_fanins =
+      ctx->graph_view.GetNode(matched_index)->GetControllingFanins();
+  for (size_t i = 0; i < control_fanins.size(); ++i) {
+    auto fanin_name = control_fanins[i].node_view()->node()->name();
+    addv2.add_input(AsControlDependency(fanin_name));
+  }
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(addv2), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched_index] = true;
+  return Status::OK();
+}
+
+Status AddSum(RemapperContext* ctx, const ReplaceableSum& matched,
+              std::vector<bool>* invalidated_nodes,
+              std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& sum = graph->node(matched.sum);
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  ITEX_VLOG(2) << "Optimize " << sum.name();
+
+  if (matched.kind == ReplaceableSum::Kind::kRemove) {
+    auto* successor_view = ctx->graph_view.GetNode(matched.successor);
+    TensorId new_fanin_id = ParseTensorName(sum.input(0));
+
+    // The index `0` of fanin is hard coded in Find function.
+    mutation->AddOrUpdateRegularFanin(successor_view, 0, new_fanin_id);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+    (*nodes_to_delete)[matched.sum] = true;
+  } else {
+    NodeDef bias_add_grad;
+    bias_add_grad.set_op(kBiasAddGrad);
+    bias_add_grad.set_name(sum.name());
+    bias_add_grad.set_device(sum.device());
+    bias_add_grad.add_input(sum.input(0));
+    AddNodeAttr("T", sum.attr().at("T"), &bias_add_grad);
+    // Hard coded format `NHWC` here since only matched `reduction_indices` =
+    // last dim.
+    AddNodeAttr(kDataFormat, "NHWC", &bias_add_grad);
+
+    mutation->AddNode(std::move(bias_add_grad), &status);
+    TF_ABORT_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(mutation->Apply());
+    (*invalidated_nodes)[matched.sum] = true;
+  }
+
+  return Status::OK();
+}
+
+Status AddContractionWithReshapeAndBiasAddGrad(
+    RemapperContext* ctx, const ContractionWithReshapeAndBiasAddGrad& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& reshape = graph->node(matched.reshape_);
+  const NodeDef& biasaddgrad = graph->node(matched.biasaddgrad_);
+  NodeDef new_biasaddgrad;
+
+  new_biasaddgrad.set_op(kBiasAddGrad);
+  new_biasaddgrad.set_device(biasaddgrad.device());
+  new_biasaddgrad.set_name(biasaddgrad.name());
+  new_biasaddgrad.add_input(reshape.name());
+  CopyAllAttrs(biasaddgrad, &new_biasaddgrad);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(new_biasaddgrad), &status);
+  (*invalidated_nodes)[matched.biasaddgrad_] = true;
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
+}
+
 Status AddFusedAddN(RemapperContext* ctx, const FusedAddN& matched,
                     std::vector<bool>* invalidated_nodes,
                     std::vector<bool>* nodes_to_delete) {
@@ -2216,7 +4074,7 @@ Status AddFusedAddN(RemapperContext* ctx, const FusedAddN& matched,
   const GraphDef* graph = ctx->graph_view.graph();
   const NodeDef& addN = graph->node(matched.addN);
 
-  ITEX_DCHECK(IsAddN(addN));
+  ITEX_DCHECK(IsAddN(addN) || IsAddV2(addN));
 
   int num = matched.inputs_of_addN.size();
   ITEX_DCHECK_GE(num, 0);
@@ -2234,6 +4092,7 @@ Status AddFusedAddN(RemapperContext* ctx, const FusedAddN& matched,
     fused_op.add_input(graph->node(l2loss_index).input(0));
   }
   CopyAllAttrs(addN, &fused_op);
+  if (IsAddV2(addN)) AddNodeAttr("N", 2, &fused_op);
   AddNodeAttr("fused_ops",
               absl::Span<const absl::string_view>{"AddN", "l2loss"}, &fused_op);
 
@@ -2379,6 +4238,8 @@ Status AddFusedContractionNode(RemapperContext* ctx,
     contraction_node.set_op(kFusedConv3D);
   } else if (IsAccMatMul(contraction)) {
     contraction_node.set_op(kFusedAccMatMulWithSum);
+  } else if (IsAnyBatchMatMul(contraction)) {
+    contraction_node.set_op(kFusedBatchMatMul);
   } else {
     ITEX_CHECK(false);
   }
@@ -2436,6 +4297,8 @@ Status AddFusedContractionNode(
     fused_op.set_op(kFusedMatMul);
   } else if (IsAccMatMul(contraction)) {
     fused_op.set_op(kFusedAccMatMul);
+  } else if (IsAnyBatchMatMul(contraction)) {
+    fused_op.set_op(kFusedBatchMatMul);
   } else {
     ITEX_CHECK(false);
   }
@@ -2485,6 +4348,8 @@ Status AddFusedContractionNode(
     fused_node.set_op(kFusedMatMulWithSum);
   else if (IsAccMatMul(contraction))
     fused_node.set_op(kFusedAccMatMulWithSum);
+  else if (IsAnyBatchMatMul(contraction))
+    fused_node.set_op(kFusedBatchMatMul);
   else
     ITEX_CHECK(false);
 
@@ -2517,6 +4382,66 @@ Status AddFusedContractionNode(
   return Status::OK();
 }
 
+// Contraction + BiasAdd + Activation + Add.
+Status AddFusedContractionNode(
+    RemapperContext* ctx, const ContractionWithBiasAndActivationAdd& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& contraction = graph->node(matched.contraction);
+  ITEX_DCHECK(IsConvOrMatMul(contraction) || IsAccMatMul(contraction));
+  const NodeDef& activation = graph->node(matched.activation);
+  const NodeDef& bias_add = graph->node(matched.bias_add);
+  const NodeDef& add = graph->node(matched.add);
+
+  NodeDef fused_node;
+  fused_node.set_name(add.name());
+  if (IsConv2D(contraction))
+    fused_node.set_op(kFusedConv2DWithSum);
+  else if (IsDepthwiseConv2dNative(contraction))
+    fused_node.set_op(kFusedDepthwiseConv2dNative);
+  else if (IsConv3D(contraction))
+    fused_node.set_op(kFusedConv3D);
+  else if (IsMatMul(contraction))
+    fused_node.set_op(kFusedMatMulWithSum);
+  else if (IsAccMatMul(contraction))
+    fused_node.set_op(kFusedAccMatMulWithSum);
+  else if (IsAnyBatchMatMul(contraction))
+    fused_node.set_op(kFusedBatchMatMul);
+  else
+    ITEX_CHECK(false);
+
+  fused_node.set_device(add.device());
+  fused_node.add_input(contraction.input(0));  // 0: input
+  fused_node.add_input(contraction.input(1));  // 1: filter
+  fused_node.add_input(bias_add.input(1));     // 2: bias
+
+  // Add OP has two inputs, one is conv+bias pattern matched previously,
+  // the other input to add is fused here.
+  fused_node.add_input(add.input(1 - matched.port_id));
+
+  CopyAllAttrs(contraction, &fused_node);
+  SetFusedOpAttributesWithActivation(&fused_node, &activation,
+                                     {"BiasAdd", "Add"}, 2);
+
+  // TODO(itex): Support in-place optimization for Conv3D.
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(fused_node), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.add] = true;
+  (*nodes_to_delete)[matched.activation] = true;
+  (*nodes_to_delete)[matched.bias_add] = true;
+  (*nodes_to_delete)[matched.contraction] = true;
+  ITEX_VLOG(2) << "Fuse " << contraction.op() << " with BiasAdd and Add and "
+               << activation.op() << ":"
+               << " activation=" << activation.name()
+               << " bias_add=" << bias_add.name() << " add=" << add.name()
+               << " contraction=" << contraction.name();
+  return Status::OK();
+}
+
 // Contraction + Mul(scale).
 // TODO(itex): Try to combine this function with Conv + BiasAdd
 Status AddFusedContractionNode(RemapperContext* ctx,
@@ -2540,7 +4465,7 @@ Status AddFusedContractionNode(RemapperContext* ctx,
   fused_op.set_op(kFusedBatchMatMul);
 
   CopyAllAttrs(contraction, &fused_op);
-  SetFusedOpAttributes(&fused_op, {"Mul"}, 1);
+  SetFusedOpAttributes(&fused_op, {kBinaryMul}, 1);
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
@@ -2609,10 +4534,10 @@ Status AddFusedBatchNormExNode(RemapperContext* ctx,
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
   mutation->AddNode(std::move(fused_op), &status);
-  TF_RETURN_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(status);
   mutation->AddNode(std::move(identity_op), &status);
-  TF_RETURN_IF_ERROR(status);
-  TF_RETURN_IF_ERROR(mutation->Apply());
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
 
   (*invalidated_nodes)[matched.fused_batch_norm] = true;
   (*invalidated_nodes)[matched.activation] = true;
@@ -2681,12 +4606,12 @@ Status AddFusedBatchNormGradExNode(RemapperContext* ctx,
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
   mutation->AddNode(std::move(fused_op), &status);
-  TF_RETURN_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(status);
   if (matched.side_input_grad != kMissingIndex) {
     mutation->AddNode(std::move(identity_op), &status);
-    TF_RETURN_IF_ERROR(status);
+    TF_ABORT_IF_ERROR(status);
   }
-  TF_RETURN_IF_ERROR(mutation->Apply());
+  TF_ABORT_IF_ERROR(mutation->Apply());
 
   (*invalidated_nodes)[matched.fused_batch_norm_grad] = true;
   if (matched.side_input_grad != kMissingIndex) {
@@ -2694,6 +4619,167 @@ Status AddFusedBatchNormGradExNode(RemapperContext* ctx,
   } else {
     (*nodes_to_delete)[matched.activation_grad] = true;
   }
+
+  return Status::OK();
+}
+
+bool FindPadWithContractionFwdBwd(const RemapperContext& ctx, int node_index,
+                                  PadWithContractionFwdBwd* matched,
+                                  bool check_device_compatible = true) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  // TODO(itex): Forward controls for patterns with control in dependencies.
+  if (HasControlFanin(*node_view)) return false;
+
+  const auto* node_def = node_view->node();
+  bool is_ok = IsConv2D(*node_def) || node_def->op() == kFusedConv2D ||
+               IsConv3D(*node_def) || node_def->op() == kFusedConv3D;
+  if (!is_ok) {
+    return false;
+  }
+  // Input to the contraction must be Pad.
+  if (node_view->NumRegularFanins() < 1) return false;
+
+  // Only fuse contraction with `VALID` padding.
+  // TODO(itex): Support more padding type in future.
+  string padding_str;
+  TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "padding", &padding_str));
+  if (padding_str != "VALID") return false;
+
+  // If contraction has been fused, only fuse it with Pad when only has Bias.
+  if (node_def->op() == kFusedConv2D || node_def->op() == kFusedConv3D) {
+    int num_args;
+    TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "num_args", &num_args));
+    if (num_args != 1) return false;
+  }
+
+  const auto& regular_fanin_0 = node_view->GetRegularFanin(0);
+  const auto* pad_node_view = regular_fanin_0.node_view();
+  const auto* pad_node_def = pad_node_view->node();
+
+  // Only Pad is allowed, PadV2 will be prevented.
+  if (pad_node_def->op() != "Pad") return false;
+
+  // Only fuse contraction with INT32 padding.
+  // TODO(itex): support INT64 padding in future.
+  if (!HasDataType(pad_node_def, DT_INT32, "Tpaddings")) return false;
+
+  const auto& pad_fanouts = pad_node_view->GetRegularFanout(0);
+  if (pad_fanouts.size() != 2) return false;
+
+  int conv_bwd_index = -1;
+  for (size_t i = 0; i < pad_fanouts.size(); ++i) {
+    int cur_idx = pad_fanouts[i].node_view()->node_index();
+    if (cur_idx != node_view->node_index()) conv_bwd_index = cur_idx;
+  }
+  if (conv_bwd_index == -1) return false;
+
+  const auto* node_bwd_view = ctx.graph_view.GetNode(conv_bwd_index);
+  // TODO(itex): Forward controls for patterns with control in dependencies.
+  if (HasControlFanin(*node_bwd_view)) return false;
+
+  const auto* node_bwd_def = node_bwd_view->node();
+
+  is_ok =
+      (node_bwd_def->op() == kConv2DBackpropFilter && IsConv2D(*node_def)) ||
+      (node_def->op() == kFusedConv2D &&
+       node_bwd_def->op() == kConv2DBackpropFilterWithBias) ||
+      (node_bwd_def->op() == kConv3DBackpropFilter && IsConv3D(*node_def)) ||
+      (node_bwd_def->op() == kConv3DBackpropFilterV2 && IsConv3D(*node_def)) ||
+      (node_bwd_def->op() == kConv3DBackpropFilterWithBias &&
+       node_def->op() == kFusedConv3D);
+
+  if (!is_ok) {
+    return false;
+  }
+
+  if (!HaveSameDataType(node_def, pad_node_def) ||
+      !HaveSameDataType(node_bwd_def, pad_node_def) ||
+      HasControlFanin(*pad_node_view) || IsInPreserveSet(ctx, pad_node_def))
+    return false;
+
+  // Check that data type and data format are supported on assigned device.
+  const PadWithContractionFwdBwd pattern{
+      conv_bwd_index, pad_node_view->node_index(), node_index};
+  if (check_device_compatible && !IsDeviceCompatible(ctx, pattern))
+    return false;
+
+  *matched = pattern;
+  return true;
+}
+
+Status AddPadWithContractionFwdBwd(RemapperContext* ctx,
+                                   const PadWithContractionFwdBwd& matched,
+                                   std::vector<bool>* invalidated_nodes,
+                                   std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& pad = graph->node(matched.pad);
+  const NodeDef& contraction = graph->node(matched.contraction);
+  const NodeDef& contraction_bwd = graph->node(matched.contraction_bwd);
+
+  NodeDef pad_with_conv;
+  pad_with_conv.set_name(contraction.name());
+  pad_with_conv.set_device(contraction.device());
+  pad_with_conv.add_input(pad.input(0));          // 0: input
+  pad_with_conv.add_input(contraction.input(1));  // 1: filter
+  // Add bias input if contraction is _ITEXFusedConv2D.
+  if (IsConv2D(contraction)) {
+    pad_with_conv.set_op(kPadWithConv2D);
+  } else if (IsConv3D(contraction)) {
+    pad_with_conv.set_op(kPadWithConv3D);
+  } else if (contraction.op() == kFusedConv2D) {
+    pad_with_conv.set_op(kPadWithFusedConv2D);
+    pad_with_conv.add_input(contraction.input(2));  // 2: bias
+  } else {
+    pad_with_conv.set_op(kPadWithFusedConv3D);
+    pad_with_conv.add_input(contraction.input(2));  // 2: bias
+  }
+  pad_with_conv.add_input(pad.input(1));  // Last: pad
+
+  CopyAllAttrs(contraction, &pad_with_conv);
+  DataType paddings_type;
+  TF_ABORT_IF_ERROR(GetNodeAttr(pad, "Tpaddings", &paddings_type));
+  AddNodeAttr("Tpaddings", paddings_type, &pad_with_conv);
+
+  // For bwd fused node
+  NodeDef pad_with_conv_bwd;
+  pad_with_conv_bwd.set_name(contraction_bwd.name());
+  pad_with_conv_bwd.set_device(contraction_bwd.device());
+  pad_with_conv_bwd.add_input(pad.input(0));              // 0: input
+  pad_with_conv_bwd.add_input(contraction_bwd.input(1));  // 1: size
+  pad_with_conv_bwd.add_input(contraction_bwd.input(2));  // 2: grad
+
+  if (contraction_bwd.op() == kConv2DBackpropFilter) {
+    pad_with_conv_bwd.set_op(kPadWithConv2DBackpropFilter);
+  } else if (contraction_bwd.op() == kConv3DBackpropFilter) {
+    pad_with_conv_bwd.set_op(kPadWithConv3DBackpropFilter);
+  } else if (contraction_bwd.op() == kConv2DBackpropFilterWithBias) {
+    pad_with_conv_bwd.set_op(kPadWithFusedConv2DBackpropFilter);
+  } else if (contraction_bwd.op() == kConv3DBackpropFilterWithBias) {
+    pad_with_conv_bwd.set_op(kPadWithFusedConv3DBackpropFilter);
+  } else {
+    pad_with_conv_bwd.set_op(kPadWithConv3DBackpropFilterV2);
+  }
+
+  pad_with_conv_bwd.add_input(pad.input(1));  // Last: pad
+
+  CopyAllAttrs(contraction_bwd, &pad_with_conv_bwd);
+  AddNodeAttr("Tpaddings", paddings_type, &pad_with_conv_bwd);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(pad_with_conv_bwd), &status);
+  TF_ABORT_IF_ERROR(status);
+
+  ForwardControledFanouts(ctx, mutation, {matched.pad, matched.contraction},
+                          contraction.name());
+  mutation->AddNode(std::move(pad_with_conv), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.contraction_bwd] = true;
+  (*invalidated_nodes)[matched.contraction] = true;
+  (*nodes_to_delete)[matched.pad] = true;
 
   return Status::OK();
 }
@@ -2733,6 +4819,10 @@ Status AddPadWithContractionNode(RemapperContext* ctx,
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
+
+  ForwardControledFanouts(ctx, mutation, {matched.pad, matched.contraction},
+                          contraction.name());
+
   mutation->AddNode(std::move(pad_with_conv), &status);
   TF_ABORT_IF_ERROR(status);
   TF_ABORT_IF_ERROR(mutation->Apply());
@@ -2880,6 +4970,106 @@ Status AddQuantizeV2WithQuantizedConv2DNode(
   return Status::OK();
 }
 
+Status AddQuantizedConv2DWithDequantizeNode(
+    RemapperContext* ctx, const QuantizedConv2DWithDequantize& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+
+  const NodeDef& quantized_conv2d_node_def = graph->node(matched.conv2dIndex_);
+  const NodeDef& dequantize_node_def = graph->node(matched.dequantizeIndex_);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  // create a new node
+  NodeDef fused_op;
+  fused_op.set_name(dequantize_node_def.name());
+  fused_op.set_device(dequantize_node_def.device());
+  fused_op.add_input(quantized_conv2d_node_def.input(0));  // conv input
+  fused_op.add_input(quantized_conv2d_node_def.input(1));  // conv filter
+  fused_op.add_input(quantized_conv2d_node_def.input(2));  // conv bias
+  fused_op.add_input(quantized_conv2d_node_def.input(3));  // conv min input
+  fused_op.add_input(quantized_conv2d_node_def.input(4));  // conv max input
+  fused_op.add_input(quantized_conv2d_node_def.input(5));  // conv min filter
+  fused_op.add_input(quantized_conv2d_node_def.input(6));  // conv max filter
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(7));  // conv min freezed output
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(8));  // conv max freezed output
+  fused_op.set_op(kFusedQuantizedConv2DWithDequantize);
+
+  // Copy attr from original nodes to fused node
+  CopyAllAttrs(quantized_conv2d_node_def, &fused_op);
+  // change out_type from qint8 to float
+  auto* new_attr = fused_op.mutable_attr();
+  DataType OutType;
+  if (TryGetNodeAttr(fused_op, "out_type", &OutType)) {
+    SetAttrValue(DT_FLOAT, &(*new_attr)["out_type"]);
+  }
+
+  Status status;
+  mutation->AddNode(std::move(fused_op), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  ITEX_VLOG(2) << "Fuse QuantizedConv2D with Dequantize:"
+               << " QuantizedConv2D=" << quantized_conv2d_node_def.name()
+               << " Dequantize=" << dequantize_node_def.name();
+
+  (*invalidated_nodes)[matched.dequantizeIndex_] = true;
+  (*nodes_to_delete)[matched.conv2dIndex_] = true;
+  return Status::OK();
+}
+
+Status AddQuantizedConv2DWithCastNode(RemapperContext* ctx,
+                                      const QuantizedConv2DWithCast& matched,
+                                      std::vector<bool>* invalidated_nodes,
+                                      std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+
+  const NodeDef& quantized_conv2d_node_def = graph->node(matched.conv2dIndex_);
+  const NodeDef& cast_node_def = graph->node(matched.castIndex_);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  // create a new node
+  NodeDef fused_op;
+  fused_op.set_name(cast_node_def.name());
+  fused_op.set_device(cast_node_def.device());
+  fused_op.add_input(quantized_conv2d_node_def.input(0));  // conv input
+  fused_op.add_input(quantized_conv2d_node_def.input(1));  // conv filter
+  fused_op.add_input(quantized_conv2d_node_def.input(2));  // conv bias
+  fused_op.add_input(quantized_conv2d_node_def.input(3));  // conv min input
+  fused_op.add_input(quantized_conv2d_node_def.input(4));  // conv max input
+  fused_op.add_input(quantized_conv2d_node_def.input(5));  // conv min filter
+  fused_op.add_input(quantized_conv2d_node_def.input(6));  // conv max filter
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(7));  // conv min freezed output
+  fused_op.add_input(
+      quantized_conv2d_node_def.input(8));  // conv max freezed output
+  fused_op.set_op(kFusedQuantizedConv2DWithCast);
+
+  // Copy attr from original nodes to fused node
+  CopyAllAttrs(quantized_conv2d_node_def, &fused_op);
+  // change out_type from qint8 to half
+  auto* new_attr = fused_op.mutable_attr();
+  DataType OutType;
+  if (TryGetNodeAttr(fused_op, "out_type", &OutType)) {
+    SetAttrValue(DT_HALF, &(*new_attr)["out_type"]);
+  }
+
+  Status status;
+  mutation->AddNode(std::move(fused_op), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  ITEX_VLOG(2) << "Fuse QuantizedConv2DWithDequantize With Cast:"
+               << " QuantizedConv2DWithDequantize="
+               << quantized_conv2d_node_def.name()
+               << " Cast=" << cast_node_def.name();
+
+  (*invalidated_nodes)[matched.castIndex_] = true;
+  (*nodes_to_delete)[matched.conv2dIndex_] = true;
+  return Status::OK();
+}
+
 Status AddFusedAddV2WithSoftmaxNode(RemapperContext* ctx,
                                     const AddV2WithSoftmax& matched,
                                     std::vector<bool>* invalidated_nodes,
@@ -2902,8 +5092,8 @@ Status AddFusedAddV2WithSoftmaxNode(RemapperContext* ctx,
 
   Status status;
   mutation->AddNode(std::move(fused_op), &status);
-  TF_RETURN_IF_ERROR(status);
-  TF_RETURN_IF_ERROR(mutation->Apply());
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
 
   ITEX_VLOG(2) << "Fuse AddV2, with Softmax: "
                << " AddV2= " << addv2_node_def.name()
@@ -2945,6 +5135,118 @@ Status AddConvBackpropInputWithSliceNode(
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
   mutation->AddNode(std::move(conv_backprop_input_with_slice), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.slice] = true;
+  (*nodes_to_delete)[matched.contraction] = true;
+
+  return Status::OK();
+}
+
+Status AddConv2DBackpropInputWithSliceNodeLLGA(
+    RemapperContext* ctx, const ConvBackpropInputWithSlice& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  auto& graph_view = ctx->graph_view;
+
+  auto* conv_backpropinput_node_view =
+      ctx->graph_view.GetNode(matched.contraction);
+
+  std::vector<int> out_control_index;  // control out index of fused-node
+  // Prepare control output edges for fused node
+  for (const auto& out_control_view :
+       conv_backpropinput_node_view->GetControlledFanouts()) {
+    out_control_index.push_back(out_control_view.node_index());
+  }
+
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& slice = graph->node(matched.slice);
+  const NodeDef& contraction = graph->node(matched.contraction);
+
+  for (auto f_out_index : out_control_index) {
+    auto* out_node_view = ctx->graph_view.GetNode(f_out_index);
+    mutation->RemoveControllingFanin(
+        out_node_view, conv_backpropinput_node_view->node()->name());
+    mutation->AddControllingFanin(out_node_view, slice.name());
+  }
+
+  NodeDef conv_backprop_input_with_slice;
+  conv_backprop_input_with_slice.set_name(slice.name());
+  conv_backprop_input_with_slice.set_device(contraction.device());
+
+  if (IsConv2DBackpropInput(contraction)) {
+    conv_backprop_input_with_slice.set_op("Conv2DBackpropInput");
+  } else if (IsConv3DBackpropInputV2(contraction)) {
+    conv_backprop_input_with_slice.set_op("Conv3DBackpropInputV2");
+  } else {
+    ITEX_CHECK(false) << "Unsupported fusion";
+  }
+
+  CopyAllAttrs(contraction, &conv_backprop_input_with_slice);
+
+  auto const_slice_name = slice.input(1);
+  auto* const_slice_node_view = graph_view.GetNode(const_slice_name);
+  auto* const_slice_node = const_slice_node_view->node();
+
+  // set pad as a new attribute of conv3d
+  Tensor const_slice_tensor;
+  std::vector<int> pad_value;
+
+  ITEX_CHECK_OK(GetTensorFromConstant(const_slice_node, &const_slice_tensor));
+  for (int i = 0; i < const_slice_tensor.NumElements(); i++) {
+    pad_value.push_back(const_slice_tensor.flat<int32>()(i));
+    pad_value.push_back(const_slice_tensor.flat<int32>()(i));
+  }
+
+  // check name and attr
+  auto* new_attr = conv_backprop_input_with_slice.mutable_attr();
+  SetAttrValue("EXPLICIT", &(*new_attr)["padding"]);
+  SetAttrValue(pad_value, &(*new_attr)["explicit_paddings"]);
+
+  // Add new Const op.
+  auto input_size_name = contraction.input(0);
+  auto* input_size_node_view = graph_view.GetNode(input_size_name);
+  auto* input_size_node = input_size_node_view->node();
+  Tensor input_size_tensor;
+  std::vector<int> input_size_value;
+
+  ITEX_CHECK_OK(GetTensorFromConstant(input_size_node, &input_size_tensor));
+  int length = input_size_tensor.NumElements();
+  for (int i = 0; i < length; i++) {
+    if (i == 0 || i == length - 1) {
+      input_size_value.push_back(input_size_tensor.flat<int32>()(i));
+    } else {
+      input_size_value.push_back(input_size_tensor.flat<int32>()(i) - 2);
+    }
+  }
+
+  Tensor input_size_subtract_slice_tensor =
+      Tensor(DT_INT32, input_size_tensor.shape());
+  for (int i = 0; i < input_size_tensor.NumElements(); i++) {
+    input_size_subtract_slice_tensor.flat<int32>()(i) = input_size_value[i];
+  }
+
+  NodeDef new_const_op;
+  new_const_op.set_op("Const");
+  new_const_op.set_name(input_size_name + "subtract_slice");
+  new_const_op.set_device(contraction.device());
+
+  AttrValue attr_type;
+  attr_type.set_type(DT_INT32);
+  AttrValue attr_tensor;
+  TensorProto* t = attr_tensor.mutable_tensor();
+  input_size_subtract_slice_tensor.AsProtoTensorContent(t);
+  new_const_op.mutable_attr()->insert({"dtype", attr_type});
+  new_const_op.mutable_attr()->insert({"value", attr_tensor});
+
+  conv_backprop_input_with_slice.add_input(new_const_op.name());
+  conv_backprop_input_with_slice.add_input(contraction.input(1));
+  conv_backprop_input_with_slice.add_input(contraction.input(2));
+
+  Status status;
+  mutation->AddNode(std::move(conv_backprop_input_with_slice), &status);
+  mutation->AddNode(std::move(new_const_op), &status);
   TF_ABORT_IF_ERROR(status);
   TF_ABORT_IF_ERROR(mutation->Apply());
 
@@ -3250,6 +5552,62 @@ Status AddRandomWithComparisonAndCastNode(
   return Status::OK();
 }
 
+Status AddPadConvFwdBwd(RemapperContext* ctx, const PadConvFwdBwd& matched,
+                        std::vector<bool>* invalidated_nodes,
+                        std::vector<bool>* nodes_to_delete) {
+  GraphDef* graph = ctx->graph_view.graph();
+
+  const NodeDef& input_pad_val_node = graph->node(matched.input_pad_val);
+
+  Tensor pad_value_tensor;
+  std::vector<int> pad_value;
+
+  ITEX_CHECK_OK(GetTensorFromConstant(&input_pad_val_node, &pad_value_tensor));
+  int length = pad_value_tensor.NumElements();
+  for (int i = 0; i < length; i++) {
+    pad_value.push_back(pad_value_tensor.flat<int32>()(i));
+  }
+
+  auto* conv2d_view = ctx->graph_view.GetNode(matched.conv2d);
+  auto* conv2d_bwd_filter_view =
+      ctx->graph_view.GetNode(matched.conv2d_bwd_filter);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+
+  auto* conv2d_node_new_attr = conv2d_view->node()->mutable_attr();
+  SetAttrValue("EXPLICIT", &(*conv2d_node_new_attr)["padding"]);
+  SetAttrValue(pad_value, &(*conv2d_node_new_attr)["explicit_paddings"]);
+
+  auto* conv2d_bwd_filter_node_new_attr =
+      conv2d_bwd_filter_view->node()->mutable_attr();
+  SetAttrValue("EXPLICIT", &(*conv2d_bwd_filter_node_new_attr)["padding"]);
+  SetAttrValue(pad_value,
+               &(*conv2d_bwd_filter_node_new_attr)["explicit_paddings"]);
+
+  const NodeDef& pad_node = graph->node(matched.pad);
+  string pad_name = pad_node.name();
+  string bn_name = pad_node.input(0);
+  TensorId bn_id = ParseTensorName(bn_name);
+
+  mutation->AddOrUpdateRegularFanin(conv2d_view, 0, bn_id);
+  mutation->AddOrUpdateRegularFanin(conv2d_bwd_filter_view, 0, bn_id);
+
+  auto* const_shape_0_view = ctx->graph_view.GetNode(matched.const_shape_0);
+  mutation->AddControllingFanin(const_shape_0_view, bn_name);
+  mutation->RemoveControllingFanin(const_shape_0_view, pad_name);
+
+  auto* const_shape_1_view = ctx->graph_view.GetNode(matched.const_shape_1);
+  mutation->AddControllingFanin(const_shape_1_view, bn_name);
+  mutation->RemoveControllingFanin(const_shape_1_view, pad_name);
+
+  TF_RETURN_IF_ERROR(mutation->Apply());
+
+  (*nodes_to_delete)[matched.input_pad_val] = true;
+  (*nodes_to_delete)[matched.pad] = true;
+
+  return Status::OK();
+}
+
 inline bool VerifyConstants(RemapperContext* ctx,
                             std::map<string, int>* nodes_map,
                             std::map<string, float>* values_map) {
@@ -3259,19 +5617,17 @@ inline bool VerifyConstants(RemapperContext* ctx,
     MutableNodeView* node_view = ctx->graph_view.GetNode(node_idx);
     NodeDef* node_def = node_view->node();
     Tensor const_tensor;
-    if (node_def != nullptr && node_def->op() == "Const" &&
-        const_tensor.FromProto(node_def->attr().at("value").tensor())) {
+    if (node_def != nullptr && node_def->op() == "Const") {
+      ITEX_CHECK_OK(GetTensorFromConstant(node_def, &const_tensor));
       if (const_tensor.NumElements() == 1) {
         DataType dtype = const_tensor.dtype();
         if (!(dtype == DT_FLOAT || dtype == DT_BFLOAT16 || dtype == DT_HALF))
           return false;
-        // TODO(itex): A workaround for GPU with FP16 data type.
-        if (dtype == DT_HALF && NodeIsOnCpu(node_def)) return false;
         auto const_value = (dtype == DT_FLOAT)
                                ? const_tensor.flat<float>()(0)
                                : const_tensor.flat<Eigen::bfloat16>()(0);
         // To compare float.
-        if (std::abs(const_value - it->second) > 1e-2) return false;
+        if (std::abs(const_value - it->second) > 1e-2f) return false;
       } else {
         return false;
       }
@@ -3286,12 +5642,12 @@ inline bool VerifyConstants(RemapperContext* ctx,
 // parmeter `approximate={True/False}` different types of ops are generated. We
 // distinguish them as `GeluExact` that uses Erf and `GeluApproximate` that
 // uses Tanh.
-bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
-                              std::map<string, int>* matched_nodes_map,
-                              std::set<int>* remove_node_indices,
-                              bool* is_gelu_approximate) {
+bool FindGelu(RemapperContext* ctx, int node_index,
+              std::map<string, int>* matched_nodes_map,
+              std::set<int>* remove_node_indices, bool* is_gelu_approximate) {
   using utils::MatchingDirection;
   using utils::NodeStatus;
+
   // clang-format off
   utils::OpTypePattern gelu_exact_pattern =
     {"Mul", "output", NodeStatus::kReplace,
@@ -3304,7 +5660,7 @@ bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
                   {
                     {"Mul", "bias_add_times_square_root_one_half", NodeStatus::kRemove,  // NOLINT(whitespace/line_length)
                       {
-                        {"BiasAdd", "bias_add", NodeStatus::kRemove},
+                        {"*", "input", NodeStatus::kRemain},
                         {"Const", "square_root_one_half", NodeStatus::kRemain}
                       }
                     }
@@ -3316,12 +5672,7 @@ bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
             {"Const", "one_half", NodeStatus::kRemain}
           }
         },
-        {"BiasAdd", "bias_add", NodeStatus::kRemove,
-          {
-            {"MatMul", "matmul", NodeStatus::kRemove},
-            {"*", "bias", NodeStatus::kRemain}
-          }
-        }
+        {"*", "input", NodeStatus::kRemain}
       }
     };
 
@@ -3338,12 +5689,12 @@ bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
                       {
                         {"AddV2", "matmul_plus_mul", NodeStatus::kRemove,
                           {
-                            {"BiasAdd", "bias_add", NodeStatus::kRemove},
+                            {"*", "input", NodeStatus::kRemain},
                             {"Mul", "mul", NodeStatus::kRemove,
                               {
                                 {"Pow", "pow", NodeStatus::kRemove,
                                   {
-                                    {"BiasAdd", "bias_add", NodeStatus::kRemove},  // NOLINT(whitespace/line_length)
+                                    {"*", "input", NodeStatus::kRemain},
                                     {"Const", "exponent", NodeStatus::kRemain}
                                   }
                                 },
@@ -3363,22 +5714,16 @@ bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
             {"Const", "one_half", NodeStatus::kRemain}
           }
         },
-        {"BiasAdd", "bias_add", NodeStatus::kRemove,
-         {
-           {"MatMul", "matmul", NodeStatus::kRemove},
-           {"*", "bias", NodeStatus::kRemain}
-         }
-        }
+        {"*", "input", NodeStatus::kRemain}
       }
     };
 
-
-    // Gelu approximate uses Pow(x, 3) which is optimized by arithmetic
-    // optimizer as Mul(x, Square(x)) with an arifact of control dependency.
-    // So we try to match pattern at second pass of remapper which reccieves
-    // _FusedMatMul(MatMul + BiasAdd) with control dependency removed. This
-    // is enabled only on CPU.
-    utils::OpTypePattern gelu_approximate_pattern_on_cpu =
+  // Gelu approximate uses Pow(x, 3) which is optimized by arithmetic
+  // optimizer as Mul(x, Square(x)) with an arifact of control dependency.
+  // So we try to match pattern at second pass of remapper which reccieves
+  // _FusedMatMul(MatMul + BiasAdd) with control dependency removed. This
+  // is enabled only on CPU.
+  utils::OpTypePattern gelu_approximate_pattern_on_cpu =
     {"Mul", "output", NodeStatus::kReplace,
       {
         {"Mul", "tanh_plus_one_times_one_half", NodeStatus::kRemove,
@@ -3391,17 +5736,17 @@ bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
                       {
                         {"AddV2", "matmul_plus_mul", NodeStatus::kRemove,
                           {
-                            {"BiasAdd", "bias_add", NodeStatus::kRemove},
+                            {"*", "input", NodeStatus::kRemain},
                             {"Mul", "empirical_const_times_matmul", NodeStatus::kRemove,  // NOLINT(whitespace/line_length)
                               {
                                 {"Mul", "mul", NodeStatus::kRemove,
                                  {
                                    {"Square", "square", NodeStatus::kRemove,
                                     {
-                                      {"BiasAdd", "bias_add", NodeStatus::kRemove}  // NOLINT(whitespace/line_length)
+                                      {"*", "input", NodeStatus::kRemain}
                                     }
                                    },
-                                   {"BiasAdd", "bias_add", NodeStatus::kRemove}
+                                   {"*", "input", NodeStatus::kRemain}
                                  }
                                 },
                                 {"Const", "empirical_const", NodeStatus::kRemain}  // NOLINT(whitespace/line_length)
@@ -3420,12 +5765,7 @@ bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
             {"Const", "one_half", NodeStatus::kRemain}
           }
         },
-        {"BiasAdd", "bias_add", NodeStatus::kRemove,
-         {
-           {"MatMul", "matmul", NodeStatus::kRemove},
-           {"*", "bias", NodeStatus::kRemain}
-         }
-        }
+        {"*", "input", NodeStatus::kRemain}
       }
     };
   // clang-format on
@@ -3493,43 +5833,37 @@ bool FindMatMulBiasAddAndGelu(RemapperContext* ctx, int node_index,
           found_gelu_approximate_on_cpu);
 }
 
-Status AddFusedMatMulBiasAddAndGelu(RemapperContext* ctx,
-                                    std::map<string, int>* matched_nodes_map,
-                                    std::set<int>* remove_node_indices,
-                                    std::vector<bool>* invalidated_nodes,
-                                    std::vector<bool>* nodes_to_delete,
-                                    bool is_gelu_approximate) {
+Status AddGelu(RemapperContext* ctx, std::map<string, int>* matched_nodes_map,
+               std::set<int>* remove_node_indices,
+               std::vector<bool>* invalidated_nodes,
+               std::vector<bool>* nodes_to_delete, bool is_gelu_approximate) {
   auto* output_node =
       ctx->graph_view.GetNode(matched_nodes_map->at("output"))->node();
-  auto* matmul_node =
-      ctx->graph_view.GetNode(matched_nodes_map->at("matmul"))->node();
+  auto* input_node =
+      ctx->graph_view.GetNode(matched_nodes_map->at("input"))->node();
 
   NodeDef fused_node;
   // Fused node should have the name of terminal node of the fusion.
   fused_node.set_name(output_node->name());
-  fused_node.set_op(kFusedMatMul);
-  fused_node.set_device(matmul_node->device());
-  fused_node.add_input(matmul_node->input(0));
-  fused_node.add_input(matmul_node->input(1));
-  auto* bias_add_node =
-      ctx->graph_view.GetNode(matched_nodes_map->at("bias_add"))->node();
-  fused_node.add_input(bias_add_node->input(1));
+  fused_node.set_op(kGelu);
+  fused_node.set_device(output_node->device());
+  fused_node.add_input(input_node->name());
 
-  CopyAllAttrs(*matmul_node, &fused_node);
-  if (is_gelu_approximate)
-    SetFusedOpAttributes(&fused_node, {"BiasAdd", "GeluApproximate"});
-  else
-    SetFusedOpAttributes(&fused_node, {"BiasAdd", "GeluExact"});
+  CopyAllAttrs(*output_node, &fused_node);
+  AddNodeAttr("approximate", is_gelu_approximate, &fused_node);
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
   mutation->AddNode(std::move(fused_node), &status);
   TF_ABORT_IF_ERROR(status);
   TF_ABORT_IF_ERROR(mutation->Apply());
-  (*invalidated_nodes)[matched_nodes_map->at("output")] = true;
 
+  (*invalidated_nodes)[matched_nodes_map->at("output")] = true;
   for (const auto& node_idx : *remove_node_indices) {
-    if (node_idx < nodes_to_delete->size()) (*nodes_to_delete)[node_idx] = true;
+    if (node_idx < nodes_to_delete->size()) {
+      RemoveAllRegularFanin(ctx, node_idx);
+      (*nodes_to_delete)[node_idx] = true;
+    }
   }
 
   return Status::OK();
@@ -3541,8 +5875,6 @@ Status AddMulWithMaximumNode(RemapperContext* ctx,
                              std::vector<bool>* invalidated_nodes,
                              std::vector<bool>* nodes_to_delete) {
   const GraphDef* graph = ctx->graph_view.graph();
-  const NodeDef& constant = graph->node(matched.constant);
-  const NodeDef& mul = graph->node(matched.mul);
   const NodeDef& maximum = graph->node(matched.maximum);
   const NodeDef& input = graph->node(matched.input);
 
@@ -3552,7 +5884,7 @@ Status AddMulWithMaximumNode(RemapperContext* ctx,
   NodeDef leakyrelu_op;
   leakyrelu_op.set_op(kLeakyRelu);
   leakyrelu_op.set_name(maximum.name());
-  leakyrelu_op.set_device(constant.device());
+  leakyrelu_op.set_device(maximum.device());
   leakyrelu_op.add_input(input.name());
 
   auto* attr = leakyrelu_op.mutable_attr();
@@ -3562,10 +5894,10 @@ Status AddMulWithMaximumNode(RemapperContext* ctx,
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
   mutation->AddNode(std::move(leakyrelu_op), &status);
-  TF_RETURN_IF_ERROR(status);
-  TF_RETURN_IF_ERROR(mutation->Apply());
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
 
-  (*nodes_to_delete)[matched.constant] = true;
+  RemoveAllRegularFanin(ctx, matched.mul);
   (*nodes_to_delete)[matched.mul] = true;
   (*invalidated_nodes)[matched.maximum] = true;
   return Status::OK();
@@ -3580,17 +5912,16 @@ Status AddConstWithCastNode(RemapperContext* ctx, const ConstWithCast& matched,
   const NodeDef& cast = graph->node(matched.cast);
 
   // Replace Const and Cast with Const.
-  TF_RETURN_IF_ERROR(CheckAttrExists(constant, "value"));
+  TF_ABORT_IF_ERROR(CheckAttrExists(constant, "value"));
 
   DataType dst_dtype = GetDataTypeFromAttr(cast, "DstT");
 
-  const TensorProto& raw_val = constant.attr().at("value").tensor();
-  Tensor value = Tensor(raw_val.dtype(), raw_val.tensor_shape());
-  value.FromProto(raw_val);
+  Tensor value;
+  ITEX_CHECK_OK(GetTensorFromConstant(&constant, &value));
 
   const Eigen::ThreadPoolDevice d =
       OpKernelContext::eigen_cpu_device_singleton();
-  Tensor cast_value = Tensor(dst_dtype, raw_val.tensor_shape());
+  Tensor cast_value = Tensor(dst_dtype, value.shape());
   if (dst_dtype == DT_BFLOAT16) {
     cast_value.flat<Eigen::bfloat16>().device(d) =
         value.flat<float>().template cast<Eigen::bfloat16>();
@@ -3616,6 +5947,13 @@ Status AddConstWithCastNode(RemapperContext* ctx, const ConstWithCast& matched,
   cast_value.AsProtoTensorContent(t);
   new_const_op.mutable_attr()->insert({"dtype", attr_type});
   new_const_op.mutable_attr()->insert({"value", attr_tensor});
+
+  auto* const_node_view = ctx->graph_view.GetNode(matched.constant);
+  auto control_fanins = const_node_view->GetControllingFanins();
+  for (size_t i = 0; i < control_fanins.size(); ++i) {
+    auto fanin_name = control_fanins[i].node_view()->node()->name();
+    new_const_op.add_input(AsControlDependency(fanin_name));
+  }
 
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
   Status status;
@@ -3677,17 +6015,273 @@ Status AddFusedBinaryNode(RemapperContext* ctx, const FusedBinary& matched,
   return Status::OK();
 }
 
+// Remap TF2.11 dropout select to TF2.10 cast+mul.
+Status AddDropout(RemapperContext* ctx, const Dropout& matched,
+                  std::vector<bool>* invalidated_nodes,
+                  std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& select_0 = graph->node(matched.select_0);
+  const NodeDef& select_1 = graph->node(matched.select_1);
+  const NodeDef& greater_equal = graph->node(matched.greater_equal);
+
+  ITEX_VLOG(2) << "Remap " << select_0.op() << " to "
+               << " Cast and Mul.";
+
+  // Add cast op
+  NodeDef cast;
+  cast.set_op("Cast");
+  cast.set_name(greater_equal.name() + "_cast");
+  cast.set_device(greater_equal.device());
+  cast.add_input(greater_equal.name());
+
+  auto* attrs = cast.mutable_attr();
+
+  (*attrs)["SrcT"].set_type(DT_BOOL);
+  (*attrs)["DstT"] = greater_equal.attr().at("T");
+
+  // Replace mul op for select
+  NodeDef mul;
+  mul.set_op("Mul");
+  mul.set_name(select_0.name());
+  mul.set_device(select_0.device());
+  mul.add_input(select_0.input(1));
+  mul.add_input(cast.name());
+
+  auto* mul_attrs = mul.mutable_attr();
+
+  (*mul_attrs)["T"] = select_0.attr().at("T");
+
+  // Replace mul op for select_1
+  NodeDef mul_1;
+  mul_1.set_op("Mul");
+  mul_1.set_name(select_1.name());
+  mul_1.set_device(select_1.device());
+  mul_1.add_input(select_1.input(1));
+  mul_1.add_input(cast.name());
+
+  auto* mul_1_attrs = mul_1.mutable_attr();
+
+  (*mul_1_attrs)["T"] = select_1.attr().at("T");
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(cast), &status);
+  mutation->AddNode(std::move(mul), &status);
+  mutation->AddNode(std::move(mul_1), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.select_0] = true;
+  (*invalidated_nodes)[matched.select_1] = true;
+  return Status::OK();
+}
+
+Status AddStridedSliceGrad(RemapperContext* ctx,
+                           const StridedSliceGrad& matched,
+                           std::vector<bool>* invalidated_nodes,
+                           std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& stridedslicegrad = graph->node(matched.stridedslicegrad_);
+  const NodeDef& dy = graph->node(matched.dy_);
+  DataType shape_type;
+  TF_ABORT_IF_ERROR(GetNodeAttr(stridedslicegrad, "Index", &shape_type));
+
+  ITEX_VLOG(2) << "Remap " << stridedslicegrad.op() << " to "
+               << " Pad and Reshape.";
+
+  string pad_fanin = stridedslicegrad.input(4);
+  int dims = matched.dims.size();
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  if (!matched.shrinks.empty()) {
+    // If some dims are shrunk, we should reshape first to get dims of size one
+    // back.
+    NodeDef reshape;
+    string reshape_name = stridedslicegrad.name() + "/reshape";
+    reshape.set_name(reshape_name);
+    reshape.set_op(kReshape);
+    reshape.set_device(stridedslicegrad.device());
+
+    NodeDef shape;
+    string shape_name = reshape.name() + "/shape";
+    shape.set_name(shape_name);
+    shape.set_op(kConst);
+    shape.set_device(stridedslicegrad.device());
+    shape.add_input(AsControlDependency(dy.name()));
+    auto* shape_attr = shape.mutable_attr();
+    SetAttrValue(shape_type, &(*shape_attr)["dtype"]);
+    Tensor dim_t(shape_type, {dims});
+    for (int i = 0; i < dims; i++) {
+      if (shape_type == DT_INT32) {
+        dim_t.flat<int32>()(i) = matched.end[i] - matched.begin[i];
+      } else {
+        dim_t.flat<int64_t>()(i) = matched.end[i] - matched.begin[i];
+      }
+    }
+    dim_t.AsProtoTensorContent((*shape_attr)["value"].mutable_tensor());
+    mutation->AddNode(std::move(shape), &status);
+    TF_ABORT_IF_ERROR(status);
+
+    reshape.add_input(stridedslicegrad.input(4));
+    reshape.add_input(shape_name);
+    auto* reshape_attr = reshape.mutable_attr();
+    SetAttrValue(stridedslicegrad.attr().at("T"), &(*reshape_attr)["T"]);
+    SetAttrValue(shape_type, &(*reshape_attr)["Tshape"]);
+    mutation->AddNode(std::move(reshape), &status);
+    TF_ABORT_IF_ERROR(status);
+    // The input of Pad should be changed to the Reshape which is just inserted.
+    pad_fanin = reshape_name;
+  }
+  NodeDef pad;
+  pad.set_op(kPad);
+  pad.set_name(stridedslicegrad.name());
+  pad.set_device(stridedslicegrad.device());
+
+  NodeDef paddings;
+  string paddings_name = pad.name() + "/paddings";
+  paddings.set_name(paddings_name);
+  paddings.set_op(kConst);
+  paddings.set_device(stridedslicegrad.device());
+  paddings.add_input(AsControlDependency(dy.name()));
+  auto* paddings_attr = paddings.mutable_attr();
+  SetAttrValue(shape_type, &(*paddings_attr)["dtype"]);
+  Tensor dim_t(shape_type, {dims, 2});
+  for (int i = 0; i < dims; i++) {
+    if (shape_type == DT_INT32) {
+      auto dim_m = dim_t.matrix<int32>();
+      dim_m(i, 0) = matched.begin[i];
+      dim_m(i, 1) = matched.dims[i] - matched.end[i];
+    } else {
+      auto dim_m = dim_t.matrix<int64_t>();
+      dim_m(i, 0) = matched.begin[i];
+      dim_m(i, 1) = matched.dims[i] - matched.end[i];
+    }
+  }
+  dim_t.AsProtoTensorContent((*paddings_attr)["value"].mutable_tensor());
+  mutation->AddNode(std::move(paddings), &status);
+  TF_ABORT_IF_ERROR(status);
+
+  pad.add_input(pad_fanin);
+  pad.add_input(paddings_name);
+  auto* pad_attr = pad.mutable_attr();
+  SetAttrValue(stridedslicegrad.attr().at("T"), &(*pad_attr)["T"]);
+  SetAttrValue(shape_type, &(*pad_attr)["Tpaddings"]);
+  mutation->AddNode(std::move(pad), &status);
+  TF_ABORT_IF_ERROR(status);
+
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  (*invalidated_nodes)[matched.stridedslicegrad_] = true;
+  return Status::OK();
+}
+
+Status AddDilatedContractionNode(RemapperContext* ctx,
+                                 const DilatedContraction& matched,
+                                 std::vector<bool>* invalidated_nodes,
+                                 std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& stob = graph->node(matched.stob);
+  const NodeDef& contraction = graph->node(matched.contraction);
+  const NodeDef& btos = graph->node(matched.btos);
+
+  NodeDef dilated_op;
+
+  dilated_op.set_name(btos.name());
+  dilated_op.set_op(contraction.op());
+  dilated_op.set_device(contraction.device());
+  dilated_op.add_input(stob.input(0));         // 0: input
+  dilated_op.add_input(contraction.input(1));  // 1: filter
+
+  CopyAllAttrs(contraction, &dilated_op);
+
+  const auto* btos_node_view = ctx->graph_view.GetNode(matched.btos);
+  const auto* block_shape_node_def =
+      btos_node_view->GetRegularFanin(1).node_view()->node();
+  const auto* crops_node_def =
+      btos_node_view->GetRegularFanin(2).node_view()->node();
+
+  const auto* stob_node_view = ctx->graph_view.GetNode(matched.stob);
+  const auto* paddings_node_def =
+      stob_node_view->GetRegularFanin(2).node_view()->node();
+
+  Tensor block_shape;
+  ITEX_CHECK_OK(GetTensorFromConstant(block_shape_node_def, &block_shape));
+
+  int32* block_shape_data =
+      const_cast<int32*>(block_shape.flat<int32>().data());
+
+  int32 new_dilations[] = {1, block_shape_data[0], block_shape_data[1], 1};
+
+  auto* attrs = dilated_op.mutable_attr();
+  SetAttrValue(gtl::ArraySlice<int32>(new_dilations, 4),
+               &(*attrs)["dilations"]);
+
+  Tensor paddings;
+  Tensor crops;
+
+  ITEX_CHECK_OK(GetTensorFromConstant(paddings_node_def, &paddings));
+  ITEX_CHECK_OK(GetTensorFromConstant(crops_node_def, &crops));
+
+  int32* paddings_data = const_cast<int32*>(paddings.flat<int32>().data());
+  int32* crops_data = const_cast<int32*>(crops.flat<int32>().data());
+
+  std::vector<int32> real_paddings;
+  bool is_valid = true;
+  for (int i = 0; i < 4; i++) {
+    real_paddings.emplace_back(paddings_data[i] - crops_data[i]);
+    if (real_paddings[i] != 0) {
+      is_valid = false;
+    }
+  }
+
+  string data_format;
+  ITEX_CHECK_OK(GetNodeAttr(contraction, "data_format", &data_format));
+
+  int32 explicit_paddings[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+  if (!is_valid) {
+    SetAttrValue("EXPLICIT", &(*attrs)["padding"]);
+
+    // Set explicit paddings for NHWC
+    explicit_paddings[2] = real_paddings[0];
+    explicit_paddings[3] = real_paddings[1];
+    explicit_paddings[4] = real_paddings[2];
+    explicit_paddings[5] = real_paddings[3];
+
+    SetAttrValue(gtl::ArraySlice<int32>(explicit_paddings, 8),
+                 &(*attrs)["explicit_paddings"]);
+  }
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(dilated_op), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*nodes_to_delete)[matched.stob] = true;
+  (*nodes_to_delete)[matched.contraction] = true;
+  (*invalidated_nodes)[matched.btos] = true;
+
+  return Status::OK();
+}
+
 }  // namespace
 
-// is_full is true by default. When oneDNN Graph is enabled, we want to set it
-// as false. When is_full == false, we only fuse Const + Cast / instancenorm/
-// layernorm.
-Status RunRemapper(const char* device_name, const GrapplerItem& item,
+// `is_full` is true by default. It will be set as false if this pass runs
+// before oneDNN Graph, that means only a few necessary fusions
+// (InstanceNorm/LayerNorm) will be enabled to keep the original graph as
+// complete as possible for oneDNN graph.
+// `level` is to indicate current remapper fusion level. Simple fusions without
+// any variant will be checked under BASIC(0) level only.
+Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
                    const GraphDef& graph_def, GraphDef* optimized_graph,
-                   bool is_full) {
+                   bool is_full, RemapperLevel level) {
+  // `level` must be `BASIC` if in partial remapper.
+  ITEX_CHECK(is_full || level == RemapperLevel::BASIC);
+
   Status status;
   GraphDef multable_graph_def = graph_def;
-  RemapperContext ctx(item, &multable_graph_def, &status);
+  RemapperContext ctx(item, &multable_graph_def, &status, level);
   // TODO(itex): Currently some fusions will be disabled when LayoutOPT is off,
   //       remove this dependency once all plain fusions are supported.
   bool is_layout_opt = GetOptimizerConfigFlags().enable_layout_opt;
@@ -3719,30 +6313,181 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
   // Infer statically first and only once.
   ctx.GetGraphProperties();
 
-  for (int i = num_nodes - 1; i >= 0; --i) {
-    // Check if node was invalidated or deleted by one of the previous remaps.
-    if (invalidated_nodes[i] || nodes_to_delete[i]) {
+  bool is_visited = false;
+  string last_op;
+  for (int i = num_nodes - 1; i >= 0;) {
+    NodeDef* node_def = (ctx.graph_view.GetNode(i))->node();
+
+    // IMPORTANT: Always keep this dynamic check in the start.
+    // Dynamic check node status:
+    //   1. Do normal fusion check when current node is visited first time
+    //   2. Recheck this node only if it's new fused and never rechecked before
+    //   3. Iterate to next node after current node is visited and not fused, or
+    //      already rechecked
+    if (is_visited) {
+      if (invalidated_nodes[i] && last_op != node_def->op()) {
+        // Recheck current node to find more possible fusion.
+        ITEX_VLOG(3) << "Recheck node " << node_def->op() << " : "
+                     << node_def->name();
+        last_op = node_def->op();
+      } else {
+        // Iterate to next node and reset all flags.
+        --i;
+        is_visited = false;
+        last_op = node_def->op();
+        continue;
+      }
+    } else {
+      last_op = node_def->op();
+      is_visited = true;
+    }
+
+    // Check if node is fp16 and supported on device.
+    if (NodeIsOnCpu(node_def) &&
+        GetDataTypeFromAttr(*node_def, "T") == DT_HALF &&
+        !port::HasCpuFP16Support()) {
+      ctx.nodes_to_preserve.insert(node_def->name());
       continue;
     }
 
-    // Don't fuse fetch node because layout won't rewrite it.
-    // TODO(itex): Fuse fetch node if meet performance issue in fufure.
-    if (IsInPreserveSet(ctx, (ctx.graph_view.GetNode(i))->node())) {
-      NodeDef* node_def = (ctx.graph_view.GetNode(i))->node();
+    // Check if node was deleted by one of the previous remaps.
+    if (nodes_to_delete[i]) {
+      continue;
+    }
+
+    // Don't fuse fetch node when layout is ON because layout won't rewrite it.
+    if (IsInPreserveSet(ctx, node_def) && is_layout_opt) {
       ITEX_VLOG(3) << "The node is in preserve set " << node_def->op() << ":"
                    << node_def->name();
       continue;
     }
 
     // Check if node can run on current optimizer device.
-    if (!NodeIsOnDevice(device_name, ctx.graph_view.GetNode(i)->node())) {
-      NodeDef* node_def = (ctx.graph_view.GetNode(i))->node();
+    if (!NodeIsOnDevice(opt_ctx->device_name, node_def)) {
       ITEX_VLOG(3) << "The node " << node_def->op() << ":" << node_def->name()
-                   << "is not at " << device_name;
+                   << "is not at " << opt_ctx->device_name;
       continue;
     }
 
+    // Put the fusions that always need to be enabled here no matter `is_full`
+    // is true or false.
+    {
+      // Use AddV2 for AddN when N=2
+      int AddN_index;
+      if (FindAddV2(ctx, i, &AddN_index)) {
+        TF_ABORT_IF_ERROR(ReplaceAddN(&ctx, AddN_index, &invalidated_nodes,
+                                      &nodes_to_delete));
+        continue;
+      }
+
+      // Remap TF2.11 dropout select to TF2.10 cast+mul.
+      Dropout dropout;
+      if (FindDropout(ctx, i, &dropout)) {
+        TF_ABORT_IF_ERROR(
+            AddDropout(&ctx, dropout, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      // Remap Gelu subgraph
+      std::map<string, int> matched_nodes_map;
+      std::set<int> remove_node_indices;
+      bool is_gelu_approximate = false;
+      if (level == RemapperLevel::BASIC &&
+          FindGelu(&ctx, i, &matched_nodes_map, &remove_node_indices,
+                   &is_gelu_approximate)) {
+        TF_ABORT_IF_ERROR(AddGelu(&ctx, &matched_nodes_map,
+                                  &remove_node_indices, &invalidated_nodes,
+                                  &nodes_to_delete, is_gelu_approximate));
+        continue;
+      }
+
+      // Remap Mul+Max into the LeakyRelu.
+      MulWithMaximum mul_with_maximum;
+      if (level == RemapperLevel::BASIC &&
+          FindMulWithMaximum(ctx, i, &mul_with_maximum)) {
+        TF_ABORT_IF_ERROR(AddMulWithMaximumNode(
+            &ctx, mul_with_maximum, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      MatmulReshapeBiasadd matmul_reshape_biasadd;
+      if (FindMatmulReshapeBiasadd(ctx, i, &matmul_reshape_biasadd)) {
+        TF_ABORT_IF_ERROR(AddMatmulReshapeBiasadd(&ctx, matmul_reshape_biasadd,
+                                                  &invalidated_nodes,
+                                                  &nodes_to_delete));
+        continue;
+      }
+
+      DilatedContraction dilated_contraction;
+      if (FindDilatedContraction(ctx, i, &dilated_contraction)) {
+        TF_ABORT_IF_ERROR(AddDilatedContractionNode(
+            &ctx, dilated_contraction, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      // Optimize the Sum if it can be replaced to BiasAddGrad or removed.
+      ReplaceableSum sum;
+      if (FindSum(ctx, i, &sum)) {
+        TF_ABORT_IF_ERROR(
+            AddSum(&ctx, sum, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      // Move BiasAddGrad after Reshape, so that the Contraction(MatMul and
+      // Conv2DBackpropFilter) can be fused with BiasAddGrad in the later remap
+      // stage.
+      ContractionWithReshapeAndBiasAddGrad contraction_reshape_bias_grad;
+      if (FindContractionWithReshapeAndBiasAddGrad(
+              ctx, i, &contraction_reshape_bias_grad)) {
+        TF_ABORT_IF_ERROR(AddContractionWithReshapeAndBiasAddGrad(
+            &ctx, contraction_reshape_bias_grad, &invalidated_nodes,
+            &nodes_to_delete));
+        continue;
+      }
+
+      // keras Dense layer fwd
+      KerasDenseLayerFwd keras_dense_layer_fwd;
+      if (FindKerasDenseLayerFwd(ctx, i, &keras_dense_layer_fwd)) {
+        if (keras_dense_layer_fwd.reshape_0_ == kMissingIndex) {
+          TF_ABORT_IF_ERROR(AddKerasDenseLayerFwd(&ctx, keras_dense_layer_fwd,
+                                                  &invalidated_nodes,
+                                                  &nodes_to_delete));
+          if (keras_dense_layer_fwd.activation_ != kMissingIndex) {
+            i = keras_dense_layer_fwd.activation_;
+            ITEX_VLOG(2) << "revisit index: " << i;
+          }
+        } else {
+          TF_ABORT_IF_ERROR(
+              AddKerasDenseLayerFwdBMM(&ctx, keras_dense_layer_fwd,
+                                       &invalidated_nodes, &nodes_to_delete));
+        }
+
+        continue;
+      }
+    }
+
+    // The entry of pattern matcher. It will iterate all fusion registered.
+    TF_ABORT_IF_ERROR(LaunchPatternMatcher(&ctx, i, &invalidated_nodes,
+                                           &nodes_to_delete, is_full));
+
     if (is_full) {
+      // Remap Conv2D+BiasAdd+Activation+Add into the _ITEXFusedConv2D.
+      ContractionWithBiasAndActivationAdd contract_with_bias_and_activation_add;
+      if (FindContractionWithBiasAndActivationAdd(
+              ctx, i, &contract_with_bias_and_activation_add)) {
+        TF_ABORT_IF_ERROR(
+            AddFusedContractionNode(&ctx, contract_with_bias_and_activation_add,
+                                    &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      GroupConv2DBlock group_conv;
+      if (FindResNeXtGroupConv2DBlock(ctx, i, &group_conv)) {
+        TF_ABORT_IF_ERROR(AddGroupConv2DNode(
+            &ctx, group_conv, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
       // Remap Conv2D+BiasAdd+Add+Activation into the _ITEXFusedConv2D.
       ContractionWithBiasAndAddActivation contract_with_bias_and_add_activation;
       if (FindContractionWithBiasAndAddActivation(
@@ -3763,24 +6508,6 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
         continue;
       }
 
-      // Remap MatMul + BiasAdd + gelu-subgraph
-      std::map<string, int> matched_nodes_map;
-      std::set<int> remove_node_indices;
-      bool is_gelu_approximate = false;
-      if (FindMatMulBiasAddAndGelu(&ctx, i, &matched_nodes_map,
-                                   &remove_node_indices,
-                                   &is_gelu_approximate)) {
-        TF_ABORT_IF_ERROR(AddFusedMatMulBiasAddAndGelu(
-            &ctx, &matched_nodes_map, &remove_node_indices, &invalidated_nodes,
-            &nodes_to_delete, is_gelu_approximate));
-        continue;
-      }
-    }
-    // The entry of the fusion pass. It will iterate all fusion registered.
-    TF_ABORT_IF_ERROR(LaunchPatternMatcher(&ctx, i, &invalidated_nodes,
-                                           &nodes_to_delete, is_full));
-
-    if (is_full) {
       // Remap {Conv2D,DepthwiseConv2D,Conv3D,MatMul}+BiasAdd into the
       // _ITEXFused{Conv2D,DepthwiseConv2dNative,Conv3D,MatMul}
       ContractionWithBiasAdd contract_with_bias;
@@ -3837,6 +6564,14 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
         continue;
       }
 
+      PadWithContractionFwdBwd pad_with_contract_fwd_bwd;
+      if (FindPadWithContractionFwdBwd(ctx, i, &pad_with_contract_fwd_bwd)) {
+        TF_ABORT_IF_ERROR(
+            AddPadWithContractionFwdBwd(&ctx, pad_with_contract_fwd_bwd,
+                                        &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
       // Remap Pad+{Conv2D, _ITEXFusedConv2D} into the _FusedPadConv2D.
       PadWithContraction pad_with_contract;
       if (FindPadWithContraction(ctx, i, &pad_with_contract)) {
@@ -3854,7 +6589,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Mul + AddN + TrainingOp into the _FusedTrainingOp.
       FusedTrainingOp fused_training_op;
-      if (FindFusedTrainingOp(ctx, i, &fused_training_op)) {
+      if (level == RemapperLevel::BASIC &&
+          FindFusedTrainingOp(ctx, i, &fused_training_op)) {
         TF_ABORT_IF_ERROR(AddFusedTrainingNode(
             &ctx, fused_training_op, &invalidated_nodes, &nodes_to_delete));
         continue;
@@ -3870,7 +6606,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // delete dequantize node if it finds dequantize_with_shape pattern
       DequantizeWithShape dequantize_with_shape;
-      if (FindDequantizeWithShape(ctx, i, &dequantize_with_shape)) {
+      if (level == RemapperLevel::BASIC &&
+          FindDequantizeWithShape(ctx, i, &dequantize_with_shape)) {
         TF_ABORT_IF_ERROR(AddFusedDequantizeWithShape(
             &ctx, dequantize_with_shape, &invalidated_nodes, &nodes_to_delete));
         continue;
@@ -3878,7 +6615,7 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // delete dequantize node if it finds dequantize_with_reshape pattern
       DequantizeWithReshape dequantize_with_reshape;
-      if (is_layout_opt &&
+      if (is_layout_opt && level == RemapperLevel::BASIC &&
           FindDequantizeWithReshape(ctx, i, &dequantize_with_reshape)) {
         TF_ABORT_IF_ERROR(AddFusedDequantizeWithReshape(
             &ctx, dequantize_with_reshape, &invalidated_nodes,
@@ -3897,16 +6634,34 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
         continue;
       }
 
+      QuantizedConv2DWithDequantize conv2d_with_dequantize;
+      if (is_layout_opt && (FindQuantizedConv2DWithDequantize(
+                               ctx, i, &conv2d_with_dequantize))) {
+        TF_ABORT_IF_ERROR(AddQuantizedConv2DWithDequantizeNode(
+            &ctx, conv2d_with_dequantize, &invalidated_nodes,
+            &nodes_to_delete));
+        continue;
+      }
+
+      QuantizedConv2DWithCast conv2d_with_cast;
+      if (is_layout_opt &&
+          (FindQuantizedConv2DWithCast(ctx, i, &conv2d_with_cast))) {
+        TF_ABORT_IF_ERROR(AddQuantizedConv2DWithCastNode(
+            &ctx, conv2d_with_cast, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
       // Remap L2loss+AddN into the _FusedAddN
       FusedAddN fused_addn;
-      if (FindFusedAddN(ctx, i, &fused_addn)) {
+      if (level == RemapperLevel::BASIC && FindFusedAddN(ctx, i, &fused_addn)) {
         TF_ABORT_IF_ERROR(AddFusedAddN(&ctx, fused_addn, &invalidated_nodes,
                                        &nodes_to_delete));
         continue;
       }
 
       AddV2WithSoftmax fused_addv2_with_softmax;
-      if (FindAddV2WithSoftmax(ctx, i, &fused_addv2_with_softmax)) {
+      if (level == RemapperLevel::BASIC &&
+          FindAddV2WithSoftmax(ctx, i, &fused_addv2_with_softmax)) {
         TF_ABORT_IF_ERROR(
             AddFusedAddV2WithSoftmaxNode(&ctx, fused_addv2_with_softmax,
                                          &invalidated_nodes, &nodes_to_delete));
@@ -3923,7 +6678,8 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Random Comparison+Cast into the RandomWithComparisonAndCast.
       RandomWithComparisonAndCast random_with_compare_and_cast;
-      if (FindRandomWithComparisonAndCast(ctx, i,
+      if (level == RemapperLevel::BASIC &&
+          FindRandomWithComparisonAndCast(ctx, i,
                                           &random_with_compare_and_cast)) {
         TF_ABORT_IF_ERROR(AddRandomWithComparisonAndCastNode(
             &ctx, random_with_compare_and_cast, &invalidated_nodes,
@@ -3943,35 +6699,64 @@ Status RunRemapper(const char* device_name, const GrapplerItem& item,
 
       // Remap Comparison+Cast into the ComparisonWithCast.
       ComparisonWithCast comparison_with_cast;
-      if (FindComparisonWithCast(ctx, i, &comparison_with_cast)) {
+      if (level == RemapperLevel::BASIC &&
+          FindComparisonWithCast(ctx, i, &comparison_with_cast)) {
         TF_ABORT_IF_ERROR(AddComparisonWithCastNode(
             &ctx, comparison_with_cast, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
 
-      // Remap Mul+Max into the LeakyRelu.
-      MulWithMaximum mul_with_maximum;
-      if (FindMulWithMaximum(ctx, i, &mul_with_maximum)) {
-        TF_ABORT_IF_ERROR(AddMulWithMaximumNode(
-            &ctx, mul_with_maximum, &invalidated_nodes, &nodes_to_delete));
+      // Remap Const+Cast into the Const. this fusion aims to reduce the number
+      // of Cast which were produced by auto mixed precision.
+      ConstWithCast const_with_cast;
+      if (level == RemapperLevel::BASIC &&
+          FindConstWithCast(ctx, i, &const_with_cast)) {
+        TF_ABORT_IF_ERROR(AddConstWithCastNode(
+            &ctx, const_with_cast, &invalidated_nodes, &nodes_to_delete));
         continue;
       }
-    }
 
-    // Remap Const+Cast into the Const. this fusion aims to reduce the number
-    // of Cast which were produced by auto mixed precision.
-    ConstWithCast const_with_cast;
-    if (FindConstWithCast(ctx, i, &const_with_cast)) {
-      TF_ABORT_IF_ERROR(AddConstWithCastNode(
-          &ctx, const_with_cast, &invalidated_nodes, &nodes_to_delete));
-      continue;
-    }
+      // Remap sequatial Binary ops into the _ITEXFusedBinary op.
+      // Disable it in 1st remapper since it may break other high priority
+      // fusions.
+      FusedBinary seq_binary;
+      if (level != RemapperLevel::BASIC &&
+          FindFusedBinary(ctx, i, &seq_binary)) {
+        TF_ABORT_IF_ERROR(AddFusedBinaryNode(
+            &ctx, seq_binary, &invalidated_nodes, &nodes_to_delete));
+      }
 
-    // Remap sequatial Binary ops into the _ITEXFusedBinary op.
-    FusedBinary seq_binary;
-    if (FindFusedBinary(ctx, i, &seq_binary)) {
-      TF_ABORT_IF_ERROR(AddFusedBinaryNode(&ctx, seq_binary, &invalidated_nodes,
-                                           &nodes_to_delete));
+      // Remap StridedSliceGrad to Pad when the stride of it is 1.
+      StridedSliceGrad strided_slice_grad;
+      if (FindStridedSliceGrad(ctx, i, &strided_slice_grad)) {
+        TF_ABORT_IF_ERROR(AddStridedSliceGrad(
+            &ctx, strided_slice_grad, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+    } else {
+      // Only run in llga mode
+      // TODO(itex): create other names for functions below
+      bool onednn_graph_all_type_flag =
+          GetOptimizerConfigFlags().enable_onednn_graph_all_type;
+      bool onednn_graph_compiler_backend_flag =
+          GetOptimizerConfigFlags().enable_onednn_graph_compiler_backend;
+      if (!onednn_graph_all_type_flag || !onednn_graph_compiler_backend_flag) {
+        continue;
+      }
+
+      ConvBackpropInputWithSlice conv_with_slice;
+      if (FindConv2DBackpropInputWithSliceLLGA(ctx, i, &conv_with_slice)) {
+        TF_ABORT_IF_ERROR(AddConv2DBackpropInputWithSliceNodeLLGA(
+            &ctx, conv_with_slice, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      PadConvFwdBwd pad_conv_fwd_bwd;
+      if (FindPadConvFwdBwd(ctx, i, &pad_conv_fwd_bwd)) {
+        TF_ABORT_IF_ERROR(AddPadConvFwdBwd(
+            &ctx, pad_conv_fwd_bwd, &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
     }
   }
 

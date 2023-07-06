@@ -23,7 +23,9 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/kernels/common/conv_ops.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/onednn/block/quantized_ops.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/errors.h"
@@ -419,10 +421,10 @@ class LegacyQuantizedConvOpBase
         // the scaling factor of 255.0f cancels each other and thus is avoided.
         // If it is not then  it is DT_INT8 and is scaled appropriately.
 
-        if (summand_type == DT_QUINT8) {
-          sum_post_op_scale = scale_summand / scale_output;
-        } else {
+        if (std::is_same<Toutput, quint8>::value && summand_type == DT_QINT8) {
           sum_post_op_scale = 255.0f * scale_summand / (scale_output * 127.0f);
+        } else {
+          sum_post_op_scale = scale_summand / scale_output;
         }
       } else {
         sum_post_op_scale = 1.0;
@@ -446,10 +448,101 @@ class LegacyQuantizedConvOpBase
   Tbias* GetBiasHandle(OpKernelContext* context,
                        const Tensor& bias_tensor) override {
     if (std::is_same<Tbias, qint32>::value) {
+#ifdef ITEX_ONEDNN_3_0
+      if (std::is_same<Toutput, qint32>::value) {
+        return static_cast<Tbias*>(
+            const_cast<Tbias*>(bias_tensor.flat<Tbias>().data()));
+      }
+      if (is_bias_const_ && !bias_cache_manager.IsEmpty()) {
+        return static_cast<Tbias*>(bias_cache_manager.GetCache(context));
+      }
+      Tensor scaled_bias;
+      TF_ABORT_IF_ERROR(context->allocate_temp(
+          DataTypeToEnum<float>::v(), bias_tensor.shape(), &scaled_bias));
+      const Device& d = context->eigen_device<Device>();
+
+      Tensor bias_tensor_int32;
+      ITEX_CHECK_OK(bias_tensor_int32.BitcastFrom(bias_tensor, DT_INT32,
+                                                  bias_tensor.shape()));
+      CastDataType<Device, int32, float>{}(
+          d, const_cast<const Tensor&>(bias_tensor_int32).flat<int32>(),
+          scaled_bias.flat<float>());
+
+      const std::vector<float>& scale = this->post_op_util_.GetOutputScale();
+      float* bias_scales_ptr;
+      if (std::is_same<Toutput, float>::value ||
+          std::is_same<Toutput, Eigen::bfloat16>::value ||
+          std::is_same<Toutput, Eigen::half>::value) {
+        const float min_input =
+            context->input(kSrcMinRangeIndex).flat<float>()(0);
+        const float max_input =
+            context->input(kSrcMaxRangeIndex).flat<float>()(0);
+        const Tensor& min_filter_vector = context->input(kFilterMinRangeIndex);
+        const Tensor& max_filter_vector = context->input(kFilterMaxRangeIndex);
+        const float* min_filter = min_filter_vector.flat<float>().data();
+        const float* max_filter = max_filter_vector.flat<float>().data();
+
+        const float int_const_scale_limit =
+            (std::is_same<Tinput, quint8>::value) ? 255.0 * 127.0
+                                                  : 127.0 * 127.0;
+        // Re-scale bias if either of following 2 conditions are met:
+        // 1. Bias is not const;
+        // 2. Bias is const, but bias cache is empty (first iteration).
+
+        // TODO(itex): avoid to use new memory
+        size_t depth = min_filter_vector.NumElements();
+        scales_.resize(depth);
+
+        for (size_t i = 0; i < depth; ++i) {
+          float tmp_scale =
+              (std::max(std::abs(max_input), std::abs(min_input)) *
+               std::max(std::abs(max_filter[i]), std::abs(min_filter[i]))) /
+              int_const_scale_limit;
+          // TODO(itex): Check whether delete some instuctions about
+          // scales_are_valid is correct
+          scales_[i] = tmp_scale;
+        }
+        if (bias_cache_manager.IsEmpty()) {
+          bias_scales_ptr = bias_scale_cache_.GetCachedPtr(
+              context, scales_.data(), scales_.size());
+        }
+
+      } else {
+        if (bias_cache_manager.IsEmpty()) {
+          bias_scales_ptr = bias_scale_cache_.GetCachedPtr(
+              context, scale.data(), scale.size());
+        }
+      }
+      if (bias_cache_manager.IsEmpty()) {
+        dnnl::primitive_attr bias_attr;
+        memory bias_scales_mem({{static_cast<dnnl_dim_t>(scale.size())},
+                                memory::data_type::f32,
+                                memory::format_tag::x},
+                               this->onednn_engine_,
+                               reinterpret_cast<void*>(bias_scales_ptr));
+        if (scale.size() == 1) {
+          bias_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+        } else {
+          bias_attr.set_scales_mask(DNNL_ARG_SRC, 1);
+        }
+
+        auto bias_md =
+            memory::desc({static_cast<int>(bias_tensor.NumElements())},
+                         OneDnnType<float>(), memory::format_tag::x);
+        void* bias_data = static_cast<void*>(
+            const_cast<float*>(scaled_bias.flat<float>().data()));
+
+        // TODO(itex): Check whether the bias_md is always equals to
+        // conv_pd.bias_desc()
+        bias_cache_manager.SetCache(context, bias_md, bias_attr, bias_data,
+                                    this->onednn_engine_, bias_scales_mem);
+      }
+      return static_cast<Tbias*>(bias_cache_manager.GetCache(context));
+#else
       return static_cast<Tbias*>(
           const_cast<Tbias*>(bias_tensor.flat<Tbias>().data()));
+#endif
     }
-
     const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
     const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
     const Tensor& min_filter_vector = context->input(kFilterMinRangeIndex);
@@ -466,6 +559,10 @@ class LegacyQuantizedConvOpBase
     // TODO(itex): avoid to use new memory
     size_t depth = min_filter_vector.NumElements();
     scales_.resize(depth);
+
+#ifdef ITEX_ONEDNN_3_0
+    const std::vector<float>& scale = this->post_op_util_.GetOutputScale();
+#endif
     for (size_t i = 0; i < depth; ++i) {
       float tmp_scale =
           int_const_scale_limit /
@@ -473,16 +570,35 @@ class LegacyQuantizedConvOpBase
            std::max(std::abs(max_filter[i]), std::abs(min_filter[i])));
       // TODO(itex): Check whether delete some instuctions about
       // scales_are_valid is correct
+#ifdef ITEX_ONEDNN_3_0
+      scales_[i] = tmp_scale * scale[i];
+#else
       scales_[i] = tmp_scale;
+#endif
     }
     // TODO(itex): is_bias_const_ is useless, delete it
     if (!is_bias_const_ || bias_cache_manager.IsEmpty()) {
       dnnl::primitive_attr bias_attr;
+#ifdef ITEX_ONEDNN_3_0
+      float* bias_scales_ptr =
+          bias_scale_cache_.GetCachedPtr(context, scales_.data(), depth);
+      memory bias_scales_mem({{static_cast<dnnl_dim_t>(depth)},
+                              memory::data_type::f32,
+                              memory::format_tag::x},
+                             this->onednn_engine_,
+                             reinterpret_cast<void*>(bias_scales_ptr));
+      if (depth == 1) {
+        bias_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+      } else {
+        bias_attr.set_scales_mask(DNNL_ARG_SRC, 1);
+      }
+#else
       if (depth == 1) {
         bias_attr.set_output_scales(0, scales_);
       } else {
         bias_attr.set_output_scales(1, scales_);
       }
+#endif
 
       auto bias_md = memory::desc({static_cast<int>(bias_tensor.NumElements())},
                                   OneDnnType<Tbias>(), memory::format_tag::x);
@@ -491,8 +607,14 @@ class LegacyQuantizedConvOpBase
 
       // TODO(itex): Check whether the bias_md is always equals to
       // conv_pd.bias_desc()
+
+#ifdef ITEX_ONEDNN_3_0
+      bias_cache_manager.SetCache(context, bias_md, bias_attr, bias_data,
+                                  this->onednn_engine_, bias_scales_mem);
+#else
       bias_cache_manager.SetCache(context, bias_md, bias_attr, bias_data,
                                   this->onednn_engine_);
+#endif
     }
     return bias_cache_manager.GetCache(context);
   }
@@ -512,7 +634,7 @@ class LegacyQuantizedConvOpBase
       return;
     }
 
-    if (std::is_same<Toutput, quint8>::value) {
+    if (!std::is_same<Toutput, qint32>::value) {
       Tensor& summand = const_cast<Tensor&>(context->input(kSummandDataIndex));
 
       // TODO(itex): We could try to use Tsummand here
@@ -520,7 +642,7 @@ class LegacyQuantizedConvOpBase
       ITEX_CHECK((summand_type == DT_QINT8) || (summand_type == DT_QUINT8));
 
       // TODO(itex): Handle both block and plain layout tensors
-      if (summand_type == DT_QINT8) {
+      if (std::is_same<Toutput, quint8>::value && summand_type == DT_QINT8) {
         // TODO(itex): TF proper uses bitcastfrom, check whether there is
         // problem here.
         OP_REQUIRES_OK(
@@ -529,11 +651,26 @@ class LegacyQuantizedConvOpBase
 
       // Here is workaround to always forward add tensor in conv + bias + add +
       // relu int8 fusion
-      // TODO(itex): Implement code for "inplace_sum = False" and discuss with
+      // FIXME(itex): Implement code for "inplace_sum = False" and discuss with
       // LPOT about new design.
       // JIRA: https://jira.devtools.intel.com/browse/TFDO-5059
+      if (std::is_same<Toutput, qint8>::value &&
+          std::is_same<Tsummand, qint8>::value &&
+          context->input(kSummandDataIndex).dtype() == DT_QUINT8) {
+        // To bypass the INC pb generation bug. INC may wrongly set Tsummand
+        // attr qint8 when the actual input is quint8. Intel-TF can avoid the
+        // issue by internal type check in forward_input_to_output_with_shape.
+        // Since ITEX have to use set_output here, it will always inplace, and
+        // cause crash.
+        // TODO(itex): Discuss with INC to fix incorrect pb.
+        OP_REQUIRES_OK(context,
+                       context->allocate_output(this->kDstIndex_,
+                                                dst_tensor_shape, dst_tensor));
+      } else {
+        context->set_output(this->kDstIndex_,
+                            context->input(kSummandDataIndex));
+      }
 
-      context->set_output(this->kDstIndex_, context->input(kSummandDataIndex));
       *dst_tensor = context->mutable_output(this->kDstIndex_);
       return;
     }
@@ -573,12 +710,26 @@ class LegacyQuantizedConvOpBase
                    std::max(std::abs(max_filter[i]), std::abs(min_filter[i])));
     }
     dnnl::primitive_attr reorder_attr;
+#ifdef ITEX_ONEDNN_3_0
+    float* output_scale_ptr =
+        output_scale_cache_.GetCachedPtr(context, scales.data(), depth);
+    memory output_scales_mem({{static_cast<dnnl_dim_t>(depth)},
+                              memory::data_type::f32,
+                              memory::format_tag::x},
+                             this->onednn_engine_,
+                             reinterpret_cast<void*>(output_scale_ptr));
+    if (depth == 1) {
+      reorder_attr.set_scales_mask(DNNL_ARG_SRC, 0);
+    } else {
+      reorder_attr.set_scales_mask(DNNL_ARG_SRC, 2);
+    }
+#else
     if (depth == 1) {
       reorder_attr.set_output_scales(0, scales);
     } else {
       reorder_attr.set_output_scales(2, scales);
     }
-
+#endif
     // TODO(itex) Remove this hard code.
     auto summand_md =
         memory::desc(dst_dims_onednn, OneDnnType<Tbias>(),
@@ -600,7 +751,12 @@ class LegacyQuantizedConvOpBase
     dnnl::reorder summand_scaled_primitive =
         dnnl::reorder(summand_mem, dst_mem, reorder_attr);
     std::unordered_map<int, dnnl::memory> reorder_args = {
-        {DNNL_ARG_SRC, summand_mem}, {DNNL_ARG_DST, dst_mem}};
+        {DNNL_ARG_SRC, summand_mem},
+        {DNNL_ARG_DST, dst_mem},
+#ifdef ITEX_ONEDNN_3_0
+        {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, output_scales_mem},
+#endif
+    };
     auto onednn_stream = CreateDnnlStream(*context, this->onednn_engine_);
     summand_scaled_primitive.execute(onednn_stream, reorder_args);
   }
@@ -636,6 +792,10 @@ class LegacyQuantizedConvOpBase
   std::vector<float> scales_;
   // Bias cache manager
   BiasCacheManager<Tbias> bias_cache_manager;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, float> bias_scale_cache_;
+#endif
 };
 
 }  // namespace itex

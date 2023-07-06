@@ -11,6 +11,8 @@ licenses([
 
 exports_files(["LICENSE"])
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
 #load("//third_party/mkl:build_defs.bzl", "if_mkl")
 
 EIGEN3_THIRD_PARTY_HEADERS = [
@@ -36,7 +38,7 @@ cc_library(
     includes = [],  #+ if_mkl(["./mkl_include"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/build_option/dpcpp:eigen_dpcpp_header",
+        "//third_party/build_option/dpcpp:eigen_itex_gpu_header",
         "@eigen_archive//:eigen",
     ],
 )

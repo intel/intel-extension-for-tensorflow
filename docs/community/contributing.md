@@ -12,7 +12,7 @@ We welcome community contributions to Intel® Extension for TensorFlow*. Before 
     - Search for your issue in the [issue list](https://github.com/intel/intel-extension-for-tensorflow/issues).
     - Pick an issue and comment that you'd like to work on the bug-fix or feature.
 
-* For bug-fix, please submit a Pull Request to project [github](https://github.com/intel/intel-extension-for-tensorflow/issues).
+* For bug-fix, please submit a Pull Request to project [github](https://github.com/intel/intel-extension-for-tensorflow/pulls).
 
   Ensure that you can build the product and run all the examples with your patch.
   Submit a [pull request](https://github.com/intel/intel-extension-for-tensorflow/pulls).
@@ -26,7 +26,7 @@ We welcome community contributions to Intel® Extension for TensorFlow*. Before 
 
 ## Developing Intel® Extension for TensorFlow\*
 
-Please refer to a full set of [instructions](../install/how_to_build.md) on installing Intel® Extension for TensorFlow\* from source.
+Refer to a full set of [instructions](../install/how_to_build.md) on installing Intel® Extension for TensorFlow\* from source.
 
 ## Tips and Debugging
 
@@ -85,10 +85,10 @@ The C++ code should conform to the [Google C++ Style Guide](https://google.githu
 To install `clang-format` and check a file with `clang-format` against custom style definition from the Intel® Extension for TensorFlow* source code root directory:
 
 ```bash
-apt-get install clang-format-8
+apt-get install clang-format-12
 
 # The -i option makes it inplace, by default formatted output is written to stdout
-clang-format-8 -i -style=file <file>
+clang-format-12 -i -style=file <file>
 ```
 
 To install `cpplint` and check a file with `cpplint` from the Intel® Extension for TensorFlow* source code root directory:
@@ -99,7 +99,7 @@ pip install cpplint
 cpplint --filter=-legal/copyright --exclude=./third_party --recursive ./
 ```
 
-Sometimes `cpplint` may report false positive errors, and you can comment code with `// NOLINT` or `// NOLINTNEXTLINE` to skip the line for check:
+Sometimes `cpplint` may report false positive errors. You can comment code with `// NOLINT` or `// NOLINTNEXTLINE` to skip the line for check:
 
 ```c++
 #include "mkl.h" // NOLINT(build/include_subdir)
@@ -110,7 +110,7 @@ Sometimes `cpplint` may report false positive errors, and you can comment code w
 
 ### bazel style guide
 
-[buildifier](https://github.com/bazelbuild/buildtools/tree/master/buildifier) is a tool for formatting bazel `BUILD` and `.bzl` files with a standard convention(`xxx.tpl` files are not supported).
+[buildifier](https://github.com/bazelbuild/buildtools/tree/master/buildifier) is a tool for formatting bazel `BUILD` and `.bzl` files with a standard convention (`xxx.tpl` files are not supported).
 
 To check bazel files manually:
 

@@ -18,7 +18,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import gen_math_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 from utils import tailed_no_tailed_size, broadcast_binary_size_x, broadcast_binary_size_y
@@ -39,7 +39,7 @@ class AddTest(test.TestCase):
         y = np.random.normal(size=y_size)
         y = constant_op.constant(y, dtype=dtype)
         flush_cache()
-        out_gpu = math_ops.add(x, y)
+        out_gpu = gen_math_ops.add(x, y)
 
     @add_profiling
     @multi_run(ITERATION)

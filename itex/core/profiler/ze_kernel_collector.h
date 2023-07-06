@@ -900,6 +900,8 @@ class ZeKernelCollector {
       call->submit_time = command->append_time;
       call->device_submit_time = collector->GetDeviceTimestamp(device);
       call->queue = reinterpret_cast<ze_command_queue_handle_t>(command_list);
+      ZeKernelCollector::GetzePluggableTracerDeviceQueueMap()[device].insert(
+          call->queue);
     }
 
     *instance_data = static_cast<void*>(call);

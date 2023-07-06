@@ -423,6 +423,16 @@ class Conv2DTest(test.TestCase):
         strides=[2, 2],
         padding="SAME",
         expected=expected_output)
+  
+  @test_util.run_in_graph_and_eager_modes
+  def testConv2D2x2GroupedFilterStride2Same(self):
+    expected_output = [217., 271., 333., 119., 152., 189.]
+    self._VerifyValues(
+        tensor_in_sizes=[1, 2, 3, 3],
+        filter_in_sizes=[2, 2, 1, 3],
+        strides=[2, 2],
+        padding="SAME",
+        expected=expected_output)
 
   @test_util.run_in_graph_and_eager_modes()
   def testConv2D2x2Padding(self):

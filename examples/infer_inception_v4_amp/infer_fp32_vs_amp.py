@@ -34,7 +34,7 @@ def set_itex_fp32(device):
     itex.set_backend(backend)
     print("Set itex for FP32 with backend {}".format(backend))
 
-def set_itex_amp(device, amp_target):
+def set_itex_amp(amp_target):
     # set configure for auto mixed precision.
     auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()
     if amp_target=="BF16":
@@ -49,10 +49,9 @@ def set_itex_amp(device, amp_target):
     config = itex.ConfigProto(graph_options=graph_options)
     # set GPU backend.
 
-    backend = device
-    itex.set_backend(backend, config)
+    itex.set_config(config)
 
-    print("Set itex for AMP (auto_mixed_precision, {}_FP32) with backend {}".format(amp_target, backend))
+    print("Set itex for AMP (auto_mixed_precision, {}_FP32) with backend {}".format(amp_target, device))
 
 
 def main(device, amp):
@@ -64,7 +63,7 @@ def main(device, amp):
     benchmark.save_json_data(bench_res, bench_res_file)
     
     
-    set_itex_amp(device, amp)
+    set_itex_amp(amp)
     bench_res = benchmark.benchmark()
     bench_res_file = "amp_bench_res.json"
     benchmark.save_json_data(bench_res, bench_res_file)

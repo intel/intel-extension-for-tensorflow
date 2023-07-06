@@ -90,9 +90,9 @@ struct ConciseHealthKernel {
       }
       id += total_items;
     }
-    DpcppAtomicAdd(output, accum[0]);
-    DpcppAtomicAdd(output + 1, accum[1]);
-    DpcppAtomicAdd(output + 2, accum[2]);
+    ItexAtomicAdd(output, accum[0]);
+    ItexAtomicAdd(output + 1, accum[1]);
+    ItexAtomicAdd(output + 2, accum[2]);
   }
 
  private:
@@ -135,12 +135,12 @@ struct FullHealthKernel {
       id += total_items;
     }
 
-    DpcppAtomicAdd(output, accum[0]);
-    DpcppAtomicAdd(output + 1, accum[1]);
-    DpcppAtomicAdd(output + 2, accum[2]);
-    DpcppAtomicAdd(output + 3, accum[3]);
-    DpcppAtomicAdd(output + 4, accum[4]);
-    DpcppAtomicAdd(output + 5, accum[5]);
+    ItexAtomicAdd(output, accum[0]);
+    ItexAtomicAdd(output + 1, accum[1]);
+    ItexAtomicAdd(output + 2, accum[2]);
+    ItexAtomicAdd(output + 3, accum[3]);
+    ItexAtomicAdd(output + 4, accum[4]);
+    ItexAtomicAdd(output + 5, accum[5]);
   }
 
  private:
@@ -199,8 +199,8 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
     const Tout num_elem = static_cast<Tout>(tensor.NumElements());
 
     auto input = tensor.flat<Tin>();
-    auto* dpcpp_stream = context->GetDeviceStream();
-    OP_REQUIRES(context, dpcpp_stream != nullptr,
+    auto* ITEX_GPU_stream = context->GetDeviceStream();
+    OP_REQUIRES(context, ITEX_GPU_stream != nullptr,
                 errors::Internal("No GPU stream available."));
 
     // Disregard lossy cast if mode is REDUCE_INF_NAN_THREE_SLOTS because
@@ -220,17 +220,18 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
       OP_REQUIRES_OK(context,
                      context->allocate_output(0, shape, &output_tensor));
 
-      dpcpp_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0), 2);
-      dpcpp_stream->memcpy(output_tensor->data(), &tensor_id, sizeof(Tout))
+      ITEX_GPU_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0),
+                                  2);
+      ITEX_GPU_stream->memcpy(output_tensor->data(), &tensor_id, sizeof(Tout))
           .wait();
 
       if (num_elem == 0) return;
 
       auto total_items =
-          dpcpp_stream->get_device()
+          ITEX_GPU_stream->get_device()
               .template get_info<sycl::info::device::max_work_group_size>();
 
-      dpcpp_stream->submit([&](sycl::handler& cgh) {
+      ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
         auto input_data = input.data();
         auto input_size = input.size();
         auto output = output_tensor->flat<Tout>().data() + 1;
@@ -244,19 +245,20 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
       OP_REQUIRES_OK(context,
                      context->allocate_output(0, shape, &output_tensor));
 
-      dpcpp_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0), 5);
+      ITEX_GPU_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0),
+                                  5);
       const Tout static_output[] = {tensor_id, num_elem};
-      dpcpp_stream
+      ITEX_GPU_stream
           ->memcpy(output_tensor->data(), &static_output, 2 * sizeof(Tout))
           .wait();
 
       if (num_elem == 0) return;
 
       auto total_items =
-          dpcpp_stream->get_device()
+          ITEX_GPU_stream->get_device()
               .template get_info<sycl::info::device::max_work_group_size>();
 
-      dpcpp_stream->submit([&](sycl::handler& cgh) {
+      ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
         auto input_data = input.data();
         auto input_size = input.size();
         auto output = output_tensor->flat<Tout>().data() + 2;
@@ -270,13 +272,14 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
       OP_REQUIRES_OK(context,
                      context->allocate_output(0, shape, &output_tensor));
 
-      dpcpp_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0), 11);
+      ITEX_GPU_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0),
+                                  11);
 
       int num_dims = tensor.dims();
       const Tout static_output[] = {tensor_id, -1.0,
                                     static_cast<Tout>(tensor.dtype()),
                                     static_cast<Tout>(num_dims), num_elem};
-      dpcpp_stream
+      ITEX_GPU_stream
           ->memcpy(output_tensor->data(),
                    static_cast<const void*>(static_output), 5 * sizeof(Tout))
           .wait();
@@ -284,9 +287,9 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
       if (num_elem == 0) return;
 
       auto total_items =
-          dpcpp_stream->get_device()
+          ITEX_GPU_stream->get_device()
               .template get_info<sycl::info::device::max_work_group_size>();
-      dpcpp_stream->submit([&](sycl::handler& cgh) {
+      ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
         auto input_data = input.data();
         auto input_size = input.size();
         auto output = output_tensor->flat<Tout>().data() + 5;
@@ -301,7 +304,8 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
       OP_REQUIRES_OK(context,
                      context->allocate_output(0, shape, &output_tensor));
 
-      dpcpp_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0), 11);
+      ITEX_GPU_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0),
+                                  11);
 
       int num_dims = tensor.dims();
       Tout static_output[10] = {tensor_id,
@@ -320,7 +324,7 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
         static_output[dim_idx++] = static_cast<Tout>(tensor.dim_size(i));
       }
 
-      dpcpp_stream
+      ITEX_GPU_stream
           ->memcpy(output_tensor->data(),
                    static_cast<const void*>(static_output), 10 * sizeof(Tout))
           .wait();
@@ -329,16 +333,16 @@ class DebugNumericSummaryV2Op<GPUDevice, Tin, Tout> : public OpKernel {
       OP_REQUIRES_OK(context,
                      context->allocate_output(0, shape, &output_tensor));
 
-      dpcpp_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0),
-                               output_tensor->flat<Tout>().size());
+      ITEX_GPU_stream->fill<Tout>(output_tensor->flat<Tout>().data(), Tout(0),
+                                  output_tensor->flat<Tout>().size());
 
       if (num_elem == 0) return;
 
       auto total_items =
-          dpcpp_stream->get_device()
+          ITEX_GPU_stream->get_device()
               .template get_info<sycl::info::device::max_work_group_size>();
 
-      dpcpp_stream->submit([&](sycl::handler& cgh) {
+      ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
         auto input_data = input.data();
         auto input_size = input.size();
         auto output = output_tensor->flat<Tout>().data();

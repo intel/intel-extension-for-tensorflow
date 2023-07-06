@@ -29,9 +29,11 @@ limitations under the License.
 #include "itex/core/utils/tf_buffer.h"
 #include "itex/core/utils/types.h"
 #include "protos/tensor.pb.h"
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
+
+#ifndef ITEX_BUILD_JAX
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/tf_tensor.h"
-#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
 class TensorProto;
@@ -80,7 +82,7 @@ class Tensor {
  public:
   explicit Tensor(TF_Tensor* buf);
 
-  Tensor() : buf_(nullptr) {}
+  Tensor() : Tensor(DT_FLOAT) {}
 
   explicit Tensor(DataType type) : shape_(type), buf_(nullptr) {}
 
@@ -176,8 +178,8 @@ class Tensor {
   /// `AsProtoField()` fills in the repeated field for `proto.dtype()`, while
   /// `AsProtoTensorContent()` encodes the content in `proto.tensor_content()`
   /// in a compact form.
-  //  void AsProtoField(TensorProto* proto);
-  void AsProtoTensorContent(TensorProto* proto);
+  /// void AsProtoField(TensorProto* proto) const;
+  void AsProtoTensorContent(TensorProto* proto) const;
 
   DataType dtype() const { return shape_.data_type(); }
 
@@ -466,7 +468,7 @@ class Tensor {
 
   template <typename T>
   T* base() const {
-    return reinterpret_cast<T*>(TF_TensorData(buf_));
+    return NumElements() ? reinterpret_cast<T*>(TF_TensorData(buf_)) : nullptr;
   }
 
   inline void CopyFromInternal(const Tensor& other, const TensorShape& shape) {
@@ -487,8 +489,13 @@ class Tensor {
     set_dtype(dtype);
 
     TF_Status* tf_status = TF_NewStatus();
-    TF_TensorBitcastFrom(other.buf_, static_cast<TF_DataType>(dtype), buf_,
-                         shape.dim_sizes().data(), shape.dims(), tf_status);
+    if (other.buf_) {
+      TF_TensorBitcastFrom(other.buf_, static_cast<TF_DataType>(dtype), buf_,
+                           shape.dim_sizes().data(), shape.dims(), tf_status);
+    } else {
+      TF_DeleteTensor(buf_);
+      buf_ = nullptr;
+    }
     Status s = StatusFromTF_Status(tf_status);
     ITEX_CHECK_EQ(Status::OK(), s);
     TF_DeleteStatus(tf_status);
@@ -708,5 +715,5 @@ typename TTypes<T, NDIMS>::ConstTensor Tensor::flat_inner_outer_dims(
 Status MakeShape(const Tensor& shape_t, TensorShape* out);
 
 }  // namespace itex
-
+#endif
 #endif  // ITEX_CORE_UTILS_PLUGIN_TENSOR_H_

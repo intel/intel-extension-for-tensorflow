@@ -281,6 +281,8 @@ bool TryGetNodeAttr(const AttrSlice& attrs, StringPiece attr_name,
                     DataType* value);  // type: "type"
 bool TryGetNodeAttr(const AttrSlice& attrs, StringPiece attr_name,
                     TensorShape* value);  // type: "shape"
+bool TryGetNodeAttr(const AttrSlice& attrs, StringPiece attr_name,
+                    PartialTensorShape* value);  // type: "shape"
 
 bool TryGetNodeAttr(const AttrSlice& attrs, StringPiece attr_name,
                     std::vector<string>* value);  // type: "list(string)"

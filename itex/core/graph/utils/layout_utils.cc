@@ -19,6 +19,7 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/onednn/onednn_post_op_util.h"
@@ -33,6 +34,49 @@ namespace graph {
 
 bool AlwaysRewrite(const utils::MutableNodeView& node_view) { return true; }
 
+// Rewrite when inputs have block layout ops.
+bool RewriteWithBlockInput(const utils::MutableNodeView& node_view) {
+  // Check whether inputs have block ops
+  int num_inputs = node_view.NumRegularFanins();
+  for (int i = 0; i < num_inputs; ++i) {
+    const NodeDef* input_node_def =
+        node_view.GetRegularFanin(i).node_view()->node();
+    string input_node_op = input_node_def->op();
+    if (IsOneDnnLayoutDependentOp(input_node_op)) return true;
+  }
+
+  return false;
+}
+
+// Rewrite rule for binary ops
+bool RewriteBinary(const utils::MutableNodeView& node_view) {
+  return NodeIsOnGpu(node_view.node()) && RewriteWithBlockInput(node_view);
+}
+
+// Rewrite rule for Cast op:
+//   1. Only rewrite if data type can be optimized by oneDNN
+//   2. Only rewrite if predecessor is oneDNN op for layout propagation
+bool RewriteCast(const utils::MutableNodeView& node_view) {
+  const NodeDef& node_def = *(node_view.node());
+
+  // Do not rewrite on GPU
+  if (NodeIsOnGpu(&node_def)) return false;
+
+  DataType T;
+
+  ITEX_CHECK_OK(GetNodeAttr(node_def, "SrcT", &T));
+  if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
+        T == DataType::DT_HALF))
+    return false;
+
+  ITEX_CHECK_OK(GetNodeAttr(node_def, "DstT", &T));
+  if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
+        T == DataType::DT_HALF))
+    return false;
+
+  return RewriteWithBlockInput(node_view);
+}
+
 bool RewriteBackwardDataType(const utils::MutableNodeView& node_view) {
   const NodeDef& node_def = *(node_view.node());
   DataType T;
@@ -42,19 +86,6 @@ bool RewriteBackwardDataType(const utils::MutableNodeView& node_view) {
     return false;
   else
     return true;
-}
-
-bool RewriteForGPU(const utils::MutableNodeView& node_view) {
-  const NodeDef* node_def = node_view.node();
-  return NodeIsOnGpu(node_def) ? true : false;
-}
-
-bool RewriteFusedBatchNormV3(const utils::MutableNodeView& node_view) {
-  const NodeDef& node_def = *(node_view.node());
-  string data_format;
-  ITEX_CHECK_OK(GetNodeAttr(node_def, "data_format", &data_format));
-
-  return true;
 }
 
 bool RewriteLayerNorm(const utils::MutableNodeView& node_view) {
@@ -74,8 +105,6 @@ bool RewriteLayerNormGrad(const utils::MutableNodeView& node_view) {
 }
 
 bool RewriteFusedBatchNormEx(const utils::MutableNodeView& node_view) {
-  if (!RewriteFusedBatchNormV3(node_view)) return false;
-
   const NodeDef& node_def = *(node_view.node());
   int num_side_inputs;
   ITEX_CHECK_OK(GetNodeAttr(node_def, "num_side_inputs", &num_side_inputs));
@@ -89,14 +118,7 @@ bool RewriteFusedBatchNormEx(const utils::MutableNodeView& node_view) {
   return true;
 }
 
-bool RewriteFusedBatchNormGradV3(const utils::MutableNodeView& node_view) {
-  if (!RewriteFusedBatchNormV3(node_view)) return false;
-  if (!RewriteBackwardDataType(node_view)) return false;
-  return true;
-}
-
 bool RewriteFusedBatchNormExGrad(const utils::MutableNodeView& node_view) {
-  if (!RewriteFusedBatchNormV3(node_view)) return false;
   if (!RewriteBackwardDataType(node_view)) return false;
 
   const NodeDef& node_def = *(node_view.node());
@@ -104,6 +126,64 @@ bool RewriteFusedBatchNormExGrad(const utils::MutableNodeView& node_view) {
   ITEX_CHECK_OK(GetNodeAttr(node_def, "activation_mode", &activation_mode));
   if (activation_mode != "ReluGrad") return false;
   return true;
+}
+
+static const std::vector<string>* GetPotentialOneDnnOpList() {
+  static std::vector<string> onednn_op_list{
+      "Add",       "AddN",           "AvgPool", "Cast",         "Concat",
+      "Conv",      "FusedBatchNorm", "Gelu",    "InstanceNorm", "Identity",
+      "LayerNorm", "MatMul",         "Mish",    "Mul",          "MaxPool",
+      "Quantize",  "Relu",           "Reshape", "Resize",       "Slice",
+      "Sub",       "Swish",
+  };
+  return &onednn_op_list;
+}
+
+bool RewriteOneDnnConv(const utils::MutableNodeView& node_view) {
+  for (int i = 0; i < node_view.NumRegularFanins(); ++i) {
+    const NodeDef* input_node_def =
+        node_view.GetRegularFanin(i).node_view()->node();
+    if (IsOneDnnLayoutDependentOp(input_node_def->op())) {
+      return true;
+    }
+  }
+
+  const std::vector<string>* potential_onednn_op = GetPotentialOneDnnOpList();
+  if (node_view.NumRegularFanouts() < 1) return false;
+  for (auto const& fanout : node_view.GetRegularFanouts()) {
+    if (fanout.size() < 1) continue;
+    for (auto const& fanout_i : fanout) {
+      auto const* fanout_node_view = fanout_i.node_view();
+      if (!fanout_node_view) continue;
+      auto const& crt_op_name = fanout_node_view->node()->op();
+      for (auto onednn_op : *potential_onednn_op) {
+        if (crt_op_name.find(onednn_op) != string::npos) {
+          if (onednn_op == "Conv" || onednn_op == "MatMal") {
+            return true;
+          } else {
+            if (fanout_node_view->NumRegularFanouts() < 1) continue;
+            for (auto const& next_op_output :
+                 fanout_node_view->GetRegularFanouts()) {
+              if (next_op_output.size() < 1) continue;
+              for (auto const& next_op_output_i : next_op_output) {
+                auto const* next_op_output_node_view =
+                    next_op_output_i.node_view();
+                if (!next_op_output_node_view) continue;
+                auto const& next_op_name =
+                    next_op_output_node_view->node()->op();
+                for (auto onednn_op : *potential_onednn_op) {
+                  if (next_op_name.find(onednn_op) != string::npos) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 bool RewriteFusedConv(const utils::MutableNodeView& node_view) {
@@ -117,6 +197,10 @@ bool RewriteFusedConv(const utils::MutableNodeView& node_view) {
   ITEX_CHECK_OK(GetNodeAttr(node_def, "fused_ops", &fused_ops));
 
   return post_op_util.AddOps(fused_ops);
+}
+
+bool RewriteOneDnnFusedConv(const utils::MutableNodeView& node_view) {
+  return RewriteFusedConv(node_view) && RewriteOneDnnConv(node_view);
 }
 
 bool RewriteMatMul(const utils::MutableNodeView& node_view) {
@@ -136,16 +220,6 @@ bool RewriteMatMul(const utils::MutableNodeView& node_view) {
   bool trans_b;
   ITEX_CHECK_OK(GetNodeAttr(node_def, "transpose_b", &trans_b));
   if (trans_b) return false;
-
-  return true;
-}
-
-// _FusedMatMulGrad is not rewritten when trans_a/trans_b is true.
-bool RewriteFusedMatMulGrad(const utils::MutableNodeView& node_view) {
-  if (!RewriteBackwardDataType(node_view)) return false;
-
-  // Disable GPU rewrite for better perf.
-  if (RewriteForGPU(node_view)) return false;
 
   return true;
 }
@@ -181,23 +255,38 @@ bool RewritePool(const utils::MutableNodeView& node_view) {
       GetTensorDim(ksize, data_format, 'C') != 1 ||
       GetTensorDim(strides, data_format, 'C') != 1)
     return false;
-
   return true;
 }
 
+bool RewriteOneDnnPool(const utils::MutableNodeView& node_view) {
+  return RewritePool(node_view) && RewriteWithBlockInput(node_view);
+}
+
 bool RewriteMaxPoolGrad(const utils::MutableNodeView& node_view) {
-  // Input1 of MaxPoolGrad should be _OneDnnMaxPool or MaxPool which can be
-  // rewrite
+  // Input1 of MaxPoolGrad should be _OneDnnMaxPool or _ITEXMaxPool
   const auto& regular_fanin_1 = node_view.GetRegularFanin(1);
   const auto* maxpool_node_view = regular_fanin_1.node_view();
-  if (!IsAnyMaxPool(*maxpool_node_view->node())) return false;
-  if (!RewritePool(*maxpool_node_view)) return false;
+  string op_name = maxpool_node_view->node()->op();
+  if (!(op_name.substr(0, 7) == "_OneDnn" || op_name.substr(0, 5) == "_ITEX"))
+    return false;
+  if (op_name.find("MaxPool") == std::string::npos) return false;
 
-  // Output0 of _OneDnnMaxPool/MaxPool should be MaxPoolGrad.
+  // Output0 of _OneDnnMaxPool/_ITEXMaxPool should be a tensor referenced by
+  // MaxPoolGrad.
   for (auto fanout : maxpool_node_view->GetRegularFanout(0)) {
     if (fanout.node_view()->node_index() == node_view.node_index()) return true;
   }
   return false;
+}
+
+bool RewriteRandomUniform(const utils::MutableNodeView& node_view) {
+  const NodeDef& node_def = *(node_view.node());
+
+  // CPU _ITEXRandomUniform doesn't support fp16.
+  DataType T;
+  ITEX_CHECK_OK(GetNodeAttr(node_def, "dtype", &T));
+  if (NodeIsOnCpu(&node_def) && T == DT_HALF) return false;
+  return true;
 }
 
 bool RewriteQuantize(const utils::MutableNodeView& node_view) {
@@ -266,12 +355,12 @@ bool RewriteNativeCast(const utils::MutableNodeView& node_view) {
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "SrcT", &T));
   if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
+        T == DataType::DT_HALF))
     return false;
 
   ITEX_CHECK_OK(GetNodeAttr(node_def, "DstT", &T));
   if (!(T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-        (T == DataType::DT_HALF && NodeIsOnGpu(&node_def))))
+        T == DataType::DT_HALF))
     return false;
 
   return true;
@@ -324,6 +413,31 @@ static const std::vector<int> GetConstFilterCheckList(
     return op_const_checklist_map.at("_default");
   }
   return op_const_checklist_map.at(op_name);
+}
+
+void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
+                             NodeDef* new_node) {
+  CopyAttrsAll(orig_node_view, new_node);
+
+  // Check and set filter attribute.
+  auto* new_attr = new_node->mutable_attr();
+
+  PartialTensorShape partial_shape;
+  if (TryGetNodeAttr(*new_node, "element_shape", &partial_shape) ||
+      TryGetNodeAttr(*new_node, "element_shape_except0", &partial_shape)) {
+    int32_t rank = partial_shape.dims();
+    SetAttrValue(rank, &(*new_attr)["num_dims_of_element_shape"]);
+    if (rank == -1) {
+      std::vector<int64_t> dims;
+      SetAttrValue(dims, &(*new_attr)["dims_of_element_shape"]);
+    } else {
+      std::vector<int64_t> dims(rank);
+      for (int32_t i = 0; i < rank; ++i) {
+        dims[i] = static_cast<int64_t>(partial_shape.dim_size(i));
+      }
+      SetAttrValue(dims, &(*new_attr)["dims_of_element_shape"]);
+    }
+  }
 }
 
 void CopyAttrsAllCheckConstFilter(const utils::MutableNodeView* orig_node_view,
@@ -450,11 +564,64 @@ void CopyAttrsQuantize(const utils::MutableNodeView* orig_node_view,
     // QuantizeV2 condition
     SetAttrValue(dtype, &(*new_attr)["dtype"]);
   }
+
+  bool is_onednn_graph_int8_graph = true;
+  // For oneDNN Graph INT8 pb, QuantizeV2's outputs are always Dequantize
+  for (auto fanout : orig_node_view->GetRegularFanout(0)) {
+    auto* fanout_node_view = fanout.node_view();
+    if (fanout_node_view->node()->op() != "Dequantize") {
+      is_onednn_graph_int8_graph = false;
+    }
+  }
+
+  SetAttrValue(is_onednn_graph_int8_graph,
+               &(*new_attr)["classic_asymmetric_algorithm"]);
+}
+
+// Check whether opname with type T is registered as oneDNN operator
+// that can accept input tensors in oneDNN layout.
+//
+// @input: name of the op
+// @return: true if opname is registered as OneDNN-layout dependent op;
+// false otherwise
+
+/////////////////////////////////////////////////////////////////////
+//  OneDnnLayoutDependentOp:        Input:  Data Tensor + Meta Tensor
+//                                  Output: Data Tensor + Meta Tensor
+//  OneDnnLayoutPartialDependentOp  Input:  Data Tensor + Meta Tensor
+//                                  Output: Data Tensor
+//  PlainLayoutOp                   Input:  Data Tensor
+//                                  Output: Data Tensor
+////////////////////////////////////////////////////////////////////
+
+bool IsOneDnnLayoutPartialDependentOp(const string& op_name) {
+  // PartialDependent op means that op can have OneDnn layout input, but
+  // plain(Eigen) layout output only
+  static const std::unordered_set<string> PartialDependentOp = {
+      "_OneDnnFusedDequantizeWithReshape",
+      "_OneDnnQuantizedReshape",
+      "_OneDnnQuantizedTranspose",
+      "_OneDnnReshape",
+      "_OneDnnShape",
+      "_OneDnnToTf",
+      "_OneDnnTranspose"};
+  return PartialDependentOp.find(op_name) != PartialDependentOp.end();
+}
+
+// Dependent op means that op can have both OneDnn layout input and output
+bool IsOneDnnLayoutDependentOp(const string& op_name) {
+  return op_name.substr(0, 7) == "_OneDnn" &&
+         !IsOneDnnLayoutPartialDependentOp(op_name);
+}
+
+// PlainLayout op means normal Eigen op. Input and output don't have meta
+// tensor.
+bool IsPlainLayoutOp(const string& op_name) {
+  return !(op_name.substr(0, 7) == "_OneDnn");
 }
 
 bool IsQuantizedOp(const string& op_name) {
   static const std::unordered_set<string> QuantizedOp = {
-      "_FusedDequantizeWithReshape",
       "Dequantize",
       "QuantizedAvgPool",
       "QuantizedConcatV2",
@@ -471,7 +638,7 @@ bool IsQuantizedOp(const string& op_name) {
 // check these ops.
 bool IsDataTypeExemptOp(const string& op_name) {
   static const std::unordered_set<string> DataTypeExemptOp = {
-      "_FusedDequantizeWithReshape",
+      "_ITEXFusedDequantizeWithReshape",
       "ITEXQuantizedAvgPool",
       "QuantizedConcatV2",
       "QuantizedConv2DAndRequantize",
@@ -507,6 +674,8 @@ bool IsDataTypeExemptOp(const string& op_name) {
       "_ITEXQuantizedConv2DWithBiasSignedSumAndReluAndRequantize",
       "_ITEXQuantizedConv2DWithBiasSumAndRelu",
       "_ITEXQuantizedConv2DWithBiasSumAndReluAndRequantize",
+      "_ITEXQuantizedConv2DWithDequantize",
+      "_ITEXQuantizedConv2DWithCast",
       "_ITEXQuantizeV2",
       "_ITEXQuantizeV2WithQuantizedConv2D",
       "_QuantizedBatchMatMul",
@@ -531,6 +700,7 @@ bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def) {
 
   // Op only used by ITEX.
   if (IsDataTypeExemptOp(op_name)) return true;
+  if (IsTensorArray(node_def)) return true;
 
   // Quantized op used by both normal TF and intel ITEX. Need to check whether
   // they are supported before rewritting.
@@ -541,8 +711,7 @@ bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def) {
       DataType T;
       AttrSlice attr_list(node_def);
       ITEX_CHECK_OK(GetNodeAttr(attr_list, "T", &T));
-      return (T == DataType::DT_QINT8 || T == DataType::DT_QUINT8 ||
-              T == DataType::DT_QINT32);
+      return (T == DataType::DT_QINT8 || T == DataType::DT_QUINT8);
     } else if (op_name == "QuantizedConv2D" ||
                op_name == "QuantizedConv2DPerChannel") {
       DataType Tinput;
@@ -569,11 +738,11 @@ bool IsLayoutRewriteSupportedDataType(const NodeDef& node_def) {
   // TODO(itex): Use standard solution to unify all custom ops instead of
   // simple condition check.
   if (IsRandomUniform(node_def)) {
-    GetNodeAttr(attr_list, "dtype", &T);
+    ITEX_CHECK_OK(GetNodeAttr(attr_list, "dtype", &T));
   }
 
   return (T == DataType::DT_FLOAT || T == DataType::DT_BFLOAT16 ||
-          (T == DataType::DT_HALF && NodeIsOnGpu(&node_def)));
+          T == DataType::DT_HALF);
 }
 
 OpDef GetOpDef(const NodeDef& node_def) {
@@ -604,6 +773,43 @@ void CopyAllAttrs(const NodeDef& orig_node, NodeDef* new_node) {
     }
     ++iter;
   }
+}
+
+string GetInputName(const NodeDef* input, const int out_slot) {
+  if (out_slot == 0)
+    return input->name();
+  else
+    return input->name() + ":" + std::to_string(out_slot);
+}
+
+static const std::vector<WorkSpaceInfo>* GetWorkspaceInfo() {
+  static std::vector<WorkSpaceInfo> wsinfo{
+      {"MaxPoolGrad", 1, 1}, {"MaxPool3DGrad", 1, 1}, {"MaxPoolGradV2", 1, 1}};
+  return &wsinfo;
+}
+
+NodeDef* AddWorkspace(const itex::graph::utils::MutableNodeView* ori_node_view,
+                      NodeDef* new_node_def) {
+  NodeDef* input_node_def = nullptr;
+  const std::vector<WorkSpaceInfo>* wsinfo = GetWorkspaceInfo();
+  for (auto it = wsinfo->cbegin(); it != wsinfo->cend(); ++it) {
+    // Add workspace edge between rewritten fwd node and rewritten bwd node.
+    if (ori_node_view->node()->op().compare(it->bwd_op) == 0) {
+      auto* fanin_node_def =
+          ori_node_view->GetRegularFanin(it->bwd_slot).node_view()->node();
+
+      // Add workspace directly, legality will be checked in
+      // `RewriteMaxPoolGrad()` later.
+      new_node_def->add_input(GetInputName(fanin_node_def, it->ws_fwd_slot));
+      input_node_def = fanin_node_def;
+      ITEX_VLOG(3) << "Workspace: Add workspace edge between ["
+                   << fanin_node_def->op() << "] and [" << new_node_def->op()
+                   << "], while rewriting [" << ori_node_view->node()->op()
+                   << "]";
+      break;
+    }
+  }
+  return input_node_def;
 }
 
 }  // namespace graph

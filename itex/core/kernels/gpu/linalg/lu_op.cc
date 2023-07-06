@@ -175,9 +175,9 @@ class LuOpGpu : public OpKernel {
 
     // Transpose the input. This is necessary because OneMKL assumes
     // column-major storage while TensorFlow uses row-major.
-    OP_REQUIRES_OK(context,
-                   DoMatrixTranspose(device, *packed_triangular_factors,
-                                     &packed_triangular_factors_transpose));
+    OP_REQUIRES_OK(context, DoConjugateMatrixTranspose(
+                                device, *packed_triangular_factors,
+                                &packed_triangular_factors_transpose));
 
     int64_t lda = num_rows;
     int64_t stride_a = lda * num_cols;
@@ -217,9 +217,9 @@ class LuOpGpu : public OpKernel {
                                  "call to LAPACK API."));
 
     // Transpose the result since we had transposed the input.
-    OP_REQUIRES_OK(
-        context, DoMatrixTranspose(device, packed_triangular_factors_transpose,
-                                   packed_triangular_factors));
+    OP_REQUIRES_OK(context, DoConjugateMatrixTranspose(
+                                device, packed_triangular_factors_transpose,
+                                packed_triangular_factors));
 
     // Pivots encode the permutation of the rows as a sequences of row swaps.
     // For each index i, row i is swapped with row pivots[i].

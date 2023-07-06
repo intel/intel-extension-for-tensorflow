@@ -54,28 +54,28 @@ struct LeftUpdate<T, scatter_nd_op::UpdateOp::ASSIGN> {
 template <typename T>
 struct LeftUpdate<T, scatter_nd_op::UpdateOp::ADD> {
   EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC void operator()(T* out, const T& val) {
-    DpcppAtomicAdd(out, val);
+    ItexAtomicAdd(out, val);
   }
 };
 
 template <typename T>
 struct LeftUpdate<T, scatter_nd_op::UpdateOp::SUB> {
   EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC void operator()(T* out, const T& val) {
-    DpcppAtomicSub(out, val);
+    ItexAtomicSub(out, val);
   }
 };
 
 template <typename T>
 struct LeftUpdate<T, scatter_nd_op::UpdateOp::MAX> {
   EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC void operator()(T* out, const T& val) {
-    DpcppAtomicMax(out, val);
+    ItexAtomicMax(out, val);
   }
 };
 
 template <typename T>
 struct LeftUpdate<T, scatter_nd_op::UpdateOp::MIN> {
   EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC void operator()(T* out, const T& val) {
-    DpcppAtomicMin(out, val);
+    ItexAtomicMin(out, val);
   }
 };
 
@@ -87,8 +87,8 @@ struct LeftUpdate<std::complex<T>, scatter_nd_op::UpdateOp::ADD> {
   EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC void operator()(
       std::complex<T>* out, const std::complex<T>& val) {
     T* ptr = reinterpret_cast<T*>(out);
-    DpcppAtomicAdd(ptr, val.real());
-    DpcppAtomicAdd(ptr + 1, val.imag());
+    ItexAtomicAdd(ptr, val.real());
+    ItexAtomicAdd(ptr + 1, val.imag());
   }
 };
 
@@ -97,8 +97,8 @@ struct LeftUpdate<std::complex<T>, scatter_nd_op::UpdateOp::SUB> {
   EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC void operator()(
       std::complex<T>* out, const std::complex<T>& val) {
     T* ptr = reinterpret_cast<T*>(out);
-    DpcppAtomicSub(ptr, val.real());
-    DpcppAtomicSub(ptr + 1, val.imag());
+    ItexAtomicSub(ptr, val.real());
+    ItexAtomicSub(ptr + 1, val.imag());
   }
 };
 }  // namespace

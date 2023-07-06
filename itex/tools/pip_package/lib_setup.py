@@ -9,12 +9,14 @@ from __future__ import print_function
 import fnmatch
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'intel_extension_for_tensorflow/python')) # pylint: disable=line-too-long
-from version import __version__
 
+from datetime import date
 from setuptools import setup
 from setuptools.command.install import install as InstallCommandBase
 from setuptools.dist import Distribution
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'intel_extension_for_tensorflow/python')) # pylint: disable=line-too-long
+from version import __version__
 
 
 # This version string is semver compatible, but incompatible with pip.
@@ -32,6 +34,12 @@ if sys.byteorder == 'little':
   REQUIRED_PACKAGES.append('grpcio >= 1.8.6')
 
 project_name = 'intel_extension_for_tensorflow_lib'
+DEV_VERSION_SUFFIX = ""
+if "--weekly_build" in sys.argv:
+        DEV_VERSION_SUFFIX = ".dev" + _VERSION.split(".dev")[1]
+        _VERSION = _VERSION.split(".dev")[0]
+        sys.argv.remove("--weekly_build")
+        project_name = "intel_extension_for_tensorflow_lib_weekly"
 if '--project_name' in sys.argv:
   project_name_idx = sys.argv.index('--project_name')
   project_name = sys.argv[project_name_idx + 1] + "_lib"
@@ -49,6 +57,10 @@ _plugin_path = 'tensorflow-plugins'
 filenames = os.listdir(_plugin_path)
 is_cpu = False
 is_gpu = False
+is_rc = "rc" in _VERSION
+if is_rc:
+  _VERSION_EXT = _VERSION.split("rc")[1]
+  _VERSION = _VERSION.split("rc")[0]
 for filename in filenames:
   if "cpu" in filename:
     is_cpu = True
@@ -59,10 +71,13 @@ if is_cpu and not is_gpu:
 elif not is_cpu and is_gpu:
   _VERSION = _VERSION + ".1"
 elif is_cpu and is_gpu:
-  raise Exception("This version does not yet support both CPU and GPU.")
+  _VERSION = _VERSION + ".2"
 else:
-  raise Exception("There are no .so files in the folder of tensorflow-plugins, please check it.")
+  raise Exception("There are no .so files in the folder of \
+                   tensorflow-plugins, please check it.")
 
+if is_rc:
+  _VERSION = _VERSION + "rc" + _VERSION_EXT
 
 class BinaryDistribution(Distribution):
 
@@ -87,10 +102,15 @@ for path in so_lib_paths:
       ['../' + x for x in find_files('*', path) if '.py' not in x]
   )
 
+env_check_tool = []
+if is_gpu:
+  env_check_tool = ['tools/*']
+
 long_description = """# Intel® Extension for Tensorflow* library
 
-[![Python](https://img.shields.io/pypi/pyversions/tensorflow.svg?style=plastic)](https://pypi.org/project/intel-extension-for-tensorflow)
-[![version](https://img.shields.io/badge/release-1.0.0-green)](https://github.com/intel/intel-extension-for-tensorflow/releases)
+[![Python](https://img.shields.io/pypi/pyversions/intel_extension_for_tensorflow)](https://badge.fury.io/py/intel-extension-for-tensorflow)
+[![PyPI version](https://badge.fury.io/py/intel-extension-for-tensorflow.svg)](https://badge.fury.io/py/intel-extension-for-tensorflow)
+[![version](https://img.shields.io/github/v/release/intel/intel-extension-for-tensorflow?color=brightgreen)](https://github.com/intel/intel-extension-for-tensorflow/releases)
 
 Intel® Extension for Tensorflow* library is the support library for Intel® Extension for Tensorflow*(https://pypi.org/project/intel-extension-for-tensorflow/). While Intel® Extension for Tensorflow* itself is a pure Python package, Intel® Extension for Tensorflow* library contains the binary (C/C++) parts of the library, including Python bindings, Intel XPU(GPU, CPU, etc) devices support.
 
@@ -107,14 +127,15 @@ class InstallCommand(InstallCommandBase):
 
   def finalize_options(self):
     ret = InstallCommandBase.finalize_options(self)  # pylint: disable=assignment-from-no-return
-    self.install_headers = os.path.join(self.install_platlib, 'intel_extension_for_tensorflow',
+    self.install_headers = os.path.join(self.install_platlib, \
+                           'intel_extension_for_tensorflow',
                                         'include')
     self.install_lib = self.install_platlib
     return ret
 
 setup(
     name=project_name,
-    version=_VERSION.replace('-', ''),
+    version=_VERSION.replace('-', '') + DEV_VERSION_SUFFIX,
     description='Intel® Extension for Tensorflow* library',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -122,7 +143,7 @@ setup(
     url='https://github.com/intel/intel-extension-for-tensorflow',
     download_url='https://github.com/intel/intel-extension-for-tensorflow/tags',
     project_urls={
-            "Bug Tracker": "https://github.com/intel/intel-extension-for-tensorflow/issues",
+        "Bug Tracker": "https://github.com/intel/intel-extension-for-tensorflow/issues",
     },
     # pylint: enable=line-too-long
     author='Intel Corporation',
@@ -138,20 +159,21 @@ setup(
     package_data={
         _ext_path: [
             'python/*.so',
-            'libitex_common.so'
-        ] + matches,
+            '*.so',
+        ] + matches + env_check_tool,
         _plugin_path: [
             '*'
         ],
         _ext_lib_path: [
             '__init__.py',
+            '__main__.py',
             "third-party-programs/*",
         ],
     },
     exclude_package_data={
         'intel_extension_for_tensorflow': ['tools']
     },
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     zip_safe=False,
     distclass=BinaryDistribution,
     # PyPI package information.
@@ -161,10 +183,10 @@ setup(
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
@@ -175,6 +197,6 @@ setup(
     license='Apache 2.0',
     keywords='Intel® Extension for Tensorflow*',
         cmdclass={
-        'install': InstallCommand,
-    },
+            'install': InstallCommand,
+        },
 )

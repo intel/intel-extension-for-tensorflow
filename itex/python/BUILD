@@ -4,19 +4,13 @@ pybind_extension(
     name = "_pywrap_itex",
     srcs = [
         "itex_wrapper.cc",
-    ] + select({
-        "@local_config_dpcpp//dpcpp:using_dpcpp": [
-            "//itex:libitex_gpu.so",
-        ],
-        "//conditions:default": [
-            "//itex:libitex_cpu.so",
-        ],
-    }),
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core:protos_all_cc",
-        "//itex/core/devices:xpu_device_util_hdr",
-        "//itex/core/utils:env_var",
+        "//itex/core/devices:device_backend_util_hdr",
+        "//itex/core/graph:config_util_hdr",
+        "//itex/core/kernels:libitex_common",
         "@com_google_absl//absl/strings",
         "@local_config_python//:python_headers",
         "@local_config_tf//:tf_header_lib",
@@ -31,6 +25,12 @@ py_library(
         ":_pywrap_itex.so",
         "//itex/core:protos_all_py",
     ],
+)
+
+py_binary(
+    name = "gen_itex_version",
+    srcs = ["gen_itex_version.py"],
+    visibility = ["//visibility:public"],
 )
 
 # This targe should only be used for API generation.

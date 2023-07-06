@@ -18,7 +18,8 @@ limitations under the License.
 #include "itex/core/kernels/common/cwise_ops_common.h"
 
 namespace itex {
-REGISTER(BinaryOp, GPU, "Atan2", functor::atan2, float);
+REGISTER3(BinaryOp, GPU, "Atan2", functor::atan2, float, Eigen::half,
+          Eigen::bfloat16);
 #ifdef ITEX_ENABLE_DOUBLE
 REGISTER(BinaryOp, GPU, "Atan2", functor::atan2, double);
 #endif  // ITEX_ENABLE_DOUBLE

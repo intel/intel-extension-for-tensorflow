@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/stateless_random_ops_v2.h"
+
 #include "itex/core/kernels/common/random_ops_util.h"
 #include "itex/core/kernels/gpu/random_op_gpu.h"
 #include "itex/core/kernels/gpu/stateless_random_ops.h"

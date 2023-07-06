@@ -74,6 +74,11 @@ const dnnl::memory::desc OneDnnShape::GetTfLayout() const {
   return dnnl::memory::desc(dims, dt, format_tag);
 }
 
+const dnnl::memory::format_tag OneDnnShape::GetFormatTag() const {
+  auto format_tag = OneDnnTensorFormatToTag(data_.tf_data_format_);
+  return format_tag;
+}
+
 void OneDnnShape::SetTfDimOrder(OneDnnTensorFormat format) {
   // Aparts from nchw/nhwc/ndhwc/ncdhw, dims sequence for normal block layout
   // is the same as the sequence for TF plain layout

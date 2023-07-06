@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <algorithm>
 
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/group_radix_select.h"
 #include "itex/core/utils/group_radix_sort.h"
 #include "itex/core/utils/radix_utils.h"
@@ -29,8 +30,7 @@ namespace itex {
 namespace functor {
 namespace internal {
 
-using LocalAcc = sycl::accessor<uint8, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<uint8_t, 1>;
 
 template <int KEYS_PER_ITEM, int GROUP_SIZE, class Selector, int SUB_GROUP_SIZE>
 struct TopkScoresKernel {
@@ -56,7 +56,7 @@ struct TopkScoresKernel {
     int local_id = item.get_local_id(1);
 
     // set the pointer of local memory and radix selector
-    uint8* local_mem = scratch_.get_pointer().get();
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch_);
     Selector rselector(g, item.get_sub_group(), local_id, local_mem);
 
     const uint32* inp_scores = scores_ + batch_id * num_classes_ * num_boxes_;
@@ -196,7 +196,7 @@ struct SortScoresKernel {
     }
 
     // get the pointer of share local memory
-    uint8* local_mem = scratch_.get_pointer().get();
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch_);
     // Sorting the scores
     Sortor(item.get_group(), item.get_sub_group(), local_id, local_mem)
         .SortDescending(item_scores, item_boxIds, ptr_candidate_scores,
@@ -372,7 +372,8 @@ struct NmsPerClassKernel {
     const int num_valid = valid_candidates_[base_offset];
 
     // local memory allocation
-    uint8* local_mem = scratch_.get_pointer().get();
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch_);
+
     float4* sorted_boxes =
         reinterpret_cast<float4*>(local_mem + NmsReducer::LocalStorage::SIZE);
 
@@ -590,7 +591,7 @@ struct MergeScoresKernel {
     const int32* inp_selected_classIds = nms_selected_classIds_ + offset;
 
     // local memory allocation
-    uint8* local_mem = scratch_.get_pointer().get();
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch_);
 
     ScoreT* local_mem_in1 = reinterpret_cast<ScoreT*>(local_mem);
     ScoreT* local_mem_in2 = local_mem_in1 + per_batch_size_;

@@ -36,10 +36,12 @@ limitations under the License.
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/types.h"
 #include "protos/node_def.pb.h"
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
+
+#ifndef ITEX_BUILD_JAX
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/kernels.h"
 #include "tensorflow/c/kernels_experimental.h"
-#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/devices/gpu/eigen_stream_device.h"
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
@@ -50,6 +52,9 @@ namespace itex {
 class OpKernelContext;
 class OpKernelConstruction;
 class PersistentTensor;
+class ResourceMgr;
+class ResourceMgrPool;
+class ScopedStepContainer;
 
 // Empty function, given to C-API requiring a function pointer
 void EmptyCopyFunctor(TF_OpKernelContext* tf_ctx, TF_Tensor* tf_source,
@@ -169,11 +174,20 @@ class OpOutputList {
 
 class OpKernelContext {
  public:
+#ifndef INTEL_CPU_ONLY
+  explicit OpKernelContext(TF_OpKernelContext* ctx)
+      : ctx_(ctx),
+        outputs_(TF_NumOutputs(ctx_)),
+        status_(TF_NewStatus()),
+        device_(ctx_, status_),
+        resource_mgr(nullptr) {}
+#else
   explicit OpKernelContext(TF_OpKernelContext* ctx)
       : ctx_(ctx),
         outputs_(TF_NumOutputs(ctx_)),
         status_(TF_NewStatus()),
         device_(ctx_, status_) {}
+#endif
 
   ~OpKernelContext() {
     if (inputs_ != nullptr) {
@@ -186,8 +200,8 @@ class OpKernelContext {
 
   int num_inputs() const;  // { return inputs->size(); }
 
-  // TODO(itex): Add TF_InputIsRef C-API to distinguish whether the input is
-  // ref tensor or not. Currently, input_dtype is not fully funtional at all !!
+  bool input_is_ref(int index) const;
+
   DataType input_dtype(int index) const;
   // Status input_dtype(StringPiece name, DataType* dtype) const;
 
@@ -203,6 +217,7 @@ class OpKernelContext {
   void* tensor_data(int index);
 
   bool is_input_same(int index, std::vector<int64> shape);
+  int64_t step_id() const;
 
   //  Status input_list(StringPiece name, OpInputList* list);
   //
@@ -329,7 +344,12 @@ class OpKernelContext {
   const Eigen::GpuDevice& eigen_gpu_device() const {
     return device_.eigen_gpu_device_;
   }
+
 #endif  // INTEL_CPU_ONLY
+
+#ifndef INTEL_CPU_ONLY
+  ResourceMgr* resource_manager();
+#endif
 
   template <typename EigenDeviceType>
   const EigenDeviceType& eigen_device() const;
@@ -347,7 +367,7 @@ class OpKernelContext {
   static constexpr int kNoReservation = -1;
 
 #ifndef INTEL_CPU_ONLY
-  DPCPPStream* GetDeviceStream() const {
+  ITEX_GPUStream* GetDeviceStream() const {
     return TF_GetStream(ctx_, status_)->stream_handle;
   }
 #else
@@ -400,6 +420,9 @@ class OpKernelContext {
 #endif  // INTEL_CPU_ONLY
   };
   InternalDevice device_;
+#ifndef INTEL_CPU_ONLY
+  ResourceMgr* resource_mgr;
+#endif
 };
 
 template <>
@@ -681,11 +704,11 @@ class Registrar {
 };
 }  // namespace register_kernel
 
-// The synchronize method of dpcpp runtime will be called in this function.
+// The synchronize method of ITEX_GPU runtime will be called in this function.
 //
 // There are 3 methods to implement kernels, including
 //   1. Using Eigen APIs.
-//   2. Using dpcpp APIs.
+//   2. Using ITEX_GPU APIs.
 //   3. Using OneDNN APIs.
 // The triple implementation will use the same stream which is the
 // `sycl::queue`. So we can directly call the wait on the stream at the end of
@@ -695,18 +718,49 @@ class Registrar {
 // types of implementation.
 bool IsSyncExecEnabled();
 bool IsVerboseEnabled();
+
+#ifndef INTEL_CPU_ONLY
+const char* const USES_FP64_MATH = "uses-fp64-math";
+const char* const ASPECT_FP64_IS_NOT_SUPPORTED = "aspect fp64 is not supported";
+const char* const FP64_ERROR_FROM_MKL = "double type is not supported";
+
+inline void RunWithSyncHandler(OpKernelContext* context, OpKernel* op) {
+  try {
+    op->Compute(context);
+  } catch (const sycl::exception& e) {
+    const string& err_msg = e.what();
+    if (err_msg.find(USES_FP64_MATH) != std::string::npos ||
+        err_msg.find(ASPECT_FP64_IS_NOT_SUPPORTED) != std::string::npos ||
+        err_msg.find(FP64_ERROR_FROM_MKL) != std::string::npos) {
+      context->CtxFailureWithWarning(itex::Status(
+          TF_Code::TF_ABORTED,
+          strings::StrCat(
+              op->type(),
+              " op uses fp64 data type, while fp64 instructions are "
+              "not supported on the platform.")));
+    } else {
+      context->CtxFailure(itex::Status(
+          TF_Code::TF_INTERNAL,
+          strings::StrCat(
+              op->type(),
+              " op executes failed with error message: ", err_msg.c_str())));
+    }
+  }
+}
+#endif
+
 inline void RunOrWaitUntilFinish(OpKernelContext* context, OpKernel* op) {
 #ifndef INTEL_CPU_ONLY
   if (IsSyncExecEnabled()) {
     auto start = std::chrono::steady_clock::now();
-    op->Compute(context);
+    RunWithSyncHandler(context, op);
     auto stream = context->GetDeviceStream();
-    auto error = dpcppStreamSynchronize(stream);
-    if (error != DPCPP_SUCCESS) {
+    auto error = ITEX_GPUStreamSynchronize(stream);
+    if (error != ITEX_GPU_SUCCESS) {
       context->CtxFailure(
           __FILE__, __LINE__,
           errors::Internal("Error to call the stream's wait with error ",
-                           dpcppGetErrorName(error)));
+                           ITEX_GPUGetErrorName(error)));
     }
     auto end = std::chrono::steady_clock::now();
     auto elapsed =
@@ -718,14 +772,14 @@ inline void RunOrWaitUntilFinish(OpKernelContext* context, OpKernel* op) {
   } else {
     if (IsVerboseEnabled()) {
       auto start = std::chrono::steady_clock::now();
-      op->Compute(context);
+      RunWithSyncHandler(context, op);
       auto end = std::chrono::steady_clock::now();
       auto elapsed =
           std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
               .count();
       ITEX_VLOG(0) << op->type() << "," << op->name() << "," << elapsed;
     } else {
-      op->Compute(context);
+      RunWithSyncHandler(context, op);
     }
   }
 #else
@@ -863,5 +917,5 @@ void CheckNotInComputeAsync(OpKernelContext* ctx,
                             const char* correct_macro_name);
 
 }  // namespace itex
-
+#endif
 #endif  // ITEX_CORE_UTILS_OP_KERNEL_H_

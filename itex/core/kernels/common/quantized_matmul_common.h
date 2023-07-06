@@ -18,12 +18,15 @@ limitations under the License.
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/kernels/common/cast_op.h"
 #include "itex/core/kernels/common/fill_functor.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/no_ops.h"
 #include "itex/core/kernels/onednn/block/quantized_ops.h"
 #include "itex/core/utils/errors.h"
@@ -62,23 +65,38 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
+
     if (is_input_zero_) {
       functor::SetZeroFunctor<Device, Toutput> f;
       OP_REQUIRES_OK(context, context->allocate_output(
                                   kOutputIndex_Dst, dst_shape_, &dst_tensor_));
       f(context->eigen_device<Device>(), dst_tensor_->flat<Toutput>());
+      const float min_input =
+          context->input(kSrcMinRangeIndex).flat<float>()(0);
+      const float max_input =
+          context->input(kSrcMaxRangeIndex).flat<float>()(0);
+
+      // TODO(itex): check whether we need to allocate different output min/max
+      // with different output scaled mode
       AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
-          context, kSrcMinRangeIndex, kSrcMaxRangeIndex, kFilterMinRangeIndex,
+          context, min_input, max_input, kFilterMinRangeIndex,
           kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
           kDstMinRangeIndex, kDstMaxRangeIndex);
+
+      scratchpad_tensor_.reset();
       return;
     }
 
     fwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
+
+    const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
+    const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
 
     AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
-        context, kSrcMinRangeIndex, kSrcMaxRangeIndex, kFilterMinRangeIndex,
+        context, min_input, max_input, kFilterMinRangeIndex,
         kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
         kDstMinRangeIndex, kDstMaxRangeIndex);
   }
@@ -114,7 +132,6 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
           scaled_bias_data = this->GetScaledBias(context, fwd_pd_, bias_tensor,
                                                  &scaled_bias_tensor);
         }
-
         Tbias* bias_data =
             std::is_same<Tweight, qint8>::value
                 ? scaled_bias_data
@@ -122,6 +139,13 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
         bias_mem_.set_data_handle(bias_data);
       }
+
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_.set_data_handle(
+          GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
 
       AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_, dst_shape_,
                            &dst_tensor_);
@@ -192,17 +216,21 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
       // Note: Extend the basic parameters for data types and fusions.
       this->ExtendInt8PostOps(context);
 
-      auto fwd_desc = dnnl::inner_product_forward::desc(
-          dnnl::prop_kind::forward_inference, src_md, weight_exec_md, bias_md,
-          dst_md);
-
       // Set post op attribution.
       dnnl::primitive_attr post_ops_attr;
       this->post_op_util_.SetPostOpAttr(&post_ops_attr);
       post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-
+#ifdef ITEX_ONEDNN_3_0
+      fwd_pd_ = dnnl::inner_product_forward::primitive_desc(
+          onednn_engine_, dnnl::prop_kind::forward_inference, src_md,
+          weight_exec_md, bias_md, dst_md, post_ops_attr);
+#else
+      auto fwd_desc = dnnl::inner_product_forward::desc(
+          dnnl::prop_kind::forward_inference, src_md, weight_exec_md, bias_md,
+          dst_md);
       fwd_pd_ = dnnl::inner_product_forward::primitive_desc(
           fwd_desc, post_ops_attr, onednn_engine_);
+#endif
       fwd_primitive_ = dnnl::inner_product_forward(fwd_pd_);
 
       // Allocate output Tensor.
@@ -259,21 +287,35 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
       dst_mem_ = CreateDnnlMemory(fwd_pd_.dst_desc(), onednn_engine_,
                                   static_cast<void*>(dst_data));
 
-      int64 scratchpad_size =
-          fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<Tinput>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
-                       GetTensorBuffer<Tinput>(&scratchpad_tensor_));
+                       GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
 
       // Execute MatMul INT8
       fwd_primitive_args_ = {{DNNL_ARG_SRC, src_mem_},
                              {DNNL_ARG_WEIGHTS, weight_mem_},
                              {DNNL_ARG_DST, dst_mem_},
                              {DNNL_ARG_SCRATCHPAD, scratchpad_mem_}};
+#ifdef ITEX_ONEDNN_3_0
+      if (this->post_op_util_.HasOutputScales()) {
+        float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
+            context, this->post_op_util_.GetOutputScale().data(),
+            this->post_op_util_.GetOutputScale().size());
+        dnnl::memory scale_mem(
+            {{static_cast<dnnl_dim_t>(
+                 this->post_op_util_.GetOutputScale().size())},
+             dnnl::memory::data_type::f32,
+             dnnl::memory::format_tag::x},
+            onednn_engine_, reinterpret_cast<void*>(output_scale_ptr));
+        fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
+                                    scale_mem);
+      }
+#endif
 
       // Note: The asymmetric compensation is calculate in bias handle
       Tensor scaled_bias_tensor;
@@ -282,7 +324,6 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
         scaled_bias_data = this->GetScaledBias(context, fwd_pd_, bias_tensor,
                                                &scaled_bias_tensor);
       }
-
       Tbias* bias_data =
           std::is_same<Tweight, qint8>::value
               ? scaled_bias_data
@@ -426,8 +467,8 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
   bool IsCachedBiasValid(float current_min_input, float current_max_input) {
     if (this->is_bias_const_ && this->is_weight_const_ &&
-        std::abs(current_min_input - saved_min_input_) < 1e-5 &&
-        std::abs(current_max_input - saved_max_input_) < 1e-5)
+        std::abs(current_min_input - saved_min_input_) < 1e-5f &&
+        std::abs(current_max_input - saved_max_input_) < 1e-5f)
       return true;
     return false;
   }
@@ -511,11 +552,11 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
         void* input_weight_host_buf =
             GetTensorBuffer<Tweight>(&weight_host_tensor);
 
-        auto* dpcpp_stream = context->GetDeviceStream();
-        dpcpp_stream
+        auto* ITEX_GPU_stream = context->GetDeviceStream();
+        ITEX_GPU_stream
             ->memcpy(input_bias_host_buf, input_bias_buf, n * sizeof(Tbias))
             .wait();
-        dpcpp_stream
+        ITEX_GPU_stream
             ->memcpy(input_weight_host_buf, input_weight_buf,
                      k * n * sizeof(Tweight))
             .wait();
@@ -540,14 +581,49 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
           for (int i = 0; i < k; ++i) {
             sum += wt_buf[i * n + j];
           }
+#ifdef ITEX_ONEDNN_3_0
+          // No need to quantize bias after onednn 3.0, y = scale*wx + b
+          if (std::is_same<Toutput, float>::value ||
+              std::is_same<Toutput, Eigen::bfloat16>::value ||
+              std::is_same<Toutput, Eigen::half>::value) {
+            adjusted_bias[j] =
+                static_cast<Tbias>(static_cast<float>(input_bias[j]) +
+                                   (sum * q_min_input / scales[j]));
+          } else if (std::is_same<Toutput, quint8>::value ||
+                     std::is_same<Toutput, qint8>::value) {
+            if (this->post_op_util_.GetOutputScale().size() == 1) {
+              adjusted_bias[j] = static_cast<Tbias>(
+                  static_cast<float>(input_bias[j]) * scales[j] *
+                      this->post_op_util_.GetOutputScale()[0] +
+                  (sum * q_min_input *
+                   this->post_op_util_.GetOutputScale()[0]));
+            } else {
+              adjusted_bias[j] = static_cast<Tbias>(
+                  static_cast<float>(input_bias[j]) * scales[j] *
+                      this->post_op_util_.GetOutputScale()[j] +
+                  (sum * q_min_input *
+                   this->post_op_util_.GetOutputScale()[j]));
+            }
+          } else {
+            adjusted_bias[j] = static_cast<Tbias>(
+                static_cast<float>(input_bias[j]) * scales[j] +
+                (sum * q_min_input));
+          }
+#else
           adjusted_bias[j] =
               static_cast<Tbias>(static_cast<float>(input_bias[j]) * scales[j] +
                                  (sum * q_min_input));
+#endif
         }
       } else {
         dnnl::primitive_attr bias_attr;
+#ifdef ITEX_ONEDNN_3_0
+        (num_weight_scales == 1) ? bias_attr.set_scales_mask(DNNL_ARG_SRC, 0)
+                                 : bias_attr.set_scales_mask(DNNL_ARG_SRC, 1);
+#else
         (num_weight_scales == 1) ? bias_attr.set_output_scales(0, bias_scales)
                                  : bias_attr.set_output_scales(1, bias_scales);
+#endif
         memory::dims input_bias_dims =
             memory::dims({1, bias_tensor.shape().dim_size(0)});
         auto input_bias_md = dnnl::memory::desc(
@@ -560,11 +636,24 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
         auto scaled_bias_mem =
             dnnl::memory(scaled_bias_md, onednn_engine_, scaled_bias_buf);
-
+#ifdef ITEX_ONEDNN_3_0
+        float* bias_scales_ptr = bias_scale_cache_.GetCachedPtr(
+            context, bias_scales.data(), num_weight_scales);
+        dnnl::memory bias_scales_mem = dnnl::memory(
+            {{static_cast<dnnl_dim_t>(num_weight_scales)},
+             dnnl::memory::data_type::f32,
+             dnnl::memory::format_tag::x},
+            onednn_engine_, reinterpret_cast<void*>(bias_scales_ptr));
+#endif
         auto reorder_prim =
             dnnl::reorder(input_bias_mem, scaled_bias_mem, bias_attr);
         std::unordered_map<int, memory> reorder_net_args = {
-            {DNNL_ARG_SRC, input_bias_mem}, {DNNL_ARG_DST, scaled_bias_mem}};
+            {DNNL_ARG_SRC, input_bias_mem},
+            {DNNL_ARG_DST, scaled_bias_mem},
+#ifdef ITEX_ONEDNN_3_0
+            {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, bias_scales_mem},
+#endif
+        };
         auto onednn_stream = CreateDnnlStream(*context, onednn_engine_);
         reorder_prim.execute(onednn_stream, reorder_net_args);
       }
@@ -581,8 +670,8 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
         void* scaled_bias_device_buf =
             GetTensorBuffer<Tbias>(&scaled_bias_device_tensor);
 
-        auto* dpcpp_stream = context->GetDeviceStream();
-        dpcpp_stream
+        auto* ITEX_GPU_stream = context->GetDeviceStream();
+        ITEX_GPU_stream
             ->memcpy(scaled_bias_device_buf, scaled_bias_buf,
                      scaled_bias_md.get_size() * sizeof(Tbias))
             .wait();
@@ -658,7 +747,8 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
   Tensor* dst_tensor_ = nullptr;
   Tensor tmp_weight_;
-  Tensor scratchpad_tensor_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
 
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;
@@ -666,7 +756,687 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
   dnnl::primitive fwd_primitive_;
   dnnl::inner_product_forward::primitive_desc fwd_pd_;
   std::unordered_map<int, memory> fwd_primitive_args_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, float> bias_scale_cache_;
+#endif
 };
+
+#ifdef ITEX_ONEDNN_3_0
+template <typename Device, typename Tinput, typename Tweight, typename Toutput>
+class LegacyQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32, Toutput>
+    : public OpKernel {
+ public:
+  explicit LegacyQuantizedMatMulOpBase(OpKernelConstruction* context)
+      : OpKernel(context) {
+    OP_REQUIRES_OK(context,
+                   context->GetAttr("transpose_a", &this->transpose_a_));
+    OP_REQUIRES_OK(context,
+                   context->GetAttr("transpose_b", &this->transpose_b_));
+    ITEX_CHECK_OK(
+        ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false, &enable_cache_));
+  }
+  void Compute(OpKernelContext* context) override {
+    mutex_lock lock(&mu_compute_);
+    dst_tensor_ = nullptr;
+    onednn_engine_ = CreateDnnlEngine<Device>(*context);
+    // onednn_stream has thread safety issue, need create a new one in
+    // every compute.
+    onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
+    InitOrSetMemory(context);
+
+    if (is_input_zero_) {
+      functor::SetZeroFunctor<Device, Toutput> f;
+      OP_REQUIRES_OK(context, context->allocate_output(
+                                  kOutputIndex_Dst, dst_shape_, &dst_tensor_));
+      f(context->eigen_device<Device>(), dst_tensor_->flat<Toutput>());
+      const float min_input =
+          context->input(kSrcMinRangeIndex).flat<float>()(0);
+      const float max_input =
+          context->input(kSrcMaxRangeIndex).flat<float>()(0);
+
+      // TODO(itex): check whether we need to allocate different output min/max
+      // with different output scaled mode
+      AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
+          context, min_input, max_input, kFilterMinRangeIndex,
+          kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
+          kDstMinRangeIndex, kDstMaxRangeIndex);
+
+      scratchpad_tensor_.reset();
+      return;
+    }
+
+    fwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
+
+    const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
+    const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
+
+    AllocateNativeOutputMinMax<Tinput, Tweight, Toutput>(
+        context, min_input, max_input, kFilterMinRangeIndex,
+        kFilterMaxRangeIndex, kMinFreezedIndex, kMaxFreezedIndex,
+        kDstMinRangeIndex, kDstMaxRangeIndex);
+  }
+
+  void InitOrSetMemory(OpKernelContext* context) {
+    if (enable_cache_ && is_init_ && context->is_input_same(0, input_dims_)) {
+      ITEX_VLOG(3) << "Hit ITEX native MatMul INT8 object cache";
+      src_mem_.set_data_handle(context->tensor_data(kInputIndex_Src));
+
+      if (is_weight_reorder_) {
+        if (!is_weight_const_) {
+          weight_mem_.set_data_handle(context->tensor_data(kInputIndex_Filter));
+          weight_mem_opt_.set_data_handle(
+              GetTensorBuffer<Tweight>(&tmp_weight_));
+          ReorderMemory(*context, &weight_mem_, &weight_mem_opt_,
+                        onednn_engine_);
+          weight_mem_ = weight_mem_opt_;
+        }
+      } else {
+        weight_mem_.set_data_handle(context->tensor_data(kInputIndex_Filter));
+      }
+
+      if (post_op_util_.HasBias()) {
+        // TODO(itex): avoid to use context->input, which may can C API and
+        // trigger new twice, causing overhead
+        const Tensor& bias_tensor = context->input(kInputIndex_Bias);
+
+        // Note: The asymmetric compensation is calculate in bias handle
+        // TODO(itex): improve the code immplementation here
+        Tensor scaled_bias_tensor;
+        float* scaled_bias_data;
+        if (std::is_same<Tweight, qint8>::value) {
+          scaled_bias_data = this->GetScaledBias(context, fwd_pd_, bias_tensor,
+                                                 &scaled_bias_tensor);
+        }
+        float* bias_data =
+            std::is_same<Tweight, qint8>::value
+                ? scaled_bias_data
+                : const_cast<float*>(bias_tensor.flat<float>().data());
+
+        bias_mem_.set_data_handle(bias_data);
+      }
+
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_.set_data_handle(
+          GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
+
+      AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_, dst_shape_,
+                           &dst_tensor_);
+
+      // Set dst mem if output need reorder.
+      // Here is trick to calculate INT8 conv + bias + add + relu, where
+      // Tsummand is s8, and Toutput is u8
+      dst_mem_.set_data_handle(GetTensorBuffer<Toutput>(dst_tensor_));
+
+    } else {
+      Init(context);
+    }
+  }
+
+  void Init(OpKernelContext* context) {
+    try {
+      // Input tensors
+      const Tensor& src_tensor = context->input(this->kInputIndex_Src);
+      const Tensor& weight_tensor = context->input(this->kInputIndex_Filter);
+      const Tensor& bias_tensor = context->input(this->kInputIndex_Bias);
+
+      fwd_primitive_args_.clear();
+
+      // Get shapes of input & filter tensors
+      TensorShape src_tf_shape = src_tensor.shape();
+      TensorShape weight_tf_shape = weight_tensor.shape();
+
+      input_dims_.clear();
+      for (int i = 0; i < src_tf_shape.dims(); ++i) {
+        input_dims_.push_back(src_tf_shape.dim_size(i));
+      }
+
+      memory::dims src_dims, weight_dims;
+
+      const int batch = this->transpose_a_ ? src_tf_shape.dim_size(1)
+                                           : src_tf_shape.dim_size(0);
+      const int k = this->transpose_a_ ? src_tf_shape.dim_size(0)
+                                       : src_tf_shape.dim_size(1);
+      const int channel = this->transpose_b_ ? weight_tf_shape.dim_size(0)
+                                             : weight_tf_shape.dim_size(1);
+
+      src_dims = {batch, k};
+      weight_dims = {channel, k};
+      dst_dims_onednn_ = {batch, channel};
+
+      // Create memory for user data.
+      // Describe how the inputs and outputs of inner-product look like. Also
+      // specify buffers containing actual input and output data.
+      auto src_md =
+          memory::desc(src_dims, OneDnnType<Tinput>(), memory::format_tag::nc);
+
+      auto weight_md = memory::desc(
+          weight_dims, OneDnnType<Tweight>(),
+          this->transpose_b_ ? memory::format_tag::oi : memory::format_tag::io);
+
+      auto weight_exec_md = memory::desc(weight_dims, OneDnnType<Tweight>(),
+                                         memory::format_tag::any);
+
+      dnnl::memory::dims bias_dims = {
+          static_cast<int>(bias_tensor.dim_size(0))};
+
+      auto bias_md =
+          memory::desc(bias_dims, OneDnnType<float>(), memory::format_tag::x);
+
+      auto dst_md = memory::desc(dst_dims_onednn_, OneDnnType<Toutput>(),
+                                 memory::format_tag::nc);
+
+      // Note: Extend the basic parameters for data types and fusions.
+      this->ExtendInt8PostOps(context);
+
+      // Set post op attribution.
+      dnnl::primitive_attr post_ops_attr;
+      this->post_op_util_.SetPostOpAttr(&post_ops_attr);
+      post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+
+      fwd_pd_ = dnnl::inner_product_forward::primitive_desc(
+          onednn_engine_, dnnl::prop_kind::forward_inference, src_md,
+          weight_exec_md, bias_md, dst_md, post_ops_attr);
+
+      fwd_primitive_ = dnnl::inner_product_forward(fwd_pd_);
+
+      // Allocate output Tensor.
+      dst_shape_ = TensorShape({batch, channel});
+
+      this->AllocateOutputTensor(context, fwd_pd_, dst_dims_onednn_, dst_shape_,
+                                 &dst_tensor_);
+
+      // Create src memory, check if src needs to be reordered
+      src_mem_ = CreateDnnlMemory(src_md, onednn_engine_,
+                                  GetTensorBuffer<Tinput>(&src_tensor));
+
+      const Tweight* weight_data = weight_tensor.flat<Tweight>().data();
+      memory::desc expected_md = fwd_pd_.weights_desc();
+
+      is_weight_reorder_ = (weight_md != expected_md);
+      if (is_weight_reorder_) {
+        if (this->weight_cache_manager.IsEmpty()) {
+          // Cache weight in first time executing this node
+          this->weight_cache_manager.SetCache(
+              context, weight_md, expected_md,
+              static_cast<void*>(const_cast<Tweight*>(weight_data)),
+              onednn_engine_);
+        }
+        Tweight* weight_cached_data =
+            this->weight_cache_manager.GetCache(context, expected_md);
+
+        if (weight_cached_data != nullptr) {
+          weight_mem_ =
+              CreateDnnlMemory(expected_md, onednn_engine_, weight_cached_data);
+        } else {
+          // Reorder if cache is failed since pd has already used any format.
+          int64_t reorder_size = expected_md.get_size() / sizeof(Tweight);
+          OP_REQUIRES_OK(context,
+                         context->allocate_temp(DataTypeToEnum<Tweight>::v(),
+                                                TensorShape({reorder_size}),
+                                                &tmp_weight_));
+          void* data_handle = GetTensorBuffer<Tweight>(&tmp_weight_);
+          weight_mem_opt_ =
+              CreateDnnlMemory(expected_md, onednn_engine_, data_handle);
+          ReorderMemory(*context, &weight_mem_, &weight_mem_opt_,
+                        onednn_engine_);
+          weight_mem_ = weight_mem_opt_;
+        }
+      } else {
+        // No reorder needed
+        weight_mem_ = CreateDnnlMemory(
+            weight_md, onednn_engine_,
+            static_cast<void*>(const_cast<Tweight*>(weight_data)));
+      }
+
+      // Create dst memory
+      Toutput* dst_data = dst_tensor_->flat<Toutput>().data();
+      dst_mem_ = CreateDnnlMemory(fwd_pd_.dst_desc(), onednn_engine_,
+                                  static_cast<void*>(dst_data));
+
+      scratchpad_size_ = fwd_pd_.scratchpad_desc().get_size() / sizeof(Tinput);
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<Tinput>::v(),
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_ =
+          dnnl::memory(fwd_pd_.scratchpad_desc(), onednn_engine_,
+                       GetTensorBuffer<Tinput>(scratchpad_tensor_.get()));
+
+      // Execute MatMul INT8
+      fwd_primitive_args_ = {{DNNL_ARG_SRC, src_mem_},
+                             {DNNL_ARG_WEIGHTS, weight_mem_},
+                             {DNNL_ARG_DST, dst_mem_},
+                             {DNNL_ARG_SCRATCHPAD, scratchpad_mem_}};
+      if (this->post_op_util_.HasOutputScales()) {
+        float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
+            context, this->post_op_util_.GetOutputScale().data(),
+            this->post_op_util_.GetOutputScale().size());
+        dnnl::memory scale_mem(
+            {{static_cast<dnnl_dim_t>(
+                 this->post_op_util_.GetOutputScale().size())},
+             dnnl::memory::data_type::f32,
+             dnnl::memory::format_tag::x},
+            onednn_engine_, reinterpret_cast<void*>(output_scale_ptr));
+        fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
+                                    scale_mem);
+      }
+
+      // Note: The asymmetric compensation is calculate in bias handle
+      Tensor scaled_bias_tensor;
+      float* scaled_bias_data;
+      if (std::is_same<Tweight, qint8>::value) {
+        scaled_bias_data = this->GetScaledBias(context, fwd_pd_, bias_tensor,
+                                               &scaled_bias_tensor);
+      }
+      // Create bias memory, since it is 1-dimension, no reordered needed
+      bias_mem_ = CreateDnnlMemory(fwd_pd_.bias_desc(), onednn_engine_,
+                                   scaled_bias_data);
+
+      fwd_primitive_args_.emplace(DNNL_ARG_BIAS, bias_mem_);
+      is_init_ = true;
+    } catch (dnnl::error& e) {
+      string error_msg = itex::strings::StrCat(
+          "Status: ", e.status, ", message: ", string(e.message), ", in file ",
+          __FILE__, ":", __LINE__);
+      OP_REQUIRES_OK(
+          context,
+          errors::Aborted("Operation received an exception:", error_msg));
+    }
+  }
+
+  // MatMul + Bias + Add handling
+  void SumPostopHandling(
+      OpKernelContext* context,
+      const dnnl::inner_product_forward::primitive_desc& matmul_pd,
+      const dnnl::memory::dims& dst_dims_onednn, TensorShape tensor_shape,
+      Tensor** dst_tensor) {
+    if (!(std::is_same<Toutput, float>::value ||
+          std::is_same<Toutput, Eigen::bfloat16>::value ||
+          std::is_same<Toutput, Eigen::half>::value)) {
+      ITEX_LOG(FATAL) << "Currently, we only support MatMul + Bias + Add INT8 "
+                         "fusion with float/half/bfloat16 output";
+    }
+
+    auto dst_md = matmul_pd.dst_desc();
+    const int kInputIndex_Add = 3;
+    const Tensor& add_tensor = context->input(kInputIndex_Add);
+
+    TensorShape add_tf_shape = add_tensor.shape();
+    // Check if reorder is needed.
+    if (add_tf_shape == tensor_shape) {
+      // TODO(itex): Add inplace check
+      if (true) {
+        context->set_output(kOutputIndex_Dst, add_tensor);
+        *dst_tensor = context->mutable_output(kOutputIndex_Dst);
+        return;
+      }
+      const int kUnsuccess = -1;
+      int is_forward_success = kUnsuccess;
+      OP_REQUIRES_OK(context,
+                     context->forward_input_or_allocate_output(
+                         {kInputIndex_Add}, kOutputIndex_Dst, tensor_shape,
+                         dst_tensor, &is_forward_success));
+
+      // Everything is done if forward succeed.
+      if (is_forward_success != kUnsuccess) return;
+    }
+
+    // Reorder is needed. Check `*dst_tensor` first:
+    //   1) nullptr, add shape is different with dst shape;
+    //   2) not nullptr, forward is failed but dst has been allocated;
+    if (*dst_tensor == nullptr) {
+      OP_REQUIRES_OK(context, context->allocate_output(
+                                  kOutputIndex_Dst, tensor_shape, dst_tensor));
+    }
+
+    auto onednn_engine_ = CreateDnnlEngine<Device>(*context);
+    auto add_md = dst_md;
+    memory fuse_add_src =
+        memory(add_md, onednn_engine_, GetTensorBuffer<Toutput>(&add_tensor));
+    memory fuse_add_dst =
+        memory(dst_md, onednn_engine_, GetTensorBuffer<Toutput>(*dst_tensor));
+    ReorderMemory(*context, &fuse_add_src, &fuse_add_dst, onednn_engine_);
+  }
+
+  // Allocate output tensor.
+  virtual void AllocateOutputTensor(
+      OpKernelContext* context,
+      const dnnl::inner_product_forward::primitive_desc& matmul_pd,
+      const dnnl::memory::dims& dst_dims_onednn, TensorShape tensor_shape,
+      Tensor** dst_tensor) {
+    ITEX_DCHECK(dst_tensor);
+
+    if (this->post_op_util_.HasAdd()) {
+      SumPostopHandling(context, matmul_pd, dst_dims_onednn, tensor_shape,
+                        dst_tensor);
+    } else {
+      OP_REQUIRES_OK(context, context->allocate_output(
+                                  kOutputIndex_Dst, tensor_shape, dst_tensor));
+    }
+  }
+
+  void ComputeOutputRangeForInt32(OpKernelContext* context,
+                                  float* min_output_value,
+                                  float* max_output_value) {
+    const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
+    const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
+    const float min_weight =
+        context->input(kFilterMinRangeIndex).flat<float>()(0);
+    const float max_weight =
+        context->input(kFilterMaxRangeIndex).flat<float>()(0);
+    OneDnnQuantizationRangeForMultiplication<quint8, qint8, qint32>(
+        min_input, max_input, min_weight, max_weight, min_output_value,
+        max_output_value);
+  }
+
+  virtual void ExtendInt8PostOps(OpKernelContext* context) = 0;
+
+  bool IsBiasCacheEmpty() TF_LOCKS_EXCLUDED(bias_cache_mutex_) {
+    tf_shared_lock lock(&bias_cache_mutex_);
+    // TODO(itex): investigate why bias_cached_data_.NumElements() == 1
+    // instead of 0,  when bias_cached_data_.IsInitialized() == True
+    return (!bias_cached_data_.IsInitialized());
+  }
+
+  void CacheBias(OpKernelContext* context,
+                 const Tensor& temp_scaled_bias_tensor) {
+    mutex_lock lock(&bias_cache_mutex_);
+    if (bias_cached_data_.IsInitialized()) {
+      return;
+    }
+    Tensor* bias_cached_tensor = nullptr;
+    OP_REQUIRES_OK(context, context->allocate_persistent(
+                                temp_scaled_bias_tensor.dtype(),
+                                temp_scaled_bias_tensor.shape(),
+                                &bias_cached_data_, &bias_cached_tensor));
+
+    auto* stream = context->GetDeviceStream();
+    const void* input_data = temp_scaled_bias_tensor.flat<float>().data();
+    void* output_data = bias_cached_tensor->flat<float>().data();
+    DeviceMemcpy<Device>(output_data, input_data,
+                         temp_scaled_bias_tensor.NumElements() * sizeof(float),
+                         stream);
+  }
+
+  float* GetCachedBias(OpKernelContext* context) {
+    tf_shared_lock lock(&bias_cache_mutex_);
+    const Tensor* cached_bias_data = bias_cached_data_.AccessTensor(context);
+    return const_cast<float*>(cached_bias_data->flat<float>().data());
+  }
+
+  bool IsCachedBiasValid(float current_min_input, float current_max_input) {
+    if (this->is_bias_const_ && this->is_weight_const_ &&
+        std::abs(current_min_input - saved_min_input_) < 1e-5f &&
+        std::abs(current_max_input - saved_max_input_) < 1e-5f)
+      return true;
+    return false;
+  }
+
+  virtual float* GetScaledBias(
+      OpKernelContext* context,
+      const dnnl::inner_product_forward::primitive_desc& matmul_pd,
+      const Tensor& bias_tensor, Tensor* scaled_bias_tensor) {
+    Tensor scaled_bias;
+    TF_ABORT_IF_ERROR(context->allocate_temp(
+        DataTypeToEnum<float>::v(), bias_tensor.shape(), &scaled_bias));
+    const Device& d = context->eigen_device<Device>();
+
+    Tensor bias_tensor_int32;
+    ITEX_CHECK_OK(bias_tensor_int32.BitcastFrom(bias_tensor, DT_INT32,
+                                                bias_tensor.shape()));
+    CastDataType<Device, int32, float>{}(
+        d, const_cast<const Tensor&>(bias_tensor_int32).flat<int32>(),
+        scaled_bias.flat<float>());
+
+    const float min_input = context->input(kSrcMinRangeIndex).flat<float>()(0);
+    const float max_input = context->input(kSrcMaxRangeIndex).flat<float>()(0);
+    const Tensor& min_weight_tensor = context->input(kFilterMinRangeIndex);
+    const Tensor& max_weight_tensor = context->input(kFilterMaxRangeIndex);
+    const float* min_weight = min_weight_tensor.flat<float>().data();
+    const float* max_weight = max_weight_tensor.flat<float>().data();
+    // We can use cached bias which has been scaled only when (i) bias is
+    // constant (ii) weight is constant (iii) min_input is same as saved one
+    // (iv) max_input is same as saved one (v) BiasCache is not empty.
+    if (this->IsBiasCacheEmpty() ||
+        !this->IsCachedBiasValid(min_input, max_input)) {
+      void* input_bias_buf = static_cast<void*>(
+          const_cast<float*>(scaled_bias.flat<float>().data()));
+      auto scaled_bias_md = matmul_pd.bias_desc();
+      TensorShape scaled_bias_shape;
+      scaled_bias_shape.AddDim((scaled_bias_md.get_size() / sizeof(float)));
+      auto weight_md = matmul_pd.weights_desc();
+      TensorShape weight_shape;
+      weight_shape.AddDim((weight_md.get_size() / sizeof(Tweight)));
+
+      AllocatorAttributes alloc_attr;
+      alloc_attr.set_on_host(true);
+      TF_ABORT_IF_ERROR(context->allocate_temp(DataTypeToEnum<float>::v(),
+                                               scaled_bias_shape,
+                                               scaled_bias_tensor, alloc_attr));
+      void* scaled_bias_buf =
+          static_cast<void*>(scaled_bias_tensor->flat<float>().data());
+
+      const float max_int8_input =
+          (std::is_same<Tinput, quint8>::value) ? 255.0f : 127.0f;
+      const float max_int8_weight =
+          (std::is_same<Tweight, quint8>::value) ? 255.0f : 127.0f;
+      const float range_input =
+          (mode_ == QuantizeMode::MIN_FIRST)
+              ? max_input - min_input
+              : std::max(std::abs(min_input), std::abs(max_input));
+      const size_t num_weight_scales = min_weight_tensor.NumElements();
+      std::vector<float> bias_scales(num_weight_scales, 1.0);
+      for (size_t i = 0; i < num_weight_scales; ++i) {
+        float range_weight =
+            std::max(std::abs(min_weight[i]), std::abs(max_weight[i]));
+        // scale_factor = 1/scale_factor now
+        float scale_factor =
+            (range_input * range_weight) / (max_int8_input * max_int8_weight);
+        bias_scales[i] = scale_factor;
+      }
+      if (mode_ == QuantizeMode::MIN_FIRST) {
+        const Tensor& weight_tensor = context->input(1);
+
+        // int k = weight_tensor.dim_size(0);
+        int n = weight_tensor.dim_size(1);
+#ifdef INTEL_CPU_ONLY
+        float* input_bias = static_cast<float*>(input_bias_buf);
+#else
+        // For GPU, copy bias tensor to host, for easy implementation
+        Tensor bias_host_tensor;
+        TF_ABORT_IF_ERROR(context->allocate_temp(
+            DataTypeToEnum<float>::v(), scaled_bias_shape, &bias_host_tensor,
+            alloc_attr));
+        void* input_bias_host_buf = GetTensorBuffer<float>(&bias_host_tensor);
+        auto* ITEX_GPU_stream = context->GetDeviceStream();
+        ITEX_GPU_stream
+            ->memcpy(input_bias_host_buf, input_bias_buf, n * sizeof(float))
+            .wait();
+        auto* input_bias = static_cast<float*>(input_bias_host_buf);
+#endif  // INTEL_CPU_ONLY
+
+        auto* adjusted_bias = static_cast<float*>(scaled_bias_buf);
+        // float q_min_input = max_int8_input * min_input / range_input;
+
+        // Scales needs to expanded to number of output channels by the values
+        // of bias_scales.
+        std::vector<float> scales(n);
+        if (num_weight_scales != n)  // weights quanitzed per_tensor
+          std::fill(scales.begin(), scales.end(), bias_scales[0]);
+        else
+          scales = bias_scales;  // Expensive copy
+#ifdef INTEL_CPU_ONLY
+#pragma omp parallel for schedule(static)
+#endif  // INTEL_CPU_ONLY
+        for (int j = 0; j < n; ++j) {
+          /*int sum = 0;
+          for (int i = 0; i < k; ++i) {
+            sum += wt_buf[i * n + j];
+          }*/
+          // No need to quantize bias after onednn 3.0, y = scale*wx + b
+          if (std::is_same<Toutput, float>::value ||
+              std::is_same<Toutput, Eigen::bfloat16>::value ||
+              std::is_same<Toutput, Eigen::half>::value) {
+            adjusted_bias[j] = static_cast<float>(input_bias[j] * scales[j]);
+          } else if (std::is_same<Toutput, quint8>::value ||
+                     std::is_same<Toutput, qint8>::value) {
+            if (this->post_op_util_.GetOutputScale().size() == 1) {
+              adjusted_bias[j] = static_cast<float>(
+                  input_bias[j] * this->post_op_util_.GetOutputScale()[0]);
+            } else {
+              adjusted_bias[j] = static_cast<float>(
+                  input_bias[j] * this->post_op_util_.GetOutputScale()[j]);
+            }
+          } else {
+            adjusted_bias[j] = static_cast<float>(input_bias[j]);
+          }
+        }
+      } else {
+        dnnl::primitive_attr bias_attr;
+        (num_weight_scales == 1) ? bias_attr.set_scales_mask(DNNL_ARG_SRC, 0)
+                                 : bias_attr.set_scales_mask(DNNL_ARG_SRC, 1);
+
+        memory::dims input_bias_dims =
+            memory::dims({bias_tensor.shape().dim_size(0)});
+        auto input_bias_md = dnnl::memory::desc(
+            input_bias_dims, OneDnnType<float>(), memory::format_tag::x);
+
+        auto onednn_engine_ = CreateDnnlEngine<Device>(*context);
+
+        auto input_bias_mem =
+            dnnl::memory(input_bias_md, onednn_engine_, input_bias_buf);
+
+        auto scaled_bias_mem =
+            dnnl::memory(scaled_bias_md, onednn_engine_, scaled_bias_buf);
+        float* bias_scales_ptr = bias_scale_cache_.GetCachedPtr(
+            context, bias_scales.data(), num_weight_scales);
+        dnnl::memory bias_scales_mem = dnnl::memory(
+            {{static_cast<dnnl_dim_t>(num_weight_scales)},
+             dnnl::memory::data_type::f32,
+             dnnl::memory::format_tag::x},
+            onednn_engine_, reinterpret_cast<void*>(bias_scales_ptr));
+        auto reorder_prim =
+            dnnl::reorder(input_bias_mem, scaled_bias_mem, bias_attr);
+
+        std::unordered_map<int, memory> reorder_net_args = {
+            {DNNL_ARG_SRC, input_bias_mem},
+            {DNNL_ARG_DST, scaled_bias_mem},
+            {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, bias_scales_mem},
+        };
+        auto onednn_stream = CreateDnnlStream(*context, onednn_engine_);
+        reorder_prim.execute(onednn_stream, reorder_net_args);
+      }
+
+      // Cache the scaled bias
+      if (this->is_bias_const_ && this->is_weight_const_) {
+#ifdef INTEL_CPU_ONLY
+        this->CacheBias(context, *scaled_bias_tensor);
+#else
+        Tensor scaled_bias_device_tensor;
+        TF_ABORT_IF_ERROR(context->allocate_temp(DataTypeToEnum<float>::v(),
+                                                 scaled_bias_shape,
+                                                 &scaled_bias_device_tensor));
+        void* scaled_bias_device_buf =
+            GetTensorBuffer<float>(&scaled_bias_device_tensor);
+
+        auto* ITEX_GPU_stream = context->GetDeviceStream();
+        ITEX_GPU_stream
+            ->memcpy(scaled_bias_device_buf, scaled_bias_buf,
+                     scaled_bias_md.get_size() * sizeof(float))
+            .wait();
+        this->CacheBias(context, scaled_bias_device_tensor);
+#endif  // INTEL_CPU_ONLY
+
+        this->saved_min_input_ = min_input;
+        this->saved_max_input_ = max_input;
+      }
+    }
+
+    return this->GetCachedBias(context);
+  }
+
+ protected:
+  bool is_weight_const_;
+  bool is_bias_const_;
+
+  bool transpose_a_;
+  bool transpose_b_;
+
+  // Note: Legacy MatMul INT8 kernel's bias cache is different from normal INT8
+  // bias cache. The bias calculation not only consists of scaling but also
+  // complex compensation for asymmetric zero-point. Therefore, we cannot reuse
+  // the BiasCacheManager. Here we implement a limited functionality bias
+  // manager.
+  mutex bias_cache_mutex_;
+  PersistentTensor bias_cached_data_ TF_GUARDED_BY(bias_cache_mutex_);
+
+  const int kInputIndex_Src = 0;
+  const int kInputIndex_Filter = 1;
+  const int kInputIndex_Bias = 2;
+  const int kOutputIndex_Dst = 0;
+
+  int kSrcMinRangeIndex;
+  int kSrcMaxRangeIndex;
+  int kFilterMinRangeIndex;
+  int kFilterMaxRangeIndex;
+  int kMinFreezedIndex;
+  int kMaxFreezedIndex;
+  int kDstMinRangeIndex;
+  int kDstMaxRangeIndex;
+
+  /* Quantization mode */
+  QuantizeMode mode_;
+  /* Fused MatMul */
+  PostOpUtil post_op_util_;
+  // Weight cache manager
+  WeightCacheManager<Tweight> weight_cache_manager;
+
+  float saved_min_input_ = -std::numeric_limits<float>::infinity();
+  float saved_max_input_ = std::numeric_limits<float>::infinity();
+
+  // Cache oneDNN object and TF memory
+  mutex mu_compute_;
+
+  bool enable_cache_ = false;
+  bool is_init_ = false;
+  bool is_input_zero_ = false;
+  bool is_weight_reorder_ = false;
+
+  dnnl::memory src_mem_;
+  dnnl::memory bias_mem_;
+  // Original native weight memory
+  dnnl::memory weight_mem_;
+  // Target block weight memory.
+  dnnl::memory weight_mem_opt_;
+  dnnl::memory dst_mem_;
+  dnnl::memory scratchpad_mem_;
+
+  std::vector<int64> input_dims_;
+  TensorShape dst_shape_;
+
+  memory::dims dst_dims_onednn_;
+
+  Tensor* dst_tensor_ = nullptr;
+  Tensor tmp_weight_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
+
+  dnnl::stream onednn_stream_;
+  dnnl::engine onednn_engine_;
+
+  dnnl::primitive fwd_primitive_;
+  dnnl::inner_product_forward::primitive_desc fwd_pd_;
+  std::unordered_map<int, memory> fwd_primitive_args_;
+  HostDataCache<Device, float> output_scale_cache_;
+  HostDataCache<Device, float> bias_scale_cache_;
+};
+#endif
 
 template <typename Device, typename Tinput, typename Tweight, typename Tbias,
           typename Toutput>
@@ -694,6 +1464,8 @@ class QuantizedMatMulOp
     if (context->HasAttr("is_weight_const")) {
       OP_REQUIRES_OK(context, context->GetAttr("is_weight_const",
                                                &(this->is_weight_const_)));
+    } else {
+      this->is_weight_const_ = true;
     }
     this->is_bias_const_ = true;
 
@@ -996,9 +1768,6 @@ class QuantizedFusedMatMulV2Op
     }
     OP_REQUIRES_OK(context,
                    context->GetAttr("output_quant_mode", &output_quant_mode_));
-    OP_REQUIRES(
-        context, output_quant_mode_ == "SCALED",
-        errors::Unimplemented("Requantize is supported for SCALED mode only."));
     OP_REQUIRES_OK(
         context, context->GetAttr("is_weight_const", &this->is_weight_const_));
     OP_REQUIRES_OK(context,
@@ -1007,6 +1776,14 @@ class QuantizedFusedMatMulV2Op
     // Extract activation info and canonicalize activation types to
     // common name "Activation" in the fused_ops attribute.
     OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops_));
+    // If we have min_first output quantization mode, we have to set zeropoint,
+    // so output scale here is not sufficient here. We use linear eltwise post
+    // op to set both scale & shift
+    if (std::find(fused_ops_.begin(), fused_ops_.end(), "Requantize") !=
+            fused_ops_.end() &&
+        output_quant_mode_ == "MIN_FIRST") {
+      fused_ops_.push_back("Linear");
+    }
     OP_REQUIRES(context, this->post_op_util_.AddOps(fused_ops_),
                 errors::InvalidArgument(
                     "Found unsupported fusion in _QuantizedMatMul."));
@@ -1030,6 +1807,13 @@ class QuantizedFusedMatMulV2Op
       this->kFilterMinRangeIndex += 1;
       this->kFilterMaxRangeIndex += 1;
     }
+
+    // Currently, these index are hardcoded, due to the fusion currently
+    // supported
+    this->kMinFreezedIndex = 7;
+    this->kMaxFreezedIndex = 8;
+    this->kDstMinRangeIndex = 1;
+    this->kDstMaxRangeIndex = 2;
 
     // Set alpha if get `LeakyRelu` after adding ops.
     if (this->post_op_util_.HasLeakyRelu()) {
@@ -1090,7 +1874,8 @@ class QuantizedFusedMatMulV2Op
         // Update output_scale for Requantize fusion without Activation.
         // Activation scale will be handled later.
         if (this->post_op_util_.HasRequantize() &&
-            !this->post_op_util_.HasActivation()) {
+            !this->post_op_util_.HasActivation() &&
+            !this->post_op_util_.HasLinear()) {
           const float min_output =
               context->input(kOutputMinIdx).template flat<float>()(0);
           const float max_output =
@@ -1109,7 +1894,8 @@ class QuantizedFusedMatMulV2Op
       }
 
       if (this->post_op_util_.HasActivation()) {
-        if (this->post_op_util_.HasRequantize()) {
+        if (this->post_op_util_.HasRequantize() &&
+            !this->post_op_util_.HasLinear()) {
           // Update scale for requantize fusion.
           const float min_output =
               context->input(kOutputMinIdx).template flat<float>()(0);
@@ -1120,8 +1906,26 @@ class QuantizedFusedMatMulV2Op
           const float max_int8_output =
               (std::is_same<Toutput, quint8>::value) ? 255.0f : 127.0f;
           float scale = max_int8_output / range_output;
-          this->post_op_util_.SetPostOpScale(activation_type_, scale);
+
+          // Current supported fusion, activation is always 2nd post op
+          string activation_type = fused_ops_[1];
+          this->post_op_util_.SetPostOpScale(activation_type, scale);
         }
+      }
+
+      if (this->post_op_util_.HasLinear()) {
+        // Update output_scale for requantize fusion.
+        const float min_output =
+            context->input(kOutputMinIdx).template flat<float>()(0);
+        const float max_output =
+            context->input(kOutputMaxIdx).template flat<float>()(0);
+        const float max_int8_output =
+            (std::is_same<Toutput, quint8>::value) ? 255.0f : 127.0f;
+        const float range_output = max_output - min_output;
+        float req_scale = max_int8_output / range_output;
+        float req_shift = -min_output * max_int8_output / range_output;
+
+        this->post_op_util_.SetLinearAlphaBeta(req_scale, req_shift);
       }
 
       if (this->post_op_util_.HasAdd()) {

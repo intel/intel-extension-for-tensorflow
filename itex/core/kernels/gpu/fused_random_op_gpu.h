@@ -110,6 +110,7 @@ struct FillPhiloxRandomFusedKernel<Distribution, false, Op> {
     if (dims_ == 0) {
       return compare_data_[0];
     }
+    return T(0);
   }
 
   T* data_;

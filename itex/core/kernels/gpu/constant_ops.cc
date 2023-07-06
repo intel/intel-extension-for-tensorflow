@@ -139,6 +139,8 @@ class ZerosLikeOp<Device, Variant> : public OpKernel {
         out.template flat<dtype>().constant(dtype(0));              \
     break;
         TF_CALL_POD_TYPES(DTYPE_CASE)
+        default:
+          break;
 #undef DTYPE_CASE
       }
     };

@@ -19,6 +19,7 @@
 import numpy as np
 
 from intel_extension_for_tensorflow.python.test_func import test_util
+from intel_extension_for_tensorflow.python.test_func import test
 
 from tensorflow.python.framework import constant_op
 from tensorflow.python.ops import array_ops
@@ -26,14 +27,13 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn_impl
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.ops import variables
-from tensorflow.python.platform import test as test_lib
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.ops import random_ops
 from tensorflow.python.framework import dtypes
 
 @test_util.run_all_in_native_and_block_format
 @test_util.run_all_in_graph_and_eager_modes
-class SwishTest(test_lib.TestCase):
+class SwishTest(test.TestCase):
   def testValues(self):
     np_values = np.array(
         [np.linspace(-7.0, 0.0, 100),
@@ -111,7 +111,7 @@ class SwishTest(test_lib.TestCase):
 
 @test_util.run_all_in_native_and_block_format
 @test_util.run_all_in_graph_and_eager_modes
-class SwishAlphaTest(test_lib.TestCase):
+class SwishAlphaTest(test.TestCase):
   def testValues(self):
     np_values = np.array(
         [np.linspace(-7.0, 0.0, 100),
@@ -186,5 +186,30 @@ class SwishAlphaTest(test_lib.TestCase):
 
     self.assertTrue(exsiting_swish)
 
+  @test_util.run_deprecated_v1
+  @test_util.disable_xla('This test does not pass with XLA')
+  def testNNImplSwishApi(self):
+
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    input1 = variables.Variable(random_ops.truncated_normal((6, 1), seed=0))
+    input1 = input1 * input1
+    swish1 = nn_impl.swish(input1)
+    swish1 = array_ops.identity(swish1)
+
+    with self.session() as sess:
+      sess.run(variables.global_variables_initializer())
+      output_val = sess.run(swish1, options=run_options, run_metadata=metadata)
+      graph = metadata.partition_graphs[0]
+
+    exsiting_swish = False
+    for node in graph.node:
+        if 'Swish' in node.op:
+          exsiting_swish = True
+          break
+
+    self.assertTrue(exsiting_swish)
+
 if __name__ == "__main__":
-  test_lib.main()
+  test.main()

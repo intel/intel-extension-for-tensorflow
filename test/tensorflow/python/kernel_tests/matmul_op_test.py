@@ -1,3 +1,5 @@
+# Copyright (c) 2023 Intel Corporation
+#
 # Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +23,6 @@ from intel_extension_for_tensorflow.python.test_func import test
 from intel_extension_for_tensorflow.python.test_func import test_util
 
 import operator
-import os
 
 import numpy as np
 import tensorflow as tf
@@ -38,31 +39,26 @@ from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import variables
 from intel_extension_for_tensorflow.python.test_func import test as test_lib
 
-# Test plain format
-os.environ['ITEX_ENABLE_ONEDNN_LAYOUT_OPT']="0"
-
-# TODO(yangzihao): Currently matmul autotuning is disabled by default. Use
-# os.environ["TF_MATMUL_AUTOTUNE_ENABLE"] = "1" to enable it.
-
-
+@test_util.run_all_in_native_and_block_format
 class MatVecTest(test_lib.TestCase):
   """Simple test for matvec, which is sugar on top of matmul."""
 
+  @test_util.run_deprecated_v1
   def testTwoByTwoCase(self):
-    a = np.array([[1, 2], [3, 4]])
-    b = np.array([5, 6])
-    c = math_ops.matvec(a, b)
+    a = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    b = np.array([5, 6]).astype(np.float32)
+    c = array_ops.identity(math_ops.matvec(a, b))
     self.assertAllEqual((2,), c.shape)
     self.assertAllEqual([5 + 2 * 6, 3 * 5 + 4 * 6], c)
 
-
+@test_util.run_deprecated_v1
 def _AddTest(test, op_name, testcase_name, fn):
   test_name = "_".join(["test", op_name, testcase_name])
   if hasattr(test, test_name):
     raise RuntimeError("Test %s defined more than once" % test_name)
   setattr(test, test_name, test_util.deprecated_graph_mode_only(fn))
 
-
+@test_util.run_deprecated_v1
 def _GetTransposedMatrices(x, x_name, kwargs):
   if kwargs["transpose_" + x_name] is True:
     return x.T
@@ -71,7 +67,7 @@ def _GetTransposedMatrices(x, x_name, kwargs):
   else:
     return x
 
-
+@test_util.run_all_in_native_and_block_format
 class MatMulTest(test_lib.TestCase):
 
   @test_util.run_deprecated_v1
@@ -82,23 +78,29 @@ class MatMulTest(test_lib.TestCase):
       use_gpu = False
 
     with self.cached_session(use_gpu=use_gpu):
-      a_shape = [2, 5]
-      b_shape = [5, 3]
-      dz_shape = [2, 3]
+      for dtype in (tf.float32, tf.bfloat16):
+        a_shape = [2, 5]
+        b_shape = [5, 3]
+        dz_shape = [2, 3]
 
-      a = tf.random.normal(a_shape, seed=0, dtype=np.float32)
-      b = tf.random.normal(b_shape, seed=0, dtype=np.float32)
-      dz = nn_ops.relu(tf.random.normal(dz_shape, seed=0, dtype=np.float32))
+        a = tf.random.normal(a_shape, seed=0, dtype=dtype)
+        b = tf.random.normal(b_shape, seed=0, dtype=dtype)
+        dz = nn_ops.relu(tf.random.normal(dz_shape, seed=0, dtype=dtype))
 
-      ga = math_ops.matmul(dz, b, transpose_b=True)
-      gb = math_ops.matmul(a, dz, transpose_a=True)
-      gbias = gen_nn_ops.bias_add_grad(dz)
+        ga = math_ops.matmul(dz, b, transpose_b=True)
+        gb = math_ops.matmul(a, dz, transpose_a=True)
+        gbias = gen_nn_ops.bias_add_grad(dz)
 
-      result = nn_ops.bias_add(math_ops.matmul(ga, gb), gbias)
+        result = nn_ops.bias_add(math_ops.matmul(ga, gb), gbias)
 
-    expected = [[1.377363, -18.70002, -0.45520365],
-                [1.1163716, 7.374195, 1.4626069]]
-    self.assertAllClose(expected, self.evaluate(result))
+        if dtype == tf.float32:
+          tol = 1e-6
+        else:
+          tol = 1e-2
+
+        expected = [[1.377363, -18.70002, -0.45520365],
+                    [1.1163716, 7.374195, 1.4626069]]
+        self.assertAllClose(expected, self.evaluate(result), rtol=tol, atol=tol)
 
   @test_util.run_deprecated_v1
   def testBiasAddFusionCase(self):
@@ -147,6 +149,7 @@ class MatMulTest(test_lib.TestCase):
       self.assertAllClose(c1, self.evaluate(c2))
 
 
+@test_util.run_deprecated_v1
 def _GetMatMulTest(a_np_, b_np_, use_static_shape_, **kwargs_):
 
   @test_util.run_without_tensor_float_32("Tests matmul")
@@ -169,12 +172,12 @@ def _GetMatMulTest(a_np_, b_np_, use_static_shape_, **kwargs_):
       if use_static_shape_:
         a = constant_op.constant(effective_a_np)
         b = constant_op.constant(effective_b_np)
-        res = math_ops.matmul(a, b, **kwargs_)
+        res = array_ops.identity(math_ops.matmul(a, b, **kwargs_))
         tf_val = self.evaluate(res)
       else:
         a = array_ops.placeholder(a_np_.dtype)
         b = array_ops.placeholder(b_np_.dtype)
-        res = math_ops.matmul(a, b, **kwargs_)
+        res = array_ops.identity(math_ops.matmul(a, b, **kwargs_))
         tf_val = sess.run(res, feed_dict={a: effective_a_np, b: effective_b_np})
 
     self.assertAllCloseAccordingToType(
@@ -187,11 +190,12 @@ def _GetMatMulTest(a_np_, b_np_, use_static_shape_, **kwargs_):
 
   return Test
 
-
+@test_util.run_all_in_native_and_block_format
 class MatMulGradientTest(test_lib.TestCase):
   pass  # Will be filled in below.
 
 
+@test_util.run_deprecated_v1
 def _GetMatMulGradientTest(a_np_, b_np_, use_static_shape_, **kwargs_):
 
   def Test(self):
@@ -210,27 +214,27 @@ def _GetMatMulGradientTest(a_np_, b_np_, use_static_shape_, **kwargs_):
     tol = 20 * delta
     with self.session():
       theoretical, numerical = gradient_checker_v2.compute_gradient(
-          lambda x: math_ops.matmul(x, effective_b_np, **kwargs_),
+          lambda x: array_ops.identity(math_ops.matmul(x, effective_b_np, **kwargs_)),
           [effective_a_np],
           delta=delta)
       self.assertAllClose(theoretical, numerical, rtol=tol, atol=tol)
 
       theoretical, numerical = gradient_checker_v2.compute_gradient(
-          lambda x: math_ops.matmul(effective_a_np, x, **kwargs_),
+          lambda x: array_ops.identity(math_ops.matmul(effective_a_np, x, **kwargs_)),
           [effective_b_np],
           delta=delta)
       self.assertAllClose(theoretical, numerical, rtol=tol, atol=tol)
 
   return Test
 
-
+@test_util.run_all_in_native_and_block_format
 class MatMulStatsTest(test_lib.TestCase):
 
   @test_util.run_v1_only("Test requires a Graph and NodeDef inspection")
   def testSimpleStatistics(self):
     a = variables.Variable(random_ops.random_normal([25, 16]))
     b = variables.Variable(random_ops.random_normal([16, 9]))
-    math_ops.matmul(a, b)
+    array_ops.identity(math_ops.matmul(a, b))
     g = ops.get_default_graph()
     for op in g.get_operations():
       flops = ops.get_stats_for_node_def(g, op.node_def, "flops").value
@@ -241,7 +245,7 @@ class MatMulStatsTest(test_lib.TestCase):
   def testTransposedStatistics(self):
     a = variables.Variable(random_ops.random_normal([16, 25]))
     b = variables.Variable(random_ops.random_normal([16, 9]))
-    math_ops.matmul(a, b, transpose_a=True)
+    array_ops.identity(math_ops.matmul(a, b, transpose_a=True))
     g = ops.get_default_graph()
     for op in g.get_operations():
       flops = ops.get_stats_for_node_def(g, op.node_def, "flops").value

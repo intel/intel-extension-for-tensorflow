@@ -138,6 +138,9 @@ class OneDnnReshapeOp : public OpKernel {
         OP_REQUIRES_OK(context,
                        context->allocate_output(kDstIndex, shape, &dst_tensor));
 
+        // If dst tensor is empty, we do not need to execute reorder primitive.
+        if (shape.num_elements() == 0) return;
+
         auto onednn_engine = CreateDnnlEngine<Device>(*context);
         auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
 

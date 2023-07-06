@@ -23,7 +23,7 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 
 tf.compat.v1.disable_eager_execution()
-def GetRandomNormalInput(shape, dtype):
+def GetRandomNormalInput(shape, dtype=np.float64):
     scale = 0.1
     loc = 0.1
     vals = np.array(np.random.normal(loc, scale, np.prod(shape)), dtype=dtype)
@@ -43,14 +43,14 @@ class BatchMatMulTest(test_util.TensorFlowTestCase):
         return np.matmul(x, y)
 
     # Compares TensorFlow BatchMatmul with NumPy's matmul.
-    def _compare(self, x_in, y_in, adjoint_a, adjoint_b, static_shape):
+    def _compare(self, dtype, x_in, y_in, adjoint_a, adjoint_b, static_shape):
         x_t_shape = x_in.shape[:-2] + (x_in.shape[-1], x_in.shape[-2])
         y_t_shape = y_in.shape[:-2] + (y_in.shape[-1], y_in.shape[-2])
         x = x_in if not adjoint_a else x_in.reshape(x_t_shape)
         y = y_in if not adjoint_b else y_in.reshape(y_t_shape)
         x2 = x + 1.
         with self.cached_session(use_gpu=True):
-            dtype = tf.bfloat16
+            dtype = dtype
             x1 = tf.cast(x, dtype=dtype)
             y1 = tf.cast(y, dtype=dtype)
             x2 = tf.cast(x2, dtype=dtype)
@@ -64,13 +64,15 @@ class BatchMatMulTest(test_util.TensorFlowTestCase):
 
         def CompareNonEmpty(self, a_shape, b_shape):
             self._compare(
-                GetRandomNormalInput(a_shape, dtype),
-                GetRandomNormalInput(b_shape, dtype),
+                dtype,
+                GetRandomNormalInput(a_shape),
+                GetRandomNormalInput(b_shape),
                 adjoint_a,
                 adjoint_b,
                 static_shape=True)
 
-        CompareNonEmpty(self, [1, 2, 3], [1, 3, 5])
+        CompareNonEmpty(self, [2, 3], [3, 5])
+        CompareNonEmpty(self, [2, 2, 3], [1, 3, 5])
         CompareNonEmpty(self, [1, 2, 3], [1, 3, 1])
         CompareNonEmpty(self, [1, 1, 3], [1, 3, 5])
         CompareNonEmpty(self, [1, 2, 3], [1, 3, 5])
@@ -78,12 +80,19 @@ class BatchMatMulTest(test_util.TensorFlowTestCase):
         CompareNonEmpty(self, [7, 2, 3], [7, 3, 1])
         CompareNonEmpty(self, [7, 2, 3], [7, 3, 5])
         CompareNonEmpty(self, [10, 64, 75], [10, 75, 30])
+        CompareNonEmpty(self, [3, 2, 2, 3], [3, 1, 3, 5])
         CompareNonEmpty(self, [5, 7, 2, 3], [5, 7, 3, 5])
+        CompareNonEmpty(self, [5, 7, 2, 3], [5, 1, 3, 5])
 
     def testBf16(self):
         for adjoint_a_ in False, True:
             for adjoint_b_ in False, True:
-                self._testNonEmpty(np.float64, adjoint_a_, adjoint_b_)
+                self._testNonEmpty(tf.bfloat16, adjoint_a_, adjoint_b_)
+ 
+    def testFp64(self):
+        for adjoint_a_ in False, True:
+            for adjoint_b_ in False, True:
+                self._testNonEmpty(tf.double, adjoint_a_, adjoint_b_)
 
 
 if __name__ == "__main__":

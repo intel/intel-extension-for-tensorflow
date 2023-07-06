@@ -23,8 +23,8 @@ limitations under the License.
 #define ITEX_CORE_PROFILER_UTILS_H_
 
 #include <sys/syscall.h>
-
 #include <unistd.h>
+
 #include <cstdint>
 #include <fstream>
 #include <string>

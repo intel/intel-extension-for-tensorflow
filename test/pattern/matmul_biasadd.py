@@ -22,6 +22,9 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.platform import test
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.ops import array_ops
+from tensorflow.python.framework import constant_op
+from tensorflow.python.framework import dtypes
+import intel_extension_for_tensorflow as itex
 import time
 import os
 import subprocess
@@ -64,6 +67,102 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         
 
         self.assertAllClose(ret_cpu, ret_gpu)
+
+
+    def testQdqMatMulReshapeBiasAdd(self):
+        x = tf.compat.v1.placeholder(tf.float32, shape=(3, 4))
+        y = tf.compat.v1.placeholder(tf.float32, shape=(4, 5))
+        b = np.random.rand(5).astype(np.float32)
+
+        x_arr = np.random.rand(3, 4)
+        y_arr = np.random.rand(4, 5)
+
+        x_min = constant_op.constant(0, dtype=dtypes.float32)
+        x_max = constant_op.constant(1, dtype=dtypes.float32)
+        x_int8, x_min, x_max = array_ops.quantize(x_arr, x_min, x_max, T=dtypes.quint8, mode="SCALED",
+          round_mode="HALF_TO_EVEN", narrow_range=True)
+        x_fp = array_ops.dequantize(x_int8, x_min, x_max, mode="SCALED")
+        
+        y_min = constant_op.constant(0, dtype=dtypes.float32)
+        y_max = constant_op.constant(1, dtype=dtypes.float32)
+        y_int8, y_min, y_max = array_ops.quantize(y_arr, y_min, y_max, T=dtypes.quint8, mode="SCALED",
+          round_mode="HALF_TO_EVEN", narrow_range=True)
+        y_fp = array_ops.dequantize(y_int8, y_min, y_max, mode="SCALED")
+
+        out = tf.reshape(tf.matmul(x_fp, y_fp), [1, 3, 5])
+        fused = tf.nn.bias_add(out, b)
+        fused = array_ops.identity(fused)
+
+        run_options = config_pb2.RunOptions(output_partition_graphs=True)
+        metadata = config_pb2.RunMetadata()
+        with self.session(use_gpu=True) as sess:
+            # fused = tf.nn.bias_add(tf.matmul(x, y), b)
+            start_time = time.time()
+            ret_gpu = sess.run(fused, feed_dict={x: x_arr, y: y_arr},options=run_options, run_metadata=metadata)
+            duration = time.time() - start_time
+            print("end to end duration is : {}".format(duration))
+            # Graph should contain fused op.
+            graph = metadata.partition_graphs[0]
+            found_deleted_op = False
+            for node in graph.node:
+                if node.op in ('BiasAdd'):
+                    found_deleted_op = True
+                    self.assertTrue(found_deleted_op, "this pattern has fusion issue!!")
+                    break
+
+        with self.session(use_gpu=False) as sess:
+            ret_cpu = sess.run(fused, feed_dict={x: x_arr, y: y_arr})
+        
+        self.assertAllClose(ret_cpu, ret_gpu)
+
+
+    def testQdqMatMulReshapeBiasAddGelu(self):
+        x = tf.compat.v1.placeholder(tf.float32, shape=(3, 4))
+        y = tf.compat.v1.placeholder(tf.float32, shape=(4, 5))
+        b = np.random.rand(5).astype(np.float32)
+
+        x_arr = np.random.rand(3, 4)
+        y_arr = np.random.rand(4, 5)
+
+        x_min = constant_op.constant(0, dtype=dtypes.float32)
+        x_max = constant_op.constant(1, dtype=dtypes.float32)
+        x_int8, x_min, x_max = array_ops.quantize(x_arr, x_min, x_max, T=dtypes.quint8, mode="SCALED",
+          round_mode="HALF_TO_EVEN", narrow_range=True)
+        x_fp = array_ops.dequantize(x_int8, x_min, x_max, mode="SCALED")
+        
+        y_min = constant_op.constant(0, dtype=dtypes.float32)
+        y_max = constant_op.constant(1, dtype=dtypes.float32)
+        y_int8, y_min, y_max = array_ops.quantize(y_arr, y_min, y_max, T=dtypes.quint8, mode="SCALED",
+          round_mode="HALF_TO_EVEN", narrow_range=True)
+        y_fp = array_ops.dequantize(y_int8, y_min, y_max, mode="SCALED")
+
+        out = tf.reshape(tf.matmul(x_fp, y_fp), [1, 3, 5])
+        fused = tf.nn.bias_add(out, b)
+        fused = itex.ops.gelu(fused,approximate=False)
+        fused = array_ops.identity(fused)
+
+        run_options = config_pb2.RunOptions(output_partition_graphs=True)
+        metadata = config_pb2.RunMetadata()
+        with self.session(use_gpu=True) as sess:
+            # fused = tf.nn.bias_add(tf.matmul(x, y), b)
+            start_time = time.time()
+            ret_gpu = sess.run(fused, feed_dict={x: x_arr, y: y_arr},options=run_options, run_metadata=metadata)
+            duration = time.time() - start_time
+            print("end to end duration is : {}".format(duration))
+            # Graph should contain fused op.
+            graph = metadata.partition_graphs[0]
+            found_deleted_op = False
+            for node in graph.node:
+                if node.op in ('BiasAdd') or node.op in ('Gelu'):
+                    found_deleted_op = True
+                    self.assertTrue(found_deleted_op, "this pattern has fusion issue!!")
+                    break
+
+        with self.session(use_gpu=False) as sess:
+            ret_cpu = sess.run(fused, feed_dict={x: x_arr, y: y_arr})
+        
+        self.assertAllClose(ret_cpu, ret_gpu)
+
 
 if __name__ == '__main__':
     test.main()

@@ -19,7 +19,8 @@ limitations under the License.
 #include "itex/core/kernels/common/cwise_ops_gradients.h"
 
 namespace itex {
-REGISTER(UnaryOp, GPU, "Asinh", functor::asinh, float);
+REGISTER3(UnaryOp, GPU, "Asinh", functor::asinh, float, Eigen::half,
+          Eigen::bfloat16);
 #ifdef ITEX_ENABLE_DOUBLE
 REGISTER(UnaryOp, GPU, "Asinh", functor::asinh, double);
 #endif  // ITEX_ENABLE_DOUBLE

@@ -9,21 +9,27 @@ load(
     _cc_library = "cc_library",
     _cc_test = "cc_test",
 )
+load("@intel_extension_for_tensorflow//itex:itex.bzl", _itex_cc_library = "cc_library")
 
 cc_binary = _cc_binary
 cc_import = _cc_import
 cc_library = _cc_library
 cc_test = _cc_test
+itex_cc_library = _itex_cc_library
 
 def cc_proto(name, src, deps = []):
     native.genrule(
         name = "%s_cc" % name,
         outs = ["include/protos/%s.pb.cc" % name, "include/protos/%s.pb.h" % name],
-        cmd = "$(location @com_google_protobuf//:protoc) -I$(GENDIR)/external/local_config_tf/include/protos --cpp_out=$(GENDIR)/external/local_config_tf/include/protos $<",
+        cmd = "$(location @com_google_protobuf//:protoc) \
+                -I$(GENDIR)/external/local_config_tf/include/protos \
+                -Ibazel-out/$(TARGET_CPU)-$(COMPILATION_MODE)/bin/external/local_config_tf/include/protos \
+                -Ibazel-out/$(TARGET_CPU)-$(COMPILATION_MODE)/bin/external/com_google_protobuf/python/ \
+                --cpp_out=$(GENDIR)/external/local_config_tf/include/protos $<",
         srcs = ["include/protos/%s" % src],
         tools = ["@com_google_protobuf//:protoc"],
     )
-    native.cc_library(
+    itex_cc_library(
         name = "%s_proto" % name,
         srcs = ["include/protos/%s.pb.cc" % name],
         hdrs = ["include/protos/%s.pb.h" % name],
@@ -237,7 +243,7 @@ def cc_proto_library(
         )
 
         # An empty cc_library to make rule dependency consistent.
-        native.cc_library(
+        itex_cc_library(
             name = name,
             **kargs
         )
@@ -291,7 +297,7 @@ def cc_proto_library(
             visibility = kargs["visibility"],
         )
 
-    native.cc_library(
+    itex_cc_library(
         name = impl_name,
         srcs = gen_srcs,
         hdrs = gen_hdrs,
@@ -300,7 +306,7 @@ def cc_proto_library(
         alwayslink = 1,
         **kargs
     )
-    native.cc_library(
+    itex_cc_library(
         name = header_only_name,
         deps = [
             "@com_google_protobuf//:protobuf_headers",
@@ -361,6 +367,13 @@ def py_proto_library(
     # is not explicitly listed in py_libs. Instead, host system is assumed to
     # have grpc installed.
 
+    genproto_deps = []
+    for dep in deps:
+        if dep != "@com_google_protobuf//:protobuf_python":
+            genproto_deps.append(dep + "_genproto")
+        else:
+            genproto_deps.append("@com_google_protobuf//:well_known_types_py_pb2_genproto")
+
     proto_gen(
         name = name + "_genproto",
         srcs = srcs,
@@ -371,7 +384,7 @@ def py_proto_library(
         plugin_language = "grpc",
         protoc = protoc,
         visibility = ["//visibility:public"],
-        deps = [s + "_genproto" for s in deps],
+        deps = genproto_deps,
     )
 
     if default_runtime and not default_runtime in py_libs + deps:
@@ -442,13 +455,13 @@ def tf_proto_library_cc(
             visibility = visibility,
         )
 
-        native.cc_library(
+        itex_cc_library(
             name = cc_name,
             deps = cc_deps + ["@com_google_protobuf//:protobuf_headers"] + if_static([name + "_cc_impl"]),
             testonly = testonly,
             visibility = visibility,
         )
-        native.cc_library(
+        itex_cc_library(
             name = cc_name + "_impl",
             deps = [s + "_impl" for s in cc_deps] + ["@com_google_protobuf//:cc_wkt_protos"],
         )

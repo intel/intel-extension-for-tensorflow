@@ -20,7 +20,6 @@ limitations under the License.
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"
-
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {

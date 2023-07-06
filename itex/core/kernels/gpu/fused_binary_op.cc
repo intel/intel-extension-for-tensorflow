@@ -149,6 +149,6 @@ class FusedBinaryOp : public OpKernel {
       FusedBinaryOp<GPUDevice, type>)
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_FUSEDBINARY_KERNELS);
-#undef REGISTER_TOPK_KERNELS
+#undef REGISTER_FUSEDBINARY_KERNELS
 
 }  // namespace itex

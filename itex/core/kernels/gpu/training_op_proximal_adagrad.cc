@@ -79,7 +79,7 @@ template <typename T>
 class ProximalAdagradKernel;
 
 template <typename T>
-struct ApplyProximalAdagradDPCPP {
+struct ApplyProximalAdagradITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* accum, const T* lr,
                   const T* l1, const T* l2, const T* grad, OpKernelContext* ctx,
                   int elements) {
@@ -154,7 +154,7 @@ class ApplyProximalAdagradOp : public OpKernel {
                                 grad.shape().DebugString()));
 
     auto device = ctx->eigen_gpu_device();
-    functor::ApplyProximalAdagradDPCPP<T>()(
+    functor::ApplyProximalAdagradITEX_GPU<T>()(
         device, var.flat<T>().data(), accum.flat<T>().data(),
         lr.scalar<T>().data(), l1.scalar<T>().data(), l2.scalar<T>().data(),
         grad.flat<T>().data(), ctx, grad.NumElements());
@@ -166,7 +166,7 @@ class ApplyProximalAdagradOp : public OpKernel {
   bool use_exclusive_lock_;
 };
 
-#define REGISTER_DPCPP_KERNELS(T)                                             \
+#define REGISTER_ITEX_GPU_KERNELS(T)                                          \
   REGISTER_KERNEL_BUILDER(                                                    \
       Name("ApplyProximalAdagrad").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
       ApplyProximalAdagradOp<T>);                                             \
@@ -177,13 +177,13 @@ class ApplyProximalAdagradOp : public OpKernel {
                               .TypeConstraint<T>("T"),                        \
                           ApplyProximalAdagradOp<T>);
 
-TF_CALL_half(REGISTER_DPCPP_KERNELS);
-TF_CALL_float(REGISTER_DPCPP_KERNELS);
-TF_CALL_bfloat16(REGISTER_DPCPP_KERNELS);
+TF_CALL_half(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_float(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_bfloat16(REGISTER_ITEX_GPU_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(REGISTER_DPCPP_KERNELS);
+TF_CALL_double(REGISTER_ITEX_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
-#undef REGISTER_DPCPP_KERNELS
+#undef REGISTER_ITEX_GPU_KERNELS
 
 namespace functor {
 
@@ -266,8 +266,8 @@ struct SparseApplyProximalAdagrad<GPUDevice, T, Tindex> {
     const Tindex grad_size = grad.size();
     const Tindex indices_size = indices.size();
 
-    auto* dpcpp_stream = d.stream();
-    dpcpp_stream->submit([&](sycl::handler& cgh) {
+    auto* ITEX_GPU_stream = d.stream();
+    ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
       SparseApplyProximalAdagradKernel<T, Tindex> task(
           var.data(), accum.data(), lr.data(), l1.data(), l2.data(),
           grad.data(), indices.data(), first_dim_size, grad_size, indices_size);

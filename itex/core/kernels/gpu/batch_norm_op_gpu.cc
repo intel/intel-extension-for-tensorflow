@@ -16,7 +16,6 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/batch_norm_op.h"
-
 #include "itex/core/utils/register_types.h"
 
 namespace itex {

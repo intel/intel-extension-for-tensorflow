@@ -22,7 +22,6 @@ limitations under the License.
 #include <string>
 
 #include "itex/core/utils/macros.h"
-#include "itex/core/utils/types.h"
 
 // Printf variants that place their output in a C++ string.
 //

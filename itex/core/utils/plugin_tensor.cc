@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef ITEX_BUILD_JAX
 #include "itex/core/utils/plugin_tensor.h"
 
 #include <algorithm>
@@ -327,7 +328,7 @@ bool Tensor::FromProto(const TensorProto& proto) {
   CASES_WITH_DEFAULT(TYPE_ENUM, STMTS, ITEX_LOG(FATAL) << "Type not set"; \
                      , ITEX_LOG(FATAL) << "Unexpected type: " << TYPE_ENUM;)
 
-void Tensor::AsProtoTensorContent(TensorProto* proto) {
+void Tensor::AsProtoTensorContent(TensorProto* proto) const {
   proto->Clear();
   proto->set_dtype(dtype());
   shape_.AsProto(proto->mutable_tensor_shape());
@@ -581,3 +582,4 @@ string Tensor::SummarizeValue(int64 max_entries, bool print_v2) const {
   }
 }
 }  // namespace itex
+#endif  // ITEX_BUILD_JAX

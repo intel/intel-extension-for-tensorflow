@@ -4,13 +4,6 @@ load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure", "llvm_disable_opt
 
 # The subset of LLVM targets that TensorFlow cares about.
 _LLVM_TARGETS = [
-    # "AArch64",
-    # "AMDGPU",
-    # "ARM",
-    # "NVPTX",
-    # "PowerPC",
-    # "RISCV",
-    # "SystemZ",
     "X86",
 ]
 
@@ -21,9 +14,6 @@ def llvm_setup(name):
     # Build @llvm-project from @llvm-raw using overlays.
     llvm_configure(
         name = name,
-        # src_path = ".",
-        # src_workspace = "@llvm-raw//utils/bazel:WORKSPACE",
-        # _overlay_script = "@llvm-raw//utils/bazel:overlay_directories.py",
-        # repo_mapping = {"@python_runtime": "@local_config_python"},
+        repo_mapping = {"@python_runtime": "@local_config_python"},
         targets = _LLVM_TARGETS,
     )

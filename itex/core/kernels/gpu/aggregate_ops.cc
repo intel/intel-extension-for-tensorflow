@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/aggregate_ops.h"
 
-#include "itex/core/kernels/gpu/reduction_dpcpp_kernels.h"
+#include "itex/core/kernels/gpu/full_reduction_kernels.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/op_kernel.h"
@@ -149,6 +149,9 @@ class AddNOp<Device, Variant> : public OpKernel {
     break;
         TF_CALL_NUMBER_TYPES(DTYPE_CASE)
 #undef DTYPE_CASE
+        default:
+          ITEX_LOG(FATAL) << "Trying to compute AddN for unsupported dtype: "
+                          << DataTypeString(out.dtype());
       }
     };
 
@@ -156,7 +159,7 @@ class AddNOp<Device, Variant> : public OpKernel {
     TF_Status* tf_status = TF_NewStatus();
     TF_AddNVariant(tf_ctx, binary_add_func, tf_status);
     Status status = StatusFromTF_Status(tf_status);
-    ITEX_CHECK_OK(status);
+    OP_REQUIRES_OK(ctx, status);
     TF_DeleteStatus(tf_status);
   }
 };
@@ -218,9 +221,9 @@ class FusedAddNOp<GPUDevice, T> : public OpKernel {
   }
 };
 
-#define REGISTER_FUSEDADDN(TYPE)                                       \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("_FusedAddN").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
+#define REGISTER_FUSEDADDN(TYPE)                                           \
+  REGISTER_KERNEL_BUILDER(                                                 \
+      Name("_ITEXFusedAddN").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
       FusedAddNOp<GPUDevice, TYPE>)
 
 TF_CALL_float(REGISTER_FUSEDADDN);

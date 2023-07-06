@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/aggregate_ops.h"
+
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
 #include "itex/core/utils/onednn/onednn_util.h"
@@ -153,8 +154,13 @@ class AddNOp : public OpKernel {
       std::vector<float> coeff(num_inputs, 1.0);
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
       dnnl::primitive_attr attr;
+#ifdef ITEX_ONEDNN_3_0
+      auto sum_pd =
+          dnnl::sum::primitive_desc(onednn_engine, coeff, srcs_pd, attr);
+#else
       auto sum_pd =
           dnnl::sum::primitive_desc(coeff, srcs_pd, onednn_engine, attr);
+#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size = sum_pd.scratchpad_desc().get_size() / sizeof(T);

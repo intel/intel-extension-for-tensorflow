@@ -19,6 +19,8 @@ limitations under the License.
 
 #include "itex/core/devices/gpu/eigen_stream_device.h"
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
+#include "itex/core/kernels/gpu/custom_fused_batch_norm_functor.h"
+#include "itex/core/kernels/gpu/custom_fused_batch_norm_op.h"
 #include "itex/core/utils/onednn/onednn_util.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
@@ -41,47 +43,52 @@ REGISTER_FUSED_BATCHNORM_GPU(Eigen::bfloat16);
 REGISTER_FUSED_BATCHNORM_GPU(Eigen::half);
 #undef REGISTER_FUSED_BATCHNORM_GPU
 
-#define REGISTER_FUSED_BATCHNORM_GPU(T, U)                                 \
-  REGISTER_KERNEL_BUILDER(Name("FusedBatchNormV2")                         \
-                              .Device(DEVICE_GPU)                          \
-                              .TypeConstraint<T>("T")                      \
-                              .TypeConstraint<U>("U"),                     \
-                          FusedBatchNormOp<GPUDevice, T, U, false, false>) \
-  REGISTER_KERNEL_BUILDER(Name("FusedBatchNormV3")                         \
-                              .Device(DEVICE_GPU)                          \
-                              .TypeConstraint<T>("T")                      \
-                              .TypeConstraint<U>("U"),                     \
-                          FusedBatchNormOp<GPUDevice, T, U, true, false>)  \
-  REGISTER_KERNEL_BUILDER(Name("_FusedBatchNormEx")                        \
-                              .Device(DEVICE_GPU)                          \
-                              .TypeConstraint<T>("T")                      \
-                              .TypeConstraint<U>("U"),                     \
-                          FusedBatchNormOp<GPUDevice, T, U, true, true>)
+#define REGISTER_FUSED_BATCHNORM_GPU(T, U)                   \
+  REGISTER_KERNEL_BUILDER(                                   \
+      Name("FusedBatchNormV2")                               \
+          .Device(DEVICE_GPU)                                \
+          .TypeConstraint<T>("T")                            \
+          .TypeConstraint<U>("U"),                           \
+      CustomFusedBatchNormOp<GPUDevice, T, U, false, false>) \
+  REGISTER_KERNEL_BUILDER(                                   \
+      Name("FusedBatchNormV3")                               \
+          .Device(DEVICE_GPU)                                \
+          .TypeConstraint<T>("T")                            \
+          .TypeConstraint<U>("U"),                           \
+      CustomFusedBatchNormOp<GPUDevice, T, U, true, false>)  \
+  REGISTER_KERNEL_BUILDER(Name("_FusedBatchNormEx")          \
+                              .Device(DEVICE_GPU)            \
+                              .TypeConstraint<T>("T")        \
+                              .TypeConstraint<U>("U"),       \
+                          CustomFusedBatchNormOp<GPUDevice, T, U, true, true>)
 
 REGISTER_FUSED_BATCHNORM_GPU(float, float);
 REGISTER_FUSED_BATCHNORM_GPU(Eigen::bfloat16, float);
 REGISTER_FUSED_BATCHNORM_GPU(Eigen::half, float);
 #undef REGISTER_FUSED_BATCHNORM_GPU
 
-#define REGISTER_FUSED_BATCHNORM_GRAD_GPU(T, U)                                \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("FusedBatchNormGrad").Device(DEVICE_GPU).TypeConstraint<T>("T"),    \
-      FusedBatchNormGradOp<GPUDevice, T, T, false, false>)                     \
-  REGISTER_KERNEL_BUILDER(Name("FusedBatchNormGradV2")                         \
-                              .Device(DEVICE_GPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<U>("U"),                         \
-                          FusedBatchNormGradOp<GPUDevice, T, U, false, false>) \
-  REGISTER_KERNEL_BUILDER(Name("FusedBatchNormGradV3")                         \
-                              .Device(DEVICE_GPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<U>("U"),                         \
-                          FusedBatchNormGradOp<GPUDevice, T, U, true, false>)  \
-  REGISTER_KERNEL_BUILDER(Name("_FusedBatchNormExGrad")                        \
-                              .Device(DEVICE_GPU)                              \
-                              .TypeConstraint<T>("T")                          \
-                              .TypeConstraint<U>("U"),                         \
-                          FusedBatchNormGradOp<GPUDevice, T, U, true, true>)
+#define REGISTER_FUSED_BATCHNORM_GRAD_GPU(T, U)                             \
+  REGISTER_KERNEL_BUILDER(                                                  \
+      Name("FusedBatchNormGrad").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
+      CustomFusedBatchNormGradOp<GPUDevice, T, U, false, false>)            \
+  REGISTER_KERNEL_BUILDER(                                                  \
+      Name("FusedBatchNormGradV2")                                          \
+          .Device(DEVICE_GPU)                                               \
+          .TypeConstraint<T>("T")                                           \
+          .TypeConstraint<U>("U"),                                          \
+      CustomFusedBatchNormGradOp<GPUDevice, T, U, false, false>)            \
+  REGISTER_KERNEL_BUILDER(                                                  \
+      Name("FusedBatchNormGradV3")                                          \
+          .Device(DEVICE_GPU)                                               \
+          .TypeConstraint<T>("T")                                           \
+          .TypeConstraint<U>("U"),                                          \
+      CustomFusedBatchNormGradOp<GPUDevice, T, U, true, false>)             \
+  REGISTER_KERNEL_BUILDER(                                                  \
+      Name("_ITEXFusedBatchNormGradEx")                                     \
+          .Device(DEVICE_GPU)                                               \
+          .TypeConstraint<T>("T")                                           \
+          .TypeConstraint<U>("U"),                                          \
+      CustomFusedBatchNormGradOp<GPUDevice, T, U, true, true>)
 
 REGISTER_FUSED_BATCHNORM_GRAD_GPU(float, float);
 REGISTER_FUSED_BATCHNORM_GRAD_GPU(Eigen::bfloat16, float);

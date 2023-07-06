@@ -85,11 +85,10 @@ struct Hex {
     static_assert(
         sizeof(v) == 1 || sizeof(v) == 2 || sizeof(v) == 4 || sizeof(v) == 8,
         "Unknown integer type");
-    value = sizeof(v) == 1
-                ? static_cast<uint8>(v)
-                : sizeof(v) == 2 ? static_cast<uint16>(v)
-                                 : sizeof(v) == 4 ? static_cast<uint32>(v)
-                                                  : static_cast<uint64>(v);
+    value = sizeof(v) == 1   ? static_cast<uint8>(v)
+            : sizeof(v) == 2 ? static_cast<uint16>(v)
+            : sizeof(v) == 4 ? static_cast<uint32>(v)
+                             : static_cast<uint64>(v);
   }
 };
 

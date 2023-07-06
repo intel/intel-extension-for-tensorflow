@@ -76,8 +76,8 @@ struct ReverseSequence {
 };
 
 template <typename T, typename Tlen, size_t Dims>
-struct ReverseSequenceKernelDPCPP {
-  ReverseSequenceKernelDPCPP(
+struct ReverseSequenceKernelITEX_GPU {
+  ReverseSequenceKernelITEX_GPU(
       const int32 batch_dim, const int32 seq_dim,
       const Eigen::DSizes<Eigen::DenseIndex, Dims> coord_dims,
       const Tlen* seq_lengths, const T* input, T* output, const int64 size)
@@ -147,11 +147,11 @@ struct ReverseSequence<GPUDevice, T, Tlen, Dims> {
     const int32 b_dim = batch_dim;
     const int32 s_dim = seq_dim;
     stream->submit([&](sycl::handler& cgh) {
-      ReverseSequenceKernelDPCPP<T, Tlen, Dims> kernel(
+      ReverseSequenceKernelITEX_GPU<T, Tlen, Dims> kernel(
           b_dim, s_dim, coord_dims, seq_lengths.data(), input.data(),
           output.data(), size);
 
-      cgh.parallel_for<ReverseSequenceKernelDPCPP<T, Tlen, Dims> >(
+      cgh.parallel_for<ReverseSequenceKernelITEX_GPU<T, Tlen, Dims> >(
           sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
                             sycl::range<1>(group_size)),
           kernel);

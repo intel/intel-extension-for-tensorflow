@@ -18,7 +18,9 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_REDUCTION_OPS_H_
 #define ITEX_CORE_KERNELS_GPU_REDUCTION_OPS_H_
 
-#include "itex/core/kernels/gpu/reduction_dpcpp_kernels.h"
+#include "itex/core/kernels/gpu/col_reduction_kernels.h"
+#include "itex/core/kernels/gpu/full_reduction_kernels.h"
+#include "itex/core/kernels/gpu/row_reduction_kernels.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
@@ -173,8 +175,14 @@ void ReduceGPUImpl(
                        in_func, out_func);
   } else if (in_rank == 2 && out_rank == 1 &&
              reduction_axes[0] == 0) {  // column reduction
-    LaunchColReduction(ctx, in_data, out_data, init, 1, in_dim0, in_dim1, op,
-                       in_func, out_func);
+    if (in_dim1 == 1) {
+      const int in_size = in_dim0;
+      LaunchFullReduction(ctx, in_data, out_data, init, in_size, op, in_func,
+                          out_func);
+    } else {
+      LaunchColReduction(ctx, in_data, out_data, init, 1, in_dim0, in_dim1, op,
+                         in_func, out_func);
+    }
   } else if (in_rank == 3 && out_rank == 2 &&
              reduction_axes[0] == 1) {  // column reduction
     LaunchColReduction(ctx, in_data, out_data, init, in_dim0, in_dim1, in_dim2,
@@ -353,13 +361,13 @@ struct ReduceFunctor<Eigen::internal::AndReducer> {
                      const ReductionAxes& reduction_axes,
                      const Eigen::internal::AndReducer& reducer) {
     //  as bool is not supported by compiler reduce api, use uint8_t
-    typedef bool T;
     typedef uint8_t InitValueT;
     typedef sycl::bit_and<InitValueT> BinaryOp;
     InitValueT init = InitValueT(1);
-    ReduceGPUImpl<const T, T, InitValueT, BinaryOp, ReductionAxes>(
-        ctx, reinterpret_cast<const T*>(in.data()),
-        reinterpret_cast<T*>(out.data()), in.rank(), in.dimension(0),
+    ReduceGPUImpl<const InitValueT, InitValueT, InitValueT, BinaryOp,
+                  ReductionAxes>(
+        ctx, reinterpret_cast<const InitValueT*>(in.data()),
+        reinterpret_cast<InitValueT*>(out.data()), in.rank(), in.dimension(0),
         in.rank() >= 2 ? in.dimension(1) : 1,
         in.rank() >= 3 ? in.dimension(2) : 1, out.rank(), init, BinaryOp(),
         reduction_axes);
@@ -379,13 +387,13 @@ struct ReduceFunctor<Eigen::internal::OrReducer> {
                      const ReductionAxes& reduction_axes,
                      const Eigen::internal::OrReducer& reducer) {
     //  as bool is not supported by compiler reduce api, use uint8_t
-    typedef bool T;
     typedef uint8_t InitValueT;
     typedef sycl::bit_or<InitValueT> BinaryOp;
     InitValueT init = InitValueT(0);
-    ReduceGPUImpl<const T, T, InitValueT, BinaryOp, ReductionAxes>(
-        ctx, reinterpret_cast<const T*>(in.data()),
-        reinterpret_cast<T*>(out.data()), in.rank(), in.dimension(0),
+    ReduceGPUImpl<const InitValueT, InitValueT, InitValueT, BinaryOp,
+                  ReductionAxes>(
+        ctx, reinterpret_cast<const InitValueT*>(in.data()),
+        reinterpret_cast<InitValueT*>(out.data()), in.rank(), in.dimension(0),
         in.rank() >= 2 ? in.dimension(1) : 1,
         in.rank() >= 3 ? in.dimension(2) : 1, out.rank(), init, BinaryOp(),
         reduction_axes);

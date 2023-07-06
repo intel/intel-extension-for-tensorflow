@@ -34,16 +34,17 @@ namespace itex {
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T"),                         \
                           FusedConvOp<GPUDevice, T, T, T, T, T, false, true>)  \
-  REGISTER_KERNEL_BUILDER(                                                     \
-      Name("_FusedConv2DWithSum").Device(DEVICE_GPU).TypeConstraint<T>("T"),   \
-      FusedConvOp<GPUDevice, T, T, T, T, T>)                                   \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithConv2D")                               \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedConv2DWithSum")                      \
+                              .Device(DEVICE_GPU)                              \
+                              .TypeConstraint<T>("T"),                         \
+                          FusedConvOp<GPUDevice, T, T, T, T, T>)               \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithConv2D")                           \
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<int32>("Tpaddings")              \
                               .HostMemory("paddings"),                         \
                           ConvOpBase<GPUDevice, T, T, T, T, T, true>)          \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithFusedConv2D")                          \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithFusedConv2D")                      \
                               .Device(DEVICE_GPU)                              \
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<int32>("Tpaddings")              \
@@ -57,13 +58,13 @@ TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_CONV2D);
   REGISTER_KERNEL_BUILDER(                                                \
       Name("_ITEXFusedConv3D").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
       FusedConvOp<GPUDevice, T, T, T, T, T>)                              \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithConv3D")                          \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithConv3D")                      \
                               .Device(DEVICE_GPU)                         \
                               .TypeConstraint<T>("T")                     \
                               .TypeConstraint<int32>("Tpaddings")         \
                               .HostMemory("paddings"),                    \
                           ConvOpBase<GPUDevice, T, T, T, T, T, true>)     \
-  REGISTER_KERNEL_BUILDER(Name("_PadWithFusedConv3D")                     \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithFusedConv3D")                 \
                               .Device(DEVICE_GPU)                         \
                               .TypeConstraint<T>("T")                     \
                               .TypeConstraint<int32>("Tpaddings")         \
@@ -89,23 +90,74 @@ TF_CALL_double(REGISTER_GPU_CONV_DOUBLE);
 #endif
 #undef REGISTER_GPU_CONV_DOUBLE
 
-#define REGISTER_GPU_FUSED_QUANTIZEDCONV(T)                          \
-  REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizeV2WithQuantizedConv2D") \
-                              .Device(DEVICE_GPU)                    \
-                              .TypeConstraint<float>("Tinput")       \
-                              .TypeConstraint<qint8>("Tfilter")      \
-                              .TypeConstraint<T>("Tbias")            \
-                              .TypeConstraint<quint8>("out_type")    \
-                              .HostMemory("min_input")               \
-                              .HostMemory("max_input")               \
-                              .HostMemory("min_filter")              \
-                              .HostMemory("max_filter")              \
-                              .HostMemory("min_freezed_output")      \
-                              .HostMemory("max_freezed_output")      \
-                              .HostMemory("min_output")              \
-                              .HostMemory("max_output"),             \
+#define REGISTER_GPU_FUSED_QUANTIZEDCONV(T)                            \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizeV2WithQuantizedConv2D")   \
+                              .Device(DEVICE_GPU)                      \
+                              .TypeConstraint<float>("Tinput")         \
+                              .TypeConstraint<qint8>("Tfilter")        \
+                              .TypeConstraint<T>("Tbias")              \
+                              .TypeConstraint<quint8>("out_type")      \
+                              .HostMemory("min_input")                 \
+                              .HostMemory("max_input")                 \
+                              .HostMemory("min_filter")                \
+                              .HostMemory("max_filter")                \
+                              .HostMemory("min_freezed_output")        \
+                              .HostMemory("max_freezed_output")        \
+                              .HostMemory("min_output")                \
+                              .HostMemory("max_output"),               \
+                          NoImplementOp);                              \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConv2DWithDequantize")   \
+                              .Device(DEVICE_GPU)                      \
+                              .TypeConstraint<qint8>("Tinput")         \
+                              .TypeConstraint<qint8>("Tfilter")        \
+                              .TypeConstraint<T>("Tbias")              \
+                              .TypeConstraint<float>("out_type")       \
+                              .HostMemory("min_input")                 \
+                              .HostMemory("max_input")                 \
+                              .HostMemory("min_filter")                \
+                              .HostMemory("max_filter")                \
+                              .HostMemory("min_freezed_output")        \
+                              .HostMemory("max_freezed_output"),       \
+                          NoImplementOp);                              \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConv2DWithCast")         \
+                              .Device(DEVICE_GPU)                      \
+                              .TypeConstraint<qint8>("Tinput")         \
+                              .TypeConstraint<qint8>("Tfilter")        \
+                              .TypeConstraint<T>("Tbias")              \
+                              .TypeConstraint<Eigen::half>("out_type") \
+                              .HostMemory("min_input")                 \
+                              .HostMemory("max_input")                 \
+                              .HostMemory("min_filter")                \
+                              .HostMemory("max_filter")                \
+                              .HostMemory("min_freezed_output")        \
+                              .HostMemory("max_freezed_output"),       \
+                          NoImplementOp);                              \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConv2DWithDequantize")   \
+                              .Device(DEVICE_GPU)                      \
+                              .TypeConstraint<quint8>("Tinput")        \
+                              .TypeConstraint<qint8>("Tfilter")        \
+                              .TypeConstraint<T>("Tbias")              \
+                              .TypeConstraint<float>("out_type")       \
+                              .HostMemory("min_input")                 \
+                              .HostMemory("max_input")                 \
+                              .HostMemory("min_filter")                \
+                              .HostMemory("max_filter")                \
+                              .HostMemory("min_freezed_output")        \
+                              .HostMemory("max_freezed_output"),       \
+                          NoImplementOp);                              \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXQuantizedConv2DWithCast")         \
+                              .Device(DEVICE_GPU)                      \
+                              .TypeConstraint<quint8>("Tinput")        \
+                              .TypeConstraint<qint8>("Tfilter")        \
+                              .TypeConstraint<T>("Tbias")              \
+                              .TypeConstraint<Eigen::half>("out_type") \
+                              .HostMemory("min_input")                 \
+                              .HostMemory("max_input")                 \
+                              .HostMemory("min_filter")                \
+                              .HostMemory("max_filter")                \
+                              .HostMemory("min_freezed_output")        \
+                              .HostMemory("max_freezed_output"),       \
                           NoImplementOp);
-
 TF_CALL_qint32(REGISTER_GPU_FUSED_QUANTIZEDCONV);
 TF_CALL_float(REGISTER_GPU_FUSED_QUANTIZEDCONV);
 #undef REGISTER_GPU_FUSED_QUANTIZEDCONV

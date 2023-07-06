@@ -16,8 +16,11 @@
 # limitations under the License.
 # ==============================================================================
 
-onednn_gpu_path="bazel-bin/external/onednn_gpu/include/oneapi/dnnl/dnnl_version.h"
-onednn_cpu_path="bazel-bin/external/onednn_cpu/include/oneapi/dnnl/dnnl_version.h"
+onednn_gpu_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_gpu/include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+onednn_cpu_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_cpu/include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+onednn_gpu_v2_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_gpu_v2//include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+onednn_cpu_v2_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_cpu_v2//include/oneapi/dnnl/ -name dnnl_version.h | head -1)
+
 itex_tmp_folder_name="itex.tmp"
 lib_tmp_folder_name="lib.tmp"
 
@@ -32,15 +35,14 @@ function real_path() {
 }
 
 function get_git_desc() {
-  git_version=`git describe --always`
+  git_version=`git rev-parse --short=8 HEAD`
   echo $git_version
 }
 
 function get_compiler_version() {
   compiler_path=`cat .itex_configure.bazelrc | grep -Eo 'DPCPP_TOOLKIT_PATH=.*$' | cut -d '=' -f 2 | cut -d '"' -f 2`
   version=`${compiler_path}/bin/icx --version | grep -Eo '\([a-zA-Z0-9.]{10,}\)' | grep -Eo '[a-zA-Z0-9.]{10,}'`
-  gcc_version=`/usr/bin/gcc --version | grep gcc | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,}$'`
-  echo "gcc-${gcc_version}, dpcpp-${version}"
+  echo "dpcpp-${version}"
 }
 
 function get_onednn_git_version() {
@@ -62,25 +64,49 @@ function emit_version_info() {
     echo "$1 not exists!"
     exit -1
   fi
+  # weekly build, add .dev suffix
+  if [ ! -z "$2" ] && [ $(grep -E "__version__ *= *'[0-9]+.[0-9]+.[0-9]+.*'" $1 >& /dev/null; echo $?) -eq 0 ]; then
+    origin_version=$(grep -E "__version__ *= *'[0-9]+.[0-9]+.[0-9]+.*'" $1 | awk -F"'" '{print $2}')
+    dev_version="${origin_version}.dev$(date +%Y%m%d)"
+    sed -i "s#$origin_version#$dev_version#" $1
+  fi
   echo "__git_desc__= '`get_git_desc`'" >> $1
   echo "VERSION = __version__" >> $1
-  echo "GIT_VERSION = __git_desc__ if len(__git_desc__) > 8 else 'v' + __version__ + '-' + __git_desc__" >> $1
+  echo "GIT_VERSION = 'v' + __version__ + '-' + __git_desc__" >> $1
   echo "COMPILER_VERSION = '`get_compiler_version`'" >> $1
-  if [ -f ${onednn_gpu_path} ]; then
-    onednn_path=${onednn_gpu_path}
-  elif [ -f ${onednn_cpu_path} ]; then
-    onednn_path=${onednn_cpu_path}
-  else
+  onednn_version_check=0
+  if [ ! -z "${onednn_gpu_path}" ] && [ -f "${onednn_gpu_path}" ]; then
+    onednn_gpu_git_version=`get_onednn_git_version ${onednn_gpu_path}`
+    if [ ${onednn_gpu_git_version} != "none" ]; then
+      echo "ONEDNN_GPU_GIT_VERSION = '${onednn_gpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  elif [ ! -z "${onednn_gpu_v2_path}" ] && [ -f "${onednn_gpu_v2_path}" ]; then
+    onednn_gpu_git_version=`get_onednn_git_version ${onednn_gpu_v2_path}`
+    if [ ${onednn_gpu_git_version} != "none" ]; then
+      echo "ONEDNN_GPU_GIT_VERSION = '${onednn_gpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  fi
+  if [ ! -z "${onednn_cpu_path}" ] && [ -f "${onednn_cpu_path}" ]; then
+    onednn_cpu_git_version=`get_onednn_git_version ${onednn_cpu_path}`
+    if [ ${onednn_cpu_git_version} != "none" ]; then
+      echo "ONEDNN_CPU_GIT_VERSION = '${onednn_cpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  elif [ ! -z "${onednn_cpu_v2_path}" ] && [ -f "${onednn_cpu_v2_path}" ]; then
+    onednn_cpu_git_version=`get_onednn_git_version ${onednn_cpu_v2_path}`
+    if [ ${onednn_cpu_git_version} != "none" ]; then
+      echo "ONEDNN_CPU_GIT_VERSION = '${onednn_cpu_git_version}'" >> $1
+    fi
+    onednn_version_check=$(($onednn_version_check + 1))
+  fi
+  if [ $onednn_version_check -eq 0 ]; then
     echo "Error: no oneDNN version files"
     exit -1
   fi
-  onednn_git_version=`get_onednn_git_version ${onednn_path}`
-  if [ ${onednn_git_version} != "none" ]; then
-    echo "ONEDNN_GIT_VERSION = '${onednn_git_version}'" >> $1
-  fi
   echo "TF_COMPATIBLE_VERSION = '>= 2.8.0'" >> $1
 }
-
 
 PLATFORM="$(uname -s | tr 'A-Z' 'a-z')"
 
@@ -107,7 +133,7 @@ function prepare_src() {
   fi
 
   RUNFILES=bazel-bin/itex/tools/pip_package/build_pip_package.runfiles/intel_extension_for_tensorflow
-  cp -R \
+  cp -LR \
       bazel-bin/itex/tools/pip_package/build_pip_package.runfiles/intel_extension_for_tensorflow/itex \
       "${ITEX_TMPDIR}"
   # Copy oneDNN libs over so they can be loaded at runtime
@@ -131,7 +157,8 @@ function prepare_src() {
     mv -f ${ITEX_TMPDIR}/itex/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow
     cp -rf itex/python/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python
     mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/base_init.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__init__.py
-    emit_version_info ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py
+    mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/__main__.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__main__.py
+    emit_version_info ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py "$WEEKLY_BUILD_FLAG"
     chmod +x ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__init__.py
     rm -rf ${ITEX_TMPDIR}/itex
   fi
@@ -139,17 +166,24 @@ function prepare_src() {
   # lib_itex
   cp LICENSE.txt ${LIB_TMPDIR}/
   cp -r third-party-programs ${LIB_TMPDIR}/
+  cp -r tools/ ${LIB_TMPDIR}/
   cp itex/tools/pip_package/lib_setup.py ${LIB_TMPDIR}/setup.py
   mkdir -p ${LIB_TMPDIR}/intel_extension_for_tensorflow
   mkdir -p ${LIB_TMPDIR}/tensorflow-plugins
   mkdir -p ${LIB_TMPDIR}/intel_extension_for_tensorflow_lib
   touch ${LIB_TMPDIR}/intel_extension_for_tensorflow_lib/__init__.py
   mv -f ${LIB_TMPDIR}/third-party-programs ${LIB_TMPDIR}/intel_extension_for_tensorflow_lib/
-  mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/lib*.so ${LIB_TMPDIR}/tensorflow-plugins
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu.so ${LIB_TMPDIR}/tensorflow-plugins/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu.so ${LIB_TMPDIR}/tensorflow-plugins/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx2.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx2.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   cp ${RUNFILES}/../../../../core/kernels/libitex_common.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   mkdir ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
   cp -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py ${LIB_TMPDIR}/intel_extension_for_tensorflow/python/
   mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/*wrap* ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
+  mkdir ${LIB_TMPDIR}/intel_extension_for_tensorflow/tools
+  mv ${LIB_TMPDIR}/tools/* ${LIB_TMPDIR}/intel_extension_for_tensorflow/tools
 }
 
 function build_wheel() {
@@ -161,6 +195,7 @@ function build_wheel() {
   TMPDIR="$1"
   DEST="$2"
   PKG_NAME_FLAG="$3"
+  WEEKLY_BUILD_FLAG="$4"
 
   # Before we leave the top-level directory, make sure we know how to
   # call python.
@@ -171,7 +206,7 @@ function build_wheel() {
   pushd ${TMPDIR}/${lib_tmp_folder_name} > /dev/null
   rm -f MANIFEST
   echo $(date) : "=== Building Intel® Extension for Tensorflow* library wheel"
-  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} >/dev/null
+  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${WEEKLY_BUILD_FLAG}>/dev/null
   mkdir -p ${DEST}
   cp dist/* ${DEST}
   popd > /dev/null
@@ -180,7 +215,7 @@ function build_wheel() {
   pushd ${TMPDIR}/${itex_tmp_folder_name} > /dev/null
   rm -f MANIFEST
   echo $(date) : "=== Building Intel® Extension for Tensorflow* wheel"
-  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} >/dev/null
+  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${WEEKLY_BUILD_FLAG}>/dev/null
   mkdir -p ${DEST}
   cp dist/* ${DEST}
   popd > /dev/null
@@ -208,6 +243,7 @@ function main() {
   SRCDIR=""
   DSTDIR=""
   CLEANSRC=1
+  WEEKLY_BUILD_FLAG=""
   while true; do
     if [[ "$1" == "--help" ]]; then
       usage
@@ -222,6 +258,8 @@ function main() {
       shift
       SRCDIR="$(real_path $1)"
       CLEANSRC=0
+    elif [[ "$1" == "--weekly" ]]; then
+      WEEKLY_BUILD_FLAG="--weekly_build"
     elif [[ "$1" == "--dst" ]]; then
       shift
       DSTDIR="$(real_path $1)"
@@ -256,9 +294,8 @@ function main() {
   if [[ -n ${PROJECT_NAME} ]]; then
     PKG_NAME_FLAG="--project_name ${PROJECT_NAME}"
   fi
-  
 
-  build_wheel "$SRCDIR" "$DSTDIR" "$PKG_NAME_FLAG"
+  build_wheel "$SRCDIR" "$DSTDIR" "$PKG_NAME_FLAG" "$WEEKLY_BUILD_FLAG"
 
   if [[ $CLEANSRC -ne 0 ]]; then
     rm -rf "${TMPDIR}"

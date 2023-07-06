@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2022 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
@@ -21,6 +21,7 @@ limitations under the License.
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/overflow.h"
+#include "itex/core/utils/status.h"
 #include "itex/core/utils/str_util.h"
 #include "itex/core/utils/strcat.h"
 #include "protos/tensor_shape.pb.h"
@@ -160,7 +161,7 @@ template <class Shape>
 TensorShapeBase<Shape>::TensorShapeBase(gtl::ArraySlice<int64> dim_sizes) {
   set_tag(REP16);
   set_data_type(DT_INVALID);
-  InitDims(dim_sizes);
+  ITEX_CHECK_OK(InitDims(dim_sizes));
 }
 
 // Returns true iff partial is true and val is < 0.
@@ -182,7 +183,7 @@ static inline bool Set16(bool partial, uint16* dst, int dim, int64 val) {
 }
 
 template <class Shape>
-void TensorShapeBase<Shape>::InitDims(gtl::ArraySlice<int64> dim_sizes) {
+Status TensorShapeBase<Shape>::InitDims(gtl::ArraySlice<int64> dim_sizes) {
   ITEX_DCHECK_EQ(tag(), REP16);
 
   // Allow sizes that are under kint64max^0.25 so that 4-way multiplication
@@ -198,6 +199,15 @@ void TensorShapeBase<Shape>::InitDims(gtl::ArraySlice<int64> dim_sizes) {
     }
   }
 
+  if (!kIsPartial && !large_size) {
+    for (auto s : dim_sizes) {
+      if (ITEX_PREDICT_FALSE(s < 0)) {
+        return errors::InvalidArgument(
+            "Expected shape dimensions to be non-negative, got ", s);
+      }
+    }
+  }
+
   if (!large_size) {
     // Every size fits in 16 bits; use fast-paths for dims in {1,2,3,4}.
     uint16* dst = as16()->dims_;
@@ -207,7 +217,7 @@ void TensorShapeBase<Shape>::InitDims(gtl::ArraySlice<int64> dim_sizes) {
         const int64 size = dim_sizes[0];
         const bool neg = Set16(kIsPartial, dst, 0, size);
         set_num_elements(neg ? -1 : size);
-        return;
+        return Status::OK();
       }
       case 2: {
         set_ndims_byte(2);
@@ -216,7 +226,7 @@ void TensorShapeBase<Shape>::InitDims(gtl::ArraySlice<int64> dim_sizes) {
         bool neg = Set16(kIsPartial, dst, 0, size0);
         neg |= Set16(kIsPartial, dst, 1, size1);
         set_num_elements(neg ? -1 : (size0 * size1));
-        return;
+        return Status::OK();
       }
       case 3: {
         set_ndims_byte(3);
@@ -227,7 +237,7 @@ void TensorShapeBase<Shape>::InitDims(gtl::ArraySlice<int64> dim_sizes) {
         neg |= Set16(kIsPartial, dst, 1, size1);
         neg |= Set16(kIsPartial, dst, 2, size2);
         set_num_elements(neg ? -1 : (size0 * size1 * size2));
-        return;
+        return Status::OK();
       }
       case 4: {
         set_ndims_byte(4);
@@ -240,16 +250,19 @@ void TensorShapeBase<Shape>::InitDims(gtl::ArraySlice<int64> dim_sizes) {
         neg |= Set16(kIsPartial, dst, 2, size2);
         neg |= Set16(kIsPartial, dst, 3, size3);
         set_num_elements(neg ? -1 : (size0 * size1 * size2 * size3));
-        return;
+        return Status::OK();
       }
     }
   }
 
   set_ndims_byte(0);
   set_num_elements(1);
+
+  Status status = Status::OK();
   for (int64 s : dim_sizes) {
-    AddDim(internal::SubtleMustCopy(s));
+    status.Update(AddDimWithStatus(internal::SubtleMustCopy(s)));
   }
+  return Status::OK();
 }
 
 template <class Shape>
@@ -359,6 +372,39 @@ void TensorShapeBase<Shape>::AddDim(int64 size) {
     ITEX_CHECK_LE(0, new_num_elements);
   }
   UnsafeAddDim(size, new_num_elements);
+}
+
+template <class Shape>
+Status TensorShapeBase<Shape>::AddDimWithStatus(int64_t size) {
+  if (!kIsPartial) {
+    if (ITEX_PREDICT_FALSE(size < 0)) {
+      return errors::InvalidArgument("Expected a non-negative size, got ",
+                                     size);
+    }
+  }
+
+  if (unknown_rank()) {
+    return Status();
+  }
+
+  if (ITEX_PREDICT_FALSE(ndims_byte() >= MaxDimensions())) {
+    return errors::InvalidArgument("Too many dimensions in tensor");
+  }
+
+  int64_t new_num_elements;
+  if (kIsPartial && (num_elements() < 0 || size < 0)) {
+    new_num_elements = -1;
+  } else {
+    new_num_elements = MultiplyWithoutOverflow(num_elements(), size);
+    if (ITEX_PREDICT_FALSE(new_num_elements < 0)) {
+      return errors::InvalidArgument("Encountered overflow when multiplying ",
+                                     num_elements(), " with ", size,
+                                     ", result: ", new_num_elements);
+    }
+  }
+
+  UnsafeAddDim(size, new_num_elements);
+  return Status();
 }
 
 template <class Shape>
@@ -512,6 +558,54 @@ template <class Shape>
 TensorShapeIter<Shape> TensorShapeBase<Shape>::end() const {
   ITEX_CHECK(!unknown_rank());
   return TensorShapeIter<Shape>(static_cast<const Shape*>(this), dims());
+}
+
+template <class Shape>
+Status TensorShapeBase<Shape>::BuildTensorShapeBase(
+    gtl::ArraySlice<int64_t> dim_sizes, TensorShapeBase* out) {
+  out->set_tag(REP16);
+  out->set_data_type(DT_INVALID);
+  return out->InitDims(dim_sizes);
+}
+
+template <class Shape>
+Status TensorShapeBase<Shape>::BuildTensorShapeBase(
+    const TensorShapeProto& proto, TensorShapeBase* out) {
+  out->set_tag(REP16);
+  out->set_data_type(DT_INVALID);
+  // NOTE(irving): Unfortunately, TensorShape allows parsing protos with
+  // unknown_shape() set, and it seems hard to remove this without backwards
+  // compatibility issues.
+  if (kIsPartial && proto.unknown_rank()) {
+    out->set_ndims_byte(kUnknownRank);
+    out->set_num_elements(-1);
+  } else {
+    out->set_ndims_byte(0);
+    out->set_num_elements(1);
+    int64_t num_elements_excluding_zero_dims = 1;
+    Status s = Status();
+    for (const auto& d : proto.dim()) {
+      s = out->AddDimWithStatus(d.size());
+      if (!s.ok()) {
+        return s;
+      }
+      // If one of the dimensions has size 0, multiplying the dimensions in
+      // ascending order isn't sufficient to prevent all multiplication orders
+      // from overflowing. To do that, we need to check that there would be no
+      // overflow if all zero-length dimensions were multiplied last, which is
+      // equivalent to ensuring that there's no overflow if zero-length
+      // dimensions are skipped. Unknown dimensions are also ignored.
+      if (d.size() > 0) {
+        num_elements_excluding_zero_dims =
+            MultiplyWithoutOverflow(num_elements_excluding_zero_dims, d.size());
+        if (ITEX_PREDICT_FALSE(num_elements_excluding_zero_dims < 0)) {
+          return errors::InvalidArgument(
+              "Encountered overflow when multiplying shape dimensions");
+        }
+      }
+    }
+  }
+  return Status();
 }
 
 string TensorShapeRep::DebugString() const {

@@ -1,10 +1,12 @@
+load("//itex:itex.bzl", "cc_library")
+
 cc_library(
     name = "onednn_graph",
     srcs = ["onednn_graph.cc"],
     hdrs = ["onednn_graph.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core/graph/utils:function",
+        "//itex/core/graph:optimizer_config",
         "//itex/core/graph/utils:graph_common_utils",
         "//itex/core/graph/utils:graph_properties",
         "//itex/core/graph/utils:graph_view",

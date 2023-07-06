@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2022 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Copyright 2018 The TensorFlow Authors. All Rights Reserved.
 
@@ -18,11 +18,11 @@ limitations under the License.
 #ifndef ITEX_CORE_KERNELS_GPU_SCAN_OPS_GPU_H_
 #define ITEX_CORE_KERNELS_GPU_SCAN_OPS_GPU_H_
 
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/tensor_types.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
-
 namespace itex {
 
 namespace functor {
@@ -47,8 +47,7 @@ inline int MapReversedIndex<false>(int dim_size, int index) {
 }
 
 template <typename T>
-using LocalAcc = sycl::accessor<T, 1, sycl::access::mode::read_write,
-                                sycl::access::target::local>;
+using LocalAcc = sycl::local_accessor<T, 1>;
 
 template <typename InputT, typename OutputT, typename InitValueT,
           typename BinaryOp, typename LocalAccessor, int GroupSize,
@@ -73,7 +72,7 @@ struct GroupScan {
     typedef InitValueT T;
     auto group = item.get_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to SLM
     auto end = GroupSize * ElemsPerWorkItem;
@@ -85,7 +84,7 @@ struct GroupScan {
       else
         local_mem_ptr[i] = init_;
     }
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
     // reduce
     T prefix = init_;
@@ -116,9 +115,9 @@ struct GroupScan {
       }
     }
 
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; i < end; i += GroupSize) {
       if (i < N_)
@@ -148,7 +147,7 @@ void launchGroupScan(OpKernelContext* ctx, InputT* in, OutputT* out,
   sycl::nd_range<1> thread_range(GroupSize, GroupSize);
   int scratch_size = GroupSize * ElemsPerWorkItem;
   auto& stream = (ctx->eigen_gpu_device()).stream();
-  sycl::event evt = stream->submit([&](sycl::handler& cgh) {
+  stream->submit([&](sycl::handler& cgh) {
     LocalAcc<InitValueT> scratch(scratch_size, cgh);
     GroupScan<InputT, OutputT, InitValueT, BinaryOp, LocalAcc<InitValueT>,
               GroupSize, ElemsPerWorkItem, IsExclusive, IsReverse, InputFunctor,
@@ -182,7 +181,7 @@ struct DeviceScanFirstStep {
     auto group_id = item.get_group_linear_id();
     auto group = item.get_group();
     auto lid = item.get_local_linear_id();
-    T* local_mem_ptr = local_mem_.get_pointer().get();
+    T* local_mem_ptr = ITEXGetLocalAccPointer<T>(local_mem_);
 
     // read data from global memory to slm
     auto start = group_id * GroupSize * ElemsPerWorkItem;
@@ -196,7 +195,7 @@ struct DeviceScanFirstStep {
       else
         local_mem_ptr[i] = init_;
     }
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
     // reduce
     T prefix = init_;
@@ -225,9 +224,9 @@ struct DeviceScanFirstStep {
         local_mem_ptr[local_start + i] = updated_prefix;
       }
     }
-    sycl::group_barrier(group);
+    item.barrier(sycl::access::fence_space::local_space);
 
-    // write  output
+// write  output
 #pragma unroll
     for (int i = lid; start + i < end; i += GroupSize) {
       if (start + i < N_)
@@ -436,11 +435,11 @@ void launchFullScanImpl(OpKernelContext* ctx, InputT* in, OutputT* out,
 template <typename InputT, typename OutputT, typename InitValueT,
           typename BinaryOp, typename InputFunctor = internal::Identity<InputT>,
           typename OutputFunctor = internal::Identity<InitValueT>>
-void launchFullScan(OpKernelContext* ctx, InputT* in, OutputT* out,
-                    InitValueT init, BinaryOp binary_op,
-                    const bool is_exclusive, const bool is_reverse, const int N,
-                    InputFunctor in_func = internal::Identity<InputT>(),
-                    OutputFunctor out_func = internal::Identity<InitValueT>()) {
+Status launchFullScan(
+    OpKernelContext* ctx, InputT* in, OutputT* out, InitValueT init,
+    BinaryOp binary_op, const bool is_exclusive, const bool is_reverse,
+    const int N, InputFunctor in_func = internal::Identity<InputT>(),
+    OutputFunctor out_func = internal::Identity<InitValueT>()) {
   if (is_exclusive) {
     if (is_reverse)
       internal::launchFullScanImpl<InputT, OutputT, InitValueT, BinaryOp, true,
@@ -460,6 +459,7 @@ void launchFullScan(OpKernelContext* ctx, InputT* in, OutputT* out,
                                    false, InputFunctor, OutputFunctor>(
           ctx, in, out, init, binary_op, N, in_func, out_func);
   }
+  return Status::OK();
 }
 
 }  // namespace functor
@@ -548,7 +548,7 @@ struct VanillaPartialScan {
 
       carry = sycl::group_broadcast(group, updated_prefix, GroupSize - 1);
 
-      // write  output
+// write  output
 #pragma unroll
       for (int i = 0; i < ElemsPerWorkItem; ++i) {
         int start = loop * group_elems + lid * ElemsPerWorkItem + i;
@@ -675,13 +675,12 @@ template <typename T, typename Item, typename BinaryOp, int SubGroupSize,
 void slmScan(Item item, T* array, T* carry_array, const T* old_data,
              T* updated_data, const T init, BinaryOp binary_op) {
   constexpr int k = NumSubGroup / SubGroupSize;
-  auto group = item.get_group();
   auto sg_group = item.get_sub_group();
   int sg_id = sg_group.get_group_linear_id();
   int lid_in_sg = sg_group.get_local_linear_id();
 
   array[sg_id + lid_in_sg * NumSubGroup] = *old_data;
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   // ----------------------------
   // Three stage scan in SLM
@@ -694,7 +693,7 @@ void slmScan(Item item, T* array, T* carry_array, const T* old_data,
 
   // Second stage: compute subgroup prefix
   if (lid_in_sg == SubGroupSize - 1) carry_array[sg_id] = exclusive_sum + data;
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   if (sg_id == 0) {
     int offset = lid_in_sg * k;
@@ -705,10 +704,10 @@ void slmScan(Item item, T* array, T* carry_array, const T* old_data,
       carry = binary_op(carry, tmp);
     }
   }
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   array[offset + lid_in_sg] = binary_op(exclusive_sum, carry_array[sg_id]);
-  sycl::group_barrier(group);
+  item.barrier(sycl::access::fence_space::local_space);
 
   *updated_data = array[sg_id + lid_in_sg * NumSubGroup];
 }
@@ -770,9 +769,9 @@ struct OptimizedOuterScan {
 
     T updated_reduce_sum = init_;
     slmScan<T, sycl::nd_item<1>, BinaryOp, SubGroupSize, NumSubGroup>(
-        item, local_mem_.get_pointer().get(),
-        local_mem_carry_.get_pointer().get(), &reduce_sum, &updated_reduce_sum,
-        init_, binary_op_);
+        item, ITEXGetLocalAccPointer(local_mem_),
+        ITEXGetLocalAccPointer(local_mem_carry_), &reduce_sum,
+        &updated_reduce_sum, init_, binary_op_);
 
     // Each SubGroup do interanl scan and store data to Global Memory
     if (IsExclusive) {
@@ -836,26 +835,20 @@ void optimizedOuterScanKernelFunc(OpKernelContext* ctx, InputT* in,
 
   auto& stream = (ctx->eigen_gpu_device()).stream();
   stream->submit([&](sycl::handler& cgh) {
-    sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                   sycl::access::target::local>
-        scratch(SubGroupSize * NumSubGroup, cgh);
-    sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                   sycl::access::target::local>
-        scratch_carry(SubGroupSize * k, cgh);
-    OptimizedOuterScan<
-        InputT, OutputT, InitValueT, BinaryOp,
-        sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                       sycl::access::target::local>,
-        GroupSize, SubGroupSize, IsExclusive, IsReverse, InputFunctor,
-        OutputFunctor>
+    sycl::local_accessor<InitValueT, 1> scratch(SubGroupSize * NumSubGroup,
+                                                cgh);
+    sycl::local_accessor<InitValueT, 1> scratch_carry(SubGroupSize * k, cgh);
+    OptimizedOuterScan<InputT, OutputT, InitValueT, BinaryOp,
+                       sycl::local_accessor<InitValueT, 1>, GroupSize,
+                       SubGroupSize, IsExclusive, IsReverse, InputFunctor,
+                       OutputFunctor>
         task(in, out, scratch, scratch_carry, init, binary_op, num_outer,
              num_scaned, num_inner, elems_per_work_item, k, in_func, out_func);
     cgh.parallel_for<OptimizedOuterScan<
         InputT, OutputT, InitValueT, BinaryOp,
-        sycl::accessor<InitValueT, 1, sycl::access::mode::read_write,
-                       sycl::access::target::local>,
-        GroupSize, SubGroupSize, IsExclusive, IsReverse, InputFunctor,
-        OutputFunctor>>(thread_range, task);
+        sycl::local_accessor<InitValueT, 1>, GroupSize, SubGroupSize,
+        IsExclusive, IsReverse, InputFunctor, OutputFunctor>>(thread_range,
+                                                              task);
   });
 }
 

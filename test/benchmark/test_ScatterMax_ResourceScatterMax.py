@@ -17,7 +17,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops import resource_variable_ops
+from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 from utils import tailed_no_tailed_size
@@ -31,22 +31,32 @@ except ImportError:
 ITERATION = 5
 
 class ScatterMax_ResourceScatterMax_Test(test.TestCase):
-    def _test_impl(self, ref_size, dtype):
-        ref = np.random.normal(size=ref_size)
-        handle = resource_variable_ops.var_handle_op(dtype=dtype, shape=ref_size)
-        resource_variable_ops.assign_variable_op(handle, constant_op.constant(ref, dtype=dtype))
-        indices = tf.constant([], dtype=dtypes.int32)
-        updates = tf.constant([], dtype=dtype)
+    def _test1d(self,  m, n, dtype):
+        np.random.seed(0)
+        indice = constant_op.constant(np.random.choice(m, n, replace=False).reshape(n), dtype=tf.int64)
+        update = constant_op.constant(np.random.choice(m, n, replace=False), dtype=dtype)
+        x = np.random.normal(size=m)
+        shape = tf.Variable(x, dtype=dtype) 
         flush_cache()
-        out_gpu = resource_variable_ops.resource_scatter_max(handle, indices, updates)
+        op = state_ops.scatter_max(ref=shape, indices=indice, updates=update)
+            
+    def _test2d(self,  m, n, dtype):
+        np.random.seed(0)
+        indice = constant_op.constant(np.random.choice(n, n, replace=False), dtype=tf.int64) 
+        update = constant_op.constant(np.random.choice(m, n, replace=False).repeat(m).reshape(n,m), dtype=dtype)
+        x = np.random.random((n,m))
+        shape = tf.Variable(x, dtype=dtype) 
+        flush_cache()
+        op = state_ops.scatter_max(ref=shape, indices=indice, updates=update)
 
     @add_profiling
     @multi_run(ITERATION)
-    def test_ScatterMax_ResourceScatterMax(self):
+    def test(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            # test tailed_no_tailed_size
-            for in_size in tailed_no_tailed_size:
-                self._test_impl([in_size], dtype)
+            self._test1d(1024, 256, dtype)
+            self._test1d(8192, 4095, dtype)
+            self._test2d(1024, 256, dtype)
+            self._test2d(8192, 4095, dtype)
 
 if __name__ == '__main__':
     test.main()

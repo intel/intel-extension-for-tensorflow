@@ -23,8 +23,15 @@ def _gelu_grad(op, grad):
       grad, op.inputs[0], op.get_attr("approximate")
   )
 
+@ops.RegisterGradient("ITEXGelu")
+def _itex_gelu_grad(op, grad):
+  return load_ops_library.itex_gelu_grad(
+      grad, op.inputs[0], op.get_attr("approximate")
+  )
+
 @ops.RegisterGradient("LayerNorm")
 def _layer_norm_grad(op, *grad):
+  """A dummy docstring."""
   x = op.inputs[0]
   grad_y = grad[0]
   scale = op.inputs[1]
@@ -35,9 +42,27 @@ def _layer_norm_grad(op, *grad):
   reserve_space_1 = op.outputs[1]
   reserve_space_2 = op.outputs[2]
   dx, dscale, doffset, _, _ = grad_fun(
-    y_backprop=grad_y, x=x, scale=scale, reserve_space_1=reserve_space_1,
-    reserve_space_2=reserve_space_2, epsilon=epsilon, is_training=is_training,
-    data_format=data_format)
+      y_backprop=grad_y, x=x, scale=scale, reserve_space_1=reserve_space_1,
+      reserve_space_2=reserve_space_2, epsilon=epsilon, is_training=is_training,
+      data_format=data_format)
+  return dx, dscale, doffset
+
+@ops.RegisterGradient("ITEXLayerNorm")
+def _itex_layer_norm_grad(op, *grad):
+  """A dummy docstring."""
+  x = op.inputs[0]
+  grad_y = grad[0]
+  scale = op.inputs[1]
+  epsilon = op.get_attr("epsilon")
+  is_training = op.get_attr("is_training")
+  data_format = op.get_attr("data_format")
+  grad_fun = load_ops_library.itex_layer_norm_grad
+  reserve_space_1 = op.outputs[1]
+  reserve_space_2 = op.outputs[2]
+  dx, dscale, doffset, _, _ = grad_fun(
+      y_backprop=grad_y, x=x, scale=scale, reserve_space_1=reserve_space_1,
+      reserve_space_2=reserve_space_2, epsilon=epsilon, is_training=is_training,
+      data_format=data_format)
   return dx, dscale, doffset
 
 @ops.RegisterGradient("ItexRnn")
@@ -65,5 +90,4 @@ def _itex_rnn_grad(op, *grad):
       # seed=op.get_attr("seed"),
       # seed2=op.get_attr("seed2"),
       num_proj=op.get_attr("num_proj"),
-      var_seq_length=op.get_attr("var_seq_length")) + (None, None, None, )
-  
+      var_seq_length=op.get_attr("var_seq_length")) + (None, None, None,)

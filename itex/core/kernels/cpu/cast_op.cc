@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/kernels/common/cast_op.h"
+
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_layout_util.h"
 #include "itex/core/utils/onednn/onednn_util.h"
@@ -45,7 +47,6 @@ class CastOp : public OpKernel {
 
   void Compute(OpKernelContext* context) override {
     try {
-      auto onednn_engine = CreateDnnlEngine<Device>(*context);
       const Tensor& src_tensor = context->input(0);
       TensorShape src_tf_shape = src_tensor.shape();
 
@@ -56,7 +57,17 @@ class CastOp : public OpKernel {
                                     {0}, 0, src_tf_shape, &dst_tensor));
         return;
       }
+      TensorShape output_tf_shape = src_tf_shape;
+      OP_REQUIRES_OK(context,
+                     context->allocate_output(0, output_tf_shape, &dst_tensor));
 
+      const Device& d = context->eigen_device<Device>();
+#ifdef INTEL_CPU_ONLY
+      CastDataType<Device, SrcT, DstT>{}(
+          d, const_cast<const Tensor&>(src_tensor).flat<SrcT>(),
+          dst_tensor->flat<DstT>());
+#else
+      auto onednn_engine = CreateDnnlEngine<Device>(*context);
       dnnl::memory::dims src_dims;
       dnnl::memory::desc src_md, dst_md;
       src_dims = TFShapeToOneDnnDims(src_tf_shape);
@@ -79,6 +90,7 @@ class CastOp : public OpKernel {
       std::unordered_map<int, dnnl::memory> reorder_args = {
           {DNNL_ARG_SRC, src_mem}, {DNNL_ARG_DST, dst_mem}};
       reorder_primitive.execute(onednn_stream, reorder_args);
+#endif
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
                          ", message: " + string(e.message) + ", in file " +

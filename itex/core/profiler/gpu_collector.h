@@ -57,10 +57,10 @@ class PerDeviceCollector {
   PerDeviceCollector(int device_id, uint64_t start_walltime_ns,
                      uint64_t start_gpu_ns)
       : start_walltime_ns_(start_walltime_ns), start_gpu_ns_(start_gpu_ns) {
-    DPCPPDevice* device_h;
-    dpcppGetDevice(&device_h, device_id);
-    std::vector<DPCPPStream*> stream_pool;
-    dpcppGetStreamPool(device_h, &stream_pool);
+    ITEX_GPUDevice* device_h;
+    ITEX_GPUGetDevice(&device_h, device_id);
+    std::vector<ITEX_GPUStream*> stream_pool;
+    ITEX_GPUGetStreamPool(device_h, &stream_pool);
     auto l0_native_queue =
         sycl::get_native<sycl::backend::level_zero>(*device_h);
     zePluggableTracerQueueList queue_list = ZeKernelCollector::

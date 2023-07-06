@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2022 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@ limitations under the License.
 
 #ifndef ITEX_CORE_KERNELS_GPU_UNIQUE_OP_H_
 #define ITEX_CORE_KERNELS_GPU_UNIQUE_OP_H_
-
 #include <iterator>
+#include <limits>
 
+#include "itex/core/kernels/gpu/topk_op.h"
 #include "itex/core/kernels/gpu/unique_op_helpers.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/group_radix_sort.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
@@ -32,8 +34,7 @@ typedef Eigen::GpuDevice GPUDevice;
 namespace impl {
 
 template <typename T>
-using __shared__ = sycl::accessor<T, 1, sycl::access::mode::read_write,
-                                  sycl::access::target::local>;
+using __shared__ = sycl::local_accessor<T, 1>;
 
 inline int Log2Floor(uint32_t n) {
   if (n == 0) return -1;
@@ -350,29 +351,31 @@ struct RadixSortKernel {
         d_input_inds_ptr(d_input_inds_ptr),
         sorted_input_ptr(sorted_input_ptr),
         sorted_input_inds_ptr(sorted_input_inds_ptr) {}
-  [[cl::intel_reqd_sub_group_size(SUBGROUP_SIZE)]] void operator()(
+  [[intel::reqd_sub_group_size(SUBGROUP_SIZE)]] void operator()(
       sycl::nd_item<1> item) const {
     int local_id = item.get_local_id(0);
 
     KeyT* d_input_iter = d_input + local_id * KEYS_PER_ITEM;
     ValueT* d_input_inds_iter = d_input_inds_ptr + local_id * KEYS_PER_ITEM;
 
-    KeyT item_scores[KEYS_PER_ITEM] = {0u};
-    ValueT item_boxIds[KEYS_PER_ITEM] = {0};
+    KeyT item_scores[KEYS_PER_ITEM];
+    ValueT item_boxIds[KEYS_PER_ITEM];
 
 #pragma unroll
     for (int i = 0; i < KEYS_PER_ITEM; i++) {
       if (local_id * KEYS_PER_ITEM + i < num_instances) {
         item_scores[i] = d_input_iter[i];
         item_boxIds[i] = d_input_inds_iter[i];
+      } else {
+        item_scores[i] = std::numeric_limits<KeyT>::max();
       }
     }
     // get the pointer of share local memory
-    uint8_t* local_mem = scratch.get_pointer().get();
-    // Sorting the scores
+    uint8_t* local_mem = ITEXGetLocalAccPointer<uint8_t>(scratch);
+    // Sorting the scores in ascending order
     Sortor(item.get_group(), item.get_sub_group(), local_id, local_mem)
-        .SortDescending(item_scores, item_boxIds, sorted_input_ptr,
-                        sorted_input_inds_ptr, num_instances, 0, num_bits);
+        .Sort(item_scores, item_boxIds, sorted_input_ptr, sorted_input_inds_ptr,
+              num_instances, 0, num_bits);
   }
 
  private:
@@ -394,7 +397,7 @@ Status LaunchRadixSortKernel(sycl::queue* stream, const int32_t num_instances,
                              sycl::range<1> global_range,
                              sycl::range<1> local_range,
                              size_t local_memory_size,
-                             int num_bits = sizeof(KeyT)) {
+                             int num_bits = sizeof(KeyT) * 8) {
   stream->submit([&](sycl::handler& cgh) {
     __shared__<uint8_t> scratch(sycl::range<1>{local_memory_size}, cgh);
     RadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE, Sortor> task(
@@ -412,7 +415,7 @@ template <typename KeyT, typename ValueT, int KEYS_PER_ITEM, int GROUP_SIZE,
           int SUBGROUP_SIZE>
 Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
                          KeyT* keys_in, ValueT* indices_in, KeyT* keys_out,
-                         ValueT* indices_out, int num_bits = sizeof(KeyT)) {
+                         ValueT* indices_out, int num_bits = sizeof(KeyT) * 8) {
   if (size == 0) return Status(TF_INVALID_ARGUMENT, "Invalid Value");
   const GPUDevice& device = context->eigen_device<GPUDevice>();
   sycl::queue* stream = device.stream();
@@ -423,23 +426,50 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
         DataTypeToEnum<ValueT>::value, TensorShape({size}), &tmp_indices_in));
     ValueT* mutable_indices_in = tmp_indices_in.flat<ValueT>().data();
     indices_in = mutable_indices_in;
-    LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1), ValueT(size),
-                                  indices_in);
+    // Set indices_in to range only if indices_in is created internally.
+    ITEX_CHECK_OK(LaunchRangeInitKernel<ValueT>(stream, ValueT(0), ValueT(1),
+                                                ValueT(size), indices_in));
   }
 
-  using Rsortor = GroupRadixSortor<
-      KeyT, /*key_per_item==*/KEYS_PER_ITEM, /*group_size=*/GROUP_SIZE,
-      /*subgroup_size =*/SUBGROUP_SIZE, sycl::group<1>, ValueT>;
-  // Compute the required local memory size
-  size_t local_memory_size = Rsortor::LocalStorage::SIZE;
-  const int32_t num_wg = (size + GROUP_SIZE - 1) / GROUP_SIZE;
-  sycl::range<1> global_range(num_wg * GROUP_SIZE);
-  sycl::range<1> local_range(GROUP_SIZE);
+  Tensor tmp_keys_out;
+  if (!keys_out) {
+    TF_RETURN_IF_ERROR(context->allocate_temp(
+        DataTypeToEnum<KeyT>::value, TensorShape({size}), &tmp_keys_out));
+    KeyT* mutable_keys_out = tmp_keys_out.flat<KeyT>().data();
+    keys_out = mutable_keys_out;
+  }
 
-  return LaunchRadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE,
-                               Rsortor>(
-      stream, size, keys_in, indices_in, keys_out, indices_out, global_range,
-      local_range, local_memory_size, num_bits);
+  if (size <= KEYS_PER_ITEM * GROUP_SIZE) {
+    using Rsortor = GroupRadixSortor<
+        KeyT, /*key_per_item==*/KEYS_PER_ITEM, /*group_size=*/GROUP_SIZE,
+        /*subgroup_size =*/SUBGROUP_SIZE, sycl::group<1>, ValueT>;
+    // Compute the required local memory size
+    size_t local_memory_size = Rsortor::LocalStorage::SIZE;
+    const int32_t num_wg = 1;
+    sycl::range<1> global_range(num_wg * GROUP_SIZE);
+    sycl::range<1> local_range(GROUP_SIZE);
+
+    return LaunchRadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE,
+                                 Rsortor>(
+        stream, size, keys_in, indices_in, keys_out, indices_out, global_range,
+        local_range, local_memory_size, num_bits);
+  } else {
+    // TODO(itex): Kernel is too slow if inputs size is large. We temporary
+    // set group size as max value, and plan to optimize the kernel performance
+    // in the future.
+    int max_group_size =
+        stream->get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    Tensor tmp_keys_buffer;
+    TF_RETURN_IF_ERROR(context->allocate_temp(
+        DataTypeToEnum<KeyT>::value, TensorShape({size}), &tmp_keys_buffer));
+
+    ::itex::functor::DispatchToFallBackRadixSort(
+        stream, keys_in, keys_out, tmp_keys_buffer.flat<KeyT>().data(),
+        indices_out, indices_in, 1, size, max_group_size);
+
+    return Status::OK();
+  }
 }
 
 template <typename InputIteratorT, typename OutputIteratorT, typename BinaryOp>

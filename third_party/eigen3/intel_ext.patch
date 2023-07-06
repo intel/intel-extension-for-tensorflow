@@ -1,5 +1,5 @@
 diff --git a/Eigen/Core b/Eigen/Core
-index f44b77831..2c20e5e19 100644
+index f44b77831..992ec5124 100644
 --- a/Eigen/Core
 +++ b/Eigen/Core
 @@ -29,7 +29,6 @@
@@ -10,7 +10,7 @@ index f44b77831..2c20e5e19 100644
  #ifdef EIGEN_EXCEPTIONS
    #include <new>
  #endif
-@@ -106,13 +105,19 @@
+@@ -106,13 +105,21 @@
    #include <intrin.h>
  #endif
  
@@ -21,18 +21,19 @@ index f44b77831..2c20e5e19 100644
    #undef isnan
    #undef isinf
    #undef isfinite
--  #include <CL/sycl.hpp>
-+#if __has_include(<sycl/sycl.hpp>)
-+#include <sycl/sycl.hpp>
-+#elif __has_include(<CL/sycl.hpp>)
-+#include <CL/sycl.hpp>
-+#else
-+#error "Unsupported compiler"
-+#endif
++
++  #if __has_include(<sycl/sycl.hpp>)
++  #include <sycl/sycl.hpp>
++  #elif __has_include(<CL/sycl.hpp>)
+   #include <CL/sycl.hpp>
++  #else
++  #error "Unsupported compiler"
++  #endif
++  
    #include <map>
    #include <memory>
    #include <utility>
-@@ -166,8 +171,13 @@ using std::ptrdiff_t;
+@@ -166,8 +173,13 @@ using std::ptrdiff_t;
  #include "src/Core/MathFunctionsImpl.h"
  #include "src/Core/arch/Default/ConjHelper.h"
  // Generic half float support
@@ -46,7 +47,7 @@ index f44b77831..2c20e5e19 100644
  #include "src/Core/arch/Default/TypeCasting.h"
  #include "src/Core/arch/Default/GenericPacketMathFunctionsFwd.h"
  
-@@ -218,6 +228,19 @@ using std::ptrdiff_t;
+@@ -218,6 +230,19 @@ using std::ptrdiff_t;
    #include "src/Core/arch/MSA/Complex.h"
  #endif
  
@@ -66,7 +67,7 @@ index f44b77831..2c20e5e19 100644
  #if defined EIGEN_VECTORIZE_GPU
    #include "src/Core/arch/GPU/PacketMath.h"
    #include "src/Core/arch/GPU/MathFunctions.h"
-@@ -234,16 +257,15 @@ using std::ptrdiff_t;
+@@ -234,16 +259,15 @@ using std::ptrdiff_t;
  #endif
  #endif
  
@@ -83,7 +84,7 @@ index f44b77831..2c20e5e19 100644
 +#if defined(EIGEN_USE_DPCPP)
 +  #include "src/Core/arch/DPCPP/InteropHeaders.h"
 +  #include "src/Core/arch/DPCPP/TypeCasting.h"
-+  #include "dpcpp_runtime.h"
++  #include "itex_gpu_runtime.h"
 +#if !defined(EIGEN_DONT_VECTORIZE_SYCL)
 +  #include "src/Core/arch/DPCPP/MathFunctions.h"
 +  #include "src/Core/arch/DPCPP/PacketMath.h"
@@ -93,7 +94,7 @@ index f44b77831..2c20e5e19 100644
  // Specialized functors to enable the processing of complex numbers
  // on CUDA devices
 diff --git a/Eigen/src/Core/GenericPacketMath.h b/Eigen/src/Core/GenericPacketMath.h
-index ebae1a34f..fe7332db4 100644
+index ebae1a34f..663c9cffa 100644
 --- a/Eigen/src/Core/GenericPacketMath.h
 +++ b/Eigen/src/Core/GenericPacketMath.h
 @@ -107,6 +107,7 @@ template<typename T> struct packet_traits : default_packet_traits
@@ -116,10 +117,14 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns -a (coeff-wise) */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pnegate(const Packet& a) { return -a; }
-@@ -223,6 +229,15 @@ pmin(const Packet& a, const Packet& b) { return numext::mini(a, b); }
+@@ -223,6 +229,19 @@ pmin(const Packet& a, const Packet& b) { return numext::mini(a, b); }
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pmax(const Packet& a, const Packet& b) { return numext::maxi(a, b); }
  
++/** \internal \returns the pow of \a a and \a exponent b  (coeff-wise) */
++template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
++ppow(const Packet& a, const Packet& b) { return numext::pow(a, b); }
++
 +template<typename OutPacket, typename InPacket> EIGEN_DEVICE_FUNC inline OutPacket 
 +pisnan(const InPacket& a) { using numext::isnan; return isnan(a); }
 +
@@ -132,7 +137,7 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns the absolute value of \a a */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pabs(const Packet& a) { using std::abs; return abs(a); }
-@@ -293,7 +308,14 @@ template<> EIGEN_DEVICE_FUNC inline double pzero<double>(const double& a) {
+@@ -293,7 +312,14 @@ template<> EIGEN_DEVICE_FUNC inline double pzero<double>(const double& a) {
  
  /** \internal \returns one bits */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
@@ -148,7 +153,7 @@ index ebae1a34f..fe7332db4 100644
  
  template <typename RealScalar>
  EIGEN_DEVICE_FUNC inline std::complex<RealScalar> ptrue(const std::complex<RealScalar>& /*a*/) {
-@@ -318,6 +340,9 @@ pxor(const Packet& a, const Packet& b) { return a ^ b; }
+@@ -318,6 +344,9 @@ pxor(const Packet& a, const Packet& b) { return a ^ b; }
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pandnot(const Packet& a, const Packet& b) { return pand(a, pxor(ptrue(b), b)); }
  
@@ -158,7 +163,7 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns a <= b as a bit mask */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pcmp_le(const Packet& a, const Packet& b)  { return a<=b ? ptrue(a) : pzero(a); }
-@@ -334,6 +359,24 @@ pcmp_eq(const Packet& a, const Packet& b) { return a==b ? ptrue(a) : pzero(a); }
+@@ -334,6 +363,24 @@ pcmp_eq(const Packet& a, const Packet& b) { return a==b ? ptrue(a) : pzero(a); }
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pcmp_lt_or_nan(const Packet& a, const Packet& b) { return a>=b ? pzero(a) : ptrue(a); }
  
@@ -183,6 +188,17 @@ index ebae1a34f..fe7332db4 100644
  /** \internal \returns \a or \b for each field in packet according to \mask */
  template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
  pselect(const Packet& mask, const Packet& a, const Packet& b) {
+@@ -573,6 +620,10 @@ Packet pacos(const Packet& a) { EIGEN_USING_STD_MATH(acos); return acos(a); }
+ template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+ Packet patan(const Packet& a) { EIGEN_USING_STD_MATH(atan); return atan(a); }
+ 
++/** \internal \returns the arc tangent of \a a (coeff-wise) */
++template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
++Packet patan2(const Packet& a, const Packet& b) { EIGEN_USING_STD_MATH(atan2); return atan2(a, b); }
++
+ /** \internal \returns the hyperbolic sine of \a a (coeff-wise) */
+ template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+ Packet psinh(const Packet& a) { EIGEN_USING_STD_MATH(sinh); return sinh(a); }
 diff --git a/Eigen/src/Core/MathFunctions.h b/Eigen/src/Core/MathFunctions.h
 index 96cb24fcb..1aea7f4ff 100644
 --- a/Eigen/src/Core/MathFunctions.h
@@ -275,6 +291,38 @@ index 96cb24fcb..1aea7f4ff 100644
    }
  
  #define SYCL_SPECIALIZE_GEN2_BINARY_FUNC(NAME, FUNC, RET_TYPE, ARG_TYPE) \
+diff --git a/Eigen/src/Core/NumTraits.h b/Eigen/src/Core/NumTraits.h
+index 9ab55534f..89237db7c 100644
+--- a/Eigen/src/Core/NumTraits.h
++++ b/Eigen/src/Core/NumTraits.h
+@@ -77,6 +77,27 @@ struct default_digits_impl<T,false,true> // Integer
+ 
+ } // end namespace internal
+ 
++namespace numext {
++/** \internal bit-wise cast without changing the underlying bit representation. */
++
++// TODO: Replace by std::bit_cast (available in C++20)
++template <typename Tgt, typename Src>
++EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
++#if EIGEN_HAS_TYPE_TRAITS
++  // The behaviour of memcpy is not specified for non-trivially copyable types
++  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED);
++  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Tgt>::value && std::is_default_constructible<Tgt>::value,
++                      THIS_TYPE_IS_NOT_SUPPORTED);
++#endif
++
++  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED);
++  Tgt tgt;
++  EIGEN_USING_STD(memcpy)
++  memcpy(&tgt, &src, sizeof(Tgt));
++  return tgt;
++}
++}  // namespace numext
++
+ /** \class NumTraits
+   * \ingroup Core_Module
+   *
 diff --git a/Eigen/src/Core/arch/AVX/PacketMath.h b/Eigen/src/Core/arch/AVX/PacketMath.h
 index cf7146cbc..4dc4f6931 100644
 --- a/Eigen/src/Core/arch/AVX/PacketMath.h
@@ -352,10 +400,10 @@ index 76f3366d7..e4cbafc05 100644
    // output.value = static_cast<uint16_t>(input);
 diff --git a/Eigen/src/Core/arch/DPCPP/BFloat16.h b/Eigen/src/Core/arch/DPCPP/BFloat16.h
 new file mode 100644
-index 000000000..5666b9a0d
+index 000000000..dd2ac3641
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/BFloat16.h
-@@ -0,0 +1,674 @@
+@@ -0,0 +1,727 @@
 +/* Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 +
 +Licensed under the Apache License, Version 2.0 (the "License");
@@ -421,10 +469,36 @@ index 000000000..5666b9a0d
 +
 +  template<class T>
 +  explicit EIGEN_DEVICE_FUNC bfloat16(const T& val)
-+      : bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<internal::is_integral<T>::value>(static_cast<float>(val))) {}
-+  
++      :
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++        bfloat16_impl::bfloat16_base(__bfloat16_raw(sycl::bit_cast<uint16_t>(sycl::ext::oneapi::bfloat16(static_cast<float>(val)))))
++#else
++        bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<internal::is_integral<T>::value>(static_cast<float>(val)))
++#endif
++{
++}
++
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++  template<>
++  explicit EIGEN_DEVICE_FUNC bfloat16(const sycl::ext::oneapi::bfloat16& val)
++      : bfloat16_impl::bfloat16_base(__bfloat16_raw(*reinterpret_cast<const unsigned short*>(&val))) {}
++
++  EIGEN_DEVICE_FUNC operator sycl::ext::oneapi::bfloat16() const {
++     return *reinterpret_cast<const sycl::ext::oneapi::bfloat16*>(this); 
++  }
++#endif
++
++
 +  explicit EIGEN_DEVICE_FUNC bfloat16(float f)
-+      : bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<false>(f)) {}
++      :
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++        bfloat16_impl::bfloat16_base(__bfloat16_raw(sycl::bit_cast<uint16_t>(sycl::ext::oneapi::bfloat16(f))))
++#else
++        bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<false>(f))
++#endif
++{
++}
++
 +
 +  // Following the convention of numpy, converting between complex and
 +  // float will lead to loss of imag value.
@@ -433,7 +507,11 @@ index 000000000..5666b9a0d
 +      : bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<false>(static_cast<float>(val.real()))) {}
 +
 +  EIGEN_DEVICE_FUNC operator float() const {  // NOLINT: Allow implicit conversion to float, because it is lossless.
++#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
++    return float(*reinterpret_cast<const sycl::ext::oneapi::bfloat16*>(this));
++#else
 +    return bfloat16_impl::bfloat16_to_float(*this);
++#endif
 +  }
 +
 +#if EIGEN_HAS_CXX11
@@ -812,6 +890,26 @@ index 000000000..5666b9a0d
 +#endif
 +    return result;
 +}
++
++#ifndef EIGEN_DONT_VECTORIZE_SYCL
++
++template <int PACKET_SIZE>
++EIGEN_ALWAYS_INLINE EIGEN_DEVICE_FUNC sycl::vec<unsigned short, PACKET_SIZE> F32ToBf16(const sycl::vec<float, PACKET_SIZE>& a) {
++  sycl::vec<unsigned short, PACKET_SIZE> nan(0x7fc0); 
++  sycl::vec<short, PACKET_SIZE> isnan = sycl::isnan(a).template convert<short, sycl::rounding_mode::automatic>();
++  sycl::vec<unsigned int, PACKET_SIZE> input = *reinterpret_cast<const sycl::vec<unsigned int, PACKET_SIZE>*>(&a);
++  input = (input + ((input >> 16) & 1) + 0x7fff) >> 16;
++  return sycl::select(input.template convert<unsigned short, sycl::rounding_mode::automatic>(), nan, isnan);
++}
++
++template <int PACKET_SIZE>
++EIGEN_ALWAYS_INLINE EIGEN_DEVICE_FUNC sycl::vec<float, PACKET_SIZE> Bf16ToF32(const sycl::vec<unsigned short, PACKET_SIZE>& a) {
++  sycl::vec<unsigned int, PACKET_SIZE> r;
++  r = a.template convert<uint32_t, sycl::rounding_mode::automatic>() << 16;
++  return *reinterpret_cast<sycl::vec<float, PACKET_SIZE>*>(&r);
++}
++
++#endif // EIGEN_DONT_VECTORIZE_SYCL
 +// --- standard functions ---
 +
 +EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool (isinf)(const bfloat16& a) {
@@ -876,6 +974,9 @@ index 000000000..5666b9a0d
 +}
 +EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 atan(const bfloat16& a) {
 +  return bfloat16(sycl::atan(float(a)));
++}
++EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 atan2(const bfloat16& a, const bfloat16& b) {
++  return bfloat16(sycl::atan2(float(a), float(b)));
 +}
 +EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 sinh(const bfloat16& a) {
 +  return bfloat16(sycl::sinh(float(a)));
@@ -1747,10 +1848,10 @@ index 000000000..135b1b9c8
 +#endif // EIGEN_HALF_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/InteropHeaders.h b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
 new file mode 100644
-index 000000000..bd44c2c10
+index 000000000..6b0cc530c
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
-@@ -0,0 +1,506 @@
+@@ -0,0 +1,530 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -1776,15 +1877,35 @@ index 000000000..bd44c2c10
 +
 +namespace Eigen {
 +
++// This funciton is to back compatible with old DPCPP compiler
++template <typename T, int Dims = 1>
++inline T* SYCLGetLocalAccPointer(
++    const sycl::local_accessor<T, Dims>& accessor) {
++  if constexpr (std::is_same_v<decltype(accessor.get_pointer()),
++                               sycl::local_ptr<T>>) {
++    return accessor.get_pointer().get();
++  } else {
++    return accessor.get_pointer();
++  }
++}
++
 +#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +
 +namespace internal {
-+
-+typedef sycl::vec<bool,16> cl_bool16;
-+typedef sycl::vec<unsigned short, 8> Packet8bf16;
-+typedef sycl::vec<unsigned short, 4> Packet4bf16;
-+typedef sycl::vec<unsigned short, 2> Packet2bf16;
 +typedef sycl::ulonglong2 Packet4h2;
++typedef sycl::vec<bool,16> cl_bool16;
++
++#define PACKET_TYPE_ALIAS(length)                                 \
++  typedef sycl::vec<unsigned short, length> Packet##length##bf16; \
++  typedef sycl::vec<short , length> Packet##length##i16;          \
++  typedef sycl::vec<float, length> Packet##length##f32;           \
++  typedef sycl::vec<unsigned int, length> Packet##length##u32;    \
++  typedef sycl::vec<int, length> Packet##length##i32;
++
++PACKET_TYPE_ALIAS(2);
++PACKET_TYPE_ALIAS(4);
++PACKET_TYPE_ALIAS(8);
++#undef PACKET_TYPE_ALIAS
 +
 +template <bool is_vectorized, int lengths>
 +struct dpcpp_packet_traits : default_packet_traits {
@@ -1804,7 +1925,7 @@ index 000000000..bd44c2c10
 +    HasAbsDiff   = 0,
 +    HasMin       = 1,
 +    HasMax       = 1,
-+    HasConj      = 0,
++    HasConj      = 1,
 +    HasBlend     = is_vectorized,
 +    // This flag is used to indicate whether packet comparison is supported.
 +    // pcmp_eq, pcmp_lt and pcmp_le should be defined for it to be true.
@@ -1919,7 +2040,9 @@ index 000000000..bd44c2c10
 +    enum { size = lengths, vectorizable = true, alignment = Aligned16 }; \
 +    typedef packet_type half;                                            \
 +  };
++SYCL_UNPACKET_TRAITS(sycl::cl_float2, float, 2)
 +SYCL_UNPACKET_TRAITS(sycl::cl_float4, float, 4)
++SYCL_UNPACKET_TRAITS(sycl::cl_float8, float, 8)
 +SYCL_UNPACKET_TRAITS(cl_bool16, bool, 16)
 +
 +#undef SYCL_UNPACKET_TRAITS
@@ -2152,6 +2275,7 @@ index 000000000..bd44c2c10
 +  }
 +};
 +
++#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +template <>
 +struct PacketWrapper<Packet4h2, 8> {
 +  typedef typename ::Eigen::internal::unpacket_traits<Packet4h2>::type
@@ -2251,7 +2375,8 @@ index 000000000..bd44c2c10
 +  }
 +};
 +
-+#endif
++#endif // EIGEN_DONT_VECTORIZE_SYCL
++#endif // DPCPP_DEVICE_ONLY
 +
 +}  // end namespace internal
 +}  // end namespace Eigen
@@ -2259,10 +2384,10 @@ index 000000000..bd44c2c10
 +#endif  // EIGEN_INTEROP_HEADERS_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/MathFunctions.h b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
 new file mode 100644
-index 000000000..0b1552da3
+index 000000000..75cd0193e
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/MathFunctions.h
-@@ -0,0 +1,610 @@
+@@ -0,0 +1,533 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -2294,16 +2419,12 @@ index 000000000..0b1552da3
 +// introduce conflicts between these packet_traits definitions and the ones
 +// we'll use on the host side (SSE, AVX, ...)
 +#ifdef DPCPP_DEVICE_ONLY
-+typedef sycl::ulonglong2 Packet4h2;
-+typedef sycl::vec<unsigned short, 2> Packet2bf16;
-+typedef sycl::vec<unsigned short, 4> Packet4bf16;
-+typedef sycl::vec<unsigned short, 8> Packet8bf16;
 +
 +#define SYCL_PLOG(packet_type)                                         \
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plog<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::log(a);                                           \
++    return sycl::log(a);                                               \
 +  }
 +
 +SYCL_PLOG(sycl::cl_float4)
@@ -2314,7 +2435,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plog1p<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::log1p(a);                                           \
++    return sycl::log1p(a);                                               \
 +  }
 +
 +SYCL_PLOG1P(sycl::cl_float4)
@@ -2325,7 +2446,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plog10<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::log10(a);                                           \
++    return sycl::log10(a);                                               \
 +  }
 +
 +SYCL_PLOG10(sycl::cl_float4)
@@ -2336,7 +2457,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pexp<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::exp(a);                                           \
++    return sycl::exp(a);                                               \
 +  }
 +
 +SYCL_PEXP(sycl::cl_float4)
@@ -2347,7 +2468,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pexpm1<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::expm1(a);                                           \
++    return sycl::expm1(a);                                               \
 +  }
 +
 +SYCL_PEXPM1(sycl::cl_float4)
@@ -2358,7 +2479,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type psqrt<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::sqrt(a);                                           \
++    return sycl::sqrt(a);                                               \
 +  }
 +
 +SYCL_PSQRT(sycl::cl_float4)
@@ -2369,7 +2490,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type prsqrt<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::rsqrt(a);                                           \
++    return sycl::rsqrt(a);                                               \
 +  }
 +
 +SYCL_PRSQRT(sycl::cl_float4)
@@ -2381,7 +2502,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type psin<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::sin(a);                                           \
++    return sycl::sin(a);                                               \
 +  }
 +
 +SYCL_PSIN(sycl::cl_float4)
@@ -2393,7 +2514,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pcos<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::cos(a);                                           \
++    return sycl::cos(a);                                               \
 +  }
 +
 +SYCL_PCOS(sycl::cl_float4)
@@ -2405,7 +2526,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type ptan<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::tan(a);                                           \
++    return sycl::tan(a);                                               \
 +  }
 +
 +SYCL_PTAN(sycl::cl_float4)
@@ -2417,7 +2538,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pasin<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::asin(a);                                           \
++    return sycl::asin(a);                                               \
 +  }
 +
 +SYCL_PASIN(sycl::cl_float4)
@@ -2429,7 +2550,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pacos<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::acos(a);                                           \
++    return sycl::acos(a);                                               \
 +  }
 +
 +SYCL_PACOS(sycl::cl_float4)
@@ -2441,7 +2562,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type patan<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::atan(a);                                           \
++    return sycl::atan(a);                                               \
 +  }
 +
 +SYCL_PATAN(sycl::cl_float4)
@@ -2453,7 +2574,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type psinh<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::sinh(a);                                           \
++    return sycl::sinh(a);                                               \
 +  }
 +
 +SYCL_PSINH(sycl::cl_float4)
@@ -2465,7 +2586,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pcosh<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::cosh(a);                                           \
++    return sycl::cosh(a);                                               \
 +  }
 +
 +SYCL_PCOSH(sycl::cl_float4)
@@ -2477,7 +2598,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type ptanh<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::tanh(a);                                           \
++    return sycl::tanh(a);                                               \
 +  }
 +
 +SYCL_PTANH(sycl::cl_float4)
@@ -2488,7 +2609,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pceil<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::ceil(a);                                           \
++    return sycl::ceil(a);                                               \
 +  }
 +
 +SYCL_PCEIL(sycl::cl_float4)
@@ -2499,7 +2620,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pround<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::round(a);                                           \
++    return sycl::round(a);                                               \
 +  }
 +
 +SYCL_PROUND(sycl::cl_float4)
@@ -2510,7 +2631,7 @@ index 000000000..0b1552da3
 +  template<>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type print<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::rint(a);                                           \
++    return sycl::rint(a);                                               \
 +  }
 +
 +SYCL_PRINT(sycl::cl_float4)
@@ -2521,7 +2642,7 @@ index 000000000..0b1552da3
 +  template <>                                                            \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pfloor<packet_type>( \
 +      const packet_type& a) {                                            \
-+    return sycl::floor(a);                                           \
++    return sycl::floor(a);                                               \
 +  }
 +
 +SYCL_FLOOR(sycl::cl_float4)
@@ -2532,7 +2653,7 @@ index 000000000..0b1552da3
 +  template <>                                                          \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type perf<packet_type>( \
 +      const packet_type& a) {                                          \
-+    return sycl::erf(a);                                           \
++    return sycl::erf(a);                                               \
 +  }
 +
 +SYCL_ERF(sycl::cl_float4)
@@ -2543,7 +2664,7 @@ index 000000000..0b1552da3
 +  template <>                                                           \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type perfc<packet_type>( \
 +      const packet_type& a) {                                           \
-+    return sycl::erfc(a);                                           \
++    return sycl::erfc(a);                                               \
 +  }
 +
 +SYCL_ERFC(sycl::cl_float4)
@@ -2554,7 +2675,7 @@ index 000000000..0b1552da3
 +  template <>                                                             \
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type plgamma<packet_type>( \
 +      const packet_type& a) {                                             \
-+    return sycl::lgamma(a);                                           \
++    return sycl::lgamma(a);                                               \
 +  }
 +
 +SYCL_LGAMMA(sycl::cl_float4)
@@ -2600,38 +2721,24 @@ index 000000000..0b1552da3
 +SYCL_PACKET_MATH_UNARY_HALF8(lgamma)
 +#undef SYCL_PACKET_MATH_UNARY_HALF8
 +
-+#define SYCL_PACKET_MATH_UNARY_BFLOAT16(expr)                              \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2bf16 p##expr<Packet2bf16>(  \
-+      const Packet2bf16& a) {                                              \
-+    Eigen::bfloat16 a_x = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())));    \
-+    Eigen::bfloat16 a_y = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())));    \
-+    return Packet2bf16(a_x.value, a_y.value);                              \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4bf16 p##expr<Packet4bf16>(  \
-+      const Packet4bf16& a) {                                              \
-+    Eigen::bfloat16 a_x = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())));    \
-+    Eigen::bfloat16 a_y = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())));    \
-+    Eigen::bfloat16 a_z = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())));    \
-+    Eigen::bfloat16 a_w = Eigen::bfloat16_impl::expr(                      \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())));    \
-+    return Packet4bf16(a_x.value, a_y.value, a_z.value, a_w.value);        \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf16 p##expr<Packet8bf16>(  \
-+      const Packet8bf16& a) {                                              \
-+    Packet8bf16 r;                                                         \
-+    Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);             \
-+    const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a); \
-+    r_alias[0] = p##expr<Packet4bf16>(a_alias[0]);                         \
-+    r_alias[1] = p##expr<Packet4bf16>(a_alias[1]);                         \
-+    return r;                                                              \
++#define SYCL_PACKET_MATH_UNARY_BFLOAT16(expr)                             \
++  template <>                                                             \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2bf16 p##expr<Packet2bf16>( \
++      const Packet2bf16& a) {                                             \
++    Packet2f32 r = sycl::expr(Eigen::bfloat16_impl::Bf16ToF32<2>(a));     \
++    return Eigen::bfloat16_impl::F32ToBf16<2>(r);                         \
++  }                                                                       \
++  template <>                                                             \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4bf16 p##expr<Packet4bf16>( \
++      const Packet4bf16& a) {                                             \
++    Packet4f32 r = sycl::expr(Eigen::bfloat16_impl::Bf16ToF32<4>(a));     \
++    return Eigen::bfloat16_impl::F32ToBf16<4>(r);                         \
++  }                                                                       \
++  template <>                                                             \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf16 p##expr<Packet8bf16>( \
++      const Packet8bf16& a) {                                             \
++    Packet8f32 r = sycl::expr(Eigen::bfloat16_impl::Bf16ToF32<8>(a));     \
++    return Eigen::bfloat16_impl::F32ToBf16<8>(r);                         \
 +  }
 +
 +SYCL_PACKET_MATH_UNARY_BFLOAT16(log)
@@ -2659,116 +2766,86 @@ index 000000000..0b1552da3
 +SYCL_PACKET_MATH_UNARY_BFLOAT16(lgamma)
 +#undef SYCL_PACKET_MATH_UNARY_BFLOAT16
 +
-+#define SYCL_PMIN(packet_type, expr)                                   \
-+  template <>                                                          \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pmin<packet_type>( \
-+      const packet_type& a, const packet_type& b) {                    \
-+    return expr;                                                       \
++#define SYCL_PACKET_MATH_BINARY(packet_type, op, expr)                  \
++  template <>                                                           \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type p##op<packet_type>( \
++  const packet_type& a, const packet_type& b) {                         \
++    return expr;                                                        \
 +  }
 +
-+SYCL_PMIN(sycl::cl_float4, sycl::fmin(a, b))
-+SYCL_PMIN(sycl::cl_half2, sycl::fmin(a, b))
-+#undef SYCL_PMIN
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, min, sycl::fmin(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, min, sycl::fmin(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, max, sycl::fmax(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, max, sycl::fmax(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, pow, sycl::pow(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, pow, sycl::pow(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_float4, atan2, sycl::atan2(a, b))
++SYCL_PACKET_MATH_BINARY(sycl::cl_half2, atan2, sycl::atan2(a, b))
 +
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4h2 pmin<Packet4h2>(
-+    const Packet4h2& a, const Packet4h2& b) {
-+  Packet4h2 r;
-+  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);
-+  const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a);
-+  const sycl::cl_half2* b_alias = reinterpret_cast<const sycl::cl_half2*>(&b);
-+  r_alias[0] = pmin(a_alias[0], b_alias[0]);
-+  r_alias[1] = pmin(a_alias[1], b_alias[1]);
-+  r_alias[2] = pmin(a_alias[2], b_alias[2]);
-+  r_alias[3] = pmin(a_alias[3], b_alias[3]);
-+  return r;
++#define SYCL_PACKET_MATH_BINARY_HALF8(expr)                                    \
++template <>                                                                    \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4h2 p##expr<Packet4h2>(            \
++    const Packet4h2& a, const Packet4h2& b) {                                  \
++  Packet4h2 r;                                                                 \
++  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);            \
++  const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a); \
++  const sycl::cl_half2* b_alias = reinterpret_cast<const sycl::cl_half2*>(&b); \
++  r_alias[0] = p##expr(a_alias[0], b_alias[0]);                                \
++  r_alias[1] = p##expr(a_alias[1], b_alias[1]);                                \
++  r_alias[2] = p##expr(a_alias[2], b_alias[2]);                                \
++  r_alias[3] = p##expr(a_alias[3], b_alias[3]);                                \
++  return r;                                                                    \
 +}
 +
-+#define SYCL_PMAX(packet_type, expr)                                   \
-+  template <>                                                          \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE packet_type pmax<packet_type>( \
-+      const packet_type& a, const packet_type& b) {                    \
-+    return expr;                                                       \
++SYCL_PACKET_MATH_BINARY_HALF8(max)
++SYCL_PACKET_MATH_BINARY_HALF8(min)
++SYCL_PACKET_MATH_BINARY_HALF8(pow)
++SYCL_PACKET_MATH_BINARY_HALF8(atan2)
++#undef SYCL_PACKET_MATH_BINARY_HALF8
++
++#define SYCL_PACKET_MATH_BINARY_BFLOAT16(op, expr, in_type, out_type)           \
++  template <>                                                                   \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE in_type p##op<in_type>(                 \
++      const in_type& a, const in_type& b) {                                     \
++    out_type r = sycl::expr(                                                    \
++        Eigen::bfloat16_impl::Bf16ToF32<unpacket_traits<in_type>::size>(a),     \
++        Eigen::bfloat16_impl::Bf16ToF32<unpacket_traits<in_type>::size>(b));    \
++    return Eigen::bfloat16_impl::F32ToBf16<unpacket_traits<out_type>::size>(r); \
 +  }
 +
-+SYCL_PMAX(sycl::cl_float4, sycl::fmax(a, b))
-+SYCL_PMAX(sycl::cl_half2, sycl::fmax(a, b))
-+#undef SYCL_PMAX
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, fmax, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, fmin, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, fmax, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, fmin, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(max, fmax, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(min, fmin, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(pow, pow, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(pow, pow, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(pow, pow, Packet8bf16, Packet8f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(atan2, atan2, Packet2bf16, Packet2f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(atan2, atan2, Packet4bf16, Packet4f32)
++SYCL_PACKET_MATH_BINARY_BFLOAT16(atan2, atan2, Packet8bf16, Packet8f32)
 +
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4h2 pmax<Packet4h2>(
-+    const Packet4h2& a, const Packet4h2& b) {
-+  Packet4h2 r;
-+  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);
-+  const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a);
-+  const sycl::cl_half2* b_alias = reinterpret_cast<const sycl::cl_half2*>(&b);
-+  r_alias[0] = pmax(a_alias[0], b_alias[0]);
-+  r_alias[1] = pmax(a_alias[1], b_alias[1]);
-+  r_alias[2] = pmax(a_alias[2], b_alias[2]);
-+  r_alias[3] = pmax(a_alias[3], b_alias[3]);
-+  return r;
-+}
-+
-+#define SYCL_PACKET_MATH_BINARY_BFLOAT16(expr)                             \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2bf16 p##expr<Packet2bf16>(  \
-+      const Packet2bf16& a, const Packet2bf16& b) {                        \
-+    Eigen::bfloat16 x##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x())));    \
-+    Eigen::bfloat16 y##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y())));    \
-+    return Packet2bf16(x##expr.value, y##expr.value);                      \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4bf16 p##expr<Packet4bf16>(  \
-+      const Packet4bf16& a, const Packet4bf16& b) {                        \
-+    Eigen::bfloat16 x##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x())));    \
-+    Eigen::bfloat16 y##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y())));    \
-+    Eigen::bfloat16 z##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z())));    \
-+    Eigen::bfloat16 w##expr = Eigen::bfloat16_impl::expr(                  \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())),     \
-+        Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w())));    \
-+    return Packet4bf16(x##expr.value, y##expr.value,                       \
-+                       z##expr.value, w##expr.value);                      \
-+  }                                                                        \
-+  template <>                                                              \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf16 p##expr<Packet8bf16>(  \
-+      const Packet8bf16& a, const Packet8bf16& b) {                        \
-+    Packet8bf16 r;                                                         \
-+    Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);             \
-+    const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a); \
-+    const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b); \
-+    r_alias[0] = p##expr<Packet4bf16>(a_alias[0], b_alias[0]);             \
-+    r_alias[1] = p##expr<Packet4bf16>(a_alias[1], b_alias[1]);             \
-+    return r;                                                              \
-+  }
-+
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(max);
-+SYCL_PACKET_MATH_BINARY_BFLOAT16(min);
 +#undef SYCL_PACKET_MATH_BINARY_BFLOAT16
 +
-+#define SYCL_PISNAN(INTYPE)                                      \
-+  template<>                                                     \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
++#define SYCL_PISNAN(INTYPE, EXPR)                            \
++  template<>                                                 \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                      \
 +  sycl::vec<bool, packet_traits<INTYPE>::size>               \
-+  pisnan<sycl::vec<bool, packet_traits<INTYPE>::size>,       \
-+         typename packet_traits<INTYPE>::type>(                  \
-+         const typename packet_traits<INTYPE>::type& a) {        \
++  p##EXPR<sycl::vec<bool, packet_traits<INTYPE>::size>,      \
++         typename packet_traits<INTYPE>::type>(              \
++         const typename packet_traits<INTYPE>::type& a) {    \
 +    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
-+    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isnan(a[i]);                     \
-+    return packet_res;                                           \
++    auto res = sycl::EXPR(a);                                \
++    EIGEN_UNROLL_LOOP                                        \
++    for(int i = 0; i < packet_traits<INTYPE>::size; i++)     \
++      packet_res[i] = res[i] ? 1 : 0;                        \
++    return packet_res;                                       \
 +  }
 +
-+SYCL_PISNAN(float)
++SYCL_PISNAN(float, isnan)
++SYCL_PISNAN(float, isfinite)
++SYCL_PISNAN(float, isinf)
 +#undef SYCL_PISNAN
 +
 +template<>
@@ -2778,6 +2855,7 @@ index 000000000..0b1552da3
 +       typename packet_traits<Eigen::half>::type>(
 +       const typename packet_traits<Eigen::half>::type& a) {
 +  sycl::vec<bool, packet_traits<Eigen::half>::size> packet_res;
++#pragma unroll
 +  for(int i=0; i < packet_traits<Eigen::half>::size / 2; i++) {
 +    const sycl::cl_half2* a_alias = reinterpret_cast<const sycl::cl_half2*>(&a);
 +    packet_res[2*i] = sycl::isnan(a_alias[i].x());
@@ -2785,22 +2863,6 @@ index 000000000..0b1552da3
 +  }
 +  return packet_res;
 +}
-+
-+#define SYCL_PISFINITE(INTYPE)                                   \
-+  template<>                                                     \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>               \
-+  pisfinite<sycl::vec<bool, packet_traits<INTYPE>::size>,    \
-+         typename packet_traits<INTYPE>::type>(                  \
-+         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
-+    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isfinite(a[i]);                  \
-+    return packet_res;                                           \
-+  }
-+
-+SYCL_PISFINITE(float)
-+#undef SYCL_PISFINITE
 +
 +template<>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
@@ -2817,22 +2879,6 @@ index 000000000..0b1552da3
 +  return packet_res;
 +}
 +
-+#define SYCL_PISINF(INTYPE)                                      \
-+  template<>                                                     \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                          \
-+  sycl::vec<bool, packet_traits<INTYPE>::size>               \
-+  pisinf<sycl::vec<bool, packet_traits<INTYPE>::size>,       \
-+         typename packet_traits<INTYPE>::type>(                  \
-+         const typename packet_traits<INTYPE>::type& a) {        \
-+    sycl::vec<bool, packet_traits<INTYPE>::size> packet_res; \
-+    for(int i=0; i < packet_traits<INTYPE>::size; i++)           \
-+      packet_res[i] = sycl::isinf(a[i]);                     \
-+    return packet_res;                                           \
-+  }
-+
-+SYCL_PISINF(float)
-+#undef SYCL_PISINF
-+
 +template<>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
 +sycl::vec<bool, packet_traits<Eigen::half>::size>
@@ -2848,22 +2894,24 @@ index 000000000..0b1552da3
 +  return packet_res;
 +}
 +
-+#define SYCL_PACKET_MATH_ANOMALY_BFLOAT16(expr)                          \
-+  template <>                                                            \
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                                  \
-+  sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>                  \
-+  p##expr<sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>,         \
-+          typename packet_traits<Eigen::bfloat16>::type>(                \
-+              const typename packet_traits<Eigen::bfloat16>::type& a) {  \
-+    sycl::vec<bool, packet_traits<Eigen::bfloat16>::size> packet_res;    \
-+    for(int i = 0; i < packet_traits<Eigen::bfloat16>::size; ++i)        \
-+      packet_res[i] = Eigen::numext::expr(                               \
-+          Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a[i]))); \
-+    return packet_res;                                                   \
++#define SYCL_PACKET_MATH_ANOMALY_BFLOAT16(EXPR)                                    \
++  template <>                                                                      \
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE                                            \
++  sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>                            \
++  p##EXPR<sycl::vec<bool, packet_traits<Eigen::bfloat16>::size>,                   \
++          typename packet_traits<Eigen::bfloat16>::type>(                          \
++              const typename packet_traits<Eigen::bfloat16>::type& a) {            \
++    sycl::vec<bool, packet_traits<Eigen::bfloat16>::size> packet_res;              \
++    auto res =  sycl::EXPR(                                                        \
++        Eigen::bfloat16_impl::Bf16ToF32<packet_traits<Eigen::bfloat16>::size>(a)); \
++    EIGEN_UNROLL_LOOP                                                              \
++    for(int i = 0; i < packet_traits<Eigen::bfloat16>::size; ++i)                  \
++      packet_res[i] = res[i] ? 1 : 0;                                              \
++    return packet_res;                                                             \
 +  }
-+SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isnan);
-+SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isfinite);
-+SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isinf);
++SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isnan)
++SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isfinite)
++SYCL_PACKET_MATH_ANOMALY_BFLOAT16(isinf)
 +#undef SYCL_PACKET_MATH_ANOMALY_BFLOAT16
 +
 +#endif  // DPCPP_DEVICE_ONLY
@@ -2875,10 +2923,10 @@ index 000000000..0b1552da3
 +#endif  // EIGEN_MATH_FUNCTIONS_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/PacketMath.h b/Eigen/src/Core/arch/DPCPP/PacketMath.h
 new file mode 100644
-index 000000000..840c84608
+index 000000000..f59a83d70
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/PacketMath.h
-@@ -0,0 +1,1628 @@
+@@ -0,0 +1,1499 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -2907,11 +2955,6 @@ index 000000000..840c84608
 +namespace internal {
 +
 +#if defined(DPCPP_DEVICE_ONLY)
-+typedef sycl::ulonglong2 Packet4h2;
-+typedef sycl::vec<unsigned short, 2> Packet2bf16;
-+typedef sycl::vec<unsigned short, 4> Packet4bf16;
-+typedef sycl::vec<unsigned short, 8> Packet8bf16;
-+
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float pfirst<sycl::cl_float4>(
 +    const sycl::cl_float4& a) {
@@ -2970,18 +3013,19 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_max<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return Eigen::bfloat16_impl::max(predux_max<Packet2bf16>(a_alias[0]), 
-+                                   predux_max<Packet2bf16>(a_alias[1]));
++  float r = predux_max(Eigen::bfloat16_impl::Bf16ToF32<4>(a));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_max<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  Eigen::bfloat16 candidate0 = predux_max(a_alias[0]);
-+  Eigen::bfloat16 candidate1 = predux_max(a_alias[1]);
-+  return Eigen::bfloat16_impl::max(candidate0, candidate1);
++  float candidate1, candidate2;
++  candidate1 = predux_max(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[0]));
++  candidate2 = predux_max(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[1]));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(
++      sycl::fmax(candidate1, candidate2));
 +}
 +
 +template <>
@@ -3018,17 +3062,19 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_min<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return Eigen::bfloat16_impl::min(predux_min(a_alias[0]), predux_min(a_alias[1]));
++  float r = predux_min(Eigen::bfloat16_impl::Bf16ToF32<4>(a));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Eigen::bfloat16 predux_min<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  Eigen::bfloat16 candidate0 = predux_min(a_alias[0]);
-+  Eigen::bfloat16 candidate1 = predux_min(a_alias[1]);
-+  return Eigen::bfloat16_impl::min(candidate0, candidate1);
++  float candidate1, candidate2;
++  candidate1 = predux_min(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[0]));
++  candidate2 = predux_min(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[1]));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(
++      sycl::fmin(candidate1, candidate2));
 +}
 +
 +template <>
@@ -3101,10 +3147,10 @@ index 000000000..840c84608
 +                                sycl::rounding_mode::automatic>());
 +}
 +
-+#define SYCL_PACKET_COMPARE_HALF2(NAME, OP)                                 \
-+template <>                                                                 \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::cl_half2 sycl_pcmp_##NAME(      \
-+    const sycl::cl_half2 &a, const sycl::cl_half2 &b) {                     \
++#define SYCL_PACKET_COMPARE_HALF2(NAME, OP)                             \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::cl_half2 sycl_pcmp_##NAME(  \
++    const sycl::cl_half2 &a, const sycl::cl_half2 &b) {                 \
 +  return ((a OP b).template convert<sycl::half,                         \
 +                                    sycl::rounding_mode::automatic>()); \
 +}
@@ -3133,26 +3179,19 @@ index 000000000..840c84608
 +SYCL_PACKET_COMPARE_HALF8(eq);
 +#undef SYCL_PACKET_COMPARE_HALF8
 +
-+#define SYCL_PACKET_COMPARE_BFLOAT16(NAME, OP, PACKET_TYPE)                              \
-+template <>                                                                              \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PACKET_TYPE sycl_pcmp_##NAME(                      \
-+    const PACKET_TYPE &a, const PACKET_TYPE &b) {                                        \
-+  const int SIZE = unpacket_traits<PACKET_TYPE>::size;                                   \
-+  sycl::vec<float, SIZE> a2float, b2float, r_float;                                      \
-+  PACKET_TYPE r;                                                                         \
-+  for(int i = 0; i < SIZE; ++i) {                                                        \
-+    a2float[i] = Eigen::bfloat16_impl::bfloat16_to_float(                                \
-+        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(a[i]));                             \
-+    b2float[i] = Eigen::bfloat16_impl::bfloat16_to_float(                                \
-+        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(b[i]));                             \
-+  }                                                                                      \
-+  r_float = ((a OP b).template convert<float,                                            \
-+                                    sycl::rounding_mode::automatic>());              \
-+  for(int i = 0; i < SIZE; ++i) {                                                        \
-+    Eigen::bfloat16 tmp(Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(r_float[i])); \
-+    r[i] = tmp.value;                                                                    \
-+  }                                                                                      \
-+  return r;                                                                              \
++#define SYCL_PACKET_COMPARE_BFLOAT16(NAME, OP, PACKET_TYPE)             \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PACKET_TYPE sycl_pcmp_##NAME(     \
++    const PACKET_TYPE &a, const PACKET_TYPE &b) {                       \
++  const int SIZE = unpacket_traits<PACKET_TYPE>::size;                  \
++  sycl::vec<float, SIZE> a2float, b2float, r_float;                     \
++  PACKET_TYPE r;                                                        \
++  a2float = Eigen::bfloat16_impl::Bf16ToF32<SIZE>(a);                   \
++  b2float = Eigen::bfloat16_impl::Bf16ToF32<SIZE>(b);                   \
++  r_float = ((a OP b).template convert<float,                           \
++                                    sycl::rounding_mode::automatic>()); \
++  r = Eigen::bfloat16_impl::F32ToBf16<SIZE>(r_float);                   \
++  return r;                                                             \
 +}
 +
 +SYCL_PACKET_COMPARE_BFLOAT16(le, <=, Packet2bf16);
@@ -3195,11 +3234,11 @@ index 000000000..840c84608
 +
 +#define SYCL_PCMP_BOOL(OP, CMP, INTYPE)                                                    \
 +template <>                                                                                \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                   \
-+    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,     \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                       \
++    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,         \
 +    typename packet_traits<INTYPE>::type>(const typename packet_traits<INTYPE>::type &a,   \
 +                                          const typename packet_traits<INTYPE>::type &b) { \
-+  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                             \
++  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                                 \
 +  for(int i = 0; i < packet_traits<INTYPE>::size; i++)                                     \
 +    packet_res[i] = (a[i] CMP b[i]);                                                       \
 +  return packet_res;                                                                       \
@@ -3214,11 +3253,11 @@ index 000000000..840c84608
 +
 +#define SYCL_PCMP_BOOL_FOR_HALF8(OP, CMP, INTYPE)                                          \
 +template <>                                                                                \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                   \
-+    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,     \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                       \
++    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,         \
 +    typename packet_traits<INTYPE>::type>(const typename packet_traits<INTYPE>::type &a,   \
 +                                          const typename packet_traits<INTYPE>::type &b) { \
-+  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                             \
++  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                                 \
 +  typename packet_traits<INTYPE>::type cmp_res = sycl_pcmp_##OP(a, b);                     \
 +  const short* cmp_res_alias = reinterpret_cast<const short*>(&cmp_res);                   \
 +  for(int i = 0; i < packet_traits<INTYPE>::size; i++)                                     \
@@ -3232,11 +3271,11 @@ index 000000000..840c84608
 +
 +#define SYCL_PCMP_BOOL_FOR_BFLOAT16(OP, CMP, INTYPE)                                       \
 +template <>                                                                                \
-+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                   \
-+    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,     \
++EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE sycl::vec<bool, packet_traits<                       \
++    INTYPE>::size> boolean_pcmp_##OP<sycl::vec<bool, packet_traits<INTYPE>::size>,         \
 +    typename packet_traits<INTYPE>::type>(const typename packet_traits<INTYPE>::type &a,   \
 +                                          const typename packet_traits<INTYPE>::type &b) { \
-+  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                             \
++  sycl::vec<bool, packet_traits<INTYPE>::size> packet_res;                                 \
 +  for(int i = 0; i < packet_traits<INTYPE>::size; i++) {                                   \
 +    float a2float = Eigen::bfloat16_impl::bfloat16_to_float(                               \
 +        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(a[i]));                               \
@@ -3297,12 +3336,9 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16
 +convert_vector(const sycl::cl_int8& p) {
 +  Packet8bf16 r;
-+  p.template convert<sycl::cl_float, sycl::rounding_mode::automatic>();
-+#pragma unroll
-+  for(int i = 0; i < 8; ++i) {
-+    Eigen::bfloat16 tmp(Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(p[i]));
-+    r[i] = tmp.value;
-+  }
++  Packet8f32 p2float = p.template convert<sycl::cl_float, sycl::rounding_mode::automatic>();
++  r = Eigen::bfloat16_impl::F32ToBf16<8>(p2float); 
++  return r;
 +}
 +
 +#define SYCL_PAND(TYPE)                                                \
@@ -3316,15 +3352,15 @@ index 000000000..840c84608
 +SYCL_PAND(Packet8bf16)
 +#undef SYCL_PAND
 +
-+#define SYCL_PLOGICAL_NOT(SIZE)                                                   \
-+template <>                                                                       \
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE sycl::vec<bool, SIZE>                   \
++#define SYCL_PLOGICAL_NOT(SIZE)                                           \
++template <>                                                               \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE sycl::vec<bool, SIZE>               \
 +    plogical_not<sycl::vec<bool, SIZE>>(const sycl::vec<bool, SIZE>& a) { \
-+  sycl::vec<bool, SIZE> b;                                                    \
-+  for(int i = 0; i < SIZE; ++i) {                                                 \
-+    b[i] = (!a[i]);                                                               \
-+  }                                                                               \
-+  return b;                                                                       \
++  sycl::vec<bool, SIZE> b;                                                \
++  for(int i = 0; i < SIZE; ++i) {                                         \
++    b[i] = (!a[i]);                                                       \
++  }                                                                       \
++  return b;                                                               \
 +}
 +SYCL_PLOGICAL_NOT(16)
 +SYCL_PLOGICAL_NOT(8)
@@ -3609,15 +3645,10 @@ index 000000000..840c84608
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pstoreu<Eigen::bfloat16>(Eigen::bfloat16* to, const Packet8bf16& from) {
-+  to[0] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[0]));
-+  to[1] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[1]));
-+  to[2] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[2]));
-+  to[3] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[3]));
-+  to[4] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[4]));
-+  to[5] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[5]));
-+  to[6] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[6]));
-+  to[7] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[7]));
-+}
++  #pragma unroll
++  for(int i = 0; i < unpacket_traits<Packet8bf16>::size; ++i)
++    to[i] = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(from[i]));
++ }
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pstore<bool,sycl::vec<bool,16>>(bool* to, const sycl::vec<bool,16>& from) {
@@ -3768,8 +3799,7 @@ index 000000000..840c84608
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pset1<Packet8bf16>(const Eigen::bfloat16& from) {
-+  return Packet8bf16(from.value, from.value, from.value, from.value,
-+                     from.value, from.value, from.value, from.value);
++  return Packet8bf16(from.value);
 +}
 +
 +/** \internal \returns a packet with constant coefficients \a a[0], e.g.: (a[0],a[0])) */
@@ -3848,24 +3878,6 @@ index 000000000..840c84608
 +}
 +
 +template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 pmul<Packet2bf16>(const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 res_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 res_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+
-+  return Packet2bf16(res_x.value, res_y.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 pmul<Packet4bf16>(const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 res_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 res_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 res_z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 res_w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) * Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(res_x.value, res_y.value, res_z.value, res_w.value);
-+}
-+
-+template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE sycl::cl_float4 pdiv<sycl::cl_float4>(const sycl::cl_float4& a, const sycl::cl_float4& b) {
 +  return sycl::cl_float4(a.x() / b.x(), a.y() / b.y(), a.z() / b.z(), a.w() / b.w());
 +}
@@ -3936,19 +3948,10 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 psign(const Packet8bf16& a) {
 +  const int SIZE = unpacket_traits<Packet8bf16>::size;
 +  sycl::vec<float, SIZE> a2float, r_float;
-+  Packet8bf16 r;
-+  for (int i = 0; i < SIZE; ++i) {
-+    a2float[i] = Eigen::bfloat16_impl::bfloat16_to_float(
-+        Eigen::bfloat16_impl::raw_uint16_to_bfloat16(a[i]));
-+  }
++  a2float = Eigen::bfloat16_impl::Bf16ToF32<8>(a);
 +  r_float = sycl::sign(a2float); 
-+  for (int i = 0; i < SIZE; ++i) {
-+    Eigen::bfloat16 tmp(Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(r_float[i])); 
-+    r[i] = tmp.value; 
-+  }
-+  return r;
++  return Eigen::bfloat16_impl::F32ToBf16<8>(r_float);
 +}
-+
 +
 +template <>
 +EIGEN_DEVICE_FUNC inline sycl::cl_float4 psign(const sycl::cl_float4& a) {
@@ -4119,11 +4122,8 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pabs<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  r_alias[0] = pabs(a_alias[0]);
-+  r_alias[1] = pabs(a_alias[1]);
-+
++  Packet8f32 a2float = Eigen::bfloat16_impl::Bf16ToF32<8>(a);
++  r = Eigen::bfloat16_impl::F32ToBf16<8>(sycl::fabs(a2float));
 +  return r;
 +}
 +
@@ -4223,37 +4223,34 @@ index 000000000..840c84608
 +  return r;
 +}
 +
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 padd<Packet2bf16>(
-+    const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  return Packet2bf16(x.value, y.value);
++#define DPCPP_PACKET_BASIC_FUNC_BFLOAT16(NAME, OP)                      \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 p##NAME<Packet8bf16>( \
++    const Packet8bf16& a, const Packet8bf16& b) {                       \
++  Packet8f32 r = (Eigen::bfloat16_impl::Bf16ToF32<8>(a)) OP             \
++                 (Eigen::bfloat16_impl::Bf16ToF32<8>(b));               \
++  return Eigen::bfloat16_impl::F32ToBf16<8>(r);                         \
++}                                                                       \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 p##NAME<Packet4bf16>( \
++    const Packet4bf16& a, const Packet4bf16& b) {                       \
++  Packet4f32 r = Eigen::bfloat16_impl::Bf16ToF32<4>(a) OP               \
++                 Eigen::bfloat16_impl::Bf16ToF32<4>(b);                 \
++  return Eigen::bfloat16_impl::F32ToBf16<4>(r);                         \
++}                                                                       \
++template <>                                                             \
++EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 p##NAME<Packet2bf16>( \
++    const Packet2bf16& a, const Packet2bf16& b) {                       \
++  Packet2f32 r = Eigen::bfloat16_impl::Bf16ToF32<2>(a) OP               \
++                 Eigen::bfloat16_impl::Bf16ToF32<2>(b);                 \
++  return Eigen::bfloat16_impl::F32ToBf16<2>(r);                         \
 +}
 +
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 padd<Packet4bf16>(
-+    const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) + Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(x.value, y.value, z.value, w.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 padd<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = padd<Packet4bf16>(a_alias[0], b_alias[0]);
-+  r_alias[1] = padd<Packet4bf16>(a_alias[1], b_alias[1]);
-+
-+  return r;
-+}
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(add, +);
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(sub, -);
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(mul, *);
++DPCPP_PACKET_BASIC_FUNC_BFLOAT16(div, /);
++#undef DPCPP_PACKET_BASIC_FUNC_BFLOAT16
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4h2 pmadd<Packet4h2>(
@@ -4285,38 +4282,6 @@ index 000000000..840c84608
 +}
 +
 +template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 psub<Packet2bf16>(
-+    const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  return Packet2bf16(x.value, y.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 psub<Packet4bf16>(
-+    const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(x.value, y.value, z.value, w.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 psub<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = psub<Packet4bf16>(a_alias[0], b_alias[0]);
-+  r_alias[1] = psub<Packet4bf16>(a_alias[1], b_alias[1]);
-+
-+  return r;
-+}
-+
-+template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4h2 pnegate<Packet4h2>(const Packet4h2& a) {
 +  Packet4h2 r;
 +  sycl::cl_half2* r_alias  = reinterpret_cast<sycl::cl_half2*>(&r);
@@ -4331,34 +4296,22 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 pnegate<Packet2bf16>(
 +    const Packet2bf16& a) {
-+  Eigen::bfloat16 negate_x = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x()));
-+  Eigen::bfloat16 negate_y = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y()));
-+
-+  return Packet2bf16(negate_x.value, negate_y.value);
++  Packet2f32 r = - Eigen::bfloat16_impl::Bf16ToF32<2>(a);
++  return Eigen::bfloat16_impl::F32ToBf16<2>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 pnegate<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  Eigen::bfloat16 negate_x = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x()));
-+  Eigen::bfloat16 negate_y = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y()));
-+  Eigen::bfloat16 negate_z = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z()));
-+  Eigen::bfloat16 negate_w = - Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w()));
-+
-+  return Packet4bf16(negate_x.value, negate_y.value,
-+                     negate_z.value, negate_w.value);
++  Packet4f32 r = - Eigen::bfloat16_impl::Bf16ToF32<4>(a);
++  return Eigen::bfloat16_impl::F32ToBf16<4>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pnegate<Packet8bf16>(
 +    const Packet8bf16& a) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  r_alias[0] = pnegate<Packet4bf16>(a_alias[0]);
-+  r_alias[1] = pnegate<Packet4bf16>(a_alias[1]);
-+
-+  return r;
++  Packet8f32 r = - Eigen::bfloat16_impl::Bf16ToF32<8>(a);
++  return Eigen::bfloat16_impl::F32ToBf16<8>(r);
 +}
 +
 +template <>
@@ -4386,18 +4339,6 @@ index 000000000..840c84608
 +}
 +
 +template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pmul<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = pmul(a_alias[0], b_alias[0]);
-+  r_alias[1] = pmul(a_alias[1], b_alias[1]);
-+  return r;
-+}
-+
-+template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4h2 pdiv<Packet4h2>(
 +    const Packet4h2& a, const Packet4h2& b) {
 +  Packet4h2 r;
@@ -4408,39 +4349,6 @@ index 000000000..840c84608
 +  r_alias[1] = pdiv(a_alias[1], b_alias[1]);
 +  r_alias[2] = pdiv(a_alias[2], b_alias[2]);
 +  r_alias[3] = pdiv(a_alias[3], b_alias[3]);
-+  return r;
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet2bf16 pdiv<Packet2bf16>(
-+    const Packet2bf16& a, const Packet2bf16& b) {
-+  Eigen::bfloat16 div_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 div_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+
-+  return Packet2bf16(div_x.value, div_y.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet4bf16 pdiv<Packet4bf16>(
-+    const Packet4bf16& a, const Packet4bf16& b) {
-+  Eigen::bfloat16 div_x = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.x())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.x()));
-+  Eigen::bfloat16 div_y = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.y())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.y()));
-+  Eigen::bfloat16 div_z = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.z())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.z()));
-+  Eigen::bfloat16 div_w = Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(a.w())) / Eigen::bfloat16(bfloat16_impl::raw_uint16_to_bfloat16(b.w()));
-+
-+  return Packet4bf16(div_x.value, div_y.value, div_z.value, div_w.value);
-+}
-+
-+template <>
-+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet8bf16 pdiv<Packet8bf16>(
-+    const Packet8bf16& a, const Packet8bf16& b) {
-+  Packet8bf16 r;
-+  Packet4bf16* r_alias = reinterpret_cast<Packet4bf16*>(&r);
-+  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  const Packet4bf16* b_alias = reinterpret_cast<const Packet4bf16*>(&b);
-+  r_alias[0] = pdiv<Packet4bf16>(a_alias[0], b_alias[0]);
-+  r_alias[1] = pdiv<Packet4bf16>(a_alias[1], b_alias[1]);
-+
 +  return r;
 +}
 +
@@ -4461,15 +4369,20 @@ index 000000000..840c84608
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux<Packet4bf16>(
 +    const Packet4bf16& a) {
-+  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return predux(a_alias[0]) + predux(a_alias[1]);
++  float r = predux(Eigen::bfloat16_impl::Bf16ToF32<4>(a)); 
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  return predux(a_alias[0]) + predux(a_alias[1]);
++  float r = 0;
++#pragma unroll
++  for (int i = 0; i < 2; ++i) {
++    r += predux(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[i]));
++  }
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
@@ -4490,14 +4403,20 @@ index 000000000..840c84608
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux_mul<Packet4bf16>(
 +    const Packet4bf16& a) {
 +  const Packet2bf16* a_alias = reinterpret_cast<const Packet2bf16*>(&a);
-+  return predux_mul(a_alias[0]) * predux_mul(a_alias[1]);
++  float r = predux_mul(Eigen::bfloat16_impl::Bf16ToF32<4>(a));
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +template <>
 +EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::bfloat16 predux_mul<Packet8bf16>(
 +    const Packet8bf16& a) {
 +  const Packet4bf16* a_alias = reinterpret_cast<const Packet4bf16*>(&a);
-+  return predux_mul(a_alias[0]) * predux_mul(a_alias[1]);
++  float r = 0;
++#pragma unroll
++  for (int i = 0; i < 2; ++i) {
++    r += predux_mul(Eigen::bfloat16_impl::Bf16ToF32<4>(a_alias[i]));
++  }
++  return Eigen::bfloat16_impl::float_to_bfloat16_rtne<false>(r);
 +}
 +
 +#endif  // DPCPP_DEVICE_ONLY
@@ -4509,10 +4428,10 @@ index 000000000..840c84608
 +#endif  // EIGEN_PACKET_MATH_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/TypeCasting.h b/Eigen/src/Core/arch/DPCPP/TypeCasting.h
 new file mode 100644
-index 000000000..ec39d497c
+index 000000000..aa16baa85
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/TypeCasting.h
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,79 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -4540,6 +4459,7 @@ index 000000000..ec39d497c
 +
 +namespace internal {
 +#if defined(DPCPP_DEVICE_ONLY)
++
 +template <>
 +struct type_casting_traits<float, int> {
 +  enum { VectorizedCast = 1, SrcCoeffRatio = 1, TgtCoeffRatio = 1 };
@@ -4592,10 +4512,40 @@ index 000000000..ec39d497c
 +
 +#endif  // EIGEN_TYPE_CASTING_DPCPP_H
 diff --git a/Eigen/src/Core/arch/Default/BFloat16.h b/Eigen/src/Core/arch/Default/BFloat16.h
-index 30f3cd456..951c6ddd9 100644
+index 30f3cd456..e4d138869 100644
 --- a/Eigen/src/Core/arch/Default/BFloat16.h
 +++ b/Eigen/src/Core/arch/Default/BFloat16.h
-@@ -566,6 +566,9 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 floor(const bfloat16& a) {
+@@ -263,12 +263,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC __bfloat16_raw truncate_to_bfloat16(const
+     output.value = std::signbit(v) ? 0x8000 : 0;
+     return output;
+   }
+-  const uint16_t* p = reinterpret_cast<const uint16_t*>(&v);
+-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+-  output.value = p[0];
+-#else
+-  output.value = p[1];
+-#endif
++  output.value = static_cast<numext::uint16_t>(numext::bit_cast<numext::uint32_t>(v) >> 16);
+   return output;
+ }
+ 
+@@ -475,14 +470,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC __bfloat16_raw float_to_bfloat16_rtne<true
+ }
+ 
+ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC float bfloat16_to_float(__bfloat16_raw h) {
+-    float result = 0;
+-    unsigned short* q = reinterpret_cast<unsigned short*>(&result);
+-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+-    q[0] = h.value;
+-#else
+-    q[1] = h.value;
+-#endif
+-    return result;
++    return numext::bit_cast<float>(static_cast<numext::uint32_t>(h.value) << 16);
+ }
+ // --- standard functions ---
+ 
+@@ -566,6 +554,9 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 floor(const bfloat16& a) {
  EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 ceil(const bfloat16& a) {
    return bfloat16(::ceilf(float(a)));
  }
@@ -4605,7 +4555,7 @@ index 30f3cd456..951c6ddd9 100644
  EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 fmod(const bfloat16& a, const bfloat16& b) {
    return bfloat16(::fmodf(float(a), float(b)));
  }
-@@ -674,6 +677,12 @@ bool (isfinite)(const Eigen::bfloat16& h) {
+@@ -674,6 +665,12 @@ bool (isfinite)(const Eigen::bfloat16& h) {
    return (bfloat16_impl::isfinite)(h);
  }
  
@@ -6062,7 +6012,7 @@ index 9208ab21d..05065da30 100644
  
  #endif
 diff --git a/Eigen/src/Core/functors/BinaryFunctors.h b/Eigen/src/Core/functors/BinaryFunctors.h
-index d8b7b1eba..f484d3a92 100644
+index d8b7b1eba..5d9742ae0 100644
 --- a/Eigen/src/Core/functors/BinaryFunctors.h
 +++ b/Eigen/src/Core/functors/BinaryFunctors.h
 @@ -42,7 +42,7 @@ struct scalar_sum_op : binary_op_base<LhsScalar,RhsScalar>
@@ -6074,6 +6024,137 @@ index d8b7b1eba..f484d3a92 100644
    template<typename Packet>
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
    { return internal::predux(a); }
+@@ -50,7 +50,7 @@ struct scalar_sum_op : binary_op_base<LhsScalar,RhsScalar>
+ template<typename LhsScalar,typename RhsScalar>
+ struct functor_traits<scalar_sum_op<LhsScalar,RhsScalar> > {
+   enum {
+-    Cost = (NumTraits<LhsScalar>::AddCost+NumTraits<RhsScalar>::AddCost)/2, // rough estimate!
++    Cost = (int(NumTraits<LhsScalar>::AddCost) + int(NumTraits<RhsScalar>::AddCost)) / 2, // rough estimate!
+     PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasAdd && packet_traits<RhsScalar>::HasAdd
+     // TODO vectorize mixed sum
+   };
+@@ -88,7 +88,7 @@ struct scalar_product_op  : binary_op_base<LhsScalar,RhsScalar>
+ template<typename LhsScalar,typename RhsScalar>
+ struct functor_traits<scalar_product_op<LhsScalar,RhsScalar> > {
+   enum {
+-    Cost = (NumTraits<LhsScalar>::MulCost + NumTraits<RhsScalar>::MulCost)/2, // rough estimate!
++    Cost = (int(NumTraits<LhsScalar>::MulCost) + int(NumTraits<RhsScalar>::MulCost))/2, // rough estimate!
+     PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasMul && packet_traits<RhsScalar>::HasMul
+     // TODO vectorize mixed product
+   };
+@@ -405,10 +405,23 @@ struct scalar_pow_op  : binary_op_base<Scalar,Exponent>
+ #endif
+   EIGEN_DEVICE_FUNC
+   inline result_type operator() (const Scalar& a, const Exponent& b) const { return numext::pow(a, b); }
++
++  template<typename Packet>
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const
++  {
++    return ppow(a,b);
++  }
+ };
++
+ template<typename Scalar, typename Exponent>
+ struct functor_traits<scalar_pow_op<Scalar,Exponent> > {
+-  enum { Cost = 5 * NumTraits<Scalar>::MulCost, PacketAccess = false };
++  enum { 
++    Cost = 5 * NumTraits<Scalar>::MulCost,
++    PacketAccess = (!NumTraits<Scalar>::IsComplex && !NumTraits<Scalar>::IsInteger &&
++                    packet_traits<Scalar>::HasExp && packet_traits<Scalar>::HasLog &&
++                    packet_traits<Scalar>::HasRound && packet_traits<Scalar>::HasCmp
++                   )
++  };
+ };
+ 
+ 
+@@ -439,7 +452,7 @@ struct scalar_difference_op : binary_op_base<LhsScalar,RhsScalar>
+ template<typename LhsScalar,typename RhsScalar>
+ struct functor_traits<scalar_difference_op<LhsScalar,RhsScalar> > {
+   enum {
+-    Cost = (NumTraits<LhsScalar>::AddCost+NumTraits<RhsScalar>::AddCost)/2,
++    Cost = (int(NumTraits<LhsScalar>::AddCost) + int(NumTraits<RhsScalar>::AddCost)) / 2,
+     PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasSub && packet_traits<RhsScalar>::HasSub
+   };
+ };
+@@ -564,6 +577,78 @@ struct functor_traits<scalar_absolute_difference_op<LhsScalar,RhsScalar> > {
+ };
+ 
+ 
++template <typename LhsScalar, typename RhsScalar>
++struct scalar_atan2_op {
++  using Scalar = LhsScalar;
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE std::enable_if_t<is_same<LhsScalar,RhsScalar>::value, Scalar>
++  operator()(const Scalar& y, const Scalar& x) const {
++    EIGEN_USING_STD(atan2);
++    return static_cast<Scalar>(atan2(y, x));
++  }
++  template <typename Packet>
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
++      std::enable_if_t<is_same<LhsScalar, RhsScalar>::value, Packet>
++      packetOp(const Packet& y, const Packet& x) const {
++#if 0
++    // See https://en.cppreference.com/w/cpp/numeric/math/atan2
++    // for how corner cases are supposed to be handled according to the
++    // IEEE floating-point standard (IEC 60559).
++
++    const Packet kSignMask = pset1<Packet>(-Scalar(0));
++    const Packet kPi = pset1<Packet>(Scalar(EIGEN_PI));
++    const Packet kPiO2 = pset1<Packet>(Scalar(EIGEN_PI / 2));
++    const Packet kPiO4 = pset1<Packet>(Scalar(EIGEN_PI / 4));
++    const Packet k3PiO4 = pset1<Packet>(Scalar(3.0 * (EIGEN_PI / 4)));
++
++    // Various predicates about the inputs.
++    Packet x_signbit = pand(x, kSignMask);
++    Packet x_has_signbit = pcmp_lt(por(x_signbit, kPi), pzero(x));
++    Packet x_is_zero = pcmp_eq(x, pzero(x));
++    Packet x_neg = pandnot(x_has_signbit, x_is_zero);
++
++    Packet y_signbit = pand(y, kSignMask);
++    Packet y_is_zero = pcmp_eq(y, pzero(y));
++    Packet x_is_not_nan = pcmp_eq(x, x);
++    Packet y_is_not_nan = pcmp_eq(y, y);
++
++    // Compute the normal case. Notice that we expect that
++    // finite/infinite = +/-0 here.
++    Packet result = patan(pdiv(y, x));
++
++    // Compute shift for when x != 0 and y != 0.
++    Packet shift = pselect(x_neg, por(kPi, y_signbit), pzero(x));
++
++    // Special cases:
++    //   Handle  x = +/-inf && y = +/-inf.
++    Packet is_not_nan = pcmp_eq(result, result);
++    result =
++        pselect(is_not_nan, padd(shift, result),
++                pselect(x_neg, por(k3PiO4, y_signbit), por(kPiO4, y_signbit)));
++    //   Handle x == +/-0.
++    result = pselect(
++        x_is_zero, pselect(y_is_zero, pzero(y), por(y_signbit, kPiO2)), result);
++    //   Handle y == +/-0.
++    result = pselect(
++        y_is_zero,
++        pselect(x_has_signbit, por(y_signbit, kPi), por(y_signbit, pzero(y))),
++        result);
++    // Handle NaN inputs.
++    Packet kQNaN = pset1<Packet>(NumTraits<Scalar>::quiet_NaN());
++    return pselect(pand(x_is_not_nan, y_is_not_nan), result, kQNaN);
++#else
++    return internal::patan2(y, x);
++#endif
++  }
++};
++
++template<typename LhsScalar,typename RhsScalar>
++    struct functor_traits<scalar_atan2_op<LhsScalar, RhsScalar>> {
++  enum {
++    PacketAccess = is_same<LhsScalar,RhsScalar>::value && packet_traits<LhsScalar>::HasATan && packet_traits<LhsScalar>::HasDiv && !NumTraits<LhsScalar>::IsInteger && !NumTraits<LhsScalar>::IsComplex,
++    Cost =
++        scalar_div_cost<LhsScalar, PacketAccess>::value + 5 * NumTraits<LhsScalar>::MulCost + 5 * NumTraits<LhsScalar>::AddCost
++  };
++};
+ 
+ //---------- binary functors bound to a constant, thus appearing as a unary functor ----------
+ 
 diff --git a/Eigen/src/Core/functors/NullaryFunctors.h b/Eigen/src/Core/functors/NullaryFunctors.h
 index 4aa33a19f..435e005c0 100644
 --- a/Eigen/src/Core/functors/NullaryFunctors.h
@@ -6087,7 +6168,7 @@ index 4aa33a19f..435e005c0 100644
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const { return m_other; }
    template<typename PacketType>
 diff --git a/Eigen/src/Core/functors/UnaryFunctors.h b/Eigen/src/Core/functors/UnaryFunctors.h
-index a9cbfd967..e09121058 100644
+index a9cbfd967..b0d866560 100644
 --- a/Eigen/src/Core/functors/UnaryFunctors.h
 +++ b/Eigen/src/Core/functors/UnaryFunctors.h
 @@ -825,13 +825,17 @@ template<typename Scalar> struct scalar_isnan_op {
@@ -6217,20 +6298,15 @@ index a9cbfd967..e09121058 100644
    };
  };
  
-@@ -1061,12 +1081,7 @@ struct functor_traits<scalar_logistic_op<T> > {
-                 ? NumTraits<T>::AddCost * 15 + NumTraits<T>::MulCost * 11
-                 : NumTraits<T>::AddCost * 2 +
-                       functor_traits<scalar_exp_op<T> >::Cost),
--    PacketAccess =
--        packet_traits<T>::HasAdd && packet_traits<T>::HasDiv &&
--        (internal::is_same<T, float>::value
--             ? packet_traits<T>::HasMul && packet_traits<T>::HasMax &&
--                   packet_traits<T>::HasMin
--             : packet_traits<T>::HasNegate && packet_traits<T>::HasExp)
-+    PacketAccess = false,
-   };
+@@ -974,7 +994,7 @@ struct scalar_logistic_op {
+   }
  };
  
+-#ifndef EIGEN_GPU_COMPILE_PHASE
++#if !defined(EIGEN_GPU_COMPILE_PHASE) && !defined(EIGEN_USE_DPCPP)
+ /** \internal
+   * \brief Template specialization of the logistic function for float.
+   *
 diff --git a/Eigen/src/Core/util/ConfigureVectorization.h b/Eigen/src/Core/util/ConfigureVectorization.h
 index 739dab60d..23fc561a7 100644
 --- a/Eigen/src/Core/util/ConfigureVectorization.h
@@ -6335,9 +6411,18 @@ index d0499a1c9..cb4ac5c80 100644
  #endif
  
 diff --git a/Eigen/src/Core/util/Memory.h b/Eigen/src/Core/util/Memory.h
-index 1b12544d2..ff217f091 100644
+index 1b12544d2..8857ad116 100644
 --- a/Eigen/src/Core/util/Memory.h
 +++ b/Eigen/src/Core/util/Memory.h
+@@ -82,7 +82,7 @@ inline void throw_std_bad_alloc()
+     //
+     new int[huge];
+     #else
+-    ::operator new(huge);
++    (void)::operator new(huge);
+     #endif
+   #endif
+ }
 @@ -522,14 +522,33 @@ template<typename T> struct smart_copy_helper<T,true> {
      IntPtr size = IntPtr(end)-IntPtr(start);
      if(size==0) return;
@@ -6565,7 +6650,7 @@ index 72f072cf2..a15214e20 100644
      m_rightImpl.bind(cgh);
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h b/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h
-index fc75c8d9a..26731804f 100644
+index fc75c8d9a..7a47182ed 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h
 @@ -60,6 +60,12 @@ struct is_input_scalar<Sizes<Indices...> > {
@@ -6581,6 +6666,15 @@ index fc75c8d9a..26731804f 100644
  
  }  // end namespace internal
  
+@@ -106,7 +112,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+   typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
+   static const int PacketSize = PacketType<CoeffReturnType, Device>::size;
+   protected: //  all the non-static fields must have the same access control, otherwise the TensorEvaluator wont be standard layout;
+-  bool isCopy, nByOne, oneByN;
++  bool isCopy, isScalar, nByOne, oneByN;
+   public:
+   typedef StorageMemory<CoeffReturnType, Device> Storage;
+   typedef typename Storage::Type EvaluatorPointerType;
 @@ -121,6 +127,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
    };
  
@@ -6589,7 +6683,20 @@ index fc75c8d9a..26731804f 100644
  
    // We do block based broadcasting using a trick with 2x tensor rank and 0
    // strides. See block method implementation for details.
-@@ -153,6 +160,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -140,7 +147,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+ 
+   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op,
+                                                         const Device& device)
+-      : isCopy(false), nByOne(false), oneByN(false),
++      : isCopy(false), isScalar(false), nByOne(false), oneByN(false),
+         m_device(device), m_broadcast(op.broadcast()), m_impl(op.expression(), device)
+   {
+ 
+@@ -150,12 +157,17 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+     EIGEN_STATIC_ASSERT((NumDims > 0), YOU_MADE_A_PROGRAMMING_MISTAKE);
+     const InputDimensions& input_dims = m_impl.dimensions();
+     isCopy = true;
++    isScalar = true;
      for (int i = 0; i < NumDims; ++i) {
        eigen_assert(input_dims[i] > 0);
        m_dimensions[i] = input_dims[i] * m_broadcast[i];
@@ -6597,7 +6704,13 @@ index fc75c8d9a..26731804f 100644
        if (m_broadcast[i] != 1) {
          isCopy = false;
        }
-@@ -164,6 +172,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
++      if (input_dims[i] != 1) {
++        isScalar = false;
++      }
+     }
+ 
+     if (static_cast<int>(Layout) == static_cast<int>(ColMajor)) {
+@@ -164,6 +176,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
        for (int i = 1; i < NumDims; ++i) {
          m_inputStrides[i] = m_inputStrides[i-1] * input_dims[i-1];
          m_outputStrides[i] = m_outputStrides[i-1] * m_dimensions[i-1];
@@ -6605,7 +6718,7 @@ index fc75c8d9a..26731804f 100644
        }
      } else {
        m_inputStrides[NumDims-1] = 1;
-@@ -171,6 +180,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -171,6 +184,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
        for (int i = NumDims-2; i >= 0; --i) {
          m_inputStrides[i] = m_inputStrides[i+1] * input_dims[i+1];
          m_outputStrides[i] = m_outputStrides[i+1] * m_dimensions[i+1];
@@ -6613,7 +6726,18 @@ index fc75c8d9a..26731804f 100644
        }
      }
  
-@@ -254,7 +264,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -211,6 +225,10 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+ 
+   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions& dimensions() const { return m_dimensions; }
+ 
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const InputDimensions& inputDimensions() const { return m_impl.dimensions(); }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const bool isCopyOrNot() const { return isCopy; }
++
+   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(EvaluatorPointerType) {
+     m_impl.evalSubExprsIfNeeded(NULL);
+     return true;
+@@ -254,7 +272,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
      Index inputIndex = 0;
      EIGEN_UNROLL_LOOP
      for (int i = NumDims - 1; i > 0; --i) {
@@ -6622,25 +6746,37 @@ index fc75c8d9a..26731804f 100644
        if (internal::index_statically_eq<Broadcast>(i, 1)) {
          eigen_assert(idx < m_impl.dimensions()[i]);
          inputIndex += idx * m_inputStrides[i];
-@@ -262,7 +272,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -262,7 +280,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
          if (internal::index_statically_eq<InputDimensions>(i, 1)) {
            eigen_assert(idx % m_impl.dimensions()[i] == 0);
          } else {
 -          inputIndex += (idx % m_impl.dimensions()[i]) * m_inputStrides[i];
-+        inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i];
++          if (m_impl.dimensions()[i] != 1) {
++            if (m_impl.dimensions()[i] == m_dimensions[i]) {
++              inputIndex += idx * m_inputStrides[i];
++            } else {
++              inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i]; 
++            }
++          }
          }
        }
        index -= idx * m_outputStrides[i];
-@@ -274,7 +284,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -274,7 +298,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
        if (internal::index_statically_eq<InputDimensions>(0, 1)) {
          eigen_assert(index % m_impl.dimensions()[0] == 0);
        } else {
 -        inputIndex += (index % m_impl.dimensions()[0]);
-+      inputIndex += (index - (index / m_fastInputDims[0]) * m_impl.dimensions()[0]);
++        if (m_impl.dimensions()[0] != 1) {
++          if (m_impl.dimensions()[0] == m_dimensions[0]) {
++            inputIndex += index * m_inputStrides[0];
++          } else {
++            inputIndex += (index- (index / m_fastInputDims[0]) * m_impl.dimensions()[0]); 
++          }
++        }
        }
      }
      return inputIndex;
-@@ -289,7 +299,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -289,7 +319,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
      Index inputIndex = 0;
      EIGEN_UNROLL_LOOP
      for (int i = 0; i < NumDims - 1; ++i) {
@@ -6649,25 +6785,79 @@ index fc75c8d9a..26731804f 100644
        if (internal::index_statically_eq<Broadcast>(i, 1)) {
          eigen_assert(idx < m_impl.dimensions()[i]);
          inputIndex += idx * m_inputStrides[i];
-@@ -297,7 +307,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -297,7 +327,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
          if (internal::index_statically_eq<InputDimensions>(i, 1)) {
            eigen_assert(idx % m_impl.dimensions()[i] == 0);
          } else {
 -          inputIndex += (idx % m_impl.dimensions()[i]) * m_inputStrides[i];
-+        inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i];
++          if (m_impl.dimensions()[i] != 1) {
++            if (m_impl.dimensions()[i] == m_dimensions[i]) {
++              inputIndex += idx * m_inputStrides[i];
++            } else {
++              inputIndex += (idx - (idx / m_fastInputDims[i]) * m_impl.dimensions()[i]) * m_inputStrides[i]; 
++            }
++          }
          }
        }
        index -= idx * m_outputStrides[i];
-@@ -309,7 +319,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -309,7 +345,13 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
        if (internal::index_statically_eq<InputDimensions>(NumDims - 1, 1)) {
          eigen_assert(index % m_impl.dimensions()[NumDims - 1] == 0);
        } else {
 -        inputIndex += (index % m_impl.dimensions()[NumDims - 1]);
-+      inputIndex += (index - (index / m_fastInputDims[NumDims - 1]) * m_impl.dimensions()[NumDims - 1]);
++        if (m_impl.dimensions()[NumDims - 1] != 1) {
++          if (m_impl.dimensions()[NumDims - 1] == m_dimensions[NumDims - 1]) {
++            inputIndex += index;
++          } else {
++            inputIndex += (index - (index / m_fastInputDims[NumDims - 1]) * m_impl.dimensions()[NumDims - 1]); 
++          }
++        }
        }
      }
      return inputIndex;
-@@ -697,7 +707,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+@@ -320,10 +362,40 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
+     return m_impl.coeff(indexRowMajor(index));
+   }
+ 
++  // only use when not scalar and not copy.
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getInputIndex(Index index) const {
++    if (static_cast<int>(Layout) == static_cast<int>(ColMajor)) {
++      return indexColMajor(index);
++    }
++    else {
++      return indexRowMajor(index);
++    }
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeffInputIndex(Index index) const
++  {
++    return m_impl.coeff(index);
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getInputStride(Index index) const
++  {
++    return m_inputStrides[index];
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getOutputStride(Index index) const
++  {
++    return m_outputStrides[index];
++  }
++
++  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Index getBroadcast(Index index) const
++  {
++    return m_broadcast[index];
++  }
++
+   template<int LoadMode>
+   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketReturnType packet(Index index) const
+   {
+-    if (internal::is_input_scalar<typename internal::remove_all<InputDimensions>::type>::value) {
++    if (internal::is_input_scalar<typename internal::remove_all<InputDimensions>::type>::value || isScalar) {
+       return internal::pset1<PacketReturnType>(m_impl.coeff(0));
+     }
+ 
+@@ -697,7 +769,7 @@ struct TensorEvaluator<const TensorBroadcastingOp<Broadcast, ArgType>, Device>
  #ifdef EIGEN_USE_SYCL
    // binding placeholder accessors to a command group handler for SYCL
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(
@@ -6676,7 +6866,7 @@ index fc75c8d9a..26731804f 100644
      m_impl.bind(cgh);
    }
  #endif
-@@ -1085,6 +1095,8 @@ protected:
+@@ -1085,6 +1157,8 @@ protected:
    Dimensions m_dimensions;
    array<Index, NumDims> m_outputStrides;
    array<Index, NumDims> m_inputStrides;
@@ -6729,7 +6919,7 @@ index 5968ff4b7..b4e8d6564 100644
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h
 new file mode 100644
-index 000000000..5d9ab272c
+index 000000000..85c9fec84
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorContractionDpcpp.h
 @@ -0,0 +1,1631 @@
@@ -7206,7 +7396,7 @@ index 000000000..5d9ab272c
 +  static EIGEN_CONSTEXPR StorageIndex NStride =
 +      contraction_tp == contraction_type::local ? Properties::WorkLoadPerThreadN : RHSBlockProperties::nc_stride;
 +
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local> Scratch;
++  typedef sycl::local_accessor<OutScalar, 1> Scratch;
 +  typedef sycl::multi_ptr<OutScalar, sycl::access::address_space::local_space> local_ptr;
 +  typedef OutScalar * /*sycl::multi_ptr<OutScalar, sycl::access::address_space::private_space>*/ private_ptr;
 +  typedef
@@ -7360,7 +7550,7 @@ index 000000000..5d9ab272c
 +        ThreadProperties<StorageIndex>(linearLocalThreadId, kGroupId, mGroupOffset, nGroupOffset, kGroupOffset,
 +                                       mLocalOffset, nLocalOffset, mGlobalOffset, nGlobalOffset, kSize, is_internal);
 +
-+    auto out_ptr = out_res.get_pointer() + (IsFinal ? 0 : thread_properties.kGroupId * triple_dim.M * triple_dim.N);
++    auto out_ptr = SYCLGetLocalAccPointer(out_res) + (IsFinal ? 0 : thread_properties.kGroupId * triple_dim.M * triple_dim.N);
 +
 +    (thread_properties.is_internal) ? compute_panel<true>(itemID, thread_properties, out_ptr)
 +                                    : compute_panel<false>(itemID, thread_properties, out_ptr);
@@ -7605,7 +7795,7 @@ index 000000000..5d9ab272c
 +  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void compute_panel(const sycl::nd_item<1> &itemID,
 +                                                           ThreadProperties<StorageIndex> &thread_properties,
 +                                                           OutPtr out_ptr) {
-+    auto tiled_input_block = TiledMemory{thread_properties, scratch.get_pointer()};
++    auto tiled_input_block = TiledMemory{thread_properties, SYCLGetLocalAccPointer(scratch)};
 +    // Allocate register space
 +    PacketReturnType privateRes[Properties::WorkLoadPerThreadM * Properties::WorkLoadPerThreadN / PacketSize] = {
 +        PacketReturnType{0}};
@@ -7737,7 +7927,7 @@ index 000000000..5d9ab272c
 +      PacketReturnType;
 +  static EIGEN_CONSTEXPR int PacketSize =
 +      Eigen::internal::Vectorise<OutScalar, Eigen::GpuDevice, Vectorizable>::PacketSize;
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local> Scratch;
++  typedef sycl::local_accessor<OutScalar, 1> Scratch;
 +
 +  static EIGEN_CONSTEXPR StorageIndex OutScratchOffset =
 +      KFactor * Properties::LocalThreadSizeC * Properties::LocalThreadSizeNC;
@@ -7769,7 +7959,7 @@ index 000000000..5d9ab272c
 +        contractDim(contractDim_) {}
 +
 +  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(sycl::nd_item<1> itemID) {
-+    auto scratch_ptr = scratch.get_pointer();
++    auto scratch_ptr = SYCLGetLocalAccPointer(scratch);
 +    const StorageIndex linearLocalThreadId = itemID.get_local_id(0);
 +    StorageIndex nonContractId = is_lhs_vec ? linearLocalThreadId / Properties::LocalThreadSizeC
 +                                            : linearLocalThreadId % Properties::LocalThreadSizeNC;
@@ -7780,7 +7970,7 @@ index 000000000..5d9ab272c
 +        is_lhs_vec ? itemID.get_group(0) / cGroupSize : itemID.get_group(0) % nonContractGroupSize;
 +    const StorageIndex contractGroupId =
 +        is_lhs_vec ? itemID.get_group(0) % cGroupSize : itemID.get_group(0) / nonContractGroupSize;
-+    auto out_ptr = out_res.get_pointer() + (IsFinal ? 0 : contractGroupId * nonContractDim);
++    auto out_ptr = SYCLGetLocalAccPointer(out_res) + (IsFinal ? 0 : contractGroupId * nonContractDim);
 +
 +    const StorageIndex nonContractGroupOffset = nonContractGroupId * Properties::TileSizeDimNC;
 +    const StorageIndex contractGroupOffset = contractGroupId * Properties::TileSizeDimC;
@@ -7973,7 +8163,7 @@ index 000000000..5d9ab272c
 +template <typename OutScalar, typename LhsScalar, typename RhsScalar, typename OutAccessor, typename LhsMapper,
 +          typename RhsMapper, typename StorageIndex, bool Vectorizable>
 +struct GeneralScalarContraction {
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local> Scratch;
++  typedef sycl::local_accessor<OutScalar, 1> Scratch;
 +  Scratch scratch;
 +  const LhsMapper lhs;
 +  const RhsMapper rhs;
@@ -7986,8 +8176,8 @@ index 000000000..5d9ab272c
 +      : scratch(scratch_), lhs(lhs_), rhs(rhs_), out_res(out_res_), rng(rng_) {}
 +
 +  EIGEN_DEVICE_FUNC void operator()(sycl::nd_item<1> itemID) {
-+    auto out_ptr = out_res.get_pointer();
-+    auto scratch_ptr = scratch.get_pointer().get();
++    auto out_ptr = SYCLGetLocalAccPointer(out_res);
++    auto scratch_ptr = SYCLGetLocalAccPointer(scratch);
 +
 +    StorageIndex globalid = itemID.get_global_id(0);
 +    StorageIndex localid = itemID.get_local_id(0);
@@ -8986,7 +9176,7 @@ index 476b2282a..292b2855d 100644
    }
  #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h b/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h
-index 7f3394438..54fc519c1 100644
+index 7f3394438..8a5bb4523 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h
 @@ -273,7 +273,7 @@ struct GpuDevice {
@@ -9025,7 +9215,7 @@ index 7f3394438..54fc519c1 100644
    EIGEN_STRONG_INLINE int majorDeviceVersion() const {
      return stream_->deviceProperties().major;
    }
-@@ -320,9 +333,142 @@ struct GpuDevice {
+@@ -320,9 +333,132 @@ struct GpuDevice {
  #endif
    }
  
@@ -9053,11 +9243,7 @@ index 7f3394438..54fc519c1 100644
 +                                                 Index scratchSize,
 +                                                 T... var) const {
 +    auto kernel_functor = [=](sycl::handler &cgh) {
-+    typedef sycl::accessor<OutScalar, 1,
-+                               sycl::access::mode::read_write,
-+                               sycl::access::target::local>
-+        LocalAccessor;
-+
++    typedef sycl::local_accessor<OutScalar, 1> LocalAccessor;
 +    LocalAccessor scratch(sycl::range<1>(scratchSize), cgh);
 +    cgh.parallel_for<sycl_kernel>(
 +          thread_range, sycl_kernel(scratch, inptr, var...));
@@ -9079,10 +9265,7 @@ index 7f3394438..54fc519c1 100644
 +                                                 Index scratchSize,
 +                                                 T... var) const {
 +    auto kernel_functor = [=](sycl::handler &cgh) {
-+    typedef sycl::accessor<OutScalar, 1,
-+                               sycl::access::mode::read_write,
-+                               sycl::access::target::local>
-+        LocalAccessor;
++    typedef sycl::local_accessor<OutScalar, 1> LocalAccessor;
 +
 +    LocalAccessor scratch(sycl::range<1>(scratchSize), cgh);
 +    cgh.parallel_for<sycl_kernel>(
@@ -9102,10 +9285,7 @@ index 7f3394438..54fc519c1 100644
 +                                                  Index scratchSize,
 +                                                  T... var) const {
 +    auto kernel_functor = [=](sycl::handler &cgh) {
-+    typedef sycl::accessor<OutScalar, 1,
-+                               sycl::access::mode::read_write,
-+                               sycl::access::target::local>
-+        LocalAccessor;
++    typedef sycl::local_accessor<OutScalar, 1> LocalAccessor;
 +
 +    LocalAccessor scratch(sycl::range<1>(scratchSize), cgh);
 +    cgh.parallel_for<sycl_kernel>(
@@ -9852,6 +10032,19 @@ index df591c21d..b2090406e 100644
      return queue_stream()->get_latest_event();
    }
  
+diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h b/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h
+index 132458a20..f0f1e832a 100644
+--- a/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h
++++ b/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h
+@@ -466,7 +466,7 @@ struct sizes_match_below_dim {
+ template <typename Dims1, typename Dims2, ptrdiff_t n>
+ struct sizes_match_below_dim<Dims1, Dims2, n, n> {
+   static EIGEN_DEVICE_FUNC  EIGEN_STRONG_INLINE bool run(Dims1& dims1, Dims2& dims2) {
+-    return (array_get<n-1>(dims1) == array_get<n-1>(dims2)) &
++    return (array_get<n-1>(dims1) == array_get<n-1>(dims2)) &&
+         sizes_match_below_dim<Dims1, Dims2, n-1, n-1>::run(dims1, dims2);
+   }
+ };
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h b/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h
 index 4689b0230..5cf29ddc3 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h
@@ -9891,7 +10084,7 @@ index 4689b0230..5cf29ddc3 100644
      m_buffer.bind(cgh);
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h b/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h
-index d4532b72c..b81b06b0c 100644
+index d4532b72c..67c61df31 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h
 @@ -24,6 +24,7 @@ namespace Eigen {
@@ -10052,7 +10245,93 @@ index d4532b72c..b81b06b0c 100644
      m_arg1Impl.bind(cgh);
      m_arg2Impl.bind(cgh);
      m_arg3Impl.bind(cgh);
-@@ -926,7 +927,6 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+@@ -803,6 +804,30 @@ struct TensorEvaluator<const TensorCwiseTernaryOp<TernaryOp, Arg1Type, Arg2Type,
+   TensorEvaluator<Arg3Type, Device> m_arg3Impl;
+ };
+ 
++namespace {
++
++template <typename Expression, typename Device>
++typename std::enable_if<!internal::IsTensorBroadcastingOp<Expression>::value, bool>::type
++isScalarOrNot(const TensorEvaluator<Expression, Device>& expr) {
++  return false;
++}
++
++template <typename Expression, typename Device>
++typename std::enable_if<internal::IsTensorBroadcastingOp<Expression>::value, bool>::type
++isScalarOrNot(const TensorEvaluator<Expression, Device>& expr) {
++  auto& input_dims = expr.inputDimensions();
++  bool is_scalar = true;
++  EIGEN_UNROLL_LOOP
++  for(int i = 0; i < TensorEvaluator<Expression, Device>::NumDims; ++i) {
++    if (input_dims[i] != 1) {
++      is_scalar = false;
++    }
++  }
++  return is_scalar;
++}
++
++}; // namespace
++
+ 
+ // -------------------- SelectOp --------------------
+ 
+@@ -838,6 +863,7 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+     EIGEN_STATIC_ASSERT((static_cast<int>(TensorEvaluator<IfArgType, Device>::Layout) == static_cast<int>(TensorEvaluator<ElseArgType, Device>::Layout)), YOU_MADE_A_PROGRAMMING_MISTAKE);
+     eigen_assert(dimensions_match(m_condImpl.dimensions(), m_thenImpl.dimensions()));
+     eigen_assert(dimensions_match(m_thenImpl.dimensions(), m_elseImpl.dimensions()));
++    isScalar = isScalarOrNot<IfArgType, Device>(m_condImpl);
+   }
+ 
+   typedef typename XprType::Index Index;
+@@ -915,18 +941,48 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+   {
+     return m_condImpl.coeff(index) ? m_thenImpl.coeff(index) : m_elseImpl.coeff(index);
+   }
++
++  template <typename Expression = IfArgType>
++  EIGEN_DEVICE_FUNC typename std::enable_if<internal::IsTensorBroadcastingOp<Expression>::value,
++                                            internal::Selector<PacketSize>>::type
++  getSelector(Index index) const
++  {
++    internal::Selector<PacketSize> select;
++    if (isScalar) {
++      select.select[0] = m_condImpl.coeffInputIndex(0);
++      EIGEN_UNROLL_LOOP
++      for (Index i = 1; i < PacketSize; ++i) {
++        select.select[i] = select.select[0];
++      }
++    } else {
++      EIGEN_UNROLL_LOOP
++      for (Index i = 0; i < PacketSize; ++i) {
++        select.select[i] = m_condImpl.coeff(index+i);
++      }
++    } 
++    return select;
++  }
++
++  template <typename Expression = IfArgType>
++  EIGEN_DEVICE_FUNC typename std::enable_if<!internal::IsTensorBroadcastingOp<Expression>::value,
++                                            internal::Selector<PacketSize>>::type
++  getSelector(Index index) const {
++    internal::Selector<PacketSize> select;
++    EIGEN_UNROLL_LOOP
++    for (Index i = 0; i < PacketSize; ++i) {
++      select.select[i] = m_condImpl.coeff(index+i);
++    }
++    return select;
++  }
++
+   template<int LoadMode>
+   EIGEN_DEVICE_FUNC PacketReturnType packet(Index index) const
+   {
+-     internal::Selector<PacketSize> select;
+-     EIGEN_UNROLL_LOOP
+-     for (Index i = 0; i < PacketSize; ++i) {
+-       select.select[i] = m_condImpl.coeff(index+i);
+-     }
++     internal::Selector<PacketSize> select = getSelector(index);
++
       return internal::pblend(select,
                               m_thenImpl.template packet<LoadMode>(index),
                               m_elseImpl.template packet<LoadMode>(index));
@@ -10060,7 +10339,7 @@ index d4532b72c..b81b06b0c 100644
    }
  
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
-@@ -966,7 +966,7 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
+@@ -966,13 +1022,15 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
  
  #ifdef EIGEN_USE_SYCL
   // binding placeholder accessors to a command group handler for SYCL
@@ -10069,8 +10348,16 @@ index d4532b72c..b81b06b0c 100644
      m_condImpl.bind(cgh);
      m_thenImpl.bind(cgh);
      m_elseImpl.bind(cgh);
+   }
+ #endif
+  private:
++  // When m_condImpl is BroadcastingOp, represent whether the tensor of m_condImpl is scalar.
++  bool isScalar;
+   TensorEvaluator<IfArgType, Device> m_condImpl;
+   TensorEvaluator<ThenArgType, Device> m_thenImpl;
+   TensorEvaluator<ElseArgType, Device> m_elseImpl;
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
-index c52fb77dc..3905ffde4 100644
+index c52fb77dc..23509ddac 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 @@ -76,8 +76,13 @@ struct ExpressionHasTensorBroadcastingOp<
@@ -10087,13 +10374,17 @@ index c52fb77dc..3905ffde4 100644
  class TensorExecutor {
   public:
    typedef typename Expression::Index StorageIndex;
-@@ -325,17 +330,18 @@ template <typename Expression, bool Vectorizable, TiledEvaluation Tiling>
+@@ -325,17 +330,22 @@ template <typename Expression, bool Vectorizable, TiledEvaluation Tiling>
  class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable, Tiling> {
   public:
    typedef typename Expression::Index StorageIndex;
 -
 +  // TODO(itex): Reopen ThreadPoolDevice dedicated vectorization path when it's ready.
++#ifdef EIGEN_USE_DPCPP
 +  static const bool vectorized = false;
++#else
++  static const bool vectorized = Vectorizable;
++#endif
    static EIGEN_STRONG_INLINE void run(const Expression& expr,
                           const ThreadPoolDevice& device) {
      typedef TensorEvaluator<Expression, ThreadPoolDevice> Evaluator;
@@ -10109,27 +10400,29 @@ index c52fb77dc..3905ffde4 100644
                           EvalRange::alignBlockSize,
                           [&evaluator](StorageIndex firstIdx, StorageIndex lastIdx) {
                             EvalRange::run(&evaluator, firstIdx, lastIdx);
-@@ -345,8 +351,8 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable, Tiling> {
-   }
- };
- 
--template <typename Expression, bool Vectorizable>
--class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
-+template <typename Expression>
-+class TensorExecutor<Expression, ThreadPoolDevice, /*Vectorizable*/false,
-                      /*Tiling=*/TiledEvaluation::On> {
-  public:
-   typedef typename traits<Expression>::Index IndexType;
-@@ -354,6 +360,8 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
+@@ -354,6 +364,12 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
    typedef typename remove_const<Scalar>::type ScalarNoConst;
  
    static const int NumDims = traits<Expression>::NumDimensions;
 +  // TODO: Reopen ThreadPoolDevice dedicated vectorization path when it's ready.
-+  static const bool Vectorizable = false;
++#ifdef EIGEN_USE_DPCPP
++  static const bool vectorized = false;
++#else
++  static const bool vectorized = Vectorizable;
++#endif
  
    typedef TensorEvaluator<Expression, ThreadPoolDevice> Evaluator;
    typedef TensorBlockMapper<NumDims, Evaluator::Layout, IndexType> BlockMapper;
-@@ -615,6 +623,84 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
+@@ -372,7 +388,7 @@ class TensorExecutor<Expression, ThreadPoolDevice, Vectorizable,
+     if (needs_assign) {
+       const TilingContext tiling =
+           internal::GetTensorExecutorTilingContext<Evaluator, BlockMapper,
+-                                                   Vectorizable>(evaluator);
++                                                   vectorized>(evaluator);
+ 
+       auto eval_block = [&device, &evaluator, &tiling](IndexType firstBlockIdx,
+                                                        IndexType lastBlockIdx) {
+@@ -615,6 +631,108 @@ EIGEN_STRONG_INLINE void TensorExecutor<Expression, GpuDevice, Vectorizable, Til
  }
  
  #endif  // EIGEN_GPUCC
@@ -10142,18 +10435,25 @@ index c52fb77dc..3905ffde4 100644
 +  typedef typename Evaluator::Scalar Scalar;
 +  Evaluator evaluator;
 +  const Index range;
++  const bool is_small_shape;
++#ifndef EIGEN_DONT_VECTORIZE_SYCL
 +  static const bool vectorized = Eigen::PacketType<Scalar, GpuDevice>::vectorized;
++#else
++  static const bool vectorized = false;
++#endif
 +  template <typename Scratch>
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ExecExprFunctorKernel(
-+      const Scratch, Evaluator evaluator_, const Index range_)
-+      : evaluator(evaluator_), range(range_) {}
++      const Scratch, Evaluator evaluator_, const Index range_,
++      const bool is_small_shape_) :
++          evaluator(evaluator_), range(range_),
++          is_small_shape(is_small_shape_) {}
 +
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void operator()(
 +      sycl::nd_item<1> itemID) const {
-+    compute(itemID);
++      compute(itemID);
 +  }
 +  template <bool is_vec = Evaluator::PacketAccess & vectorized>
-+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<!is_vec>::type
++  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<!is_vec>::type 
 +  compute(const sycl::nd_item<1>& itemID) const {
 +    Index gId = static_cast<Index>(itemID.get_global_linear_id());
 +    Index total_threads = itemID.get_global_range(0);
@@ -10164,19 +10464,28 @@ index c52fb77dc..3905ffde4 100644
 +  template <bool is_vec = Evaluator::PacketAccess & vectorized>
 +  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<is_vec>::type
 +  compute(const sycl::nd_item<1>& itemID) const {
-+    const Index vectorizedRange =
-+        (range / Evaluator::PacketSize) * Evaluator::PacketSize;
-+    Index gId = static_cast<Index>(itemID.get_global_linear_id());
-+    Index total_threads = itemID.get_global_range(0);
-+    const Index step = Evaluator::PacketSize * itemID.get_global_range(0);
-+    const Index start = Evaluator::PacketSize * gId;
-+    for (Index i = start; i < vectorizedRange; i += step) {
-+      evaluator.evalPacket(i);
-+    }
-+    gId += vectorizedRange;
-+    for (Index i = gId; i < range; i += total_threads) {
-+      evaluator.evalScalar(i);
-+    }
++      if (!is_small_shape) {
++          const Index vectorizedRange =
++              (range / Evaluator::PacketSize) * Evaluator::PacketSize;
++          Index gId = static_cast<Index>(itemID.get_global_linear_id());
++          Index total_threads = itemID.get_global_range(0);
++          const Index step = Evaluator::PacketSize * itemID.get_global_range(0);
++          const Index start = Evaluator::PacketSize * gId;
++
++          for (Index i = start; i < vectorizedRange; i += step) {
++            evaluator.evalPacket(i);
++          }
++          gId += vectorizedRange;
++          for (Index i = gId; i < range; i += total_threads) {
++            evaluator.evalScalar(i);
++          }
++      } else {
++            Index gId = static_cast<Index>(itemID.get_global_linear_id());
++            Index total_threads = itemID.get_global_range(0);
++            for (Index i = gId; i < range; i += total_threads) {
++              evaluator.evalScalar(i);
++            }
++      }
 +  }
 +};
 +
@@ -10188,13 +10497,21 @@ index c52fb77dc..3905ffde4 100644
 +  Evaluator evaluator(expr, dev);
 +  const bool needs_assign = evaluator.evalSubExprsIfNeeded(NULL);
 +  if (needs_assign) {
++    auto sycl_dev = dev.stream()->get_device();
++    const int hardware_vectorize_threshold =
++        sycl_dev.get_info<sycl::ext::intel::info::device::gpu_eu_count>() *
++        sycl_dev.get_info<sycl::ext::intel::info::device::gpu_hw_threads_per_eu>() *
++        sycl_dev.get_info<sycl::ext::intel::info::device::gpu_eu_simd_width>();
++    
 +    Index range, GRange, tileSize;
 +    Index total_size = ::Eigen::internal::array_prod(evaluator.dimensions());
 +    total_size = (total_size == 0) ? 1 : total_size;
-+    const int PacketSize =
-+        Eigen::PacketType<typename Evaluator::CoeffReturnType,
-+                          GpuDevice>::size;
-+    Index vectorizable_threads = static_cast<Index>(total_size / PacketSize);
++
++    bool is_small_shape = hardware_vectorize_threshold >= total_size;
++    const int PacketSize = evaluator.PacketSize;
++    Index vectorizable_threads = is_small_shape ? 
++        total_size : static_cast<Index>(total_size / PacketSize);
++
 +    dev.parallel_for_setup(vectorizable_threads, tileSize, range, GRange);
 +    range = total_size;
 +
@@ -10204,7 +10521,7 @@ index c52fb77dc..3905ffde4 100644
 +        evaluator,
 +        sycl::nd_range<1>(sycl::range<1>(GRange),
 +                              sycl::range<1>(tileSize)),
-+        Index(1), range);
++        Index(1), range, is_small_shape);
 +  }
 +  evaluator.cleanup();
 +}
@@ -10214,7 +10531,7 @@ index c52fb77dc..3905ffde4 100644
  #endif  // EIGEN_USE_GPU
  
  // SYCL Executor policy
-@@ -624,19 +710,19 @@ template <typename Evaluator>
+@@ -624,19 +742,19 @@ template <typename Evaluator>
  struct ExecExprFunctorKernel {
    typedef typename Evaluator::Index Index;
    Evaluator evaluator;
@@ -10238,7 +10555,7 @@ index c52fb77dc..3905ffde4 100644
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
      Index total_threads = itemID.get_global_range(0);
  
-@@ -646,7 +732,7 @@ struct ExecExprFunctorKernel {
+@@ -646,7 +764,7 @@ struct ExecExprFunctorKernel {
    }
    template <bool is_vec = Evaluator::PacketAccess>
    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename std::enable_if<is_vec>::type
@@ -10247,7 +10564,7 @@ index c52fb77dc..3905ffde4 100644
      const Index vectorizedRange =
          (range / Evaluator::PacketSize) * Evaluator::PacketSize;
      Index gId = static_cast<Index>(itemID.get_global_linear_id());
-@@ -686,8 +772,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
+@@ -686,8 +804,8 @@ class TensorExecutor<Expression, Eigen::SyclDevice, Vectorizable, Tiling> {
            typename Evaluator::CoeffReturnType,
            ExecExprFunctorKernel<Evaluator> >(
            evaluator,
@@ -10285,7 +10602,7 @@ index 14020aa68..558869176 100644
      m_impl.bind(cgh);
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h b/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h
-index 246ebe44e..78c43c442 100644
+index 246ebe44e..36f2bab2c 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h
 @@ -107,12 +107,12 @@ struct SyclDevice;
@@ -10317,10 +10634,20 @@ index 246ebe44e..78c43c442 100644
  
  enum FFTResultType {
    RealPart = 0,
-@@ -154,6 +160,20 @@ struct IsVectorizable<GpuDevice, Expression> {
+@@ -154,6 +160,30 @@ struct IsVectorizable<GpuDevice, Expression> {
                              TensorEvaluator<Expression, GpuDevice>::IsAligned;
  };
  
++template <typename Expression>
++struct IsTensorBroadcastingOp {
++  static const bool value = false;
++};
++
++template <typename Broadcast, typename XprType>
++struct IsTensorBroadcastingOp<const TensorBroadcastingOp<Broadcast, XprType> > {
++  static const bool value = true;
++};
++
 +template <typename Expression>
 +struct IsOperator {
 +  static const bool value = true;
@@ -10385,7 +10712,7 @@ index b1ff1d8b1..54cfd1907 100644
  
   protected:
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h b/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h
-index f32ce27e9..fb704cdf4 100644
+index f32ce27e9..ac84b3e56 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h
 @@ -49,6 +49,132 @@
@@ -10435,8 +10762,8 @@ index f32ce27e9..fb704cdf4 100644
 +#define cudaStreamDefault  DefaultQueue::getInstance()
 +
 +using  gpuStream_t    =  dpruntimeStream_t;
-+#define gpuError_t       dpcppError_t
-+#define gpuSuccess       DPCPP_SUCCESS
++#define gpuError_t       ITEX_GPUError_t
++#define gpuSuccess       ITEX_GPU_SUCCESS
 +#define gpuErrorNotReady cudaErrorNotReady
 +#define gpuGetDeviceCount dpruntimeGetDeviceCount
 +#define gpuGetErrorString cudaGetErrorString
@@ -10455,8 +10782,8 @@ index f32ce27e9..fb704cdf4 100644
 +#define gpuDeviceSynchronize cudaDeviceSynchronize
 +#define gpuMemcpy dpruntimeMemcpy
 +
-+inline dpcppError_t gpuGetDeviceProperties(gpuDeviceProp_t * devProp, int device){
-+  DPCPPdevice_st dpcppDevice;
++inline ITEX_GPUError_t gpuGetDeviceProperties(gpuDeviceProp_t * devProp, int device){
++  ITEX_GPUdevice_st dpcppDevice;
 +  dpruntimeGetRealDPCPPDevice(&dpcppDevice, device);
 +  devProp->multiProcessorCount = dpcppDevice.template get_info<sycl::info::device::max_compute_units>();
 +  devProp->maxThreadsPerBlock = dpcppDevice.template get_info<sycl::info::device::max_work_group_size>();
@@ -10465,27 +10792,27 @@ index f32ce27e9..fb704cdf4 100644
 +  devProp->major = 0;
 +  devProp->minor = 0;
 +  devProp->local_mem_type = dpcppDevice.template get_info<sycl::info::device::local_mem_type>();
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
 +
-+inline dpcppError_t gpuMalloc(void** devPtr, size_t size) {
++inline ITEX_GPUError_t gpuMalloc(void** devPtr, size_t size) {
 +  *devPtr = dpruntimeMalloc(size);
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
-+inline dpcppError_t gpuFree(void* devPtr) {
++inline ITEX_GPUError_t gpuFree(void* devPtr) {
 +  dpruntimeFree(devPtr);
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
-+inline dpcppError_t dpruntimeMemsetAsync(void *devPtr, int value, size_t count,
++inline ITEX_GPUError_t dpruntimeMemsetAsync(void *devPtr, int value, size_t count,
 +                     const gpuStream_t stream)
 +{
 +  return dpruntimeMemsetD8Async(devPtr, value, count, stream);
 +}
 +
-+inline dpcppError_t dpruntimeMemcpyAsync(void *dst, const void *src, size_t count, int kind,
++inline ITEX_GPUError_t dpruntimeMemcpyAsync(void *dst, const void *src, size_t count, int kind,
 +                   const gpuStream_t stream)
 +{
 +  switch (kind) {
@@ -10498,11 +10825,11 @@ index f32ce27e9..fb704cdf4 100644
 +    default:
 +      eigen_assert(((kind == dpruntimeMemcpyDeviceToDevice) || (kind == dpruntimeMemcpyDeviceToHost) || (kind == dpruntimeMemcpyHostToDevice)));
 +  }
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
 +
-+inline dpcppError_t dpruntimeMemcpy(void *dst, const void *src, size_t count, int kind)
++inline ITEX_GPUError_t dpruntimeMemcpy(void *dst, const void *src, size_t count, int kind)
 +{
 +  switch (kind) {
 +    case dpruntimeMemcpyDeviceToDevice:
@@ -10514,7 +10841,7 @@ index f32ce27e9..fb704cdf4 100644
 +    default:
 +      eigen_assert(((kind == dpruntimeMemcpyDeviceToDevice) || (kind == dpruntimeMemcpyDeviceToHost) || (kind == dpruntimeMemcpyHostToDevice)));
 +  }
-+  return DPCPP_SUCCESS;
++  return ITEX_GPU_SUCCESS;
 +}
 +
 +
@@ -10534,6 +10861,91 @@ index 49d1004f3..4a7ba3b83 100644
      m_impl.bind(cgh);
    }
  #endif
+diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h b/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h
+index 0e9133c49..d7667c6fb 100644
+--- a/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h
++++ b/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h
+@@ -468,7 +468,7 @@ struct index_statically_eq_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_eq_impl<IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) == value);
+   }
+ };
+@@ -476,7 +476,7 @@ struct index_statically_eq_impl<IndexList<FirstType, OtherTypes...> > {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_eq_impl<const IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) == value);
+   }
+ };
+@@ -492,7 +492,7 @@ struct index_statically_ne_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_ne_impl<IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) != value);
+   }
+ };
+@@ -541,7 +541,7 @@ struct index_statically_lt_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_lt_impl<IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) < value);
+   }
+ };
+@@ -549,7 +549,7 @@ struct index_statically_lt_impl<IndexList<FirstType, OtherTypes...> > {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_statically_lt_impl<const IndexList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexList<FirstType, OtherTypes...>().get(i) < value);
+   }
+ };
+@@ -566,7 +566,7 @@ struct index_pair_first_statically_eq_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_first_statically_eq_impl<IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).first == value);
+   }
+ };
+@@ -574,7 +574,7 @@ struct index_pair_first_statically_eq_impl<IndexPairList<FirstType, OtherTypes..
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_first_statically_eq_impl<const IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).first == value);
+   }
+ };
+@@ -591,7 +591,7 @@ struct index_pair_second_statically_eq_impl {
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_second_statically_eq_impl<IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).second == value);
+   }
+ };
+@@ -599,7 +599,7 @@ struct index_pair_second_statically_eq_impl<IndexPairList<FirstType, OtherTypes.
+ template <typename FirstType, typename... OtherTypes>
+ struct index_pair_second_statically_eq_impl<const IndexPairList<FirstType, OtherTypes...> > {
+   EIGEN_DEVICE_FUNC static constexpr bool run(const Index i, const Index value) {
+-    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &
++    return IndexPairList<FirstType, OtherTypes...>().value_known_statically(i) &&
+         (IndexPairList<FirstType, OtherTypes...>().operator[](i).second == value);
+   }
+ };
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h b/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h
 index 7dadec7fb..8c4cf4821 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h
@@ -11412,10 +11824,10 @@ index 9b0eb3e2f..4a2167be0 100644
  : public TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>, Eigen::SyclDevice> {
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h
 new file mode 100644
-index 000000000..66dcd0d0e
+index 000000000..50062efd2
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorReductionDpcpp.h
-@@ -0,0 +1,579 @@
+@@ -0,0 +1,575 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -11483,8 +11895,7 @@ index 000000000..66dcd0d0e
 +
 +template <typename CoeffReturnType, typename OpType, typename InputAccessor, typename OutputAccessor, typename Index>
 +struct SecondStepFullReducer {
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<CoeffReturnType, 1> LocalAccessor;
 +  typedef OpDefiner<OpType, CoeffReturnType, Index, true> OpDef;
 +  typedef typename OpDef::type Op;
 +  LocalAccessor scratch;
@@ -11505,7 +11916,7 @@ index 000000000..66dcd0d0e
 +    const Index localid = itemID.get_local_id(0);
 +    auto aInPtr = aI + localid;
 +    auto aOutPtr = outAcc;
-+    CoeffReturnType *scratchptr = scratch.get_pointer();
++    CoeffReturnType *scratchptr = SYCLGetLocalAccPointer(scratch);
 +    CoeffReturnType accumulator = *aInPtr;
 +
 +    scratchptr[localid] = op.finalize(accumulator);
@@ -11539,8 +11950,7 @@ index 000000000..66dcd0d0e
 +  typedef
 +      typename ::Eigen::internal::conditional<(Evaluator::ReducerTraits::PacketAccess & Evaluator::InputPacketAccess),
 +                                              PacketReturnType, CoeffReturnType>::type OutType;
-+  typedef sycl::accessor<OutType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<OutType, 1> LocalAccessor;
 +  LocalAccessor scratch;
 +  Evaluator evaluator;
 +  EvaluatorPointerType final_output;
@@ -11670,8 +12080,7 @@ index 000000000..66dcd0d0e
 +  typedef typename Evaluator::Index Index;
 +  typedef OpDefiner<OpType, CoeffReturnType, Index, false> OpDef;
 +  typedef typename OpDef::type Op;
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      ScratchAcc;
++  typedef sycl::local_accessor<CoeffReturnType, 1> ScratchAcc;
 +  ScratchAcc scratch;
 +  Evaluator evaluator;
 +  EvaluatorPointerType output_accessor;
@@ -11725,7 +12134,7 @@ index 000000000..66dcd0d0e
 +
 +    Index globalPId = pGroupId * PannelParameters::LocalThreadSizeP + pLocalThreadId;
 +    const Index globalRId = rGroupId * PannelParameters::LocalThreadSizeR + rLocalThreadId;
-+    auto scratchPtr = scratch.get_pointer().get();
++    auto scratchPtr = SYCLGetLocalAccPointer(scratch);
 +    auto outPtr =
 +        output_accessor + (reduce_elements_num_groups > 1 ? rGroupId * num_coeffs_to_preserve : 0);
 +    CoeffReturnType accumulator = op.initialize();
@@ -11776,8 +12185,7 @@ index 000000000..66dcd0d0e
 +struct SecondStepPartialReduction {
 +  typedef OpDefiner<OpType, OutScalar, Index, false> OpDef;
 +  typedef typename OpDef::type Op;
-+  typedef sycl::accessor<OutScalar, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      ScratchAccessor;
++  typedef sycl::local_accessor<OutScalar, 1> ScratchAccessor;
 +  InputAccessor input_accessor;
 +  OutputAccessor output_accessor;
 +  Op op;
@@ -12212,10 +12620,10 @@ index 9e3b1a0b9..5782cc585 100644
    }
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h
 new file mode 100644
-index 000000000..940967140
+index 000000000..7bf777a4c
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorScanDpcpp.h
-@@ -0,0 +1,515 @@
+@@ -0,0 +1,513 @@
 +// This file is part of Eigen, a lightweight C++ template library
 +// for linear algebra.
 +//
@@ -12302,8 +12710,7 @@ index 000000000..940967140
 +template <typename Evaluator, typename CoeffReturnType, typename OutAccessor, typename Op, typename Index,
 +          scan_step stp>
 +struct ScanKernelFunctor {
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<CoeffReturnType, 1> LocalAccessor;
 +  static EIGEN_CONSTEXPR int PacketSize = ScanParameters<Index>::ScanPerThread / 2;
 +
 +  LocalAccessor scratch;
@@ -12352,7 +12759,7 @@ index 000000000..940967140
 +  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(sycl::nd_item<1> itemID) const {
 +    auto out_ptr = out_accessor;
 +    auto tmp_ptr = temp_accessor;
-+    auto scratch_ptr = scratch.get_pointer().get();
++    auto scratch_ptr = SYCLGetLocalAccPointer(scratch);
 +
 +    for (Index loop_offset = 0; loop_offset < scanParameters.loop_range; loop_offset++) {
 +      Index data_offset = (itemID.get_global_id(0) + (itemID.get_global_range(0) * loop_offset));
@@ -12511,8 +12918,7 @@ index 000000000..940967140
 +
 +template <typename CoeffReturnType, typename InAccessor, typename OutAccessor, typename Op, typename Index>
 +struct ScanAdjustmentKernelFunctor {
-+  typedef sycl::accessor<CoeffReturnType, 1, sycl::access::mode::read_write, sycl::access::target::local>
-+      LocalAccessor;
++  typedef sycl::local_accessor<CoeffReturnType, 1> LocalAccessor;
 +  static EIGEN_CONSTEXPR int PacketSize = ScanParameters<Index>::ScanPerThread / 2;
 +  InAccessor in_accessor;
 +  OutAccessor out_accessor;
@@ -13006,10 +13412,10 @@ index 597ca64cd..60ec3e5bb 100644
  #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h b/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h
 new file mode 100644
-index 000000000..53b1bc6a0
+index 000000000..48cadf103
 --- /dev/null
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorShufflingDpcpp.h
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,252 @@
 +#if defined(EIGEN_USE_DPCPP) &&                                                  \
 +    !defined(UNSUPPORTED_EIGEN_CXX11_SRC_TENSOR_TENSOR_SHUFFLING_DPCPP_HPP)
 +#define UNSUPPORTED_EIGEN_CXX11_SRC_TENSOR_TENSOR_SHUFFLING_DPCPP_HPP
@@ -13042,8 +13448,10 @@ index 000000000..53b1bc6a0
 +        outer_dim_size(outer_dim_size_), inner_dim_size(inner_dim_size_),
 +        outer_sub_group(outer_sub_group_), inner_sub_group(inner_sub_group_) {}
 +
-+  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]] void
-+  operator()(sycl::nd_item<1> itemID) const {
++#if defined(DPCPP_DEVICE_ONLY)
++  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]]
++#endif
++  void operator()(sycl::nd_item<1> itemID) const {
 +    transpose_impl(itemID);
 +  }
 +
@@ -13155,8 +13563,10 @@ index 000000000..53b1bc6a0
 +        inner_dim_size(inner_dim_size_), outer_sub_group(outer_sub_group_),
 +        mid_sub_group(mid_sub_group_), inner_sub_group(inner_sub_group_) {}
 +
-+  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]] void
-+  operator()(sycl::nd_item<1> itemID) const {
++#if defined(DPCPP_DEVICE_ONLY)
++  [[intel::reqd_sub_group_size(SUBGROUPSIZE)]]
++#endif
++  void operator()(sycl::nd_item<1> itemID) const {
 +    transpose_impl(itemID);
 +  }
 +
@@ -13272,9 +13682,18 @@ index d05f37532..15529de0c 100644
    }
  #endif
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h b/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h
-index 24d22c189..3966e3868 100644
+index 24d22c189..887703123 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h
+@@ -133,7 +133,7 @@ struct TensorEvaluator<const TensorTraceOp<Dims, ArgType>, Device>
+         ++num_distinct_reduce_dims;
+       }
+     }
+-
++    (void) num_distinct_reduce_dims;
+     eigen_assert(num_distinct_reduce_dims == NumReducedDims);
+ 
+     // Compute the dimensions of the result.
 @@ -257,7 +257,7 @@ struct TensorEvaluator<const TensorTraceOp<Dims, ArgType>, Device>
  
  #ifdef EIGEN_USE_SYCL
@@ -13296,6 +13715,27 @@ index 4f7fd340e..1b139c938 100644
    typedef typename BaseTraits::Scalar Scalar;
    typedef typename BaseTraits::StorageKind StorageKind;
    typedef typename BaseTraits::Index Index;
+diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h b/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h
+index d23f2e4c8..afbcba4a2 100644
+--- a/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h
++++ b/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h
+@@ -78,14 +78,14 @@ template <typename HL, typename LL, typename HR, typename LR>
+ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+ bool operator == (const TensorUInt128<HL, LL>& lhs, const TensorUInt128<HR, LR>& rhs)
+ {
+-  return (lhs.high == rhs.high) & (lhs.low == rhs.low);
++  return (lhs.high == rhs.high) && (lhs.low == rhs.low);
+ }
+ 
+ template <typename HL, typename LL, typename HR, typename LR>
+ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+ bool operator != (const TensorUInt128<HL, LL>& lhs, const TensorUInt128<HR, LR>& rhs)
+ {
+-  return (lhs.high != rhs.high) | (lhs.low != rhs.low);
++  return (lhs.high != rhs.high) || (lhs.low != rhs.low);
+ }
+ 
+ template <typename HL, typename LL, typename HR, typename LR>
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h b/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h
 index 000ed5b41..d3a7d1231 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h

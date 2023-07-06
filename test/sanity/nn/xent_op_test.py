@@ -184,6 +184,13 @@ class XentTest(test.TestCase):
         np.array([[1., 1., 1., 1.], [1., 2., 3., 4.]]).astype(np.float32),
         np.array([[0., 0., 0., 1.], [0., .5, .5, 0.]]).astype(np.float32))
 
+  def testPaddingCase(self):
+    row = 1
+    cols = 32 * 29 - 1
+    logits_in = np.reshape(np.array([1.0]*cols), (row, cols)).astype(np.float32)
+    labels_in = np.reshape(np.array([2.0]*cols), (row, cols)).astype(np.float32)
+    self._testXent(logits_in, labels_in, use_gpu=True, dtype=np.float32) 
+        
   ''' Op 'SoftmaxCrossEntropyWithLogits' has no registration of bfloat16 on CPU,
       after waiting for bfloat16 registration on CPU,
       the test case of bfloat16 should be enabled

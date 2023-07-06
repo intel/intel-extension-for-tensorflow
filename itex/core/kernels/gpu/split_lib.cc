@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/split_lib.h"
+
 #include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"
@@ -185,20 +186,20 @@ void SplitGpuFunctor<T>::operator()(
       suffix_dim_size, split_dim_output_size, offset, output_ptr_data);
 }
 
-#define DEFINE_DPCPP_KERNELS(T) \
-  template struct Split<T, 2>;  \
-  template struct Split<T, 3>;  \
+#define DEFINE_ITEX_GPU_KERNELS(T) \
+  template struct Split<T, 2>;     \
+  template struct Split<T, 3>;     \
   template struct SplitGpuFunctor<T>;
 
-TF_CALL_GPU_NUMBER_TYPES(DEFINE_DPCPP_KERNELS);
-TF_CALL_int64(DEFINE_DPCPP_KERNELS);
-TF_CALL_int32(DEFINE_DPCPP_KERNELS);
-TF_CALL_complex64(DEFINE_DPCPP_KERNELS);
+TF_CALL_GPU_NUMBER_TYPES(DEFINE_ITEX_GPU_KERNELS);
+TF_CALL_int64(DEFINE_ITEX_GPU_KERNELS);
+TF_CALL_int32(DEFINE_ITEX_GPU_KERNELS);
+TF_CALL_complex64(DEFINE_ITEX_GPU_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(DEFINE_DPCPP_KERNELS);
-TF_CALL_complex128(DEFINE_DPCPP_KERNELS);
+TF_CALL_double(DEFINE_ITEX_GPU_KERNELS);
+TF_CALL_complex128(DEFINE_ITEX_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 
-#undef DEFINE_DPCPP_KERNELS
+#undef DEFINE_ITEX_GPU_KERNELS
 }  // namespace functor
 }  // namespace itex

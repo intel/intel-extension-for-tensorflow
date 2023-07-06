@@ -15,22 +15,28 @@ Refer to [Install for GPU](../docs/install/install_for_gpu.md) and [Install for 
 
 ## Binaries Preparation
 
-Download and copy Intel® Extension for TensorFlow* wheel into ./models/ binaries directory.
+Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory.
 
 ```
 mkdir ./models/binaries
+```
+
+To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/horovod as well.
+
+```bash
+mkdir ./models/horovod
 ```
 
 ## Usage of Docker Container
 ### I. Customize build script
 [build.sh](./build.sh) is provided as docker container build script. While OS version and some software version (such as Python and TensorFlow) is hard coded inside the script. If you prefer to use newer or later version, you can edit this script.
 
-For example, to build docker container with Python 3.9 and TensorFlow 2.10 on Ubuntu 20.04 layer, update [build.sh](./build.sh) as below.
+For example, to build docker container with Python 3.9 and TensorFlow 2.12 on Ubuntu 20.04 layer, update [build.sh](./build.sh) as below.
 ```
 IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
         docker build --build-arg UBUNTU_VERSION=20.04 \
                                 --build-arg PYTHON=python3.9 \
-                                --build-arg TF_VER=2.10 \
+                                --build-arg TF_VER=2.12 \
                                 --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
                                 -t $IMAGE_NAME \
                                 -f itex-cpu-ubuntu.Dockerfile .
@@ -41,7 +47,7 @@ IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
 To build the docker container, enter into [docker](./) folder and run below commands:
 
 ```
-./build.sh [gpu/cpu-centos/cpu-ubuntu]
+./build.sh [gpu/gpu-horovod/cpu-centos/cpu-ubuntu]
 ```
 ### III. Running container
 
@@ -50,8 +56,10 @@ Run following commands to start docker container. You can use `-v` option to mou
 ```
 IMAGE_NAME=intel-extension-for-tensorflow:gpu
 docker run -v <your-local-dir>:/workspace \
+           -v /dev/dri/by-path:/dev/dri/by-path \
            --device /dev/dri \
            --privileged \
+           --ipc=host \
            -e http_proxy=$http_proxy \
            -e https_proxy=$https_proxy \
            -e no_proxy=$no_proxy \

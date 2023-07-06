@@ -19,25 +19,15 @@ from __future__ import division
 from __future__ import print_function
 
 from intel_extension_for_tensorflow.python._pywrap_itex import *
-from intel_extension_for_tensorflow.core.utils.protobuf import config_pb2
 
 _VALID_DEVICE_BACKENDS = frozenset({"CPU", "GPU", "AUTO"})
 
-
-def set_backend(backend, config=None):
-  """set backend"""
-  if config is None:
-    config = config_pb2.ConfigProto()
-  if not isinstance(config, config_pb2.ConfigProto):
-    raise TypeError('config must be a tf.ConfigProto, but got %s' %
-                    type(config))
+def set_backend(backend):
   if backend.upper() in _VALID_DEVICE_BACKENDS:
-    config_str = config.SerializeToString()
-    ITEX_SetBackend(backend.upper(), config_str)
+    ITEX_SetBackend(backend.upper())
   else:
     raise ValueError("Cannot specify %s as XPU backend, Only %s is VALID"
                      % (backend, _VALID_DEVICE_BACKENDS))
-
 
 def get_backend():
   return ITEX_GetBackend()

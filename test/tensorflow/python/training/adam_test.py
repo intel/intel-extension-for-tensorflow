@@ -29,10 +29,15 @@ from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
 from tensorflow.python.training import adam
 
 
@@ -70,14 +75,14 @@ class AdamOptimizerTest(test.TestCase):
           var0 = resource_variable_ops.ResourceVariable(var0_np)
           var1 = resource_variable_ops.ResourceVariable(var1_np)
         else:
-          var0 = variables.RefVariable(var0_np)
-          var1 = variables.RefVariable(var1_np)
+          var0 = RefVariable(var0_np)
+          var1 = RefVariable(var1_np)
         grads0_np_indices = np.array([0, 1], dtype=np.int32)
-        grads0 = ops.IndexedSlices(
+        grads0 = indexed_slices.IndexedSlices(
             constant_op.constant(grads0_np),
             constant_op.constant(grads0_np_indices), constant_op.constant([2]))
         grads1_np_indices = np.array([0, 1], dtype=np.int32)
-        grads1 = ops.IndexedSlices(
+        grads1 = indexed_slices.IndexedSlices(
             constant_op.constant(grads1_np),
             constant_op.constant(grads1_np_indices), constant_op.constant([2]))
         opt = adam.AdamOptimizer()
@@ -134,12 +139,12 @@ class AdamOptimizerTest(test.TestCase):
               [[1.0], [2.0]], dtype=dtype)
           aggregated_update_var = variables.Variable(
               [[1.0], [2.0]], dtype=dtype)
-          grad_repeated_index = ops.IndexedSlices(
+          grad_repeated_index = indexed_slices.IndexedSlices(
               constant_op.constant(
                   [0.1, 0.1], shape=[2, 1], dtype=dtype),
               constant_op.constant([1, 1]),
               constant_op.constant([2, 1]))
-          grad_aggregated = ops.IndexedSlices(
+          grad_aggregated = indexed_slices.IndexedSlices(
               constant_op.constant(
                   [0.2], shape=[1, 1], dtype=dtype),
               constant_op.constant([1]),
@@ -176,8 +181,8 @@ class AdamOptimizerTest(test.TestCase):
           var1 = resource_variable_ops.ResourceVariable(
               var1_np, name="var1_%d" % i)
         else:
-          var0 = variables.RefVariable(var0_np)
-          var1 = variables.RefVariable(var1_np)
+          var0 = RefVariable(var0_np)
+          var1 = RefVariable(var1_np)
         grads0 = constant_op.constant(grads0_np)
         grads1 = constant_op.constant(grads1_np)
 
@@ -241,6 +246,7 @@ class AdamOptimizerTest(test.TestCase):
             self.assertEqual("var0_%d/Adam:0" % (i,),
                              opt.get_slot(var=var0, name="m").name)
 
+  @test_util.deprecated_graph_mode_only
   def testBasic(self):
     with self.cached_session():
       self.doTestBasic(use_resource=False)

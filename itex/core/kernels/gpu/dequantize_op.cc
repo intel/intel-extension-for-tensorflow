@@ -32,6 +32,13 @@ namespace itex {
   REGISTER_KERNEL_BUILDER(Name("Dequantize")                               \
                               .Device(DEVICE_GPU)                          \
                               .TypeConstraint<TYPE>("T")                   \
+                              .TypeConstraint<Eigen::half>("dtype")        \
+                              .HostMemory("min_range")                     \
+                              .HostMemory("max_range"),                    \
+                          DequantizeOp<GPUDevice, TYPE, Eigen::half>);     \
+  REGISTER_KERNEL_BUILDER(Name("Dequantize")                               \
+                              .Device(DEVICE_GPU)                          \
+                              .TypeConstraint<TYPE>("T")                   \
                               .TypeConstraint<float>("dtype")              \
                               .HostMemory("min_range")                     \
                               .HostMemory("max_range"),                    \

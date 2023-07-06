@@ -16,38 +16,29 @@
 # ==============================================================================
 """Utilities for unit-testing Keras."""
 
-import tensorflow.compat.v2 as tf
-
 import collections
 import contextlib
 import functools
 import itertools
 import threading
 
+import tensorflow.compat.v2 as tf
+
 import numpy as np
 from intel_extension_for_tensorflow.python.test_func import test_util
+from tensorflow.python.keras.engine import base_layer_utils
+from tensorflow.python.keras.optimizer_v2 import adadelta as adadelta_v2
+from tensorflow.python.keras.optimizer_v2 import adagrad as adagrad_v2
+from tensorflow.python.keras.optimizer_v2 import adam as adam_v2
+from tensorflow.python.keras.optimizer_v2 import adamax as adamax_v2
+from tensorflow.python.keras.optimizer_v2 import gradient_descent as gradient_descent_v2
+from tensorflow.python.keras.optimizer_v2 import nadam as nadam_v2
+from tensorflow.python.keras.optimizer_v2 import rmsprop as rmsprop_v2
+from tensorflow.python.keras.utils import tf_contextlib
+from tensorflow.python.keras.utils import tf_inspect
 from keras import backend
 from keras import layers
 from keras import models
-from keras.engine import base_layer_utils
-try:
-  from keras.optimizers.optimizer_v2 import adadelta as adadelta_v2
-  from keras.optimizers.optimizer_v2 import adagrad as adagrad_v2
-  from keras.optimizers.optimizer_v2 import adam as adam_v2
-  from keras.optimizers.optimizer_v2 import adamax as adamax_v2
-  from keras.optimizers.optimizer_v2 import gradient_descent as gradient_descent_v2
-  from keras.optimizers.optimizer_v2 import nadam as nadam_v2
-  from keras.optimizers.optimizer_v2 import rmsprop as rmsprop_v2
-except ImportError:
-  from keras.optimizer_v2 import adadelta as adadelta_v2
-  from keras.optimizer_v2 import adagrad as adagrad_v2
-  from keras.optimizer_v2 import adam as adam_v2
-  from keras.optimizer_v2 import adamax as adamax_v2
-  from keras.optimizer_v2 import gradient_descent as gradient_descent_v2
-  from keras.optimizer_v2 import nadam as nadam_v2
-  from keras.optimizer_v2 import rmsprop as rmsprop_v2
-from keras.utils import tf_contextlib
-from keras.utils import tf_inspect
 
 
 def string_test(actual, expected):
@@ -660,6 +651,7 @@ class _MultiIOSubclassModel(models.Model):
     self._shared_output_branch = shared_output_branch
 
   def call(self, inputs, **kwargs):
+    """A dummy docstring."""
     if self._shared_input_branch:
       for layer in self._shared_input_branch:
         inputs = layer(inputs)
@@ -711,6 +703,7 @@ class _MultiIOSubclassModelCustomBuild(models.Model):
       self._shared_output_branch = self._shared_output_branch_func()
 
   def call(self, inputs, **kwargs):
+    """A dummy docstring."""
     if self._shared_input_branch:
       for layer in self._shared_input_branch:
         inputs = layer(inputs)

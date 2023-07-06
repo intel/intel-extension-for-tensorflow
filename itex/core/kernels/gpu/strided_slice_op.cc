@@ -296,8 +296,8 @@ class StridedSliceAssignOp : public OpKernel {
               ". Automatic broadcasting not ", "yet implemented."));
       const int processing_dims = processing_shape.dims();
 
-      // 0-dimensional case implies the left and right are exactly the same
-      // scalar shape
+// 0-dimensional case implies the left and right are exactly the same
+// scalar shape
 
 // Handle general dimensions
 #define HANDLE_DIM(NDIM)                                                       \
@@ -374,6 +374,11 @@ class StridedSliceAssignOp : public OpKernel {
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU);
 TF_CALL_bool(REGISTER_GPU);
 TF_CALL_complex64(REGISTER_GPU);
+
+TF_CALL_uint8(REGISTER_GPU);
+TF_CALL_int8(REGISTER_GPU);
+TF_CALL_int16(REGISTER_GPU);
+TF_CALL_uint32(REGISTER_GPU);
 #ifdef ITEX_ENABLE_DOUBLE
 TF_CALL_int64(REGISTER_GPU);
 TF_CALL_double(REGISTER_GPU);

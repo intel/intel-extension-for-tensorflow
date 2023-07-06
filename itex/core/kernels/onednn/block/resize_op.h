@@ -1,11 +1,8 @@
 /* Copyright (c) 2021-2022 Intel Corporation
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,7 +31,8 @@ using dnnl::primitive;
 using dnnl::prop_kind;
 
 namespace itex {
-template <typename Device, typename T, dnnl::algorithm alg>
+template <typename Device, typename InputT, typename OutputT,
+          dnnl::algorithm alg>
 class OneDnnResizeOp : public OpKernel {
  public:
   explicit OneDnnResizeOp(OpKernelConstruction* context) : OpKernel(context) {
@@ -89,7 +87,7 @@ class OneDnnResizeOp : public OpKernel {
         if (is_5d) {
           format = dnnl::memory::format_tag::ndhwc;
         }
-        src_md = memory::desc(src_dims, OneDnnType<T>(), format);
+        src_md = memory::desc(src_dims, OneDnnType<InputT>(), format);
       }
 
       auto batch_size = src_tf_shape.dim_size(0);
@@ -118,45 +116,55 @@ class OneDnnResizeOp : public OpKernel {
         dst_tf_shape = TensorShape(
             {batch_size, output_depth, output_height, output_width, channel});
       }
-      memory::desc dst_md = memory::desc(dst_dims, dnnl::memory::data_type::f32,
+      memory::desc dst_md = memory::desc(dst_dims, OneDnnType<OutputT>(),
                                          dnnl::memory::format_tag::any);
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = dnnl::resampling_forward::primitive_desc(
+          onednn_engine,
+          prop_kind::forward_training
+          /* training and inference is same*/,
+          alg, src_md, dst_md, attr);
+#else
       auto fwd_desc =
           dnnl::resampling_forward::desc(prop_kind::forward_training
                                          /* training and inference is same*/,
                                          alg, src_md, dst_md);
-
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       auto fwd_pd = dnnl::resampling_forward::primitive_desc(fwd_desc, attr,
                                                              onednn_engine);
+#endif
       Tensor scratchpad_tensor;
       dnnl::memory scratchpad_mem;
-      int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
+      int64 scratchpad_size =
+          fwd_pd.scratchpad_desc().get_size() / sizeof(InputT);
       OP_REQUIRES_OK(context,
-                     context->allocate_temp(DataTypeToEnum<T>::v(),
+                     context->allocate_temp(DataTypeToEnum<InputT>::v(),
                                             TensorShape({scratchpad_size}),
                                             &scratchpad_tensor));
-      scratchpad_mem = dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine,
-                                    GetTensorBuffer<T>(&scratchpad_tensor));
+      scratchpad_mem =
+          dnnl::memory(fwd_pd.scratchpad_desc(), onednn_engine,
+                       GetTensorBuffer<InputT>(&scratchpad_tensor));
 
       auto fwd_primitive = dnnl::resampling_forward(fwd_pd);
 
-      dnnl::memory src_mem =
-          dnnl::memory(src_md, onednn_engine, GetTensorBuffer<T>(&src_tensor));
+      dnnl::memory src_mem = dnnl::memory(src_md, onednn_engine,
+                                          GetTensorBuffer<InputT>(&src_tensor));
 
       dnnl::memory reorder_mem;
       Tensor src_reorder_tensor;
       bool is_src_reordered = (src_md != fwd_pd.src_desc());
       if (is_src_reordered) {
-        int64 src_reorder_size = fwd_pd.src_desc().get_size() / sizeof(T);
+        int64 src_reorder_size = fwd_pd.src_desc().get_size() / sizeof(InputT);
         OP_REQUIRES_OK(context,
-                       context->allocate_temp(DataTypeToEnum<T>::v(),
+                       context->allocate_temp(DataTypeToEnum<InputT>::v(),
                                               TensorShape({src_reorder_size}),
                                               &src_reorder_tensor));
 
-        reorder_mem = CreateDnnlMemory(fwd_pd.src_desc(), onednn_engine,
-                                       GetTensorBuffer<T>(&src_reorder_tensor));
+        reorder_mem =
+            CreateDnnlMemory(fwd_pd.src_desc(), onednn_engine,
+                             GetTensorBuffer<InputT>(&src_reorder_tensor));
         ReorderMemory(*context, &src_mem, &reorder_mem, onednn_engine);
       }
 
@@ -169,7 +177,7 @@ class OneDnnResizeOp : public OpKernel {
                                    dst_onednn_shape);
 
       // Create dst memory
-      float* dst_data = dst_tensor->flat<float>().data();
+      OutputT* dst_data = dst_tensor->flat<OutputT>().data();
       auto dst_mem = CreateDnnlMemory(fwd_pd.dst_desc(), onednn_engine,
                                       static_cast<void*>(dst_data));
 
@@ -309,6 +317,15 @@ class OneDnnResizeGradOp : public OpKernel {
       memory::dims diff_src_dims = src_dims;
       memory::desc diff_src_md = src_md;
 
+      dnnl::primitive_attr attr;
+      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = dnnl::resampling_forward::primitive_desc(
+          onednn_engine, dnnl::prop_kind::forward_training, alg, src_md,
+          diff_dst_md);
+      auto bwd_pd = dnnl::resampling_backward::primitive_desc(
+          onednn_engine, alg, diff_src_md, diff_dst_md, fwd_pd, attr);
+#else
       auto bwd_desc =
           dnnl::resampling_backward::desc(alg, diff_src_md, diff_dst_md);
       // resampling needs a forward hint, we create it ourselves due to we can't
@@ -317,10 +334,10 @@ class OneDnnResizeGradOp : public OpKernel {
           dnnl::prop_kind::forward_training, alg, src_md, diff_dst_md);
       auto fwd_pd =
           dnnl::resampling_forward::primitive_desc(fwd_desc, onednn_engine);
-      dnnl::primitive_attr attr;
-      attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+
       auto bwd_pd = dnnl::resampling_backward::primitive_desc(
           bwd_desc, attr, onednn_engine, fwd_pd);
+#endif
       Tensor scratchpad_tensor;
       dnnl::memory scratchpad_mem;
       int64 scratchpad_size = bwd_pd.scratchpad_desc().get_size() / sizeof(T);

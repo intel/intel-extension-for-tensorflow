@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "itex/core/kernels/gpu/cast_op.h"
+#include "itex/core/kernels/common/cast_op.h"
 
 #include "itex/core/kernels/gpu/cast_op_impl.h"
 #include "itex/core/utils/op_requires.h"

@@ -35,6 +35,11 @@ bool ShapeIsSymbolicallyDefined(const OpInfo::TensorProperties& properties);
 bool ShapesSymbolicallyEqual(const TensorShapeProto& left,
                              const TensorShapeProto& right);
 
+// Shapes are symbolically equal, if they have the same rank, they are known or
+// symbolically defined, and have matching dimensions except batch(first dim).
+bool ShapesSymbolicallyEqualExceptBatch(const TensorShapeProto& left,
+                                        const TensorShapeProto& right);
+
 // Returns the rank of the shape ir -1 if unknown
 int Rank(const TensorShapeProto& shape);
 

@@ -1,10 +1,11 @@
 # Quick Get Started
 
-[![Python](https://img.shields.io/pypi/pyversions/tensorflow.svg?style=plastic)](https://pypi.org/project/intel-extension-for-tensorflow)
-[![version](https://img.shields.io/badge/release-1.0.0-green)](https://github.com/intel/intel-extension-for-tensorflow/releases)
+[![Python](https://img.shields.io/pypi/pyversions/intel_extension_for_tensorflow)](https://badge.fury.io/py/intel-extension-for-tensorflow)
+[![PyPI version](https://badge.fury.io/py/intel-extension-for-tensorflow.svg)](https://badge.fury.io/py/intel-extension-for-tensorflow)
+[![version](https://img.shields.io/github/v/release/intel/intel-extension-for-tensorflow?color=brightgreen)](https://github.com/intel/intel-extension-for-tensorflow/releases)
 [![license](https://img.shields.io/badge/license-Apache%202-blue)](LICENSE.txt)
 
-Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow [PluggableDevice](https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md) interface to bring Intel XPU(GPU, CPU, etc) devices into [TensorFlow](https://github.com/tensorflow/tensorflow) open source community for AI workload acceleration. It allows flexibly plugging an XPU into TensorFlow on-demand, and exposing computing power inside Intel's hardware.
+Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow [PluggableDevice](https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md) interface to bring Intel CPU or GPU devices into [TensorFlow](https://github.com/tensorflow/tensorflow) open source community for AI workload acceleration. It allows flexibly plugging an XPU into TensorFlow on-demand, and exposing computing power inside Intel's hardware.
 
 This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
 
@@ -33,21 +34,32 @@ This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
 
 Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_gpu.html#hardware-requirements) support and experimental [Intel CPU](docs/install/experimental/install_for_cpu.html#hardware-requirements) support.
 
+
+
+
 ### Software Requirement
 
 |Package|CPU|GPU|Installation|
 |-|-|-|-|
 |Intel GPU driver||Y|[Install Intel GPU driver](docs/install/install_for_gpu.html#install-gpu-drivers)|
 |Intel® oneAPI Base Toolkit||Y|[Install Intel® oneAPI Base Toolkit](docs/install/install_for_gpu.html#install-oneapi-base-toolkit-packages)|
-|TensorFlow|Y|Y|[Install TensorFlow 2.10.0](https://www.tensorflow.org/install)|
+|TensorFlow|Y|Y|[Install TensorFlow 2.12.0](https://www.tensorflow.org/install)|
 
 ### Installation Channel:
 Intel® Extension for TensorFlow* can be installed from the following channels:
 
-|PyPI|DockerHub|Source|
-|-|-|-|
-|[GPU](docs/install/install_for_gpu.html#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.html#install-via-pypi-wheel-in-bare-metal)  |[ GPU Container ](docs/install/install_for_gpu.html#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.html#install-via-docker-container)|[Build from source](docs/install/how_to_build.html)|
+* PyPI: [GPU](docs/install/install_for_gpu.html#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.html#install-via-pypi-wheel-in-bare-metal) 
+* DockerHub: [ GPU Container ](docs/install/install_for_gpu.html#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.html#install-via-docker-container)
+* Source: [Build from source](docs/install/how_to_build.html)
 
+
+### Compatibility Table
+
+| Intel® Extension for TensorFlow*  | Stock TensorFlow |
+| ------- | ----------- |    
+| [latest build from source](docs/install/how_to_build.html)  | 2.12        |
+| v1.1.0  | 2.10 & 2.11 |
+| v1.0.0  | 2.10        | 
 
 ### Compatibility Table
 
@@ -62,9 +74,10 @@ pip install tensorflow==2.10.0
 pip install intel-extension-for-tensorflow[gpu]==1.0.0
 ```
 
-Please refer to [GPU installation](docs/install/install_for_gpu.md) for details.
+Refer to [GPU installation](docs/install/install_for_gpu.md) for details.
 
 ### Install for CPU [Experimental]
+
 ```
 pip install tensorflow==2.10.0
 pip install intel-extension-for-tensorflow[cpu]==1.0.0
@@ -75,6 +88,10 @@ Sanity check by:
 python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
 ```
 
+## Resources
+- [TensorFlow GPU device plugins](https://www.tensorflow.org/install/gpu_plugins)
+- [Accelerating TensorFlow on Intel® Data Center GPU Flex Series](https://blog.tensorflow.org/2022/10/accelerating-tensorflow-on-intel-data-center-gpu-flex-series.html)
+- [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://www.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
 
 ## Support
-Please submit your questions, feature requests, and bug reports on the [GitHub issues](https://github.com/intel/intel-extension-for-tensorflow/issues) page.
+Submit your questions, feature requests, and bug reports on the [GitHub issues](https://github.com/intel/intel-extension-for-tensorflow/issues) page.

@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "tf_copts")
 
 cc_library(
     name = "onednn_graph_op",

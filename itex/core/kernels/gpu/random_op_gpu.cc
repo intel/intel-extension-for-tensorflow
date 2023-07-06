@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/gpu/random_op_gpu.h"
+
 #include "itex/core/utils/lib/random/philox_random.h"
 #include "itex/core/utils/lib/random/random_distributions.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"

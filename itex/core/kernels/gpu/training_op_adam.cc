@@ -133,7 +133,7 @@ template <typename T, bool fused>
 class AdamKernel;
 
 template <typename T>
-struct ApplyAdamDPCPP {
+struct ApplyAdamITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* m, T* v, const T* beta1_power,
                   const T* beta2_power, const T* lr, const T* beta1,
                   const T* beta2, const T* epsilon, const T* grad,
@@ -158,7 +158,7 @@ struct ApplyAdamDPCPP {
 };
 
 template <typename T>
-struct FusedApplyAdamDPCPP {
+struct FusedApplyAdamITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* m, T* v, const T* beta1_power,
                   const T* beta2_power, const T* lr, const T* beta1,
                   const T* beta2, const T* epsilon, const T* mul_left,
@@ -305,7 +305,7 @@ template <typename T, bool fused>
 class AdamWeightDecayKernel;
 
 template <typename T>
-struct ApplyAdamWeightDecayDPCPP {
+struct ApplyAdamWeightDecayITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* m, T* v, const T* beta1_power,
                   const T* beta2_power, const T* lr, const T* beta1,
                   const T* beta2, const T* epsilon, const T* grad,
@@ -331,7 +331,7 @@ struct ApplyAdamWeightDecayDPCPP {
 };
 
 template <typename T>
-struct FusedApplyAdamWeightDecayDPCPP {
+struct FusedApplyAdamWeightDecayITEX_GPU {
   void operator()(const GPUDevice& d, T* var, T* m, T* v, const T* beta1_power,
                   const T* beta2_power, const T* lr, const T* beta1,
                   const T* beta2, const T* epsilon, const T* mul_left,
@@ -449,7 +449,7 @@ class ApplyAdamOp<GPUDevice, T> : public OpKernel {
         errors::InvalidArgument("var and grad do not have the same shape",
                                 var.shape().DebugString(), " ",
                                 grad.shape().DebugString()));
-    functor::ApplyAdamDPCPP<T>()(
+    functor::ApplyAdamITEX_GPU<T>()(
         device, var.flat<T>().data(), m.flat<T>().data(), v.flat<T>().data(),
         beta1_power_dev.flat<T>().data(), beta2_power_dev.flat<T>().data(),
         lr_dev.flat<T>().data(), beta1_dev.flat<T>().data(),
@@ -546,7 +546,7 @@ class FusedApplyAdamOp<GPUDevice, T> : public OpKernel {
                                 mul_left.shape().DebugString()));
 
     auto device = ctx->eigen_gpu_device();
-    functor::FusedApplyAdamDPCPP<T>()(
+    functor::FusedApplyAdamITEX_GPU<T>()(
         device, var.flat<T>().data(), m.flat<T>().data(), v.flat<T>().data(),
         beta1_power_dev.flat<T>().data(), beta2_power_dev.flat<T>().data(),
         lr_dev.flat<T>().data(), beta1_dev.flat<T>().data(),
@@ -619,7 +619,7 @@ class ApplyAdamWithWeightDecayOp : public OpKernel {
         errors::InvalidArgument("var and grad do not have the same shape",
                                 var.shape().DebugString(), " ",
                                 grad.shape().DebugString()));
-    functor::ApplyAdamWeightDecayDPCPP<T>()(
+    functor::ApplyAdamWeightDecayITEX_GPU<T>()(
         device, var.flat<T>().data(), m.flat<T>().data(), v.flat<T>().data(),
         beta1_power_dev.flat<T>().data(), beta2_power_dev.flat<T>().data(),
         lr_dev.flat<T>().data(), beta1_dev.flat<T>().data(),
@@ -717,7 +717,7 @@ class FusedApplyAdamWithWeightDecayOp : public OpKernel {
                                 var.shape().DebugString(), " ",
                                 mul_left.shape().DebugString()));
     auto device = ctx->eigen_gpu_device();
-    functor::FusedApplyAdamWeightDecayDPCPP<T>()(
+    functor::FusedApplyAdamWeightDecayITEX_GPU<T>()(
         device, var.flat<T>().data(), m.flat<T>().data(), v.flat<T>().data(),
         beta1_power_dev.flat<T>().data(), beta2_power_dev.flat<T>().data(),
         lr_dev.flat<T>().data(), beta1_dev.flat<T>().data(),
@@ -752,54 +752,54 @@ TF_CALL_complex128(REGISTER_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_KERNELS
 
-#define REGISTER_DPCPP_KERNELS(T)                                         \
-  REGISTER_KERNEL_BUILDER(                                                \
-      Name("ApplyAdam").Device(DEVICE_GPU).TypeConstraint<T>("T"),        \
-      ApplyAdamOp<GPUDevice, T>);                                         \
-  REGISTER_KERNEL_BUILDER(Name("ResourceApplyAdam")                       \
-                              .HostMemory("var")                          \
-                              .HostMemory("m")                            \
-                              .HostMemory("v")                            \
-                              .Device(DEVICE_GPU)                         \
-                              .TypeConstraint<T>("T"),                    \
-                          ApplyAdamOp<GPUDevice, T>);                     \
-  REGISTER_KERNEL_BUILDER(                                                \
-      Name("_FusedApplyAdam").Device(DEVICE_GPU).TypeConstraint<T>("T"),  \
-      FusedApplyAdamOp<GPUDevice, T>);                                    \
-  REGISTER_KERNEL_BUILDER(Name("_FusedResourceApplyAdam")                 \
-                              .HostMemory("var")                          \
-                              .HostMemory("m")                            \
-                              .HostMemory("v")                            \
-                              .Device(DEVICE_GPU)                         \
-                              .TypeConstraint<T>("T"),                    \
-                          FusedApplyAdamOp<GPUDevice, T>);                \
-  REGISTER_KERNEL_BUILDER(Name("ApplyAdamWithWeightDecay")                \
-                              .Device(DEVICE_GPU)                         \
-                              .TypeConstraint<T>("T"),                    \
-                          ApplyAdamWithWeightDecayOp<GPUDevice, T>);      \
-  REGISTER_KERNEL_BUILDER(Name("ResourceApplyAdamWithWeightDecay")        \
-                              .HostMemory("var")                          \
-                              .HostMemory("m")                            \
-                              .HostMemory("v")                            \
-                              .Device(DEVICE_GPU)                         \
-                              .TypeConstraint<T>("T"),                    \
-                          ApplyAdamWithWeightDecayOp<GPUDevice, T>);      \
-  REGISTER_KERNEL_BUILDER(Name("_FusedApplyAdamWithWeightDecay")          \
-                              .Device(DEVICE_GPU)                         \
-                              .TypeConstraint<T>("T"),                    \
-                          FusedApplyAdamWithWeightDecayOp<GPUDevice, T>); \
-  REGISTER_KERNEL_BUILDER(Name("_FusedResourceApplyAdamWithWeightDecay")  \
-                              .HostMemory("var")                          \
-                              .HostMemory("m")                            \
-                              .HostMemory("v")                            \
-                              .Device(DEVICE_GPU)                         \
-                              .TypeConstraint<T>("T"),                    \
+#define REGISTER_ITEX_GPU_KERNELS(T)                                         \
+  REGISTER_KERNEL_BUILDER(                                                   \
+      Name("ApplyAdam").Device(DEVICE_GPU).TypeConstraint<T>("T"),           \
+      ApplyAdamOp<GPUDevice, T>);                                            \
+  REGISTER_KERNEL_BUILDER(Name("ResourceApplyAdam")                          \
+                              .HostMemory("var")                             \
+                              .HostMemory("m")                               \
+                              .HostMemory("v")                               \
+                              .Device(DEVICE_GPU)                            \
+                              .TypeConstraint<T>("T"),                       \
+                          ApplyAdamOp<GPUDevice, T>);                        \
+  REGISTER_KERNEL_BUILDER(                                                   \
+      Name("_ITEXFusedApplyAdam").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
+      FusedApplyAdamOp<GPUDevice, T>);                                       \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedResourceApplyAdam")                \
+                              .HostMemory("var")                             \
+                              .HostMemory("m")                               \
+                              .HostMemory("v")                               \
+                              .Device(DEVICE_GPU)                            \
+                              .TypeConstraint<T>("T"),                       \
+                          FusedApplyAdamOp<GPUDevice, T>);                   \
+  REGISTER_KERNEL_BUILDER(Name("ITEXApplyAdamWithWeightDecay")               \
+                              .Device(DEVICE_GPU)                            \
+                              .TypeConstraint<T>("T"),                       \
+                          ApplyAdamWithWeightDecayOp<GPUDevice, T>);         \
+  REGISTER_KERNEL_BUILDER(Name("ITEXResourceApplyAdamWithWeightDecay")       \
+                              .HostMemory("var")                             \
+                              .HostMemory("m")                               \
+                              .HostMemory("v")                               \
+                              .Device(DEVICE_GPU)                            \
+                              .TypeConstraint<T>("T"),                       \
+                          ApplyAdamWithWeightDecayOp<GPUDevice, T>);         \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedApplyAdamWithWeightDecay")         \
+                              .Device(DEVICE_GPU)                            \
+                              .TypeConstraint<T>("T"),                       \
+                          FusedApplyAdamWithWeightDecayOp<GPUDevice, T>);    \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedResourceApplyAdamWithWeightDecay") \
+                              .HostMemory("var")                             \
+                              .HostMemory("m")                               \
+                              .HostMemory("v")                               \
+                              .Device(DEVICE_GPU)                            \
+                              .TypeConstraint<T>("T"),                       \
                           FusedApplyAdamWithWeightDecayOp<GPUDevice, T>);
 
-TF_CALL_half(REGISTER_DPCPP_KERNELS);
-TF_CALL_float(REGISTER_DPCPP_KERNELS);
-TF_CALL_bfloat16(REGISTER_DPCPP_KERNELS);
-#undef REGISTER_DPCPP_KERNELS
+TF_CALL_half(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_float(REGISTER_ITEX_GPU_KERNELS);
+TF_CALL_bfloat16(REGISTER_ITEX_GPU_KERNELS);
+#undef REGISTER_ITEX_GPU_KERNELS
 
 template <typename Device, typename T>
 class ApplyAdamWithAmsgradOp : public OpKernel {
@@ -903,12 +903,12 @@ class ApplyAdamWithAmsgradOp : public OpKernel {
                               .TypeConstraint<T>("T"),         \
                           ApplyAdamWithAmsgradOp<D##Device, T>);
 
-#define REGISTER_DPCPP_KERNELS(T) REGISTER_KERNELS(GPU, T)
-TF_CALL_GPU_NUMBER_TYPES(REGISTER_DPCPP_KERNELS);
+#define REGISTER_ITEX_GPU_KERNELS(T) REGISTER_KERNELS(GPU, T)
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ITEX_GPU_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(REGISTER_DPCPP_KERNELS);
+TF_CALL_double(REGISTER_ITEX_GPU_KERNELS);
 #endif  // ITEX_ENABLE_DOUBLE
-#undef REGISTER_DPCPP_KERNELS
+#undef REGISTER_ITEX_GPU_KERNELS
 #undef REGISTER_KERNELS
 
 }  // namespace itex

@@ -49,6 +49,22 @@ bool ShapesSymbolicallyEqual(const TensorShapeProto& left,
   return true;
 }
 
+bool ShapesSymbolicallyEqualExceptBatch(const TensorShapeProto& left,
+                                        const TensorShapeProto& right) {
+  if (left.unknown_rank() || right.unknown_rank() ||
+      left.dim_size() != right.dim_size()) {
+    return false;
+  }
+  for (int i = 1; i < left.dim_size(); ++i) {
+    const auto& ldim = left.dim(i);
+    const auto& rdim = right.dim(i);
+    if (IsUnknown(ldim) || IsUnknown(rdim) || ldim.size() != rdim.size()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 int Rank(const TensorShapeProto& shape) {
   if (shape.unknown_rank()) {
     return -1;

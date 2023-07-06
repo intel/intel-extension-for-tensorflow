@@ -51,12 +51,15 @@ template <typename T, typename TIndex>
 Status InputCumSum<T, TIndex>::Compute(
     OpKernelContext* context, typename TTypes<T>::ConstFlat input,
     typename TTypes<TIndex>::Vec input_cumsum, TIndex num_elems) {
-  launchFullScan<const T, TIndex, TIndex, sycl::plus<TIndex>,
-                 NonZero<T, TIndex>>(context, input.data(), input_cumsum.data(),
-                                     TIndex(0), sycl::plus<TIndex>(), false,
-                                     false, num_elems, NonZero<T, TIndex>());
+  TF_RETURN_IF_ERROR(launchFullScan<const T, TIndex, TIndex, sycl::plus<TIndex>,
+                                    NonZero<T, TIndex>>(
+      context, input.data(), input_cumsum.data(), TIndex(0),
+      sycl::plus<TIndex>(), false, false, num_elems, NonZero<T, TIndex>()));
   return Status::OK();
 }
+
+// Explicit instantiation for SparseSliceOp.
+template struct InputCumSum<int, int64_t>;
 
 template <int NDIM, typename T, typename TIndex>
 struct WhereKernel {
@@ -129,7 +132,12 @@ struct Where<GPUDevice, NDIM, T, TIndex> {
 template <typename T>
 class WhereOp : public OpKernel {
  public:
-  explicit WhereOp(OpKernelConstruction* context) : OpKernel(context) {}
+  explicit WhereOp(OpKernelConstruction* context)
+      : OpKernel(context), num_true_host_(nullptr), stream_(nullptr) {}
+
+  ~WhereOp() {
+    if (num_true_host_ && stream_) sycl::free(num_true_host_, *stream_);
+  }
 
   void Compute(OpKernelContext* context) override {
     const Tensor& input = context->input(0);
@@ -170,19 +178,21 @@ class WhereOp : public OpKernel {
     OP_REQUIRES_OK(context, s);
 
     // Copy num_true to host;
-    Tindex num_true_host;
     const GPUDevice& d = context->eigen_device<GPUDevice>();
-    d.stream()
-        ->memcpy(&num_true_host, input_cumsum_t.data() + input_size - 1,
+    stream_ = d.stream();
+    if (!num_true_host_)
+      num_true_host_ = static_cast<int64_t*>(sycl::aligned_alloc_host(
+          /*alignment=*/64, sizeof(int64_t), *stream_));
+    stream_
+        ->memcpy(num_true_host_, input_cumsum_t.data() + input_size - 1,
                  sizeof(Tindex))
         .wait();
 
     Tensor* output;
     OP_REQUIRES_OK(context,
                    context->allocate_output(
-                       0, TensorShape({num_true_host, input_dims}), &output));
+                       0, TensorShape({*num_true_host_, input_dims}), &output));
 
-    // Currently Where<GPUDevice>::Compute() does not compute found_true
 #define HANDLE_DIM(NDIM)                                            \
   case NDIM: {                                                      \
     Status s = functor::Where<GPUDevice, NDIM, T, Tindex>::Compute( \
@@ -208,6 +218,8 @@ class WhereOp : public OpKernel {
 
  private:
   TF_DISALLOW_COPY_AND_ASSIGN(WhereOp);
+  int64_t* num_true_host_;
+  ITEX_GPUStream* stream_;
 };
 
 #define REGISTER_WHERE_OP(T) \
@@ -218,9 +230,9 @@ TF_CALL_int8(REGISTER_WHERE_OP);
 TF_CALL_uint8(REGISTER_WHERE_OP);
 TF_CALL_int32(REGISTER_WHERE_OP);
 TF_CALL_int64(REGISTER_WHERE_OP);
-TF_CALL_complex64(REGISTER_WHERE_OP);
 #ifdef ITEX_ENABLE_DOUBLE
 TF_CALL_double(REGISTER_WHERE_OP);
+TF_CALL_complex64(REGISTER_WHERE_OP);
 TF_CALL_complex128(REGISTER_WHERE_OP);
 #endif
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_WHERE_OP);

@@ -44,6 +44,8 @@ class ReverseTest(test.TestCase):
             self._test_impl([1,25,49,49,1], [2], dtype)
             self._test_impl([1,25,49,49,1], [3], dtype)
             self._test_impl([8192,3], [0], dtype)
+            self._test_impl([288,18,512], [1], dtype)
+            self._test_impl([1,30,512], [1], dtype)
 
 if __name__ == '__main__':
     test.main()

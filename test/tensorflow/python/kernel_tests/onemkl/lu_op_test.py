@@ -24,6 +24,7 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.client import session
 from tensorflow.python.framework import dtypes
@@ -119,7 +120,7 @@ class LuOpTest(test.TestCase):
         inv_perm_reshaped = array_ops.zeros_like(batch_indices)
       permuted_verification_reshaped = array_ops.gather_nd(
           verification_reshaped,
-          array_ops.stack([batch_indices, inv_perm_reshaped], axis=-1))
+          tf.stack([batch_indices, inv_perm_reshaped], axis=-1))
 
       # Reshape the verification matrix back to the original shape.
       verification = array_ops.reshape(permuted_verification_reshaped,

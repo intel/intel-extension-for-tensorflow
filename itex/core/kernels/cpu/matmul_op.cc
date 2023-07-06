@@ -28,13 +28,10 @@ namespace itex {
   REGISTER_KERNEL_BUILDER(                                                   \
       Name("_ITEXMatMul").Device(DEVICE_CPU).TypeConstraint<TYPE>("T"),      \
       MatMulOp<CPUDevice, TYPE, TYPE, TYPE>);                                \
-  REGISTER_KERNEL_BUILDER(                                                   \
-      Name("_FusedMatMulGrad").Device(DEVICE_CPU).TypeConstraint<TYPE>("T"), \
-      FusedMatMulGradOp<CPUDevice, TYPE, TYPE>);                             \
-  REGISTER_KERNEL_BUILDER(Name("_FusedMatMulWithSum")                        \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXFusedMatMulGrad")                       \
                               .Device(DEVICE_CPU)                            \
                               .TypeConstraint<TYPE>("T"),                    \
-                          MatMulOp<CPUDevice, TYPE, TYPE, TYPE>);
+                          FusedMatMulGradOp<CPUDevice, TYPE, TYPE>);
 // TODO(itex): remove registration of intermediate kernels. Remapper should
 // directly generate _ITEXFusedxxx.
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_MATMUL_CPU);
@@ -60,7 +57,7 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_MATMUL_CPU);
                               .TypeConstraint<float>("Tpost"),      \
                           MatMulOp<CPUDevice, TYPE, float, float>);
 
-TF_CALL_CPU_NUMBER_TYPES(REGISTER_BF32MATMUL_CPU);
+TF_CALL_CPU_NUMBER_TYPES_WITHOUT_HALF(REGISTER_BF32MATMUL_CPU);
 #undef REGISTER_BF32MATMUL_CPU
 
 #define REGISTER_BF32MATMUL_CPU(TYPE)                                         \

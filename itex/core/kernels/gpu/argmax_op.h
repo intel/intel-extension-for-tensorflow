@@ -43,6 +43,27 @@ struct ArgMaxFunctor {
 
 #undef DECLARE_COMPUTE_SPEC
 };
+
+template <typename Device, typename T, typename Tout>
+struct ArgMinFunctor {
+#define DECLARE_COMPUTE_SPEC(Dims)                                             \
+  EIGEN_ALWAYS_INLINE static void Reduce##Dims(                                \
+      const Device& d, typename TTypes<T, Dims>::ConstTensor input,            \
+      const int32 dimension, typename TTypes<Tout, Dims - 1>::Tensor output) { \
+    output.device(d) = input.argmin(dimension).template cast<Tout>();          \
+  }
+
+  DECLARE_COMPUTE_SPEC(1);
+  DECLARE_COMPUTE_SPEC(2);
+  DECLARE_COMPUTE_SPEC(3);
+  DECLARE_COMPUTE_SPEC(4);
+  DECLARE_COMPUTE_SPEC(5);
+  DECLARE_COMPUTE_SPEC(6);
+  DECLARE_COMPUTE_SPEC(7);
+
+#undef DECLARE_COMPUTE_SPEC
+};
+
 }  // namespace itex
 
 #endif  // ITEX_CORE_KERNELS_GPU_ARGMAX_OP_H_

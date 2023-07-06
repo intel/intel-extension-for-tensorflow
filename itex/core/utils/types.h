@@ -23,6 +23,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 
+#include "itex/core/utils/device_types.h"
 #include "itex/core/utils/gtl/array_slice.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/integral_types.h"
@@ -30,6 +31,7 @@ limitations under the License.
 #include "itex/core/utils/numeric_types.h"
 #include "itex/core/utils/stringpiece.h"
 #include "itex/core/utils/tstring.h"
+#include "protos/full_type.pb.h"
 #include "protos/types.pb.h"
 
 namespace Eigen {
@@ -42,6 +44,7 @@ struct GpuDevice;
 namespace itex {
 
 class Variant;
+class ResourceHandle;
 //
 // MemoryType is used to describe whether input or output Tensors of
 // an OpKernel should reside in "Host memory" (e.g., CPU memory) or
@@ -72,13 +75,6 @@ class DeviceType {
   std::string type_;
 };
 std::ostream& operator<<(std::ostream& os, const DeviceType& d);
-
-// Convenient constants that can be passed to a DeviceType constructor
-TF_EXPORT extern const char* const DEVICE_DEFAULT;  // "DEFAULT"
-TF_EXPORT extern const char* const DEVICE_CPU;      // "CPU"
-TF_EXPORT extern const char* const DEVICE_GPU;      // "GPU"
-TF_EXPORT extern const char* const DEVICE_XPU;
-TF_EXPORT extern const char* const DEVICE_AUTO;  // "AUTO"
 
 template <typename Device>
 struct DeviceName {};
@@ -351,7 +347,7 @@ MATCH_TYPE_AND_ENUM(quint16, DT_QUINT16);
 MATCH_TYPE_AND_ENUM(qint32, DT_QINT32);
 MATCH_TYPE_AND_ENUM(Eigen::bfloat16, DT_BFLOAT16);
 MATCH_TYPE_AND_ENUM(Eigen::half, DT_HALF);
-// MATCH_TYPE_AND_ENUM(ResourceHandle, DT_RESOURCE);
+MATCH_TYPE_AND_ENUM(ResourceHandle, DT_RESOURCE);
 MATCH_TYPE_AND_ENUM(Variant, DT_VARIANT);
 
 template <>
@@ -494,5 +490,7 @@ MemoryType MTypeFromDType(const DataType dtype);
 //// object has device-allocated resources).
 // bool DataTypeAlwaysOnHost(DataType dt);
 
+// Maps a legacy DType proto enum to an equivalent FullType ID.
+void map_dtype_to_tensor(const DataType& dtype, FullTypeDef& t);  // NOLINT
 }  // namespace itex
 #endif  // ITEX_CORE_UTILS_TYPES_H_

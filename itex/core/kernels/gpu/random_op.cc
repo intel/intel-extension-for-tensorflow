@@ -16,6 +16,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/random_op.h"
+
 #include "itex/core/kernels/gpu/random_op_gpu.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/register_types.h"

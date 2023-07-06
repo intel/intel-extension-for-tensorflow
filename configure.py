@@ -204,10 +204,16 @@ def get_python_path(environ_cp, python_bin_path):
     python_paths = environ_cp.get('PYTHONPATH').split(':')
 
   checked_python_bin_path = check_safe_python_bin_path(python_bin_path)
+  library_paths = []
+  user_paths = []
   try:
     library_paths = run_shell([
         checked_python_bin_path, '-c',
         'import site; print("\\n".join(site.getsitepackages()))'
+    ]).split('\n')
+    user_paths = run_shell([
+        checked_python_bin_path, '-m',
+        'site', '--user-site'
     ]).split('\n')
   except subprocess.CalledProcessError:
     library_paths = [
@@ -218,12 +224,16 @@ def get_python_path(environ_cp, python_bin_path):
         ])
     ]
 
-  all_paths = set(python_paths + library_paths)
+  all_paths = set(python_paths + library_paths + user_paths)
 
   paths = []
   for path in all_paths:
     if os.path.isdir(path):
-      paths.append(path)
+      tf_path = path + os.path.sep + "tensorflow"
+      if os.path.exists(tf_path):
+        paths.append(path)
+  if len(paths) == 0:
+    raise Exception("Tensorflow package not found! Please install it first!")
   return paths
 
 
@@ -286,20 +296,24 @@ def setup_python(environ_cp):
     python_paths = environ_cp.get('PYTHONPATH').split(':')
     if python_lib_path in python_paths:
       write_action_env_to_bazelrc('PYTHONPATH', environ_cp.get('PYTHONPATH'))
-  # check tensorflw >=2.10.0
+  # check tensorflw version
   # not check tensorflow-estimator version
-  package_list= subprocess.Popen(checked_python_lib_path + "/../../../bin/pip" + " list | grep \"^tensorflow \"", shell=True, stdout=subprocess.PIPE).stdout.read().decode()
+  package_list= subprocess.Popen(os.path.sep.join(checked_python_bin_path.split(os.path.sep)[:-1]) + os.path.sep + "pip" + " list | grep \"^tensorflow \"", shell=True, stdout=subprocess.PIPE).stdout.read().decode()
   tensorflow_list = package_list.splitlines()
   for line in tensorflow_list:
     if line.startswith("tensorflow  "):
         name, version = line.split()
+        version = version.split("rc")[0]
         current_tensorflow_version = convert_version_to_int(version)
-        min_tf_version = convert_version_to_int("2.10.0")
+        tf_major_version = version.split(".")[0]
+        tf_minor_version = version.split(".")[1]
+        write_to_bazelrc('build --define=tf_main_version=' + tf_major_version + '.' + tf_minor_version)
+        min_tf_version = convert_version_to_int("2.12.0")
         if current_tensorflow_version < min_tf_version:
-          print('Make sure you installed tensorflow version >= 2.10.0')
+          print('Make sure you installed tensorflow version >= 2.12.0')
           sys.exit(1)
     else:
-         print('Make sure you installed tensorflow version >= 2.10.0')
+         print('Make sure you installed tensorflow version >= 2.12.0')
          sys.exit(1)
   # Write tools/python_bin_path.sh
   try:
@@ -343,6 +357,24 @@ def cleanup_makefile():
         if f.endswith('BUILD'):
           os.remove(os.path.join(root, f))
 
+def get_var_from_name(environ_cp, var_name):
+  var = environ_cp.get(var_name)
+  if var is not None:
+    var_content = var.strip().lower()
+    true_strings = ('1', 't', 'true', 'y', 'yes')
+    false_strings = ('0', 'f', 'false', 'n', 'no')
+    if var_content in true_strings:
+      var = True
+    elif var_content in false_strings:
+      var = False
+    else:
+      raise UserInputError(
+          'Environment variable %s must be set as a boolean indicator.\n'
+          'The following are accepted as TRUE : %s.\n'
+          'The following are accepted as FALSE: %s.\n'
+          'Current value is %s.' %
+          (var_name, ', '.join(true_strings), ', '.join(false_strings), var))
+  return var
 
 def get_var(environ_cp,
             var_name,
@@ -392,23 +424,7 @@ def get_var(environ_cp,
   else:
     question += ' [y/N]: '
 
-  var = environ_cp.get(var_name)
-  if var is not None:
-    var_content = var.strip().lower()
-    true_strings = ('1', 't', 'true', 'y', 'yes')
-    false_strings = ('0', 'f', 'false', 'n', 'no')
-    if var_content in true_strings:
-      var = True
-    elif var_content in false_strings:
-      var = False
-    else:
-      raise UserInputError(
-          'Environment variable %s must be set as a boolean indicator.\n'
-          'The following are accepted as TRUE : %s.\n'
-          'The following are accepted as FALSE: %s.\n'
-          'Current value is %s.' %
-          (var_name, ', '.join(true_strings), ', '.join(false_strings), var))
-
+  var = get_var_from_name(environ_cp, var_name)
   while var is None:
     user_input_origin = get_input(question)
     user_input = user_input_origin.strip().lower()
@@ -519,12 +535,11 @@ def convert_version_to_int(version):
   return int(version_str)
 
 
-def check_bazel_version(min_version, max_version):
-  """Check installed bazel version is between min_version and max_version.
+def check_bazel_version(min_version):
+  """Check installed bazel version is higher than min_version.
 
   Args:
     min_version: string for minimum bazel version (must exist!).
-    max_version: string for maximum bazel version (must exist!).
 
   Returns:
     The bazel version detected.
@@ -542,7 +557,6 @@ def check_bazel_version(min_version, max_version):
 
   min_version_int = convert_version_to_int(min_version)
   curr_version_int = convert_version_to_int(curr_version)
-  max_version_int = convert_version_to_int(max_version)
 
   # Check if current bazel version can be detected properly.
   if not curr_version_int:
@@ -555,14 +569,6 @@ def check_bazel_version(min_version, max_version):
   if curr_version_int < min_version_int:
     print('Please upgrade your bazel installation to version %s or higher to '
           'build Intel® Extension for TensorFlow*!' % min_version)
-    sys.exit(1)
-  if (curr_version_int > max_version_int and
-      'TF_IGNORE_MAX_BAZEL_VERSION' not in os.environ):
-    print('Please downgrade your bazel installation to version %s or lower to '
-          'build Intel® Extension for TensorFlow*! To downgrade: '
-          'download the installer for the old '
-          'version (from https://github.com/bazelbuild/bazel/releases) then '
-          'run the installer.' % max_version)
     sys.exit(1)
   return curr_version
 
@@ -660,7 +666,7 @@ def prompt_loop_or_load_from_env(environ_cp,
       break
     if not suppress_default_error:
       print(error_msg)
-    environ_cp[var_name] = ''
+    environ_cp[var_name] = None
   else:
     raise UserInputError('Invalid %s setting was provided %d times in a row. '
                          'Assuming to be a scripting mistake.' %
@@ -852,6 +858,27 @@ def check_safe_workspace_path(workspace):
 
   raise Exception("Invalid workspace path!")
 
+def set_jax_path(environ_cp):
+  if get_var_from_name(environ_cp, 'BUILD_JAX'):
+    cmd = os.path.sep.join(environ_cp['PYTHON_BIN_PATH'].split(os.path.sep)[:-1]) + os.path.sep + "pip" + " list | grep \"^jaxlib \""
+    package_list= subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read().decode()
+    jaxlib_list = package_list.splitlines()
+    if len(jaxlib_list) == 0:
+      print("Jaxlib package not found! Please install it by 'pip install jaxlib==0.4.4'")
+      sys.exit(1)
+    for line in jaxlib_list:
+      if line.startswith("jaxlib"):
+        name, version = line.split()
+        current_jaxlib_version = convert_version_to_int(version)
+        min_jaxlib_version = convert_version_to_int("0.4.4")
+        if current_jaxlib_version < min_jaxlib_version:
+          print('Make sure you installed jaxlib version >= 0.4.4')
+          sys.exit(1)
+      else:
+        print('Make sure you installed jaxlib version >= 0.4.4')
+        sys.exit(1)
+  jax_shared_lib_dir = environ_cp['PYTHON_LIB_PATH'] + "/jaxlib/"
+  write_action_env_to_bazelrc("JAX_SHARED_LIBRARY_DIR", jax_shared_lib_dir)
 
 def main():
   global _ITEX_WORKSPACE_ROOT
@@ -877,7 +904,7 @@ def main():
   # environment variables.
   environ_cp = dict(os.environ)
 
-  current_bazel_version = check_bazel_version('3.1.0', '5.0.0')
+  current_bazel_version = check_bazel_version('5.3.0')
   _ITEX_CURRENT_BAZEL_VERSION = convert_version_to_int(current_bazel_version)
 
   reset_configure_bazelrc()
@@ -893,15 +920,17 @@ def main():
     set_action_env_var(environ_cp, 'TF_NEED_MKL', 'MKL', False)
     if environ_cp.get('TF_NEED_MKL') == '1':
       set_mkl_path(environ_cp)
+    set_action_env_var(environ_cp, 'BUILD_JAX', 'JAX', False,
+                       question="Do you wish to build for JAX support?",
+                       yes_reply="JAX support will be enabled, please follow 'bazel build --config=jax'.",
+                       no_reply="No JAX support will be enabled.")
+    set_jax_path(environ_cp)
   else:
     print('Only CPU support is available for '
           'Intel® Extension for TensorFlow*.')
 
   set_cc_opt_flags()
   set_system_libs_flag(environ_cp)
-
-  # Add a config option to build TensorFlow 2.0 API.
-  write_to_bazelrc('build:v2 --define=tf_api_version=2')
 
   system_specific_test_config(os.environ)
 
@@ -911,6 +940,8 @@ def main():
   if environ_cp.get('TF_NEED_DPCPP') == '1':
     config_info_line('gpu', ('Build Intel® Extension for TensorFlow* '
                      'with GPU support.'))
+    config_info_line('xpu', ('Build Intel® Extension for TensorFlow* '
+                     'with XPU support.'))
   else:
     config_info_line('cpu', 'Build Intel® Extension for TensorFlow* '
                      'with CPU support.')

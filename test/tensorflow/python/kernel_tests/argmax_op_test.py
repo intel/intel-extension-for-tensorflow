@@ -71,6 +71,9 @@ class ArgMaxTest(test.TestCase):
 
   def testOpt(self):
       shapes = [
+            [1024],
+            [1024*64],
+            [1024*256],
             [1024,262144],
             [1024, 32],
             [1024, 1024],
@@ -84,6 +87,9 @@ class ArgMaxTest(test.TestCase):
             [3,4,640,1024,3]]
 
       axises = [
+              0,
+              0,
+              0,
               0,
               1,
               1,

@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/random_op.h"
+
 #include "itex/core/kernels/cpu/random_op_cpu.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/register_types.h"
@@ -31,7 +32,7 @@ namespace itex {
       PhiloxRandomOp<CPUDevice, random::UniformDistribution< \
                                     random::PhiloxRandom, TYPE>>);
 
-TF_CALL_CPU_NUMBER_TYPES(REGISTER_RANDOM_KERNEL);
+TF_CALL_CPU_NUMBER_TYPES_WITHOUT_HALF(REGISTER_RANDOM_KERNEL);
 #undef REGISTER_RANDOM_KERNEL
 
 }  // namespace itex

@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "tf_copts")
 
 filegroup(
     name = "core_ops_hdrs",
@@ -95,6 +95,20 @@ cc_library(
     alwayslink = True,
 )
 
+cc_library(
+    name = "fp8_ops",
+    srcs = ["fp8_ops.cc"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":shape_inference_fns",
+        "//itex/core/ops/utils:logging",
+        "//itex/core/ops/utils:status",
+    ],
+    alwayslink = True,
+)
+
 OPS = [
     ":array_ops",
     ":math_ops",
@@ -102,6 +116,7 @@ OPS = [
     ":nn_ops",
     ":onednn_graph_op",
     ":training_ops",
+    ":fp8_ops",
 ]
 
 cc_library(
@@ -111,7 +126,6 @@ cc_library(
         "shape_inference_fns.h",
     ],
     copts = tf_copts(),
-    defines = ["INTEL_COMMON"],
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/ops/utils:logging",

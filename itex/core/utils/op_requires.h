@@ -49,6 +49,25 @@ namespace itex {
     }                                                     \
   } while (0)
 
+#define OP_REQUIRES_RETURN_STATUS(CTX, EXP, STATUS)       \
+  do {                                                    \
+    if (!ITEX_PREDICT_TRUE(EXP)) {                        \
+      CheckNotInComputeAsync((CTX), "OP_REQUIRES_ASYNC"); \
+      (CTX)->CtxFailure(__FILE__, __LINE__, (STATUS));    \
+      return STATUS;                                      \
+    }                                                     \
+  } while (0)
+
+#define OP_REQUIRES_OK_RETURN_STATUS(CTX, ...)               \
+  do {                                                       \
+    ::itex::Status _s(__VA_ARGS__);                          \
+    if (!ITEX_PREDICT_TRUE(_s.ok())) {                       \
+      CheckNotInComputeAsync((CTX), "OP_REQUIRES_OK_ASYNC"); \
+      (CTX)->CtxFailureWithWarning(__FILE__, __LINE__, _s);  \
+      return _s;                                             \
+    }                                                        \
+  } while (0)
+
 #define OP_REQUIRES_OK(CTX, ...)                             \
   do {                                                       \
     ::itex::Status _s(__VA_ARGS__);                          \

@@ -18,6 +18,7 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_ALLOCATOR_H_
 #define ITEX_CORE_UTILS_ALLOCATOR_H_
 
+#ifndef ITEX_BUILD_JAX
 #include <functional>
 
 #include "itex/core/utils/integral_types.h"
@@ -65,4 +66,5 @@ struct AllocatorAttributes {
 };
 
 }  // namespace itex
+#endif
 #endif  // ITEX_CORE_UTILS_ALLOCATOR_H_

@@ -17,12 +17,12 @@ sys.path.insert(0, os.path.abspath('.'))
 # -- Project information -----------------------------------------------------
 
 project = 'Intel® Extension for TensorFlow*'
-copyright = 'Copyright (c) 2022 Intel Corporation'
+copyright = 'Copyright (c) 2022-2023 Intel Corporation'
 author = 'Intel Corporation'
 
 # The full version, including alpha/beta/rc tags
-version = 'v1.0.0'
-release = 'v1.0.0'
+version = 'v1.2.0'
+release = 'v1.2.0'
 
 
 # -- General configuration ---------------------------------------------------

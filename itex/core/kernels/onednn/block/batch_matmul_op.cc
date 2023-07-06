@@ -1,11 +1,8 @@
 /* Copyright (c) 2021-2022 Intel Corporation
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +15,7 @@ limitations under the License.
 #include <unordered_map>
 #include <vector>
 
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/kernels/common/matmul_op.h"
 #include "itex/core/kernels/common/no_ops.h"
 #include "itex/core/kernels/onednn/block/matmul_op.h"
@@ -49,30 +47,45 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
     if (context->HasAttr("fused_ops")) {
       std::vector<string> fused_ops;
       OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops));
-      // TODO(itex): Replace Add(Sum) fusion to binary::add fusion manually.
-      //             Will refine all Add fusion to binary:add in future.
+
+      // TODO(itex): Replace Add(Sum)/Mul(output_scale) fusion to Binary post
+      //             op fusion manually. Will refine related fusion to binary
+      //             fusion in future.
       for (int i = 0; i < fused_ops.size(); ++i) {
         if (fused_ops[i] == "Add") fused_ops[i] = "BinaryAdd";
+        if (fused_ops[i] == "Mul") fused_ops[i] = "BinaryMul";
       }
       OP_REQUIRES(context, this->post_op_util_.AddOps(fused_ops),
                   errors::InvalidArgument(
                       "Found unsupported fusion in Fused BatchMatMul."));
+
+      if (this->post_op_util_.HasBinary()) {
+        const int binary_num = this->post_op_util_.GetBinaryNum();
+        OP_REQUIRES(
+            context, binary_num <= kMaxBinaryNum_,
+            errors::Unimplemented(
+                "The number of Binary op fusion in BatchMatMul is: ",
+                binary_num, ", which is greater than ", kMaxBinaryNum_));
+      }
+
+      // Set alpha if get `LeakyRelu` after adding ops.
+      if (this->post_op_util_.HasLeakyRelu()) {
+        float alpha;
+        OP_REQUIRES_OK(context, context->GetAttr("leakyrelu_alpha", &alpha));
+        this->post_op_util_.SetLeakyReluAlpha(alpha);
+      }
     }
   }
 
   void Compute(OpKernelContext* context) override {
     try {
-      const int src_index = 0;
-      const int wei_index = 1;
-      const int dst_index = 0;
-
-      const Tensor& src_tensor = context->input(src_index);
-      const Tensor& wei_tensor = context->input(wei_index);
+      const Tensor& src_tensor = context->input(kSrcIndex_);
+      const Tensor& wei_tensor = context->input(kWeightIndex_);
 
       OneDnnShape src_onednn_shape;
       OneDnnShape wei_onednn_shape;
-      GetOneDnnShape(context, src_index, &src_onednn_shape);
-      GetOneDnnShape(context, wei_index, &wei_onednn_shape);
+      GetOneDnnShape(context, kSrcIndex_, &src_onednn_shape);
+      GetOneDnnShape(context, kWeightIndex_, &wei_onednn_shape);
 
       TensorShape src_tf_shape = src_onednn_shape.IsOneDnnTensor()
                                      ? src_onednn_shape.GetTfShape()
@@ -118,12 +131,12 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       dst_tf_shape.AddDim(d0);
       dst_tf_shape.AddDim(d3);
 
-      if (dst_tf_shape.num_elements() == 0) {
+      if (!this->post_op_util_.HasBias() && dst_tf_shape.num_elements() == 0) {
         Tensor* dst_tensor = nullptr;
         OneDnnShape dst_onednn_shape;
 
         dst_onednn_shape.SetOneDnnTensor(false);
-        AllocateOutputSetOneDnnShape(context, dst_index, &dst_tensor,
+        AllocateOutputSetOneDnnShape(context, kDstIndex_, &dst_tensor,
                                      dst_tf_shape, dst_onednn_shape);
         return;
       }
@@ -151,12 +164,23 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
                                 : wei_fwd_md;
 
       auto onednn_engine = CreateDnnlEngine<Device>(*context);
+      memory::desc bias_md;
+      memory bias_mem;
+      if (this->post_op_util_.HasBias()) {
+        const Tensor& bias_tensor = context->input(kBiasIndex_);
+
+        bias_md = memory::desc(params->bias_dims, OneDnnType<Toutput>(),
+                               params->bias_strides);
+        // create bias memory
+        bias_mem = CreateDnnlMemory(bias_md, onednn_engine,
+                                    GetTensorBuffer<Toutput>(&bias_tensor));
+      }
 
       // Create matmul forward primitive
       std::unordered_map<int, memory> fwd_primitive_args;
-      auto fwd_desc = matmul::desc(src_fwd_md, wei_fwd_md, dst_fwd_md);
-      auto fwd_pd = GetPrimitiveDesc(context, fwd_desc, &fwd_primitive_args,
-                                     onednn_engine);
+      auto fwd_pd =
+          GetPrimitiveDesc(context, src_fwd_md, wei_fwd_md, bias_md, dst_fwd_md,
+                           &fwd_primitive_args, onednn_engine);
       auto fwd_primitive = matmul(fwd_pd);
 
       // Create src memory, check if src needs to be reordered
@@ -245,7 +269,7 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       OneDnnShape dst_onednn_shape;
       dst_onednn_shape.SetOneDnnTensor(false);
       Tensor* dst_tensor = nullptr;
-      AllocateOutputSetOneDnnShape(context, dst_index, &dst_tensor,
+      AllocateOutputSetOneDnnShape(context, kDstIndex_, &dst_tensor,
                                    dst_tf_shape, dst_onednn_shape);
 
       // Create dst memory
@@ -271,6 +295,21 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
                                  is_wei_reordered ? wei_reorder_mem : wei_mem);
       fwd_primitive_args.emplace(DNNL_ARG_DST, dst_mem);
       fwd_primitive_args.emplace(DNNL_ARG_SCRATCHPAD, scratchpad_mem);
+      if (this->post_op_util_.HasBias()) {
+        fwd_primitive_args.emplace(DNNL_ARG_BIAS, bias_mem);
+      }
+#ifdef ITEX_ONEDNN_3_0
+      if (this->post_op_util_.HasOutputScales()) {
+        float alpha = this->post_op_util_.GetOutputScale()[0];
+        float* output_scale_ptr =
+            output_scale_cache_.GetCachedPtr(context, &alpha, 1);
+        dnnl::memory scale_mem(
+            {{1}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x},
+            onednn_engine, output_scale_ptr);
+        fwd_primitive_args.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
+                                   scale_mem);
+      }
+#endif
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
@@ -288,54 +327,30 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
   }
 
   matmul::primitive_desc GetPrimitiveDesc(
-      OpKernelContext* context, const matmul::desc& fwd_desc,
+      OpKernelContext* context, memory::desc src_md, memory::desc wei_md,
+      memory::desc bias_md, memory::desc dst_md,
       std::unordered_map<int, memory>* fwd_args,
       const dnnl::engine& onednn_engine) {
-    const int kPostOpStartIdx = 2;
-    int post_op_input_index = kPostOpStartIdx;
     dnnl::primitive_attr post_ops_attr;
     post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 
-    // TODO(itex): Since ITEX currently combine mul post op and scale of
-    // INT8 together. Here maybe slight accuracy difference with Intel-TF with
-    // INT8-BF16 BatchMatMul Intel-TF: INT8 scale (fp32) * mul (bf16) ITEX: INT8
-    // scale (fp32) * mul (fp32)
     if (this->post_op_util_.HasOutputScales()) {
-      // mul_value = INT8 scale * mul
+      // mul_value = INT8 scale
       float mul_value = 1.0;
-      if (this->post_op_util_.HasMul()) {
-        // BatchMatMul + Mul needs to set scale in node execution
-        const Tensor& scale_tensor = context->input(post_op_input_index);
-
-        if (scale_tensor.NumElements() != 1) {
-          ITEX_LOG(FATAL) << "Mul tensor must be a scalar.";
-        }
-
-#ifndef INTEL_CPU_ONLY
-        if (IsMulCacheEmpty()) {
-          // Cache weight
-          const Toutput* mul_device_data = scale_tensor.flat<Toutput>().data();
-          CacheMul(context, mul_device_data);
-        }
-        Toutput* mul_host_data = GetCachedMul(context);
-        mul_value = static_cast<float>(mul_host_data[0]);
-#else
-        mul_value = static_cast<float>(scale_tensor.flat<Toutput>()(0));
-#endif  // INTEL_CPU_ONLY
-      }
-
       AccumulateMulAndInt8Scale(context, &mul_value);
 
       std::vector<float> scales = {mul_value};
       this->post_op_util_.SetOutputScale(scales);
-      post_op_input_index++;
     }
 
-    if (this->post_op_util_.HasBinary()) {
-      // BatchMatMul + Add needs to set add input md in node execution.
-      const Tensor& add_tensor = context->input(post_op_input_index);
+    std::vector<memory::desc> md_list;
+    const int kPostOpStartIdx =
+        1 + (this->post_op_util_.HasBias() ? kBiasIndex_ : kWeightIndex_);
+    for (int i = 0; i < this->post_op_util_.GetBinaryNum(); ++i) {
+      // FusedBatchMatMul need to set binary input md in node execution.
+      const Tensor& binary_tensor = context->input(kPostOpStartIdx + i);
       OneDnnShape onednn_shape;
-      GetOneDnnShape(context, post_op_input_index, &onednn_shape);
+      GetOneDnnShape(context, kPostOpStartIdx + i, &onednn_shape);
 
       // Same as input and weight of BatchMatMul, add tensor also needs to:
       //   1. Get original block/plain md
@@ -343,88 +358,57 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       //   3. Reorder original md to extended md if needed
       TensorShape tf_shape = onednn_shape.IsOneDnnTensor()
                                  ? onednn_shape.GetTfShape()
-                                 : add_tensor.shape();
-      ITEX_CHECK(tf_shape.dims() >= 3)
-          << "Add input of FusedBatchMatMul must have 3 dims at least";
+                                 : binary_tensor.shape();
+      ITEX_CHECK(binary_tensor.NumElements() == 1 || tf_shape.dims() >= 3)
+          << "Binary input of FusedBatchMatMul must be scalar or have 3 dims "
+          << "at least, but got " << tf_shape.dims();
 
-      auto add_dims = TFShapeToOneDnnDims(tf_shape);
-      auto add_strides = CalculateTFStrides(add_dims);
-      auto add_md = memory::desc(add_dims, OneDnnType<Toutput>(), add_strides);
+      auto binary_dims = TFShapeToOneDnnDims(tf_shape);
+      auto binary_strides = CalculateTFStrides(binary_dims);
+      auto binary_md =
+          memory::desc(binary_dims, OneDnnType<Toutput>(), binary_strides);
 
       bool is_reordered = false;
       if (onednn_shape.IsOneDnnTensor()) {
-        is_reordered = (onednn_shape.GetOneDnnLayout() == add_md);
+        is_reordered = (onednn_shape.GetOneDnnLayout() == binary_md);
       }
       // FIXME(itex): Simply ingnore reorder this time, will fix it soon.
       ITEX_CHECK(!is_reordered)
-          << "Need to Reorder Add input of FusedBatchMatMul";
+          << "Need to reorder binary input of FusedBatchMatMul";
 
-      this->post_op_util_.SetBinaryInput(add_md);
-      auto add_mem = CreateDnnlMemory(add_md, onednn_engine,
-                                      GetTensorBuffer<Toutput>(&add_tensor));
+      md_list.push_back(binary_md);
+      auto binary_mem = CreateDnnlMemory(
+          binary_md, onednn_engine, GetTensorBuffer<Toutput>(&binary_tensor));
       fwd_args->insert(
-          {DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem});
-      post_op_input_index++;
+          {DNNL_ARG_ATTR_MULTIPLE_POST_OP(i) | DNNL_ARG_SRC_1, binary_mem});
     }
 
-    this->post_op_util_.SetPostOpAttr(&post_ops_attr);
-    return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
+    this->post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
+#ifdef ITEX_ONEDNN_3_0
+    if (this->post_op_util_.HasBias()) {
+      return matmul::primitive_desc(onednn_engine, src_md, wei_md, bias_md,
+                                    dst_md, post_ops_attr);
+    } else {
+      return matmul::primitive_desc(onednn_engine, src_md, wei_md, dst_md,
+                                    post_ops_attr);
+    }
+#else
+    if (this->post_op_util_.HasBias()) {
+      auto fwd_desc = matmul::desc(src_md, wei_md, bias_md, dst_md);
+      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
+    } else {
+      auto fwd_desc = matmul::desc(src_md, wei_md, dst_md);
+      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
+    }
+#endif
   }
 
  private:
-#ifndef INTEL_CPU_ONLY
-  // TODO(itex): Wrap all cache related code to a module, reuse this module
-  inline bool IsMulCacheEmpty() TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    return (!mul_cached_tensor_.IsInitialized());
-  }
-
-  void AllocatePersistentTensor(OpKernelContext* context, Tensor** mul_tensor) {
-    ITEX_DCHECK(mul_tensor);
-    TensorShape mul_tf_shape;
-    // Only one number is stored
-    mul_tf_shape.AddDim(1);
-    AllocatorAttributes alloc_attr;
-    alloc_attr.set_on_host(true);
-    OP_REQUIRES_OK(context, context->allocate_persistent(
-                                DataTypeToEnum<Toutput>::value, mul_tf_shape,
-                                &mul_cached_tensor_, mul_tensor, alloc_attr));
-  }
-
-  void CacheMul(OpKernelContext* context, const Toutput* mul_device_data)
-      TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    mutex_lock lock(&mul_cache_mu_);
-
-    // If mul is already cached, there's nothing to do.
-    if (mul_cached_tensor_.IsInitialized()) {
-      return;
-    }
-
-    // Create cached mul buffer
-    Tensor* mul_tensor_ptr = nullptr;
-    AllocatePersistentTensor(context, &mul_tensor_ptr);
-    Toutput* mul_host_data =
-        const_cast<Toutput*>(mul_tensor_ptr->flat<Toutput>().data());
-
-    // TODO(itex): refactor the memcpy code
-    auto* dpcpp_stream = context->GetDeviceStream();
-    auto event = dpcpp_stream->memcpy(mul_host_data, mul_device_data,
-                                      1 * sizeof(Toutput));
-    event.wait();
-  }
-
-  Toutput* GetCachedMul(OpKernelContext* context)
-      TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    const Tensor& mul_cached_data = *mul_cached_tensor_.AccessTensor(context);
-
-    return static_cast<Toutput*>(
-        const_cast<Toutput*>(mul_cached_data.flat<Toutput>().data()));
-  }
-
-  mutex mul_cache_mu_;
-  PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
-#endif  // INTEL_CPU_ONLY
+  static const int kSrcIndex_ = 0, kWeightIndex_ = 1, kBiasIndex_ = 2,
+                   kDstIndex_ = 0, kMaxBinaryNum_ = 2;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 template <typename Device, typename Tlhs, typename Trhs, typename Toutput>
@@ -433,38 +417,34 @@ class OneDnnQuantizedBatchMatMulV2Op
  public:
   explicit OneDnnQuantizedBatchMatMulV2Op(OpKernelConstruction* context)
       : OneDnnBatchMatMulV2Op<Device, Tlhs, Trhs, Toutput>(context) {
+    int num_args = 0;
+    std::vector<string> fused_ops;
+
     this->post_op_util_.AddOps({"Quantized"});
 
     if (context->HasAttr("fused_ops")) {
-      OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &this->fused_ops_));
-    }
-    if (context->HasAttr("num_args")) {
-      OP_REQUIRES_OK(context, context->GetAttr("num_args", &this->num_args_));
-    } else {
-      this->num_args_ = 0;
+      // Fusion will be handled in fathter class, only get info for check here.
+      OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops));
     }
 
-    if (context->HasAttr("fused_ops") && context->HasAttr("num_args")) {
-      if (this->fused_ops_ == std::vector<string>{"Mul"} ||
-          this->fused_ops_ == std::vector<string>{"Mul", "Add"}) {
-        OP_REQUIRES(context, this->num_args_ == this->fused_ops_.size(),
+    if (context->HasAttr("num_args")) {
+      OP_REQUIRES_OK(context, context->GetAttr("num_args", &num_args));
+
+      if (context->HasAttr("fused_ops")) {
+        OP_REQUIRES(context, num_args == fused_ops.size(),
                     errors::InvalidArgument(
                         "_QuantizedFusedBatchMatMulV2AndDequantize should "
                         "have same number of additional "
                         "inputs as the number of fusions"));
-      } else {
-        OP_REQUIRES(
-            context, false,
-            errors::Unimplemented("Fusion is not implemented: [",
-                                  absl::StrJoin(this->fused_ops_, ","), "]"));
       }
     }
 
-    kInputIndexMinLhs = this->num_args_ + 2;
-    kInputIndexMaxLhs = this->num_args_ + 3;
-    kInputIndexMinRhs = this->num_args_ + 4;
-    kInputIndexMaxRhs = this->num_args_ + 5;
+    kInputIndexMinLhs = num_args + 2;
+    kInputIndexMaxLhs = num_args + 3;
+    kInputIndexMinRhs = num_args + 4;
+    kInputIndexMaxRhs = num_args + 5;
   }
+
   void AccumulateMulAndInt8Scale(OpKernelContext* context,
                                  float* mul_value) override {
     const float min_lhs =
@@ -486,10 +466,6 @@ class OneDnnQuantizedBatchMatMulV2Op
   }
 
  private:
-  // INT8 kernel may need some post op information during runtime.
-  std::vector<string> fused_ops_;
-  int num_args_;
-
   int kInputIndexMinLhs;
   int kInputIndexMaxLhs;
   int kInputIndexMinRhs;
@@ -554,16 +530,10 @@ TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL);
 #define REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, output_type) \
   REGISTER_ONEDNN_KERNEL(op, kernel, qint8, qint8, output_type);
 
-#ifdef INTEL_CPU_ONLY
-#define REGISTER_ONEDNN_KERNEL_ALL_OUTPUT_TYPES(op, kernel)    \
-  REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, float); \
-  REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::bfloat16);
-#else
 #define REGISTER_ONEDNN_KERNEL_ALL_OUTPUT_TYPES(op, kernel)              \
   REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, float);           \
   REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::bfloat16); \
   REGISTER_ONEDNN_KERNEL_ALL_LHS_RHS_TYPES(op, kernel, Eigen::half);
-#endif  // INTEL_CPU_ONLY
 
 // Concrete OneDnn BatchnMatMul INT8 kernel implementation
 #define TEMPLATE_ARGS(Device, lhs_type, rhs_type, output_type) \

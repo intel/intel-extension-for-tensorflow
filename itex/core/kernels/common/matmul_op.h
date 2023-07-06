@@ -24,6 +24,7 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/kernels/common/fill_functor.h"
+#include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/bcast.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_post_op_util.h"
@@ -60,7 +61,6 @@ class MatMulBCast {
     output_batch_size_ = output_shape_.num_elements();
     broadcasting_required_ =
         std::min(x_batch_size_, y_batch_size_) != output_batch_size_;
-
     if (broadcasting_required_) {
       ComputeBatchIndices(output_batch_size_, batch_bcast_->x_reshape(),
                           batch_bcast_->x_bcast(), &x_batch_indices_);
@@ -75,6 +75,8 @@ class MatMulBCast {
   const int64 output_batch_size() const { return output_batch_size_; }
   const int64 x_batch_size() const { return x_batch_size_; }
   const int64 y_batch_size() const { return y_batch_size_; }
+  const bool is_x_bcast() const { return x_batch_size_ != output_batch_size_; }
+  const bool is_y_bcast() const { return y_batch_size_ != output_batch_size_; }
   const TensorShape& output_batch_shape() const { return output_shape_; }
 
   // Returns the mapping from the flattened output batch indices to x's
@@ -277,12 +279,16 @@ class MatMulOp : public OpKernel {
       bias_mem_.set_data_handle(context->tensor_data(kBiasIndex_));
     }
 
-    if (post_op_util_.HasAdd() || post_op_util_.HasBinary()) {
-      add_tensor_ = &context->input(kAddIndex_);
-    }
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<T>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
     if (post_op_util_.HasAdd()) {
       int is_forward_success = kUnsuccess_;
+      add_tensor_ = &context->input(kAddIndex_);
       // Try to do in-place.
       // TODO(itex): Remove this workaround when inplace works.
       if (inplace_sum_) {
@@ -306,10 +312,6 @@ class MatMulOp : public OpKernel {
     } else {
       OP_REQUIRES_OK(context, context->allocate_output(kDstIndex_, dst_shape_,
                                                        &dst_tensor_));
-    }
-    if (post_op_util_.HasBinary()) {
-      // BatchMatMul + Add needs to set add input md in node execution.
-      add_mem_.set_data_handle(GetTensorBuffer<Tpost>(add_tensor_));
     }
     dst_mem_.set_data_handle(GetTensorBuffer<Tout>(dst_tensor_));
   }
@@ -424,51 +426,58 @@ class MatMulOp : public OpKernel {
           memory::desc(params->a_dims, OneDnnType<T>(), params->a_strides);
       auto weights_md =
           memory::desc(params->b_dims, OneDnnType<T>(), params->b_strides);
-      // Let oneDNN choose weight format if:
-      //   1. Weight is const and can be cached
-      //   2. Kernel is on CPU and weight is not tranposed
-      bool is_any =
-          is_filter_const_ ||
-          (Eigen::internal::is_same<Device, CPUDevice>::value && !adj_y_);
+      // Let oneDNN choose weight format if Weight is const and can be cached
       auto weights_md_prefer =
-          is_any ? memory::desc(params->b_dims, OneDnnType<T>(),
-                                memory::format_tag::any)
-                 : weights_md;
+          is_filter_const_ ? memory::desc(params->b_dims, OneDnnType<T>(),
+                                          memory::format_tag::any)
+                           : weights_md;
       auto dst_md =
           memory::desc(params->c_dims, OneDnnType<Tout>(), params->c_strides);
-
-      std::shared_ptr<dnnl::matmul::desc> matmul_desc_;
-      if (post_op_util_.HasBias()) {
-        // bias use same dims as dst
-        auto bias_md = memory::desc(params->bias_dims, OneDnnType<Tpost>(),
-                                    params->bias_strides);
-        matmul_desc_.reset(
-            new dnnl::matmul::desc(src_md, weights_md_prefer, bias_md, dst_md));
-        // create bias memory
-        const Tensor& bias_tensor = context->input(kBiasIndex_);
-        bias_mem_ = CreateDnnlMemory(bias_md, dnnl_engine_,
-                                     GetTensorBuffer<Tpost>(&bias_tensor));
-      } else {
-        matmul_desc_.reset(
-            new dnnl::matmul::desc(src_md, weights_md_prefer, dst_md));
-      }
-
+      dnnl::matmul::primitive_desc matmul_pd;
       dnnl::primitive_attr post_ops_attr;
+
       post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         post_ops_attr.set_fpmath_mode(fp32_math_mode_);
       }
-      std::shared_ptr<dnnl::matmul::primitive_desc> matmul_pd_ =
-          std::make_shared<dnnl::matmul::primitive_desc>(*matmul_desc_,
-                                                         dnnl_engine_);
-      if (post_op_util_.HasAdd() || post_op_util_.HasBinary()) {
-        add_tensor_ = &context->input(kAddIndex_);
+      // Set post ops attr after handling all fusions.
+      post_op_util_.SetPostOpAttr(&post_ops_attr);
+
+      if (post_op_util_.HasBias()) {
+        // bias use same dims as dst
+        auto bias_md = memory::desc(params->bias_dims, OneDnnType<Tpost>(),
+                                    params->bias_strides);
+        // create bias memory
+        const Tensor& bias_tensor = context->input(kBiasIndex_);
+        bias_mem_ = CreateDnnlMemory(bias_md, dnnl_engine_,
+                                     GetTensorBuffer<Tpost>(&bias_tensor));
+#ifndef ITEX_ONEDNN_3_0
+        auto matmul_desc =
+            dnnl::matmul::desc(src_md, weights_md_prefer, bias_md, dst_md);
+        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
+                                                 dnnl_engine_);
+#else
+        matmul_pd = dnnl::matmul::primitive_desc(dnnl_engine_, src_md,
+                                                 weights_md_prefer, bias_md,
+                                                 dst_md, post_ops_attr);
+#endif
+      } else {
+#ifndef ITEX_ONEDNN_3_0
+        auto matmul_desc =
+            dnnl::matmul::desc(src_md, weights_md_prefer, dst_md);
+        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
+                                                 dnnl_engine_);
+#else
+        matmul_pd = dnnl::matmul::primitive_desc(
+            dnnl_engine_, src_md, weights_md_prefer, dst_md, post_ops_attr);
+#endif
       }
 
       // Handle Add fusion and decide output tensor buffer.
       if (post_op_util_.HasAdd()) {
         // const Tensor& add_tensor = context->input(kAddIndex_);
         int is_forward_success = kUnsuccess_;
+        add_tensor_ = &context->input(kAddIndex_);
 
         // Try to do in-place.
         // TODO(itex): Remove this workaround when inplace works.
@@ -488,9 +497,8 @@ class MatMulOp : public OpKernel {
               memory::desc(params->c_dims, OneDnnType<Tpost>(),
                            params->c_strides),
               dnnl_engine_, GetTensorBuffer<Tpost>(add_tensor_));
-          fuse_add_dst_mem_ =
-              CreateDnnlMemory(matmul_pd_->dst_desc(), dnnl_engine_,
-                               GetTensorBuffer<Tout>(dst_tensor_));
+          fuse_add_dst_mem_ = CreateDnnlMemory(
+              dst_md, dnnl_engine_, GetTensorBuffer<Tout>(dst_tensor_));
           ReorderMemory(*context, &fuse_add_src_mem_, &fuse_add_dst_mem_,
                         dnnl_engine_);
         }
@@ -499,58 +507,22 @@ class MatMulOp : public OpKernel {
                                                          &dst_tensor_));
       }
 
-      // Handle Mul fusion.
+#ifdef ITEX_ONEDNN_3_0
       if (post_op_util_.HasOutputScales()) {
-        const Tensor& scale_tensor = context->input(kMulIndex_);
-        OP_REQUIRES(context, scale_tensor.NumElements() == 1,
-                    errors::InvalidArgument("Mul Tensor must be a scalar"));
-
-#ifndef INTEL_CPU_ONLY
-        if (IsMulCacheEmpty()) {
-          // Cache weight
-          const T* mul_device_data = scale_tensor.flat<T>().data();
-          CacheMul(context, mul_device_data);
-        }
-        T* mul_host_data = GetCachedMul(context);
-        float mul_value = static_cast<float>(mul_host_data[0]);
-#else
-        float mul_value =
-            static_cast<float>(scale_tensor.flat<Tpost>().data()[0]);
-#endif  // INTEL_CPU_ONLY
-        std::vector<float> scales = {mul_value};
-
-        post_op_util_.SetOutputScale(scales);
+        float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
+            context, post_op_util_.GetOutputScale().data(), 1);
+        dnnl::memory scale_mem(
+            {{1}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x},
+            dnnl_engine_, reinterpret_cast<void*>(output_scale_ptr));
+        fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
+                                    scale_mem);
       }
-      if (this->post_op_util_.HasBinary()) {
-        // BatchMatMul + Add needs to set add input md in node execution.
-        // const Tensor& add_tensor = context->input(kAddIndex_);
-
-        // Figure out the extended md for primitive execution
-        TensorShape tf_shape = add_tensor_->shape();
-
-        ITEX_CHECK(tf_shape.dims() >= 3)
-            << "Add input of FusedBatchMatMul must have 3 dims at least";
-
-        auto add_dims = TFShapeToOneDnnDims(tf_shape);
-        auto add_strides = CalculateTFStrides(add_dims);
-        auto add_md = memory::desc(add_dims, OneDnnType<Tpost>(), add_strides);
-
-        this->post_op_util_.SetBinaryInput(add_md);
-        add_mem_ = CreateDnnlMemory(add_md, dnnl_engine_,
-                                    GetTensorBuffer<Tpost>(add_tensor_));
-
-        fwd_primitive_args_.emplace(
-            DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, add_mem_);
-      }
-      // Set post ops attr after handling all fusions.
-      post_op_util_.SetPostOpAttr(&post_ops_attr);
-      matmul_pd_.reset(new dnnl::matmul::primitive_desc(
-          *matmul_desc_, post_ops_attr, dnnl_engine_));
+#endif
 
       // Do weight cache only if Reorder is needed and weight is const.
       weights_mem_input_ = CreateDnnlMemory(
           weights_md, dnnl_engine_, GetTensorBuffer<T>(&weights_tensor));
-      weights_md_prefer = matmul_pd_->weights_desc();
+      weights_md_prefer = matmul_pd.weights_desc();
       is_weight_reorder_ = (weights_md != weights_md_prefer);
       if (is_weight_reorder_) {
         T* weight_cached_data = nullptr;
@@ -586,17 +558,16 @@ class MatMulOp : public OpKernel {
       } else {
         weights_mem_ = weights_mem_input_;
       }
-      int64 scratchpad_size =
-          matmul_pd_->scratchpad_desc().get_size() / sizeof(T);
+      scratchpad_size_ = matmul_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
-          dnnl::memory(matmul_pd_->scratchpad_desc(), dnnl_engine_,
-                       GetTensorBuffer<T>(&scratchpad_tensor_));
+          dnnl::memory(matmul_pd.scratchpad_desc(), dnnl_engine_,
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
 
-      matmul_primitive_ = dnnl::matmul(*matmul_pd_);
+      matmul_primitive_ = dnnl::matmul(matmul_pd);
       src_mem_ = CreateDnnlMemory(src_md, dnnl_engine_,
                                   GetTensorBuffer<T>(&src_tensor));
       dst_mem_ = CreateDnnlMemory(dst_md, dnnl_engine_,
@@ -627,61 +598,18 @@ class MatMulOp : public OpKernel {
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
     dnnl_stream_ = CreateDnnlStream(*context, dnnl_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
     // Skip primitive execution if the calculation is meaningless.
-    if (is_input_zero_) return;
-
-    matmul_primitive_.execute(dnnl_stream_, fwd_primitive_args_);
-  }
-
-  // TODO(itex): Wrap all cache related code to a module, reuse this module
-  inline bool IsMulCacheEmpty() TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    return (!mul_cached_tensor_.IsInitialized());
-  }
-
-  void AllocatePersistentTensor(OpKernelContext* context, Tensor** mul_tensor) {
-    ITEX_DCHECK(mul_tensor);
-    TensorShape mul_tf_shape;
-    // Only one number is stored
-    mul_tf_shape.AddDim(1);
-    AllocatorAttributes alloc_attr;
-    alloc_attr.set_on_host(true);
-    OP_REQUIRES_OK(context, context->allocate_persistent(
-                                DataTypeToEnum<T>::value, mul_tf_shape,
-                                &mul_cached_tensor_, mul_tensor, alloc_attr));
-  }
-
-#ifndef INTEL_CPU_ONLY
-  void CacheMul(OpKernelContext* context, const T* mul_device_data)
-      TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    mutex_lock lock(&mul_cache_mu_);
-
-    // If mul is already cached, there's nothing to do.
-    if (mul_cached_tensor_.IsInitialized()) {
+    if (is_input_zero_) {
+      scratchpad_tensor_.reset();
       return;
     }
 
-    // Create cached mul buffer
-    Tensor* mul_tensor_ptr = nullptr;
-    AllocatePersistentTensor(context, &mul_tensor_ptr);
-    T* mul_host_data = const_cast<T*>(mul_tensor_ptr->flat<T>().data());
-
-    // TODO(itex): refactor the memcpy code
-    auto* dpcpp_stream = context->GetDeviceStream();
-    auto event =
-        dpcpp_stream->memcpy(mul_host_data, mul_device_data, 1 * sizeof(T));
-    event.wait();
+    matmul_primitive_.execute(dnnl_stream_, fwd_primitive_args_);
+    scratchpad_tensor_.reset();
   }
-
-  T* GetCachedMul(OpKernelContext* context) TF_LOCKS_EXCLUDED(mul_cache_mu_) {
-    tf_shared_lock lock(&mul_cache_mu_);
-    const Tensor& mul_cached_data = *mul_cached_tensor_.AccessTensor(context);
-
-    return static_cast<T*>(const_cast<T*>(mul_cached_data.flat<T>().data()));
-  }
-#endif  // INTEL_CPU_ONLY
 
  protected:
   bool adj_x_ = false;
@@ -692,8 +620,8 @@ class MatMulOp : public OpKernel {
   bool enable_cache_ = false;
   bool is_init_ = false;
   bool is_input_zero_ = false;
-  const int kSrcIndex_ = 0, kDstIndex_ = 0, kWeightIndex_ = 1, kBiasIndex_ = 2,
-            kAddIndex_ = 3, kMulIndex_ = 2, kUnsuccess_ = -1;
+  static const int kSrcIndex_ = 0, kDstIndex_ = 0, kWeightIndex_ = 1,
+                   kBiasIndex_ = 2, kAddIndex_ = 3, kUnsuccess_ = -1;
 
   // Fusion util.
   PostOpUtil post_op_util_;
@@ -702,20 +630,404 @@ class MatMulOp : public OpKernel {
   WeightCacheManager<T> weight_cache_manager_;
 
  private:
-  mutex mul_cache_mu_, mu_compute_;
+  mutex mu_compute_;
   std::unordered_map<int, memory> fwd_primitive_args_;
   memory src_mem_, weights_mem_, weights_mem_input_, dst_mem_, bias_mem_,
       add_mem_, fuse_add_src_mem_, fuse_add_dst_mem_, scratchpad_mem_;
   dnnl::matmul matmul_primitive_;
   Tensor* dst_tensor_;
   const Tensor* add_tensor_;
-  Tensor tmp_weight_, scratchpad_tensor_;
+  Tensor tmp_weight_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
   std::vector<int64> input_dims_, weights_dims_;
   TensorShape dst_shape_;
-  PersistentTensor mul_cached_tensor_ TF_GUARDED_BY(mul_cache_mu_);
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
   dnnl::stream dnnl_stream_;
   dnnl::engine dnnl_engine_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
+};
+
+template <typename Device, typename T, typename Tout, typename Tpost,
+          bool allow_bcast = true>
+class MatMulFunctor {
+ public:
+  explicit MatMulFunctor(std::vector<string> fused_ops = {},
+                         float leakyrelu_alpha = 0.0f,
+                         bool is_bf16_math_mode = false)
+      : inplace_sum_(false) {
+    if (fused_ops.size() > 0) {
+      if (!post_op_util_.AddOps(fused_ops)) {
+        ITEX_VLOG(2) << "Found unsupported fusion in Fused MatMul.";
+      }
+      // Set alpha if get `LeakyRelu` after adding ops.
+      if (post_op_util_.HasLeakyRelu()) {
+        post_op_util_.SetLeakyReluAlpha(leakyrelu_alpha);
+      }
+    }
+
+    fp32_math_mode_ = GetFP32MathMode<Device>();
+    if (is_bf16_math_mode && std::is_same<Device, CPUDevice>::value) {
+      fp32_math_mode_ = dnnl::fpmath_mode::bf16;
+    }
+
+    ITEX_CHECK_OK(
+        ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false, &enable_cache_));
+  }
+
+  void InitOrSetMemory(OpKernelContext* context, T* input_tensor_data,
+                       std::vector<int64> input_dims, T* weights_tensor_data,
+                       std::vector<int64> weights_dims, bool is_filter_const,
+                       Tout* output_tensor_data, Tpost* bias_tensor_data,
+                       T* scale_data, std::vector<int64> add_tensor_dims,
+                       Tpost* add_tensor_data) {
+    if (!(enable_cache_ && is_init_ && input_dims == input_dims_ &&
+          weights_dims == weights_dims_)) {
+      Init(context, input_tensor_data, input_dims, weights_tensor_data,
+           weights_dims, is_filter_const, output_tensor_data, bias_tensor_data,
+           scale_data, add_tensor_dims, add_tensor_data);
+      return;
+    }
+
+    if (is_input_zero_) {
+      return;
+    }
+
+    src_mem_.set_data_handle(input_tensor_data);
+    if (is_weight_reorder_) {
+      if (!is_filter_const) {
+        weights_mem_input_.set_data_handle(weights_tensor_data);
+        weights_mem_.set_data_handle(GetTensorBuffer<T>(&tmp_weight_));
+        ReorderMemory(*context, &weights_mem_input_, &weights_mem_,
+                      dnnl_engine_);
+      }
+    } else {
+      weights_mem_.set_data_handle(weights_tensor_data);
+    }
+
+    if (post_op_util_.HasBias()) {
+      bias_mem_.set_data_handle(bias_tensor_data);
+    }
+
+    OP_REQUIRES_OK(context,
+                   context->allocate_temp(DataTypeToEnum<T>::v(),
+                                          TensorShape({scratchpad_size_}),
+                                          scratchpad_tensor_.get()));
+    scratchpad_mem_.set_data_handle(
+        GetTensorBuffer<T>(scratchpad_tensor_.get()));
+
+    if (post_op_util_.HasAdd()) {
+      // In-place do not success, need reorder.
+      fuse_add_src_mem_.set_data_handle(add_tensor_data);
+      fuse_add_dst_mem_.set_data_handle(output_tensor_data);
+      ReorderMemory(*context, &fuse_add_src_mem_, &fuse_add_dst_mem_,
+                    dnnl_engine_);
+    }
+
+    dst_mem_.set_data_handle(output_tensor_data);
+  }
+
+  void SetContext(OpKernelContext* context) { context_ = context; }
+
+  void Init(OpKernelContext* context, T* input_tensor_data,
+            std::vector<int64> input_dims, T* weights_tensor_data,
+            std::vector<int64> weights_dims, bool is_filter_const,
+            Tout* output_tensor_data, Tpost* bias_tensor_data, T* scale_data,
+            std::vector<int64> add_tensor_dims, Tpost* add_tensor_data) {
+    fwd_primitive_args_.clear();
+    input_dims_ = input_dims;
+    weights_dims_ = weights_dims;
+
+    TensorShape input_shape(input_dims);
+    TensorShape weights_tensor_shape(weights_dims);
+
+    OP_REQUIRES(context, input_shape.dims() >= 2,
+                errors::InvalidArgument("In[0] ndims must be >= 2: ",
+                                        input_shape.dims()));
+
+    if (!allow_bcast) {
+      // Using V1, so check to make sure lhs and rhs dimensions are correct and
+      // no broadcasting is needed.
+      OP_REQUIRES(context, input_shape.dims() == weights_tensor_shape.dims(),
+                  errors::InvalidArgument("lhs and rhs has different ndims: ",
+                                          input_shape.DebugString(), " vs. ",
+                                          weights_tensor_shape.DebugString()));
+      const int ndims = input_shape.dims();
+      OP_REQUIRES(
+          context, ndims >= 2,
+          errors::InvalidArgument("lhs and rhs ndims must be >= 2: ", ndims));
+      for (int i = 0; i < ndims - 2; ++i) {
+        OP_REQUIRES(context,
+                    input_shape.dim_size(i) == weights_tensor_shape.dim_size(i),
+                    errors::InvalidArgument(
+                        "lhs.dim(", i, ") and rhs.dim(", i,
+                        ") must be the same: ", input_shape.DebugString(),
+                        " vs ", weights_tensor_shape.DebugString()));
+      }
+    }
+
+    MatMulBCast bcast(input_shape.dim_sizes(),
+                      weights_tensor_shape.dim_sizes());
+    OP_REQUIRES(context, bcast.IsValid(),
+                errors::InvalidArgument(
+                    "In[0] and In[1] must have compatible batch dimensions: ",
+                    input_shape.DebugString(), " vs. ",
+                    weights_tensor_shape.DebugString()));
+
+    // dst(bs, m,n) = \sigma{src(bs, m,k) * weights(bs, k, n)} + bias(bs, m,n)
+    // Get the actual m & n to set dst_shape, and MatMulBCast will calculate the
+    // shape of batches for us
+    const int kSrcDims = input_shape.dims();
+    const auto m = adj_x_ ? input_shape.dim_size(kSrcDims - 1)
+                          : input_shape.dim_size(kSrcDims - 2);
+    const auto k = adj_x_ ? input_shape.dim_size(kSrcDims - 2)
+                          : input_shape.dim_size(kSrcDims - 1);
+    const int kWeightsDims = weights_tensor_shape.dims();
+    const auto k_weights =
+        adj_y_ ? weights_tensor_shape.dim_size(kWeightsDims - 1)
+               : weights_tensor_shape.dim_size(kWeightsDims - 2);
+    const auto n = adj_y_ ? weights_tensor_shape.dim_size(kWeightsDims - 2)
+                          : weights_tensor_shape.dim_size(kWeightsDims - 1);
+    OP_REQUIRES(
+        context, k == k_weights,
+        errors::InvalidArgument(
+            "Matrix size-incompatible: In[0]: ", input_shape.DebugString(),
+            ", In[1]: ", weights_tensor_shape.DebugString()));
+
+    dst_shape_ = bcast.output_batch_shape();
+    dst_shape_.AddDim(m);
+    dst_shape_.AddDim(n);
+    // The maximum number of dimensions for a tensor in DNNL is 6 on GPU.
+    OP_REQUIRES(
+        context, dst_shape_.dims() <= 6,
+        errors::InvalidArgument(
+            "Rank of output tensor must be <= 6, but is ", dst_shape_.dims(),
+            ". Current implementation supports up to rank 6 tensors."));
+
+    if (dst_shape_.num_elements() == 0) {
+      is_input_zero_ = true;
+      is_init_ = true;
+      return;
+    }
+
+    try {
+      // Compute parameters for DNNL matmul primitive.
+      auto params = MatMulBaseUtil::CreateMatMulParams(
+          input_shape, weights_tensor_shape, dst_shape_, adj_x_, adj_y_);
+      auto src_md =
+          memory::desc(params->a_dims, OneDnnType<T>(), params->a_strides);
+      auto weights_md =
+          memory::desc(params->b_dims, OneDnnType<T>(), params->b_strides);
+      // Let oneDNN choose weight format if Weight is const and can be cached
+      auto weights_md_prefer =
+          is_filter_const ? memory::desc(params->b_dims, OneDnnType<T>(),
+                                         memory::format_tag::any)
+                          : weights_md;
+      auto dst_md =
+          memory::desc(params->c_dims, OneDnnType<Tout>(), params->c_strides);
+
+      dnnl::primitive_attr post_ops_attr;
+      post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+      if (std::is_same<T, float>::value) {
+        post_ops_attr.set_fpmath_mode(fp32_math_mode_);
+      }
+      // Set post ops attr after handling all fusions.
+      post_op_util_.SetPostOpAttr(&post_ops_attr);
+
+      dnnl::matmul::primitive_desc matmul_pd;
+      if (post_op_util_.HasBias()) {
+        // bias use same dims as dst
+        auto bias_md = memory::desc(params->bias_dims, OneDnnType<Tpost>(),
+                                    params->bias_strides);
+        bias_mem_ = CreateDnnlMemory(bias_md, dnnl_engine_, bias_tensor_data);
+        // Reassigin desc if it has bias.
+#ifdef ITEX_ONEDNN_3_0
+        matmul_pd = dnnl::matmul::primitive_desc(dnnl_engine_, src_md,
+                                                 weights_md_prefer, bias_md,
+                                                 dst_md, post_ops_attr);
+#else
+        auto matmul_desc =
+            dnnl::matmul::desc(src_md, weights_md_prefer, bias_md, dst_md);
+        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
+                                                 dnnl_engine_);
+#endif
+      } else {
+#ifndef ITEX_ONEDNN_3_0
+        auto matmul_desc =
+            dnnl::matmul::desc(src_md, weights_md_prefer, dst_md);
+        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
+                                                 dnnl_engine_);
+#else
+        matmul_pd = dnnl::matmul::primitive_desc(
+            dnnl_engine_, src_md, weights_md_prefer, dst_md, post_ops_attr);
+#endif
+      }
+
+      // Handle Add fusion and decide output tensor buffer.
+      if (post_op_util_.HasAdd()) {
+        // Reorder is needed
+        // In-place do not success, need reorder.
+        fuse_add_src_mem_ =
+            CreateDnnlMemory(memory::desc(params->c_dims, OneDnnType<Tpost>(),
+                                          params->c_strides),
+                             dnnl_engine_, add_tensor_data);
+        fuse_add_dst_mem_ =
+            CreateDnnlMemory(dst_md, dnnl_engine_, output_tensor_data);
+        ReorderMemory(*context, &fuse_add_src_mem_, &fuse_add_dst_mem_,
+                      dnnl_engine_);
+      }
+
+#ifdef ITEX_ONEDNN_3_0
+      if (post_op_util_.HasOutputScales()) {
+        float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
+            context, post_op_util_.GetOutputScale().data(), 1);
+        dnnl::memory scale_mem(
+            {{1}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x},
+            dnnl_engine_, reinterpret_cast<void*>(output_scale_ptr));
+        fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
+                                    scale_mem);
+      }
+#endif
+
+      // Do weight cache only if Reorder is needed and weight is const.
+      weights_mem_input_ =
+          CreateDnnlMemory(weights_md, dnnl_engine_, weights_tensor_data);
+      weights_md_prefer = matmul_pd.weights_desc();
+      is_weight_reorder_ = (weights_md != weights_md_prefer);
+      if (is_weight_reorder_) {
+        T* weight_cached_data = nullptr;
+
+        // Check weight cache
+        if (is_filter_const) {
+          if (weight_cache_manager_.IsEmpty()) {
+            // Cache weight in first time executing this node.
+            weight_cache_manager_.SetCache(context, weights_md,
+                                           weights_md_prefer,
+                                           weights_tensor_data, dnnl_engine_);
+          }
+          weight_cached_data =
+              this->weight_cache_manager_.GetCache(context, weights_md_prefer);
+        }
+
+        if (weight_cached_data != nullptr) {
+          weights_mem_ = CreateDnnlMemory(weights_md_prefer, dnnl_engine_,
+                                          weight_cached_data);
+        } else {
+          // Reorder if cache is failed since pd has already used any format.
+          int64_t reorder_size = weights_md_prefer.get_size() / sizeof(T);
+          OP_REQUIRES_OK(context,
+                         context->allocate_temp(DataTypeToEnum<T>::v(),
+                                                TensorShape({reorder_size}),
+                                                &tmp_weight_));
+          void* data_handle = GetTensorBuffer<T>(&tmp_weight_);
+          weights_mem_ =
+              CreateDnnlMemory(weights_md_prefer, dnnl_engine_, data_handle);
+          ReorderMemory(*context, &weights_mem_input_, &weights_mem_,
+                        dnnl_engine_);
+        }
+      } else {
+        weights_mem_ = weights_mem_input_;
+      }
+      scratchpad_size_ = matmul_pd.scratchpad_desc().get_size() / sizeof(T);
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<T>::v(),
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_ =
+          dnnl::memory(matmul_pd.scratchpad_desc(), dnnl_engine_,
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
+
+      matmul_primitive_ = dnnl::matmul(matmul_pd);
+      src_mem_ = CreateDnnlMemory(src_md, dnnl_engine_, input_tensor_data);
+      dst_mem_ = CreateDnnlMemory(dst_md, dnnl_engine_, output_tensor_data);
+      fwd_primitive_args_.emplace(DNNL_ARG_SRC, src_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_WEIGHTS, weights_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_DST, dst_mem_);
+      fwd_primitive_args_.emplace(DNNL_ARG_SCRATCHPAD, scratchpad_mem_);
+
+      if (post_op_util_.HasBias()) {
+        fwd_primitive_args_.emplace(DNNL_ARG_BIAS, bias_mem_);
+      }
+      is_init_ = true;
+    } catch (dnnl::error& e) {
+      string error_msg = "Status: " + std::to_string(e.status) +
+                         ", message: " + string(e.message) + ", in file " +
+                         string(__FILE__) + ":" + std::to_string(__LINE__);
+      OP_REQUIRES_OK(
+          context,
+          errors::Aborted("Operation received an exception:", error_msg));
+    }
+  }
+
+  void Compute(T* input_tensor_data, std::vector<int64> input_dims,
+               bool transpose_a, T* weights_tensor_data,
+               std::vector<int64> weights_dims, bool transpose_b,
+               bool is_filter_const, Tout* output_tensor_data,
+               Tpost* bias_tensor_data = nullptr, T* scale_data = nullptr,
+               std::vector<int64> add_tensor_dims = {},
+               Tpost* add_tensor_data = nullptr) {
+    adj_x_ = transpose_a;
+    adj_y_ = transpose_b;
+
+    mutex_lock lock(&mu_compute_);
+    dnnl_engine_ = CreateDnnlEngine<Device>(*context_);
+    // onednn_stream has thread safety issue, need create a new one in
+    // every compute.
+    dnnl_stream_ = CreateDnnlStream(*context_, dnnl_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
+    InitOrSetMemory(context_, input_tensor_data, input_dims,
+                    weights_tensor_data, weights_dims, is_filter_const,
+                    output_tensor_data, bias_tensor_data, scale_data,
+                    add_tensor_dims, add_tensor_data);
+
+    // Skip primitive execution if the calculation is meaningless.
+    if (is_input_zero_) {
+      scratchpad_tensor_.reset();
+      return;
+    }
+
+    matmul_primitive_.execute(dnnl_stream_, fwd_primitive_args_);
+
+    scratchpad_tensor_.reset();
+  }
+
+ protected:
+  bool adj_x_ = false;
+  bool adj_y_ = false;
+  bool inplace_sum_ = false;
+  bool is_weight_reorder_ = false;
+  bool enable_cache_ = false;
+  bool is_init_ = false;
+  bool is_input_zero_ = false;
+
+  // Fusion util.
+  PostOpUtil post_op_util_;
+
+  // Weight cache manager
+  WeightCacheManager<T> weight_cache_manager_;
+
+ private:
+  mutex mu_compute_;
+  std::unordered_map<int, memory> fwd_primitive_args_;
+  memory src_mem_, weights_mem_, weights_mem_input_, dst_mem_, bias_mem_,
+      add_mem_, fuse_add_src_mem_, fuse_add_dst_mem_, scratchpad_mem_;
+  dnnl::matmul matmul_primitive_;
+
+  Tensor tmp_weight_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64_t scratchpad_size_ = 0;
+  std::vector<int64> input_dims_, weights_dims_;
+  TensorShape dst_shape_;
+  dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
+  dnnl::stream dnnl_stream_;
+  dnnl::engine dnnl_engine_;
+
+  OpKernelContext* context_;
+#ifdef ITEX_ONEDNN_3_0
+  HostDataCache<Device, float> output_scale_cache_;
+#endif
 };
 
 template <typename Device, typename T, typename Tgrad>
@@ -723,17 +1035,23 @@ class FusedMatMulGradOp : public OpKernel {
  public:
   explicit FusedMatMulGradOp(OpKernelConstruction* context)
       : OpKernel(context) {
-    OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops_));
-    OP_REQUIRES_OK(context, context->GetAttr("transpose_a", &transpose_a_));
-    OP_REQUIRES_OK(context, context->GetAttr("transpose_b", &transpose_b_));
+    bool transpose_b;
+    std::vector<string> fused_ops;
 
-    OP_REQUIRES(context, fused_ops_.size() == 1,
+    OP_REQUIRES_OK(context, context->GetAttr("fused_ops", &fused_ops));
+    OP_REQUIRES_OK(context, context->GetAttr("transpose_a", &transpose_a_));
+    OP_REQUIRES_OK(context, context->GetAttr("transpose_b", &transpose_b));
+    OP_REQUIRES(context, !transpose_b,
                 errors::InvalidArgument(
-                    "_FusedMatMulGrad must have 1 post-arguments at most."));
+                    "_ITEXFusedMatMulGrad only supports transpose_b = false."));
     OP_REQUIRES(
-        context, fused_ops_[0] == "BiasAddGrad",
+        context, fused_ops.size() == 1,
         errors::InvalidArgument(
-            "The 1st post-argument of _FusedMatMulGrad must be BiasAddGrad."));
+            "_ITEXFusedMatMulGrad must have 1 post-arguments at most."));
+    OP_REQUIRES(
+        context, fused_ops[0] == "BiasAddGrad",
+        errors::InvalidArgument("The 1st post-argument of _ITEXFusedMatMulGrad"
+                                " must be BiasAddGrad."));
     fp32_math_mode_ = GetFP32MathMode<Device>();
     bool is_bf16_math_mode = false;
     if (context->HasAttr("is_bf16_math_mode")) {
@@ -749,8 +1067,8 @@ class FusedMatMulGradOp : public OpKernel {
   }
 
   void InitOrSetMemory(OpKernelContext* context) {
-    diff_weight_tensor_ = nullptr;
-    diff_bias_tensor_ = nullptr;
+    Tensor* diff_weight_tensor = nullptr;
+    Tensor* diff_bias_tensor = nullptr;
 
     if (enable_cache_ && is_init_ &&
         context->is_input_same(kSrcIndex_, input_dims_) &&
@@ -760,12 +1078,27 @@ class FusedMatMulGradOp : public OpKernel {
 
       OP_REQUIRES_OK(context, context->allocate_output(kDiffWeightIndex_,
                                                        diff_weight_tf_shape_,
-                                                       &diff_weight_tensor_));
+                                                       &diff_weight_tensor));
       OP_REQUIRES_OK(context, context->allocate_output(kDiffBiasIndex_,
                                                        diff_bias_tf_shape_,
-                                                       &diff_bias_tensor_));
-      diff_weight_mem_.set_data_handle(GetTensorBuffer<T>(diff_weight_tensor_));
-      diff_bias_mem_.set_data_handle(GetTensorBuffer<Tgrad>(diff_bias_tensor_));
+                                                       &diff_bias_tensor));
+
+      diff_weight_mem_.set_data_handle(GetTensorBuffer<T>(diff_weight_tensor));
+      if (is_reorder_) {
+        diff_weight_mem_prefer_.set_data_handle(
+            GetTensorBuffer<T>(&tmp_reorder_));
+      } else {
+        diff_weight_mem_prefer_.set_data_handle(
+            GetTensorBuffer<T>(diff_weight_tensor));
+      }
+
+      diff_bias_mem_.set_data_handle(GetTensorBuffer<Tgrad>(diff_bias_tensor));
+      OP_REQUIRES_OK(context,
+                     context->allocate_temp(DataTypeToEnum<T>::v(),
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
+      scratchpad_mem_.set_data_handle(
+          GetTensorBuffer<T>(scratchpad_tensor_.get()));
     } else {
       Init(context);
     }
@@ -809,43 +1142,60 @@ class FusedMatMulGradOp : public OpKernel {
                                                 ? dnnl::memory::format_tag::cn
                                                 : dnnl::memory::format_tag::nc;
       dnnl::memory::format_tag diff_weight_format =
-          transpose_b_ ? dnnl::memory::format_tag::oi
-                       : dnnl::memory::format_tag::io;
-      dnnl::memory::format_tag diff_dst_format = dnnl::memory::format_tag::nc;
+          dnnl::memory::format_tag::io;
+      // Don't use block format on GPU since it has tranpose load.
+      dnnl::memory::format_tag diff_weight_format_prefer =
+          std::is_same<Device, CPUDevice>::value ? dnnl::memory::format_tag::any
+                                                 : diff_weight_format;
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(fp32_math_mode_);
       }
+
       auto src_md = dnnl::memory::desc(src_dims, OneDnnType<T>(), src_format);
-      auto diff_dst_md =
-          dnnl::memory::desc(diff_dst_dims, OneDnnType<T>(), diff_dst_format);
+      auto diff_dst_md = dnnl::memory::desc(diff_dst_dims, OneDnnType<T>(),
+                                            dnnl::memory::format_tag::nc);
       auto diff_weight_md = dnnl::memory::desc(
           diff_weight_dims, OneDnnType<T>(), diff_weight_format);
+      auto diff_weight_md_prefer = dnnl::memory::desc(
+          diff_weight_dims, OneDnnType<T>(), diff_weight_format_prefer);
       auto diff_bias_md = dnnl::memory::desc(
-          {diff_bias_dims}, OneDnnType<Tgrad>(), dnnl::memory::format_tag::x);
+          diff_bias_dims, OneDnnType<Tgrad>(), dnnl::memory::format_tag::x);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = dnnl::inner_product_forward::primitive_desc(
+          onednn_engine_, dnnl::prop_kind::forward, src_md,
+          diff_weight_md_prefer, diff_bias_md, diff_dst_md, attr);
+      auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
+          onednn_engine_, src_md, diff_weight_md_prefer, diff_bias_md,
+          diff_dst_md, fwd_pd, attr);
+#else
       auto fwd_desc = dnnl::inner_product_forward::desc(
-          dnnl::prop_kind::forward, src_md, diff_weight_md, diff_bias_md,
+          dnnl::prop_kind::forward, src_md, diff_weight_md_prefer, diff_bias_md,
           diff_dst_md);
       auto fwd_pd = dnnl::inner_product_forward::primitive_desc(fwd_desc, attr,
                                                                 onednn_engine_);
       auto bwd_desc = dnnl::inner_product_backward_weights::desc(
-          src_md, diff_weight_md, diff_bias_md, diff_dst_md);
+          src_md, diff_weight_md_prefer, diff_bias_md, diff_dst_md);
       auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
           bwd_desc, attr, onednn_engine_, fwd_pd);
+#endif
       matmul_bwd_primitive_ =
           dnnl::inner_product_backward_weights(matmul_bwd_pd);
+
       // Allocate output tensors.
-      diff_weight_tf_shape_ =
-          transpose_b_ ? TensorShape({channel, k}) : TensorShape({k, channel});
+      Tensor* diff_weight_tensor = nullptr;
+      Tensor* diff_bias_tensor = nullptr;
+      diff_weight_tf_shape_ = TensorShape({k, channel});
       OP_REQUIRES_OK(context, context->allocate_output(kDiffWeightIndex_,
                                                        diff_weight_tf_shape_,
-                                                       &diff_weight_tensor_));
+                                                       &diff_weight_tensor));
       diff_bias_tf_shape_ = TensorShape({channel});
       OP_REQUIRES_OK(context, context->allocate_output(kDiffBiasIndex_,
                                                        diff_bias_tf_shape_,
-                                                       &diff_bias_tensor_));
+                                                       &diff_bias_tensor));
+
       // Create memory primitive.
       src_mem_ = CreateDnnlMemory(src_md, onednn_engine_,
                                   GetTensorBuffer<T>(&src_tensor));
@@ -853,23 +1203,39 @@ class FusedMatMulGradOp : public OpKernel {
                                        GetTensorBuffer<T>(&diff_dst_tensor));
       diff_bias_mem_ =
           CreateDnnlMemory(diff_bias_md, onednn_engine_,
-                           GetTensorBuffer<Tgrad>(diff_bias_tensor_));
+                           GetTensorBuffer<Tgrad>(diff_bias_tensor));
       diff_weight_mem_ =
-          CreateDnnlMemory(matmul_bwd_pd.diff_weights_desc(), onednn_engine_,
-                           GetTensorBuffer<T>(diff_weight_tensor_));
-      int64 scratchpad_size =
-          matmul_bwd_pd.scratchpad_desc().get_size() / sizeof(T);
+          CreateDnnlMemory(diff_weight_md, onednn_engine_,
+                           GetTensorBuffer<T>(diff_weight_tensor));
+      scratchpad_size_ = matmul_bwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,
                      context->allocate_temp(DataTypeToEnum<T>::v(),
-                                            TensorShape({scratchpad_size}),
-                                            &scratchpad_tensor_));
+                                            TensorShape({scratchpad_size_}),
+                                            scratchpad_tensor_.get()));
       scratchpad_mem_ =
           dnnl::memory(matmul_bwd_pd.scratchpad_desc(), onednn_engine_,
-                       GetTensorBuffer<T>(&scratchpad_tensor_));
+                       GetTensorBuffer<T>(scratchpad_tensor_.get()));
+
+      // Reorder diff weight for better performance.
+      diff_weight_md_prefer = matmul_bwd_pd.diff_weights_desc();
+      is_reorder_ = (diff_weight_md != diff_weight_md_prefer);
+      if (is_reorder_) {
+        int64_t reorder_size = diff_weight_md_prefer.get_size() / sizeof(T);
+        OP_REQUIRES_OK(
+            context,
+            context->allocate_temp(DataTypeToEnum<T>::v(),
+                                   TensorShape({reorder_size}), &tmp_reorder_));
+        diff_weight_mem_prefer_ =
+            CreateDnnlMemory(diff_weight_md_prefer, onednn_engine_,
+                             GetTensorBuffer<T>(&tmp_reorder_));
+      } else {
+        diff_weight_mem_prefer_ = diff_weight_mem_;
+      }
+
       // Execute.
       fwd_primitive_args_ = {{DNNL_ARG_SRC, src_mem_},
                              {DNNL_ARG_DIFF_DST, diff_dst_mem_},
-                             {DNNL_ARG_DIFF_WEIGHTS, diff_weight_mem_},
+                             {DNNL_ARG_DIFF_WEIGHTS, diff_weight_mem_prefer_},
                              {DNNL_ARG_DIFF_BIAS, diff_bias_mem_},
                              {DNNL_ARG_SCRATCHPAD, scratchpad_mem_}};
       is_init_ = true;
@@ -887,32 +1253,39 @@ class FusedMatMulGradOp : public OpKernel {
     mutex_lock lock(&mu_compute_);
     onednn_engine_ = CreateDnnlEngine<Device>(*context);
     onednn_stream_ = CreateDnnlStream(*context, onednn_engine_);
+    scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
     matmul_bwd_primitive_.execute(onednn_stream_, fwd_primitive_args_);
+
+    scratchpad_tensor_.reset();
+    // Reorder diff weight to plain format if it's reordered.
+    if (is_reorder_) {
+      ReorderMemory(*context, &diff_weight_mem_prefer_, &diff_weight_mem_,
+                    onednn_engine_);
+    }
   }
 
  protected:
-  const int kSrcIndex_ = 0, kDiffDstIndex_ = 1, kDiffWeightIndex_ = 0,
-            kDiffBiasIndex_ = 1;
+  static const int kSrcIndex_ = 0, kDiffDstIndex_ = 1, kDiffWeightIndex_ = 0,
+                   kDiffBiasIndex_ = 1;
   bool is_init_ = false;
   bool enable_cache_ = false;
 
  private:
-  mutex mul_cache_mu_, mu_compute_;
+  mutex mu_compute_;
   std::unordered_map<int, memory> fwd_primitive_args_;  // ?
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;
   dnnl::inner_product_backward_weights matmul_bwd_primitive_;
   dnnl::memory src_mem_, diff_dst_mem_, diff_bias_mem_, diff_weight_mem_,
-      scratchpad_mem_;
-  Tensor scratchpad_tensor_;
-  Tensor* diff_weight_tensor_ = nullptr;
-  Tensor* diff_bias_tensor_ = nullptr;
+      diff_weight_mem_prefer_, scratchpad_mem_;
+  Tensor tmp_reorder_;
+  std::shared_ptr<Tensor> scratchpad_tensor_;
+  int64 scratchpad_size_ = 0;
   TensorShape diff_weight_tf_shape_, diff_bias_tf_shape_;
   std::vector<int64> input_dims_, diff_dst_dims_;
+  bool is_reorder_;
   bool transpose_a_;
-  bool transpose_b_;
-  std::vector<string> fused_ops_;
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
 };
 

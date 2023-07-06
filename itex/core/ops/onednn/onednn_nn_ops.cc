@@ -1071,11 +1071,11 @@ void Register_OneDnnFusedBatchNormGradV3Op() {
   }
 }
 
-void Register_OneDnnFusedBatchNormExGradOp() {
+void Register_OneDnnFusedBatchNormGradExOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_OneDnnFusedBatchNormExGrad");
+        TF_NewOpDefinitionBuilder("_OneDnnFusedBatchNormGradEx");
 
     TF_OpDefinitionBuilderAddInput(op_builder, "y_backprop: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
@@ -1121,7 +1121,7 @@ void Register_OneDnnFusedBatchNormExGradOp() {
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_OneDnnFusedBatchNormExGrad op registration failed: ";
+        << "_OneDnnFusedBatchNormGradEx op registration failed: ";
   }
 }
 
@@ -2908,12 +2908,120 @@ void Register_OneDnnQuantizeV2Op() {
                                   "ensure_minimum_range: float = 0.01");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "dtype: {bfloat16, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "classic_asymmetric_algorithm: bool = false");
     // TODO(itex): Implement quantize_shape_fn in the future
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_OneDnnQuantizeV2 op registration failed: ";
+  }
+}
+
+void Register_OneDnnQuantizedConv2DWithDequantizeOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_OneDnnQuantizedConv2DWithDequantize");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input: Tinput");
+    TF_OpDefinitionBuilderAddInput(op_builder, "filter: Tfilter");
+    TF_OpDefinitionBuilderAddInput(op_builder, "bias: Tbias");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_input: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_input: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_filter: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_filter: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_freezed_output: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_freezed_output: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "filter_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "bias_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_input_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_input_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_filter_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_filter_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder,
+                                   "min_freezed_output_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder,
+                                   "max_freezed_output_meta: uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: out_type");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output_meta: uint8");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tinput: quantizedtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tfilter: quantizedtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tbias: {float, qint32}");
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder, "out_type: {bfloat16, half, float} = DT_FLOAT");
+    // TODO(itex): avoid hardcode "NHWC" for QuantizedConv2DWithBias
+    TF_OpDefinitionBuilderAddAttr(op_builder, "data_format: string = 'NHWC'");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_bias_const: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  GetPaddingAttrStringWithExplicit());
+    TF_OpDefinitionBuilderAddAttr(op_builder, "padding_list: list(int) = []");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "dilations: list(int) = [1, 1, 1, 1]");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_OneDnnQuantizedConv2DWithDequantize op registration "
+           "failed: ";
+  }
+}
+
+void Register_OneDnnQuantizedConv2DWithCastOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_OneDnnQuantizedConv2DWithCast");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input: Tinput");
+    TF_OpDefinitionBuilderAddInput(op_builder, "filter: Tfilter");
+    TF_OpDefinitionBuilderAddInput(op_builder, "bias: Tbias");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_input: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_input: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_filter: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_filter: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_freezed_output: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_freezed_output: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "filter_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "bias_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_input_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_input_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "min_filter_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder, "max_filter_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder,
+                                   "min_freezed_output_meta: uint8");
+    TF_OpDefinitionBuilderAddInput(op_builder,
+                                   "max_freezed_output_meta: uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: out_type");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "min_output: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "max_output: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output_meta: uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "min_output_meta:  uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "max_output_meta:  uint8");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tinput: quantizedtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tfilter: quantizedtype");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tbias: {float, qint32}");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "out_type: {bfloat16, half} = DT_HALF");
+    // TODO(itex): avoid hardcode "NHWC" for QuantizedConv2DWithBias
+    TF_OpDefinitionBuilderAddAttr(op_builder, "data_format: string = 'NHWC'");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_bias_const: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  GetPaddingAttrStringWithExplicit());
+    TF_OpDefinitionBuilderAddAttr(op_builder, "padding_list: list(int) = []");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "dilations: list(int) = [1, 1, 1, 1]");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_OneDnnQuantizedConv2DWithCast op registration "
+           "failed: ";
   }
 }
 
@@ -3437,6 +3545,26 @@ void Register_OneDnnSwishOp() {
   }
 }
 
+void Register_OneDnnMishOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_OneDnnMish");
+    TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "features_meta: uint8");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "activations: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "activations_meta: uint8");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "T: {bfloat16, half, float} = DT_FLOAT");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unchanged_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_OneDnnMish op registration failed: ";
+  }
+}
+
 void Register_OneDnnResizeNearestNeighborOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
@@ -3447,7 +3575,7 @@ void Register_OneDnnResizeNearestNeighborOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "images_meta: uint8");
     TF_OpDefinitionBuilderAddInput(op_builder, "size_meta: uint8");
 
-    TF_OpDefinitionBuilderAddOutput(op_builder, "resized_images: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "resized_images: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "resized_images_meta: uint8");
 
     TF_OpDefinitionBuilderAddAttr(op_builder,

@@ -13,6 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef CC_BUILD
+#include "itex/core/profiler/gpu_profiler.h"
+#endif
+
+#include <string>
+#include <vector>
+
 #include "itex/core/profiler/gpu_collector.h"
 #include "itex/core/profiler/utils.h"
 #include "itex/core/profiler/utils/xplane_utils.h"
@@ -23,7 +30,7 @@ limitations under the License.
 #include "itex/core/utils/strcat.h"
 #include "protos/xplane.pb.h"
 #include "tensorflow/c/experimental/pluggable_profiler/pluggable_profiler.h"
-#include "third_party/build_option/dpcpp/runtime/dpcpp_runtime.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
 inline std::string GpuPlaneName(int32_t device_ordinal) {
   return itex::strings::StrCat("/device:GPU:", device_ordinal);
@@ -68,7 +75,8 @@ void gpu_start(const TP_Profiler* profiler, TF_Status* status) {
            "profiler "
            "Warning***************************************************";
     ITEX_LOG(WARNING)
-        << "Itex profiler not enabled, if you want to enable it, please set "
+        << "Intel Extension For TensorFlow profiler not enabled, if you want "
+           "to enable it, please set "
            "environment as :\nexport ZE_ENABLE_TRACING_LAYER=1 \nexport "
            "UseCyclesPerSecondTimer=1\nexport ENABLE_TF_PROFILER=1";
     ITEX_LOG(WARNING) << "*****************************************************"
@@ -95,7 +103,7 @@ static void NormalizeTimeStamps(itex::profiler::XPlaneBuilder* plane,
 void gpu_collect_data_xspace(const TP_Profiler* profiler, uint8_t* buffer,
                              size_t* size_in_bytes, TF_Status* status) {
   int device_count = 0;
-  dpcppGetDeviceCount(&device_count);
+  ITEX_GPUGetDeviceCount(&device_count);
 
   std::vector<itex::profiler::PerDeviceCollector> per_device_collector;
   itex::XSpace space;
@@ -124,7 +132,12 @@ void gpu_destroy_profiler(TP_Profiler* profiler) {}
 
 void gpu_destroy_profiler_fns(TP_ProfilerFns* profiler_fns) {}
 
+#ifndef CC_BUILD
+void TF_InitProfiler_Internal(TF_ProfilerRegistrationParams* params,
+                              TF_Status* status) {
+#else
 void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status) {
+#endif
   params->struct_size = TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE;
   params->profiler->struct_size = TP_PROFILER_STRUCT_SIZE;
   params->profiler_fns->struct_size = TP_PROFILER_FNS_STRUCT_SIZE;

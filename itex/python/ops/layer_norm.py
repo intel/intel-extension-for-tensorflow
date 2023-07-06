@@ -36,8 +36,11 @@ from keras import backend as K
 from keras import constraints
 from keras import initializers
 from keras import regularizers
-from keras.engine.base_layer import Layer
-from keras.utils import control_flow_util
+from keras.layers import Layer
+try:
+  from keras.utils import control_flow_util
+except ImportError:
+  from keras.src.utils import control_flow_util
 
 def _layer_norm(
     x,
@@ -55,7 +58,7 @@ def _layer_norm(
   min_epsilon = 1.001e-5
   epsilon = epsilon if epsilon > min_epsilon else min_epsilon
 
-  y, running_mean, running_var = load_ops_library.layer_norm(
+  y, running_mean, running_var = load_ops_library.itex_layer_norm(
       x,
       scale,
       offset,
@@ -273,7 +276,8 @@ class LayerNormalization(Layer):
       self._is_one_axis_len = False
 
     if self.dtype == 'float64':
-      raise ValueError('Itex Layernorm only support float32, bfloat16 and float16.')
+      raise ValueError('Itex Layernorm only support float32, \
+                        bfloat16 and float16.')
 
     return can_use_onednn_layer_norm
 

@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_OP_DEF_UTIL_H_
 
 #include <string>
+
 #include "itex/core/utils/protobuf.h"
 #include "itex/core/utils/status.h"
 #include "protos/api_def.pb.h"

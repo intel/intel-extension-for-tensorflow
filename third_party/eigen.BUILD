@@ -11,6 +11,8 @@ licenses([
 
 exports_files(["COPYING.MPL2"])
 
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
 # License-restricted (i.e. not reciprocal or notice) files inside Eigen/...
 EIGEN_RESTRICTED_FILES = [
     "Eigen/src/OrderingMethods/Amd.h",

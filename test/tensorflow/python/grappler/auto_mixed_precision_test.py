@@ -250,8 +250,8 @@ def _get_config(auto_mixed_precision_mode):
     os.environ['ITEX_REMAPPER'] = '0'
   else:
     assert auto_mixed_precision_mode is None
-    # disable meta optimization.
-    rewrite_config.use_plugin_optimizers = rewriter_config_pb2.RewriterConfig.OFF # pylint: line-too-long
+    os.environ['ITEX_AUTO_MIXED_PRECISION'] = '0'
+    os.environ['ITEX_REMAPPER'] = '0'
   rewrite_config.min_graph_nodes = -1
   graph_options = config_pb2.GraphOptions(
       rewrite_options=rewrite_config, build_cost_model=1)

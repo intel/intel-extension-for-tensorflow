@@ -109,15 +109,15 @@ class OneDnnRequantizationRangePerChannelOp : public OpKernel {
     // TODO(itex): Add parallel_for for both CPU and GPU
     for (int64_t i = 0; i < depth; ++i) {
 #ifndef INTEL_CPU_ONLY
-      auto* dpcpp_stream = context->GetDeviceStream();
+      auto* ITEX_GPU_stream = context->GetDeviceStream();
       min_device.flat<qint32>().device(d) =
           transposed_input.chip<0>(i).minimum();
       max_device.flat<qint32>().device(d) =
           transposed_input.chip<0>(i).maximum();
 
-      dpcpp_stream->memcpy(min_host.flat<qint32>().data(),
-                           min_device.flat<qint32>().data(), sizeof(qint32));
-      dpcpp_stream
+      ITEX_GPU_stream->memcpy(min_host.flat<qint32>().data(),
+                              min_device.flat<qint32>().data(), sizeof(qint32));
+      ITEX_GPU_stream
           ->memcpy(max_host.flat<qint32>().data(),
                    max_device.flat<qint32>().data(), sizeof(qint32))
           .wait();
@@ -180,15 +180,6 @@ class OneDnnRequantizationRangePerChannelOp : public OpKernel {
           .HostMemory("output_min")         \
           .HostMemory("output_max"),        \
       OneDnnRequantizationRangePerChannelOp<GPUDevice, TYPE>)
-TF_CALL_qint32(REGISTER_KERNEL);
-
-#else
-#define REGISTER_KERNEL(TYPE)               \
-  REGISTER_KERNEL_BUILDER(                  \
-      Name("RequantizationRangePerChannel") \
-          .Device(DEVICE_CPU)               \
-          .TypeConstraint<TYPE>("T"),       \
-      OneDnnRequantizationRangePerChannelOp<CPUDevice, TYPE>)
 TF_CALL_qint32(REGISTER_KERNEL);
 #endif  // INTEL_CPU_ONLY
 

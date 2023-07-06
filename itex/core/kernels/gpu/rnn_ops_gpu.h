@@ -152,16 +152,17 @@ struct ApplyMaskThenReduceKernel {
     int x = id / extend_z;
     int z = id - x * extend_z;
 
-    T res = T(0);
+    float res = 0.0f;
     for (int y = 0; y < extend_y; ++y) {
       int offset1 = x * extend_y * extend_z + y * extend_z + z;
       int offset2 = y * extend_z + z;
       if (UseMask)
-        res += input[offset1] * mask[offset2];
+        res += static_cast<float>(const_cast<T*>(input)[offset1]) *
+               static_cast<float>(const_cast<T*>(mask)[offset2]);
       else
-        res += input[offset1];
+        res += static_cast<float>(const_cast<T*>(input)[offset1]);
     }
-    output[id] = res;
+    output[id] = static_cast<T>(res);
   }
   const T* input;
   const T* mask;
@@ -170,6 +171,54 @@ struct ApplyMaskThenReduceKernel {
   const int extend_y;
   const int extend_z;
 };
+
+// if DPCPP supports bf16 cast instructions on this platform,
+// use DPCPP's bf16 cast instead of Eigen's bf16 cast for performance.
+#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
+template <bool UseMask>
+struct ApplyMaskThenReduceKernel<Eigen::bfloat16, UseMask> {
+  using sycl_bf16_t = sycl::ext::oneapi::bfloat16;
+  ApplyMaskThenReduceKernel(const Eigen::bfloat16* input_,
+                            const Eigen::bfloat16* mask_,
+                            Eigen::bfloat16* output_, const int extend_x_,
+                            const int extend_y_, const int extend_z_)
+      : input(input_),
+        mask(mask_),
+        output(output_),
+        extend_x(extend_x_),
+        extend_y(extend_y_),
+        extend_z(extend_z_) {}
+  inline void operator()(sycl::nd_item<1> item) const {
+    int num_elems = extend_x * extend_z;
+    int id = item.get_global_linear_id();
+    if (id >= num_elems) return;
+
+    int x = id / extend_z;
+    int z = id - x * extend_z;
+
+    float res = 0.0f;
+    for (int y = 0; y < extend_y; ++y) {
+      int offset1 = x * extend_y * extend_z + y * extend_z + z;
+      int offset2 = y * extend_z + z;
+      if (UseMask)
+        res += static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+                   const_cast<Eigen::bfloat16*>(input))[offset1]) *
+               static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+                   const_cast<Eigen::bfloat16*>(mask))[offset2]);
+      else
+        res += static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+            const_cast<Eigen::bfloat16*>(input))[offset1]);
+    }
+    reinterpret_cast<sycl_bf16_t*>(output)[id] = static_cast<sycl_bf16_t>(res);
+  }
+  const Eigen::bfloat16* input;
+  const Eigen::bfloat16* mask;
+  Eigen::bfloat16* output;
+  const int extend_x;
+  const int extend_y;
+  const int extend_z;
+};
+#endif
 
 template <typename T, bool UseMask>
 void ApplyMaskThenReduce(const GPUDevice& d, const T* input, const T* mask,
@@ -229,7 +278,7 @@ struct InputGemmKernel {
     // register tile (A, B, C) for better performancee
     T a_reg[TAB][cM];
     T b_reg[TAB][cP];
-    T sum[cM][cP] = {T(0)};
+    T sum[cM][cP] = {{T(0)}};
 
     int stride_a;
     if (BcastA) {
@@ -246,7 +295,7 @@ struct InputGemmKernel {
 
     // reduction in K direction
     for (int k = 0; k < N; k += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSY); k1++) {
 #pragma unroll
@@ -266,7 +315,7 @@ struct InputGemmKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSX); k1++) {
 #pragma unroll
@@ -291,7 +340,7 @@ struct InputGemmKernel {
 
       // Per thread consideration in core computation part
       for (int k1 = 0; k1 < TILE_K; k1 += TAB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -301,7 +350,7 @@ struct InputGemmKernel {
           }
         }
 
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -326,7 +375,7 @@ struct InputGemmKernel {
       block.barrier(sycl::access::fence_space::local_space);
     }
 
-    // write results back
+// write results back
 #pragma unroll
     for (int m = 0; m < cM; m++) {
 #pragma unroll
@@ -420,7 +469,7 @@ struct GemmKernel {
 
     T a_reg[TAB][cM];
     T b_reg[TAB][cP];
-    T sum[cM][cP] = {T(0)};
+    T sum[cM][cP] = {{T(0)}};
 
     int stride_a = !BcastA * M * N;
     int stride_b = !BcastB * N * P;
@@ -431,7 +480,7 @@ struct GemmKernel {
 
     // reduction in K direction
     for (int k = 0; k < N; k += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSY); k1++) {
 #pragma unroll
@@ -451,7 +500,7 @@ struct GemmKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSX); k1++) {
 #pragma unroll
@@ -476,7 +525,7 @@ struct GemmKernel {
 
       // Per thread consideration in core computation part
       for (int k1 = 0; k1 < TILE_K; k1 += TAB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -486,7 +535,7 @@ struct GemmKernel {
           }
         }
 
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -511,7 +560,7 @@ struct GemmKernel {
       item.barrier(sycl::access::fence_space::local_space);
     }
 
-    // write results back
+// write results back
 #pragma unroll
     for (int m = 0; m < cM; m++) {
 #pragma unroll
@@ -606,7 +655,7 @@ struct ParamsGemmKernel {
 
     T a_reg[TAB][cM];
     T b_reg[TAB][cP];
-    T sum[cM][cP] = {T(0)};
+    T sum[cM][cP] = {{T(0)}};
 
     int stride_a = group_z_t * bs * M * N + group_z_b * M * N;
     int stride_b;
@@ -616,14 +665,13 @@ struct ParamsGemmKernel {
       stride_b = group_z_t * bs * N * P + group_z_b * N * P;
     }
 
-    int stride_c = group_z_t * bs * M * P + group_z_b * M * P;
     const T* A_per_batch = A + stride_a;
     const T* B_per_batch = B + stride_b;
     T* C_per_batch = C + group_z * M * P;
 
     // reduction in K direction
     for (int k = 0; k < N; k += TILE_K) {
-      // Load matrix A into local memory
+// Load matrix A into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSY); k1++) {
 #pragma unroll
@@ -643,7 +691,7 @@ struct ParamsGemmKernel {
         }
       }
 
-      // Load matrix B into local memory
+// Load matrix B into local memory
 #pragma unroll
       for (int k1 = 0; k1 < DivUp(TILE_K, BSX); k1++) {
 #pragma unroll
@@ -668,7 +716,7 @@ struct ParamsGemmKernel {
 
       // Per thread consideration in core computation part
       for (int k1 = 0; k1 < TILE_K; k1 += TAB) {
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -678,7 +726,7 @@ struct ParamsGemmKernel {
           }
         }
 
-        // load SLM to registers
+// load SLM to registers
 #pragma unroll
         for (int tab = 0; tab < TAB; tab++) {
 #pragma unroll
@@ -703,7 +751,7 @@ struct ParamsGemmKernel {
       block.barrier(sycl::access::fence_space::local_space);
     }
 
-    // write results back
+// write results back
 #pragma unroll
     for (int m = 0; m < cM; m++) {
 #pragma unroll
@@ -789,37 +837,43 @@ struct LstmEltwiseKernel {
     int bs = id / output_size;
     int col = id - bs * output_size;
 
-    const T ii_gates = igates[id];
-    const T hi_gates = hgates[id];
-    const T i_bias = bias[col];
-    const T it = sigmoid(ii_gates + hi_gates + i_bias);
+    float ii_gates = static_cast<float>(const_cast<T*>(igates)[id]);
+    float hi_gates = static_cast<float>(const_cast<T*>(hgates)[id]);
+    float i_bias = static_cast<float>(const_cast<T*>(bias)[col]);
+    float it = sigmoid(ii_gates + hi_gates + i_bias);
 
-    const T if_gates = igates[id + num_elems];
-    const T hf_gates = hgates[id + num_elems];
-    const T f_bias = bias[col + output_size];
-    const T ft = sigmoid(if_gates + hf_gates + f_bias);
+    float if_gates = static_cast<float>(const_cast<T*>(igates)[id + num_elems]);
+    float hf_gates = static_cast<float>(const_cast<T*>(hgates)[id + num_elems]);
+    float f_bias = static_cast<float>(const_cast<T*>(bias)[col + output_size]);
+    float ft = sigmoid(if_gates + hf_gates + f_bias);
 
-    const T ic_gates = igates[id + num_elems * 2];
-    const T hc_gates = hgates[id + num_elems * 2];
-    const T c_bias = bias[col + output_size * 2];
-    const T ct = Eigen::numext::tanh(ic_gates + hc_gates + c_bias);
+    float ic_gates =
+        static_cast<float>(const_cast<T*>(igates)[id + num_elems * 2]);
+    float hc_gates =
+        static_cast<float>(const_cast<T*>(hgates)[id + num_elems * 2]);
+    float c_bias =
+        static_cast<float>(const_cast<T*>(bias)[col + output_size * 2]);
+    float ct = Eigen::numext::tanh(ic_gates + hc_gates + c_bias);
 
-    const T io_gates = igates[id + num_elems * 3];
-    const T ho_gates = hgates[id + num_elems * 3];
-    const T o_bias = bias[col + output_size * 3];
-    const T ot = sigmoid(io_gates + ho_gates + o_bias);
+    float io_gates =
+        static_cast<float>(const_cast<T*>(igates)[id + num_elems * 3]);
+    float ho_gates =
+        static_cast<float>(const_cast<T*>(hgates)[id + num_elems * 3]);
+    float o_bias =
+        static_cast<float>(const_cast<T*>(bias)[col + output_size * 3]);
+    float ot = sigmoid(io_gates + ho_gates + o_bias);
 
-    const T c_nt = ft * c_prev[id] + it * ct;
-    const T h_nt = ot * Eigen::numext::tanh(c_nt);
+    float c_nt = ft * static_cast<float>(const_cast<T*>(c_prev)[id]) + it * ct;
+    float h_nt = ot * Eigen::numext::tanh(c_nt);
 
-    c_next[id] = c_nt;
-    h_next[id] = h_nt;
+    c_next[id] = static_cast<T>(c_nt);
+    h_next[id] = static_cast<T>(h_nt);
 
     if (IsTraining) {
-      gates[id] = it;
-      gates[id + num_elems] = ft;
-      gates[id + num_elems * 2] = ct;
-      gates[id + num_elems * 3] = ot;
+      gates[id] = static_cast<T>(it);
+      gates[id + num_elems] = static_cast<T>(ft);
+      gates[id + num_elems * 2] = static_cast<T>(ct);
+      gates[id + num_elems * 3] = static_cast<T>(ot);
     }
   }
 
@@ -833,6 +887,96 @@ struct LstmEltwiseKernel {
   const int batch_size;
   const int output_size;
 };
+
+#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
+template <bool IsTraining>
+struct LstmEltwiseKernel<Eigen::bfloat16, IsTraining> {
+  using sycl_bf16_t = sycl::ext::oneapi::bfloat16;
+  LstmEltwiseKernel(const Eigen::bfloat16* igates_,
+                    const Eigen::bfloat16* hgates_,
+                    const Eigen::bfloat16* bias_,
+                    const Eigen::bfloat16* c_prev_, Eigen::bfloat16* h_next_,
+                    Eigen::bfloat16* c_next_, Eigen::bfloat16* gates_,
+                    const int batch_size_, const int output_size_)
+      : igates(igates_),
+        hgates(hgates_),
+        bias(bias_),
+        c_prev(c_prev_),
+        h_next(h_next_),
+        c_next(c_next_),
+        gates(gates_),
+        batch_size(batch_size_),
+        output_size(output_size_) {}
+  inline void operator()(sycl::nd_item<1> item) const {
+    int num_elems = batch_size * output_size;
+    int id = item.get_global_linear_id();
+    if (id >= num_elems) return;
+
+    int bs = id / output_size;
+    int col = id - bs * output_size;
+
+    float ii_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(igates))[id]);
+    float hi_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(hgates))[id]);
+    float i_bias = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(bias))[col]);
+    float it = sigmoid(ii_gates + hi_gates + i_bias);
+
+    float if_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(igates))[id + num_elems]);
+    float hf_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(hgates))[id + num_elems]);
+    float f_bias = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(bias))[col + output_size]);
+    float ft = sigmoid(if_gates + hf_gates + f_bias);
+
+    float ic_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(igates))[id + num_elems * 2]);
+    float hc_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(hgates))[id + num_elems * 2]);
+    float c_bias = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(bias))[col + output_size * 2]);
+    float ct = Eigen::numext::tanh(ic_gates + hc_gates + c_bias);
+
+    float io_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(igates))[id + num_elems * 3]);
+    float ho_gates = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(hgates))[id + num_elems * 3]);
+    float o_bias = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(bias))[col + output_size * 3]);
+    float ot = sigmoid(io_gates + ho_gates + o_bias);
+
+    float c_nt = ft * static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+                          const_cast<Eigen::bfloat16*>(c_prev))[id]) +
+                 it * ct;
+    float h_nt = ot * Eigen::numext::tanh(c_nt);
+
+    reinterpret_cast<sycl_bf16_t*>(c_next)[id] = static_cast<sycl_bf16_t>(c_nt);
+    reinterpret_cast<sycl_bf16_t*>(h_next)[id] = static_cast<sycl_bf16_t>(h_nt);
+
+    if (IsTraining) {
+      reinterpret_cast<sycl_bf16_t*>(gates)[id] = static_cast<sycl_bf16_t>(it);
+      reinterpret_cast<sycl_bf16_t*>(gates)[id + num_elems] =
+          static_cast<sycl_bf16_t>(ft);
+      reinterpret_cast<sycl_bf16_t*>(gates)[id + num_elems * 2] =
+          static_cast<sycl_bf16_t>(ct);
+      reinterpret_cast<sycl_bf16_t*>(gates)[id + num_elems * 3] =
+          static_cast<sycl_bf16_t>(ot);
+    }
+  }
+
+  const Eigen::bfloat16* igates;
+  const Eigen::bfloat16* hgates;
+  const Eigen::bfloat16* bias;
+  const Eigen::bfloat16* c_prev;
+  Eigen::bfloat16* h_next;
+  Eigen::bfloat16* c_next;
+  Eigen::bfloat16* gates;
+  const int batch_size;
+  const int output_size;
+};
+#endif
 
 template <typename T, bool IsTraining>
 void LstmEltwise(const GPUDevice& d, const T* igates, const T* hgates,
@@ -883,33 +1027,37 @@ struct LstmGradEltwiseKernel {
     int id = item.get_global_linear_id();
     if (id >= num_elems) return;
 
-    const T dh_next = h_prev_grad[id] + output_grad[id];
+    float dh_next = static_cast<float>(const_cast<T*>(h_prev_grad)[id]) +
+                    static_cast<float>(const_cast<T*>(output_grad)[id]);
 
-    const T it = gates[id];
-    const T ft = gates[id + num_elems];
-    const T gt = gates[id + num_elems * 2];
-    const T ot = gates[id + num_elems * 3];
+    float it = static_cast<float>(const_cast<T*>(gates)[id]);
+    float ft = static_cast<float>(const_cast<T*>(gates)[id + num_elems]);
+    float gt = static_cast<float>(const_cast<T*>(gates)[id + num_elems * 2]);
+    float ot = static_cast<float>(const_cast<T*>(gates)[id + num_elems * 3]);
 
-    const T tanh_c_next = Eigen::numext::tanh(c_next[id]);
-    const T dc_next =
-        c_next_grad[id] + dh_next * ot * (T(1) - square(tanh_c_next));
+    float tanh_c_next =
+        Eigen::numext::tanh(static_cast<float>(const_cast<T*>(c_next)[id]));
+    float dc_next =
+        static_cast<float>(const_cast<T*>(c_next_grad)[id]) +
+        dh_next * ot * (static_cast<float>(1.0f) - square(tanh_c_next));
     // dc_prev = dct * ft
-    const T dc_prev = dc_next * ft;
+    float dc_prev = dc_next * ft;
 
     // dot = dst_diff_h * tanh(c_next) * ot * (1 - ot)
-    const T dot = dh_next * tanh_c_next * ot * (T(1) - ot);
+    float dot = dh_next * tanh_c_next * ot * (static_cast<float>(1.0f) - ot);
     // dft = dct * c_prev * ft * (1 - ft)
-    const T dft = dc_next * c_prev[id] * ft * (T(1) - ft);
+    float dft = dc_next * static_cast<float>(const_cast<T*>(c_prev)[id]) * ft *
+                (static_cast<float>(1.0f) - ft);
     //  dit = dct * gt * it * (1 - it)
-    const T dit = dc_next * gt * it * (T(1) - it);
+    float dit = dc_next * gt * it * (static_cast<float>(1.0f) - it);
     // dgt = dct * it * (1 - np.square(gt))
-    const T dgt = dc_next * it * (T(1) - square(gt));
+    float dgt = dc_next * it * (static_cast<float>(1.0f) - square(gt));
 
-    c_prev_grad[id] = dc_prev;
-    gates_grad[id] = dit;
-    gates_grad[id + num_elems] = dft;
-    gates_grad[id + num_elems * 2] = dgt;
-    gates_grad[id + num_elems * 3] = dot;
+    c_prev_grad[id] = static_cast<T>(dc_prev);
+    gates_grad[id] = static_cast<T>(dit);
+    gates_grad[id + num_elems] = static_cast<T>(dft);
+    gates_grad[id + num_elems * 2] = static_cast<T>(dgt);
+    gates_grad[id + num_elems * 3] = static_cast<T>(dot);
   }
 
   const T* c_prev;
@@ -923,6 +1071,92 @@ struct LstmGradEltwiseKernel {
   const int batch_size;
   const int output_size;
 };
+
+#ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
+template <>
+struct LstmGradEltwiseKernel<Eigen::bfloat16> {
+  using sycl_bf16_t = sycl::ext::oneapi::bfloat16;
+  LstmGradEltwiseKernel(
+      const Eigen::bfloat16* c_prev_, const Eigen::bfloat16* c_next_,
+      const Eigen::bfloat16* output_grad_, const Eigen::bfloat16* h_prev_grad_,
+      const Eigen::bfloat16* c_next_grad_, const Eigen::bfloat16* gates_,
+      Eigen::bfloat16* c_prev_grad_, Eigen::bfloat16* gates_grad_,
+      const int batch_size_, const int output_size_)
+      : c_prev(c_prev_),
+        c_next(c_next_),
+        output_grad(output_grad_),
+        h_prev_grad(h_prev_grad_),
+        c_next_grad(c_next_grad_),
+        gates(gates_),
+        c_prev_grad(c_prev_grad_),
+        gates_grad(gates_grad_),
+        batch_size(batch_size_),
+        output_size(output_size_) {}
+  inline void operator()(sycl::nd_item<1> item) const {
+    int num_elems = batch_size * output_size;
+    int id = item.get_global_linear_id();
+    if (id >= num_elems) return;
+
+    float dh_next = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+                        const_cast<Eigen::bfloat16*>(h_prev_grad))[id]) +
+                    static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+                        const_cast<Eigen::bfloat16*>(output_grad))[id]);
+
+    float it = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(gates))[id]);
+    float ft = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(gates))[id + num_elems]);
+    float gt = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(gates))[id + num_elems * 2]);
+    float ot = static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+        const_cast<Eigen::bfloat16*>(gates))[id + num_elems * 3]);
+
+    float tanh_c_next =
+        Eigen::numext::tanh(static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+            const_cast<Eigen::bfloat16*>(c_next))[id]));
+    float dc_next =
+        static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+            const_cast<Eigen::bfloat16*>(c_next_grad))[id]) +
+        dh_next * ot * (static_cast<float>(1.0f) - square(tanh_c_next));
+    // dc_prev = dct * ft
+    float dc_prev = dc_next * ft;
+
+    // dot = dst_diff_h * tanh(c_next) * ot * (1 - ot)
+    float dot = dh_next * tanh_c_next * ot * (static_cast<float>(1.0f) - ot);
+    // dft = dct * c_prev * ft * (1 - ft)
+    float dft = dc_next *
+                static_cast<float>(reinterpret_cast<sycl_bf16_t*>(
+                    const_cast<Eigen::bfloat16*>(c_prev))[id]) *
+                ft * (static_cast<float>(1.0f) - ft);
+    //  dit = dct * gt * it * (1 - it)
+    float dit = dc_next * gt * it * (static_cast<float>(1.0f) - it);
+    // dgt = dct * it * (1 - np.square(gt))
+    float dgt = dc_next * it * (static_cast<float>(1.0f) - square(gt));
+
+    reinterpret_cast<sycl_bf16_t*>(c_prev_grad)[id] =
+        static_cast<sycl_bf16_t>(dc_prev);
+    reinterpret_cast<sycl_bf16_t*>(gates_grad)[id] =
+        static_cast<sycl_bf16_t>(dit);
+    reinterpret_cast<sycl_bf16_t*>(gates_grad)[id + num_elems] =
+        static_cast<sycl_bf16_t>(dft);
+    reinterpret_cast<sycl_bf16_t*>(gates_grad)[id + num_elems * 2] =
+        static_cast<sycl_bf16_t>(dgt);
+    reinterpret_cast<sycl_bf16_t*>(gates_grad)[id + num_elems * 3] =
+        static_cast<sycl_bf16_t>(dot);
+  }
+
+  const Eigen::bfloat16* c_prev;
+  const Eigen::bfloat16* c_next;
+  const Eigen::bfloat16* output_grad;
+  const Eigen::bfloat16* h_prev_grad;
+  const Eigen::bfloat16* c_next_grad;
+  const Eigen::bfloat16* gates;
+  Eigen::bfloat16* c_prev_grad;
+  Eigen::bfloat16* gates_grad;
+  const int batch_size;
+  const int output_size;
+};
+#endif
 
 template <typename T>
 void LstmGradEltwise(const GPUDevice& d, const T* c_prev, const T* c_next,

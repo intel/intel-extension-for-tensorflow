@@ -14,41 +14,60 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-
 #include "itex/core/kernels/gpu/bincount_op.h"
+
+#include <algorithm>
 
 #include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/utils/gpu_device_functions.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"
 
 namespace itex {
-constexpr static auto read_write = sycl::access::mode::read_write;
-constexpr static auto local_target = sycl::access::target::local;
+constexpr static int ITEMS_PER_THREAD = 8;
 
 typedef Eigen::GpuDevice GPUDevice;
 
 namespace functor {
 
-template <typename Tidx, typename T, bool has_weight, bool binary_count>
-struct BincountKernel;
+template <typename Tidx, typename T, bool binary_count, bool has_weight>
+struct GroupBincountKernel;
 
-template <typename Tidx, typename T>
-struct BincountKernel<Tidx, T, true, false> {
-  BincountKernel(int64_t arr_size, const Tidx* arr_ptr, const Tidx num_bins,
-                 T* output_ptr, const T* weights_ptr)
+template <typename Tidx, typename T, bool binary_count>
+struct GroupBincountKernel<Tidx, T, binary_count, true> {
+  GroupBincountKernel(int64_t arr_size, const Tidx* arr_ptr,
+                      const Tidx num_bins, T* output_ptr, const T* weights_ptr,
+                      int64_t elems_per_group)
       : arr_size(arr_size),
         arr_ptr(arr_ptr),
         num_bins(num_bins),
         output_ptr(output_ptr),
-        weights_ptr(weights_ptr) {}
-  void operator()() const {
-    for (int32 i = 0; i < arr_size; ++i) {
+        weights_ptr(weights_ptr),
+        elems_per_group(elems_per_group) {}
+
+  void operator()(sycl::nd_item<1> item) const {
+    auto local_id = item.get_local_id(0);
+    auto group_id = item.get_group(0);
+    int group_size = item.get_local_range(0);
+
+    int group_start = group_id * elems_per_group;
+    int group_end = group_start + elems_per_group;
+    group_end = group_end > arr_size ? arr_size : group_end;
+    if (group_start >= arr_size) return;
+
+    for (int32 i = group_start + local_id; i < group_end; i += group_size) {
       Tidx value = arr_ptr[i];
       if (value < num_bins) {
-        output_ptr[value] += weights_ptr[i];
+        int offset = value;
+        if (binary_count) {
+          output_ptr[offset] = T(1);
+        } else {
+          T weight = weights_ptr[i];
+          ItexAtomicAdd(output_ptr + offset, weight);
+        }
       }
     }
   }
@@ -59,21 +78,39 @@ struct BincountKernel<Tidx, T, true, false> {
   const Tidx num_bins;
   T* output_ptr;
   const T* weights_ptr;
+  int64_t elems_per_group;
 };
 
-template <typename Tidx, typename T>
-struct BincountKernel<Tidx, T, false, false> {
-  BincountKernel(int64_t arr_size, const Tidx* arr_ptr, const Tidx num_bins,
-                 T* output_ptr)
+template <typename Tidx, typename T, bool binary_count>
+struct GroupBincountKernel<Tidx, T, binary_count, false> {
+  GroupBincountKernel(int64_t arr_size, const Tidx* arr_ptr,
+                      const Tidx num_bins, T* output_ptr,
+                      int64_t elems_per_group)
       : arr_size(arr_size),
         arr_ptr(arr_ptr),
         num_bins(num_bins),
-        output_ptr(output_ptr) {}
-  void operator()() const {
-    for (int32 i = 0; i < arr_size; ++i) {
+        output_ptr(output_ptr),
+        elems_per_group(elems_per_group) {}
+
+  void operator()(sycl::nd_item<1> item) const {
+    auto local_id = item.get_local_id(0);
+    auto group_id = item.get_group(0);
+    int group_size = item.get_local_range(0);
+
+    int group_start = group_id * elems_per_group;
+    int group_end = group_start + elems_per_group;
+    group_end = group_end > arr_size ? arr_size : group_end;
+    if (group_start >= arr_size) return;
+
+    for (int32 i = group_start + local_id; i < group_end; i += group_size) {
       Tidx value = arr_ptr[i];
       if (value < num_bins) {
-        output_ptr[value] += T(1);
+        int offset = value;
+        if (binary_count) {
+          output_ptr[offset] = T(1);
+        } else {
+          ItexAtomicAdd(output_ptr + offset, T(1));
+        }
       }
     }
   }
@@ -83,30 +120,7 @@ struct BincountKernel<Tidx, T, false, false> {
   const Tidx* arr_ptr;
   const Tidx num_bins;
   T* output_ptr;
-};
-
-template <typename Tidx, typename T>
-struct BincountKernel<Tidx, T, false, true> {
-  BincountKernel(int64_t arr_size, const Tidx* arr_ptr, const Tidx num_bins,
-                 T* output_ptr)
-      : arr_size(arr_size),
-        arr_ptr(arr_ptr),
-        num_bins(num_bins),
-        output_ptr(output_ptr) {}
-  void operator()() const {
-    for (int32 i = 0; i < arr_size; ++i) {
-      Tidx value = arr_ptr[i];
-      if (value < num_bins) {
-        output_ptr[value] = true;
-      }
-    }
-  }
-
- private:
-  int64_t arr_size;
-  const Tidx* arr_ptr;
-  const Tidx num_bins;
-  T* output_ptr;
+  int64_t elems_per_group;
 };
 
 template <typename Tidx, typename T>
@@ -117,43 +131,70 @@ struct BincountFunctor<GPUDevice, Tidx, T, false> {
       const typename TTypes<T, 1>::ConstTensor& weights,
       typename TTypes<T, 1>::Tensor& output,  // NOLINT(runtime/references)
       const Tidx num_bins) {
-    if (output.size() == 0) {
-      return Status::OK();
-    }
-
+    if (output.size() == 0) return Status::OK();
     auto* stream = context->GetDeviceStream();
     output.device(context->eigen_gpu_device()) = output.constant(T(0));
-
     if (arr.size() == 0) return Status::OK();
 
-    if (weights.size()) {
-      stream->submit([&](sycl::handler& cgh) {
-        auto arr_ptr = arr.data();
+    auto arr_size = arr.size();
+    auto arr_ptr = arr.data();
+    auto output_ptr = output.data();
+
+    int max_group_size =
+        stream->get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    int group_size = std::min(512, max_group_size);
+    const int max_elems_per_group = group_size * ITEMS_PER_THREAD * 6;
+
+    if (arr_size <= max_elems_per_group) {
+      int elems_per_group =
+          RoundUp(static_cast<int>(arr_size), group_size * ITEMS_PER_THREAD);
+      sycl::range<1> local(group_size);
+      sycl::range<1> global(group_size);
+      if (weights.size()) {
         auto weights_ptr = weights.data();
-        auto output_ptr = output.data();
-        cgh.single_task<BincountKernel<Tidx, T, true, false> >([=]() {
-          for (int32 i = 0; i < arr.size(); ++i) {
-            Tidx value = arr_ptr[i];
-            if (value < num_bins) {
-              output_ptr[value] += weights_ptr[i];
-            }
-          }
+        stream->submit([&](sycl::handler& cgh) {
+          GroupBincountKernel<Tidx, T, false, true> bincount_kernel(
+              arr_size, arr_ptr, num_bins, output_ptr, weights_ptr,
+              elems_per_group);
+          cgh.parallel_for<GroupBincountKernel<Tidx, T, false, true> >(
+              sycl::nd_range<1>(global, local), bincount_kernel);
         });
-      });
+      } else {
+        stream->submit([&](sycl::handler& cgh) {
+          GroupBincountKernel<Tidx, T, false, false> bincount_kernel(
+              arr_size, arr_ptr, num_bins, output_ptr, elems_per_group);
+          cgh.parallel_for<GroupBincountKernel<Tidx, T, false, false> >(
+              sycl::nd_range<1>(global, local), bincount_kernel);
+        });
+      }
     } else {
-      stream->submit([&](sycl::handler& cgh) {
-        auto arr_ptr = arr.data();
-        auto output_ptr = output.data();
-        cgh.single_task<BincountKernel<Tidx, T, false, false> >([=]() {
-          for (int32 i = 0; i < arr.size(); ++i) {
-            Tidx value = arr_ptr[i];
-            if (value < num_bins) {
-              output_ptr[value] += T(1);
-            }
-          }
+      int num_wg = std::min(group_size, DivUp(static_cast<int>(arr_size),
+                                              group_size * ITEMS_PER_THREAD));
+      int elems_per_group =
+          RoundUp(DivUp(group_size, num_wg), group_size * ITEMS_PER_THREAD);
+      num_wg = DivUp(static_cast<int>(arr_size), elems_per_group);
+      sycl::range<1> local(group_size);
+      sycl::range<1> global(num_wg * group_size);
+      if (weights.size()) {
+        auto weights_ptr = weights.data();
+        stream->submit([&](sycl::handler& cgh) {
+          GroupBincountKernel<Tidx, T, false, true> bincount_kernel(
+              arr_size, arr_ptr, num_bins, output_ptr, weights_ptr,
+              elems_per_group);
+          cgh.parallel_for<GroupBincountKernel<Tidx, T, false, true> >(
+              sycl::nd_range<1>(global, local), bincount_kernel);
         });
-      });
+      } else {
+        stream->submit([&](sycl::handler& cgh) {
+          GroupBincountKernel<Tidx, T, false, false> bincount_kernel(
+              arr_size, arr_ptr, num_bins, output_ptr, elems_per_group);
+          cgh.parallel_for<GroupBincountKernel<Tidx, T, false, false> >(
+              sycl::nd_range<1>(global, local), bincount_kernel);
+        });
+      }
     }
+
     return Status::OK();
   }
 };
@@ -166,24 +207,47 @@ struct BincountFunctor<GPUDevice, Tidx, T, true> {
       const typename TTypes<T, 1>::ConstTensor& weights,
       typename TTypes<T, 1>::Tensor& output,  // NOLINT(runtime/references)
       const Tidx num_bins) {
-    if (arr.size() == 0 || output.size() == 0) {
-      return Status::OK();
-    }
-
+    if (output.size() == 0) return Status::OK();
     auto* stream = context->GetDeviceStream();
     output.device(context->eigen_gpu_device()) = output.constant(T(0));
-    stream->submit([&](sycl::handler& cgh) {
-      auto arr_ptr = arr.data();
-      auto output_ptr = output.data();
-      cgh.single_task<BincountKernel<Tidx, T, false, true> >([=]() {
-        for (int32 i = 0; i < arr.size(); ++i) {
-          Tidx value = arr_ptr[i];
-          if (value < num_bins) {
-            output_ptr[value] = true;
-          }
-        }
+    if (arr.size() == 0) return Status::OK();
+
+    auto arr_size = arr.size();
+    auto arr_ptr = arr.data();
+    auto output_ptr = output.data();
+
+    int max_group_size =
+        stream->get_device()
+            .template get_info<sycl::info::device::max_work_group_size>();
+    int group_size = std::min(512, max_group_size);
+    const int max_elems_per_group = group_size * ITEMS_PER_THREAD * 6;
+
+    if (arr_size <= max_elems_per_group) {
+      int elems_per_group =
+          RoundUp(static_cast<int>(arr_size), group_size * ITEMS_PER_THREAD);
+      sycl::range<1> local(group_size);
+      sycl::range<1> global(group_size);
+      stream->submit([&](sycl::handler& cgh) {
+        GroupBincountKernel<Tidx, T, true, false> bincount_kernel(
+            arr_size, arr_ptr, num_bins, output_ptr, elems_per_group);
+        cgh.parallel_for<GroupBincountKernel<Tidx, T, true, false> >(
+            sycl::nd_range<1>(global, local), bincount_kernel);
       });
-    });
+    } else {
+      int num_wg = std::min(group_size, DivUp(static_cast<int>(arr_size),
+                                              group_size * ITEMS_PER_THREAD));
+      int elems_per_group =
+          RoundUp(DivUp(group_size, num_wg), group_size * ITEMS_PER_THREAD);
+      num_wg = DivUp(static_cast<int>(arr_size), elems_per_group);
+      sycl::range<1> local(group_size);
+      sycl::range<1> global(num_wg * group_size);
+      stream->submit([&](sycl::handler& cgh) {
+        GroupBincountKernel<Tidx, T, true, false> bincount_kernel(
+            arr_size, arr_ptr, num_bins, output_ptr, elems_per_group);
+        cgh.parallel_for<GroupBincountKernel<Tidx, T, true, false> >(
+            sycl::nd_range<1>(global, local), bincount_kernel);
+      });
+    }
 
     return Status::OK();
   }
@@ -256,7 +320,7 @@ struct BincountColReduceKernel<Tidx, T, binary_count, false> {
       if (binary_count) {
         out_ptr[offset] = T(1);
       } else {
-        DpcppAtomicAdd(out_ptr + offset, T(1));
+        ItexAtomicAdd(out_ptr + offset, T(1));
       }
     }
   }
@@ -292,7 +356,7 @@ struct BincountColReduceKernel<Tidx, T, binary_count, true> {
         out_ptr[offset] = T(1);
       } else {
         T value = weights_ptr[index];
-        DpcppAtomicAdd(out_ptr + offset, value);
+        ItexAtomicAdd(out_ptr + offset, value);
       }
     }
   }
@@ -311,10 +375,9 @@ struct BincountColReduceSharedKernel;
 
 template <typename Tidx, typename T, bool binary_count>
 struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
-  BincountColReduceSharedKernel(
-      int num_rows, int num_cols, const Tidx* in_ptr, Tidx num_bins, T* out_ptr,
-      const T* weights_ptr,
-      sycl::accessor<T, 1, read_write, local_target> local_acc)
+  BincountColReduceSharedKernel(int num_rows, int num_cols, const Tidx* in_ptr,
+                                Tidx num_bins, T* out_ptr, const T* weights_ptr,
+                                sycl::local_accessor<T, 1> local_acc)
       : num_rows(num_rows),
         num_cols(num_cols),
         in_ptr(in_ptr),
@@ -342,9 +405,9 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
           shared_col_bins[offset] = T(1);
         } else {
           T value = weights_ptr[index];
-          DpcppAtomicAdd<T, T, sycl::memory_order::relaxed,
-                         sycl::memory_scope::work_group,
-                         sycl::access::address_space::local_space>(
+          ItexAtomicAdd<T, T, sycl::memory_order::relaxed,
+                        sycl::memory_scope::work_group,
+                        sycl::access::address_space::local_space>(
               shared_col_bins + offset, value);
         }
       }
@@ -358,7 +421,7 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
           out_ptr[binIdx] = shared_col_bins[binIdx];
         }
       } else {
-        DpcppAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
+        ItexAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
       }
     }
   }
@@ -370,14 +433,14 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
   Tidx num_bins;
   T* out_ptr;
   const T* weights_ptr;
-  sycl::accessor<T, 1, read_write, local_target> local_acc;
+  sycl::local_accessor<T, 1> local_acc;
 };
 
 template <typename Tidx, typename T, bool binary_count>
 struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
-  BincountColReduceSharedKernel(
-      int num_rows, int num_cols, const Tidx* in_ptr, Tidx num_bins, T* out_ptr,
-      sycl::accessor<T, 1, read_write, local_target> local_acc)
+  BincountColReduceSharedKernel(int num_rows, int num_cols, const Tidx* in_ptr,
+                                Tidx num_bins, T* out_ptr,
+                                sycl::local_accessor<T, 1> local_acc)
       : num_rows(num_rows),
         num_cols(num_cols),
         in_ptr(in_ptr),
@@ -403,9 +466,9 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
         if (binary_count) {
           shared_col_bins[offset] = T(1);
         } else {
-          DpcppAtomicAdd<T, T, sycl::memory_order::relaxed,
-                         sycl::memory_scope::work_group,
-                         sycl::access::address_space::local_space>(
+          ItexAtomicAdd<T, T, sycl::memory_order::relaxed,
+                        sycl::memory_scope::work_group,
+                        sycl::access::address_space::local_space>(
               shared_col_bins + offset, T(1));
         }
       }
@@ -419,7 +482,7 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
           out_ptr[binIdx] = shared_col_bins[binIdx];
         }
       } else {
-        DpcppAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
+        ItexAtomicAdd(out_ptr + binIdx, shared_col_bins[binIdx]);
       }
     }
   }
@@ -430,7 +493,7 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
   const Tidx* in_ptr;
   Tidx num_bins;
   T* out_ptr;
-  sycl::accessor<T, 1, read_write, local_target> local_acc;
+  sycl::local_accessor<T, 1> local_acc;
 };
 
 template <typename Tidx, typename T, bool binary_count>
@@ -464,8 +527,7 @@ struct functor::BincountReduceFunctor<GPUDevice, Tidx, T, binary_count> {
           auto weights_ptr = weights.data();
           auto out_ptr = out.data();
 
-          sycl::accessor<T, 1, read_write, local_target> local_acc(
-              sycl::range<1>(smem_usage), cgh);
+          sycl::local_accessor<T, 1> local_acc(sycl::range<1>(smem_usage), cgh);
           BincountColReduceSharedKernel<Tidx, T, binary_count, true>
               kernel_functor(num_rows, num_cols, in_ptr, num_bins, out_ptr,
                              weights_ptr, local_acc);
@@ -480,8 +542,7 @@ struct functor::BincountReduceFunctor<GPUDevice, Tidx, T, binary_count> {
           auto in_ptr = in.data();
           auto out_ptr = out.data();
 
-          sycl::accessor<T, 1, read_write, local_target> local_acc(
-              sycl::range<1>(smem_usage), cgh);
+          sycl::local_accessor<T, 1> local_acc(sycl::range<1>(smem_usage), cgh);
           BincountColReduceSharedKernel<Tidx, T, binary_count, false>
               kernel_functor(num_rows, num_cols, in_ptr, num_bins, out_ptr,
                              local_acc);

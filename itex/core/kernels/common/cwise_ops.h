@@ -185,6 +185,7 @@ struct no_nan_op {
                                                         const Packet& b) const {
     const Packet mask = pcmp_eq(b, pzero(b));
     Packet quotient = Binary().packetOp(a, b);
+#pragma unroll
     for (int i = 0; i < Eigen::internal::unpacket_traits<Packet>::size; i++) {
       if (mask[i] != 0) {
         quotient[i] = 0;
@@ -198,10 +199,24 @@ template <typename T>
 struct div_no_nan_op : public no_nan_op<T, scalar_quotient_op<T>> {
   EIGEN_EMPTY_STRUCT_CTOR(div_no_nan_op)
 };
+template <typename T>
+struct functor_traits<div_no_nan_op<T>> {
+  enum {
+    Cost = functor_traits<scalar_quotient_op<T>>::Cost + NumTraits<T>::AddCost,
+    PacketAccess = true,
+  };
+};
 
 template <typename T>
 struct mul_no_nan_op : public no_nan_op<T, scalar_product_op<T>> {
   EIGEN_EMPTY_STRUCT_CTOR(mul_no_nan_op)
+};
+template <typename T>
+struct functor_traits<mul_no_nan_op<T>> {
+  enum {
+    Cost = functor_traits<scalar_product_op<T>>::Cost + NumTraits<T>::AddCost,
+    PacketAccess = true,
+  };
 };
 
 // similar to std::equal_to, but with the DEVICE_FUNC qualifier
@@ -399,6 +414,16 @@ struct google_floor_div_real {
                                                         const Packet& y) const {
     return pfloor(pdiv(x, y));
   }
+};
+template <typename Scalar>
+struct functor_traits<google_floor_div_real<Scalar>> {
+  enum {
+    Cost = 2 * Eigen::internal::scalar_div_cost<
+                   Scalar, packet_traits<Scalar>::HasDiv>::value +
+           2 * NumTraits<Scalar>::AddCost,
+    PacketAccess =
+        packet_traits<Scalar>::HasDiv && packet_traits<Scalar>::HasFloor
+  };
 };
 
 // similar to std::greater, but with the DEVICE_FUNC qualifier
@@ -863,17 +888,8 @@ struct acosh : base<T, Eigen::internal::scalar_acosh_op<T>> {};
 template <typename T>
 struct cosh : base<T, Eigen::internal::scalar_cosh_op<T>> {};
 
-template <typename Scalar>
-struct scalar_atan2_op {
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_atan2_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar
-  operator()(const Scalar& y, const Scalar& x) const {
-    return std::atan2(y, x);
-  }
-};
-
 template <typename T>
-struct atan2 : base<T, scalar_atan2_op<T>> {};
+struct atan2 : base<T, Eigen::internal::scalar_atan2_op<T, T>> {};
 
 template <typename T>
 struct squared_difference

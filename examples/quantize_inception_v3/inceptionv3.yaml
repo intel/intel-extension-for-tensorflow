@@ -1,0 +1,17 @@
+version: 1.0
+
+model:
+  name: inception_v3
+  framework: tensorflow_itex                         # possible values are tensorflow, mxnet and pytorch
+
+evaluation: 
+  accuracy: 
+    metric:
+      topk: 1                               # built-in metrics are topk, map, f1, allow user to register new metric.
+      
+tuning:
+  accuracy_criterion:
+    relative: 0.01                             # the tuning target of accuracy loss percentage: 2%
+  exit_policy:
+    timeout: 0                                   # tuning timeout (seconds)
+  random_seed: 100                               # random seed

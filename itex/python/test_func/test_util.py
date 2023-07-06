@@ -18,14 +18,14 @@
 ################################################################################
 # Device placement API summary:
 # Usually there are 3 ways to set device placment
-# 1) 
+# 1)
 # with self.cached_session(use_gpu=use_gpu, force_gpu=force_gpu) as sess:
 # """ default: use_gpu = True, force_gpu = False
 # force_gpu = True                       -> with ops.device("/device:XPU:0") + allow_soft_placement = False
 # force_gpu = False and use_gpu = True   -> with ops.device("/device:XPU:0") + allow_soft_placement = True
 # force_gpu = False and use_gpu = False  -> with ops.device("/device:CPU:0") + allow_soft_placement = True
-# 
-# 
+#
+#
 # 2) with test_util.device(use_gpu=use_gpu) / with test_util.force_gpu()
 # test_util.device(use_gpu=True) or test_util.force_gpu()   -> with ops.device("/device:XPU:0")
 # test_util.device(use_gpu=False) or test_util.force_cpu()  -> with ops.device("/device:CPU:0")
@@ -54,10 +54,10 @@ import tempfile
 import threading
 import time
 import unittest
+import six
 
 from absl.testing import parameterized
 import numpy as np
-import six
 
 from intel_extension_for_tensorflow.python.device import get_backend
 
@@ -83,6 +83,7 @@ from tensorflow.python.framework import errors
 from tensorflow.python.framework import errors_impl
 from tensorflow.python.framework import gpu_util
 from tensorflow.python.framework import importer
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import random_seed
 from tensorflow.python.framework import sparse_tensor
@@ -268,6 +269,7 @@ def assert_equal_graph_def_v1(actual, expected, checkpoint_v2=False,
 
 def assert_equal_graph_def(actual, expected, checkpoint_v2=False,
                            hash_table_shared_name=False):
+  """A dummy docstring."""
   if not isinstance(actual, graph_pb2.GraphDef):
     raise TypeError("Expected tf.GraphDef for actual, got %s" %
                     type(actual).__name__)
@@ -334,6 +336,7 @@ _SHARDED_SAVE_OP_PATTERN = "_temp_[0-9a-z]{32}/part"
 
 
 def _strip_checkpoint_v2_randomized(graph_def):
+  """A dummy docstring."""
   for node in graph_def.node:
     delete_keys = []
     for attr_key in node.attr:
@@ -405,9 +408,8 @@ def NHWCToNCHW(input_tensor):
   if isinstance(input_tensor, ops.Tensor):
     ndims = input_tensor.shape.ndims
     return array_ops.transpose(input_tensor, new_axes[ndims])
-  else:
-    ndims = len(input_tensor)
-    return [input_tensor[a] for a in new_axes[ndims]]
+  ndims = len(input_tensor)
+  return [input_tensor[a] for a in new_axes[ndims]]
 
 
 def NHWCToNCHW_VECT_C(input_shape_or_tensor):
@@ -441,8 +443,7 @@ def NHWCToNCHW_VECT_C(input_shape_or_tensor):
   if is_tensor:
     t = array_ops.reshape(input_shape_or_tensor, temp_shape)
     return array_ops.transpose(t, permutation)
-  else:
-    return [temp_shape[a] for a in permutation]
+  return [temp_shape[a] for a in permutation]
 
 
 def NCHW_VECT_CToNHWC(input_shape_or_tensor):
@@ -473,8 +474,7 @@ def NCHW_VECT_CToNHWC(input_shape_or_tensor):
   if is_tensor:
     t = array_ops.transpose(input_shape_or_tensor, permutation)
     return array_ops.reshape(t, nhwc_shape)
-  else:
-    return nhwc_shape
+  return nhwc_shape
 
 
 def NCHWToNHWC(input_tensor):
@@ -491,9 +491,8 @@ def NCHWToNHWC(input_tensor):
   if isinstance(input_tensor, ops.Tensor):
     ndims = input_tensor.shape.ndims
     return array_ops.transpose(input_tensor, new_axes[ndims])
-  else:
-    ndims = len(input_tensor)
-    return [input_tensor[a] for a in new_axes[ndims]]
+  ndims = len(input_tensor)
+  return [input_tensor[a] for a in new_axes[ndims]]
 
 
 def skip_if(condition):
@@ -711,6 +710,17 @@ def assert_no_new_pyobjects_executing_eagerly(func=None, warmup_iters=2):
       """Warms up, gets object counts, runs the test, checks for new objects."""
       with context.eager_mode():
         gc.disable()
+        # Python 3.11 removed "errors" and "skipped" as members of
+        # unittest.case._Outcome so get them from the test result object
+        # instead.
+        test_errors = None
+        test_skipped = None
+        if hasattr(self._outcome, "errors"):
+          test_errors = self._outcome.errors
+          test_skipped = self._outcome.skipped
+        else:
+          test_errors = self._outcome.result.errors
+          test_skipped = self._outcome.result.skipped
         # Run the test 2 times as warmup, in an attempt to fill up caches, which
         # should not grow as the test is run repeatedly below.
         #
@@ -735,8 +745,7 @@ def assert_no_new_pyobjects_executing_eagerly(func=None, warmup_iters=2):
         # These objects are retained across gc collections so we exclude them
         # from the object count calculation.
         obj_count_by_type = _get_object_count_by_type(
-            exclude=gc.get_referents(self._outcome.errors,
-                                     self._outcome.skipped))
+            exclude=gc.get_referents(test_errors, test_skipped))
 
         if ops.has_default_graph():
           collection_sizes_before = {
@@ -771,8 +780,7 @@ def assert_no_new_pyobjects_executing_eagerly(func=None, warmup_iters=2):
         # There should be no new Python objects hanging around.
         obj_count_by_type = (
             _get_object_count_by_type(
-                exclude=gc.get_referents(self._outcome.errors,
-                                         self._outcome.skipped)) -
+                exclude=gc.get_referents(test_errors, test_skipped)) -
             obj_count_by_type)
 
         # There should be no newly registered functions hanging around.
@@ -794,8 +802,7 @@ def assert_no_new_pyobjects_executing_eagerly(func=None, warmup_iters=2):
 
   if func is None:
     return wrap_f
-  else:
-    return wrap_f(func)
+  return wrap_f(func)
 
 
 def assert_no_new_tensors(f):
@@ -861,7 +868,7 @@ def assert_no_new_tensors(f):
 
 
 def _find_reference_cycle(objects, idx):
-
+  """A dummy docstring."""
   def get_ignore_reason(obj, denylist):
     """Tests whether an object should be omitted from the dependency graph."""
     if len(denylist) > 100:
@@ -979,10 +986,6 @@ def assert_no_garbage_created(f):
 
   def decorator(self, **kwargs):
     """Sets DEBUG_SAVEALL, runs the test, and checks for new garbage."""
-    # Force-load `distribution_strategy_context` to prevent GC at
-    # test time when using eager. Remove once b/117329403 is resolved.
-    tape.distribution_strategy_context.get_strategy()
-
     gc.disable()
     previous_debug_flags = gc.get_debug()
     gc.set_debug(gc.DEBUG_SAVEALL)
@@ -1400,7 +1403,7 @@ def run_in_graph_and_eager_modes(func=None,
 
 
 def py_func_if_in_function(f):
-
+  """A dummy docstring."""
   def decorated(*args, **kwds):
     if not ops.inside_function():
       return f(*args, **kwds)
@@ -1832,7 +1835,7 @@ def is_gpu_available(cuda_only=False, min_cuda_compute_capability=None):
 
   try:
     for local_device in device_lib.list_local_devices():
-      if local_device.device_type == "XPU" and get_backend() == b"GPU": 
+      if local_device.device_type == "XPU" and get_backend() == b"GPU":
         return True
       if local_device.device_type == "GPU":
         gpu_info = gpu_util.compute_capability_from_device_desc(local_device)
@@ -1843,9 +1846,8 @@ def is_gpu_available(cuda_only=False, min_cuda_compute_capability=None):
   except errors_impl.NotFoundError as e:
     if not all(x in str(e) for x in ["CUDA", "not find"]):
       raise e
-    else:
-      logging.error(str(e))
-      return False
+    logging.error(str(e))
+    return False
 
 # use_gpu = True will not check is_gpu_available()
 @contextlib.contextmanager
@@ -1853,7 +1855,8 @@ def device(use_gpu):
   """Uses gpu when requested and available."""
   if use_gpu:
     if get_backend() != b"GPU":
-      logging.info("The test is set use_gpu = True, but you are using INTEL_XPU device with CPU backend")
+      logging.info("The test is set use_gpu = True, but you are using \
+                    INTEL_XPU device with CPU backend")
     dev = "/device:XPU:0"
   else:
     dev = "/device:CPU:0"
@@ -1871,7 +1874,8 @@ def use_gpu():
 @contextlib.contextmanager
 def force_gpu():
   if get_backend() != b"GPU":
-    logging.info("The test is set force_gpu = True, but you are using INTEL_XPU device with CPU backend")
+    logging.info("The test is set force_gpu = True, but you are using \
+                  INTEL_XPU device with CPU backend")
   with ops.device("/device:XPU:0"):
     yield
 
@@ -1893,7 +1897,7 @@ def deterministic_ops():
     config.disable_op_determinism()
 
 
-class CapturedWrites(object):
+class CapturedWrites:
   """A utility class to load the captured writes made to a stream."""
 
   def __init__(self, capture_location):
@@ -1906,7 +1910,7 @@ class CapturedWrites(object):
     return output_data
 
 
-class FakeEagerSession(object):
+class FakeEagerSession:
   """Fake session so tests that conditionally use placeholders can use eager.
 
   There are a number of tests that conditionally use placeholders for shape
@@ -2004,11 +2008,11 @@ def disable_cudnn_autotune(func):
 
       result = f(self, *args, **kwargs)
 
-      if (original_tf_cudnn_use_autotune is None):
+      if original_tf_cudnn_use_autotune is None:
         del os.environ["TF_CUDNN_USE_AUTOTUNE"]
       else:
         os.environ["TF_CUDNN_USE_AUTOTUNE"] = original_tf_cudnn_use_autotune
-      if (original_xla_flags is None):
+      if original_xla_flags is None:
         del os.environ["XLA_FLAGS"]
       else:
         os.environ["XLA_FLAGS"] = original_xla_flags
@@ -2025,7 +2029,7 @@ def disable_cudnn_autotune(func):
 
 # The description is just for documentation purposes.
 def enable_tf_xla_constant_folding(description):
-
+  """A dummy docstring."""
   if not isinstance(description, str):
     raise ValueError("'description' should be string, got {}".format(
         type(description)))
@@ -2063,12 +2067,13 @@ def enable_tf_xla_constant_folding(description):
 
 # Updates test function by selectively disabling it.
 def _disable_test(execute_func):
-
+  """A dummy docstring."""
   def disable_test_impl(func):
 
     def decorator(func):
 
       def decorated(self, *args, **kwargs):
+        """A dummy docstring."""
         if execute_func:
           return func(self, *args, **kwargs)
 
@@ -2126,23 +2131,21 @@ def disable_ubsan(description):  # pylint: disable=unused-argument
 
 # The description is just for documentation purposes.
 def disable_tfrt(unused_description):
-
+  """A dummy docstring."""
   def disable_tfrt_impl(cls_or_func):
     """Execute the test only if tfrt is not enabled."""
 
     if tf_inspect.isclass(cls_or_func):
       if tfrt_utils.enabled():
         return None
-      else:
-        return cls_or_func
+      return cls_or_func
     else:
       def decorator(func):
 
         def decorated(self, *args, **kwargs):
           if tfrt_utils.enabled():
             return
-          else:
-            return func(self, *args, **kwargs)
+          return func(self, *args, **kwargs)
 
         return decorated
 
@@ -2190,7 +2193,7 @@ def no_xla_auto_jit(description):  # pylint: disable=unused-argument
 
 # The description is just for documentation purposes.
 def xla_allow_fallback(description):  # pylint: disable=unused-argument
-
+  """A dummy docstring."""
   def xla_allow_fallback_impl(func):
     """Allow fallback to TF even though testing xla."""
 
@@ -2205,8 +2208,7 @@ def xla_allow_fallback(description):  # pylint: disable=unused-argument
           result = func(self, *args, **kwargs)
           pywrap_tf_session.TF_SetXlaEnableLazyCompilation(old_value)
           return result
-        else:
-          return func(self, *args, **kwargs)
+        return func(self, *args, **kwargs)
 
       return decorated
 
@@ -2291,11 +2293,10 @@ def matmul_without_tf32(a, b, *args, **kwargs):
     b = math_ops.cast(b, "complex128")
     ret = math_ops.matmul(a, b, *args, **kwargs)
     return math_ops.cast(ret, a.dtype)
-  else:
-    return math_ops.matmul(a, b, *args, **kwargs)
+  return math_ops.matmul(a, b, *args, **kwargs)
 
 
-class EagerSessionWarner(object):
+class EagerSessionWarner:
 
   def __getattr__(self, attr):
     raise AttributeError(
@@ -2313,6 +2314,8 @@ class TensorFlowTestCase(googletest.TestCase):
 
   def __init__(self, methodName="runTest"):  # pylint: disable=invalid-name
     super(TensorFlowTestCase, self).__init__(methodName)
+    # Set Test Mode for all unit tests
+    os.environ['_ITEX_TEST_MODE'] = '1'
     # Make sure we get unfiltered stack traces during the test
     traceback_utils.disable_traceback_filtering()
     if is_xla_enabled():
@@ -2342,6 +2345,7 @@ class TensorFlowTestCase(googletest.TestCase):
     self._set_default_seed = True
 
   def setUp(self):
+    """A dummy docstring."""
     super(TensorFlowTestCase, self).setUp()
     self._ClearCachedSession()
     random.seed(random_seed.DEFAULT_GRAPH_SEED)
@@ -2368,6 +2372,7 @@ class TensorFlowTestCase(googletest.TestCase):
     self._test_start_time = time.time()
 
   def tearDown(self):
+    """A dummy docstring."""
     # If a subclass overrides setUp and doesn't call the parent class's setUp,
     # then we may not have set the start time.
     if self._test_start_time is not None:
@@ -2464,7 +2469,8 @@ class TensorFlowTestCase(googletest.TestCase):
     if not compare.ProtoEq(a, b):
       compare.assertProtoEqual(self, a, b, normalize_numbers=True, msg=msg)
 
-  def assertProtoEquals(self, expected_message_maybe_ascii, message, msg=None):
+  def assertProtoEquals(self,
+                          expected_message_maybe_ascii, message, msg=None):
     """Asserts that message is same as parsed expected_message_ascii.
 
     Creates another prototype of message, reads the ascii message into it and
@@ -2514,6 +2520,7 @@ class TensorFlowTestCase(googletest.TestCase):
       self.fail(fail_msg)
 
   def _eval_tensor(self, tensor):
+    """A dummy docstring."""
     if tensor is None:
       return None
     elif callable(tensor):
@@ -2528,8 +2535,8 @@ class TensorFlowTestCase(googletest.TestCase):
           return ragged_tensor_value.RaggedTensorValue(
               self._eval_tensor(tensor.values),
               self._eval_tensor(tensor.row_splits))
-        elif isinstance(tensor, ops.IndexedSlices):
-          return ops.IndexedSlicesValue(
+        elif isinstance(tensor, indexed_slices.IndexedSlices):
+          return indexed_slices.IndexedSlicesValue(
               values=tensor.values.numpy(),
               indices=tensor.indices.numpy(),
               dense_shape=tensor.dense_shape.numpy())
@@ -2560,8 +2567,7 @@ class TensorFlowTestCase(googletest.TestCase):
       if sess is None:
         with self.test_session() as sess:
           return sess.run(tensors)
-      else:
-        return sess.run(tensors)
+      return sess.run(tensors)
 
   # pylint: disable=g-doc-return-or-yield
   @contextlib.contextmanager
@@ -2690,7 +2696,7 @@ class TensorFlowTestCase(googletest.TestCase):
 
   # pylint: enable=g-doc-return-or-yield
 
-  class _CheckedThread(object):
+  class _CheckedThread:
     """A wrapper class for Thread that asserts successful completion.
 
     This class should be created using the TensorFlowTestCase.checkedThread()
@@ -2863,10 +2869,10 @@ class TensorFlowTestCase(googletest.TestCase):
         not isinstance(a, ops._EagerTensorBase) and
         not isinstance(b, ops._EagerTensorBase)):
       return self.evaluate((a, b))
-    else:
-      return (a, b)
+    return (a, b)
 
   def _assertArrayLikeAllClose(self, a, b, rtol=1e-6, atol=1e-6, msg=None):
+    """A dummy docstring."""
     (a, b) = self.evaluate_if_both_tensors(a, b)
     a = self._GetNdArray(a)
     b = self._GetNdArray(b)
@@ -2919,12 +2925,13 @@ class TensorFlowTestCase(googletest.TestCase):
           a, b, rtol=rtol, atol=atol, err_msg="\n".join(msgs), equal_nan=True)
 
   def _assertAllCloseRecursive(self,
-                               a,
-                               b,
-                               rtol=1e-6,
-                               atol=1e-6,
-                               path=None,
-                               msg=None):
+                                  a,
+                                  b,
+                                  rtol=1e-6,
+                                  atol=1e-6,
+                                  path=None,
+                                  msg=None):
+    """A dummy docstring."""
     path = path or []
     path_str = (("[" + "][".join(str(p) for p in path) + "]") if path else "")
     msg = msg if msg else ""
@@ -3026,17 +3033,17 @@ class TensorFlowTestCase(googletest.TestCase):
 
   @py_func_if_in_function
   def assertAllCloseAccordingToType(self,
-                                    a,
-                                    b,
-                                    rtol=1e-6,
-                                    atol=1e-6,
-                                    float_rtol=1e-6,
-                                    float_atol=1e-6,
-                                    half_rtol=1e-3,
-                                    half_atol=1e-3,
-                                    bfloat16_rtol=1e-2,
-                                    bfloat16_atol=1e-2,
-                                    msg=None):
+                                         a,
+                                         b,
+                                         rtol=1e-6,
+                                         atol=1e-6,
+                                         float_rtol=1e-6,
+                                         float_atol=1e-6,
+                                         half_rtol=1e-3,
+                                         half_atol=1e-3,
+                                         bfloat16_rtol=1e-2,
+                                         bfloat16_atol=1e-2,
+                                         msg=None):
     """Like assertAllClose, but also suitable for comparing fp16 arrays.
 
     In particular, the tolerance is reduced to 1e-3 if at least
@@ -3266,11 +3273,11 @@ class TensorFlowTestCase(googletest.TestCase):
 
   @py_func_if_in_function
   def assertAllInRange(self,
-                       target,
-                       lower_bound,
-                       upper_bound,
-                       open_lower_bound=False,
-                       open_upper_bound=False):
+                          target,
+                          lower_bound,
+                          upper_bound,
+                          open_lower_bound=False,
+                          open_upper_bound=False):
     """Assert that elements in a Tensor are all in a given range.
 
     Args:
@@ -3485,7 +3492,7 @@ class TensorFlowTestCase(googletest.TestCase):
     self.assertEqual(type(a), type(b))
     if isinstance(a, (list, tuple)):
       self.assertLen(a, len(b), "Length differs for %s" % path)
-      for i in range(len(a)):
+      for i in enumerate(a):
         self._assertListCloseRecursive(a[i], b[i], rtol, atol, msg,
                                        "%s[%s]" % (path, i))
     else:
@@ -3512,7 +3519,8 @@ class TensorFlowTestCase(googletest.TestCase):
       with sess.graph.as_default(), sess.as_default():
         if force_gpu or use_gpu:
           if get_backend() != b"GPU":
-            logging.info("The test is set use_gpu = True, but you are using INTEL_XPU device with CPU backend")
+            logging.info("The test is set use_gpu = True, but you are using \
+                          INTEL_XPU device with CPU backend")
         if force_gpu:
           # Use the name of an actual device if one is detected, or
           # '/device:XPU:0' otherwise
@@ -3730,6 +3738,7 @@ def _fake_gradient_tape_context_manager():
   """
   try:
     class FakeGradientTape:
+      """A dummy docstring."""
 
       def watch(self, x):
         pass

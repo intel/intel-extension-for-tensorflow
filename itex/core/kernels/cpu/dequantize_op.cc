@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/dequantize_op.h"
+
 #include "itex/core/utils/register_types.h"
 
 namespace itex {
@@ -24,6 +25,11 @@ namespace itex {
                               .TypeConstraint<TYPE>("T")                   \
                               .TypeConstraint<Eigen::bfloat16>("dtype"),   \
                           DequantizeOp<CPUDevice, TYPE, Eigen::bfloat16>); \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXDequantize")                          \
+                              .Device(DEVICE_CPU)                          \
+                              .TypeConstraint<TYPE>("T")                   \
+                              .TypeConstraint<Eigen::half>("dtype"),       \
+                          DequantizeOp<CPUDevice, TYPE, Eigen::half>);     \
   REGISTER_KERNEL_BUILDER(Name("_ITEXDequantize")                          \
                               .Device(DEVICE_CPU)                          \
                               .TypeConstraint<TYPE>("T")                   \

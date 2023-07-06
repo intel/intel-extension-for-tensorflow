@@ -20,7 +20,7 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import array_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
-from utils import tailed_no_tailed_size, broadcast_binary_size_x, broadcast_binary_size_y
+from utils import tailed_no_tailed_size, broadcast_binary_size_x, broadcast_binary_size_y, common_2d_input_size
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
@@ -47,6 +47,8 @@ class StridedSliceTest(test.TestCase):
         for dtype in FLOAT_COMPUTE_TYPE:
             for in_size in tailed_no_tailed_size:
                 self._test_impl([in_size], dtype)
+            for in_size in common_2d_input_size:
+                self._test_impl(in_size, dtype)
 
 if __name__ == '__main__':
     test.main()   

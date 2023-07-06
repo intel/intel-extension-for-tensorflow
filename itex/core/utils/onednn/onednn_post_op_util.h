@@ -39,7 +39,6 @@ struct PostOpInfo {
   dnnl::algorithm alg;
   float alpha;
   float beta;
-  float scale;
 };
 
 // Helper data struct to record necessary info for output_scales
@@ -58,13 +57,12 @@ class PostOpUtil {
   // Return `true` if all ops are supported.
   bool AddOps(const std::vector<string>& fused_ops);
 
-  // Set extra input md for post binary op.
-  // Will report error if no binary op in post ops.
-  void SetBinaryInput(const dnnl::memory::desc& binary_md);
-
   // Set alpha for `LeakyRelu`.
   // Will report error if no `LeakyRelu` in post ops.
   void SetLeakyReluAlpha(float alpha);
+  // Set alpha/beta for `Linear`.
+  // Will report error if no `Linear` in post ops.
+  void SetLinearAlphaBeta(float alpha, float beta);
 
   // Set scale for post op. Sometimes the scale is only available during node
   // execution, so we need to set scale to the post op which is created in node
@@ -76,8 +74,12 @@ class PostOpUtil {
   // scale, which is only available in node execution
   void SetOutputScale(const std::vector<float>& scales);
 
+  std::vector<float>& GetOutputScale() { return output_scale_param_.scales; }
+
   // Set post op and output scale attribution for `attr`.
-  void SetPostOpAttr(dnnl::primitive_attr* attr);
+  // If `HasBinary()`, an extra parameter `md_list` is required.
+  void SetPostOpAttr(dnnl::primitive_attr* attr,
+                     const std::vector<dnnl::memory::desc>& md_list = {});
 
   // Check the given elewise op is supported by oneDNN or not.
   static bool IsSupportedActivation(const absl::string_view op_name);
@@ -86,15 +88,15 @@ class PostOpUtil {
   inline bool HasActivation() { return has_activation_; }
   inline bool HasAdd() { return has_add_; }
   inline bool HasBias() { return has_bias_; }
-  inline bool HasMul() { return has_mul_; }
-  inline bool HasBinary() { return has_binary_; }
+  inline bool HasBinary() { return binary_num_ != 0; }
   inline bool HasLeakyRelu() { return has_leaky_relu_; }
+  inline bool HasLinear() { return has_linear_; }
 
-  // TODO(itex): currently both INT8 output scale and batchmatmul + mul
-  // fusion use HasOutputScales(). We might need functions to separate
-  // them
   inline bool HasOutputScales() { return has_output_scales_; }
   inline bool HasRequantize() { return has_requantize_; }
+
+  // Record op number to support multiple Binary post op fusion.
+  inline int GetBinaryNum() { return binary_num_; }
 
  private:
   // Return the read-only table contains supported `PostOpInfo`.
@@ -110,7 +112,8 @@ class PostOpUtil {
   // Reasons for lazy evalution is that once postop attribures are set, OneDnn
   // doesn't allow to change the postop scales. So we have to set scale in
   // Compute(), when all context information is available
-  void SetPostOp(dnnl::post_ops* post_op);
+  void SetPostOp(dnnl::post_ops* post_op,
+                 const std::vector<dnnl::memory::desc>& md_list);
 
   // Save the post op and its corresponding scale factor
   // The first element is post op name, second element is corresponding scale
@@ -124,22 +127,21 @@ class PostOpUtil {
   // Note `BiasAdd` is a special case, it doesn't have post op info because
   // it will be fused in primitive directly.
   bool has_bias_ = false;
-  // Used in BatchMatMul + Mul fusion, currently implemented by
-  // set_output_scales
-  bool has_mul_ = false;
-  bool has_binary_ = false;
   // Use this flag to check whether need to set alpha for `LeakyRelu`.
   bool has_leaky_relu_ = false;
+  // Use this flag to check whether has linear post op
+  bool has_linear_ = false;
 
   // Flags for INT8.
   bool has_output_scales_ = false;
   bool has_requantize_ = false;
 
+  // Helper var for multilpe Binary post op fusion.
+  int binary_num_ = 0;
   // Helper vars for post op execution.
   float leaky_relu_alpha_ = NAN;
-
-  // Helper var for input of post binary op.
-  std::vector<dnnl::memory::desc> binary_md_list_;
+  float linear_alpha_ = NAN;
+  float linear_beta_ = NAN;
 };
 
 }  // namespace itex

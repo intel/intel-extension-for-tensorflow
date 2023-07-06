@@ -40,6 +40,13 @@ struct TopKFunctor<GPUDevice, T, IndexT> {
                   int num_topk);
 };
 
+template <typename KeyT, typename ValueT, bool Ascending = true>
+void DispatchToFallBackRadixSort(const gpuStream_t& stream,
+                                 const KeyT* key_array, KeyT* key_src,
+                                 KeyT* key_dst, ValueT* value_src,
+                                 ValueT* value_dst, const int num_rows,
+                                 const int num_cols, const int max_group_size);
+
 }  // end namespace functor
 }  // namespace itex
 

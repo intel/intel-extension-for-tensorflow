@@ -2,13 +2,13 @@
 
 
 
-1. Prepare the python virtual environment:
+1. Prepare the Python virtual environment using conda:
     ```
     conda create -n build_itex_doc python=3.6 -y
     conda activate build_itex_doc
     ```
 
-2. Install documents build dependencies:
+2. Install documentation build dependencies:
     ```
     python -m pip install -r docs/docs_build/sphinx-requirements.txt
     ```
@@ -17,9 +17,9 @@
     ```
     make html
     ```
-    The above is compiled using `make html` and you need to open the html file to check it after compilation.
+    The above steps compiles an HTML websites from the markdown content in the repo into the build/html directory. You need to open the html file to check it after compilation.
 
-4. There is also an HTTP service that can be viewed in the browser via the ip address(127.0.0.1):
+4. There is also an HTTP service that can be viewed in the browser via the ip address (127.0.0.1):
     ```
     sphinx-autobuild source build/html
     ```

@@ -27,7 +27,7 @@ namespace itex {
           .HostMemory("images_meta")          \
           .HostMemory("size_meta")            \
           .HostMemory("resized_images_meta"), \
-      OneDnnResizeOp<GPUDevice, T, dnnl::algorithm::resampling_nearest>);
+      OneDnnResizeOp<GPUDevice, T, T, dnnl::algorithm::resampling_nearest>);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNEL);
 
@@ -51,7 +51,7 @@ TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_GRAD_KERNEL);
       Name("_OneDnnResizeNearestNeighbor") \
           .Device(DEVICE_CPU)              \
           .TypeConstraint<T>("T"),         \
-      OneDnnResizeOp<CPUDevice, T, dnnl::algorithm::resampling_nearest>);
+      OneDnnResizeOp<CPUDevice, T, T, dnnl::algorithm::resampling_nearest>);
 
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_KERNEL);
 

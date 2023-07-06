@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Intel Corporation
+/* Copyright (c) 2021-2023 Intel Corporation
 
 Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
@@ -25,7 +25,12 @@ limitations under the License.
 namespace itex {
 
 // Multiply two nonnegative int64's, returning negative for overflow
-inline int64 MultiplyWithoutOverflow(const int64 x, const int64 y) {
+// If any of the arguments is negative, return negative too.
+inline int64_t MultiplyWithoutOverflow(const int64_t x, const int64_t y) {
+  if (ITEX_PREDICT_FALSE(x < 0)) return -1;
+  if (ITEX_PREDICT_FALSE(y < 0)) return -1;
+  if (ITEX_PREDICT_FALSE(x == 0)) return 0;
+
   // Multiply in uint64 rather than int64 since signed overflow is undefined.
   // Negative values will wrap around to large unsigned values in the casts
   // (see section 4.7 [conv.integral] of the C++14 standard).
@@ -35,16 +40,12 @@ inline int64 MultiplyWithoutOverflow(const int64 x, const int64 y) {
 
   // Check if we overflow uint64, using a cheap check if both inputs are small
   if (ITEX_PREDICT_FALSE((ux | uy) >> 32 != 0)) {
-    // Ensure nonnegativity.  Note that negative numbers will appear "large"
-    // to the unsigned comparisons above.
-    ITEX_CHECK(x >= 0 && y >= 0);
-
     // Otherwise, detect overflow using a division
-    if (ux != 0 && uxy / ux != uy) return -1;
+    if (uxy / ux != uy) return -1;
   }
 
-  // Cast back to signed.  Any negative value will signal an error.
-  return static_cast<int64>(uxy);
+  // Cast back to signed. A negative value will signal an error.
+  return static_cast<int64_t>(uxy);
 }
 
 }  // namespace itex

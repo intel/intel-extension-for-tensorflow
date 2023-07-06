@@ -25,10 +25,10 @@ from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32]
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16, dtypes.bfloat16]
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32]  # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
 
 ITERATION = 5
 
@@ -49,12 +49,10 @@ class SegmentMinTest(test.TestCase):
         outer_dim_options = [2**x for x in range(9, 14, 2)]
         ratio_options = [2**x for x in range(1, 6, 2)]
         inner_dim_options = [2**x for x in range(9, 14, 2)]
-        inner_dim_options += [
-            1120, 1215, 1856, 1302, 1329, 1531, 1313, 1672, 1851, 1584
-        ]
         options = (outer_dim_options, ratio_options, inner_dim_options, FLOAT_COMPUTE_TYPE)
         for outer_dim, ratio, inner_dim, dtype in itertools.product(*options):
             self._test_impl(outer_dim, ratio, inner_dim, dtype)
             
 if __name__ == '__main__':
+    np.random.seed(0)
     test.main()    

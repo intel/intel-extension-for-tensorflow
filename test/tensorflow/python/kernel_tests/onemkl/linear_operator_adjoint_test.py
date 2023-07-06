@@ -72,103 +72,103 @@ class LinearOperatorAdjointTest(
 
     return operator, linalg.adjoint(matrix)
 
-#   def test_base_operator_hint_used(self):
-#     # The matrix values do not effect auto-setting of the flags.
-#     matrix = [[1., 0.], [1., 1.]]
-#     operator = linalg.LinearOperatorFullMatrix(
-#         matrix,
-#         is_positive_definite=True,
-#         is_non_singular=True,
-#         is_self_adjoint=False)
-#     operator_adjoint = LinearOperatorAdjoint(operator)
-#     self.assertTrue(operator_adjoint.is_positive_definite)
-#     self.assertTrue(operator_adjoint.is_non_singular)
-#     self.assertFalse(operator_adjoint.is_self_adjoint)
+  def test_base_operator_hint_used(self):
+    # The matrix values do not effect auto-setting of the flags.
+    matrix = [[1., 0.], [1., 1.]]
+    operator = linalg.LinearOperatorFullMatrix(
+        matrix,
+        is_positive_definite=True,
+        is_non_singular=True,
+        is_self_adjoint=False)
+    operator_adjoint = LinearOperatorAdjoint(operator)
+    self.assertTrue(operator_adjoint.is_positive_definite)
+    self.assertTrue(operator_adjoint.is_non_singular)
+    self.assertFalse(operator_adjoint.is_self_adjoint)
 
-#   def test_supplied_hint_used(self):
-#     # The matrix values do not effect auto-setting of the flags.
-#     matrix = [[1., 0.], [1., 1.]]
-#     operator = linalg.LinearOperatorFullMatrix(matrix)
-#     operator_adjoint = LinearOperatorAdjoint(
-#         operator,
-#         is_positive_definite=True,
-#         is_non_singular=True,
-#         is_self_adjoint=False)
-#     self.assertTrue(operator_adjoint.is_positive_definite)
-#     self.assertTrue(operator_adjoint.is_non_singular)
-#     self.assertFalse(operator_adjoint.is_self_adjoint)
+  def test_supplied_hint_used(self):
+    # The matrix values do not effect auto-setting of the flags.
+    matrix = [[1., 0.], [1., 1.]]
+    operator = linalg.LinearOperatorFullMatrix(matrix)
+    operator_adjoint = LinearOperatorAdjoint(
+        operator,
+        is_positive_definite=True,
+        is_non_singular=True,
+        is_self_adjoint=False)
+    self.assertTrue(operator_adjoint.is_positive_definite)
+    self.assertTrue(operator_adjoint.is_non_singular)
+    self.assertFalse(operator_adjoint.is_self_adjoint)
 
-#   def test_contradicting_hints_raise(self):
-#     # The matrix values do not effect auto-setting of the flags.
-#     matrix = [[1., 0.], [1., 1.]]
-#     operator = linalg.LinearOperatorFullMatrix(
-#         matrix, is_positive_definite=False)
-#     with self.assertRaisesRegex(ValueError, "positive-definite"):
-#       LinearOperatorAdjoint(operator, is_positive_definite=True)
+  def test_contradicting_hints_raise(self):
+    # The matrix values do not effect auto-setting of the flags.
+    matrix = [[1., 0.], [1., 1.]]
+    operator = linalg.LinearOperatorFullMatrix(
+        matrix, is_positive_definite=False)
+    with self.assertRaisesRegex(ValueError, "positive-definite"):
+      LinearOperatorAdjoint(operator, is_positive_definite=True)
 
-#     operator = linalg.LinearOperatorFullMatrix(matrix, is_self_adjoint=False)
-#     with self.assertRaisesRegex(ValueError, "self-adjoint"):
-#       LinearOperatorAdjoint(operator, is_self_adjoint=True)
+    operator = linalg.LinearOperatorFullMatrix(matrix, is_self_adjoint=False)
+    with self.assertRaisesRegex(ValueError, "self-adjoint"):
+      LinearOperatorAdjoint(operator, is_self_adjoint=True)
 
-#   def test_name(self):
-#     matrix = [[11., 0.], [1., 8.]]
-#     operator = linalg.LinearOperatorFullMatrix(
-#         matrix, name="my_operator", is_non_singular=True)
+  def test_name(self):
+    matrix = [[11., 0.], [1., 8.]]
+    operator = linalg.LinearOperatorFullMatrix(
+        matrix, name="my_operator", is_non_singular=True)
 
-#     operator = LinearOperatorAdjoint(operator)
+    operator = LinearOperatorAdjoint(operator)
 
-#     self.assertEqual("my_operator_adjoint", operator.name)
+    self.assertEqual("my_operator_adjoint", operator.name)
 
-#   def test_matmul_adjoint_operator(self):
-#     matrix1 = np.random.randn(4, 4)
-#     matrix2 = np.random.randn(4, 4)
-#     full_matrix1 = linalg.LinearOperatorFullMatrix(matrix1)
-#     full_matrix2 = linalg.LinearOperatorFullMatrix(matrix2)
+  def test_matmul_adjoint_operator(self):
+    matrix1 = np.random.randn(4, 4)
+    matrix2 = np.random.randn(4, 4)
+    full_matrix1 = linalg.LinearOperatorFullMatrix(matrix1)
+    full_matrix2 = linalg.LinearOperatorFullMatrix(matrix2)
 
-#     self.assertAllClose(
-#         np.matmul(matrix1, matrix2.T),
-#         self.evaluate(
-#             full_matrix1.matmul(full_matrix2, adjoint_arg=True).to_dense()))
+    self.assertAllClose(
+        np.matmul(matrix1, matrix2.T),
+        self.evaluate(
+            full_matrix1.matmul(full_matrix2, adjoint_arg=True).to_dense()))
 
-#     self.assertAllClose(
-#         np.matmul(matrix1.T, matrix2),
-#         self.evaluate(
-#             full_matrix1.matmul(full_matrix2, adjoint=True).to_dense()))
+    self.assertAllClose(
+        np.matmul(matrix1.T, matrix2),
+        self.evaluate(
+            full_matrix1.matmul(full_matrix2, adjoint=True).to_dense()))
 
-#     self.assertAllClose(
-#         np.matmul(matrix1.T, matrix2.T),
-#         self.evaluate(
-#             full_matrix1.matmul(
-#                 full_matrix2, adjoint=True, adjoint_arg=True).to_dense()))
+    self.assertAllClose(
+        np.matmul(matrix1.T, matrix2.T),
+        self.evaluate(
+            full_matrix1.matmul(
+                full_matrix2, adjoint=True, adjoint_arg=True).to_dense()))
 
-#   def test_matmul_adjoint_complex_operator(self):
-    # matrix1 = np.random.randn(4, 4) + 1j * np.random.randn(4, 4)
-    # matrix2 = np.random.randn(4, 4) + 1j * np.random.randn(4, 4)
-    # full_matrix1 = linalg.LinearOperatorFullMatrix(matrix1)
-    # full_matrix2 = linalg.LinearOperatorFullMatrix(matrix2)
+  def test_matmul_adjoint_complex_operator(self):
+    matrix1 = np.random.randn(4, 4) + 1j * np.random.randn(4, 4)
+    matrix2 = np.random.randn(4, 4) + 1j * np.random.randn(4, 4)
+    full_matrix1 = linalg.LinearOperatorFullMatrix(matrix1)
+    full_matrix2 = linalg.LinearOperatorFullMatrix(matrix2)
 
-    # self.assertAllClose(
-    #     np.matmul(matrix1, matrix2.conj().T),
-    #     self.evaluate(
-    #         full_matrix1.matmul(full_matrix2, adjoint_arg=True).to_dense()))
+    self.assertAllClose(
+        np.matmul(matrix1, matrix2.conj().T),
+        self.evaluate(
+            full_matrix1.matmul(full_matrix2, adjoint_arg=True).to_dense()))
 
-    # self.assertAllClose(
-    #     np.matmul(matrix1.conj().T, matrix2),
-    #     self.evaluate(
-    #         full_matrix1.matmul(full_matrix2, adjoint=True).to_dense()))
+    self.assertAllClose(
+        np.matmul(matrix1.conj().T, matrix2),
+        self.evaluate(
+            full_matrix1.matmul(full_matrix2, adjoint=True).to_dense()))
 
-    # self.assertAllClose(
-    #     np.matmul(matrix1.conj().T, matrix2.conj().T),
-    #     self.evaluate(
-    #         full_matrix1.matmul(
-    #             full_matrix2, adjoint=True, adjoint_arg=True).to_dense()))
+    self.assertAllClose(
+        np.matmul(matrix1.conj().T, matrix2.conj().T),
+        self.evaluate(
+            full_matrix1.matmul(
+                full_matrix2, adjoint=True, adjoint_arg=True).to_dense()))
 
-#   def test_matvec(self):
-#     matrix = np.array([[1., 2.], [3., 4.]])
-#     x = np.array([1., 2.])
-#     operator = linalg.LinearOperatorFullMatrix(matrix)
-#     self.assertAllClose(matrix.dot(x), self.evaluate(operator.matvec(x)))
-#     self.assertAllClose(matrix.T.dot(x), self.evaluate(operator.H.matvec(x)))
+  def test_matvec(self):
+    matrix = np.array([[1., 2.], [3., 4.]])
+    x = np.array([1., 2.])
+    operator = linalg.LinearOperatorFullMatrix(matrix)
+    self.assertAllClose(matrix.dot(x), self.evaluate(operator.matvec(x)))
+    self.assertAllClose(matrix.T.dot(x), self.evaluate(operator.H.matvec(x)))
 
   def test_solve_adjoint_operator(self):
     matrix1 = self.evaluate(

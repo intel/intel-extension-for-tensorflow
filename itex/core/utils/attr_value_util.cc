@@ -28,7 +28,6 @@ limitations under the License.
 #include "itex/core/utils/str_util.h"
 #include "itex/core/utils/stringpiece.h"
 #include "itex/core/utils/types.h"
-
 #include "protos/attr_value.pb.h"
 #include "protos/tensor.pb.h"
 #include "protos/tensor_shape.pb.h"
@@ -54,12 +53,16 @@ string SummarizeString(const string& str) {
 }
 
 string SummarizeTensor(const TensorProto& tensor_proto) {
+#ifndef ITEX_BUILD_JAX
   Tensor t;
   if (!t.FromProto(tensor_proto)) {
     return strings::StrCat(
         "<Invalid TensorProto: ", tensor_proto.ShortDebugString(), ">");
   }
   return t.DebugString();
+#else
+  ITEX_LOG(FATAL) << "SummarizeTensor is not implemented.";
+#endif
 }
 
 string SummarizeFunc(const NameAttrList& func) {

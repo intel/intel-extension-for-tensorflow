@@ -73,9 +73,6 @@ struct MatchedProperties {
 class Fusion {
  public:
   typedef std::vector<std::string> Labels;
-  bool is_partial = false;
-  // We can set it as true only if we need this fusion when oneDNN Graph is
-  // enabled. Currently, only InstanceNorm and LayerNorm is set is_partial=true.
 
   struct InternalPattern {
     InternalPattern() = default;
@@ -108,8 +105,13 @@ class Fusion {
   // The nodes number in graph, including Any node.
   int NumNodes() const;
 
+  inline bool IsPartial() const { return is_partial_; }
+
  protected:
   InternalPattern pattern_;
+
+  // Set it as true only if need this fusion before oneDNN Graph.
+  bool is_partial_ = false;
 };
 
 class FusionMgr {

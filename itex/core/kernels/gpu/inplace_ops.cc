@@ -25,6 +25,29 @@ limitations under the License.
 #include "itex/core/utils/tensor_shape.h"
 
 namespace itex {
+
+typedef Eigen::ThreadPoolDevice CPUDevice;
+typedef Eigen::GpuDevice GPUDevice;
+
+namespace functor {
+template <typename Device, typename T>
+void DoParallelConcatUpdate(const Device& d, const Tensor& value, int32 loc,
+                            Tensor* output) {
+  auto Tvalue = value.shaped<T, 2>({1, value.NumElements()});
+  auto Toutput = output->flat_outer_dims<T>();
+  auto nrows = Toutput.dimension(0);
+  auto r = (loc % nrows + nrows) % nrows;  // Guard index range.
+  Toutput.template chip<0>(r).device(d) = Tvalue.template chip<0>(0);
+}
+
+template <typename T>
+void DoParallelConcat(const CPUDevice& d, const Tensor& value, int32 loc,
+                      Tensor* output) {
+  ITEX_CHECK_EQ(value.dtype(), output->dtype());
+  return DoParallelConcatUpdate<CPUDevice, T>(d, value, loc, output);
+}
+}  // end namespace functor
+
 template <typename Device, typename T>
 class ParallelConcatUpdate : public OpKernel {
  public:
@@ -202,68 +225,31 @@ class CopyOp : public CopyOpBase {
   }
 };
 
-typedef Eigen::GpuDevice GPUDevice;
-
-#define REGISTER(TYPE)                                                 \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("InplaceAdd").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
-      InplaceOp<GPUDevice, functor::I_ADD>);                           \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("InplaceSub").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
-      InplaceOp<GPUDevice, functor::I_SUB>);                           \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("DeepCopy").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"),   \
-      CopyOp<GPUDevice>);                                              \
-  REGISTER_KERNEL_BUILDER(Name("Empty")                                \
-                              .Device(DEVICE_GPU)                      \
-                              .HostMemory("shape")                     \
-                              .TypeConstraint<TYPE>("dtype"),          \
+#define REGISTER(TYPE)                                                    \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("InplaceAdd").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"),    \
+      InplaceOp<GPUDevice, functor::I_ADD>);                              \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("InplaceSub").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"),    \
+      InplaceOp<GPUDevice, functor::I_SUB>);                              \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("InplaceUpdate").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
+      InplaceOp<GPUDevice, functor::I_UPDATE>);                           \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("DeepCopy").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"),      \
+      CopyOp<GPUDevice>);                                                 \
+  REGISTER_KERNEL_BUILDER(Name("Empty")                                   \
+                              .Device(DEVICE_GPU)                         \
+                              .HostMemory("shape")                        \
+                              .TypeConstraint<TYPE>("dtype"),             \
                           EmptyOp<GPUDevice, TYPE>)
 
-REGISTER(float);
-REGISTER(Eigen::bfloat16);
-REGISTER(Eigen::half);
-REGISTER(itex::int64);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER);
+TF_CALL_int64(REGISTER);
+#ifdef ITEX_ENABLE_DOUBLE
+TF_CALL_double(REGISTER);
+#endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER
-
-#define REGISTER_KERNEL_FOR_GPU(TYPE)                                      \
-  REGISTER_KERNEL_BUILDER(Name("_ParallelConcatStart")                     \
-                              .Device(DEVICE_GPU)                          \
-                              .TypeConstraint<TYPE>("T"),                  \
-                          ParallelConcatStart<GPUDevice, TYPE>);           \
-  REGISTER_KERNEL_BUILDER(Name("_ParallelConcatUpdate")                    \
-                              .Device(DEVICE_GPU)                          \
-                              .TypeConstraint<TYPE>("T"),                  \
-                          ParallelConcatUpdate<GPUDevice, TYPE>);          \
-  REGISTER_KERNEL_BUILDER(                                                 \
-      Name("ParallelConcat").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
-      FailureKernel);                                                      \
-  REGISTER_KERNEL_BUILDER(                                                 \
-      Name("InplaceUpdate").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"),  \
-      InplaceOp<GPUDevice, functor::I_UPDATE>);
-
-TF_CALL_float(REGISTER_KERNEL_FOR_GPU);
-TF_CALL_bfloat16(REGISTER_KERNEL_FOR_GPU);
-TF_CALL_half(REGISTER_KERNEL_FOR_GPU);
-TF_CALL_int32(REGISTER_KERNEL_FOR_GPU);
-TF_CALL_int64(REGISTER_KERNEL_FOR_GPU);
-#ifdef ITEX_ENABLE_DOUBLE
-TF_CALL_double(REGISTER_KERNEL_FOR_GPU);
-#endif  // ITEX_ENABLE_DOUBLE
-#undef REGISTER_KERNEL_FOR_GPU
-
-#define REGISTER_INPLACEADD_SUB_DOUBLE(TYPE)                           \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("InplaceAdd").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
-      InplaceOp<GPUDevice, functor::I_ADD>);                           \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("InplaceSub").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
-      InplaceOp<GPUDevice, functor::I_SUB>)
-
-#ifdef ITEX_ENABLE_DOUBLE
-REGISTER_INPLACEADD_SUB_DOUBLE(double);
-#endif  // ITEX_ENABLE_DOUBLE
-#undef REGISTER_INPLACEADD_SUB_DOUBLE
 
 REGISTER_KERNEL_BUILDER(Name("Empty")
                             .Device(DEVICE_GPU)
@@ -273,14 +259,37 @@ REGISTER_KERNEL_BUILDER(Name("Empty")
 REGISTER_KERNEL_BUILDER(
     Name("InplaceUpdate").Device(DEVICE_GPU).TypeConstraint<bool>("T"),
     InplaceOp<GPUDevice, functor::I_UPDATE>);
+
+// ParallelConcat
+#define REGISTER_KERNEL_FOR_GPU(TYPE)                                      \
+  REGISTER_KERNEL_BUILDER(Name("_ParallelConcatStart")                     \
+                              .Device(DEVICE_GPU)                          \
+                              .TypeConstraint<TYPE>("dtype"),              \
+                          ParallelConcatStart<GPUDevice, TYPE>);           \
+  REGISTER_KERNEL_BUILDER(Name("_ParallelConcatUpdate")                    \
+                              .Device(DEVICE_GPU)                          \
+                              .TypeConstraint<TYPE>("T"),                  \
+                          ParallelConcatUpdate<GPUDevice, TYPE>);          \
+  REGISTER_KERNEL_BUILDER(                                                 \
+      Name("ParallelConcat").Device(DEVICE_GPU).TypeConstraint<TYPE>("T"), \
+      FailureKernel);
+
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_KERNEL_FOR_GPU);
+TF_CALL_int64(REGISTER_KERNEL_FOR_GPU);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_KERNEL_BUILDER(
-    Name("DeepCopy").Device(DEVICE_GPU).TypeConstraint<double>("T"),
-    CopyOp<GPUDevice>);
-REGISTER_KERNEL_BUILDER(Name("Empty")
-                            .Device(DEVICE_GPU)
-                            .HostMemory("shape")
-                            .TypeConstraint<double>("dtype"),
-                        EmptyOp<GPUDevice, double>)
+TF_CALL_double(REGISTER_KERNEL_FOR_GPU);
 #endif  // ITEX_ENABLE_DOUBLE
+#undef REGISTER_KERNEL_FOR_GPU
+
+// Register versions that operate on int32 data on the CPU even though the op
+// has been placed on the GPU
+
+REGISTER_KERNEL_BUILDER(Name("_ParallelConcatUpdate")
+                            .Device(DEVICE_GPU)
+                            .HostMemory("value")
+                            .HostMemory("update")
+                            .HostMemory("output")
+                            .TypeConstraint<itex::int32>("T"),
+                        ParallelConcatUpdate<CPUDevice, itex::int32>);
+
 }  // namespace itex

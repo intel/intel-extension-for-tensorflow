@@ -20,6 +20,9 @@ FROM centos:${CENTOS_VER}
 SHELL ["/bin/bash", "-c"]
 ENV LANG=C.UTF-8
 
+HEALTHCHECK NONE
+RUN useradd -d /home/itex -m -s /bin/bash itex
+
 RUN sed -i.bak '/^mirrorlist=/s/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/CentOS-Linux-* && \
     sed -i.bak 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-* && \
     yum distro-sync -y && \
@@ -56,7 +59,7 @@ RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/local/bin/python3 && \
     ln -sf $(which ${PYTHON}) /usr/bin/python
 
-ARG TF_VER="2.10"
+ARG TF_VER="2.11"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 

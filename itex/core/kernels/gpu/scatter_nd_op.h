@@ -21,7 +21,6 @@ limitations under the License.
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/tensor_shape.h"
-
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {

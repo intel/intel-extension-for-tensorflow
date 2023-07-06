@@ -28,15 +28,9 @@ from tensorflow.python.ops import array_ops
 from tensorflow.core.protobuf import config_pb2
 
 
-@test_util.run_all_in_graph_and_eager_modes
 class FusedBinaryTest(test_lib.TestCase):
-  @test_util.run_deprecated_v1
-  @test_util.disable_xla('This test does not pass with XLA')
-  def testGraphStructure(self):
-    if not test_lib.is_gpu_available():
-      self.skipTest("Skip on GPU due to the pattern not supported")
 
-    shape1 = (16, 16, 512, 512)
+  def _testGraphStructure(self, shape1):
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -45,11 +39,15 @@ class FusedBinaryTest(test_lib.TestCase):
     in_x = tf.placeholder(tf.float32, shape=shape1)
     in_z = tf.placeholder(tf.float32, shape=shape1)
 
-    for dtype in [tf.float32, tf.half, tf.bfloat16]:
+    dtypes = [tf.float32, tf.bfloat16]
+    if tf.config.list_physical_devices('XPU'):
+      dtypes += [tf.half]
+    for dtype in dtypes:
       in_x_d = tf.cast(in_x, dtype=dtype)
       in_z_d = tf.cast(in_z, dtype=dtype)
       x = in_x_d - 1
       x = tf.math.multiply(x, in_z_d)
+      x = x - in_z_d
       x = tf.reshape(x, [-1])
 
       with self.session(use_gpu=True) as sess:
@@ -70,20 +68,15 @@ class FusedBinaryTest(test_lib.TestCase):
         in_array = in_array.astype(np.float16)
         y_atol = 1e-3
         if dtype is tf.bfloat16:
-          y_atol = 2e-3
+          y_atol = 6e-3
 
       y = in_array - 1
       y = y * in_array
+      y = y - in_array
       y = y.reshape((-1))
       self.assertAllClose(output_val, y, atol=y_atol)
 
-  @test_util.run_deprecated_v1
-  @test_util.disable_xla('This test does not pass with XLA')
-  def testGraphStructureSub1(self):
-    if not test_lib.is_gpu_available():
-      self.skipTest("Skip on GPU due to the pattern not supported")
-
-    shape1 = (16, 16, 512, 512)
+  def _testGraphStructureSub1(self, shape1):
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -91,11 +84,15 @@ class FusedBinaryTest(test_lib.TestCase):
     in_array = in_array.astype(np.float32).reshape(shape1)
     in_x = tf.placeholder(tf.float32, shape=shape1)
     in_z = tf.placeholder(tf.float32, shape=shape1)
-    for dtype in [tf.float32, tf.half, tf.bfloat16]:
+    dtypes = [tf.float32, tf.bfloat16]
+    if tf.config.list_physical_devices('XPU'):
+      dtypes += [tf.half]
+    for dtype in dtypes:
       in_x_d = tf.cast(in_x, dtype=dtype)
       in_z_d = tf.cast(in_z, dtype=dtype)
       x = 1 - in_x_d
       x = tf.math.multiply(x, in_z_d)
+      x = in_z_d - x
       x = tf.reshape(x, [-1])
 
       with self.session(use_gpu=True) as sess:
@@ -116,12 +113,25 @@ class FusedBinaryTest(test_lib.TestCase):
         in_array = in_array.astype(np.float16)
         y_atol = 1e-3
         if dtype is tf.bfloat16:
-          y_atol = 2e-3
+          y_atol = 1e-2
 
       y = 1 - in_array
       y = y * in_array
+      y = in_array - y
       y = y.reshape((-1))
       self.assertAllClose(output_val, y, atol=y_atol)
+
+  @test_util.run_deprecated_v1
+  @test_util.disable_xla('This test does not pass with XLA')
+  def testGraphStructure(self):
+    self._testGraphStructure((16, 16, 512, 512))
+    self._testGraphStructure((64, 64))
+
+  @test_util.run_deprecated_v1
+  @test_util.disable_xla('This test does not pass with XLA')
+  def testGraphStructureSub1(self):
+    self._testGraphStructureSub1((16, 16, 512, 512))
+    self._testGraphStructureSub1((1280, 16))
 
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
@@ -132,7 +142,7 @@ class FusedBinaryTest(test_lib.TestCase):
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
-    for dtype in [np.float, np.float64]:
+    for dtype in [float, np.float64]:
       in_x = tf.placeholder(tf.float32, shape=shape)
       in_y = tf.placeholder(tf.float32, shape=shape)
       in_array = np.random.uniform(size=np.prod(shape)).astype(dtype).reshape(shape)

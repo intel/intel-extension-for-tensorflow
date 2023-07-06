@@ -1,10 +1,10 @@
 # Graph fusion
 
-Intel® Extension for TensorFlow\* provides graph optimization to fuse specified operator patterns into new single operator for better performance.
+Intel® Extension for TensorFlow\* provides graph optimization to fuse specified operator patterns into a new single operator for better performance.
 
 ## Basic fusion
 
-The basic list of supported fusions are shown below. These fusions requires  input and output the same data type.
+The basic list of supported fusions is shown below. These fusions require input and output of the same data type.
 
 | Pattern | Operator number |
 | -- | -- |
@@ -21,7 +21,7 @@ The basic list of supported fusions are shown below. These fusions requires  inp
 | `Conv+Bias+Add` | 3 |
 | `Conv`+`Bias`+`Add`+(`Relu`, `Relu6`, `Elu`, `LeakyRelu`, `Gelu_erf`, `Gelu_tanh`, `Tanh`, `Sigmoid`) | 4 |
 | `MatMul`+`Bias`+`Add` | 3 |
-| `MatMul`+`Bias`+`Add`+(`Relu`, `Relu6`, `Elu`,  `Gelu_erf`, `Gelu_tanh`, `Tanh`, `Sigmoid`) | 4 |
+| `MatMul`+`Bias`+`Add`+(`Relu`, `Relu6`, `Elu`,  `Gelu_erf`, `Gelu_tanh`, `Tanh`, `Sigmoid`) | 4 |
 | `MatMul+BiasAddGrad` | 2 |
 | `ConvGradFilter`+`BiasAddGrad` | 2 |
 | `Pad`+`Conv` | 2 |
@@ -31,7 +31,7 @@ The basic list of supported fusions are shown below. These fusions requires  inp
 
 ## Mixed data type fusion
 
-As stock TensorFlow only supports same input output data type, inserting a cast node during `BF16` inference and training may break the existing fusion pattern and impact performance.
+As stock TensorFlow only supports same-data-type input and output, inserting a cast node during `BF16` inference and training may break the existing fusion pattern and impact performance.
 
 Intel® Extension for TensorFlow\* provides mixed data type fusion, which removes the additional data type conversions on the graph level.
 
@@ -52,4 +52,12 @@ The new kernels are implemented（`AccMatMul` and `FusedAccMatMul(WithSum)`）as
 
 - `Tout`: Output data type ∈ {`float32`}.
 - `Tpost`: Post op data type ∈ {`bfloat16`, `float32`}.
-- `is_bf16_math_mode`: A boolean to indicate whether to use oneDNN `BF16` math mode in the case of `FP32` input, `FP32` output.
+- `is_bf16_math_mode`: A Boolean to indicate whether to use oneDNN `BF16` math mode if `FP32` input, `FP32` output.
+
+## Generic layout optimizer
+
+As the channels_first format is not supported by stock TensorFlow on CPU, it inserts transpose nodes before and after the Conv3D/MaxPool3D nodes. However, this problem does not exist in GPU device. To avoid unnecessary layout transformation when running on a GPU device, Intel® Extension for TensorFlow\* adds a separate layout optimizer.
+
+| Pattern | Fused operator | Conv data format (before optimization)  | Conv data format (after optimization)| 
+| --      | --        | -- | -- | 
+| `Transpose + Conv3D + Transpose` | `Conv3D` | `NDHWC` | `NCDHW` |

@@ -503,63 +503,87 @@ class MaxPooling3dGradGradOp : public OpKernel {
   TensorFormat data_format_;
 };
 
-#define REGISTER_GPU_POOL_KERNELS(T)                               \
-  REGISTER_KERNEL_BUILDER(                                         \
-      Name("MaxPool").Device(DEVICE_GPU).TypeConstraint<T>("T"),   \
-      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);      \
-  REGISTER_KERNEL_BUILDER(                                         \
-      Name("MaxPoolV2")                                            \
-          .Device(DEVICE_GPU)                                      \
-          .HostMemory("ksize")                                     \
-          .HostMemory("strides")                                   \
-          .TypeConstraint<T>("T"),                                 \
-      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);      \
-  REGISTER_KERNEL_BUILDER(                                         \
-      Name("MaxPool3D").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
-      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);      \
-  REGISTER_KERNEL_BUILDER(Name("MaxPoolWithArgmax")                \
-                              .Device(DEVICE_GPU)                  \
-                              .TypeConstraint<int64>("Targmax")    \
-                              .TypeConstraint<T>("T"),             \
-                          MaxPoolingWithArgmaxOp<GPUDevice, T>);
+#define REGISTER_GPU_POOL_KERNELS(T)                                    \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("MaxPool").Device(DEVICE_GPU).TypeConstraint<T>("T"),        \
+      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);           \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("MaxPoolV2")                                                 \
+          .Device(DEVICE_GPU)                                           \
+          .HostMemory("ksize")                                          \
+          .HostMemory("strides")                                        \
+          .TypeConstraint<T>("T"),                                      \
+      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);           \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("_ITEXMaxPoolV2")                                            \
+          .Device(DEVICE_GPU)                                           \
+          .HostMemory("ksize")                                          \
+          .HostMemory("strides")                                        \
+          .TypeConstraint<T>("T"),                                      \
+      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);           \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("MaxPool3D").Device(DEVICE_GPU).TypeConstraint<T>("T"),      \
+      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);           \
+  REGISTER_KERNEL_BUILDER(Name("MaxPoolWithArgmax")                     \
+                              .Device(DEVICE_GPU)                       \
+                              .TypeConstraint<int64>("Targmax")         \
+                              .TypeConstraint<T>("T"),                  \
+                          MaxPoolingWithArgmaxOp<GPUDevice, T>);        \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("_ITEXMaxPool").Device(DEVICE_GPU).TypeConstraint<T>("T"),   \
+      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);           \
+  REGISTER_KERNEL_BUILDER(                                              \
+      Name("_ITEXMaxPool3D").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
+      PoolingOp<GPUDevice, T, dnnl::algorithm::pooling_max>);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_POOL_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_KERNEL_BUILDER(Name("MaxPoolWithArgmax")
-                            .Device(DEVICE_GPU)
-                            .TypeConstraint<int64>("Targmax")
-                            .TypeConstraint<double>("T"),
-                        MaxPoolingWithArgmaxOp<GPUDevice, double>);
+TF_CALL_double(REGISTER_GPU_POOL_KERNELS);
 #endif
 #undef REGISTER_GPU_POOL_KERNELS
 
-#define REGISTER_GPU_POOL_GRAD_KERNELS(T)                              \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("MaxPoolGrad").Device(DEVICE_GPU).TypeConstraint<T>("T"),   \
-      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>); \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("MaxPoolGradV2")                                            \
-          .Device(DEVICE_GPU)                                          \
-          .HostMemory("ksize")                                         \
-          .HostMemory("strides")                                       \
-          .TypeConstraint<T>("T"),                                     \
-      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>); \
-  REGISTER_KERNEL_BUILDER(                                             \
-      Name("MaxPool3DGrad").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
-      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>); \
-  REGISTER_KERNEL_BUILDER(Name("MaxPoolGradWithArgmax")                \
-                              .Device(DEVICE_GPU)                      \
-                              .TypeConstraint<T>("T")                  \
-                              .TypeConstraint<int64>("Targmax"),       \
-                          MaxPoolingGradWithArgmaxOp<GPUDevice, T>);
+#define REGISTER_GPU_POOL_GRAD_KERNELS(T)                                 \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("MaxPoolGrad").Device(DEVICE_GPU).TypeConstraint<T>("T"),      \
+      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>);    \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("MaxPoolGradV2")                                               \
+          .Device(DEVICE_GPU)                                             \
+          .HostMemory("ksize")                                            \
+          .HostMemory("strides")                                          \
+          .TypeConstraint<T>("T"),                                        \
+      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>);    \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("MaxPool3DGrad")                                               \
+          .Device(DEVICE_GPU)                                             \
+          .TypeConstraint<T>("T")                                         \
+          .TypeConstraint<T>("TInput"),                                   \
+      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>);    \
+  REGISTER_KERNEL_BUILDER(Name("MaxPoolGradWithArgmax")                   \
+                              .Device(DEVICE_GPU)                         \
+                              .TypeConstraint<T>("T")                     \
+                              .TypeConstraint<int64>("Targmax"),          \
+                          MaxPoolingGradWithArgmaxOp<GPUDevice, T>);      \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("_ITEXMaxPoolGrad").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
+      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>);    \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("_ITEXMaxPoolGradV2")                                          \
+          .Device(DEVICE_GPU)                                             \
+          .HostMemory("ksize")                                            \
+          .HostMemory("strides")                                          \
+          .TypeConstraint<T>("T"),                                        \
+      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>);    \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("_ITEXMaxPool3DGrad")                                          \
+          .Device(DEVICE_GPU)                                             \
+          .TypeConstraint<T>("T")                                         \
+          .TypeConstraint<T>("TInput"),                                   \
+      MaxPoolGradOp<GPUDevice, T, dnnl::prop_kind::forward_training>);
 
 TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_GPU_POOL_GRAD_KERNELS);
 #ifdef ITEX_ENABLE_DOUBLE
-REGISTER_KERNEL_BUILDER(Name("MaxPoolGradWithArgmax")
-                            .Device(DEVICE_GPU)
-                            .TypeConstraint<double>("T")
-                            .TypeConstraint<int64>("Targmax"),
-                        MaxPoolingGradWithArgmaxOp<GPUDevice, double>);
+TF_CALL_double(REGISTER_GPU_POOL_GRAD_KERNELS);
 #endif
 #undef REGISTER_GPU_POOL_GRAD_KERNELS
 
@@ -594,6 +618,21 @@ TF_CALL_double(REGISTER_GPU_POOL_GRADGRAD_KERNELS);
 #define REGISTER_KERNEL(TYPE)         \
   REGISTER_KERNEL_BUILDER(            \
       Name("QuantizedMaxPool")        \
+          .Device(DEVICE_GPU)         \
+          .HostMemory("min_input")    \
+          .HostMemory("max_input")    \
+          .HostMemory("min_output")   \
+          .HostMemory("max_output")   \
+          .TypeConstraint<TYPE>("T"), \
+      PoolingOp<GPUDevice, TYPE, dnnl::algorithm::pooling_max>)
+
+TF_CALL_qint8(REGISTER_KERNEL);
+TF_CALL_quint8(REGISTER_KERNEL);
+#undef REGISTER_KERNEL
+
+#define REGISTER_KERNEL(TYPE)         \
+  REGISTER_KERNEL_BUILDER(            \
+      Name("_QuantizedMaxPool3D")     \
           .Device(DEVICE_GPU)         \
           .HostMemory("min_input")    \
           .HostMemory("max_input")    \

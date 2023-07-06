@@ -1,0 +1,40 @@
+diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+index 75e9d1933308..ed11831180a4 100644
+--- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+@@ -8,6 +8,7 @@ load(":config.bzl", "llvm_config_defines")
+ load(":targets.bzl", "llvm_targets")
+ load(":enum_targets_gen.bzl", "enum_targets_gen")
+ load(":binary_alias.bzl", "binary_alias")
++load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
+ package(default_visibility = ["//visibility:public"])
+
+@@ -22,6 +23,7 @@ exports_files(["LICENSE.TXT"])
+ # this `Make` variable.
+ llvm_copts = [
+     "$(STACK_FRAME_UNLIMITED)",
++    "-fvisibility=hidden",
+ ]
+ 
+ enum_targets_gen(
+@@ -4653,3 +4655,19 @@ cc_binary(
+         ":Support",
+     ],
+ )
++
++cc_library(
++    name = "SYCLLowerIR",
++    srcs = glob([
++        "lib/SYCLLowerIR/*.cpp",
++    ]),
++    hdrs = glob(["include/llvm/SYCLLowerIR/*.h"]),
++    copts = llvm_copts,
++    deps = [
++        ":Analysis",
++        ":Core",
++        ":Demangle",
++        ":Support",
++        ":TransformUtils",
++    ],
++)

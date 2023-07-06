@@ -22,6 +22,12 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
+try:
+  from tensorflow.python.ops.variables import RefVariable
+  from tensorflow.python.ops.variables import VariableV1
+except ImportError:
+  from tensorflow.python.ops.ref_variable import RefVariable
+  from tensorflow.python.ops.variable_v1 import VariableV1
 from tensorflow.python.training import training_ops
 import numpy as np
 """Tests for ResourceApplyAdamMax."""
@@ -66,12 +72,12 @@ class AdaMaxTest(test.TestCase):
           m = resource_variable_ops.ResourceVariable(m_np, dtype = dtype)
           v = resource_variable_ops.ResourceVariable(v_np, dtype = dtype)
         else:
-          var = variables.RefVariable(var_np, dtype = dtype)
-          m = variables.RefVariable(m_np, dtype = dtype)
-          v = variables.RefVariable(v_np, dtype = dtype)
+          var = RefVariable(var_np, dtype = dtype)
+          m = RefVariable(m_np, dtype = dtype)
+          v = RefVariable(v_np, dtype = dtype)
         beta1_t = constant_op.constant(beta1, dtype = dtype)
         beta2_t = constant_op.constant(beta2, dtype = dtype)
-        beta1_power_t = variables.VariableV1(beta1_power, dtype = dtype)
+        beta1_power_t = VariableV1(beta1_power, dtype = dtype)
         lr_t = constant_op.constant(lr, dtype = dtype)
         epsilon_t = constant_op.constant(epsilon, dtype = dtype)
         grads_t = constant_op.constant(grads_np, dtype = dtype)
@@ -83,7 +89,8 @@ class AdaMaxTest(test.TestCase):
         self.evaluate(op_out)
         var_np, m_np, v_np = adamx_update_numpy(var_np, grads_np, t, m_np, v_np, lr, beta1, beta2, epsilon)
         self.assertAllCloseAccordingToType(var_np, self.evaluate(var))
-
+  
+  @test_util.deprecated_graph_mode_only
   def testBasic(self):
     with self.cached_session():
       self.doTestBasic(use_resource=False)

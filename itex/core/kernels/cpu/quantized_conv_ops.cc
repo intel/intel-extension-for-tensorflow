@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/quantized_conv_ops.h"
+
 #include "itex/core/kernels/common/no_ops.h"
 
 namespace itex {
@@ -164,6 +165,10 @@ REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedConv2D",
                                          Eigen::bfloat16, Eigen::bfloat16,
                                          false, quantized_fusions::none, -1);
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedConv2D",
+                                         LegacyQuantizedConvOpBase, Eigen::half,
+                                         Eigen::half, false,
+                                         quantized_fusions::none, -1);
+REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedConv2D",
                                          LegacyQuantizedConvOpBase, float,
                                          float, false, quantized_fusions::none,
                                          -1);
@@ -186,6 +191,10 @@ REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedDepthwiseConv2D",
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedDepthwiseConv2D",
                                          LegacyQuantizedConvOpBase,
                                          Eigen::bfloat16, Eigen::bfloat16, true,
+                                         quantized_fusions::none, -1);
+REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedDepthwiseConv2D",
+                                         LegacyQuantizedConvOpBase, Eigen::half,
+                                         Eigen::half, true,
                                          quantized_fusions::none, -1);
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedDepthwiseConv2D",
                                          LegacyQuantizedConvOpBase, float,
@@ -211,6 +220,10 @@ REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedConv3D",
                                          LegacyQuantizedConvOpBase,
                                          Eigen::bfloat16, Eigen::bfloat16,
                                          false, quantized_fusions::none, -1);
+REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedConv3D",
+                                         LegacyQuantizedConvOpBase, Eigen::half,
+                                         Eigen::half, false,
+                                         quantized_fusions::none, -1);
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_QuantizedConv3D",
                                          LegacyQuantizedConvOpBase, float,
                                          float, false, quantized_fusions::none,
@@ -251,6 +264,10 @@ REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedConv2DV2",
                                          Eigen::bfloat16, Eigen::bfloat16,
                                          false, quantized_fusions::none, -1);
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedConv2DV2",
+                                         LegacyQuantizedConvOpBase, Eigen::half,
+                                         Eigen::half, false,
+                                         quantized_fusions::none, -1);
+REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedConv2DV2",
                                          LegacyQuantizedConvOpBase, float,
                                          float, false, quantized_fusions::none,
                                          -1);
@@ -274,6 +291,10 @@ REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedDepthwiseConv2DV2",
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedDepthwiseConv2DV2",
                                          LegacyQuantizedConvOpBase,
                                          Eigen::bfloat16, Eigen::bfloat16, true,
+                                         quantized_fusions::none, -1);
+REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedDepthwiseConv2DV2",
+                                         LegacyQuantizedConvOpBase, Eigen::half,
+                                         Eigen::half, true,
                                          quantized_fusions::none, -1);
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedDepthwiseConv2DV2",
                                          LegacyQuantizedConvOpBase, float,
@@ -300,6 +321,10 @@ REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedConv3DV2",
                                          LegacyQuantizedConvOpBase,
                                          Eigen::bfloat16, Eigen::bfloat16,
                                          false, quantized_fusions::none, -1);
+REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedConv3DV2",
+                                         LegacyQuantizedConvOpBase, Eigen::half,
+                                         Eigen::half, false,
+                                         quantized_fusions::none, -1);
 REGISTER_KERNEL_ALL_INPUT_AND_BIAS_TYPES("_ITEXQuantizedConv3DV2",
                                          LegacyQuantizedConvOpBase, float,
                                          float, false, quantized_fusions::none,

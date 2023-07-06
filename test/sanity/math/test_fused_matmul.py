@@ -47,7 +47,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
     self.assertAllClose(ret_cpu, ret_gpu)
 
   # set ITEX_VLOG=1, you can see log like:
-  # _FusedBatchMatMulV2[T=DT_FLOAT, _XlaHasReferenceVars=false, adj_x=false, adj_y=false, fused_ops=["Mul"],
+  # _FusedBatchMatMulV2[T=DT_FLOAT, _XlaHasReferenceVars=false, adj_x=false, adj_y=false, fused_ops=["BinaryMul"],
   # num_args=1, _device="/job:localhost/replica:0/task:0/device:XPU:0"]
   def testFuseMul(self):
     x = tf.compat.v1.placeholder(tf.float32, shape=(1, 5, 5))
@@ -58,7 +58,6 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
     y_arr = np.random.rand(2, 5, 5)
     with self.session(use_gpu=False) as sess:
       bmm = math_ops.matmul(x, y, transpose_a=False, transpose_b=False)
-      # CPU does not support the fusion of BatchMatMulV2 + Mul
       ret_cpu = sess.run(array_ops.identity(tf.math.multiply(bmm, scale)), feed_dict={x: x_arr, y: y_arr})
     with self.session(use_gpu=True) as sess:
       bmm = math_ops.matmul(x, y, transpose_a=False, transpose_b=False)

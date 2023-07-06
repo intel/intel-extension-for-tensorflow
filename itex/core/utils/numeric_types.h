@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_NUMERIC_TYPES_H_
 
 #include <complex>
+
 #include "itex/core/utils/tstring.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 // Disable clang-format to prevent 'FixedPoint' header from being included

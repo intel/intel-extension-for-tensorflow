@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "itex/core/utils/tf_buffer.h"
 
+#ifndef ITEX_BUILD_JAX
 namespace itex {
 
 Status MessageToBuffer(const itex::protobuf::MessageLite& in, TF_Buffer* out) {
@@ -51,3 +52,4 @@ Status BufferToMessage(
 }
 
 }  // namespace itex
+#endif

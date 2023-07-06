@@ -26,7 +26,6 @@ limitations under the License.
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/types.h"
-
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 using dnnl::algorithm;
@@ -86,10 +85,16 @@ class OneDnnEltwiseBaseOp : public OpKernel {
       // Create eltwise forward primitive
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = eltwise_forward::primitive_desc(
+          onednn_engine, prop_kind::forward, algo_, src_md, src_md, alpha_,
+          beta_, attr);
+#else
       auto fwd_desc = eltwise_forward::desc(prop_kind::forward, algo_, src_md,
                                             alpha_, beta_);
       auto fwd_pd =
           eltwise_forward::primitive_desc(fwd_desc, attr, onednn_engine);
+#endif
       auto fwd_primitive = eltwise_forward(fwd_pd);
 
       // Create src memory, check if src needs to be reordered
@@ -283,10 +288,10 @@ class OneDnnEltwiseGradBaseOp : public OpKernel {
         diff_dst_md = diff_dst_onednn_shape.GetOneDnnLayout();
       }
 
-#ifdef INTEL_CPU_ONLY
       // Temporarily fix ReluGrad for CPU
       // If one of the input is in BLOCK format, reorder the other one as BLOCK
       // Otherwise the primitive will run into the reference path.
+      // Also for GPU, GPU would crash.
       // TODO(itex): Remove this fix once the issue is solved by OneDNN
       memory::desc _src_md({}, memory::data_type::undef,
                            memory::format_tag::undef);
@@ -301,10 +306,17 @@ class OneDnnEltwiseGradBaseOp : public OpKernel {
                  diff_dst_onednn_shape.IsOneDnnTensor()) {
         _src_md = _diff_dst_md;
       }
-#endif  // INTEL_CPU_ONLY
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+#ifdef ITEX_ONEDNN_3_0
+      auto fwd_pd = eltwise_forward::primitive_desc(
+          onednn_engine, prop_kind::forward_training, algo_, _src_md, _src_md,
+          alpha_, beta_, attr);
+      auto eltwise_bwd_pd = eltwise_backward::primitive_desc(
+          onednn_engine, algo_, _src_md, _src_md, _src_md, alpha_, beta_,
+          fwd_pd, attr);
+#else
 #ifdef INTEL_CPU_ONLY
       auto fwd_desc = eltwise_forward::desc(prop_kind::forward_training, algo_,
                                             _src_md, alpha_, beta_);
@@ -320,8 +332,10 @@ class OneDnnEltwiseGradBaseOp : public OpKernel {
       auto bwd_desc =
           eltwise_backward::desc(algo_, diff_dst_md, src_md, alpha_, beta_);
 #endif  // INTEL_CPU_ONLY
+
       auto eltwise_bwd_pd = eltwise_backward::primitive_desc(
           bwd_desc, attr, onednn_engine, fwd_pd);
+#endif
       auto eltwise_bwd_primitive = eltwise_backward(eltwise_bwd_pd);
 
       dnnl::memory src_mem = CreateDnnlMemory(src_md, onednn_engine,

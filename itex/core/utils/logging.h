@@ -71,6 +71,8 @@ class LogMessage : public std::basic_ostringstream<char> {
  protected:
   void GenerateLogMessage();
 
+  void IssueLink();
+
  private:
   const char* fname_;
   int line_;
@@ -81,7 +83,7 @@ class LogMessage : public std::basic_ostringstream<char> {
 // that the ternary ITEX_VLOG() implementation is balanced, type wise.
 struct Voidifier {
   template <typename T>
-  void operator&(const T&)const {}
+  void operator&(const T&) const {}
 };
 
 // LogMessageFatal ensures the process will exit in failure after
@@ -469,6 +471,10 @@ int64 MinLogLevelFromEnv();
 
 int64 MinVLogLevelFromEnv();
 
+// Emit "message" as a log message to the log for the specified
+// "severity" as if it came from a LOG call at "fname:line"
+void LogString(const char* fname, int line, int severity,
+               const std::string& message);
 }  // namespace internal
 
 // LogSink support adapted from //base/logging.h

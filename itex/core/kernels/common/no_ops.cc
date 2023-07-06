@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/kernels/common/no_ops.h"
+
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/types.h"
 
@@ -21,7 +22,5 @@ namespace itex {
 
 REGISTER_KERNEL_BUILDER(Name("NoOp").Device(DEVICE_GPU), NoOp);
 REGISTER_KERNEL_BUILDER(Name("NoOp").Device(DEVICE_CPU), NoOp);
-REGISTER_KERNEL_BUILDER(Name("_ITEXFusedBinary").Device(DEVICE_CPU),
-                        NoImplementOp);
 
 }  // namespace itex

@@ -21,7 +21,7 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import histogram_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
-from utils import common_2d_input_size
+from utils import tailed_no_tailed_size
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
@@ -30,10 +30,10 @@ except ImportError:
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float64]
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float64, dtypes.int32, dtypes.int64]
 except ImportError:
     from tensorflow.python.platform import test
-    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
+    FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float64, dtypes.int32, dtypes.int64]
     
 ITERATION = 5
 
@@ -42,7 +42,8 @@ class HistogramFixedWidthTest(test.TestCase):
         np.random.seed(4)
         in_array = np.random.normal(size=size)
         in_array = constant_op.constant(in_array, dtype=dtype)
-        value_range = [0.0, 5.0]
+        value_range = [0, 5]
+        value_range = constant_op.constant(value_range, dtype=dtype)
         flush_cache()
         out_gpu = histogram_ops.histogram_fixed_width(in_array, value_range, nbins=5)
 
@@ -50,7 +51,7 @@ class HistogramFixedWidthTest(test.TestCase):
     @multi_run(ITERATION)
     def testHistogramFixedWidth(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            for in_size in common_2d_input_size:
+            for in_size in tailed_no_tailed_size:
                 self._test_impl(in_size, dtype)
 
 if __name__ == '__main__':
