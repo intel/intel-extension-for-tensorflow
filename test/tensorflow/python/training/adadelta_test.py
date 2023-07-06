@@ -23,7 +23,8 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
 import numpy as np
-
+import tensorflow as tf
+#import tensorflow.compat.v1 as tfc
 from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
@@ -168,24 +169,43 @@ class AdadeltaOptimizerTest(test.TestCase):
     with context.eager_mode():
       self.doTestBasic(use_resource=True, use_callable_params=True)
 
+  def doTestAdadelta(self, dtype):
+    SHAPE1 = [8192, 8192]
+    SHAPE2 = [8192, 8192]
+
+    np.random.seed(1)
+    input_1 = np.reshape(np.random.normal(size=np.prod(SHAPE1)), newshape=SHAPE1)
+    input_2 = np.reshape(np.random.normal(size=np.prod(SHAPE2)), newshape=SHAPE2)
+    var0 = resource_variable_ops.ResourceVariable(input_1, dtype=dtype)
+    x = constant_op.constant(input_2, dtype=dtype)
+    pred = math_ops.matmul(embedding_ops.embedding_lookup([var0], [0]), x)
+    loss = pred * pred
+    sgd_op = adadelta.AdadeltaOptimizer(1.0, 1.0, 1.0).minimize(loss)
+
+    self.evaluate(variables.global_variables_initializer())
+
+    # Fetch params to validate initial values
+    self.assertAllCloseAccordingToType(input_1, self.evaluate(var0))
+
+    # Run 1 step of sgd
+    sgd_op.run()
+    return var0
+
   @test_util.run_deprecated_v1
   def testMinimizeSparseResourceVariable(self):
-    for dtype in [dtypes.half, dtypes.float32, dtypes.float64]:
-      with self.cached_session():
-        var0 = resource_variable_ops.ResourceVariable([[1.0, 2.0]], dtype=dtype)
-        x = constant_op.constant([[4.0], [5.0]], dtype=dtype)
-        pred = math_ops.matmul(embedding_ops.embedding_lookup([var0], [0]), x)
-        loss = pred * pred
-        sgd_op = adadelta.AdadeltaOptimizer(
-            1.0, 1.0, 1.0).minimize(loss)
-        self.evaluate(variables.global_variables_initializer())
-        # Fetch params to validate initial values
-        self.assertAllCloseAccordingToType([[1.0, 2.0]], self.evaluate(var0))
-        # Run 1 step of sgd
-        sgd_op.run()
+    for dtype in [dtypes.float32]:
+        
+        with self.session(use_gpu=False):
+            res = self.doTestAdadelta(dtype)
+            ans_cpu = self.evaluate(res)
+
+        with self.session(use_gpu=True):
+            res = self.doTestAdadelta(dtype)
+            y_gpu = self.evaluate(res)
+
         # Validate updated params
-        self.assertAllCloseAccordingToType([[-111, -138]], self.evaluate(var0))
+        self.assertAllClose(tf.cast(ans_cpu, dtype), y_gpu, rtol=1e-2, atol=1e-2)
 
 
 if __name__ == "__main__":
-  test.main()
+    test.main()

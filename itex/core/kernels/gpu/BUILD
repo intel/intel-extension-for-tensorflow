@@ -1752,6 +1752,7 @@ itex_xpu_library(
         "training_op_power_sign.cc",
         "training_op_proximal_adagrad.cc",
         "training_op_rmsprop.cc",
+        "training_op_sparse_apply_adadelta.cc",
     ],
     hdrs = [
         "dense_update_functor.h",
