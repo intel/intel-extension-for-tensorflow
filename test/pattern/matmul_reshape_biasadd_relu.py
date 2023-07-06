@@ -111,6 +111,15 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
                     found_fused_op = len(fused_ops) == 2 and fused_ops[0] == b'BiasAdd' and fused_ops[1] == b'Relu'
                     break
             self.assertTrue(found_fused_op, "this pattern has fusion issue!!")
+    def testTrain(self):
+        tf.random.set_seed(0)
+        with self.session(use_gpu=True) as sess:
+            tf.compat.v1.keras.backend.set_session(sess)
+            model = kerasmodel()
+            model.compile(loss='mse', metrics=['accuracy'])
+            model.fit(np.array([[[[1.,2.,3.],[4.,5.,6.]]]]).astype(np.float32),
+                      np.array([1.]).astype(np.float32),epochs=1)
+
 
 if __name__ == '__main__':
     test.main()

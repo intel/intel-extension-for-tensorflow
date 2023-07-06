@@ -976,7 +976,9 @@ bool FindKerasDenseLayerFwd(const RemapperContext& ctx, int node_index,
 
   // Input 0 of Matmul is reshape_0
   auto* reshape_0 = matmul->GetRegularFanin(0).node_view();
-  if (IsReshape(*reshape_0->node())) {
+  if (IsReshape(*reshape_0->node()) && !HasControlFaninOrFanout(*reshape_0) &&
+      !IsInPreserveSet(ctx, reshape_0->node()) &&
+      reshape_0->NumRegularFanouts() == 1) {
     std::vector<OpInfo_TensorProperties> reshape_props;
     TF_ABORT_IF_ERROR(ctx.graph_properties.GetInputProperties(
         reshape_0->node()->name(), &reshape_props));
