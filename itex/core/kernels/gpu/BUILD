@@ -1416,6 +1416,26 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "ragged_fill_empty_rows_op",
+    srcs = ["ragged_fill_empty_rows_op.cc"],
+    hdrs = [
+        "ragged_fill_empty_rows_op.h",
+        "sparse_fill_empty_rows_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":fill_empty_rows_functor",
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/gpu:scan_ops",
+        "//itex/core/kernels/gpu:unique_op",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_reorder_op",
     srcs = ["sparse_reorder_op.cc"],
     hdrs = ["sparse_reorder_op.h"],
@@ -2197,6 +2217,7 @@ GPU_KERNELS = [
     ":spacetobatch_op",
     ":sparse_concat_op",
     ":sparse_fill_empty_rows_op",
+    ":ragged_fill_empty_rows_op",
     ":sparse_math_ops",
     ":sparse_reorder_op",
     ":sparse_slice_grad_op",
