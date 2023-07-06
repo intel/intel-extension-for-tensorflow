@@ -28,6 +28,12 @@ $ bazel build -c opt --config=cpu //itex:libitex_cpu_cc.so
 
 CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/libitex_cpu_cc.so`
 
+NOTE: `libitex_cpu_cc.so` is depended on `libiomp5.so`, so `libiomp5.so` shoule be copied to the same diretcory of `libitex_cpu_cc.so`
+```bash
+$ cd <Path to intel-extension-for-tensorflow>
+$ cp bazel-out/k8-opt-ST-*/bin/external/llvm_openmp/libiomp5.so bazel-bin/itex/
+```
+
 ## Prepare Tensorflow* CC library and header files
 
 ### Option 1: Extract from Tensorflow* python package (**Recommended**)

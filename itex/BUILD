@@ -247,6 +247,7 @@ cc_binary(
 cc_binary(
     name = "libitex_cpu_cc.so",
     linkopts = [
+        "-Wl,-rpath,$$ORIGIN/",
         "-DINTEL_CPU_ONLY",
     ],
     linkshared = True,
