@@ -1512,6 +1512,25 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "sparse_to_dense_op",
+    srcs = [
+        "sparse_to_dense_op.cc",
+        "sparse_to_dense_op_gpu.cc",
+    ],
+    hdrs = ["sparse_to_dense_op_gpu.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core/compiler/xla:types",
+        "//itex/core/compiler/xla/stream_executor:stream_executor_headers",
+        "//itex/core/kernels/common:fill_functor",
+        "//itex/core/utils/sparse:sparse_tensor",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "sparse_math_ops",
     srcs = [
         "sparse_reshape_op.cc",
@@ -2224,6 +2243,7 @@ GPU_KERNELS = [
     ":sparse_slice_op",
     ":sparse_split_op",
     ":sparse_tensor_dense_mat_mul_op",
+    ":sparse_to_dense_op",
     ":sparse_xent_op",
     ":split_op",
     ":split_v_op",
