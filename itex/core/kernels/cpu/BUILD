@@ -140,21 +140,6 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
-    name = "cast_op",
-    srcs = ["cast_op.cc"],
-    hdrs = [
-        "//itex/core/kernels/common:cast_hdrs",
-    ],
-    copts = tf_copts(),
-    linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        "//itex:core",
-    ],
-    alwayslink = True,
-)
-
-itex_xpu_library(
     name = "binary_op",
     srcs = [
         "cwise_op_comparison_cast.cc",
@@ -418,7 +403,6 @@ CPU_KERNELS = [
     ":aggregate_ops",
     ":binary_op",
     ":batch_matmul_op",
-    ":cast_op",
     ":conv_ops",
     ":dequantize_op",
     ":einsum_op",

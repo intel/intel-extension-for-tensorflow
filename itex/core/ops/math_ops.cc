@@ -153,26 +153,6 @@ void Register_ITEXFusedAddNOp() {
   }
 }
 
-void Register_ITEXCastOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder = TF_NewOpDefinitionBuilder("_ITEXCast");
-    TF_OpDefinitionBuilderAddInput(op_builder, "x: SrcT");
-
-    TF_OpDefinitionBuilderAddOutput(op_builder, "y: DstT");
-
-    TF_OpDefinitionBuilderAddAttr(op_builder, "SrcT: {half, float, bfloat16}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "DstT: {half, float, bfloat16}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, float, bfloat16}");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "Truncate: bool = false");
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_ITEXCast op registration failed.";
-  }
-}
-
 void Register_ITEXFusedRandomOP() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

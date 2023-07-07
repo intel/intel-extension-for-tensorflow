@@ -115,7 +115,8 @@ class GruFusion : public Fusion {
       return ret.ToEmpty();
     }
 
-    ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
+    ret = FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_,
+                         false);
     if (!ret.Empty()) {
       if (!IsValidTypes(ctx, ret, {DT_FLOAT, DT_BFLOAT16})) ret.ToEmpty();
     }

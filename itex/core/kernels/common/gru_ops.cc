@@ -40,7 +40,7 @@ namespace itex {
   GRU Forward op
 ==================================================================*/
 template <typename Device, typename T, typename GruType>
-class OneDnnGRUForwardOp : public OpKernel {
+class GRUForwardOp : public OpKernel {
  protected:
   bool is_filter_const_ = false;
   WeightCacheManager<T> weight_layer_cache_manager_;
@@ -50,13 +50,13 @@ class OneDnnGRUForwardOp : public OpKernel {
   GruType augru_prim;
 
  public:
-  explicit OneDnnGRUForwardOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+  explicit GRUForwardOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
     if (ctx->HasAttr("is_filter_const")) {
       OP_REQUIRES_OK(ctx, ctx->GetAttr("is_filter_const", &is_filter_const_));
     }
   }
 
-  ~OneDnnGRUForwardOp() {}
+  ~GRUForwardOp() {}
 
   void Compute(OpKernelContext* ctx) override {
     // Tensors for input/output memory.
@@ -561,7 +561,7 @@ class OneDnnGRUForwardOp : public OpKernel {
 };
 
 template <typename Device, typename T, typename GruType>
-class MklGRUForwardOp : public OneDnnGRUForwardOp<Device, T, GruType> {
+class MklGRUForwardOp : public GRUForwardOp<Device, T, GruType> {
  protected:
   bool X_format_tnc = true;
   bool AUX_format_tnc = true;
@@ -571,7 +571,7 @@ class MklGRUForwardOp : public OneDnnGRUForwardOp<Device, T, GruType> {
 
  public:
   explicit MklGRUForwardOp(OpKernelConstruction* ctx)
-      : OneDnnGRUForwardOp<Device, T, GruType>(ctx) {
+      : GRUForwardOp<Device, T, GruType>(ctx) {
     std::string format = "";
     if (ctx->HasAttr("x_format")) {
       OP_REQUIRES_OK(ctx, ctx->GetAttr("x_format", &format));
@@ -593,7 +593,7 @@ class MklGRUForwardOp : public OneDnnGRUForwardOp<Device, T, GruType> {
     h_n_tensor = &h_n_tensor_local;
     x_reorder_tensor = &x_reorder_tensor_local;
     au_x_reorder_tensor = &au_x_reorder_tensor_local;
-    this->OneDnnGRUForwardOp<Device, T, GruType>::Compute(ctx);
+    this->GRUForwardOp<Device, T, GruType>::Compute(ctx);
     h_n_tensor = nullptr;
     x_reorder_tensor = nullptr;
     au_x_reorder_tensor = nullptr;
@@ -686,10 +686,10 @@ class MklGRUForwardOp : public OneDnnGRUForwardOp<Device, T, GruType> {
 #define REGISTER_GRU_KERNELS(T)                                            \
   REGISTER_KERNEL_BUILDER(                                                 \
       Name("_ITEXGRUCell").Device(DEVICE_CPU).TypeConstraint<T>("T"),      \
-      OneDnnGRUForwardOp<CPUDevice, T, dnnl::gru_forward>);                \
+      GRUForwardOp<CPUDevice, T, dnnl::gru_forward>);                      \
   REGISTER_KERNEL_BUILDER(                                                 \
       Name("_ITEXAUGRUCell").Device(DEVICE_CPU).TypeConstraint<T>("T"),    \
-      OneDnnGRUForwardOp<CPUDevice, T, dnnl::augru_forward>);              \
+      GRUForwardOp<CPUDevice, T, dnnl::augru_forward>);                    \
   REGISTER_KERNEL_BUILDER(                                                 \
       Name("_ITEXForwardGRU").Device(DEVICE_CPU).TypeConstraint<T>("T"),   \
       MklGRUForwardOp<CPUDevice, T, dnnl::gru_forward>);                   \

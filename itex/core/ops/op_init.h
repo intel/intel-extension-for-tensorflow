@@ -121,7 +121,6 @@ void Register_ITEXAvgPool3DOp();
 void Register_ITEXAvgPool3DGradOp();
 void Register_ITEXBatchMatMulOp();
 void Register_ITEXBatchMatMulV2Op();
-void Register_ITEXCastOp();
 void Register_ITEXConv2DBackpropFilterOp();
 void Register_ITEXConv2DBackpropInputOp();
 void Register_ITEXConv2DOp();

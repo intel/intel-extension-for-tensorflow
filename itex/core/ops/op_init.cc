@@ -154,7 +154,6 @@ void RegisterOps() {
   Register_ITEXAvgPool3DGradOp();
   Register_ITEXBatchMatMulOp();
   Register_ITEXBatchMatMulV2Op();
-  Register_ITEXCastOp();
   Register_ITEXConv2DBackpropFilterOp();
   Register_ITEXConv2DBackpropInputOp();
   Register_ITEXConv2DOp();
