@@ -67,6 +67,10 @@ class InstanceNormOp : public OpKernel {
                                   "only support Relu and LeakyRelu"));
       }
     }
+    is_inplace_ = false;
+    if (context->HasAttr("is_inplace")) {
+      OP_REQUIRES_OK(context, context->GetAttr("is_inplace", &is_inplace_));
+    }
   }
 
   void Compute(OpKernelContext* context) override {
@@ -103,8 +107,13 @@ class InstanceNormOp : public OpKernel {
         ITEX_DCHECK(dst_tensor);
         return;
       } else {
-        OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
-                                    {0}, 0, src_tensor.shape(), &dst_tensor));
+        if (is_inplace_) {
+          context->set_output(0, src_tensor);
+          dst_tensor = context->mutable_output(0);
+        } else {
+          OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
+                                      {0}, 0, src_tensor.shape(), &dst_tensor));
+        }
       }
 
       int num_elements_scale = scale_tensor.dim_size(0);
@@ -232,6 +241,7 @@ class InstanceNormOp : public OpKernel {
   }
 
  private:
+  bool is_inplace_;
   float epsilon_;
   float leakyrelu_alpha_;
   TensorFormat tensor_format_;

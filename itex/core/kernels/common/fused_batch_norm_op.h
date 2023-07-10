@@ -79,6 +79,10 @@ class FusedBatchNormOp : public OpKernel {
         is_batch_norm_ex_ = true;
       }
     }
+    is_inplace_ = false;
+    if (context->HasAttr("is_inplace")) {
+      OP_REQUIRES_OK(context, context->GetAttr("is_inplace", &is_inplace_));
+    }
   }
   // If use_reserved_space is true, we need to handle the 5th output (a reserved
   // space).
@@ -143,8 +147,13 @@ class FusedBatchNormOp : public OpKernel {
 
         return;
       } else {
-        OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
-                                    {0}, 0, src_tensor.shape(), &dst_tensor));
+        if (is_inplace_ && !std::is_same<T, qint8>::value) {
+          context->set_output(0, src_tensor);
+          dst_tensor = context->mutable_output(0);
+        } else {
+          OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
+                                      {0}, 0, src_tensor.shape(), &dst_tensor));
+        }
       }
 
       size_t depth =
@@ -433,6 +442,7 @@ class FusedBatchNormOp : public OpKernel {
   }
 
  private:
+  bool is_inplace_;
   float epsilon_;
   U exponential_avg_factor_;
   TensorFormat tensor_format_;

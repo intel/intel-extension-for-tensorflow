@@ -100,6 +100,7 @@ void Register_ITEXInstanceNormOp() {
     TF_OpDefinitionBuilderAddAttr(
         op_builder,
         "data_format: { 'NHWC', 'NCHW', 'NDHWC', 'NCDHW' } = 'NHWC' ");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
@@ -128,6 +129,7 @@ void Register_ITEXFusedInstanceNormOp() {
                                   "activation_mode: string = \"Identity\"");
     // Attributes for the LeakyRelu ----------------------------------------- //
     TF_OpDefinitionBuilderAddAttr(op_builder, "leakyrelu_alpha: float = 0.2");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
@@ -2162,6 +2164,7 @@ void Register_ITEXFusedBatchNormOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "exponential_avg_factor: float = 1.0");
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
@@ -2193,6 +2196,7 @@ void Register_ITEXFusedBatchNormV2Op() {
   TF_OpDefinitionBuilderAddAttr(op_builder,
                                 "exponential_avg_factor: float = 1.0");
   TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
+  TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
   TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                   &unknown_shape_fn);
   TF_RegisterOpDefinition(op_builder, status.get());
@@ -2225,6 +2229,7 @@ void Register_ITEXFusedBatchNormV3Op() {
   TF_OpDefinitionBuilderAddAttr(op_builder,
                                 "exponential_avg_factor: float = 1.0");
   TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
+  TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
   TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                   &unknown_shape_fn);
   TF_RegisterOpDefinition(op_builder, status.get());
@@ -2261,6 +2266,7 @@ void Register_ITEXFusedBatchNormExOp() {
   TF_OpDefinitionBuilderAddAttr(op_builder,
                                 "activation_mode: string = \"Identity\"");
   TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
+  TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
   TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                   &unknown_shape_fn);
   TF_RegisterOpDefinition(op_builder, status.get());
@@ -3004,6 +3010,7 @@ void Register_ITEXLayerNormOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
     TF_OpDefinitionBuilderAddAttr(op_builder,
                                   "data_format: { 'NHWC', 'NCHW'} = 'NHWC' ");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &layer_norm_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
@@ -3052,6 +3059,7 @@ void Register_ITEXMklLayerNormOp() {
     TF_OpDefinitionBuilderAddOutput(op_builder, "y: T");
     TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
     TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_inplace: bool = false");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unchanged_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());

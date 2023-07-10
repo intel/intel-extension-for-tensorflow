@@ -44,6 +44,10 @@ class LayerNormOp : public OpKernel {
     OP_REQUIRES(
         context, tensor_format == "NHWC",
         errors::InvalidArgument("Invalid data format, only support NHWC"));
+    is_inplace_ = false;
+    if (context->HasAttr("is_inplace")) {
+      OP_REQUIRES_OK(context, context->GetAttr("is_inplace", &is_inplace_));
+    }
   }
 
   void Compute(OpKernelContext* context) override {
@@ -142,8 +146,14 @@ class LayerNormOp : public OpKernel {
       dnnl::layer_normalization_forward ln_fwd_primitive(ln_fwd_pd);
 
       // Allocate output dst tensor.
-      OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
-                                  {0}, 0, src_tensor.shape(), &dst_tensor));
+      if (is_inplace_) {
+        context->set_output(0, src_tensor);
+        dst_tensor = context->mutable_output(0);
+      } else {
+        OP_REQUIRES_OK(context, context->forward_input_or_allocate_output(
+                                    {0}, 0, src_tensor.shape(), &dst_tensor));
+      }
+
       // _MklLayernorm doesn't have mean/variance output tensor
       if (!is_inteltf_ln) {
         AllocateTFOutputs(context, mean_var_shape, &layer_mean_tensor,
@@ -250,6 +260,7 @@ class LayerNormOp : public OpKernel {
   }
 
  private:
+  bool is_inplace_;
   float epsilon_;
   bool is_training_ = false;
   string tensor_format = "NHWC";
