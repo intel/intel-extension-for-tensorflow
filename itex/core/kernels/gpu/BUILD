@@ -1678,6 +1678,27 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "stateless_random_gamma_op_v3",
+    srcs = [
+        "stateless_random_gamma_op_v3.cc",
+    ],
+    hdrs = [
+        "random_op_gpu.h",
+        "stateless_random_gamma_op_v3.h",
+        "stateless_random_ops.h",
+        "//itex/core/kernels/common:random_hdrs",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/utils/lib/random:guarded_philox_random",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "stateless_random_ops_v2",
     srcs = [
         "stateless_random_ops_v2.cc",
@@ -2251,6 +2272,7 @@ GPU_KERNELS = [
     ":stateless_random_ops",
     ":stateless_random_ops_v2",
     ":stateless_random_gamma_op_v2",
+    ":stateless_random_gamma_op_v3",
     ":strided_slice_op",
     ":tile_ops",
     ":training_ops",
