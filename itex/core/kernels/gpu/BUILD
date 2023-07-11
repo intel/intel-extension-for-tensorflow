@@ -72,6 +72,23 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "tensor_to_hash_bucket_op",
+    srcs = [
+        "tensor_to_hash_bucket_op.cc",
+        "tensor_to_hash_bucket_op_gpu.cc",
+    ],
+    hdrs = ["tensor_to_hash_bucket_op.h"],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "@farmhash_gpu_archive//:farmhash_gpu",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "ctc_op",
     srcs = ["ctc_loss_op.cc"],
     copts = tf_copts(),
@@ -2297,6 +2314,7 @@ GPU_KERNELS = [
     ":xent_op",
     ":tensorarray_ops",
     ":isTensorFloat32Enabled_op",
+    ":tensor_to_hash_bucket_op",
     ":test_ops",
 ]
 

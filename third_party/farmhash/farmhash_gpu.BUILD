@@ -12,19 +12,6 @@ config_setting(
 )
 
 cc_library(
-    name = "farmhash",
-    srcs = ["src/farmhash.cc"],
-    hdrs = ["src/farmhash.h"],
-    # Disable __builtin_expect support on Windows
-    copts = select({
-        ":windows": ["/DFARMHASH_OPTIONAL_BUILTIN_EXPECT"],
-        "//conditions:default": [],
-    }),
-    includes = ["src/."],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
     name = "farmhash_gpu",
     hdrs = ["src/farmhash_gpu.h"],
     include_prefix = "third_party/farmhash_gpu",
