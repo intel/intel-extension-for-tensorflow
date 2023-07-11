@@ -16,6 +16,9 @@
 # pylint: disable=missing-module-docstring
 from tensorflow.python.framework import ops
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import gen_nn_ops
+from tensorflow.python.ops import array_ops
 
 @ops.RegisterGradient("Gelu")
 def _gelu_grad(op, grad):
@@ -91,3 +94,18 @@ def _itex_rnn_grad(op, *grad):
       # seed2=op.get_attr("seed2"),
       num_proj=op.get_attr("num_proj"),
       var_seq_length=op.get_attr("var_seq_length")) + (None, None, None,)
+
+      
+@ops.RegisterGradient("FusedDenseBiasAddGelu")
+def _itex_fused_dense_bias_add_gelu_grad(op, *grad):
+  feature = op.inputs[0]
+  weights = op.inputs[1]
+  workspace = op.outputs[1]
+  output_backprop = grad[0]
+  dgelu = math_ops.mul(workspace, output_backprop)
+  # TODO(zw): fuse dbias and dweights ? replace reduce_sum with biasAddgrad
+  # dbias = math_ops.reduce_sum(dgelu, axis=0)  
+  dbias = gen_nn_ops.bias_add_grad(dgelu)
+  dweights = math_ops.matmul(feature, dgelu, transpose_a=True)
+  dfeature = math_ops.matmul(dgelu, weights, transpose_b=True)
+  return dfeature, dweights, dbias

@@ -31,3 +31,6 @@ def set_backend(backend):
 
 def get_backend():
   return ITEX_GetBackend()
+
+def is_xehpc():
+  return ITEX_IsXeHPC()

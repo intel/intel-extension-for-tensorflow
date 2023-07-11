@@ -324,6 +324,9 @@ void Register_OneDnnSwishOp();
 void Register_OneDnnToTfOp();
 void Register_OneDnnTransposeOp();
 
+void Register_FusedDenseBiasAddGeluOp();
+void Register_FusedDenseBiasAddGeluGradOp();
+
 // FP8 kernels
 void Register_Fp8QuantizeOp();
 void Register_Fp8DequantizeOp();

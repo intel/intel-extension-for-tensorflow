@@ -1,5 +1,7 @@
 """Build rules for pybind11"""
 
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+
 PYBIND_COPTS = [
     "-fexceptions",
 ]
@@ -43,7 +45,7 @@ def pybind_extension(
         name = name + ".so",
         copts = copts + PYBIND_COPTS + ["-fvisibility=hidden"],
         features = features + PYBIND_FEATURES,
-        linkopts = ["-Wl,-Bsymbolic"] + linkopts + ["-Wl,-rpath,$$ORIGIN/../"],
+        linkopts = ["-Wl,-Bsymbolic"] + linkopts + ["-Wl,-rpath,$$ORIGIN/../"] + if_dpcpp(["-lsycl"]),
         linkshared = 1,
         tags = tags + ["local"],
         deps = deps + PYBIND_DEPS,

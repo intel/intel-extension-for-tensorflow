@@ -53,7 +53,7 @@ def system(cmd):
   else:
     return -os.WTERMSIG(ret)
 
-def call_compiler(argv, link = False, dpcpp = True, cpu_only = False, gpu_only = False):
+def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = False, gpu_only = False):
   flags = argv
 
   if cpu_only:
@@ -94,6 +94,12 @@ def call_compiler(argv, link = False, dpcpp = True, cpu_only = False, gpu_only =
   compile_flags = []
   compile_flags.append(' -isystem ' + ' -isystem '.join(%{dpcpp_builtin_include_directories}))
   compile_flags.append('-DDNNL_GRAPH_WITH_SYCL=1')
+  
+  if xetla:
+    compile_flags.append("-std=c++20")
+    compile_flags.append("-DXETPP_NEW_XMAIN")
+  else:
+    compile_flags.append("-std=c++17")    
 
   # link flags
   link_flags = ['-fPIC']
@@ -102,13 +108,16 @@ def call_compiler(argv, link = False, dpcpp = True, cpu_only = False, gpu_only =
   link_flags.append("-Wl,-rpath=%{TF_SHARED_LIBRARY_DIR}/python")
   link_flags.append("-Wl,-rpath=%{JAX_SHARED_LIBRARY_DIR}")
   link_flags.append("-L%{TF_SHARED_LIBRARY_DIR}/python/")
-  if link and gpu_only and len(AOT_DEVICE) > 0:
+  if link and gpu_only and len(AOT_DEVICE) > 0 and not xetla:
     link_flags.append("-fsycl-targets=spir64_gen,spir64")
     link_flags.append(AOT_DEVICE)
   if gpu_only:
+    if xetla:
+      link_flags.append('-Xs "-doubleGRF -Xfinalizer -printregusage  -Xfinalizer -DPASTokenReduction  -Xfinalizer -enableBCR"')
+    else:
+      link_flags.append('-Xs \'-options "-cl-poison-unsupported-fp64-kernels -cl-intel-enable-auto-large-GRF-mode"\'')
     link_flags.append('-lsycl')
     link_flags.append("-fsycl")
-    link_flags.append('-Xs \'-options "-cl-poison-unsupported-fp64-kernels -cl-intel-enable-auto-large-GRF-mode"\'')
     # TODO use bazel --jobs number here.
     link_flags.append('-fsycl-max-parallel-link-jobs=8')
     link_flags.append("-Wl,-rpath=%{DPCPP_ROOT_DIR}/lib/")
@@ -202,8 +211,9 @@ def call_compiler(argv, link = False, dpcpp = True, cpu_only = False, gpu_only =
 
 def main():
   parser = ArgumentParser()
+  parser.add_argument('--xetla', action='store_true')
   parser.add_argument('-dpcpp_compile', action='store_true')
-  parser.add_argument('-link_stage', action='store_true')
+  parser.add_argument('-link_stage', action='store_true')  
   parser.add_argument('-DINTEL_CPU_ONLY', action='store_true')
   parser.add_argument('-DINTEL_GPU_ONLY', action='store_true')
   if len(sys.argv[1:]) == 1 and (sys.argv[1:][0].startswith('@')):
@@ -217,10 +227,10 @@ def main():
   leftover = [pipes.quote(s) for s in leftover]
   if args.link_stage:
     # link for DPC++ object
-    return call_compiler(leftover, link=True, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, gpu_only=args.DINTEL_GPU_ONLY)
+    return call_compiler(leftover, link=True, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=args.DINTEL_GPU_ONLY)
   else:
     # compile for DPC++ object
-    return call_compiler(leftover, link=False, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, gpu_only=args.DINTEL_GPU_ONLY)
+    return call_compiler(leftover, link=False, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=args.DINTEL_GPU_ONLY)
 
 if __name__ == '__main__':
   sys.exit(main())

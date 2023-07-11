@@ -1,5 +1,5 @@
 load("//itex:itex.bzl", "cc_binary", "cc_library", "itex_xpu_library", "tf_copts")
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp", "if_xetla")
 
 XPU_KERNEL_DEPS = [
     "//itex/core/devices:device_backend_util_hdr",
@@ -12,6 +12,12 @@ XPU_KERNEL_DEPS = [
     ],
     [
         "//itex/core/kernels/cpu:cpu_kernel_impl",
+    ],
+) + if_xetla(
+    [
+        "//itex/core/kernels/gpu:xetla_kernel_impl",
+    ],
+    [
     ],
 )
 

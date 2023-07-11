@@ -4687,3 +4687,44 @@ void Register_ITEXQuantizedBatchMatMulOp() {
         << "_ITEXQuantizedBatchMatMul op registration failed: ";
   }
 }
+
+void Register_FusedDenseBiasAddGeluOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("FusedDenseBiasAddGelu");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "weights: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "bias: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "outputs: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "workspace: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "FusedDenseBiasAddGelu op registration failed: ";
+  }
+}
+
+void Register_FusedDenseBiasAddGeluGradOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("FusedDenseBiasAddGeluGrad");
+    TF_OpDefinitionBuilderAddInput(op_builder, "workspace: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "gradients: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "input_backprop: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "weights_backprop: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "bias_backprop: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "FusedDenseBiasAddGeluGrad op registration failed: ";
+  }
+}

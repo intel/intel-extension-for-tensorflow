@@ -1,4 +1,4 @@
-# Macros for building DPCPP code.
+#Macros for building DPCPP code.
 def if_dpcpp(if_true, if_false = []):
     """Shorthand for selects()'ing on whether we're building with DPCPP.
 
@@ -10,6 +10,19 @@ def if_dpcpp(if_true, if_false = []):
         "@intel_extension_for_tensorflow//itex:if_using_dpcpp": if_true,
         "//conditions:default": if_false,
     })
+    
+def if_xetla(if_true, if_false = []):
+    """Shorthand for select()'ing on whether we're building with xetla.
+
+    Returns a select statement which evaluates to if_true if we're building
+    with xetla header.  Otherwise, the select statement evaluates to if_false.
+
+    """
+    return select({
+        "@local_config_dpcpp//dpcpp:using_xetla": if_true,
+        "//conditions:default": if_false,
+    })     
+    
 
 def dpcpp_is_configured():
     """Returns true if DPCPP was enabled during the configure process."""

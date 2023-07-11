@@ -1,6 +1,6 @@
 # Return the options to use for a C++ library or binary build.
 # Uses the ":optmode" config_setting to pick the options.
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp", "if_xetla")
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
 def if_linux_x86_64(a, otherwise = []):
@@ -148,6 +148,17 @@ def cc_library(name, srcs = [], deps = [], *argc, **kwargs):
     native.cc_library(
         name = name,
         srcs = srcs,
+        deps = deps,
+        **kwargs
+    )
+
+def itex_xetla_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_xetla(["--xetla"])
+    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_xetla(["--xetla"])
+    native.cc_library(
+        name = name,
+        srcs = srcs,
+        hdrs = hdrs,
         deps = deps,
         **kwargs
     )

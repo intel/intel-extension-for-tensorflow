@@ -20,3 +20,4 @@ from intel_extension_for_tensorflow.python.ops.optimizers import AdamWithWeightD
 from intel_extension_for_tensorflow.python.ops.layer_norm import LayerNormalization
 from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
 from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM
+from intel_extension_for_tensorflow.python.ops.mlp import FusedDenseBiasAddGelu

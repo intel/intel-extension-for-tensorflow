@@ -356,6 +356,9 @@ void RegisterOps() {
   Register_OneDnnToTfOp();
   Register_OneDnnTransposeOp();
 
+  Register_FusedDenseBiasAddGeluOp();
+  Register_FusedDenseBiasAddGeluGradOp();
+
   // FP8 kernels
   Register_Fp8QuantizeOp();
   Register_Fp8DequantizeOp();

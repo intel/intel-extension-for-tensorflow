@@ -1,6 +1,6 @@
 licenses(["notice"])
 
-load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library", "itex_xpu_library")
 
 config_setting(
     name = "build_with_dpcpp",
@@ -10,7 +10,7 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
+itex_xpu_library(
     name = "itex_gpu_header",
     srcs = ["runtime/itex_gpu_runtime.h"],
     visibility = ["//visibility:public"],

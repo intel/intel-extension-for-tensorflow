@@ -16,7 +16,7 @@ build:cpu -c opt
 
 # This config option is used for GPU backend.
 build:gpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
-build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true
+build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true
 build:gpu --define=build_with_onednn_graph=true
 build:gpu --define=device=gpu
 build:gpu --config=onednn_v3

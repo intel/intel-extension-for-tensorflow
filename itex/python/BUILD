@@ -11,6 +11,7 @@ pybind_extension(
         "//itex/core/devices:device_backend_util_hdr",
         "//itex/core/graph:config_util_hdr",
         "//itex/core/kernels:libitex_common",
+        "//itex/core/utils:hw_info",
         "@com_google_absl//absl/strings",
         "@local_config_python//:python_headers",
         "@local_config_tf//:tf_header_lib",

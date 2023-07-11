@@ -18,6 +18,7 @@ limitations under the License.
 #include "Python.h"
 #include "itex/core/devices/device_backend_util.h"
 #include "itex/core/graph/config_util.h"
+#include "itex/core/utils/hw_info.h"
 #include "pybind11/pybind11.h"
 
 namespace py = pybind11;
@@ -39,6 +40,21 @@ static py::bytes ITEX_GetConfig() {
   return py::bytes(config_str);
 }
 
+static bool ITEX_IsXeHPC() {
+  // TODO(itex): __LIBSYCL_MINOR_VERSION == 1 is to limit compiler version as
+  // there is bug for __LIBSYCL_MINOR_VERSION == 2 remove this once the bug is
+  // fixed
+#ifndef INTEL_CPU_ONLY
+#if __LIBSYCL_MINOR_VERSION == 1
+  return IsXeHPC(nullptr);
+#else
+  return false;
+#endif
+#else
+  return false;
+#endif
+}
+
 PYBIND11_MODULE(_pywrap_itex, m) {
   m.doc() = "pybind11 front-end api for Intel ® Extension for TensorFlow*";
   m.def("ITEX_SetBackend",
@@ -57,6 +73,7 @@ PYBIND11_MODULE(_pywrap_itex, m) {
     itex_set_config(config);
   });
   m.def("ITEX_GetConfig", &itex::ITEX_GetConfig);
+  m.def("ITEX_IsXeHPC", &itex::ITEX_IsXeHPC);
 }
 
 }  // namespace itex

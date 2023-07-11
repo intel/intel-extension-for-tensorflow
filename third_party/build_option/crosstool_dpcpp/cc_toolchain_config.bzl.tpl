@@ -599,7 +599,6 @@ def _impl(ctx):
                 ],
                 flag_groups = [
                     flag_group(flags = [
-                        "-std=c++17",
                         "-fPIC",
                         "-DITEX_USE_MKL=%{TF_NEED_MKL}",
                         "-DITEX_ENABLE_DOUBLE=1",

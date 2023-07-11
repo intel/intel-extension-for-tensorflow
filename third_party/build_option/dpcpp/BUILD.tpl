@@ -11,6 +11,13 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "using_xetla",
+    values = {
+        "define": "using_xetla=true",
+    },
+)
+
 cc_library(
     name = "itex_gpu_headers",
     hdrs = glob([
