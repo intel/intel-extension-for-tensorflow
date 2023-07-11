@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Intel Corporation
+# Copyright (c) 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,3 +21,4 @@ from intel_extension_for_tensorflow.python.ops.layer_norm import LayerNormalizat
 from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
 from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM
 from intel_extension_for_tensorflow.python.ops.mlp import FusedDenseBiasAddGelu
+from intel_extension_for_tensorflow.python.ops.multi_head_attention import scaled_dot_product_attention

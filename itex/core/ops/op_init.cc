@@ -358,6 +358,9 @@ void RegisterOps() {
 
   Register_FusedDenseBiasAddGeluOp();
   Register_FusedDenseBiasAddGeluGradOp();
+  // scaled_dot_product_attention
+  Register_SDPOp();
+  Register_SDPGradOp();
 
   // FP8 kernels
   Register_Fp8QuantizeOp();

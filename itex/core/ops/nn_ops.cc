@@ -4688,6 +4688,59 @@ void Register_ITEXQuantizedBatchMatMulOp() {
   }
 }
 
+void Register_SDPOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ScaledDotProductAttention");
+    TF_OpDefinitionBuilderAddInput(op_builder, "query: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "key: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "atten_mask: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dropout_mask: bool");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "atten: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "atten_dp: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_mask: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_dropout: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dropout_prob: float = 0.0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ScaledDotProductAttention op registration failed: ";
+  }
+}
+
+void Register_SDPGradOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ScaledDotProductAttentionGrad");
+    TF_OpDefinitionBuilderAddInput(op_builder, "query: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "key: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "dropout_mask: bool");
+    TF_OpDefinitionBuilderAddInput(op_builder, "atten: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "atten_dp: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "output_backprop: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "query_backprop: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "key_backprop: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "value_backprop: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "dropout_prob: float = 0.0");
+
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ScaledDotProductAttentionGrad op registration failed: ";
+  }
+}
+
 void Register_FusedDenseBiasAddGeluOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

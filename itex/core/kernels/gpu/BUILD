@@ -11,6 +11,7 @@ itex_xetla_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
+        "//itex/core/kernels/gpu/xetla:mha_op",
         "//itex/core/kernels/gpu/xetla:mlp_op",
     ],
     alwayslink = True,

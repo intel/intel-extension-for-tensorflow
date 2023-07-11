@@ -95,6 +95,19 @@ def _itex_rnn_grad(op, *grad):
       num_proj=op.get_attr("num_proj"),
       var_seq_length=op.get_attr("var_seq_length")) + (None, None, None,)
 
+@ops.RegisterGradient("ScaledDotProductAttention")
+def _scaled_dot_product_attention_grad(op, *grad):
+  dq, dk, dv = load_ops_library.scaled_dot_product_attention_grad(
+      query=op.inputs[0],
+      key=op.inputs[1],
+      value=op.inputs[2],
+      dropout_mask=op.inputs[4],
+      atten=op.outputs[1],
+      atten_dp=op.outputs[2],
+      output_backprop=grad[0],
+      dropout_prob=op.get_attr("dropout_prob"))
+  return (dq, dk, dv, None, None)
+
       
 @ops.RegisterGradient("FusedDenseBiasAddGelu")
 def _itex_fused_dense_bias_add_gelu_grad(op, *grad):

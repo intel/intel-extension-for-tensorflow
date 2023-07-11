@@ -19,3 +19,26 @@ itex_xetla_library(
     ],
     alwayslink = True,
 )
+
+itex_xetla_library(
+    name = "mha_op",
+    srcs = ["mha_op.cc"],
+    hdrs = [
+        "fmha_forward.h",
+        "fmha_policy.h",
+        "mha_op.h",
+        "non_flash_sdp/mha_backward.h",
+        "non_flash_sdp/mha_forward.h",
+        "non_flash_sdp/mha_policy.h",
+        "non_flash_sdp/mha_util.h",
+    ],
+    copts = tf_copts() + [],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+        "@xetla//:xetla_header",
+    ],
+    alwayslink = True,
+)

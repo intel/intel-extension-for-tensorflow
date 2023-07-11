@@ -193,6 +193,8 @@ class AutoMixedPrecisionLists {
       "_ITEXPadWithFusedConv3D",
       /*Below ops have more attrs compared to original TF ops.*/
       "_ITEXConv3D",
+      "ScaledDotProductAttention",
+      "ScaledDotProductAttentionGrad",
   };
 
   // The default Infer list of FP16 and BF16.
