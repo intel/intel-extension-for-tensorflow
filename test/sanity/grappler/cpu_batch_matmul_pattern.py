@@ -59,7 +59,9 @@ class BatchMatMulWithMulAndAddTest(test_lib.TestCase):
     for node in graph.node:
         if 'BatchMatMulV2' in node.op:
             fused_ops = node.attr['fused_ops'].list.s
-            existing_pattern = len(fused_ops) == 2 and fused_ops[0] == b"BinaryMul" and fused_ops[1] == b"BinaryAdd"
+            # Disable add fusion for cpu accuracy issue.
+            # existing_pattern = len(fused_ops) == 2 and fused_ops[0] == b"BinaryMul" and fused_ops[1] == b"BinaryAdd"
+            existing_pattern = len(fused_ops) == 1 and fused_ops[0] == b"BinaryMul"
             break
 
     self.assertTrue(existing_pattern)
