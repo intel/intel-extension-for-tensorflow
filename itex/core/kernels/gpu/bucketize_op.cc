@@ -17,6 +17,8 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/bucketize_op.h"
 
+#include <algorithm>
+
 #include "itex/core/kernels/gpu/gpu_device_array.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/op_kernel.h"
@@ -32,40 +34,38 @@ namespace functor {
 
 template <typename T>
 struct BucketizeKernel {
-  BucketizeKernel(GpuDeviceArrayStruct<float> boundaries_data,
-                  size_t num_work_items, size_t boundaries_size, const T* in,
-                  int32_t* out)
+  BucketizeKernel(GpuDeviceArrayStruct<float> boundaries_data, size_t num_elems,
+                  size_t boundaries_size, const T* in, int32_t* out)
       : boundaries_data(boundaries_data),
-        num_work_items(num_work_items),
+        num_elems(num_elems),
         boundaries_size(boundaries_size),
         in(in),
         out(out) {}
   void operator()(sycl::nd_item<1> item) const {
-    auto id = item.get_global_linear_id();
-    if (id >= num_work_items) {
-      return;
-    }
     const float* boundaries = GetGpuDeviceArrayOnDevice(&boundaries_data);
-    T value = in[id];
-    int32 bucket = 0;
-    int32 count = boundaries_size;
-    while (count > 0) {
-      int32 l = bucket;
-      int32 step = count / 2;
-      l += step;
-      if (!(value < static_cast<T>(boundaries[l]))) {
-        bucket = ++l;
-        count -= step + 1;
-      } else {
-        count = step;
+    for (size_t id = item.get_global_linear_id(); id < num_elems;
+         id += item.get_global_range(0)) {
+      T value = in[id];
+      int32 bucket = 0;
+      int32 count = boundaries_size;
+      while (count > 0) {
+        int32 l = bucket;
+        int32 step = count / 2;
+        l += step;
+        if (!(value < static_cast<T>(boundaries[l]))) {
+          bucket = ++l;
+          count -= step + 1;
+        } else {
+          count = step;
+        }
       }
+      out[id] = bucket;
     }
-    out[id] = bucket;
   }
 
  private:
   GpuDeviceArrayStruct<float> boundaries_data;
-  size_t num_work_items;
+  size_t num_elems;
   size_t boundaries_size;
   const T* in;
   int32_t* out;
@@ -87,18 +87,32 @@ struct BucketizeFunctor<GPUDevice, T> {
     TF_RETURN_IF_ERROR(boundaries_array.Finalize());
 
     auto& stream = context->eigen_gpu_device().stream();
-    auto work_group_size =
-        (*stream)
-            .get_device()
+
+    const size_t num_elems = input.size();
+    const size_t work_group_size =
+        (stream->get_device())
             .template get_info<sycl::info::device::max_work_group_size>();
-    auto num_work_items = input.size();
-    auto num_wg = (num_work_items + work_group_size - 1) / work_group_size;
+    const int hw_eu_count =
+        (stream->get_device())
+            .template get_info<sycl::ext::intel::info::device::gpu_eu_count>();
+    const int hw_threads_per_eu =
+        (stream->get_device())
+            .template get_info<
+                sycl::ext::intel::info::device::gpu_hw_threads_per_eu>();
+    const int max_sub_group_size =
+        (stream->get_device())
+            .template get_info<sycl::info::device::sub_group_sizes>()
+            .back();
+    const size_t max_hw_workitem_count =
+        hw_eu_count * hw_threads_per_eu * max_sub_group_size;
+    const size_t workitem_count = std::min(max_hw_workitem_count, num_elems);
+    size_t num_wg = (workitem_count + work_group_size - 1) / work_group_size;
 
     stream->submit([&](sycl::handler& cgh) {
       auto in = input.data();
       auto out = output.data();
       GpuDeviceArrayStruct<float> boundaries_data = boundaries_array.data();
-      BucketizeKernel<T> kernel_functor(boundaries_data, num_work_items,
+      BucketizeKernel<T> kernel_functor(boundaries_data, num_elems,
                                         boundaries_size, in, out);
       cgh.parallel_for<BucketizeKernel<T> >(
           sycl::nd_range<1>(sycl::range<1>(num_wg * work_group_size),
