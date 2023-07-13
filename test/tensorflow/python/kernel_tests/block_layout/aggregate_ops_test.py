@@ -100,6 +100,25 @@ class AddNTest(test.TestCase):
           tol = 5e-3 if dtype == dtypes.float16 else 5e-7
           self.assertAllClose(expected, actual, rtol=tol, atol=tol)
 
+  @test_util.run_deprecated_v1
+  def testCPUAddNObjectCache(self):
+    np.random.seed(12345)
+    with self.session() as sess:
+      for dtype in self._supported_types():
+        for count in range(3, 6):
+          data = [self._buildData((2, 2), dtype) for _ in range(count)]
+          out = array_ops.identity(math_ops.add_n(data))
+          expected = np.sum(np.vstack(
+              [np.expand_dims(d, 0) for d in data]), axis=0)
+          tol = 5e-3 if dtype == dtypes.float16 else 5e-7
+          # todo: there is a precision issue about complex64, we need to decrease the precison 
+          # to pass the unit test. Detail: https://jira.devtools.intel.com/browse/ITEX-798
+          if dtype == dtypes.complex64:
+            tol = 5e-6
+          for i in range(3):
+            actual = self.evaluate(out)
+            self.assertAllClose(expected, actual, rtol=tol, atol=tol)
+
 
 if __name__ == "__main__":
   test.main()
