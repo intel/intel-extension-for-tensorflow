@@ -6,10 +6,7 @@ Intel® Extension for TensorFlow* provides flexible Python APIs to configure set
 
 ##### Prerequisite: `import intel_extension_for_tensorflow as itex`
 
-* [*itex.set_backend*](#itexset_backend): Public API for setting backend type and options.
-* [*itex.get_backend*](#itexget_backend): Public API for getting backend type.
 * [*itex.ConfigProto*](#itexconfigproto): ProtocolMessage for XPU configuration under different types of backends and optimization options.
-* [*itex.GPUOptions*](#itexgpuoptions): ProtocolMessage for GPU configuration optimization options.
 * [*itex.GraphOptions*](#itexgraphoptions): ProtocolMessage for graph configuration optimization options.
 * [*itex.AutoMixedPrecisionOptions*](#itexautomixedprecisionoptions): ProtocolMessage for auto mixed precision optimization options.
 * [*itex.ShardingConfig*](#itexshardingconfig): ProtocolMessage for XPUAutoShard optimization options.
@@ -28,96 +25,12 @@ You can easily configure and tune Intel® Extension for TensorFlow* run models u
 
 | Python APIs        | Default value | Environment Variables                                        | Default value                                | Definition                                                   |
 | ------------------ | ------------------ | ------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------ |
-| `itex.set_backend` |`GPU` or `CPU` |`ITEX_XPU_BACKEND`                                           | `GPU` or `CPU`                                        | set `CPU`/`GPU` as specific `XPU` backend with optimization options for execution.  |
-| `itex.get_backend` |`N/A`| `N/A`                                                        | `N/A`                                        | Get the string of current XPU backend. For example `CPU`, `GPU` or `AUTO`. |
 | `itex.ConfigProto` |`OFF`<br>`ON`<br>`ON`<br/>`OFF`<br/>`OFF`<br/> |`ITEX_ONEDNN_GRAPH` <br>`ITEX_LAYOUT_OPT`<br>`ITEX_REMAPPER`<br>`ITEX_AUTO_MIXED_PRECISION`<br>`ITEX_SHARDING` | `0`<br>`1`*<br>`1`<br/>`0`<br/>`0`<br/>| Set configuration options for specific backend type (`CPU`/`GPU`) and graph optimization. <br/> *`ITEX_LAYOUT_OPT` default `ON` in Intel GPU (except Intel® Data Center GPU Max Series) and default `OFF` in Intel CPU by hardware attributes|
 | `itex.experimental_ops_override` |`N/A` |`N/A`                                           | OFF                                        | Call this function to automatically override the operators with same name in TensorFlow by `itex.ops`. |
 
 **Notes:**
 1. The priority for setting values is as follows: Python APIs > Environment Variables > Default value.
-2. If GPU backend was installed by `pip install intel-extension-for-tensorflow[gpu]`, the default backend will be `GPU`. If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, the default backend is `CPU`.
-
-## Set Intel® Extension for TensorFlow* Backend
-
-### itex.set_backend
-Intel® Extension for TensorFlow* provides multiple types of backends with different optimization options to execute. Only one backend is allowed in the whole process, and this can only be configured once before XPU device initialization.
-
-Set `CPU`/`GPU` as specific XPU backend type for execution.
-
-```
-itex.set_backend (
-  backend='GPU'
-)
-```
-
-| Args                   |                                     Description                         |
-| -----------------------| ------------------------------------------------------------------------|
-| `backend`      | The backend type to set. The default value is `CPU`.<br>  <br> * If `GPU`, the XPU backend type is set as `GPU` and all ops will be executed on concrete GPU backend.<br> * If `CPU`, the XPU backend type is set as `CPU` and all ops will be executed on concrete CPU backend. <br><br> * If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, it's invalid to set XPU backend type as `GPU`.|
-
-| Raises                   |                                     Description                         |
-| -----------------------| ------------------------------------------------------------------------|
-| `RuntimeWarning`      | This API is called after XPU device initialization or called more than one time.|
-
-
-Examples:
-
-I. Set the specific XPU backend type and config for `tf.device("/xpu:0")`.
-
-```python
-# TensorFlow graph mode or eager mode
-import tensorflow as tf
-import intel_extension_for_tensorflow as itex
-
-# Only allow this setting once in backend device initialization
-# All operators will be executed in `GPU` backend.
-itex.set_backend('GPU')
-
-def add_func(x, y):
-    return x+y
-
-with tf.device("/xpu:0"):
-    print(add_func(1, 1))
-```
-
-II. Set the specific XPU backend type and config for a device not explicitly specified.
-
-```python
-# TensorFlow graph mode or eager mode
-import tensorflow as tf
-import intel_extension_for_tensorflow as itex
-
-itex.set_backend('GPU')
-
-def add_func(x, y):
-    return x+y
-
-print(add_func(1, 1))
-```
-
-### itex\.get_backend
-Get the string of current XPU backend type. For example `CPU` or `GPU`.
-
-```
-itex.get_backend ()
-```
-
-| Raises                   |                                     Description                         |
-| -----------------------| ------------------------------------------------------------------------|
-| `Returns`      | Return the current XPU backend type string.|
-
-The following example demonstrates setting the XPU backend type as `GPU` and checking its value on the machine, while GPU backend is installed by `pip install intel-extension-for-tensorflow[gpu]`.
-
-```
-# TensorFlow and Intel® Extension for TensorFlow*
-import tensorflow as tf
-import intel_extension_for_tensorflow as itex
-
-# Only allow setting once in backend device initialization
-itex.set_backend('GPU')
-
-print(itex.get_backend())
-```
-Then the log will output `GPU`.
+2. If `pip install intel-extension-for-tensorflow[xpu]`, both GPU and CPU backends will be installed, the default backend will be selected by the platform device situation. If the platform with Intel GPU, the activate backend will be `GPU`, otherwise, `CPU`. If GPU backend was installed by `pip install intel-extension-for-tensorflow[gpu]`, the backend will be `GPU`. If CPU backend was installed by `pip install intel-extension-for-tensorflow[cpu]`, the backend is `CPU`.
 
 ## Intel® Extension for TensorFlow* Config Protocol
 **itex.ConfigProto: ProtocolMessage for XPU configuration under different types of backends and optimization options.**
@@ -135,9 +48,6 @@ Then the log will output `GPU`.
 
 | Attribute                   |                                     Description                         |
 | -----------------------| ------------------------------------------------------------------------|
-| `gpu_options`      | GPUOptions protocolMessage, `GPU` backend options.|
-| `cpu_options`      | CPUOptions protocolMessage, `CPU` backend options.|
-| `auto_options`     | XPUOptions protocolMessage, `XPU` backend options.|
 | `graph_options`    | GraphOptions protocolMessage, graph optimization options.|
 
 ### itex.GPUOptions

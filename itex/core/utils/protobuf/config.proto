@@ -29,10 +29,6 @@ enum ITEXDataType {
   BFLOAT16 = 2;
 }
 
-message GPUOptions {
-
-}
-
 message GraphOptions {
   // (default is OFF).
   Toggle onednn_graph = 1;
@@ -56,9 +52,8 @@ message GraphOptions {
 }
 
 message ConfigProto {
- GPUOptions gpu_options = 1;
- GraphOptions graph_options = 2;
- DebugOptions debug_options = 3;
+ GraphOptions graph_options = 1;
+ DebugOptions debug_options = 2;
 }
 
 message AutoMixedPrecisionOptions {

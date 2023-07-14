@@ -20,15 +20,6 @@ from __future__ import print_function
 
 from intel_extension_for_tensorflow.python._pywrap_itex import *
 
-_VALID_DEVICE_BACKENDS = frozenset({"CPU", "GPU", "AUTO"})
-
-def set_backend(backend):
-  if backend.upper() in _VALID_DEVICE_BACKENDS:
-    ITEX_SetBackend(backend.upper())
-  else:
-    raise ValueError("Cannot specify %s as XPU backend, Only %s is VALID"
-                     % (backend, _VALID_DEVICE_BACKENDS))
-
 def get_backend():
   return ITEX_GetBackend()
 
