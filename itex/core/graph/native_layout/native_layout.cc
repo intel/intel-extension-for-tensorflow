@@ -141,6 +141,8 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
        AlwaysRewrite},
       {"_ITEXPadWithConv3D", "_ITEXPadWithConv3D", CopyAttrsAllCheckConstFilter,
        AlwaysRewrite},
+      {"_ITEXPadWithDepthwiseConv2dNative", "_ITEXPadWithDepthwiseConv2dNative",
+       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
       {"_ITEXPadWithFusedConv2D", "_ITEXPadWithFusedConv2D",
        CopyAttrsAllCheckConstFilter, RewriteFusedConv},
       {"_ITEXPadWithFusedConv3D", "_ITEXPadWithFusedConv3D",

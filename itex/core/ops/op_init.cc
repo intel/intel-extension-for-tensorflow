@@ -135,6 +135,7 @@ void RegisterOps() {
   Register_ITEXNotEqualWithCastOp();
   Register_ITEXPadWithConv2DOp();
   Register_ITEXPadWithConv3DOp();
+  Register_ITEXPadWithDepthwiseConv2dNativeOp();
   Register_ITEXPadWithFusedConv2DOp();
   Register_ITEXPadWithFusedConv3DOp();
   Register_ITEXRandomUniformOp();

@@ -49,7 +49,11 @@ namespace itex {
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<int32>("Tpaddings")              \
                               .HostMemory("paddings"),                         \
-                          FusedConvOp<CPUDevice, T, T, T, T, T, true>);
+                          FusedConvOp<CPUDevice, T, T, T, T, T, true>)         \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithDepthwiseConv2dNative")            \
+                              .Device(DEVICE_CPU)                              \
+                              .TypeConstraint<T>("T"),                         \
+                          FusedConvOp<CPUDevice, T, T, T, T, T, true, true>);
 TF_CALL_CPU_NUMBER_TYPES(REGISTER_CPU_CONV2D);
 #undef REGISTER_CPU_CONV2D
 

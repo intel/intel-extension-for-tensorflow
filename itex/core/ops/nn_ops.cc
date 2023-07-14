@@ -1365,7 +1365,6 @@ void Register_ITEXPadWithConv2DOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_cudnn_on_gpu: bool = true");
     TF_OpDefinitionBuilderAddAttr(op_builder, "padding: {'VALID'}");
     TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);
 
@@ -1403,6 +1402,36 @@ void Register_ITEXPadWithConv3DOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_ITEXPadWithConv3D op registration failed: ";
+  }
+}
+
+void Register_ITEXPadWithDepthwiseConv2dNativeOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_ITEXPadWithDepthwiseConv2dNative");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "paddings: Tpaddings");
+
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "Tpaddings: {int32, int64} = DT_INT32");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "dilations: list(int) = [1, 1, 1, 1, 1]");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "padding: {'VALID'}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnetDataFormatAttrString());
+
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_ITEXPadWithDepthwiseConv2dNative op registration failed: ";
   }
 }
 
@@ -1549,7 +1578,8 @@ void Register_ITEXFusedConv3DOp() {
   TF_OpDefinitionBuilderAddAttr(op_builder, "num_args: int >= 0");
   TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int) >= 5");
   TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
-  TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrString());
+  TF_OpDefinitionBuilderAddAttr(op_builder, GetPaddingAttrStringWithExplicit());
+  TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
   TF_OpDefinitionBuilderAddAttr(op_builder, GetConvnet3dDataFormatAttrString());
   TF_OpDefinitionBuilderAddAttr(op_builder,
                                 "dilations: list(int) = [1, 1, 1, 1, 1]");

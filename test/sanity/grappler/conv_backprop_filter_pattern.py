@@ -22,6 +22,7 @@ from intel_extension_for_tensorflow.python.test_func import test
 
 import os
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
@@ -34,11 +35,14 @@ import tensorflow.python.ops.nn_grad  # pylint: disable=unused-import
 @test_util.run_all_in_native_and_block_format
 class ConvBackpropFilterTest(test.TestCase):
 
-  def _model(self, fusedConv):
+  def _model(self, fusedConv, constPaddings=True):
     input_sizes = [4, 5, 5, 3]
     kernel_sizes = [3, 3, 3, 8]
     stride_sizes = [1, 2, 2, 1]
-    paddings = constant_op.constant([[0, 0], [1, 1], [1, 1], [0, 0]])
+    if constPaddings:
+      paddings = constant_op.constant([[0, 0], [1, 1], [1, 1], [0, 0]])
+    else:
+      paddings = tf.compat.v1.placeholder(tf.int32, shape=(4, 2))
 
     np.random.seed(1)
     val = np.random.random_sample(input_sizes)
@@ -51,24 +55,24 @@ class ConvBackpropFilterTest(test.TestCase):
     conv = nn_ops.conv2d(pad, weight, stride_sizes, "VALID")
     if fusedConv == True:
       conv = nn_ops.bias_add(conv, [1,2,3,4,5,6,7,8])
-    output_sizes = conv.get_shape().as_list()
+    output_sizes = [4, 3, 3, 8]
     gradient_output_val = np.random.random_sample(output_sizes)
     gradient_output = constant_op.constant(gradient_output_val, dtype=dtypes.float32)
     gradient_input = nn_ops.conv2d_backprop_filter(pad, kernel_sizes, gradient_output, stride_sizes, "VALID")
 
-    return conv, gradient_input
+    return conv, gradient_input, paddings
 
-  def _model_with_identity(self, fusedConv):
-    conv, gradient_input = self._model(fusedConv)
+  def _model_with_identity(self, fusedConv, constPaddings=True):
+    conv, gradient_input, paddings = self._model(fusedConv, constPaddings)
     conv = array_ops.identity(conv)
     gradient_input = array_ops.identity(gradient_input)
-    return conv, gradient_input
+    return conv, gradient_input, paddings
 
 
   @test_util.run_deprecated_v1
-  def _testAccuracy(self, fusedConv):
-    conv1, gradient_input1 = self._model(fusedConv)
-    conv2, gradient_input2 = self._model_with_identity(fusedConv)
+  def _testAccuracy(self, fusedConv, constPaddings=True):
+    conv1, gradient_input1, paddings = self._model(fusedConv, constPaddings)
+    conv2, gradient_input2, paddings = self._model_with_identity(fusedConv, constPaddings)
 
     with self.session() as sess:
       output1 = sess.run([conv1, gradient_input1])
@@ -82,14 +86,18 @@ class ConvBackpropFilterTest(test.TestCase):
 
 
   @test_util.run_deprecated_v1
-  def _testGraphStructure(self, fusedConv):
-    conv, gradient_input = self._model_with_identity(fusedConv)
+  def _testGraphStructure(self, fusedConv, constPaddings=True):
+    conv, gradient_input, paddings = self._model_with_identity(fusedConv, constPaddings)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
     with self.session() as sess:
       sess.run(variables.global_variables_initializer())
-      output_val = sess.run([conv, gradient_input], options=run_options, run_metadata=metadata)
+      if constPaddings:
+        output_val = sess.run([conv, gradient_input], options=run_options, run_metadata=metadata)
+      else:
+        pad_value = np.array([0, 0, 1, 1, 1, 1, 0, 0], dtype=tf.int32.as_numpy_dtype).reshape(4, 2)
+        output_val = sess.run([conv, gradient_input], feed_dict={paddings: pad_value}, options=run_options, run_metadata=metadata)
       graph = metadata.partition_graphs[0]
 
 
@@ -104,9 +112,9 @@ class ConvBackpropFilterTest(test.TestCase):
 
       if 'PadWithFusedConv2D' in node.op and fusedConv == True:
         exist_pad_conv = True
-
-    self.assertTrue(exist_pad_conv)
-    self.assertTrue(exist_pad_conv_backprop_filter)
+    if not constPaddings:
+      self.assertTrue(exist_pad_conv)
+      self.assertTrue(exist_pad_conv_backprop_filter)
 
   @test_util.run_deprecated_v1
   def testPadWithConv2DAccuracy(self):
@@ -120,17 +128,28 @@ class ConvBackpropFilterTest(test.TestCase):
     self._testGraphStructure(fusedConv = False)
 
   @test_util.run_deprecated_v1
+  def testPadWithConv2DGraphStructure(self):
+    self._testGraphStructure(fusedConv = False, constPaddings = False)
+
+  @test_util.run_deprecated_v1
   def testPadWithFusedConv2DGraphStructure(self):
     self._testGraphStructure(fusedConv = True)
+
+  @test_util.run_deprecated_v1
+  def testPadWithFusedConv2DGraphStructure(self):
+    self._testGraphStructure(fusedConv = True, constPaddings = False)
 
 @test_util.run_all_in_native_and_block_format
 class PadWithConv2DBackpropFilterWithBiasTest(test.TestCase):
 
-  def _model(self):
+  def _model(self, constPaddings=True):
     input_sizes = [4, 5, 5, 3]
     kernel_sizes = [3, 3, 3, 8]
     stride_sizes = [1, 2, 2, 1]
-    paddings = constant_op.constant([[0, 0], [1, 1], [1, 1], [0, 0]])
+    if constPaddings:
+      paddings = constant_op.constant([[0, 0], [1, 1], [1, 1], [0, 0]])
+    else:
+      paddings = tf.compat.v1.placeholder(tf.int32, shape=(4, 2))
 
     np.random.seed(1)
     val = np.random.random_sample(input_sizes)
@@ -139,7 +158,7 @@ class PadWithConv2DBackpropFilterWithBiasTest(test.TestCase):
     weight = constant_op.constant(weight_val, dtype=dtypes.float32)
     pad = array_ops.pad(input, paddings)
     conv = nn_ops.conv2d(pad, weight, stride_sizes, "VALID")
-    output_sizes = conv.get_shape().as_list()
+    output_sizes = [4, 3, 3, 8]
     gradient_output_val = np.random.random_sample(output_sizes)
 
     pad1 = array_ops.pad(input, paddings)
@@ -149,11 +168,11 @@ class PadWithConv2DBackpropFilterWithBiasTest(test.TestCase):
     gradient_input_explicit_pad = nn_ops.conv2d_backprop_filter(pad1, kernel_sizes, gradient_output, stride_sizes, "VALID")
     gradient_input_explicit_pad = array_ops.identity(gradient_input_explicit_pad)
 
-    return biasadd_grad, gradient_input_explicit_pad
+    return biasadd_grad, gradient_input_explicit_pad, paddings
 
   @test_util.run_deprecated_v1
   def _testAccuracy(self):
-    biasadd_grad, gradient_input_explicit_pad = self._model()
+    biasadd_grad, gradient_input_explicit_pad, paddings = self._model()
 
     os.environ['ITEX_REMAPPER'] = '0'
     with self.session() as sess:
@@ -166,14 +185,18 @@ class PadWithConv2DBackpropFilterWithBiasTest(test.TestCase):
 
 
   @test_util.run_deprecated_v1
-  def _testGraphStructure(self):
-    biasadd_grad, gradient_input_explicit_pad = self._model()
+  def _testGraphStructure(self, constPaddings):
+    biasadd_grad, gradient_input_explicit_pad, paddings = self._model(constPaddings)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
     with self.session() as sess:
       sess.run(variables.global_variables_initializer())
-      output_val = sess.run([biasadd_grad, gradient_input_explicit_pad], options=run_options, run_metadata=metadata)
+      if constPaddings:
+        output_val = sess.run([biasadd_grad, gradient_input_explicit_pad], options=run_options, run_metadata=metadata)
+      else:
+        pad_value = np.array([0, 0, 1, 1, 1, 1, 0, 0], dtype=tf.int32.as_numpy_dtype).reshape(4, 2)
+        output_val = sess.run([biasadd_grad, gradient_input_explicit_pad], feed_dict={paddings: pad_value}, options=run_options, run_metadata=metadata)
       graph = metadata.partition_graphs[0]
 
 
@@ -181,8 +204,8 @@ class PadWithConv2DBackpropFilterWithBiasTest(test.TestCase):
     for node in graph.node:
       if 'PadWithConv2DBackpropFilterWithBias' in node.op:
         exist_pad_conv_backprop_filter_bias = True
-
-    self.assertTrue(exist_pad_conv_backprop_filter_bias)
+    if not constPaddings:
+      self.assertTrue(exist_pad_conv_backprop_filter_bias)
 
   @test_util.run_deprecated_v1
   def testPadWithConv2DBackpropFilterWithBiasAccuracy(self):
@@ -190,7 +213,11 @@ class PadWithConv2DBackpropFilterWithBiasTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testPadWithConv2DBackpropFilterWithBiasGraphStructure(self):
-    self._testGraphStructure()
+    self._testGraphStructure(constPaddings = True)
+
+  @test_util.run_deprecated_v1
+  def testPadWithConv2DBackpropFilterWithBiasGraphStructure(self):
+    self._testGraphStructure(constPaddings = False)
 
 if __name__ == "__main__":
   test.main()

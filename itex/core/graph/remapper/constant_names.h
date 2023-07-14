@@ -117,6 +117,7 @@ constexpr char kInstanceNorm[] = "_ITEXInstanceNorm";
 constexpr char kLayerNorm[] = "ITEXLayerNorm";
 constexpr char kPadWithConv2D[] = "_ITEXPadWithConv2D";
 constexpr char kPadWithConv3D[] = "_ITEXPadWithConv3D";
+constexpr char kPadWithDepthwiseConv2D[] = "_ITEXPadWithDepthwiseConv2dNative";
 constexpr char kPadWithFusedConv2D[] = "_ITEXPadWithFusedConv2D";
 constexpr char kPadWithFusedConv3D[] = "_ITEXPadWithFusedConv3D";
 constexpr char kPadWithConv2DBackpropFilter[] =

@@ -73,7 +73,7 @@ def _ReluGrad(op_outputs, grad):
 tf.compat.v1.disable_eager_execution()
 class PadFusedConv3DTest(test_util.TensorFlowTestCase):
 
-    def _basePadWithConv3D(self, need_grad = True, need_check_accuracy = True, add_control_in=False):
+    def _basePadWithConv3D(self, const_paddings = True, need_grad = True, need_check_accuracy = True, add_control_in=False):
         tf.compat.v1.disable_eager_execution()
         run_options = config_pb2.RunOptions(output_partition_graphs=True)
         metadata = config_pb2.RunMetadata()
@@ -91,8 +91,11 @@ class PadFusedConv3DTest(test_util.TensorFlowTestCase):
         b = resource_variable_ops.ResourceVariable(b_arr)
 
         pad_value = [[0, 0], [1, 1], [1, 1], [1, 1], [0, 0]]
-        p = constant_op.constant(pad_value, dtype=dtypes.int32)
-
+        if const_paddings:
+            p = constant_op.constant(pad_value, dtype=dtypes.int32)
+        else:
+            pad_value = np.array([0, 0, 1, 1, 1, 1, 1, 1, 0, 0], dtype=tf.int32.as_numpy_dtype).reshape(5, 2)
+            p = tf.compat.v1.placeholder(tf.int32, shape=(5, 2))
         if add_control_in:
             with tf.control_dependencies([w,]):
                 x_pad = array_ops.pad(x, p)
@@ -118,9 +121,15 @@ class PadFusedConv3DTest(test_util.TensorFlowTestCase):
             resources.initialize_resources([b,w]).run()
 
             if need_grad:
-                ret_gpu = sess.run((fused, grad_biasadd_bias, grad_conv_filter), feed_dict={x: x_arr, loss: loss_arr}, options=run_options, run_metadata=metadata)
+                if const_paddings:
+                    ret_gpu = sess.run((fused, grad_biasadd_bias, grad_conv_filter), feed_dict={x: x_arr, loss: loss_arr}, options=run_options, run_metadata=metadata)
+                else:
+                    ret_gpu = sess.run((fused, grad_biasadd_bias, grad_conv_filter), feed_dict={x: x_arr, loss: loss_arr, p: pad_value}, options=run_options, run_metadata=metadata)
             else:
-                ret_gpu = sess.run((fused, ), feed_dict={x: x_arr, }, options=run_options, run_metadata=metadata)
+                if const_paddings:
+                    ret_gpu = sess.run((fused, ), feed_dict={x: x_arr}, options=run_options, run_metadata=metadata)
+                else:
+                    ret_gpu = sess.run((fused, ), feed_dict={x: x_arr, p: pad_value}, options=run_options, run_metadata=metadata)
 
             graph = metadata.partition_graphs[0]
             found_fused_op = False
@@ -133,12 +142,12 @@ class PadFusedConv3DTest(test_util.TensorFlowTestCase):
                     fused_ops = node.attr['fused_ops'].list.s
                     found_fused_bwd_op = len(fused_ops) == 1 and fused_ops[0] == b'BiasAddGrad' 
                 
-            if add_control_in:
+            if add_control_in :
                 if need_grad:
                     self.assertTrue((not found_fused_op) or (not found_fused_bwd_op), "this pattern has fusion issue!!")
                 else:
                     self.assertTrue((not found_fused_op), "this pattern has fusion issue!!")
-            else:
+            elif not const_paddings:
                 if need_grad:
                     self.assertTrue(found_fused_op and found_fused_bwd_op, "this pattern has fusion issue!!")
                 else:
@@ -150,9 +159,15 @@ class PadFusedConv3DTest(test_util.TensorFlowTestCase):
             with self.session(use_gpu=False) as sess:
                 resources.initialize_resources([b,w]).run()
                 if need_grad:
-                    ret_ref = sess.run((fused, grad_biasadd_bias, grad_conv_filter), feed_dict={x: x_arr, loss: loss_arr}, options=run_options, run_metadata=metadata)
+                    if const_paddings:
+                        ret_ref = sess.run((fused, grad_biasadd_bias, grad_conv_filter), feed_dict={x: x_arr, loss: loss_arr}, options=run_options, run_metadata=metadata)
+                    else:
+                        ret_ref = sess.run((fused, grad_biasadd_bias, grad_conv_filter), feed_dict={x: x_arr, loss: loss_arr, p: pad_value}, options=run_options, run_metadata=metadata)
                 else:
-                    ret_ref = sess.run((fused, ), feed_dict={x: x_arr, }, options=run_options, run_metadata=metadata)
+                    if const_paddings:
+                        ret_ref = sess.run((fused, ), feed_dict={x: x_arr}, options=run_options, run_metadata=metadata)
+                    else:
+                        ret_ref = sess.run((fused, ), feed_dict={x: x_arr, p: pad_value}, options=run_options, run_metadata=metadata)
             self.assertAllClose(ret_ref, ret_gpu)
 
     def testPadWithFusedConv3D(self, need_grad = True, need_check_accuracy = True):
@@ -166,6 +181,18 @@ class PadFusedConv3DTest(test_util.TensorFlowTestCase):
 
     def testNotPadWithConv3DBackpropFilterWithBias(self):
         self._basePadWithConv3D(need_grad = True, need_check_accuracy = False, add_control_in=True)
+
+    def testPadWithFusedConv3D(self, need_grad = True, need_check_accuracy = True):
+        self._basePadWithConv3D(const_paddings = False, need_grad = False, need_check_accuracy = True)
+
+    def testPadWithConv3DBackpropFilterWithBias(self, need_grad = True, need_check_accuracy = True):
+        self._basePadWithConv3D(const_paddings = False,  need_grad = True, need_check_accuracy = True)
+
+    def testNotPadWithFusedConv3D(self):
+        self._basePadWithConv3D(const_paddings = False, need_grad = False, need_check_accuracy = False, add_control_in=True)
+
+    def testNotPadWithConv3DBackpropFilterWithBias(self):
+        self._basePadWithConv3D(const_paddings = False, need_grad = True, need_check_accuracy = False, add_control_in=True)
 
 if __name__ == '__main__':
     test.main()

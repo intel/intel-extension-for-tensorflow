@@ -189,6 +189,7 @@ class AutoMixedPrecisionLists {
       "_ITEXFusedMatMulWithSum",
       "_ITEXPadWithConv2D",
       "_ITEXPadWithConv3D",
+      "_ITEXPadWithDepthwiseConv2dNative"
       "_ITEXPadWithFusedConv2D",
       "_ITEXPadWithFusedConv3D",
       /*Below ops have more attrs compared to original TF ops.*/

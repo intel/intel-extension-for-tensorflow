@@ -90,6 +90,7 @@ void Register_ITEXMishOp();
 void Register_ITEXNotEqualWithCastOp();
 void Register_ITEXPadWithConv2DOp();
 void Register_ITEXPadWithConv3DOp();
+void Register_ITEXPadWithDepthwiseConv2dNativeOp();
 void Register_ITEXPadWithFusedConv2DOp();
 void Register_ITEXPadWithFusedConv3DOp();
 void Register_ITEXTensorArray();

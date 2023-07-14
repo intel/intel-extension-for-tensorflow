@@ -49,7 +49,11 @@ namespace itex {
                               .TypeConstraint<T>("T")                          \
                               .TypeConstraint<int32>("Tpaddings")              \
                               .HostMemory("paddings"),                         \
-                          FusedConvOp<GPUDevice, T, T, T, T, T, true>);
+                          FusedConvOp<GPUDevice, T, T, T, T, T, true>)         \
+  REGISTER_KERNEL_BUILDER(Name("_ITEXPadWithDepthwiseConv2dNative")            \
+                              .Device(DEVICE_GPU)                              \
+                              .TypeConstraint<T>("T"),                         \
+                          FusedConvOp<GPUDevice, T, T, T, T, T, true, true>);
 
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_GPU_CONV2D);
 #undef REGISTER_GPU_CONV2D
