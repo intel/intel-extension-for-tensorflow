@@ -55,8 +55,8 @@ void Register_TFLegacyOp() {
       auto register_func = register_pair.second;
       register_func();
     } else {
-      ITEX_LOG(ERROR) << "Op: " << register_pair.first
-                      << " is already registered in Tensorflow";
+      ITEX_LOG(WARNING) << "Op: " << register_pair.first
+                        << " is already registered in Tensorflow";
     }
   }
 
