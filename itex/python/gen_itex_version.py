@@ -50,13 +50,13 @@ def generate_version(header_in, header_out):
   hash_value = git_hash(header_in)
   jax_version = get_jax_version()
 
-  [major, minor, patch] = version.__version__.split(".")
+  [major, minor, patch1, patch2] = version.__version__.split(".")
 
   with open(os.path.expanduser(header_in)) as inf:
     content = inf.read()
     content = content.replace("@ITEX_VERSION_MAJOR@", major)
     content = content.replace("@ITEX_VERSION_MINOR@", minor)
-    content = content.replace("@ITEX_VERSION_PATCH@", patch)
+    content = content.replace("@ITEX_VERSION_PATCH@", ".".join([patch1, patch2]))
     content = content.replace("@ITEX_VERSION_HASH@", hash_value)
     content = content.replace("@JAX_VERSION_STRING@", jax_version)
 
