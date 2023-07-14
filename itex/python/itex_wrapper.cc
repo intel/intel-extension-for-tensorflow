@@ -57,10 +57,7 @@ static bool ITEX_IsXeHPC() {
 
 PYBIND11_MODULE(_pywrap_itex, m) {
   m.doc() = "pybind11 front-end api for Intel ® Extension for TensorFlow*";
-  m.def("ITEX_SetBackend",
-        [](const char* backend) { itex_set_backend(backend); });
   m.def("ITEX_GetBackend", &itex::ITEX_GetBackend);
-
   m.def("ITEX_SetConfig", [](py::bytes proto) {
     char* c_string;
     Py_ssize_t py_size;

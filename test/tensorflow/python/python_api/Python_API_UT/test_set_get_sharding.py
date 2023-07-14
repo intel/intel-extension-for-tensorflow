@@ -20,7 +20,7 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
 class SetGetSharding(test_util.TensorFlowTestCase):
-    """test set_backend and get_backend itex python api"""
+    """test sharding itex python api"""
 
     @test_util.run_deprecated_v1
     def testSetGetSharding(self):
