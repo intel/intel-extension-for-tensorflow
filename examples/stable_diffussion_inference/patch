@@ -1,5 +1,5 @@
 diff --git a/keras_cv/models/stable_diffusion/__internal__/layers/attention_block.py b/keras_cv/models/stable_diffusion/__internal__/layers/attention_block.py
-index e7e1896..1624932 100644
+index e7e1896..21fba0c 100644
 --- a/keras_cv/models/stable_diffusion/__internal__/layers/attention_block.py
 +++ b/keras_cv/models/stable_diffusion/__internal__/layers/attention_block.py
 @@ -14,6 +14,12 @@
@@ -9,14 +9,14 @@ index e7e1896..1624932 100644
 +try:
 +    import intel_extension_for_tensorflow as itex
 +    keras.layers.GroupNormalization = itex.ops.GroupNormalization
-+except ImportError:
++except:
 +    pass
 +    
  
  from keras_cv.models.stable_diffusion.__internal__.layers.padded_conv2d import (
      PaddedConv2D,
 diff --git a/keras_cv/models/stable_diffusion/__internal__/layers/resnet_block.py b/keras_cv/models/stable_diffusion/__internal__/layers/resnet_block.py
-index 29aeaaa..f7d19df 100644
+index 29aeaaa..11d4be6 100644
 --- a/keras_cv/models/stable_diffusion/__internal__/layers/resnet_block.py
 +++ b/keras_cv/models/stable_diffusion/__internal__/layers/resnet_block.py
 @@ -13,6 +13,13 @@
@@ -26,7 +26,7 @@ index 29aeaaa..f7d19df 100644
 +try:
 +    import intel_extension_for_tensorflow as itex
 +    keras.layers.GroupNormalization = itex.ops.GroupNormalization
-+except ImportError:
++except:
 +    pass
 +    
 +    
@@ -34,7 +34,7 @@ index 29aeaaa..f7d19df 100644
  from keras_cv.models.stable_diffusion.__internal__.layers.padded_conv2d import (
      PaddedConv2D,
 diff --git a/keras_cv/models/stable_diffusion/decoder.py b/keras_cv/models/stable_diffusion/decoder.py
-index fe619d3..7eb0cf4 100644
+index fe619d3..ccc4b5b 100644
 --- a/keras_cv/models/stable_diffusion/decoder.py
 +++ b/keras_cv/models/stable_diffusion/decoder.py
 @@ -13,6 +13,12 @@
@@ -44,14 +44,14 @@ index fe619d3..7eb0cf4 100644
 +try:
 +    import intel_extension_for_tensorflow as itex
 +    keras.layers.GroupNormalization = itex.ops.GroupNormalization
-+except ImportError:
++except:
 +    pass
 +    
  
  from keras_cv.models.stable_diffusion.__internal__.layers.attention_block import (  # noqa: E501
      AttentionBlock,
 diff --git a/keras_cv/models/stable_diffusion/diffusion_model.py b/keras_cv/models/stable_diffusion/diffusion_model.py
-index 25b5241..dbc5e7f 100644
+index 25b5241..dafdcbc 100644
 --- a/keras_cv/models/stable_diffusion/diffusion_model.py
 +++ b/keras_cv/models/stable_diffusion/diffusion_model.py
 @@ -14,7 +14,14 @@
@@ -63,7 +63,7 @@ index 25b5241..dbc5e7f 100644
 +    import intel_extension_for_tensorflow as itex
 +    keras.layers.GroupNormalization = itex.ops.GroupNormalization
 +    keras.layers.LayerNormalization = itex.ops.LayerNormalization
-+except ImportError:
++except:
 +    pass
 +    
 +    
@@ -90,10 +90,10 @@ index 25b5241..dbc5e7f 100644
 +    def sdp(self, q, k, v):
 +        try:
 +            from intel_extension_for_tensorflow.python.ops.multi_head_attention import scaled_dot_product_attention
-+            output, _ = scaled_dot_product_attention(q, k, v, use_fast_attention=False)
++            output = scaled_dot_product_attention(q, k, v, use_fast_attention=True)
 +        except ImportError:
 +            output = self.naive_scaled_dot_product_attention(q, k, v)
-+        return output    
++        return output
  
      def call(self, inputs):
          inputs, context = inputs
@@ -134,7 +134,7 @@ index 25b5241..dbc5e7f 100644
  
  def td_dot(a, b):
 diff --git a/keras_cv/models/stable_diffusion/image_encoder.py b/keras_cv/models/stable_diffusion/image_encoder.py
-index 614b11d..a7aef60 100644
+index 614b11d..8212389 100644
 --- a/keras_cv/models/stable_diffusion/image_encoder.py
 +++ b/keras_cv/models/stable_diffusion/image_encoder.py
 @@ -13,6 +13,12 @@
@@ -144,14 +144,14 @@ index 614b11d..a7aef60 100644
 +try:
 +    import intel_extension_for_tensorflow as itex
 +    keras.layers.GroupNormalization = itex.ops.GroupNormalization
-+except ImportError:
++except:
 +    pass
 +
  
  from keras_cv.models.stable_diffusion.__internal__.layers.attention_block import (  # noqa: E501
      AttentionBlock,
 diff --git a/keras_cv/models/stable_diffusion/stable_diffusion.py b/keras_cv/models/stable_diffusion/stable_diffusion.py
-index 31752e8..f990a92 100644
+index 31752e8..b252e02 100644
 --- a/keras_cv/models/stable_diffusion/stable_diffusion.py
 +++ b/keras_cv/models/stable_diffusion/stable_diffusion.py
 @@ -29,7 +29,8 @@ import math
@@ -180,7 +180,7 @@ index 31752e8..f990a92 100644
  
      def text_to_image(
          self,
-@@ -207,18 +210,27 @@ class StableDiffusionBase:
+@@ -207,18 +210,21 @@ class StableDiffusionBase:
  
          # Iterative reverse diffusion stage
          timesteps = tf.range(1, 1000, 1000 // num_steps)
@@ -190,13 +190,7 @@ index 31752e8..f990a92 100644
          alphas, alphas_prev = self._get_initial_alphas(timesteps)
          progbar = keras.utils.Progbar(len(timesteps))
          iteration = 0
-+        # options = tf.profiler.experimental.ProfilerOptions(host_tracer_level = 3, python_tracer_level = 1, device_tracer_level = 1)
          for index, timestep in list(enumerate(timesteps))[::-1]:
-+            # if index == 0:
-+            #     profile_path = '/home/gta_local/zhuwei/workspace/tmp/stable_diffusion/profile_data/' + str(index)
-+            #     if not os.path.isdir(profile_path):
-+            #         os.mkdir(profile_path)
-+            #     tf.profiler.experimental.start(profile_path, options = options)
              latent_prev = latent  # Set aside the previous latent vector
 -            t_emb = self._get_timestep_embedding(timestep, batch_size)
 -            unconditional_latent = self.diffusion_model.predict_on_batch(
@@ -215,15 +209,7 @@ index 31752e8..f990a92 100644
              latent = unconditional_latent + unconditional_guidance_scale * (
                  latent - unconditional_latent
              )
-@@ -231,6 +243,7 @@ class StableDiffusionBase:
-             )
-             iteration += 1
-             progbar.update(iteration)
-+            #     tf.profiler.experimental.stop()
- 
-         # Decoding stage
-         decoded = self.decoder.predict_on_batch(latent)
-@@ -304,6 +317,23 @@ class StableDiffusionBase:
+@@ -304,6 +310,23 @@ class StableDiffusionBase:
              self._tokenizer = SimpleTokenizer()
          return self._tokenizer
  
@@ -247,7 +233,7 @@ index 31752e8..f990a92 100644
      def _get_timestep_embedding(
          self, timestep, batch_size, dim=320, max_period=10000
      ):
-@@ -314,6 +344,8 @@ class StableDiffusionBase:
+@@ -314,6 +337,8 @@ class StableDiffusionBase:
          args = tf.convert_to_tensor([timestep], dtype=tf.float32) * freqs
          embedding = tf.concat([tf.math.cos(args), tf.math.sin(args)], 0)
          embedding = tf.reshape(embedding, [1, -1])
@@ -256,7 +242,7 @@ index 31752e8..f990a92 100644
          return tf.repeat(embedding, batch_size, axis=0)
  
      def _get_initial_alphas(self, timesteps):
-@@ -324,14 +356,25 @@ class StableDiffusionBase:
+@@ -324,14 +349,25 @@ class StableDiffusionBase:
  
      def _get_initial_diffusion_noise(self, batch_size, seed):
          if seed is not None:
@@ -289,7 +275,7 @@ index 31752e8..f990a92 100644
  
      @staticmethod
      def _get_pos_ids():
-@@ -390,8 +433,9 @@ class StableDiffusion(StableDiffusionBase):
+@@ -390,8 +426,9 @@ class StableDiffusion(StableDiffusionBase):
          img_height=512,
          img_width=512,
          jit_compile=False,
@@ -300,7 +286,7 @@ index 31752e8..f990a92 100644
          print(
              "By using this model checkpoint, you acknowledge that its usage is "
              "subject to the terms of the CreativeML Open RAIL-M license at "
-@@ -405,7 +449,20 @@ class StableDiffusion(StableDiffusionBase):
+@@ -405,7 +442,20 @@ class StableDiffusion(StableDiffusionBase):
          needs to be modified.
          """
          if self._text_encoder is None:
@@ -322,7 +308,7 @@ index 31752e8..f990a92 100644
              if self.jit_compile:
                  self._text_encoder.compile(jit_compile=True)
          return self._text_encoder
-@@ -420,6 +477,10 @@ class StableDiffusion(StableDiffusionBase):
+@@ -420,6 +470,10 @@ class StableDiffusion(StableDiffusionBase):
              self._diffusion_model = DiffusionModel(
                  self.img_height, self.img_width, MAX_PROMPT_LENGTH
              )
@@ -333,7 +319,7 @@ index 31752e8..f990a92 100644
              if self.jit_compile:
                  self._diffusion_model.compile(jit_compile=True)
          return self._diffusion_model
-@@ -475,8 +536,9 @@ class StableDiffusionV2(StableDiffusionBase):
+@@ -475,8 +529,9 @@ class StableDiffusionV2(StableDiffusionBase):
          img_height=512,
          img_width=512,
          jit_compile=False,
@@ -344,7 +330,7 @@ index 31752e8..f990a92 100644
          print(
              "By using this model checkpoint, you acknowledge that its usage is "
              "subject to the terms of the CreativeML Open RAIL++-M license at "
-@@ -490,7 +552,20 @@ class StableDiffusionV2(StableDiffusionBase):
+@@ -490,7 +545,20 @@ class StableDiffusionV2(StableDiffusionBase):
          needs to be modified.
          """
          if self._text_encoder is None:
@@ -366,7 +352,7 @@ index 31752e8..f990a92 100644
              if self.jit_compile:
                  self._text_encoder.compile(jit_compile=True)
          return self._text_encoder
-@@ -505,6 +580,10 @@ class StableDiffusionV2(StableDiffusionBase):
+@@ -505,6 +573,10 @@ class StableDiffusionV2(StableDiffusionBase):
              self._diffusion_model = DiffusionModelV2(
                  self.img_height, self.img_width, MAX_PROMPT_LENGTH
              )
