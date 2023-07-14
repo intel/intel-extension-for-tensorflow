@@ -139,6 +139,7 @@ setup(
     extras_require={
         'cpu': [f'{extras_require_dep}=={_VERSION}.0{DEV_VERSION_SUFFIX}'],
         'gpu': [f'{extras_require_dep}=={_VERSION}.1{DEV_VERSION_SUFFIX}'],
+        'xpu': [f'{extras_require_dep}=={_VERSION}.2{DEV_VERSION_SUFFIX}'],
     },
     # PyPI package information.
     classifiers=[

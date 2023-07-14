@@ -40,10 +40,10 @@ class VersionTest(test_util.TensorFlowTestCase):
 
     def testVersion(self):
         self.assertEqual(__version__, VERSION)
-        # 1.1.1
-        self.assertRegex(__version__, r'([0-9].){2}[0-9]')
-        # v1.1.1-abcd1234
-        self.assertRegex(GIT_VERSION, r'v([0-9]+.){2}[0-9]+-[0-9a-z]{8}')
+        # 1.1.1.1
+        self.assertRegex(__version__, r'([0-9]+.){3}[0-9]')
+        # v1.1.1.1-abcd1234
+        self.assertRegex(GIT_VERSION, r'v([0-9]+.){3}[0-9]+-[0-9a-z]{8}')
         # gcc-1.1.1, dpcpp-a.0.1
         if test.is_gpu_available():
             self.assertRegex(COMPILER_VERSION, r'dpcpp-([0-9a-z].)+[0-9]+')
