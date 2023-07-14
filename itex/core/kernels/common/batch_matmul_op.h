@@ -85,6 +85,9 @@ class BatchMatMulOp : public OpKernel {
   }
 
   void Init(OpKernelContext* ctx) {
+    // TODO(ITEX): tmp_weight hold another weight in memory.
+    // We should add clear cache in weight cache manager.
+    tmp_weight_ = std::make_shared<Tensor>();
     const Tensor& src_tensor = ctx->input(kSrcIndex_);
     const Tensor& wei_tensor = ctx->input(kWeightIndex_);
 
@@ -178,10 +181,9 @@ class BatchMatMulOp : public OpKernel {
       src_mem_ = CreateDnnlMemory(src_md, onednn_engine_,
                                   GetTensorBuffer<Tlhs>(&src_tensor));
 
-      auto weights_mem_input = CreateDnnlMemory(
-          wei_md, onednn_engine_, GetTensorBuffer<Trhs>(&wei_tensor));
+      weights_mem_input_ = CreateDnnlMemory(wei_md, onednn_engine_,
+                                            GetTensorBuffer<Trhs>(&wei_tensor));
 
-      Tensor tmp_weight;
       Trhs* wei_cached_data = nullptr;
       wei_md_prefer = fwd_pd.weights_desc();
       // Reorder only happens once weight is Const, see the initializer of
@@ -205,17 +207,18 @@ class BatchMatMulOp : public OpKernel {
         } else {
           // During training, reorder weight in each iteration
           int64_t reorder_size = wei_md_prefer.get_size() / sizeof(Trhs);
-          OP_REQUIRES_OK(
-              ctx, ctx->allocate_temp(DataTypeToEnum<Trhs>::v(),
-                                      TensorShape{reorder_size}, &tmp_weight));
-          weights_mem_ = CreateDnnlMemory(wei_md_prefer, onednn_engine_,
-                                          GetTensorBuffer<Trhs>(&tmp_weight));
-          ReorderMemory(*ctx, &weights_mem_input, &weights_mem_,
+          OP_REQUIRES_OK(ctx, ctx->allocate_temp(DataTypeToEnum<Trhs>::v(),
+                                                 TensorShape{reorder_size},
+                                                 tmp_weight_.get()));
+
+          weights_mem_ =
+              CreateDnnlMemory(wei_md_prefer, onednn_engine_,
+                               GetTensorBuffer<Trhs>(tmp_weight_.get()));
+          ReorderMemory(*ctx, &weights_mem_input_, &weights_mem_,
                         onednn_engine_);
         }
       } else {
-        weights_mem_ = CreateDnnlMemory(wei_md, onednn_engine_,
-                                        GetTensorBuffer<Trhs>(&wei_tensor));
+        weights_mem_ = weights_mem_input_;
       }
 
       OP_REQUIRES_OK(
@@ -425,10 +428,11 @@ class BatchMatMulOp : public OpKernel {
   mutex mu_compute_;
 
   std::unordered_map<int, memory> fwd_primitive_args_;
-  memory src_mem_, weights_mem_, bias_mem_, dst_mem_,
+  memory src_mem_, weights_mem_, weights_mem_input_, bias_mem_, dst_mem_,
       binary_mem_[kMaxBinaryNum_], scratchpad_mem_;
   dnnl::matmul matmul_primitive_;
   Tensor* dst_tensor_;
+  std::shared_ptr<Tensor> tmp_weight_;
   std::shared_ptr<Tensor> scratchpad_tensor_;
   int64_t scratchpad_size_, binary_start_index_;
   std::vector<int64> input_dims_, weights_dims_;
