@@ -190,7 +190,11 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
     flags.append('-fno-approx-func')
     if gpu_only:
       flags.append('-DINTEL_GPU_ONLY')
-    cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + DPCPP_PATH + ' -axCORE-AVX2 ' + ' '.join(flags))
+    if os.path.basename(DPCPP_PATH) == "clang":
+      AVX_FLAG = ' -mfma -mavx -mavx2 '
+    else:
+      AVX_FLAG = ' -axCORE-AVX2 '
+    cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + DPCPP_PATH + AVX_FLAG + ' '.join(flags))
   else:
     if cpu_only:
       flags.append('-DINTEL_CPU_ONLY')
