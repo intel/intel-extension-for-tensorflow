@@ -34,7 +34,7 @@ void unknown_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status) {
   TF_ShapeInferenceContextSetUnknownShape(ctx, status);
 }
 
-// TODO(itex): Below function only work when tensorflow version == 2.12.0
+// Below function only work when tensorflow version >= 2.10.0
 // as there is a bug in TF_ShapeInferenceContextGetInput and
 // TF_ShapeInferenceContextSetOutput when index > 0 in tensorflow
 void rnn_forward_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status) {

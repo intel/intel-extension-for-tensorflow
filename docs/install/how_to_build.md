@@ -55,10 +55,10 @@ For more info, please refer to [Use AOT for Integrated Graphics (Intel GPU)](htt
 
 ### TensorFlow
 
-Install TensorFlow 2.12, and refer to [Install TensorFlow](https://www.tensorflow.org/install).
+Install TensorFlow 2.13, and refer to [Install TensorFlow](https://www.tensorflow.org/install).
 
 ```
-pip install tensorflow==2.12
+pip install tensorflow==2.13
 ```
 Check TensorFlow version:
 ```

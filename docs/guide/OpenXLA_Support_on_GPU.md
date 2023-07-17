@@ -31,7 +31,7 @@ Verified Hardware Platforms:
 - Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP3/SP4
   - Intel® Data Center GPU Max Series 
 - Intel® oneAPI Base Toolkit 2023.1
-- TensorFlow 2.12.0
+- TensorFlow 2.13.0
 - Python 3.8-3.10
 - pip 19.0 or later (requires manylinux2014 support)
 
@@ -49,7 +49,7 @@ There are some differences from   [source build procedure](https://github.com/in
 * Make sure get Intel® Extension for TensorFlow* main branch code and python version >=3.8.
 * In TensorFlow installation steps, make sure to install jax and jaxlib at the same time.
    ```bash
-    $ pip install tensorflow==2.12.0 jax==0.4.4 jaxlib==0.4.4
+    $ pip install tensorflow==2.13.0 jax==0.4.4 jaxlib==0.4.4
    ```
 * In "Configure the build" step, run ./configure, select yes for JAX support,
 

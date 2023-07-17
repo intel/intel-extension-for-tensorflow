@@ -12,14 +12,14 @@ Documentation: [**Intel® Extension for TensorFlow\* online document website**](
 
 ### Install for GPU
 ```
-pip install tensorflow==2.12.0
+pip install tensorflow==2.13.0
 pip install --upgrade intel-extension-for-tensorflow[gpu]
 ```
 Please refer to [GPU installation](https://intel.github.io/intel-extension-for-tensorflow/latest/docs/install/install_for_gpu.html) for details.
 
 ### Install for CPU [Experimental]
 ```
-pip install tensorflow==2.12.0
+pip install tensorflow==2.13.0
 pip install --upgrade intel-extension-for-tensorflow[cpu]
 ```
 
