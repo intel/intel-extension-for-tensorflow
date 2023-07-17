@@ -43,7 +43,7 @@ Then go to your browser on http://localhost:8888/
 
 The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.
 
-The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.12.0.
+The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.13.0.
 
 
 ##### Virtual environment install 
@@ -57,13 +57,13 @@ On Linux, it is often necessary to first update pip to a version that supports m
 
 To install in virtual environment, you can run 
 ```bash
-(tf)$ pip install tensorflow==2.12.0
+(tf)$ pip install tensorflow==2.13.0
 ```
 
 ##### System environment install 
 If you prefer install tensorflow in $HOME, append `--user` to the commands.
 ```bash
-$ pip3 install --user tensorflow==2.12.0
+$ pip3 install --user tensorflow==2.13.0
 ``` 
 And the following system environment install for Intel® Extension for TensorFlow* will also append `--user` to the command. 
 
