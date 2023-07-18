@@ -17,7 +17,6 @@ limitations under the License.
 
 #include "itex/core/utils/lib/random/random_distributions.h"
 
-#include "itex/core/utils/lib/random/distribution_sampler.h"
 #include "itex/core/utils/lib/random/philox_random.h"
 
 namespace itex {

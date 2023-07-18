@@ -25,7 +25,6 @@ limitations under the License.
 #include "itex/core/kernels/common/random_ops_util.h"
 #include "itex/core/utils/lib/random/guarded_philox_random.h"
 #include "itex/core/utils/lib/random/random_distributions.h"
-#include "itex/core/utils/lib/random/simple_philox.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/register_types_traits.h"
 

@@ -24,7 +24,6 @@ limitations under the License.
 #include "itex/core/kernels/gpu/stateless_random_ops.h"
 #include "itex/core/utils/lib/random/guarded_philox_random.h"
 #include "itex/core/utils/lib/random/random_distributions.h"
-#include "itex/core/utils/lib/random/simple_philox.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/plugin_tensor.h"
