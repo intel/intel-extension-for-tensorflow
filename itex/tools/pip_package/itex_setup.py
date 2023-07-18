@@ -67,7 +67,6 @@ if 'rc' in _VERSION:
   _VERSION = _VERSION.split("rc")[0]
 REQUIRED_PACKAGES.append('wheel')
 REQUIRED_PACKAGES.append('tensorflow>=2.13')
-REQUIRED_PACKAGES.append('numpy<1.24')
 CONSOLE_SCRIPTS = []
 
 
