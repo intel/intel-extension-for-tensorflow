@@ -24,10 +24,10 @@ class Kernel(object):
         x, self.extern_)
     return [format_extern(entry) for entry in self.kernels_]
 
-  def content(self, inc_dir):
+  def content(self, inc_dirs):
     path = os.path.basename(self.path_)
     kernel_name, _ = os.path.splitext(path)
-    return kernel_name, '\n'.join(self._extend_includes(inc_dir, self.path_))
+    return kernel_name, '\n'.join(self._extend_includes(inc_dirs, self.path_))
 
   def subfolder(self, sub):
     kernel_dir = os.path.dirname(self.path_)
@@ -50,7 +50,7 @@ class Kernel(object):
       kernels = re.findall(pattern, content, re.DOTALL)
       return kernels
 
-  def _extend_includes(self, inc_dir, path):
+  def _extend_includes(self, inc_dirs, path):
     ret = []
     pattern = re.compile('^\\s*#include "(.*)"')
     with open(path) as f:
@@ -59,9 +59,13 @@ class Kernel(object):
         result = pattern.match(line)
         if result is not None:
           inc_file = result.group(1)
-          inc_path = os.path.join(inc_dir, inc_file)
-          inc_lines = self._extend_includes(inc_dir, inc_path)
-          ret.extend(inc_lines)
+          for inc_dir in inc_dirs:
+            inc_path = os.path.join(inc_dir, inc_file)
+            if not os.path.exists(inc_path):
+              continue
+            inc_lines = self._extend_includes(inc_dirs, inc_path)
+            ret.extend(inc_lines)
+            break
         else:
           if is_v2:
             line = line.strip()
@@ -159,8 +163,8 @@ class KernelList(object):
     with open(target, 'w') as f:
       f.write(content)
 
-  def _generate(self, inc_dir, root, sub, impl, suffix):
-    impl_name, content = impl.content(inc_dir)
+  def _generate(self, inc_dirs, root, sub, impl, suffix):
+    impl_name, content = impl.content(inc_dirs)
     more_sub = impl.subfolder(sub)
     # construct the file xxx_suffix.cpp
     file_name = impl_name + "_" + suffix + ".cpp"
@@ -173,7 +177,7 @@ class KernelList(object):
     with open(os.path.join(target, file_name), "w") as f:
       f.write(self.format(impl_name, suffix, content))
 
-  def generate_kernel(self, inc_dir, root, sub):
+  def generate_kernel(self, inc_dirs, root, sub):
     """
         It will expand all codes and convert it into string including the new line char.
 
@@ -187,11 +191,11 @@ class KernelList(object):
         files into src/gpu/ocl/, no subfolder.
         """
     for kernel in self.kernels_:
-      self._generate(inc_dir, root, sub, kernel, "kernel")
+      self._generate(inc_dirs, root, sub, kernel, "kernel")
 
-  def generate_header(self, inc_dir, root, sub):
+  def generate_header(self, inc_dirs, root, sub):
     for header in self.headers_:
-      self._generate(inc_dir, root, sub, header, "header")
+      self._generate(inc_dirs, root, sub, header, "header")
 
   def format(self, name, suffix, content):
     """
@@ -268,7 +272,7 @@ class FilesHelper(object):
     in_dir = os.path.dirname(in_file)
     in_dir = in_dir[:-len(OCL_IMPL_DIR)]
 
-    self.inc_dir = os.path.join(in_dir, "src")
+    self.inc_dirs = [os.path.join(in_dir, "src"), os.path.join(in_dir, "include")]
     self.ocl_impls_dir = os.path.join(in_dir, OCL_IMPL_DIR)
     self.gen_kernel_list_cpp_in = os.path.join(in_dir, OCL_IMPL_DIR, IN_FILE)
 
@@ -318,10 +322,10 @@ def main():
   if not only_gen_header:
     kernel_list.generate_list(files_helper.gen_kernel_list_cpp_in,
                               files_helper.gen_kernel_list_cpp)
-    kernel_list.generate_kernel(files_helper.inc_dir, files_helper.out_root,
+    kernel_list.generate_kernel(files_helper.inc_dirs, files_helper.out_root,
                                 files_helper.out_subfolder)
   if only_gen_header and is_v2:
-    kernel_list.generate_header(files_helper.inc_dir, files_helper.out_root,
+    kernel_list.generate_header(files_helper.inc_dirs, files_helper.out_root,
                                 files_helper.header_subfolder)
 
 
