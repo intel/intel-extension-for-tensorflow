@@ -42,19 +42,29 @@ typedef random::NormalDistribution<random::PhiloxRandom, double> Normal;
 typedef random::UniformDistribution<random::PhiloxRandom, double> Uniform;
 
 template <typename T>
-struct StatelessRandomGammaKernel {
-  StatelessRandomGammaKernel(const T* alpha_flat, int64_t num_samples,
-                             int64_t num_alphas, int64_t samples_per_alpha,
-                             const random::PhiloxRandom& random,
-                             T* samples_flat)
+struct StatelessRandomGammaV3Kernel {
+  StatelessRandomGammaV3Kernel(const T* alpha_flat, const int64_t num_samples,
+                               const int64_t num_alphas,
+                               const int64_t samples_per_alpha,
+                               const uint64* key, const uint64* counter,
+                               T* samples_flat)
       : alpha_flat(alpha_flat),
         num_samples(num_samples),
         num_alphas(num_alphas),
         samples_per_alpha(samples_per_alpha),
-        random(random),
+        key(key),
+        counter(counter),
         samples_flat(samples_flat) {}
-  void operator()(sycl::item<1> item) const {
-    auto output_idx = item.get_id(0);
+  void operator()(sycl::nd_item<1> item) const {
+    auto id = item.get_global_linear_id();
+    if (id >= num_samples) return;
+
+    random::PhiloxRandom random_;
+    if (key != nullptr && counter != nullptr) {
+      random_ = GetPhiloxRandomFromCounterKeyMem(counter, key);
+    }
+
+    auto output_idx = id;
     int64 alpha_idx = output_idx / samples_per_alpha;
     int64 sample_idx = output_idx % samples_per_alpha;
 
@@ -68,7 +78,7 @@ struct StatelessRandomGammaKernel {
       // Sample from an exponential distribution.
       // As we want data stable regardless of sharding, we skip on a
       // per-sample basis.
-      random::PhiloxRandom gen = random;
+      random::PhiloxRandom gen = random_;
       gen.Skip(kReservedSamplesPerOutput * output_idx);
       double u = uniform(&gen)[Uniform::kResultElementCount - 1];
       const double res = -log1p(-u);
@@ -93,7 +103,7 @@ struct StatelessRandomGammaKernel {
       // Since each sample may use a variable number of normal/uniform
       // samples, and we want data stable regardless of sharding, we skip
       // on a per-sample basis.
-      random::PhiloxRandom gen = random;
+      random::PhiloxRandom gen = random_;
       gen.Skip(kReservedSamplesPerOutput * output_idx);
 
       // To prevent overwriting SampleBuffer's underlying array with
@@ -139,24 +149,18 @@ struct StatelessRandomGammaKernel {
 
  private:
   const T* alpha_flat;
-  int64_t num_samples;
-  int64_t num_alphas;
-  int64_t samples_per_alpha;
-  const random::PhiloxRandom random;
+  const int64_t num_samples;
+  const int64_t num_alphas;
+  const int64_t samples_per_alpha;
+  const uint64* key;
+  const uint64* counter;
   T* samples_flat;
 };
 
 template <typename Device, typename T>
 void FillKernel(OpKernelContext* ctx, const T* alpha_flat, int64 num_samples,
                 int64 num_alphas, int64 samples_per_alpha, const uint64* key,
-                const uint64* counter, const random::PhiloxRandom& random,
-                T* samples_flat) {
-  if (key != nullptr && counter != nullptr) {
-    random::PhiloxRandom* tmp_gen_ptr =
-        const_cast<random::PhiloxRandom*>(&random);
-    *tmp_gen_ptr = GetPhiloxRandomFromCounterKeyMem(counter, key);
-  }
-
+                const uint64* counter, T* samples_flat) {
   using Eigen::numext::exp;
   using Eigen::numext::log;
   using Eigen::numext::log1p;
@@ -165,15 +169,18 @@ void FillKernel(OpKernelContext* ctx, const T* alpha_flat, int64 num_samples,
   auto* ITEX_GPU_stream = ctx->GetDeviceStream();
   OP_REQUIRES(ctx, ITEX_GPU_stream != nullptr,
               errors::Internal("No GPU stream available."));
-  auto total_items =
+  auto work_group_size =
       ITEX_GPU_stream->get_device()
           .template get_info<sycl::info::device::max_work_group_size>();
-  total_items = total_items > num_samples ? num_samples : total_items;
+  auto num_wg = (num_samples + work_group_size - 1) / work_group_size;
   ITEX_GPU_stream->submit([&](sycl::handler& cgh) {
-    StatelessRandomGammaKernel<T> task(alpha_flat, num_samples, num_alphas,
-                                       samples_per_alpha, random, samples_flat);
-    cgh.parallel_for<StatelessRandomGammaKernel<T>>(sycl::range<1>(total_items),
-                                                    task);
+    StatelessRandomGammaV3Kernel<T> task(alpha_flat, num_samples, num_alphas,
+                                         samples_per_alpha, key, counter,
+                                         samples_flat);
+    cgh.parallel_for<StatelessRandomGammaV3Kernel<T>>(
+        sycl::nd_range<1>(sycl::range<1>(work_group_size * num_wg),
+                          sycl::range<1>(work_group_size)),
+        task);
   });
 }
 
@@ -242,9 +249,9 @@ class StatelessRandomGammaOpWithKeyCounter : public OpKernel {
     if (alg == RNG_ALG_PHILOX) {
       auto key_data = key.flat<uint64>().data();
       auto counter_data = counter.flat<uint64>().data();
-      functor::FillKernel<Device, T>(
-          ctx, alpha_flat, num_samples, num_alphas, samples_per_alpha, key_data,
-          counter_data, random::PhiloxRandom() /*dummy*/, samples_flat);
+      functor::FillKernel<Device, T>(ctx, alpha_flat, num_samples, num_alphas,
+                                     samples_per_alpha, key_data, counter_data,
+                                     samples_flat);
     } else {
       OP_REQUIRES(ctx, false,
                   errors::InvalidArgument("Unsupported algorithm id: ", alg));
