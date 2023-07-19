@@ -4821,7 +4821,9 @@ Status AddPadWithContraction(RemapperContext* ctx,
   const NodeDef& pad = graph->node(matched.pad);
   const NodeDef& contraction = graph->node(matched.contraction);
 
-  if (matched.pad_value_const) {
+  bool keep_node =
+      matched.pad_value_const && HasNodeAttr(contraction, "explicit_paddings");
+  if (keep_node) {
     const auto* pad_node_view = ctx->graph_view.GetNode(matched.pad);
     const auto* pad_val_node_view =
         pad_node_view->GetRegularFanin(1).node_view();

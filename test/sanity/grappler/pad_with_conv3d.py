@@ -113,9 +113,9 @@ class PadWithConv3DTest(test.TestCase):
 
       if 'PadWithFusedConv3D' in node.op and fusedConv == True:
         exist_pad_conv = True
-    if not constPaddings:
-      self.assertTrue(exist_pad_conv)
-      self.assertTrue(exist_pad_conv_backprop_filter)
+
+    self.assertTrue(exist_pad_conv)
+    self.assertTrue(exist_pad_conv_backprop_filter)
 
   @test_util.run_deprecated_v1
   def testPadWithConv3DAccuracy(self):
