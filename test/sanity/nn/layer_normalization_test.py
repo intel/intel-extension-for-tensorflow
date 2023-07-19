@@ -31,9 +31,11 @@ except ImportError:
 import numpy as np
 
 import keras
+import tensorflow as tf
 from tensorflow.python.keras import combinations
 import os
 
+from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
@@ -43,8 +45,6 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import random_ops
 from tensorflow.python.training import gradient_descent
 
-# Test plain format.
-os.environ['ITEX_LAYOUT_OPT']="0"
 
 def _run_layernorm_correctness_test(layer, dtype='float32'):
   model = keras.models.Sequential()
@@ -184,6 +184,64 @@ class LayerNormalizationTest(keras_parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, r'Duplicate axis:'):
       layer_norm = layer_normalization.LayerNormalization(axis=[-1, -1])
       layer_norm.build(input_shape=(2, 2, 2))
+
+
+@test_util.run_all_in_native_and_block_format
+class LayerNormGradTest(test.TestCase):
+  def create_initializer(self, initializer_range=0.02):
+    return tf.compat.v1.truncated_normal_initializer(stddev=initializer_range)
+
+  def _layer_norm(self, inputs):
+    lnorm = layer_normalization.LayerNormalization()
+    return array_ops.identity(lnorm(inputs))
+
+  def _gradient(self, loss):
+    global_step = tf.compat.v1.train.get_global_step()
+    optimizer = tf.compat.v1.train.AdadeltaOptimizer()
+    tvars = tf.compat.v1.trainable_variables()
+    gradients = optimizer.compute_gradients(
+        loss, tvars, colocate_gradients_with_ops=True)
+    minimize_op = optimizer.apply_gradients(
+        gradients, global_step=global_step, name="train")
+    update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
+    train_op = tf.group(minimize_op, update_ops)
+    return train_op
+
+  @test_util.run_deprecated_v1
+  def testGrad(self):
+    run_options = config_pb2.RunOptions(output_partition_graphs=True)
+    metadata = config_pb2.RunMetadata()
+
+    with tf.compat.v1.Session() as sess:
+      attention_input = tf.random.uniform((128, 128), minval=0, maxval=1000)
+      layer_input = tf.random.uniform((128, 128), minval=0, maxval=1000)
+
+      attention_output = tf.compat.v1.layers.dense(
+          attention_input,
+          128,
+          kernel_initializer=self.create_initializer())
+      loss = self._layer_norm(attention_output + layer_input)
+      r = self._gradient(loss)
+
+      init = tf.compat.v1.initialize_all_variables()
+      sess.run(init)
+      sess.run(r, options=run_options, run_metadata=metadata)
+
+    graph = metadata.partition_graphs[0]
+    found_forward = False
+    found_backward = False
+    prefix = "_OneDnn" if os.environ['ITEX_LAYOUT_OPT'] == '1' else "ITEX"
+    forward_name = prefix + "LayerNorm"
+    backward_name = prefix + "LayerNormGrad"
+    for node in graph.node:
+        if forward_name in node.op:
+          found_forward = True
+
+        if found_forward and backward_name in node.op:
+          found_backward = True
+
+    self.assertTrue(found_forward and found_backward)
+
 
 class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
   """Tests LayerNormalization has correct and numerically stable outputs."""
@@ -368,8 +426,6 @@ class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
       ln_fp32_res = self.evaluate(ln_fp32)
 
       self.assertAllClose(ln_bf16_res, ln_fp32_res, rtol=1e-2, atol=1e-2)
-
-
 
 
 if __name__ == '__main__':
