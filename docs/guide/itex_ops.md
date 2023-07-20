@@ -24,7 +24,7 @@ wd = lambda: 1e-4 * schedule(step)
 
 # ...
 
-optimizer = itex.ops.AdamWithWeightDecayOptimizer(learning_rate=lr, weight_decay=wd)
+optimizer = itex.ops.AdamWithWeightDecayOptimizer(learning_rate=lr, weight_decay_rate=wd)
 ```
 
 ## `itex.ops.LayerNormalization`

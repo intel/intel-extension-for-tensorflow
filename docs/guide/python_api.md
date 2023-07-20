@@ -206,7 +206,8 @@ N/A
 | -----------------------| ------------------------------------------------------------------------|
 | `VERSION`      | The release version. For example, `0.3.0`|
 | `GIT_VERSION`      | The git version. For example, `v0.3.0-7112d33`|
-| `ONEDNN_GIT_VERSION`      | The oneDNN git version. For example, `v2.5.2-a930253`|
+| `ONEDNN_CPU_GIT_VERSION`      | The oneDNN git version of CPU. For example, `v2.5.2-a930253`|
+| `ONEDNN_GPU_GIT_VERSION`      | The oneDNN git version of GPU. For example, `v2.5.2-a930253`|
 | `COMPILER_VERSION`      | The compiler version. For example, `gcc-8.2.1 20180905, dpcpp-2022.1.0.122`|
 | `TF_COMPATIBLE_VERSION`      | The compatible TensorFlow versions. For example, `tensorflow >= 2.5.0, < 2.7.0, !=2.5.3, ~=2.6`|
 
@@ -218,7 +219,10 @@ import intel_extension_for_tensorflow as itex
 print(itex.__version__)
 print(itex.version.VERSION)
 print(itex.version.GIT_VERSION)
-print(itex.version.ONEDNN_GIT_VERSION)
+if hasattr(itex.version, "ONEDNN_CPU_GIT_VERSION"):
+  print(itex.version.ONEDNN_CPU_GIT_VERSION)    # For CPU or XPU
+if hasattr(itex.version, "ONEDNN_GPU_GIT_VERSION"):
+  print(itex.version.ONEDNN_GPU_GIT_VERSION)    # For GPU or XPU
 print(itex.version.COMPILER_VERSION)
 print(itex.version.TF_COMPATIBLE_VERSION)
 
