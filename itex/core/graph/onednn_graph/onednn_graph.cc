@@ -1686,6 +1686,22 @@ Status TranslateReduce(const OneDnnGraphContext* ctx, const int node_index,
   bool input_invalid = props[0].shape().unknown_rank() ||
                        IsScalar(props[0].shape()) || Is1D(props[0].shape());
 
+  // TODO(itex): remove this workaround when oneDNN Graph fix their shape
+  // inference bugs for full reduce reduction operation
+  if (!input_invalid && !props[0].shape().unknown_rank()) {
+    auto* size_view = node_view->GetRegularFanin(1).node_view();
+    auto* size_node = size_view->node();
+    std::vector<int64_t> size_value;
+
+    bool is_success;
+    DataType dt = GetDataType(
+        *node_def, ctx->node_type_map.GetInputTypeAttr(*node_def, 1));
+    GetShapeFromConstShapeNode(size_node, &size_value, &is_success, dt);
+    if (is_success && size_value.size() == props[0].shape().dim().size()) {
+      input_invalid = true;
+    }
+  }
+
   if (input_invalid) {
     onednn_graph_node = nullptr;
     return Status::OK();

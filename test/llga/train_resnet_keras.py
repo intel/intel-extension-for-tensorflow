@@ -23,8 +23,13 @@ from tensorflow.keras.layers import Input, Conv2D, ReLU, BatchNormalization,\
 from tensorflow.keras import regularizers
 from tensorflow.keras.models import Model
 
+import os
+
 np.random.seed(34)
 tf.random.set_seed(34)
+
+os.environ["ITEX_ONEDNN_GRAPH"] = "1"
+os.environ["_ITEX_ONEDNN_GRAPH_ALL_TYPE"] = "1"
 
 def bn_relu(inputs: Tensor) -> Tensor:
     bn = BatchNormalization()(inputs)
