@@ -179,6 +179,8 @@ function prepare_src() {
   [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   cp ${RUNFILES}/../../../../core/kernels/libitex_common.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  xetla_lib=$(find ${RUNFILES} -name libitex_gpu_xetla.so)
+  [ -f "${xetla_lib}" ] && cp ${xetla_lib} ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   mkdir ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
   cp -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py ${LIB_TMPDIR}/intel_extension_for_tensorflow/python/
   mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/*wrap* ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
