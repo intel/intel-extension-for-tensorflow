@@ -2487,7 +2487,7 @@ void Register_ITEXGeluGradOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "features: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "backprops: T");
     TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  "T: {bfloat16, float} = DT_FLOAT");
+                                  "T: {bfloat16, half, float} = DT_FLOAT");
     TF_OpDefinitionBuilderAddAttr(op_builder, "approximate: bool = true");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unchanged_shape_fn);

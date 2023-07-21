@@ -22,6 +22,7 @@ from absl.testing import parameterized
 import numpy as np
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
+from intel_extension_for_tensorflow.python.test_func import test as test_lib
 from tensorflow.python import keras
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import test_util
@@ -75,6 +76,8 @@ class FusedDenseBiasAddGeluTest(keras_parameterized.TestCase):
         )
     )
     def test_load_weights_between_nonitex_rnn(self, to_itex, model_nest_level, dtype):
+        if not test_lib.is_gpu_available():
+            self.skipTest("Skip on CPU due to the pattern not supported")
         np.random.seed(0)
         units = 128
         activation = self.gelu
