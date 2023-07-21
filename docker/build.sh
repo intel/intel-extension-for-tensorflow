@@ -17,54 +17,29 @@
 
 set -e
 IMAGE_TYPE=$1
-if [ $IMAGE_TYPE == "gpu" ]
+if [ $IMAGE_TYPE == "xpu" -o $IMAGE_TYPE == "gpu" ]
 then
-        IMAGE_NAME=intel-extension-for-tensorflow:gpu
-        docker build --build-arg UBUNTU_VERSION=22.04 \
-                                --build-arg ICD_VER=23.05.25593.18-601~22.04 \
-                                --build-arg LEVEL_ZERO_GPU_VER=1.3.25593.18-601~22.04 \
-                                --build-arg LEVEL_ZERO_VER=1.9.4+i589~22.04 \
-                                --build-arg TF_VER=2.12 \
-                                --build-arg DPCPP_VER=2023.1.0-46305 \
-                                --build-arg MKL_VER=2023.1.0-46342 \
+        IMAGE_NAME=intel-extension-for-tensorflow:$IMAGE_TYPE
+        docker build --no-cache --build-arg UBUNTU_VERSION=22.04 \
+                                --build-arg ICD_VER=23.17.26241.33-647~22.04 \
+                                --build-arg LEVEL_ZERO_GPU_VER=1.3.26241.33-647~22.04 \
+                                --build-arg LEVEL_ZERO_VER=1.11.0-647~22.04 \
+                                --build-arg LEVEL_ZERO_DEV_VER=1.11.0-647~22.04 \
+                                --build-arg DPCPP_VER=2023.2.0-49495 \
+                                --build-arg MKL_VER=2023.2.0-49495 \
+                                --build-arg CCL_VER=2021.10.0-49084 \
                                 --build-arg PYTHON=python3.10 \
-                                --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
+                                --build-arg TF_VER=2.13 \
+                                --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
-				-f itex-gpu.Dockerfile .
-elif [ $IMAGE_TYPE == "gpu-horovod" ]
-then
-        IMAGE_NAME=intel-extension-for-tensorflow:gpu-horovod
-        docker build --build-arg UBUNTU_VERSION=22.04 \
-                                --build-arg ICD_VER=23.05.25593.18-601~22.04 \
-                                --build-arg LEVEL_ZERO_GPU_VER=1.3.25593.18-601~22.04 \
-                                --build-arg LEVEL_ZERO_VER=1.9.4+i589~22.04 \
-                                --build-arg LEVEL_ZERO_DEV_VER=1.9.4+i589~22.04 \
-                                --build-arg TF_VER=2.12 \
-                                --build-arg DPCPP_VER=2023.1.0-46305 \
-                                --build-arg MKL_VER=2023.1.0-46342 \
-                                --build-arg CCL_VER=2021.9.0-43543 \
-                                --build-arg PYTHON=python3.10 \
-                                --build-arg HOROVOD_WHL=intel_optimization_for_horovod-*.whl \
-                                --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
-                                -t $IMAGE_NAME \
-                                -f itex-gpu-horovod.Dockerfile .
-elif  [ $IMAGE_TYPE == "cpu-centos" ]
-then
-        IMAGE_NAME=intel-extension-for-tensorflow:cpu-centos
-        docker build --build-arg CENTOS_VER=8 \
-                                --build-arg PY_VER=39 \
-                                --build-arg PYTHON=python3.9 \
-                                --build-arg TF_VER=2.12 \
-                                --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
-                                -t $IMAGE_NAME \
-                                -f itex-cpu-centos.Dockerfile .
+				-f itex-xpu.Dockerfile .
 else
-        IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
-        docker build --build-arg UBUNTU_VERSION=20.04 \
+        IMAGE_NAME=intel-extension-for-tensorflow:$IMAGE_TYPE
+        docker build --no-cache --build-arg UBUNTU_VERSION=20.04 \
                                 --build-arg PYTHON=python3.9 \
-                                --build-arg TF_VER=2.12 \
-                                --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
+                                --build-arg TF_VER=2.13 \
+                                --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
-                                -f itex-cpu-ubuntu.Dockerfile .
+                                -f itex-cpu.Dockerfile .
 fi
 
