@@ -163,6 +163,22 @@ def itex_xetla_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
         **kwargs
     )
 
+def itex_xetla_binary(name, set_target = None, srcs = [], deps = [], *argc, **kwargs):
+    xpu_binary_name = name.replace("lib", "").replace(".so", "")
+    transition_rule(
+        name = name,
+        actual_binary = ":%s" % xpu_binary_name,
+        set_target = set_target,
+    )
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + if_xetla(["--xetla"])
+    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_xetla(["--xetla"])
+    native.cc_binary(
+        name = xpu_binary_name,
+        srcs = srcs,
+        deps = deps,
+        **kwargs
+    )
+
 def itex_xpu_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
     kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"])
     kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"])

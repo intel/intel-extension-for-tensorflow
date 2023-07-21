@@ -145,6 +145,7 @@ itex_xpu_binary(
             "//itex/core/graph:xpu_graph",
             "//itex/core/kernels:xpu_kernel",
             "//itex/core/profiler:gpu_profiler",
+            "//itex/core/kernels/gpu:libitex_gpu_xetla",
         ],
     ) + [
         "//itex/core:protos_all_cc",

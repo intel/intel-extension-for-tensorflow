@@ -1,20 +1,24 @@
-load("//itex:itex.bzl", "cc_library", "itex_xetla_library", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "itex_xetla_binary", "itex_xetla_library", "itex_xpu_library", "tf_copts")
 
 package(
     licenses = ["notice"],  # Apache 2.0
 )
 
-itex_xetla_library(
-    name = "xetla_kernel_impl",
-    copts = tf_copts(),
-    linkstatic = 1,
+cc_import(
+    name = "libitex_gpu_xetla",
+    shared_library = ":itex_gpu_xetla",
+    visibility = ["//visibility:public"],
+)
+
+itex_xetla_binary(
+    name = "libitex_gpu_xetla.so",
+    linkshared = True,
+    set_target = "gpu_orig_backend",
     visibility = ["//visibility:public"],
     deps = [
-        "//itex:core",
         "//itex/core/kernels/gpu/xetla:mha_op",
         "//itex/core/kernels/gpu/xetla:mlp_op",
     ],
-    alwayslink = True,
 )
 
 itex_xpu_library(

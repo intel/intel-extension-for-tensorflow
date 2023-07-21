@@ -13,12 +13,6 @@ XPU_KERNEL_DEPS = [
     [
         "//itex/core/kernels/cpu:cpu_kernel_impl",
     ],
-) + if_xetla(
-    [
-        "//itex/core/kernels/gpu:xetla_kernel_impl",
-    ],
-    [
-    ],
 )
 
 itex_xpu_library(
