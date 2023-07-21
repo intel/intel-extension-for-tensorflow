@@ -22,6 +22,7 @@ from tensorflow.python.framework import config
 
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from intel_extension_for_tensorflow.python.device import is_xehpc
+from intel_extension_for_tensorflow.python.ops.activations import gelu
 from tensorflow.python import keras
 from keras import activations
 from keras import backend
@@ -116,7 +117,7 @@ class FusedDenseBiasAddGelu(tf.compat.v1.layers.Dense):
     ):
         super(FusedDenseBiasAddGelu, self).__init__(
             units,
-            activation=functools.partial(tf.nn.gelu, approximate=True),
+            activation=functools.partial(gelu, approximate=True),
             use_bias=True,
             kernel_initializer=kernel_initializer,
             bias_initializer=bias_initializer,

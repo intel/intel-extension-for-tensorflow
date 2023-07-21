@@ -109,12 +109,6 @@ TF_CALL_double(REGISTER_RELU_GPU_KERNELS);
       Name("LeakyReluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
       LeakyReluGradOp<GPUDevice, type>);                                  \
   REGISTER_KERNEL_BUILDER(                                                \
-      Name("GeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
-      GeluGradOp<GPUDevice, type>);                                       \
-  REGISTER_KERNEL_BUILDER(                                                \
-      Name("ITEXGeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),  \
-      GeluGradOp<GPUDevice, type>);                                       \
-  REGISTER_KERNEL_BUILDER(                                                \
       Name("SeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),      \
       SeluGradOp<GPUDevice, type>);                                       \
   REGISTER_KERNEL_BUILDER(                                                \
@@ -123,6 +117,17 @@ TF_CALL_double(REGISTER_RELU_GPU_KERNELS);
 
 TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_GRAD_GPU_KERNELS);
 #undef REGISTER_GRAD_GPU_KERNELS
+
+#define REGISTER_GELUGRAD_GPU_KERNELS(type)                              \
+  REGISTER_KERNEL_BUILDER(                                               \
+      Name("GeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"),     \
+      GeluGradOp<GPUDevice, type>);                                      \
+  REGISTER_KERNEL_BUILDER(                                               \
+      Name("ITEXGeluGrad").Device(DEVICE_GPU).TypeConstraint<type>("T"), \
+      GeluGradOp<GPUDevice, type>);
+
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_GELUGRAD_GPU_KERNELS);
+#undef REGISTER_GELUGRAD_GPU_KERNELS
 
 #define REGISTER_GPU_KERNELS(type)                                   \
   REGISTER_KERNEL_BUILDER(                                           \
