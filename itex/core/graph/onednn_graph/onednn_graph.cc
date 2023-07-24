@@ -2717,6 +2717,41 @@ Status AddRetNode(OneDnnGraphContext* ctx) {
   return Status::OK();
 }
 
+// Remove AssignAddVariableOp, AssignSubVariableOp and AssignVariableOp.
+Status RemoveAssignXVariable(OneDnnGraphContext* ctx) {
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
+  TF_ABORT_IF_ERROR(ctx->node_type_map.Init(*ctx->graph_view.graph()));
+  ITEX_VLOG(2) << "Remove Assign X VariableOp to break circle.";
+  auto* mutation = ctx->graph_view.GetMutationBuilder();
+  int num_nodes = ctx->graph_view.graph()->node_size();
+  for (int idx = 0; idx < num_nodes; idx++) {
+    auto* node_view = ctx->graph_view.GetNode(idx);
+    auto* node_def = node_view->node();
+    if (node_def->name() == "AssignAddVariableOp" ||
+        node_def->name() == "AssignSubVariableOp" ||
+        node_def->name() == "AssignVariableOp") {
+      for (int i = 0; i < node_view->NumRegularFanins(); ++i) {
+        auto* input_node_view = node_view->GetRegularFanin(i).node_view();
+        const NodeDef* input_node = input_node_view->node();
+        ITEX_VLOG(2) << "input node of AssignAddVariableOp "
+                     << input_node->name();
+        ITEX_VLOG(2) << "regular input num of this node "
+                     << input_node_view->NumRegularFanins();
+        mutation->RemoveNode(input_node_view);
+      }
+      auto control_fanouts = node_view->GetControlledFanouts();
+      for (int i = 0; i < control_fanouts.size(); ++i) {
+        auto out_node_view = control_fanouts[i].node_view();
+        mutation->RemoveControllingFanin(out_node_view, node_def->name());
+      }
+      mutation->RemoveNode(node_view);
+      ITEX_VLOG(2) << "Remove AssignAddVariableOp done.";
+    }
+  }
+  TF_ABORT_IF_ERROR(mutation->Apply());
+  return Status::OK();
+}
+
 Status RemoveRetNode(OneDnnGraphContext* ctx) {
   TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
   TF_ABORT_IF_ERROR(ctx->node_type_map.Init(*ctx->graph_view.graph()));
@@ -3308,6 +3343,9 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
   // Insert Reshape before & after Q / DQ pair, when depthwise weight K = 1
   TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
   TF_ABORT_IF_ERROR(InsertReshapeForDepthwise(&ctx));
+
+  TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
+  TF_ABORT_IF_ERROR(RemoveAssignXVariable(&ctx));
 
   TF_ABORT_IF_ERROR(ctx.graph_view.SortTopologically(false, {}));
   TF_ABORT_IF_ERROR(RunRewritePass(&ctx));
