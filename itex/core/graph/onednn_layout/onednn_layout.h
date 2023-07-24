@@ -69,8 +69,6 @@ const RewriteInfo* CheckForNodeRewrite(const utils::MutableNodeView& node_view);
 Status RewriteNode(const char* device_name, OneDnnLayoutContext* ctx,
                    int node_index, const RewriteInfo* ri);
 
-Status FixOneDnnMetaDataEdges(OneDnnLayoutContext* ctx, int node_index);
-
 Status RunOneDnnLayout(OptimizerContext* opt_ctx, const GrapplerItem& item,
                        const GraphDef& graph_def, GraphDef* optimized_graph);
 

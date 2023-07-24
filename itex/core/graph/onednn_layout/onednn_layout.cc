@@ -491,50 +491,6 @@ const RewriteInfo* CheckForNodeRewrite(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-//              Post-rewrite OneDNN metadata fixup pass
-///////////////////////////////////////////////////////////////////////////////
-Status FixOneDnnMetaDataEdges(OneDnnLayoutContext* ctx, const int node_index) {
-  auto* node_view = ctx->graph_view.GetNode(node_index);
-  auto* node_def = node_view->node();
-
-  // If graph node is not OneDNN node, then return.
-  if (!IsOneDnnLayoutDependentOp(node_def->op()) &&
-      !IsOneDnnLayoutPartialDependentOp(node_def->op())) {
-    return Status::OK();
-  }
-
-  // For OneDNN nodes, we generate twice the number of input tensors (n for
-  // OneDNN data tensors + n for OneDNN metadata tensors). We need to check for
-  // correct connection of n metadata tensors only.
-  auto* mutation = ctx->graph_view.GetMutationBuilder();
-  for (int idx = 0; idx < node_view->NumRegularFanins() / 2; idx++) {
-    // Check that the source node is OneDNN node. If it is not an OneDNN
-    // node, then we don't need to do anything.
-    const auto* input_node_view = node_view->GetRegularFanin(idx).node_view();
-    const auto* input_node_def = input_node_view->node();
-
-    if (IsOneDnnLayoutDependentOp(input_node_def->op())) {
-      int meta_idx = idx + node_view->NumRegularFanins() / 2;
-      const auto* input_node_def_meta =
-          node_view->GetRegularFanin(meta_idx).node_view()->node();
-
-      // If the source of meta edge is a constant node (producing dummy OneDNN
-      // metadata tensor), then we will need to fix.
-      if (!IsHostConstant(*input_node_def_meta)) continue;
-
-      TensorId input = ParseTensorName(node_def->input(idx));
-      int out_slot_meta =
-          input.index() + ctx->node_type_map.GetOutputSize(*input_node_def) / 2;
-      TensorId meta_input(input.node(), out_slot_meta);
-
-      mutation->AddOrUpdateRegularFanin(node_view, meta_idx, meta_input);
-    }
-  }
-  TF_ABORT_IF_ERROR(mutation->Apply());
-  return Status::OK();
-}
-
-///////////////////////////////////////////////////////////////////////////////
 //              Insert conversion nodes
 ///////////////////////////////////////////////////////////////////////////////
 Status InsertConversionNode(OneDnnLayoutContext* ctx, const int node_index) {

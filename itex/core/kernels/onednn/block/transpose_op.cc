@@ -92,28 +92,9 @@ Status DoTranspose(OpKernelContext* context, const Tensor& src_tensor,
     // Plain layout input with dim > MAX_NDIMS will fall back to eigen
     // implementation
     const Device& d = context->eigen_device<Device>();
+    ITEX_CHECK(MAX_NDIMS >= 6) << "Eigen Transpose only support NDIMS > 6";
 
     switch (tensor_dims) {
-      case 2:
-        internal::TransposeUsingEigen<Device, T, 2>(d, src_tensor, perm,
-                                                    is_conjugate, dst_tensor);
-        break;
-      case 3:
-        internal::TransposeUsingEigen<Device, T, 3>(d, src_tensor, perm,
-                                                    is_conjugate, dst_tensor);
-        break;
-      case 4:
-        internal::TransposeUsingEigen<Device, T, 4>(d, src_tensor, perm,
-                                                    is_conjugate, dst_tensor);
-        break;
-      case 5:
-        internal::TransposeUsingEigen<Device, T, 5>(d, src_tensor, perm,
-                                                    is_conjugate, dst_tensor);
-        break;
-      case 6:
-        internal::TransposeUsingEigen<Device, T, 6>(d, src_tensor, perm,
-                                                    is_conjugate, dst_tensor);
-        break;
       case 7:
         internal::TransposeUsingEigen<Device, T, 7>(d, src_tensor, perm,
                                                     is_conjugate, dst_tensor);
