@@ -23,7 +23,7 @@ limitations under the License.
 #include <vector>
 
 #if __has_include(<sycl/sycl.hpp>)
-#include <sycl/backend/level_zero.hpp>
+#include <sycl/ext/oneapi/backend/level_zero.hpp>
 #include <sycl/sycl.hpp>
 #elif __has_include(<CL/sycl.hpp>)
 #include <CL/sycl.hpp>
@@ -62,7 +62,7 @@ class PerDeviceCollector {
     std::vector<ITEX_GPUStream*> stream_pool;
     ITEX_GPUGetStreamPool(device_h, &stream_pool);
     auto l0_native_queue =
-        sycl::get_native<sycl::backend::level_zero>(*device_h);
+        sycl::get_native<sycl::backend::ext_oneapi_level_zero>(*device_h);
     zePluggableTracerQueueList queue_list = ZeKernelCollector::
         GetzePluggableTracerDeviceQueueMap()[l0_native_queue];
     queues_.assign(queue_list.begin(), queue_list.end());
