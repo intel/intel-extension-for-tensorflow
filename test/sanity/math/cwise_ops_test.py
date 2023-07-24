@@ -204,8 +204,8 @@ class LogicalOpTest(test.TestCase):
     self.assertShapeEqual(np_ans, out)
 
   def testTensor(self):
-    x = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
-    y = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
+    x = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
+    y = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
     for use_gpu in [True, False]:
       with self.subTest(use_gpu=use_gpu):
         self._not(x, use_gpu)
@@ -221,8 +221,8 @@ class LogicalOpTest(test.TestCase):
         ([2, 0, 5], [2, 0, 1]),
     ]
     for (xs, ys) in shapes:
-      x = np.random.randint(0, 2, np.prod(xs)).astype(np.bool).reshape(xs)
-      y = np.random.randint(0, 2, np.prod(ys)).astype(np.bool).reshape(ys)
+      x = np.random.randint(0, 2, np.prod(xs)).astype(np.bool_).reshape(xs)
+      y = np.random.randint(0, 2, np.prod(ys)).astype(np.bool_).reshape(ys)
       for use_gpu in [True, False]:
         with self.subTest(xs=xs, ys=ys, use_gpu=use_gpu):
           self._compareBinary(x, y, np.logical_and, math_ops.logical_and,
@@ -233,8 +233,8 @@ class LogicalOpTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testShapeMismatch(self):
-    x = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
-    y = np.random.randint(0, 2, 6).astype(np.bool).reshape(3, 2, 1)
+    x = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
+    y = np.random.randint(0, 2, 6).astype(np.bool_).reshape(3, 2, 1)
     for f in [math_ops.logical_and, math_ops.logical_or, math_ops.logical_xor]:
       with self.subTest(f=f):
         with self.assertRaisesWithPredicateMatch(
@@ -311,7 +311,7 @@ class SelectOpTest(test.TestCase):
       self.assertAllClose(jacob_t, jacob_n, rtol=1e-5, atol=1e-5)
 
   def _testBasic(self, fn):
-    c = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
+    c = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
     x = np.random.rand(1, 3, 2) * 100
     y = np.random.rand(1, 3, 2) * 100
     for t in [
@@ -342,10 +342,10 @@ class SelectOpTest(test.TestCase):
           self._compare(fn, c, xt, yt, use_gpu=True)
 
   def testBasicBroadcast(self):
-    c0 = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
-    c1 = np.random.randint(0, 2, 2).astype(np.bool).reshape(1, 1, 2)
-    c2 = np.random.randint(0, 2, 3).astype(np.bool).reshape(1, 3, 1)
-    c3 = np.random.randint(0, 2, 1).astype(np.bool).reshape(1, 1, 1)
+    c0 = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
+    c1 = np.random.randint(0, 2, 2).astype(np.bool_).reshape(1, 1, 2)
+    c2 = np.random.randint(0, 2, 3).astype(np.bool_).reshape(1, 3, 1)
+    c3 = np.random.randint(0, 2, 1).astype(np.bool_).reshape(1, 1, 1)
     for c in [c0, c1, c2, c3]:
       # where_v2 only
       with self.subTest(c=c):
@@ -379,7 +379,7 @@ class SelectOpTest(test.TestCase):
         self._testBasicBroadcast(array_ops.where_v2, c, y, x)
 
   def _testGradients(self, fn):
-    c = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
+    c = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
     x = np.random.rand(1, 3, 2) * 100
     y = np.random.rand(1, 3, 2) * 100
     for t in [np.float16, np.float32, np.float64]:
@@ -392,8 +392,8 @@ class SelectOpTest(test.TestCase):
           # care is taken with choosing the inputs and the delta. This is
           # a weaker check (in particular, it does not test the op itself,
           # only its gradient), but it's much better than nothing.
-          self._compareGradientX(fn, c, xt, yt, np.float)
-          self._compareGradientY(fn, c, xt, yt, np.float)
+          self._compareGradientX(fn, c, xt, yt, np.float_)
+          self._compareGradientY(fn, c, xt, yt, np.float_)
         else:
           self._compareGradientX(fn, c, xt, yt)
           self._compareGradientY(fn, c, xt, yt)
@@ -405,7 +405,7 @@ class SelectOpTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testGradientsBroadcast(self):
-    c = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
+    c = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
     for t in [np.float32, np.float64]:
       # where_v2 only
       with self.subTest(t=t):
@@ -432,7 +432,7 @@ class SelectOpTest(test.TestCase):
         self._compareGradientX(array_ops.where_v2, c, x.astype(t), y.astype(t))
 
   def _testShapeMismatch(self, fn):
-    c = np.random.randint(0, 2, 6).astype(np.bool).reshape(1, 3, 2)
+    c = np.random.randint(0, 2, 6).astype(np.bool_).reshape(1, 3, 2)
     x = np.random.rand(1, 3, 2) * 100
     y = np.random.rand(2, 5, 3) * 100
     for t in [
@@ -512,7 +512,7 @@ class BatchSelectOpTest(test.TestCase):
       self.assertAllClose(jacob_t, jacob_n, rtol=1e-5, atol=1e-5)
 
   def testBasic(self):
-    c = np.random.randint(0, 2, 16).astype(np.bool)
+    c = np.random.randint(0, 2, 16).astype(np.bool_)
     x = np.random.rand(16, 2, 8) * 100
     y = np.random.rand(16, 2, 8) * 100
     for t in [
@@ -528,7 +528,7 @@ class BatchSelectOpTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testGradients(self):
-    c = np.random.randint(0, 2, 16).astype(np.bool)
+    c = np.random.randint(0, 2, 16).astype(np.bool_)
     x = np.random.rand(16, 2, 8) * 100
     y = np.random.rand(16, 2, 8) * 100
     for t in [np.float16, np.float32, np.float64]:
@@ -541,15 +541,15 @@ class BatchSelectOpTest(test.TestCase):
           # care is taken with choosing the inputs and the delta. This is
           # a weaker check (in particular, it does not test the op itself,
           # only its gradient), but it's much better than nothing.
-          self._compareGradientX(c, xt, yt, np.float)
-          self._compareGradientY(c, xt, yt, np.float)
+          self._compareGradientX(c, xt, yt, np.float_)
+          self._compareGradientY(c, xt, yt, np.float_)
         else:
           self._compareGradientX(c, xt, yt)
           self._compareGradientY(c, xt, yt)
 
   @test_util.run_deprecated_v1
   def testShapeMismatch(self):
-    c = np.random.randint(0, 2, 8).astype(np.bool)
+    c = np.random.randint(0, 2, 8).astype(np.bool_)
     x = np.random.rand(16, 3, 2) * 100
     y = np.random.rand(16, 3, 2) * 100
     for t in [

@@ -444,7 +444,7 @@ class MatrixDiagTest(test.TestCase):
     self._testVectorBatch(np.float64)
     self._testVectorBatch(np.int32)
     self._testVectorBatch(np.int64)
-    self._testVectorBatch(np.bool)
+    self._testVectorBatch(np.bool_)
 
   @test_util.run_deprecated_v1
   def testRectangularBatch(self):
@@ -671,7 +671,7 @@ class MatrixSetDiagTest(test.TestCase):
     self._testSquareBatch(np.float64)
     self._testSquareBatch(np.int32)
     self._testSquareBatch(np.int64)
-    self._testSquareBatch(np.bool)
+    self._testSquareBatch(np.bool_)
     self._testSquareBatch(np.complex64)
     self._testSquareBatch(np.complex128)
 
@@ -858,7 +858,7 @@ class MatrixDiagPartTest(test.TestCase):
     self._testSquareBatch(np.float64)
     self._testSquareBatch(np.int32)
     self._testSquareBatch(np.int64)
-    self._testSquareBatch(np.bool)
+    self._testSquareBatch(np.bool_)
 
   @test_util.run_deprecated_v1
   def testRectangularBatch(self):
@@ -1204,7 +1204,7 @@ class RawMatrixDiagPartTest(test.TestCase):
     self._testSquareBatch(np.float64)
     self._testSquareBatch(np.int32)
     self._testSquareBatch(np.int64)
-    self._testSquareBatch(np.bool)
+    self._testSquareBatch(np.bool_)
 
   @test_util.run_deprecated_v1
   def testRectangularBatch(self):
@@ -1294,7 +1294,7 @@ class RawMatrixSetDiagTest(test.TestCase):
     self._testSquareBatch(np.float64)
     self._testSquareBatch(np.int32)
     self._testSquareBatch(np.int64)
-    self._testSquareBatch(np.bool)
+    self._testSquareBatch(np.bool_)
     self._testSquareBatch(np.complex64)
     self._testSquareBatch(np.complex128)
 
@@ -1364,7 +1364,7 @@ class MatrixSetDiagTestV2(test.TestCase):
     self._testSquareBatch(np.float64)
     self._testSquareBatch(np.int32)
     self._testSquareBatch(np.int64)
-    self._testSquareBatch(np.bool)
+    self._testSquareBatch(np.bool_)
     self._testSquareBatch(np.complex64)
     self._testSquareBatch(np.complex128)
 
