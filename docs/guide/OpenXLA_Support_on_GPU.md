@@ -21,8 +21,8 @@ Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which se
 ### Hardware Requirements
 
 Verified Hardware Platforms:
- - Intel® Data Center GPU Max Series, Driver Version: [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)
- - Intel® Data Center GPU Flex Series 170, Driver Version: [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)
+ - Intel® Data Center GPU Max Series, Driver Version: [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.htmll)
+ - Intel® Data Center GPU Flex Series 170, Driver Version: [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html)
  - *Experimental:* Intel® Arc™ A-Series
 
 ### Software Requirements
@@ -30,7 +30,7 @@ Verified Hardware Platforms:
   - Intel® Data Center GPU Flex Series 
 - Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP3/SP4
   - Intel® Data Center GPU Max Series 
-- Intel® oneAPI Base Toolkit 2023.1
+- Intel® oneAPI Base Toolkit 2023.2
 - TensorFlow 2.13.0
 - Python 3.8-3.10
 - pip 19.0 or later (requires manylinux2014 support)
@@ -38,10 +38,10 @@ Verified Hardware Platforms:
 
 ### Install GPU Drivers
 
-|Release|OS|Intel GPU|Install Intel GPU Driver|
-|-|-|-|-|
-|v1.2.0|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04`|
-|v1.2.0|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP3/SP4|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04`|
+|OS|Intel GPU|Install Intel GPU Driver|
+|-|-|-|
+|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.17.26241.33-647~22.04`|
+|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP3/SP4|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.17.26241.33-647~22.04`|
 
 
 ## 3. Build Library for JAX
