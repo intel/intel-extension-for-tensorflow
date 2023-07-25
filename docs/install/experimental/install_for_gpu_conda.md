@@ -24,8 +24,8 @@ You may need to update your conda first, as at least conda 4.1.11 is required.
 ```
 conda update conda
 
-#Take Intel Python 2023.1.0 as an example to conda environment, but generic Python is also recommended.
-conda create -n itex -c intel intelpython3_full==2023.1.0 python=3.9
+#Take Intel Python 2023.2.0 as an example to conda environment, but generic Python is also recommended.
+conda create -n itex -c intel intelpython3_full==2023.2.0 python=3.9
 ```
 
 Activate the environment by the following commands.
