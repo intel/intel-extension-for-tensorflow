@@ -11,7 +11,7 @@ Assumptions:
 * Host machine has Intel GPU driver.
 * Host machine installs Docker software.
 
-Refer to [Install for GPU](../docs/install/install_for_gpu.md) and [Install for CPU](../docs/install/experimental/install_for_cpu.md) for detail.
+Refer to [Install for XPU](../docs/install/install_for_xpu.md) and [Install for CPU](../docs/install/install_for_cpu.md) for detail.
 
 ## Binaries Preparation
 

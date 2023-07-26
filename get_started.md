@@ -32,7 +32,7 @@ This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
 
 ### Hardware Requirement
 
-Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_gpu.html#hardware-requirements) support and experimental [Intel CPU](docs/install/experimental/install_for_cpu.html#hardware-requirements) support.
+Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_xpu.html#hardware-requirements) and [Intel CPU](docs/instal/install_for_cpu.html#hardware-requirements) support.
 
 
 
@@ -41,36 +41,36 @@ Intel® Extension for TensorFlow* provides [Intel GPU](docs/install/install_for_
 
 |Package|CPU|GPU|Installation|
 |-|-|-|-|
-|Intel GPU driver||Y|[Install Intel GPU driver](docs/install/install_for_gpu.html#install-gpu-drivers)|
-|Intel® oneAPI Base Toolkit||Y|[Install Intel® oneAPI Base Toolkit](docs/install/install_for_gpu.html#install-oneapi-base-toolkit-packages)|
+|Intel GPU driver||Y|[Install Intel GPU driver](docs/install/install_for_xpu.html#install-gpu-drivers)|
+|Intel® oneAPI Base Toolkit||Y|[Install Intel® oneAPI Base Toolkit](docs/install/install_for_xpu.html#install-oneapi-base-toolkit-packages)|
 |TensorFlow|Y|Y|[Install TensorFlow 2.13.0](https://www.tensorflow.org/install)|
 
 ### Installation Channel:
 Intel® Extension for TensorFlow* can be installed from the following channels:
 
-* PyPI: [GPU](docs/install/install_for_gpu.html#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/experimental/install_for_cpu.html#install-via-pypi-wheel-in-bare-metal) 
-* DockerHub: [ GPU Container ](docs/install/install_for_gpu.html#install-via-docker-container) \ [ CPU Container](docs/install/experimental/install_for_cpu.html#install-via-docker-container)
-* Source: [Build from source](docs/install/how_to_build.html)
+* PyPI: [XPU](docs/install/install_for_xpu.html#install-via-pypi-wheel-in-bare-metal) \ [CPU](docs/install/install_for_cpu.html#install-via-pypi-wheel-in-bare-metal) 
+* DockerHub: [ XPU Container ](docs/install/install_for_xpu.html#install-via-docker-container) \ [ CPU Container](docs/install/install_for_cpu.html#install-via-docker-container)
+* Source: [Build from source](docs/install/how_to_build.md)
 
 
 ### Compatibility Table
 
 | Intel® Extension for TensorFlow*  | Stock TensorFlow |
 | ------- | ----------- |    
-| [latest build from source](docs/install/how_to_build.html)  | 2.13        |
+| [latest build from source](docs/install/how_to_build.md)  | 2.13        |
 | v1.2.0  | 2.12 |
 | v1.1.0  | 2.10 & 2.11 |
 | v1.0.0  | 2.10        | 
 
-### Install for GPU
+### Install for XPU
 
 ```
-pip install --upgrade intel-extension-for-tensorflow[gpu]
+pip install --upgrade intel-extension-for-tensorflow[xpu]
 ```
 
-Refer to [GPU installation](docs/install/install_for_gpu.md) for details.
+Refer to [XPU installation](docs/install/install_for_xpu.md) for details.
 
-### Install for CPU [Experimental]
+### Install for CPU
 ```
 pip install --upgrade intel-extension-for-tensorflow[cpu]
 ```

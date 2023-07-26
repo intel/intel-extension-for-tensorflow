@@ -20,7 +20,7 @@ $ bazel build -c opt --config=gpu //itex:libitex_gpu_cc.so
 
 CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/libitex_gpu_cc.so`
 
-### CPU only (experimental)
+### CPU support
 
 ```bash
 $ bazel build -c opt --config=cpu //itex:libitex_cpu_cc.so

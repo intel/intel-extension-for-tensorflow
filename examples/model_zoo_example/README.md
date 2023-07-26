@@ -4,8 +4,8 @@
 This example shows the guideline to run Model Zoo workloads on Intel CPU and GPU with the optimizations from Intel® Extension for TensorFlow*, without any model code changes.
 
 ## Prerequisites
-For Intel CPU, refer to [Intel CPU software installation](../../docs/install/experimental/install_for_cpu.md#intel-cpu-software-installation).
-For Intel GPU, refer to [Intel GPU software installation](../../docs/install/install_for_gpu.md#intel-gpu-software-installation).
+For Intel CPU, refer to [Intel CPU software installation](../../docs/install/install_for_cpu.md#intel-cpu-software-installation).
+For Intel GPU, refer to [Intel XPU software installation](../../docs/install/install_for_xpu.md#intel-gpu-software-installation).
 
 ## Execute
 
