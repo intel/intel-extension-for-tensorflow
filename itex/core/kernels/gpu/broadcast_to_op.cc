@@ -29,6 +29,7 @@ limitations under the License.
 
 namespace itex {
 typedef Eigen::GpuDevice GPUDevice;
+typedef Eigen::ThreadPoolDevice CPUDevice;
 
 #define INSTANTIATE_GPU_KERNEL(Type) \
   template struct functor::BroadcastTo<GPUDevice, Type>;
@@ -73,10 +74,10 @@ class BroadcastToOp : public OpKernel {
     }
 
     // Handle broadcast from Scalar.
-    const GPUDevice& device = context->eigen_gpu_device();
+    const Device& device = context->eigen_device<Device>();
     if (input_shape.dims() == 0) {
-      functor::FillFunctor<GPUDevice, T>()(device, output_tensor->flat<T>(),
-                                           input_tensor.scalar<T>());
+      functor::FillFunctor<Device, T>()(device, output_tensor->flat<T>(),
+                                        input_tensor.scalar<T>());
       return;
     }
 
@@ -91,9 +92,9 @@ class BroadcastToOp : public OpKernel {
                                         input_shape, " to tensor of shape ",
                                         output_shape));
 
-    functor::BroadcastTo<GPUDevice, T>()(device, context, *output_tensor,
-                                         output_shape, input_tensor,
-                                         input_shape, bcast);
+    functor::BroadcastTo<Device, T>()(device, context, *output_tensor,
+                                      output_shape, input_tensor, input_shape,
+                                      bcast);
   }
 };
 
@@ -112,4 +113,12 @@ TF_CALL_double(REGISTER_KERNEL);
 TF_CALL_complex128(REGISTER_KERNEL);
 #endif  // ITEX_ENABLE_DOUBLE
 #undef REGISTER_KERNEL
+
+REGISTER_KERNEL_BUILDER(Name("BroadcastTo")
+                            .Device(DEVICE_GPU)
+                            .TypeConstraint<int32>("T")
+                            .HostMemory("input")
+                            .HostMemory("shape")
+                            .HostMemory("output"),
+                        BroadcastToOp<CPUDevice, int32>);
 }  // namespace itex
