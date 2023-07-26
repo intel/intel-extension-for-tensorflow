@@ -30,9 +30,7 @@ import intel_extension_for_tensorflow as itex
 print("intel_extension_for_tensorflow {}".format(itex.__version__))
 
 def set_itex_fp32(device):
-    backend = device
-    itex.set_backend(backend)
-    print("Set itex for FP32 with backend {}".format(backend))
+    print("Set itex for FP32 with backend {}".format(device))
 
 def set_itex_amp(amp_target):
     # set configure for auto mixed precision.
@@ -47,8 +45,6 @@ def set_itex_amp(amp_target):
     graph_options.auto_mixed_precision = itex.ON
 
     config = itex.ConfigProto(graph_options=graph_options)
-    # set GPU backend.
-
     itex.set_config(config)
 
     print("Set itex for AMP (auto_mixed_precision, {}_FP32) with backend {}".format(amp_target, device))
