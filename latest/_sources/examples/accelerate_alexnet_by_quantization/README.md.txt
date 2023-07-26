@@ -42,7 +42,7 @@ Support: Intel® Data Center Flex Series GPU.
 
 #### Local Server
 
-Install the GPU driver and oneAPI packages by referring to [Intel GPU Software Installation](/docs/install/install_for_gpu.md).
+Install the GPU driver and oneAPI packages by referring to [Intel GPU Software Installation](/docs/install/install_for_xpu.md).
 
 #### Intel® DevCloud
 
@@ -60,7 +60,7 @@ There are new requirements:
 
 1. Python should be 3.9 or newer version.
 
-2. TensorFlow should be 2.12.0
+2. TensorFlow should be 2.13.0
 
 ### Set up Intel® Extension for Tensorflow* for GPU
 

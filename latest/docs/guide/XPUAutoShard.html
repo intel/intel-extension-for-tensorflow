@@ -1,22 +1,26 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>XPUAutoShard on GPU [Experimental] &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>XPUAutoShard on GPU [Experimental] &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
         <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="OpenXLA Support on GPU" href="OpenXLA_Support_on_GPU.html" />
+    <link rel="next" title="OpenXLA Support on GPU via PJRT" href="OpenXLA_Support_on_GPU.html" />
     <link rel="prev" title="INT8 Quantization" href="INT8_quantization.html" /> 
 </head>
 
@@ -25,21 +29,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
@@ -90,9 +99,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="features.html">Features</a> &raquo;</li>
-      <li>XPUAutoShard on GPU [Experimental]</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="features.html">Features</a></li>
+      <li class="breadcrumb-item active">XPUAutoShard on GPU [Experimental]</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/docs/guide/XPUAutoShard.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -102,36 +111,36 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="xpuautoshard-on-gpu-experimental">
-<h1>XPUAutoShard on GPU [Experimental]<a class="headerlink" href="#xpuautoshard-on-gpu-experimental" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+  <section id="xpuautoshard-on-gpu-experimental">
+<h1>XPUAutoShard on GPU [Experimental]<a class="headerlink" href="#xpuautoshard-on-gpu-experimental" title="Permalink to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
 <p>Given a set of XPU devices (e.g., 2 GPU tiles), XPUAutoShard automatically shards the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage.</p>
 <p>Currently, it only supports data split on the batch dimension. As the first release of the feature, the functionality and the performance commitment are limited to the homogeneous GPU devices.</p>
-</div>
-<div class="section" id="workflow">
-<h2>Workflow<a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="workflow">
+<h2>Workflow<a class="headerlink" href="#workflow" title="Permalink to this heading"></a></h2>
 <p>At the high level, XPUAutoShard is added as a grappler pass of Intel® Extension for TensorFlow*. It accepts a TFG MLIR graph converted from the TensorFlow Graph. It is assumed here that the TensorFlow Graph here containing MatMul or Conv OP is the main part of the model, which can be converted to MLIR module normally, and then AutoShard can be performed, otherwise, it will return directly. The sharding graph rewrite is implemented as MLIR passes and the resulting sharded graph is also a TFG MLIR graph. After the graph is sharded, the TFG MLIR graph is converted back to TensorFlow Graph which is then passed to other graph optimization passes in Intel® Extension for TensorFlow* like graph fusion.</p>
 <p><img alt="autoshard" src="../../_images/autoshard.png" /></p>
-</div>
-<div class="section" id="code-structure">
-<h2>Code Structure<a class="headerlink" href="#code-structure" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="code-structure">
+<h2>Code Structure<a class="headerlink" href="#code-structure" title="Permalink to this heading"></a></h2>
 <p>Source codes are under <code class="docutils literal notranslate"><span class="pre">itex/core/experimental/XPUAutoShard/include</span></code> and <code class="docutils literal notranslate"><span class="pre">itex/core/experimental/XPUAutoShard/src</span></code>.</p>
-<p>The primary source files are under <a class="reference external" href="docs/guide/../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/tensorflow">src/xpuautoshard/tensorflow</a> and <a class="reference external" href="docs/guide/../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common">src/xpuautoshard/common</a>.</p>
+<p>The primary source files are under <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/tensorflow">src/xpuautoshard/tensorflow</a> and <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common">src/xpuautoshard/common</a>.</p>
 <p><a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/tensorflow/interface_mlir.cpp">interface_mlir.cpp</a> contains the entry point of XPUAutoShard: <code class="docutils literal notranslate"><span class="pre">auto_sharding_pass_mlir</span></code> and can be invoked in <a class="reference external" href="../../itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.cc">tfg_optimizer_hook.cc</a>, which contains conversion between TFG and Graphdef and as a hook to implement the graph optimizer pass in TFG dialect, then the AutoShard graph optimizer pass is added in <a class="reference external" href="../../itex/core/graph/xpu_optimizer.cc">xpu_optimizer.cc</a>.</p>
-<p>The MLIR passes are under <a class="reference external" href="docs/guide/../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/tensorflow/passes">src/xpuautoshard/tensorflow/passes</a> and <a class="reference external" href="docs/guide/../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/mlir/passes">src/xpuautoshard/common/mlir/passes</a>, which are composed of the following graph rewrite steps:</p>
+<p>The MLIR passes are under <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/tensorflow/passes">src/xpuautoshard/tensorflow/passes</a> and <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/mlir/passes">src/xpuautoshard/common/mlir/passes</a>, which are composed of the following graph rewrite steps:</p>
 <p><code class="docutils literal notranslate"><span class="pre">type_inference.cpp</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">tfg_to_hs.cpp</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">auto_sharding_pass.cpp</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">hs_to_tfg.cpp</span></code></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">type_inference</span></code> adds the shape info to the graph.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">tfg_to_hs</span></code> marks the graph scopes that can be sharded with shard/unshard ops and also annotates the graph values with uninitialized “sharding properties”. <br> Note that <code class="docutils literal notranslate"><span class="pre">hs</span></code> is the namespace of HS-IR, which represents Heterogeneous Sharding.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">auto_sharding_pass</span></code> initializes the sharding properties with the decision how to shard the marked data and place the data on devices. This is the key component of XPUAutoShard. The pass relies on the heuristics at <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/mlir/passes/heuristics_initializer.cpp">heuristics_initializer.cpp</a> and the <a class="reference external" href="docs/guide/../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/hsp_inference">hsp_inference</a> to infer the sharding properties per TensorFlow op semantics. <code class="docutils literal notranslate"><span class="pre">auto_sharding_pass</span></code> also contains propagation sharding properties, the pass of which is mainly at <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/mlir/passes/mlir_hsp_annotator.cpp">mlir_hsp_annotator.cpp</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">auto_sharding_pass</span></code> initializes the sharding properties with the decision how to shard the marked data and place the data on devices. This is the key component of XPUAutoShard. The pass relies on the heuristics at <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/mlir/passes/heuristics_initializer.cpp">heuristics_initializer.cpp</a> and the <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/hsp_inference">hsp_inference</a> to infer the sharding properties per TensorFlow op semantics. <code class="docutils literal notranslate"><span class="pre">auto_sharding_pass</span></code> also contains propagation sharding properties, the pass of which is mainly at <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common/mlir/passes/mlir_hsp_annotator.cpp">mlir_hsp_annotator.cpp</a>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">hs_to_tfg</span></code> finally shards the graph according to the sharding properties.</p></li>
 </ul>
-</div>
-<div class="section" id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="python-api">
-<h3>Python API<a class="headerlink" href="#python-api" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h3>
 <p>XPUAutoShard can be enabled via Python API. The feature is turned on with <code class="docutils literal notranslate"><span class="pre">itex.GraphOptions</span></code> via <code class="docutils literal notranslate"><span class="pre">sharding=itex.ON</span></code> flag. A global configuration <code class="docutils literal notranslate"><span class="pre">ShardingConfig</span></code> is provided to set the devices and how the sharding is applied. When the auto sharding mode <code class="docutils literal notranslate"><span class="pre">config.auto_mode</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, parameters <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> and <code class="docutils literal notranslate"><span class="pre">stage_num</span></code> are needed to decide how the sharding is applied, otherwise, these parameters are automatically decided by XPUAutoShard. Current release doesn’t target auto mode.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ShardingConfig</span><span class="p">()</span>
@@ -148,30 +157,30 @@
 <span class="o">...</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="dump-the-graph">
-<h3>Dump the graph<a class="headerlink" href="#dump-the-graph" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="dump-the-graph">
+<h3>Dump the graph<a class="headerlink" href="#dump-the-graph" title="Permalink to this heading"></a></h3>
 <p>You can dump the graph via setting <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ITEX_VERBOSE=4</span></code> and then <code class="docutils literal notranslate"><span class="pre">itex_optimizer_before_sharding.pbtxt</span></code> and <code class="docutils literal notranslate"><span class="pre">itex_optimizer_after_sharding.pbtxt</span></code> will be saved under current directory.</p>
-</div>
-<div class="section" id="examples">
-<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h3>
 <p>Please refer to <a class="reference internal" href="../../examples/train_resnet50_with_autoshard/README.html"><span class="doc">ResNet50 training example with XPUAutoShard</span></a> for details.</p>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="INT8_quantization.html" class="btn btn-neutral float-left" title="INT8 Quantization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="OpenXLA_Support_on_GPU.html" class="btn btn-neutral float-right" title="OpenXLA Support on GPU" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="OpenXLA_Support_on_GPU.html" class="btn btn-neutral float-right" title="OpenXLA Support on GPU via PJRT" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

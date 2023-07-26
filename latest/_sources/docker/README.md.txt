@@ -11,7 +11,7 @@ Assumptions:
 * Host machine has Intel GPU driver.
 * Host machine installs Docker software.
 
-Refer to [Install for GPU](../docs/install/install_for_gpu.md) and [Install for CPU](../docs/install/experimental/install_for_cpu.md) for detail.
+Refer to [Install for XPU](../docs/install/install_for_xpu.md) and [Install for CPU](../docs/install/install_for_cpu.md) for detail.
 
 ## Binaries Preparation
 
@@ -21,40 +21,37 @@ Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries
 mkdir ./models/binaries
 ```
 
-To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/horovod as well.
-
-```bash
-mkdir ./models/horovod
-```
+To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well.
 
 ## Usage of Docker Container
 ### I. Customize build script
 [build.sh](./build.sh) is provided as docker container build script. While OS version and some software version (such as Python and TensorFlow) is hard coded inside the script. If you prefer to use newer or later version, you can edit this script.
 
-For example, to build docker container with Python 3.9 and TensorFlow 2.12 on Ubuntu 20.04 layer, update [build.sh](./build.sh) as below.
-```
+For example, to build docker container with Python 3.10 and TensorFlow 2.13 on Ubuntu 22.04 layer, update [build.sh](./build.sh) as below.
+
+```bash
 IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
-        docker build --build-arg UBUNTU_VERSION=20.04 \
-                                --build-arg PYTHON=python3.9 \
-                                --build-arg TF_VER=2.12 \
-                                --build-arg TF_PLUGIN_WHEEL=intel_extension_for_tensorflow*.whl \
+        docker build --build-arg UBUNTU_VERSION=22.04 \
+                                --build-arg PYTHON=python3.10 \
+                                --build-arg TF_VER=2.13 \
+                                --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
-                                -f itex-cpu-ubuntu.Dockerfile .
+                                -f itex-cpu.Dockerfile .
 ```
 
 ### II. Build the container
 
 To build the docker container, enter into [docker](./) folder and run below commands:
 
-```
-./build.sh [gpu/gpu-horovod/cpu-centos/cpu-ubuntu]
+```bash
+./build.sh [xpu/cpu]
 ```
 ### III. Running container
 
-Run following commands to start docker container. You can use `-v` option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using `--device /dev/dri` option and run the container:
+Run following commands to start docker container. You can use -v option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using --device /dev/dri option and run the container:
 
-```
-IMAGE_NAME=intel-extension-for-tensorflow:gpu
+```bash
+IMAGE_NAME=intel-extension-for-tensorflow:xpu
 docker run -v <your-local-dir>:/workspace \
            -v /dev/dri/by-path:/dev/dri/by-path \
            --device /dev/dri \
@@ -67,8 +64,8 @@ docker run -v <your-local-dir>:/workspace \
            $IMAGE_NAME bash
 ```
 
-## Verify if GPU is accessible from TensorFlow
-You are inside container now. Run following command to verify GPU is visible to TensorFlow:
+## Verify if Intel GPU is accessible from TensorFlow
+You are inside container now. Run following command to verify Intel GPU is visible to TensorFlow:
 
 ```
 python -c "from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())"

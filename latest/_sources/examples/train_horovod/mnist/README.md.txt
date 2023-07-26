@@ -39,7 +39,7 @@ Run:
 ```
 source /opt/intel/oneapi/setvars.sh
 ```
-Note: to install oneAPI base toolkit to refer to [Intel GPU Software Installation](/docs/install/install_for_gpu.md#install-oneapi-base-toolkit-packages)
+Note: to install oneAPI base toolkit, refer to [Intel GPU Software Installation](/docs/install/install_for_xpu.md#install-oneapi-base-toolkit-packages)
 
 ### Device Count
 Run:

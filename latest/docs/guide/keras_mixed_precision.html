@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Keras Mixed Precision &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>Keras Mixed Precision &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
         <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -23,21 +27,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
@@ -63,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Keras Mixed Precision</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Keras Mixed Precision</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/docs/guide/keras_mixed_precision.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -74,10 +83,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="keras-mixed-precision">
-<h1>Keras Mixed Precision<a class="headerlink" href="#keras-mixed-precision" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+  <section id="keras-mixed-precision">
+<h1>Keras Mixed Precision<a class="headerlink" href="#keras-mixed-precision" title="Permalink to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* supports <strong><a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision</a></strong>,  which can run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption.</p>
 <p>After installing Intel® Extension for TensorFlow*, you need to configure mixed_precision.Policy and identify hardware devices, the models will run with 16-bit and 32-bit mixed floating-point types. The following table shows the types of mixed_precision.Policy supported for Intel hardware.</p>
 <table border="1" class="docutils">
@@ -97,9 +106,9 @@
 <td>CPU, GPU</td>
 </tr>
 </tbody>
-</table></div>
-<div class="section" id="how-to-identify-different-hardware-types">
-<h2>How to identify different hardware types?<a class="headerlink" href="#how-to-identify-different-hardware-types" title="Permalink to this headline">¶</a></h2>
+</table></section>
+<section id="how-to-identify-different-hardware-types">
+<h2>How to identify different hardware types?<a class="headerlink" href="#how-to-identify-different-hardware-types" title="Permalink to this heading"></a></h2>
 <p>​Enable Keras mixed-precision with Intel® Extension for TensorFlow* backend. We provide two ways to distinguish it.</p>
 <ul>
 <li><p>Through <code class="docutils literal notranslate"><span class="pre">tf.config.list_physical_devices</span></code></p>
@@ -119,9 +128,9 @@
 <blockquote>
 <div><p><strong>Note: Other than the difference in the identification of the hardware device, other behavior is the same, refer to the <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision</a></strong> for details.</p>
 </div></blockquote>
-</div>
-<div class="section" id="setup">
-<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this heading"></a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 
 <span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">keras</span>
@@ -141,9 +150,9 @@
 <span class="mi">2022</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">14</span> <span class="mi">02</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mf">41.063865</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">stream_executor</span><span class="o">/</span><span class="n">cuda</span><span class="o">/</span><span class="n">cuda_diagnostics</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">156</span><span class="p">]</span> <span class="n">kernel</span> <span class="n">driver</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">appear</span> <span class="n">to</span> <span class="n">be</span> <span class="n">running</span> <span class="n">on</span> <span class="n">this</span> <span class="n">host</span> <span class="p">(</span><span class="n">DUT3046</span><span class="o">-</span><span class="n">ATSP</span><span class="p">):</span> <span class="o">/</span><span class="n">proc</span><span class="o">/</span><span class="n">driver</span><span class="o">/</span><span class="n">nvidia</span><span class="o">/</span><span class="n">version</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">exist</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="setting-the-dtype-policy">
-<h2>Setting the dtype policy<a class="headerlink" href="#setting-the-dtype-policy" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="setting-the-dtype-policy">
+<h2>Setting the dtype policy<a class="headerlink" href="#setting-the-dtype-policy" title="Permalink to this heading"></a></h2>
 <p>To use mixed precision in Keras, you need to create a <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/Policy"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.Policy</span></code></a>, typically referred to as a <em>dtype policy</em>. Dtype policies specify how the dtypes layers will run. In this guide, you will construct a policy from the string <code class="docutils literal notranslate"><span class="pre">'mixed_float16'</span></code> and set it as the global policy. This will cause subsequently created layers to use mixed precision with a mix of float16 and float32.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">policy</span> <span class="o">=</span> <span class="n">mixed_precision</span><span class="o">.</span><span class="n">Policy</span><span class="p">(</span><span class="s1">&#39;mixed_float16&#39;</span><span class="p">)</span>
 <span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span>
@@ -168,9 +177,9 @@
 </pre></div>
 </div>
 <p>As mentioned before,  the policy will run on Intel GPUs and CPUs, and also could improve performance.</p>
-</div>
-<div class="section" id="building-the-model">
-<h2>Building the model<a class="headerlink" href="#building-the-model" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="building-the-model">
+<h2>Building the model<a class="headerlink" href="#building-the-model" title="Permalink to this heading"></a></h2>
 <p>Next, let’s start to build a simple model. Very small models typically do not benefit from mixed precision, because overhead from the TensorFlow runtime typically dominates the execution time, making any performance improvement on the Intel GPU negligible. Therefore, let’s build two large <code class="docutils literal notranslate"><span class="pre">Dense</span></code> layers with 4096 units each when a GPU is used.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">inputs</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">784</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;digits&#39;</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">list_physical_devices</span><span class="p">(</span><span class="s1">&#39;XPU&#39;</span><span class="p">):</span>
@@ -251,9 +260,9 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">initial_weights</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="training-the-model-with-model-fit">
-<h2>Training the model with Model.fit<a class="headerlink" href="#training-the-model-with-model-fit" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="training-the-model-with-model-fit">
+<h2>Training the model with Model.fit<a class="headerlink" href="#training-the-model-with-model-fit" title="Permalink to this heading"></a></h2>
 <p>Next, train the model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">history</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span>
                     <span class="n">batch_size</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span>
@@ -279,12 +288,12 @@
 <p>Notice the model prints the time per step in the logs: for example, “84ms/step”. The first epoch may be slower as TensorFlow spends some time optimizing the model, but afterward the time per step should stabilize.</p>
 <p>If you are running this guide in Colab, you can compare the performance of mixed precision with float32. To do so, change the policy from <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> to <code class="docutils literal notranslate"><span class="pre">float32</span></code> in the <a class="reference external" href="#setting-the-dtype-policy">Setting the dtype policy</a> section, then rerun all the cells up to this point. On GPUs, you should see the time per step significantly increase, indicating mixed precision sped up the model. Make sure to change the policy back to <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> and rerun the cells before continuing with the guide.</p>
 <p>For many real-world models, mixed precision also allows you to double the batch size without running out of memory, as float16 tensors take half the memory. This does not apply however to this toy model, as you can likely run the model in any dtype where each batch consists of the entire MNIST dataset of 60,000 images.</p>
-</div>
-<div class="section" id="loss-scaling">
-<h2>Loss scaling<a class="headerlink" href="#loss-scaling" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="loss-scaling">
+<h2>Loss scaling<a class="headerlink" href="#loss-scaling" title="Permalink to this heading"></a></h2>
 <p>Loss scaling is a technique which <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit"><code class="docutils literal notranslate"><span class="pre">tf.keras.Model.fit</span></code></a> automatically performs with the <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> policy to avoid numeric underflow. This section describes what loss scaling is and the next section describes how to use it with a custom training loop.</p>
-<div class="section" id="underflow-and-overflow">
-<h3>Underflow and Overflow<a class="headerlink" href="#underflow-and-overflow" title="Permalink to this headline">¶</a></h3>
+<section id="underflow-and-overflow">
+<h3>Underflow and Overflow<a class="headerlink" href="#underflow-and-overflow" title="Permalink to this heading"></a></h3>
 <p>The float16 data type has a narrow dynamic range compared to float32. This means values above 65504 will overflow to infinity and values below 6.0×10-8 will underflow to zero. float32 and bfloat16 have a much higher dynamic range so that overflow and underflow are not a problem.</p>
 <p>For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float16&#39;</span><span class="p">)</span>
@@ -296,9 +305,9 @@
 </pre></div>
 </div>
 <p>In practice, overflow with float16 rarely occurs. Additionally, underflow also rarely occurs during the forward pass. However, during the backward pass, gradients can underflow to zero. Loss scaling is a technique to prevent this underflow.</p>
-</div>
-<div class="section" id="loss-scaling-overview">
-<h3>Loss scaling overview<a class="headerlink" href="#loss-scaling-overview" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="loss-scaling-overview">
+<h3>Loss scaling overview<a class="headerlink" href="#loss-scaling-overview" title="Permalink to this heading"></a></h3>
 <p>The basic concept of loss scaling is simple: multiply the loss by some large number, say 1024, and you get the <em>loss scale</em> value. This will cause the gradients to scale by 1024 as well, greatly reducing the chance of underflow. Once the final gradients are computed, divide them by 1024 to bring them back to their correct values.</p>
 <p>The pseudocode for this process is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">loss_scale</span> <span class="o">=</span> <span class="mi">1024</span>
@@ -311,10 +320,10 @@
 </div>
 <p>Choosing a loss scale can be tricky. If the loss scale is too low, gradients may still underflow to zero. If too high, the gradients may overflow to infinity.</p>
 <p>To solve this, TensorFlow dynamically determines the loss scale so you do not have to choose one manually. If you use <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit"><code class="docutils literal notranslate"><span class="pre">tf.keras.Model.fit</span></code></a>, loss scaling is done for you so you do not have to do any extra work. If you use a custom training loop, you must explicitly use the special  wrapper <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.LossScaleOptimizer</span></code></a> in order to use loss scaling. This is described in the next section.</p>
-</div>
-</div>
-<div class="section" id="training-the-model-with-a-custom-training-loop">
-<h2>Training the model with a custom training loop<a class="headerlink" href="#training-the-model-with-a-custom-training-loop" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="training-the-model-with-a-custom-training-loop">
+<h2>Training the model with a custom training loop<a class="headerlink" href="#training-the-model-with-a-custom-training-loop" title="Permalink to this heading"></a></h2>
 <p>So far, you have trained a Keras model with mixed precision using <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit"><code class="docutils literal notranslate"><span class="pre">tf.keras.Model.fit</span></code></a>. Next, you will use mixed precision with a custom training loop. If you do not already know what a custom training loop is, read the <a class="reference external" href="https://www.tensorflow.org/tutorials/customization/custom_training_walkthrough">Custom training guide</a> first.</p>
 <p>Running a custom training loop with mixed precision requires two changes over running it in float32:</p>
 <ol class="simple">
@@ -384,8 +393,8 @@
 <span class="n">Epoch</span> <span class="mi">4</span><span class="p">:</span> <span class="n">loss</span><span class="o">=</span><span class="mf">0.26531240344047546</span><span class="p">,</span> <span class="n">test</span> <span class="n">accuracy</span><span class="o">=</span><span class="mf">0.9536000490188599</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -395,7 +404,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

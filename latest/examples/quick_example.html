@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quick Example on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <title>Quick Example on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+  
         <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -23,21 +27,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../docs/guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../docs/guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../docs/install/installation_guide.html">Installation Guide</a></li>
@@ -63,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Quick Example on Intel CPU and GPU</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quick Example on Intel CPU and GPU</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/examples/quick_example.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -74,20 +83,20 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="quick-example-on-intel-cpu-and-gpu">
-<h1>Quick Example on Intel CPU and GPU<a class="headerlink" href="#quick-example-on-intel-cpu-and-gpu" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+  <section id="quick-example-on-intel-cpu-and-gpu">
+<h1>Quick Example on Intel CPU and GPU<a class="headerlink" href="#quick-example-on-intel-cpu-and-gpu" title="Permalink to this heading"></a></h1>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
 <ul class="simple">
-<li><p>If you are using a heterogeneous machine that contains the Intel GPU, please refer to <a class="reference internal" href="../docs/install/install_for_gpu.html"><span class="doc">Intel GPU Software Installation</span></a></p></li>
-<li><p>Otherwise, please refer to <a class="reference internal" href="../docs/install/experimental/install_for_cpu.html"><span class="doc">Intel CPU Software Installation</span></a></p></li>
+<li><p>If you are using a machine using more than one kind of processor or core and includes an the Intel GPU, please refer to <a class="reference internal" href="../docs/install/install_for_xpu.html"><span class="doc">Intel XPU Software Installation</span></a></p></li>
+<li><p>Otherwise, please refer to <a class="reference internal" href="../docs/install/install_for_cpu.html"><span class="doc">Intel CPU Software Installation</span></a></p></li>
 </ul>
-</div>
-<div class="section" id="code">
-<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this heading"></a></h2>
 <p>Use TensorFlow to compute graph: Conv -&gt; ReLU activation -&gt; Bias</p>
-<div class="section" id="quick-example-py">
-<h3>quick_example.py<a class="headerlink" href="#quick-example-py" title="Permalink to this headline">¶</a></h3>
+<section id="quick-example-py">
+<h3>quick_example.py<a class="headerlink" href="#quick-example-py" title="Permalink to this heading"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
@@ -117,10 +126,10 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">quick_example</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="example-output">
-<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="example-output">
+<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
 <p>With successful execution, it will print out the following results:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
 <span class="n">tf</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span>
@@ -156,15 +165,15 @@
 <span class="n">Finished</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="notes">
-<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading"></a></h2>
 <ol class="simple">
 <li><p>In this example, it is not necessary to import intel_extension_for_tensorflow, and no need to call any of its APIs.<br/>
 If installed as the <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[cpu]</span></code>, then the script will choose CPU as the backend and be executed on the CPU automatically; while if installed as <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[gpu]</span></code>, then the default backend will be GPU and the script will be executed on the GPU.</p></li>
 </ol>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -174,7 +183,7 @@ If installed as the <code class="docutils literal notranslate"><span class="pre"
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

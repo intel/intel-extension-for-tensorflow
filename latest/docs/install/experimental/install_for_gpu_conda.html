@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conda Environment Installation Instructions &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <title>Conda Environment Installation Instructions &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+  
         <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Build from Source Code" href="../how_to_build.html" />
-    <link rel="prev" title="Experimental: Intel CPU Software Installation" href="install_for_cpu.html" /> 
+    <link rel="next" title="Overview" href="../how_to_build.html" />
+    <link rel="prev" title="Intel CPU Software Installation" href="../install_for_cpu.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -25,33 +29,41 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/features.html">Features</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../installation_guide.html">Installation Guide</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../install_for_gpu.html">Intel GPU Software Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install_for_cpu.html"><em>Experimental:</em> Intel CPU Software Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install_for_xpu.html">Intel XPU Software Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install_for_cpu.html">Intel CPU Software Installation</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Conda Environment Installation Instructions</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#preconditions">Preconditions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#step-by-step-instructions">Step by step instructions:</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../how_to_build.html">Build from Source Code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../how_to_build.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../how_to_build.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../how_to_build.html#build-intel-extension-for-tensorflow-pypi">Build Intel® Extension for TensorFlow* PyPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../how_to_build.html#additional">Additional</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/examples.html">Examples</a></li>
@@ -76,9 +88,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="../installation_guide.html">Installation Guide</a> &raquo;</li>
-      <li>Conda Environment Installation Instructions</li>
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../installation_guide.html">Installation Guide</a></li>
+      <li class="breadcrumb-item active">Conda Environment Installation Instructions</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../_sources/docs/install/experimental/install_for_gpu_conda.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -88,15 +100,15 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="conda-environment-installation-instructions">
-<h1>Conda Environment Installation Instructions<a class="headerlink" href="#conda-environment-installation-instructions" title="Permalink to this headline">¶</a></h1>
+  <section id="conda-environment-installation-instructions">
+<h1>Conda Environment Installation Instructions<a class="headerlink" href="#conda-environment-installation-instructions" title="Permalink to this heading"></a></h1>
 <p>This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.2.0 and Intel® Optimization for Horovod* v0.5.0 deployment for distributed training on Conda environment.</p>
-<div class="section" id="preconditions">
-<h2>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this headline">¶</a></h2>
-<p>We assume you have installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per <a class="reference external" href="../install_for_gpu.html#install_oneapi_base_toolkit_packages">instructions</a> successfully.</p>
-</div>
-<div class="section" id="step-by-step-instructions">
-<h2>Step by step instructions:<a class="headerlink" href="#step-by-step-instructions" title="Permalink to this headline">¶</a></h2>
+<section id="preconditions">
+<h2>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this heading"></a></h2>
+<p>We assume you have installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per <a class="reference external" href="../install_for_xpu.md#install_oneapi_base_toolkit_packages">instructions</a> successfully.</p>
+</section>
+<section id="step-by-step-instructions">
+<h2>Step by step instructions:<a class="headerlink" href="#step-by-step-instructions" title="Permalink to this heading"></a></h2>
 <p>Miniconda is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.
 You can use the following command to install Miniconda. During installation, you may need to press enter and type “yes”. Skip this step, if you have already installed conda.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">repo</span><span class="o">.</span><span class="n">anaconda</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">miniconda</span><span class="o">/</span><span class="n">Miniconda3</span><span class="o">-</span><span class="n">latest</span><span class="o">-</span><span class="n">Linux</span><span class="o">-</span><span class="n">x86_64</span><span class="o">.</span><span class="n">sh</span> <span class="o">-</span><span class="n">o</span> <span class="n">Miniconda3</span><span class="o">-</span><span class="n">latest</span><span class="o">-</span><span class="n">Linux</span><span class="o">-</span><span class="n">x86_64</span><span class="o">.</span><span class="n">sh</span>
@@ -110,17 +122,17 @@ You can use the following command to install Miniconda. During installation, you
 <p>You may need to update your conda first, as at least conda 4.1.11 is required.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">update</span> <span class="n">conda</span>
 
-<span class="c1">#Take Intel Python 2023.1.0 as an example to conda environment, but generic Python is also recommended.</span>
-<span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">itex</span> <span class="o">-</span><span class="n">c</span> <span class="n">intel</span> <span class="n">intelpython3_full</span><span class="o">==</span><span class="mf">2023.1.0</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
+<span class="c1">#Take Intel Python 2023.2.0 as an example to conda environment, but generic Python is also recommended.</span>
+<span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">itex</span> <span class="o">-</span><span class="n">c</span> <span class="n">intel</span> <span class="n">intelpython3_full</span><span class="o">==</span><span class="mf">2023.2.0</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
 </pre></div>
 </div>
 <p>Activate the environment by the following commands.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">itex</span>
 </pre></div>
 </div>
-<p>Install stock Tensorflow 2.12.0 and Intel® Extension for TensorFlow* GPU wheels.</p>
+<p>Install stock Tensorflow 2.13.0 and Intel® Extension for TensorFlow* GPU wheels.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.12.0</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.13.0</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -131,7 +143,7 @@ You can use the following command to install Miniconda. During installation, you
 </pre></div>
 </div>
 <p>Check the environment for GPU:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>/path<span class="w"> </span>to<span class="w"> </span>site-packages/intel_extension_for_tensorflow/tools/env_check.sh
 </pre></div>
 </div>
 <p>Verify install:</p>
@@ -153,21 +165,21 @@ You can use the following command to install Miniconda. During installation, you
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">FI_PROVIDER</span><span class="o">=</span><span class="n">sockets</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="install_for_cpu.html" class="btn btn-neutral float-left" title="Experimental: Intel CPU Software Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../how_to_build.html" class="btn btn-neutral float-right" title="Build from Source Code" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../install_for_cpu.html" class="btn btn-neutral float-left" title="Intel CPU Software Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../how_to_build.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

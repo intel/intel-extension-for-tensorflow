@@ -20,7 +20,7 @@ We optimized official keras-cv Stable Diffusion, for example, concatenate two fo
 ```
 git clone https://github.com/keras-team/keras-cv.git
 cd keras-cv
-git reset --hard 53d8aad680ce56bb37f7245dd5e2782f2ca37034
+git reset --hard 66fa74b6a2a0bb1e563ae8bce66496b118b95200
 git apply patch
 pip install .
 ```
@@ -43,6 +43,22 @@ Enable oneAPI running environment (only for GPU) and virtual running environment
 
    * For GPU, refer to [Running](../common_guide_running.md##Running)
 
+### Running the Jupyter Notebook
+   * Add kernel for env_itex environment:
+ ```
+ python3 -m ipykernel install --name env_itex --user
+  ```
+   * Change to the sample directory.
+   * Launch Jupyter Notebook.
+ ```
+ jupyter notebook --no-browser --port=8888 
+  ```
+   * Follow the instructions to open the URL with the token in your browser.
+   * Locate and select the Notebook.
+ ```
+ stable_diffussion_inference.ipynb
+  ```
+   * Run every cell in the Notebook in sequence.
 
 ### Executes the Example with Python API
 #### FP32 Inference

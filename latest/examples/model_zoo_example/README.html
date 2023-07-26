@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
         <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -23,21 +27,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
@@ -63,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/examples/model_zoo_example/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -74,29 +83,29 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="accelerating-deep-learning-inference-for-model-zoo-workloads-on-intel-cpu-and-gpu">
-<h1>Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU<a class="headerlink" href="#accelerating-deep-learning-inference-for-model-zoo-workloads-on-intel-cpu-and-gpu" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+  <section id="accelerating-deep-learning-inference-for-model-zoo-workloads-on-intel-cpu-and-gpu">
+<h1>Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU<a class="headerlink" href="#accelerating-deep-learning-inference-for-model-zoo-workloads-on-intel-cpu-and-gpu" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>This example shows the guideline to run Model Zoo workloads on Intel CPU and GPU with the optimizations from Intel® Extension for TensorFlow*, without any model code changes.</p>
-</div>
-<div class="section" id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
-<p>For Intel CPU, refer to <a class="reference external" href="../../docs/install/experimental/install_for_cpu.html#intel-cpu-software-installation">Intel CPU software installation</a>.
-For Intel GPU, refer to <a class="reference external" href="../../docs/install/install_for_gpu.html#intel-gpu-software-installation">Intel GPU software installation</a>.</p>
-</div>
-<div class="section" id="execute">
-<h2>Execute<a class="headerlink" href="#execute" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="prepare-the-codes">
-<h3>Prepare the Codes<a class="headerlink" href="#prepare-the-codes" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/IntelAI/models
-<span class="nb">cd</span> models
-git checkout v2.8.0
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<p>For Intel CPU, refer to <a class="reference external" href="../../docs/install/install_for_cpu.md#intel-cpu-software-installation">Intel CPU software installation</a>.
+For Intel GPU, refer to <a class="reference external" href="../../docs/install/install_for_xpu.md#intel-gpu-software-installation">Intel XPU software installation</a>.</p>
+</section>
+<section id="execute">
+<h2>Execute<a class="headerlink" href="#execute" title="Permalink to this heading"></a></h2>
+<section id="prepare-the-codes">
+<h3>Prepare the Codes<a class="headerlink" href="#prepare-the-codes" title="Permalink to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/IntelAI/models
+<span class="nb">cd</span><span class="w"> </span>models
+git<span class="w"> </span>checkout<span class="w"> </span>v2.8.0
 </pre></div>
 </div>
-</div>
-<div class="section" id="sample-use-cases">
-<h3>Sample Use cases<a class="headerlink" href="#sample-use-cases" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="sample-use-cases">
+<h3>Sample Use cases<a class="headerlink" href="#sample-use-cases" title="Permalink to this heading"></a></h3>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -122,13 +131,13 @@ git checkout v2.8.0
 <td><a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/resnet50v1_5/inference/fp32/README.md">FP32</a>  <a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/resnet50v1_5/inference/int8/README.md">INT8</a></td>
 </tr>
 </tbody>
-</table></div>
-<div class="section" id="performance-optimization">
-<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permalink to this headline">¶</a></h3>
+</table></section>
+<section id="performance-optimization">
+<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permalink to this heading"></a></h3>
 <ul>
 <li><p>FP16/BF16 INT8 Inference Optimization</p>
 <p>Refer to the above FP32 model documentation, and only set one extra environment variable to enable advanced auto mixed precision Graph optimization before running inference.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">ITEX_AUTO_MIXED_PRECISION</span><span class="o">=</span><span class="m">1</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ITEX_AUTO_MIXED_PRECISION</span><span class="o">=</span><span class="m">1</span>
 </pre></div>
 </div>
 </li>
@@ -144,10 +153,10 @@ git checkout v2.8.0
 <p>Use the new INT8 pb for INT8 inference, After converting to the new INT8 pb.</p>
 </li>
 </ul>
-</div>
-</div>
-<div class="section" id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
 <ol class="simple">
 <li><p>During the Inception V3 INT8 batch inference, if running with real data, you might encounter a message “Running out of images from dataset”. It is a known issue of Model Zoo script.</p></li>
 </ol>
@@ -156,12 +165,12 @@ git checkout v2.8.0
 <li><p>Option 1: Please use dummy data instead.</p></li>
 <li><p>Option 2: If you want to run inference with real data, use the command below. And comment the last line of below int8_batch_inference.sh script to unspecify the warmup_steps and steps.</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> models
-vi ./quickstart/image_recognition/tensorflow/inceptionv3/inference/cpu/int8/int8_batch_inference.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>models
+vi<span class="w"> </span>./quickstart/image_recognition/tensorflow/inceptionv3/inference/cpu/int8/int8_batch_inference.sh
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -171,7 +180,7 @@ vi ./quickstart/image_recognition/tensorflow/inceptionv3/inference/cpu/int8/int8
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

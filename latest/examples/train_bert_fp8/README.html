@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
         <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -23,21 +27,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
@@ -63,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/examples/train_bert_fp8/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -74,58 +83,58 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="fp8-bert-large-fine-tuning-for-classifying-text-on-intel-gpu">
-<h1>FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU<a class="headerlink" href="#fp8-bert-large-fine-tuning-for-classifying-text-on-intel-gpu" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+  <section id="fp8-bert-large-fine-tuning-for-classifying-text-on-intel-gpu">
+<h1>FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU<a class="headerlink" href="#fp8-bert-large-fine-tuning-for-classifying-text-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
 This example shows FP8 BERT-Large Fine-tuning for Classifying Text.</p>
 <p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Training on Intel GPU.</p>
-</div>
-<div class="section" id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="hardware-requirements">
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series</p></li>
 <li><p>Intel® Data Center GPU Flex Series 170</p></li>
 </ul>
-</div>
-<div class="section" id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="model-code-change">
-<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<section id="model-code-change">
+<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
 <p>We set up FP8 BERT-Large fine-tuning based on official google-bert. If you want to check the accuracy of FP8 BERT-Large fine-tuning, please clone google-bert and apply patch:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">google</span><span class="o">-</span><span class="n">research</span><span class="o">/</span><span class="n">bert</span><span class="o">.</span><span class="n">git</span>
 <span class="n">cd</span> <span class="n">bert</span>
 <span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="prepare-for-gpu">
-<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this headline">¶</a></h3>
-<p>Refer to <a class="reference external" href="../common_guide_running.html##Prepare">Prepare</a></p>
-</div>
-<div class="section" id="setup-running-environment">
-<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="prepare-for-gpu">
+<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="../common_guide_running.md##Prepare">Prepare</a></p>
+</section>
+<section id="setup-running-environment">
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>Setup for GPU</p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./pip_set_env.sh
 </pre></div>
 </div>
-</div>
-<div class="section" id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="enable-running-environment">
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
 <p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
 <ul class="simple">
-<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html##Running">Running</a></p></li>
+<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.md##Running">Running</a></p></li>
 </ul>
-</div>
-<div class="section" id="execute-the-example">
-<h3>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="bf16-fp8-fine-tuning">
-<h4>BF16 + FP8 Fine-tuning<a class="headerlink" href="#bf16-fp8-fine-tuning" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export BERT_LARGR_DIR=/path/to/bert-large-dir
+</section>
+<section id="execute-the-example">
+<h3>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h3>
+<section id="bf16-fp8-fine-tuning">
+<h4>BF16 + FP8 Fine-tuning<a class="headerlink" href="#bf16-fp8-fine-tuning" title="Permalink to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export BERT_LARGE_DIR=/path/to/bert-large-dir
 export SQUAD_DIR=/path/to/squad-dir
 export OUTPUT_DIR=/path/to/output-dir
 python run_squad.py \
@@ -136,7 +145,7 @@ python run_squad.py \
    --train_file=$SQUAD_DIR/train-v1.1.json \
    --do_predict=True \
    --predict_file=$SQUAD_DIR/dev-v1.1.json \
-   --train_batch_size=16 \
+   --train_batch_size=32 \
    --learning_rate=3e-5 \
    --num_train_epochs=2.0 \
    --max_seq_length=512 \
@@ -147,30 +156,30 @@ python run_squad.py \
    --precision=bfloat16 \
 </pre></div>
 </div>
-</div>
-<div class="section" id="accuracy">
-<h4>Accuracy<a class="headerlink" href="#accuracy" title="Permalink to this headline">¶</a></h4>
+</section>
+<section id="accuracy">
+<h4>Accuracy<a class="headerlink" href="#accuracy" title="Permalink to this heading"></a></h4>
 <p>The dev set predictions will be saved into a file called predictions.json in the output_dir using the above command,</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python <span class="nv">$SQUAD_DIR</span>/evaluate-v1.1.py <span class="nv">$SQUAD_DIR</span>/dev-v1.1.json <span class="nv">$OUTPUT_DIR</span>/predictions.json
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span><span class="nv">$SQUAD_DIR</span>/evaluate-v1.1.py<span class="w"> </span><span class="nv">$SQUAD_DIR</span>/dev-v1.1.json<span class="w"> </span><span class="nv">$OUTPUT_DIR</span>/predictions.json
 </pre></div>
 </div>
 <p>Which should produce an output like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;f1&quot;</span><span class="p">:</span> <span class="mf">88.41249612335034</span><span class="p">,</span> <span class="s2">&quot;exact_match&quot;</span><span class="p">:</span> <span class="mf">81.2488174077578</span><span class="p">}</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
-<div class="section" id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+</section>
+<section id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
 <ol class="simple">
 <li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
 </ol>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tensorflow</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">framework</span><span class="o">.</span><span class="n">errors_impl</span><span class="o">.</span><span class="n">NotFoundError</span><span class="p">:</span> <span class="n">libmkl_sycl</span><span class="o">.</span><span class="n">so</span><span class="mf">.2</span><span class="p">:</span> <span class="n">cannot</span> <span class="nb">open</span> <span class="n">shared</span> <span class="nb">object</span> <span class="n">file</span><span class="p">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -180,7 +189,7 @@ python run_squad.py \
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

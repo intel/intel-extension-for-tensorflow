@@ -1,8 +1,8 @@
-# OpenXLA Support on GPU
+# OpenXLA Support on GPU via PJRT
 This guide introduces the overview of OpenXLA high level integration structure, and demonstrates how to build Intel® Extension for TensorFlow* and run JAX example with OpenXLA.
 
 ## 1. Overview
-Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which seamlessly runs JAX models on Intel@ GPU. The PJRT API simplified the integration, which allowed the Intel GPU plugin to be developed separately and quickly integrated into JAX. This same PJRT implementation also enables initial Intel GPU support for TensorFlow and PyTorch models with XLA acceleration. Refer to [OpenXLA PJRT Plugin RFC](https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md) for more details.
+Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which seamlessly runs JAX models on Intel GPU. The PJRT API simplified the integration, which allowed the Intel GPU plugin to be developed separately and quickly integrated into JAX. This same PJRT implementation also enables initial Intel GPU support for TensorFlow and PyTorch models with XLA acceleration. Refer to [OpenXLA PJRT Plugin RFC](https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md) for more details.
 
  ![xla](images/xla.png)
 
@@ -21,8 +21,8 @@ Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which se
 ### Hardware Requirements
 
 Verified Hardware Platforms:
- - Intel® Data Center GPU Max Series, Driver Version: [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)
- - Intel® Data Center GPU Flex Series 170, Driver Version: [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)
+ - Intel® Data Center GPU Max Series, Driver Version: [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.htmll)
+ - Intel® Data Center GPU Flex Series 170, Driver Version: [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html)
  - *Experimental:* Intel® Arc™ A-Series
 
 ### Software Requirements
@@ -30,18 +30,18 @@ Verified Hardware Platforms:
   - Intel® Data Center GPU Flex Series 
 - Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP3/SP4
   - Intel® Data Center GPU Max Series 
-- Intel® oneAPI Base Toolkit 2023.1
-- TensorFlow 2.12.0
+- Intel® oneAPI Base Toolkit 2023.2
+- TensorFlow 2.13.0
 - Python 3.8-3.10
 - pip 19.0 or later (requires manylinux2014 support)
 
 
 ### Install GPU Drivers
 
-|Release|OS|Intel GPU|Install Intel GPU Driver|
-|-|-|-|-|
-|v1.2.0|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04`|
-|v1.2.0|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP3/SP4|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.05.25593.18-601~22.04`|
+|OS|Intel GPU|Install Intel GPU Driver|
+|-|-|-|
+|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.17.26241.33-647~22.04`|
+|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP3/SP4|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.17.26241.33-647~22.04`|
 
 
 ## 3. Build Library for JAX
@@ -49,7 +49,7 @@ There are some differences from   [source build procedure](https://github.com/in
 * Make sure get Intel® Extension for TensorFlow* main branch code and python version >=3.8.
 * In TensorFlow installation steps, make sure to install jax and jaxlib at the same time.
    ```bash
-    $ pip install tensorflow==2.12.0 jax==0.4.4 jaxlib==0.4.4
+    $ pip install tensorflow==2.13.0 jax==0.4.4 jaxlib==0.4.4
    ```
 * In "Configure the build" step, run ./configure, select yes for JAX support,
 

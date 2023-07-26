@@ -28,8 +28,8 @@
   </thead>
   <tbody>
     <tr>
-      <td colspan="3" align="center"><a href="install/experimental/install_for_cpu.md">Install for CPU</a></td>
-      <td colspan="3" align="center"><a href="install/install_for_gpu.md">Install for GPU</a></td>
+      <td colspan="3" align="center"><a href="install/install_for_cpu.md">Install for CPU</a></td>
+      <td colspan="3" align="center"><a href="install/install_for_xpu.md">Install for XPU</a></td>
       <td colspan="3" align="center"><a href="install/how_to_build.md">Install by source build</a></td>
 	  <td colspan="3" align="center"><a href="install/experimental/install_for_gpu_conda.md">Install Conda for GPU distributed</a></td>
     </tr>
@@ -64,7 +64,7 @@
       <tr>
         <td colspan="3" align="center"><a href="guide/practice_guide.md#cpu-practice-guide">CPU practice guide</a></td>
         <td colspan="3" align="center"><a href="guide/practice_guide.md#gpu-practice-guide">GPU practice guide</a></td>
-        <td colspan="3" align="center"><a href="install/experimental/install_for_cpp.md">C++ API support</a></td>
+        <td colspan="3" align="center"><a href="install/install_for_cpp.md">C++ API support</a></td>
         <td colspan="3" align="center"><a href="guide/OpenXLA_Support_on_GPU.md">OpenXLA Support on GPU</a></td>
       </tr>
   </tbody>

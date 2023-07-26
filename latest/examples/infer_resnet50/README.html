@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ResNet50 Inference on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>ResNet50 Inference on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
         <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -23,21 +27,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
@@ -63,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>ResNet50 Inference on Intel CPU and GPU</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ResNet50 Inference on Intel CPU and GPU</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/examples/infer_resnet50/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -74,16 +83,16 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="resnet50-inference-on-intel-cpu-and-gpu">
-<h1>ResNet50 Inference on Intel CPU and GPU<a class="headerlink" href="#resnet50-inference-on-intel-cpu-and-gpu" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="prepare-for-gpu-skip-this-step-for-cpu">
-<h3>Prepare for GPU (Skip this step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this headline">¶</a></h3>
-<p>Refer to <a class="reference external" href="../common_guide_running.html##Prepare">Prepare</a></p>
-</div>
-<div class="section" id="setup-running-environment">
-<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this headline">¶</a></h3>
+  <section id="resnet50-inference-on-intel-cpu-and-gpu">
+<h1>ResNet50 Inference on Intel CPU and GPU<a class="headerlink" href="#resnet50-inference-on-intel-cpu-and-gpu" title="Permalink to this heading"></a></h1>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<section id="prepare-for-gpu-skip-this-step-for-cpu">
+<h3>Prepare for GPU (Skip this step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="../common_guide_running.md##Prepare">Prepare</a></p>
+</section>
+<section id="setup-running-environment">
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>Setup for GPU</p></li>
 </ul>
@@ -96,44 +105,44 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./set_env_cpu.sh
 </pre></div>
 </div>
-</div>
-<div class="section" id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="enable-running-environment">
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
 <ul class="simple">
-<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html##Running">Running</a></p></li>
+<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.md##Running">Running</a></p></li>
 <li><p>For CPU,</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> env_itex_cpu/bin/activate
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>env_itex_cpu/bin/activate
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="executes-the-example-with-python-api">
-<h2>Executes the Example with Python API<a class="headerlink" href="#executes-the-example-with-python-api" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="executes-the-example-with-python-api">
+<h2>Executes the Example with Python API<a class="headerlink" href="#executes-the-example-with-python-api" title="Permalink to this heading"></a></h2>
 <p>If <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[cpu]</span></code> is installed, it will be executed on the CPU automatically, while if <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[gpu]</span></code> is installed, GPU will be the backend.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">infer_resnet50</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="example-output">
-<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="example-output">
+<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
 <p>With successful execution, it will print out the following results:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
 
 <span class="p">[(</span><span class="s1">&#39;n02123159&#39;</span><span class="p">,</span> <span class="s1">&#39;tiger_cat&#39;</span><span class="p">,</span> <span class="mf">0.22355853</span><span class="p">)]</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
 <ol class="simple">
 <li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
 </ol>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tensorflow</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">framework</span><span class="o">.</span><span class="n">errors_impl</span><span class="o">.</span><span class="n">NotFoundError</span><span class="p">:</span> <span class="n">libmkl_sycl</span><span class="o">.</span><span class="n">so</span><span class="mf">.2</span><span class="p">:</span> <span class="n">cannot</span> <span class="nb">open</span> <span class="n">shared</span> <span class="nb">object</span> <span class="n">file</span><span class="p">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -143,7 +152,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

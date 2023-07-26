@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to write custom op &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>How to write custom op &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
         <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -23,21 +27,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
@@ -63,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>How to write custom op</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">How to write custom op</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/docs/design/how_to_write_custom_op.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -74,28 +83,28 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="how-to-write-custom-op">
-<h1>How to write custom op<a class="headerlink" href="#how-to-write-custom-op" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="prerequisite">
-<h2>1.  Prerequisite<a class="headerlink" href="#prerequisite" title="Permalink to this headline">¶</a></h2>
+  <section id="how-to-write-custom-op">
+<h1>How to write custom op<a class="headerlink" href="#how-to-write-custom-op" title="Permalink to this heading"></a></h1>
+<section id="prerequisite">
+<h2>1.  Prerequisite<a class="headerlink" href="#prerequisite" title="Permalink to this heading"></a></h2>
 <ul>
 <li><p>Before code changes, please make sure the environment setting and source code build pass by  <a class="reference internal" href="../install/how_to_build.html"><span class="doc">build procedure</span></a>.</p></li>
 <li><p>Check TensorFlow version.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python -c <span class="s2">&quot;import tensorflow as tf;print(tf.__version__)</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import tensorflow as tf;print(tf.__version__)</span>
 </pre></div>
 </div>
 </li>
 <li><p>Check Intel Extension for TensorFlow* with verbose.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">ITEX_VERBOSE</span><span class="o">=</span><span class="m">1</span>
-$ <span class="nb">export</span> <span class="nv">ONEDNN_VERBOSE</span><span class="o">=</span><span class="m">1</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">ITEX_VERBOSE</span><span class="o">=</span><span class="m">1</span>
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">ONEDNN_VERBOSE</span><span class="o">=</span><span class="m">1</span>
 </pre></div>
 </div>
 <p>Refer to <a class="reference internal" href="../../examples/quick_example.html"><span class="doc">quick example</span></a>.<br />Refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-extension-for-tensorflow-code.html">Intel® Extension for Tensorflow* Code Guide</a> to familiar with source code architecture. Custom op is built into all Intel® Extension for Tensorflow* library.<br />Refer to <a class="reference external" href="https://www.tensorflow.org/guide/create_op">TensorFlow Guide for Creating OP</a> for TensorFlow offcial doc.</p>
 </li>
 </ul>
-</div>
-<div class="section" id="define-the-op-interface-and-register-op">
-<h2>2.  Define the op interface and Register op<a class="headerlink" href="#define-the-op-interface-and-register-op" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="define-the-op-interface-and-register-op">
+<h2>2.  Define the op interface and Register op<a class="headerlink" href="#define-the-op-interface-and-register-op" title="Permalink to this heading"></a></h2>
 <p>Take <strong>GeluOp</strong> as an example.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/ops/op_init.cc"><em>itex/core/ops/op_init.h</em></a>
@@ -131,9 +140,9 @@ $ <span class="nb">export</span> <span class="nv">ONEDNN_VERBOSE</span><span cla
 <ul class="simple">
 <li><p>Note：You can add <code class="docutils literal notranslate"><span class="pre">ITEX_VLOG(0)</span> <span class="pre">&lt;&lt;</span> <span class="pre">&quot;####</span> <span class="pre">Register_GeluOp&quot;;</span></code> in the code begining for debug.</p></li>
 </ul>
-</div>
-<div class="section" id="register-the-kernels-for-the-op">
-<h2>3.  Register the kernels for the op<a class="headerlink" href="#register-the-kernels-for-the-op" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="register-the-kernels-for-the-op">
+<h2>3.  Register the kernels for the op<a class="headerlink" href="#register-the-kernels-for-the-op" title="Permalink to this heading"></a></h2>
 <p>For example, <strong>GeluOp</strong>, one kernel made for CPUs, and a separate one for GPUs.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/kernels/cpu/relu_op.cc"><em>itex/core/kernels/cpu/relu_op.cc</em></a> Register <strong>CPU</strong> kernel <strong>Gelu</strong> for <strong>GeluOp</strong></p>
@@ -156,88 +165,88 @@ $ <span class="nb">export</span> <span class="nv">ONEDNN_VERBOSE</span><span cla
 <blockquote>
 <div><p><a class="reference external" href="../../itex/python/ops/load_ops_library.py"><em>itex/python/ops/load_ops_library.py</em></a></p>
 </div></blockquote>
-</div>
-<div class="section" id="implement-the-kernels">
-<h2>4.  Implement the kernels<a class="headerlink" href="#implement-the-kernels" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="implement-the-kernels">
+<h2>4.  Implement the kernels<a class="headerlink" href="#implement-the-kernels" title="Permalink to this heading"></a></h2>
 <p>For example, GeluOp construction,  <code class="docutils literal notranslate"><span class="pre">GeluOp</span> <span class="pre">-&gt;</span> <span class="pre">ReluBaseOp</span> <span class="pre">-&gt;</span> <span class="pre">EltwiseBaseOp</span> <span class="pre">-&gt;</span> <span class="pre">OpKernel</span></code></p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/kernels/common/relu_op.h"><em>itex/core/kernels/common/relu_op.h</em></a>.</p>
 </div></blockquote>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Device</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">class</span><span class="w"> </span><span class="nc">GeluOp</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">ReluBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">GeluOp</span><span class="p">(</span><span class="n">OpKernelConstruction</span><span class="o">*</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">ReluBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_erf</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span><span class="w"></span>
-<span class="w">                              </span><span class="mf">0.0f</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">ITEX_VLOG</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;#### GeluOp construct&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">HasAttr</span><span class="p">(</span><span class="s">&quot;approximate&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">OP_REQUIRES_OK</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="o">-&gt;</span><span class="n">GetAttr</span><span class="p">(</span><span class="s">&quot;approximate&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">approximate_</span><span class="p">));</span><span class="w"></span>
-<span class="w">      </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">alg_kind_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">approximate_</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_tanh</span><span class="w"></span>
-<span class="w">                                     </span><span class="o">:</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_erf</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Device</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GeluOp</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">ReluBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">GeluOp</span><span class="p">(</span><span class="n">OpKernelConstruction</span><span class="o">*</span><span class="w"> </span><span class="n">context</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">ReluBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_erf</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span>
+<span class="w">                              </span><span class="mf">0.0f</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ITEX_VLOG</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;#### GeluOp construct&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">HasAttr</span><span class="p">(</span><span class="s">&quot;approximate&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">OP_REQUIRES_OK</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="o">-&gt;</span><span class="n">GetAttr</span><span class="p">(</span><span class="s">&quot;approximate&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">approximate_</span><span class="p">));</span>
+<span class="w">      </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">alg_kind_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">approximate_</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_tanh</span>
+<span class="w">                                     </span><span class="o">:</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_erf</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li><p>Note: You can add <code class="docutils literal notranslate"><span class="pre">ITEX_VLOG(0)</span>&#160; <span class="pre">&lt;&lt;</span>&#160; <span class="pre">&quot;####</span> <span class="pre">GeluOp</span> <span class="pre">construct&quot;;</span></code> in the code for debug.</p></li>
 </ul>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Device</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ReluBaseOp</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">EltwiseBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">ReluBaseOp</span><span class="p">(</span><span class="n">OpKernelConstruction</span><span class="o">*</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">algorithm</span><span class="w"> </span><span class="n">algo</span><span class="p">,</span><span class="w"></span>
-<span class="w">                      </span><span class="kt">float</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">EltwiseBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">algo</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Device</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReluBaseOp</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">EltwiseBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">ReluBaseOp</span><span class="p">(</span><span class="n">OpKernelConstruction</span><span class="o">*</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">algorithm</span><span class="w"> </span><span class="n">algo</span><span class="p">,</span>
+<span class="w">                      </span><span class="kt">float</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">EltwiseBaseOp</span><span class="o">&lt;</span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">algo</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">};</span>
 </pre></div>
 </div>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/kernels/common/eltwise_base.h"><em>itex/core/kernels/common/eltwise_base.h</em></a></p>
 </div></blockquote>
 <p>Rewrite <code class="docutils literal notranslate"><span class="pre">EltwiseBaseOp</span> <span class="pre">compute</span></code></p>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Device</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">class</span><span class="w"> </span><span class="nc">EltwiseBaseOp</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">OpKernel</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">EltwiseBaseOp</span><span class="p">(</span><span class="n">OpKernelConstruction</span><span class="o">*</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">algorithm</span><span class="w"> </span><span class="n">algo</span><span class="p">,</span><span class="w"></span>
-<span class="w">                         </span><span class="kt">float</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">OpKernel</span><span class="p">(</span><span class="n">ctx</span><span class="p">),</span><span class="w"> </span><span class="n">alg_kind_</span><span class="p">(</span><span class="n">algo</span><span class="p">),</span><span class="w"> </span><span class="n">alpha_</span><span class="p">(</span><span class="n">alpha</span><span class="p">),</span><span class="w"> </span><span class="n">beta_</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Device</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EltwiseBaseOp</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">OpKernel</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">EltwiseBaseOp</span><span class="p">(</span><span class="n">OpKernelConstruction</span><span class="o">*</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">algorithm</span><span class="w"> </span><span class="n">algo</span><span class="p">,</span>
+<span class="w">                         </span><span class="kt">float</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">OpKernel</span><span class="p">(</span><span class="n">ctx</span><span class="p">),</span><span class="w"> </span><span class="n">alg_kind_</span><span class="p">(</span><span class="n">algo</span><span class="p">),</span><span class="w"> </span><span class="n">alpha_</span><span class="p">(</span><span class="n">alpha</span><span class="p">),</span><span class="w"> </span><span class="n">beta_</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">Compute</span><span class="p">(</span><span class="n">OpKernelContext</span><span class="o">*</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">ITEX_VLOG</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;#### EltwiseBaseOp compute&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">onednn_engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreateDnnlEngine</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">context</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="p">......</span><span class="w"></span>
-<span class="w">      </span><span class="n">Tensor</span><span class="o">*</span><span class="w"> </span><span class="n">dst_tensor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">Compute</span><span class="p">(</span><span class="n">OpKernelContext</span><span class="o">*</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ITEX_VLOG</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;#### EltwiseBaseOp compute&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">onednn_engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreateDnnlEngine</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">context</span><span class="p">);</span>
+<span class="w">      </span><span class="p">......</span>
+<span class="w">      </span><span class="n">Tensor</span><span class="o">*</span><span class="w"> </span><span class="n">dst_tensor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
 <span class="w">      </span><span class="c1">// Nothing to compute, return.</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">src_tensor</span><span class="p">.</span><span class="n">shape</span><span class="p">().</span><span class="n">num_elements</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">OP_REQUIRES_OK</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"></span>
-<span class="w">                       </span><span class="n">context</span><span class="o">-&gt;</span><span class="n">allocate_output</span><span class="p">(</span><span class="n">kDstIndex</span><span class="p">,</span><span class="w"> </span><span class="n">src_tensor</span><span class="p">.</span><span class="n">shape</span><span class="p">(),</span><span class="w"></span>
-<span class="w">                                                </span><span class="o">&amp;</span><span class="n">dst_tensor</span><span class="p">));</span><span class="w"></span>
-<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">      </span><span class="p">......</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">src_tensor</span><span class="p">.</span><span class="n">shape</span><span class="p">().</span><span class="n">num_elements</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">OP_REQUIRES_OK</span><span class="p">(</span><span class="n">context</span><span class="p">,</span>
+<span class="w">                       </span><span class="n">context</span><span class="o">-&gt;</span><span class="n">allocate_output</span><span class="p">(</span><span class="n">kDstIndex</span><span class="p">,</span><span class="w"> </span><span class="n">src_tensor</span><span class="p">.</span><span class="n">shape</span><span class="p">(),</span>
+<span class="w">                                                </span><span class="o">&amp;</span><span class="n">dst_tensor</span><span class="p">));</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">      </span><span class="p">......</span>
 <span class="w">      </span><span class="c1">// Create an eltwise forward descriptor and primitive descriptor</span>
-<span class="w">      </span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">desc</span><span class="w"> </span><span class="n">fwd_desc</span><span class="p">(</span><span class="n">prop_kind</span><span class="o">::</span><span class="n">forward</span><span class="p">,</span><span class="w"> </span><span class="n">alg_kind_</span><span class="p">,</span><span class="w"> </span><span class="n">src_md</span><span class="p">,</span><span class="w"></span>
-<span class="w">                                     </span><span class="n">alpha_</span><span class="p">,</span><span class="w"> </span><span class="n">beta_</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">dnnl</span><span class="o">::</span><span class="n">primitive_attr</span><span class="w"> </span><span class="n">attr</span><span class="p">;</span><span class="w"></span>
-<span class="w">      </span><span class="n">attr</span><span class="p">.</span><span class="n">set_scratchpad_mode</span><span class="p">(</span><span class="n">dnnl</span><span class="o">::</span><span class="n">scratchpad_mode</span><span class="o">::</span><span class="n">user</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">primitive_desc</span><span class="w"> </span><span class="nf">fwd_pd</span><span class="p">(</span><span class="n">fwd_desc</span><span class="p">,</span><span class="w"> </span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="n">onednn_engine</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="p">......</span><span class="w"></span>
-<span class="w">      </span><span class="n">primitive</span><span class="w"> </span><span class="n">fwd_primitive</span><span class="p">(</span><span class="n">fwd_pd</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="p">......</span><span class="w"></span>
-<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">onednn_stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreateDnnlStream</span><span class="p">(</span><span class="o">*</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">onednn_engine</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">memory</span><span class="o">&gt;</span><span class="w"> </span><span class="n">fwd_primitive_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">          </span><span class="p">{</span><span class="n">DNNL_ARG_SRC</span><span class="p">,</span><span class="w"> </span><span class="n">src_mem</span><span class="p">},</span><span class="w"></span>
-<span class="w">          </span><span class="p">{</span><span class="n">DNNL_ARG_DST</span><span class="p">,</span><span class="w"> </span><span class="n">dst_mem</span><span class="p">},</span><span class="w"></span>
-<span class="w">          </span><span class="p">{</span><span class="n">DNNL_ARG_SCRATCHPAD</span><span class="p">,</span><span class="w"> </span><span class="n">scratchpad_mem</span><span class="p">}};</span><span class="w"></span>
-<span class="w">      </span><span class="n">fwd_primitive</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">onednn_stream</span><span class="p">,</span><span class="w"> </span><span class="n">fwd_primitive_args</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">dnnl</span><span class="o">::</span><span class="n">error</span><span class="o">&amp;</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="p">......</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w"> </span><span class="k">protected</span><span class="o">:</span><span class="w"></span>
-<span class="w"> </span><span class="n">algorithm</span><span class="w"> </span><span class="n">alg_kind_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_relu</span><span class="p">;</span><span class="w"></span>
-<span class="w"> </span><span class="p">......</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w">      </span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">desc</span><span class="w"> </span><span class="n">fwd_desc</span><span class="p">(</span><span class="n">prop_kind</span><span class="o">::</span><span class="n">forward</span><span class="p">,</span><span class="w"> </span><span class="n">alg_kind_</span><span class="p">,</span><span class="w"> </span><span class="n">src_md</span><span class="p">,</span>
+<span class="w">                                     </span><span class="n">alpha_</span><span class="p">,</span><span class="w"> </span><span class="n">beta_</span><span class="p">);</span>
+<span class="w">      </span><span class="n">dnnl</span><span class="o">::</span><span class="n">primitive_attr</span><span class="w"> </span><span class="n">attr</span><span class="p">;</span>
+<span class="w">      </span><span class="n">attr</span><span class="p">.</span><span class="n">set_scratchpad_mode</span><span class="p">(</span><span class="n">dnnl</span><span class="o">::</span><span class="n">scratchpad_mode</span><span class="o">::</span><span class="n">user</span><span class="p">);</span>
+<span class="w">      </span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">primitive_desc</span><span class="w"> </span><span class="nf">fwd_pd</span><span class="p">(</span><span class="n">fwd_desc</span><span class="p">,</span><span class="w"> </span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="n">onednn_engine</span><span class="p">);</span>
+<span class="w">      </span><span class="p">......</span>
+<span class="w">      </span><span class="n">primitive</span><span class="w"> </span><span class="n">fwd_primitive</span><span class="p">(</span><span class="n">fwd_pd</span><span class="p">);</span>
+<span class="w">      </span><span class="p">......</span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">onednn_stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreateDnnlStream</span><span class="p">(</span><span class="o">*</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">onednn_engine</span><span class="p">);</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">memory</span><span class="o">&gt;</span><span class="w"> </span><span class="n">fwd_primitive_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="p">{</span><span class="n">DNNL_ARG_SRC</span><span class="p">,</span><span class="w"> </span><span class="n">src_mem</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">DNNL_ARG_DST</span><span class="p">,</span><span class="w"> </span><span class="n">dst_mem</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">DNNL_ARG_SCRATCHPAD</span><span class="p">,</span><span class="w"> </span><span class="n">scratchpad_mem</span><span class="p">}};</span>
+<span class="w">      </span><span class="n">fwd_primitive</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">onednn_stream</span><span class="p">,</span><span class="w"> </span><span class="n">fwd_primitive_args</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">dnnl</span><span class="o">::</span><span class="n">error</span><span class="o">&amp;</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="p">......</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w"> </span><span class="k">protected</span><span class="o">:</span>
+<span class="w"> </span><span class="n">algorithm</span><span class="w"> </span><span class="n">alg_kind_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_relu</span><span class="p">;</span>
+<span class="w"> </span><span class="p">......</span>
+<span class="p">};</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -250,9 +259,9 @@ $ <span class="nb">export</span> <span class="nv">ONEDNN_VERBOSE</span><span cla
 </ul>
 </li>
 </ul>
-</div>
-<div class="section" id="add-the-op-to-build">
-<h2>6.  Add the op to BUILD<a class="headerlink" href="#add-the-op-to-build" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="add-the-op-to-build">
+<h2>6.  Add the op to BUILD<a class="headerlink" href="#add-the-op-to-build" title="Permalink to this heading"></a></h2>
 <p>Add C++/Header code to BUILD. Take <strong>GeluOp</strong> as an example for GPU.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/kernels/gpu/BUILD">[<em>itex/core/kernels/gpu/BUILD</em>]</a></p>
@@ -286,9 +295,9 @@ $ <span class="nb">export</span> <span class="nv">ONEDNN_VERBOSE</span><span cla
 <li><p>Build Tips: （Optional）
 Removing some kernels in <a class="reference external" href="../../itex/core/kernels/gpu/BUILD">itex/core/kernels/gpu/BUILD</a> for GPU or  <a class="reference external" href="../../itex/core/kernels/cpu/BUILD">itex/core/kernels/cpu/BUILD</a> for CPU can save compile time.</p></li>
 </ul>
-</div>
-<div class="section" id="use-the-op-in-python">
-<h2>7. Use the op in Python<a class="headerlink" href="#use-the-op-in-python" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="use-the-op-in-python">
+<h2>7. Use the op in Python<a class="headerlink" href="#use-the-op-in-python" title="Permalink to this heading"></a></h2>
 <p>Take <strong>GeluOp</strong> as an example.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/python/ops/activations.py"><em>itex/python/ops/activations.py</em></a></p>
@@ -310,24 +319,24 @@ Removing some kernels in <a class="reference external" href="../../itex/core/ker
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="kn">from</span> <span class="nn">intel_extension_for_tensorflow.python.ops.activations</span> <span class="kn">import</span> <span class="n">gelu</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="build-the-package">
-<h2>8. Build the package<a class="headerlink" href="#build-the-package" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ bazel clean
-$ git clean -xfd
-$ ./configure
-$ bazel build -c opt --config<span class="o">=</span>gpu //itex/tools/pip_package:build_pip_package
-$ bazel-bin/itex/tools/pip_package/build_pip_package ./
+</section>
+<section id="build-the-package">
+<h2>8. Build the package<a class="headerlink" href="#build-the-package" title="Permalink to this heading"></a></h2>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>bazel<span class="w"> </span>clean
+$<span class="w"> </span>git<span class="w"> </span>clean<span class="w"> </span>-xfd
+$<span class="w"> </span>./configure
+$<span class="w"> </span>bazel<span class="w"> </span>build<span class="w"> </span>-c<span class="w"> </span>opt<span class="w"> </span>--config<span class="o">=</span>gpu<span class="w"> </span>//itex/tools/pip_package:build_pip_package
+$<span class="w"> </span>bazel-bin/itex/tools/pip_package/build_pip_package<span class="w"> </span>./
 </pre></div>
 </div>
 <p>Refer to <a class="reference internal" href="../install/how_to_build.html"><span class="doc">here</span></a> for more details.</p>
-</div>
-<div class="section" id="install-and-verify">
-<h2>9.  Install and Verify<a class="headerlink" href="#install-and-verify" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ pip uninstall intel_extension_for_tensorflow_lib
-$ pip uninstall intel_extension_for_tensorflow
-$ pip install intel_extension_for_tensorflow-*.whl
-$ pip install intel_extension_for_tensorflow_lib-*.whl
+</section>
+<section id="install-and-verify">
+<h2>9.  Install and Verify<a class="headerlink" href="#install-and-verify" title="Permalink to this heading"></a></h2>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>uninstall<span class="w"> </span>intel_extension_for_tensorflow_lib
+$<span class="w"> </span>pip<span class="w"> </span>uninstall<span class="w"> </span>intel_extension_for_tensorflow
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>intel_extension_for_tensorflow-*.whl
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>intel_extension_for_tensorflow_lib-*.whl
 </pre></div>
 </div>
 <p>For example:</p>
@@ -348,8 +357,8 @@ $ pip install intel_extension_for_tensorflow_lib-*.whl
 <span class="n">I</span> <span class="o">./</span><span class="n">itex</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">utils</span><span class="o">/</span><span class="n">op_kernel</span><span class="o">.</span><span class="n">h</span><span class="p">:</span><span class="mi">773</span><span class="p">]</span> <span class="n">Gelu</span><span class="p">,</span><span class="n">Gelu</span><span class="p">,</span><span class="n">xxxxxx</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -359,7 +368,7 @@ $ pip install intel_extension_for_tensorflow_lib-*.whl
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

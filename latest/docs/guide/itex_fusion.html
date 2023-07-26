@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Graph fusion &mdash; Intel® Extension for TensorFlow* v1.2.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <title>Graph fusion &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfeee7bb documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  
         <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -25,21 +29,26 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Intel® Extension for TensorFlow*
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
           </a>
-              <div class="version">
-                <a href="../../../versions.html">latest ▼</a>
-                <p>Click link above to switch version</p>              </div>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
 <li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
@@ -87,9 +96,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="features.html">Features</a> &raquo;</li>
-      <li>Graph fusion</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="features.html">Features</a></li>
+      <li class="breadcrumb-item active">Graph fusion</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/docs/guide/itex_fusion.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -99,11 +108,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="graph-fusion">
-<h1>Graph fusion<a class="headerlink" href="#graph-fusion" title="Permalink to this headline">¶</a></h1>
+  <section id="graph-fusion">
+<h1>Graph fusion<a class="headerlink" href="#graph-fusion" title="Permalink to this heading"></a></h1>
 <p>Intel® Extension for TensorFlow* provides graph optimization to fuse specified operator patterns into a new single operator for better performance.</p>
-<div class="section" id="basic-fusion">
-<h2>Basic fusion<a class="headerlink" href="#basic-fusion" title="Permalink to this headline">¶</a></h2>
+<section id="basic-fusion">
+<h2>Basic fusion<a class="headerlink" href="#basic-fusion" title="Permalink to this heading"></a></h2>
 <p>The basic list of supported fusions is shown below. These fusions require input and output of the same data type.</p>
 <table border="1" class="docutils">
 <thead>
@@ -194,9 +203,9 @@
 <td>3+</td>
 </tr>
 </tbody>
-</table></div>
-<div class="section" id="mixed-data-type-fusion">
-<h2>Mixed data type fusion<a class="headerlink" href="#mixed-data-type-fusion" title="Permalink to this headline">¶</a></h2>
+</table></section>
+<section id="mixed-data-type-fusion">
+<h2>Mixed data type fusion<a class="headerlink" href="#mixed-data-type-fusion" title="Permalink to this heading"></a></h2>
 <p>As stock TensorFlow only supports same-data-type input and output, inserting a cast node during <code class="docutils literal notranslate"><span class="pre">BF16</span></code> inference and training may break the existing fusion pattern and impact performance.</p>
 <p>Intel® Extension for TensorFlow* provides mixed data type fusion, which removes the additional data type conversions on the graph level.</p>
 <p>Here is the list of supported mixed data type fusions, and we’ll take a closer look at <code class="docutils literal notranslate"><span class="pre">MatMul</span></code> as an example.</p>
@@ -247,8 +256,8 @@
 <td><code>BF16</code></td>
 </tr>
 </tbody>
-</table><div class="section" id="implementation-details">
-<h3>Implementation Details<a class="headerlink" href="#implementation-details" title="Permalink to this headline">¶</a></h3>
+</table><section id="implementation-details">
+<h3>Implementation Details<a class="headerlink" href="#implementation-details" title="Permalink to this heading"></a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">Cast</span> <span class="pre">+</span> <span class="pre">(Fused)MatMul</span> <span class="pre">+</span> <span class="pre">Cast</span></code> pattern is covered by pattern matcher; the rest is covered by remapper fusion.
 The new kernels are implemented（<code class="docutils literal notranslate"><span class="pre">AccMatMul</span></code> and <code class="docutils literal notranslate"><span class="pre">FusedAccMatMul(WithSum)</span></code>）as an extension of original <code class="docutils literal notranslate"><span class="pre">MatMul</span></code> with the following new attributes:</p>
 <ul class="simple">
@@ -256,10 +265,10 @@ The new kernels are implemented（<code class="docutils literal notranslate"><sp
 <li><p><code class="docutils literal notranslate"><span class="pre">Tpost</span></code>: Post op data type ∈ {<code class="docutils literal notranslate"><span class="pre">bfloat16</span></code>, <code class="docutils literal notranslate"><span class="pre">float32</span></code>}.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">is_bf16_math_mode</span></code>: A Boolean to indicate whether to use oneDNN <code class="docutils literal notranslate"><span class="pre">BF16</span></code> math mode if <code class="docutils literal notranslate"><span class="pre">FP32</span></code> input, <code class="docutils literal notranslate"><span class="pre">FP32</span></code> output.</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="generic-layout-optimizer">
-<h2>Generic layout optimizer<a class="headerlink" href="#generic-layout-optimizer" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="generic-layout-optimizer">
+<h2>Generic layout optimizer<a class="headerlink" href="#generic-layout-optimizer" title="Permalink to this heading"></a></h2>
 <p>As the channels_first format is not supported by stock TensorFlow on CPU, it inserts transpose nodes before and after the Conv3D/MaxPool3D nodes. However, this problem does not exist in GPU device. To avoid unnecessary layout transformation when running on a GPU device, Intel® Extension for TensorFlow* adds a separate layout optimizer.</p>
 <table border="1" class="docutils">
 <thead>
@@ -278,8 +287,8 @@ The new kernels are implemented（<code class="docutils literal notranslate"><sp
 <td><code>NCDHW</code></td>
 </tr>
 </tbody>
-</table></div>
-</div>
+</table></section>
+</section>
 
 
            </div>
@@ -292,7 +301,7 @@ The new kernels are implemented（<code class="docutils literal notranslate"><sp
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright Copyright (c) 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
