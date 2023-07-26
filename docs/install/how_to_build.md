@@ -1,8 +1,30 @@
-# Build from Source Code
 
+- [Overview](#overview)
+- [Requirements](#requirements)
+  - [Hardware Requirements](#hardware-requirements)
+  - [Common Requirements](#common-requirements)
+    - [Install Bazel](#install-bazel)
+    - [Download Source Code](#download-source-code)
+    - [Create a Conda Environment](#create-a-conda-environment)
+    - [Install Tensorflow](#install-tensorflow)
+  - [Extra Requirements for XPU/GPU Build Only](#extra-requirements-for-xpugpu-build-only)
+    - [Install Intel GPU Driver](#install-intel-gpu-driver)
+    - [Install OneAPI Base Toolkit](#install-oneapi-base-toolkit)
+  
+- [Build Intel® Extension for TensorFlow* PyPI](#build-intel®-extension-for-tensorflow-pypi)
+  - [Configure](#configure)
+    - [Configure For CPU](#configure-for-cpu)
+    - [Configure For GPU/XPU](#configure-for-gpuxpu)
+  - [Build Source Code](#build-source-code)
+- [Additional](#addtional)
+  - [Configure Example For CPU](#configure-example-for-gpu-or-xpu)
+  - [Configure Example For GPU or XPU](#configure-example-for-gpu-or-xpu)
+
+
+## Overview
 This guide shows how to build an Intel® Extension for TensorFlow* PyPI package from source and install it in Ubuntu 22.04 (64-bit).
 
-When will you need to build from source code?
+Normally, you would install the latest released version of Intel® Extension for TensorFlow* using a `pip install` command. There are times though when you might need to build from source code:
 
 1. You want to get the latest feature in development branch.
 
@@ -10,9 +32,9 @@ When will you need to build from source code?
 
 3. Verify your code update.
 
-## Prepare
+## Requirements
 
-### Hardware Requirement
+### Hardware Requirements
 
 Verified Hardware Platforms:
  - Intel® CPU (Xeon, Core)
@@ -20,25 +42,65 @@ Verified Hardware Platforms:
  - [Intel® Data Center GPU Max Series](https://www.intel.com/content/www/us/en/products/docs/processors/max-series/overview.html)
  - [Intel® Arc™ Graphics](https://www.intel.com/content/www/us/en/products/details/discrete-gpus/arc.html) (experimental)
 
-### Python Running Environment
+### Common Requirements
 
-1. Conda
+#### Install Bazel
 
-Install [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+To build Intel® Extension for TensorFlow*, install Bazel 5.3.0. Refer to [install Bazel](https://docs.bazel.build/versions/main/install-ubuntu.html).
+
+Here are the recommended commands:
+
+```bash
+$ wget https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
+$ bash bazel-5.3.0-installer-linux-x86_64.sh --user
+```
+
+Check Bazel is installed successfully and is version 5.3.0:
+
+```bash
+$ bazel --version
+```
+
+#### Download Source Code
+
+```bash
+$ git clone https://github.com/intel/intel-extension-for-tensorflow.git intel-extension-for-tensorflow
+$ cd intel-extension-for-tensorflow/
+```
+
+#### Create a Conda Environment
+
+1. Install [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 2. Create Virtual Running Environment
 
+```bash
+$ conda create -n itex_build python=3.10
+$ conda activate itex_build
 ```
-conda create -n itex_build python=3.9
-conda activate itex_build
+
+Note, we support Python versions 3.8 through 3.11.
+
+#### Install TensorFlow
+
+Install TensorFlow 2.13.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
+
+```bash
+$ pip install tensorflow==2.13.0
 ```
-Note, support Python 3.8-3.10.
 
-### Intel GPU Driver (Optional, GPU and XPU)
+Check TensorFlow was installed successfully and is version 2.13.0:
 
-Install the Intel GPU Driver in the building server, which is needed to build with GPU support and **AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html))**.
+```bash
+$ python -c "import tensorflow as tf;print(tf.__version__)"
+```
 
-Refer to [Install Intel GPU driver](install_for_gpu.md).
+### Extra Requirements for XPU/GPU Build Only
+
+#### Install Intel GPU Driver
+Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html)).
+
+Refer to [Install Intel GPU driver](install_for_xpu.md/#install-gpu-drivers) for details.
 
 Note:
 
@@ -46,130 +108,92 @@ Note:
 
 2. **AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html))**
 
-AOT is option of compiling, which reduces the initialization time of GPU kernels at startup time, by creating the binary code for specified hardware platform directly during compiling. AOT will make the installation package be with bigger size.
+    AOT is a compiling option that reduces the initialization time of GPU kernels at startup time by creating the binary code for a specified hardware platform during compiling. AOT will make the installation package larger but improve performance time.
 
-Without AOT, Intel® Extension for TensorFlow* will be translated to binary code for local hardware platform during startup. That will prolong startup time to several minutes or more.
+    Without AOT, Intel® Extension for TensorFlow* will be translated to binary code for local hardware platform during startup. That will prolong startup time when using a GPU to several minutes or more.
 
-For more info, please refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html).
+    For more information, refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html).
 
+#### Install oneAPI Base Toolkit
 
-### TensorFlow
+We recommend you install the oneAPI base toolkit using `sudo` (or as root user) to the system directory `/opt/intel/oneapi`.
 
-Install TensorFlow 2.13, and refer to [Install TensorFlow](https://www.tensorflow.org/install).
+The following commands assume the oneAPI base tookit is installed in `/opt/intel/oneapi`. If you installed it in some other folder, please update the oneAPI path as appropriate.
 
-```
-pip install tensorflow==2.13
-```
-Check TensorFlow version:
-```
-python -c "import tensorflow as tf;print(tf.__version__)"
-```
+Refer to [Install oneAPI Base Toolkit Packages](install_for_xpu.md#install-oneapi-base-toolkit-packages)
 
-For detail, refer to [Install TensorFlow](https://www.tensorflow.org/install)
-
-### Install oneAPI Base Toolkit
-
-We recommend to install oneAPI by 'sudo or root' to folder **/opt/intel/oneapi**.
-
-Following commands are based on the folder **/opt/intel/oneapi**. If you install it in other folder, please change the oneAPI path as yours.
-
-Refer to [Install oneAPI Base Toolkit Packages](install_for_gpu.md#install-oneapi-base-toolkit-packages)
-
-It provides compiler and libraries used by Intel® Extension for TensorFlow*.
+The oneAPI base toolkit provides compiler and libraries needed by Intel® Extension for TensorFlow*.
 
 Enable oneAPI components:
 
-```
-source /opt/intel/oneapi/compiler/latest/env/vars.sh
-source /opt/intel/oneapi/mkl/latest/env/vars.sh
-```
-
-### Install Bazel
-
-
-To build Intel® Extension for TensorFlow*, install Bazel 5.3.0. Refer to [install Bazel](https://docs.bazel.build/versions/main/install-ubuntu.html).
-
-Here are the recommended commands:
-
-```
-$ wget https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
-$ bash bazel-5.3.0-installer-linux-x86_64.sh --user
-
-```
-Check Bazel:
 ```bash
-bazel --version
+$ source /opt/intel/oneapi/compiler/latest/env/vars.sh
+$ source /opt/intel/oneapi/mkl/latest/env/vars.sh
 ```
 
+## Build Intel® Extension for TensorFlow* PyPI
 
-### Download the Intel® Extension for TensorFlow* Source Code
+### Configure
+
+#### Configure For CPU
+
+Configure the system build by running the `./configure` command at the root of your cloned Intel® Extension for TensorFlow* source tree.
 
 ```bash
-$ git clone https://github.com/intel/intel-extension-for-tensorflow.git intel-extension-for-tensorflow
-$ cd intel-extension-for-tensorflow
+$ ./configure
 ```
 
-Change to special release/tag (Optional):
+Choose `n` to build for CPU only. Refer to [Configure Example](#configure-example).
 
-The repo defaults to the `master` development branch. You can also check out a release branch or tag to build:
+#### Configure For GPU/XPU
+
+Configure the system build by running the `./configure` command at the root of your cloned Intel® Extension for TensorFlow* source tree. This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).
 
 ```bash
-$ git checkout branch_name/tag_name
+$ ./configure
 ```
 
+- Choose `Y` for Intel GPU support. Refer to [Configure Example](#configure-example).
 
-## Configure
+- Specify the Location of Compiler (DPC++).
 
-Configure the system build by running the `./configure` command at the root of your Intel® Extension for TensorFlow* source tree.  This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).
+  Default is `/opt/intel/oneapi/compiler/latest/linux/`, which is the default installed path. Click `Enter` to confirm default location.
 
-```
-./configure
-```
+  If it's differenct, confirm the compiler (DPC++) installed path and fill the correct path.
 
-### Choose to Build with GPU Support.
+- Specify the Ahead of Time (AOT) Compilation Platforms.
 
-'Y' for GPU support; 'N' for CPU only.
+  Default is '', which means no AOT.
 
-### Specify the Location of Compiler (DPC++).
+  Fill one or more device type strings of special hardware platforms, such as `ats-m150`, `acm-g11`.
 
-Default is **/opt/intel/oneapi/compiler/latest/linux/**, which is the default installed path. Click **enter** to confirm default location.
+  Here is the list of GPUs we've verified:
 
-If it's differenct, confirm the compiler (DPC++) installed path and fill the correct path.
+  |GPU|device type|
+  |-|-|
+  |Intel® Data Center GPU Flex Series 170|ats-m150|
+  |Intel® Data Center GPU Flex Series 140|ats-m75|
+  |Intel® Data Center GPU Max Series|pvc|
+  |Intel® Arc™ A730M|acm-g10|
+  |Intel® Arc™ A380|acm-g11|
 
+  To learn how to get the device type, please refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html) or create an [issue](https://github.com/intel/intel-extension-for-tensorflow/issues) to ask support.
 
-### Specify the Ahead of Time (AOT) Compilation Platforms.
+- Choose to Build with oneMKL Support.
 
-Default is '', which means no AOT.
+  We recommend choosing `y`.
 
-Fill one or more device type strings of special hardware platforms, like 'ats-m150,acm-g11'.
+  Default is `/opt/intel/oneapi/mkl/latest`, which is the default installed path. Click `Enter` to confirm default location.
 
-Here is the list of GPUs verified:
-
-|GPU|device type|
-|-|-|
-|Intel® Data Center GPU Flex Series 170|ats-m150|
-|Intel® Data Center GPU Flex Series 140|ats-m75|
-|Intel® Data Center GPU Max Series|pvc|
-|Intel® Arc™ A730M|acm-g10|
-|Intel® Arc™ A380|acm-g11|
-
-To learn how to get the device type, please refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html) or create an [issue](https://github.com/intel/intel-extension-for-tensorflow/issues) to ask support.
-
-### Choose to Build with oneMKL Support.
-
-Recommend to choose 'y'.
-
-Default is **/opt/intel/oneapi/mkl/latest**, which is the default installed path. Click **enter** to confirm default location.
-
-If it's wrong, please confirm the oneMKL installed path and fill the correct path.
-
-### Example
-
-Please refer to [Configure Example](#configure-example).
-
-## Build the Pip Package
+  If it's wrong, please confirm the oneMKL installed path and fill the correct path.
 
 ### Build Source Code
+
+For CPU:
+
+```bash
+$ bazel build -c opt --config=cpu  //itex/tools/pip_package:build_pip_package
+```
 
 For GPU:
 
@@ -183,18 +207,13 @@ For XPU:
 $ bazel build -c opt --config=xpu  //itex/tools/pip_package:build_pip_package
 ```
 
-For CPU only (experimental):
+Create the Pip Package
 
 ```bash
-$ bazel build -c opt --config=cpu  //itex/tools/pip_package:build_pip_package
+$ bazel-bin/itex/tools/pip_package/build_pip_package WHL/
 ```
 
-### Create the Pip Package
-
-```bash
-$ bazel-bin/itex/tools/pip_package/build_pip_package ./
-```
-It will generate two wheels:
+It will generate two wheels under `WHL` directory:
 - intel_extension_for_tensorflow-*.whl
 - intel_extension_for_tensorflow_lib-*.whl
 
@@ -209,22 +228,22 @@ For example
 |------------|--------------------|--------------------|
 |1.x.0       |1.x.0.0             |1.x.0.1             |
 
-### Install the Package
+Install the Package
 
 ```bash
 $ pip install ./intel_extension_for_tensorflow*.whl
 ```
+
 or
+
 ```bash
 $ pip install ./intel_extension_for_tensorflow-*.whl
 $ pip install ./intel_extension_for_tensorflow_lib-*.whl
 ```
 
-### Installation Package Directory
+Located at `path/to/site-packages/`
 
-- located at `path/to/site-packages/`
-
-```
+```bash
 ├── intel_extension_for_tensorflow
 |   ├── libitex_common.so
 │   └── python
@@ -236,20 +255,34 @@ $ pip install ./intel_extension_for_tensorflow_lib-*.whl
 │   └── libitex_gpu.so # for GPU or XPU build
 
 ```
-## Uninstall
+
+## Additional
+
+### Configure Example for CPU
+
+Here is example output and interaction you'd see while running the `./configure` script:
 
 ```bash
-$ pip uninstall intel_extension_for_tensorflow_lib
-$ pip uninstall intel_extension_for_tensorflow
+You have bazel 5.3.0 installed.
+Python binary path: /path/to/envs/itex_build/bin/python
+
+Found possible Python library paths:
+['/path/to/envs/itex_build/lib/python3.9/site-packages']
+
+Do you wish to build Intel® Extension for TensorFlow* with GPU support? [Y/n]: n
+No GPU support will be enabled for Intel® Extension for TensorFlow*.
+
+Only CPU support is available for Intel® Extension for TensorFlow*.
+Preconfigured Bazel build configs. You can use any of the below by adding "--config=<>" to your build command. See .bazelrc for more details.
+        --config=cpu            # Build Intel® Extension for TensorFlow* with CPU support.
+Configuration finished
 ```
 
-## Addtional
+### Configure Example For GPU or XPU
 
-### Configure Example
+Here is example output and interaction you'd see while running the `./configure` script:
 
-- For GPU or XPU
-
-```
+```bash
 You have bazel 5.3.0 installed.
 Python binary path: /path/to/envs/itex_build/bin/python
 
@@ -275,24 +308,3 @@ Preconfigured Bazel build configs. You can use any of the below by adding "--con
         --config=gpu            # Build Intel® Extension for TensorFlow* with GPU support.
 Configuration finished
 ```
-
-
-
-- For CPU
-
-```
-You have bazel 5.3.0 installed.
-Python binary path: /path/to/envs/itex_build/bin/python
-
-Found possible Python library paths:
-['/path/to/envs/itex_build/lib/python3.9/site-packages']
-
-Do you wish to build Intel® Extension for TensorFlow* with GPU support? [Y/n]: n
-No GPU support will be enabled for Intel® Extension for TensorFlow*.
-
-Only CPU support is available for Intel® Extension for TensorFlow*.
-Preconfigured Bazel build configs. You can use any of the below by adding "--config=<>" to your build command. See .bazelrc for more details.
-        --config=cpu            # Build Intel® Extension for TensorFlow* with CPU support.
-Configuration finished
-```
-

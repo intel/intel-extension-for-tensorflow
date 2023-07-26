@@ -4,11 +4,11 @@
 
 ### Intel GPU Driver
 
-Refer to [Install Intel GPU driver](./../docs/install/install_for_gpu.md#install-gpu-drivers)
+Refer to [Install Intel GPU driver](./../docs/install/install_for_xpu.md#install-gpu-drivers)
 
 ### Intel® oneAPI Base Toolkit
 
-Refer to [Install Intel® oneAPI Base Toolkit](./../docs/install/install_for_gpu.md#install-oneapi-base-toolkit-packages)
+Refer to [Install Intel® oneAPI Base Toolkit](./../docs/install/install_for_xpu.md#install-oneapi-base-toolkit-packages)
 
 ### Setup Running Environment
 1. Python

@@ -1,11 +1,4 @@
-# *Experimental:* Intel CPU Software Installation 
-
-
-## *Experimental Release*
-
-Intel® Extension for TensorFlow* provides *experimental support* for 2nd Generation Intel® Xeon® Scalable Processors and newer. 
-
-Stock [TensorFlow](https://pypi.org/project/tensorflow/) and [Intel® Optimization for TensorFlow*](https://pypi.org/project/intel-tensorflow/) are recommended if product quality is required.
+# Intel CPU Software Installation
 
 ## Hardware Requirements
 

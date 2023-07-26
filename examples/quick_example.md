@@ -2,9 +2,9 @@
 
 ## Installation
 
-* If you are using a heterogeneous machine that contains the Intel GPU, please refer to [Intel GPU Software Installation](../docs/install/install_for_gpu.md)
+* If you are using a machine using more than one kind of processor or core and includes an the Intel GPU, please refer to [Intel XPU Software Installation](../docs/install/install_for_xpu.md)
 
-* Otherwise, please refer to [Intel CPU Software Installation](../docs/install/experimental/install_for_cpu.md)
+* Otherwise, please refer to [Intel CPU Software Installation](../docs/install/install_for_cpu.md)
 
 ## Code
 
