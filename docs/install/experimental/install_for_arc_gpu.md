@@ -26,7 +26,7 @@ Hardware Platforms with Experimental Only Support:
     - Linux Runtime Libraries: Intel® Arc™ GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html) (installation instructions below)
     - Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)
     - TensorFlow 2.13.0
-    - Python 3.8-3.10
+    - Python 3.8-3.11
     - pip 19.0 or later (requires manylinux2014 support)
 
 ### Native Linux Running Directly on Hardware
@@ -35,9 +35,8 @@ Hardware Platforms with Experimental Only Support:
 - Intel® GPU Drivers for Linux (installation instructions below)
     - Intel® Arc™ GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html)
 - Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)
-
 - TensorFlow 2.13.0
-- Python 3.8-3.10
+- Python 3.8-3.11
 - pip 19.0 or later (requires manylinux2014 support)
 
 ## Step-By-Step Instructions
@@ -52,9 +51,9 @@ When using WSL2, the GPU drivers are installed in the Windows OS and runtime com
 
 ##### Windows GPU Drivers
 
-|Release|OS|Intel GPU|Install Intel GPU Driver|
-|-|-|-|-|
-|v1.2.0|Windows 10, Windows 11|Intel® Arc™ A-Series GPUs|[Intel® Arc™ Graphics Windows DCH Driver](https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html)|
+|OS|Intel GPU|Install Intel GPU Driver|
+|-|-|-|
+|Windows 10, Windows 11|Intel® Arc™ A-Series GPUs|[Intel® Arc™ Graphics Windows DCH Driver](https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html)|
 
 Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.
 
@@ -81,12 +80,12 @@ The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
     ```bash
     sudo apt-get install \
         intel-opencl-icd=23.17.26241.33-647~22.04 \
-        intel-level-zero-gpu=1.3.25593.18-601~22.04 \
-        level-zero=1.9.4+i589~22.04 \
-        intel-igc-cm=1.0.176+i600~22.04 \
-        libigc1=1.0.13230.8-600~22.04 \
-        libigdfcl1=1.0.13230.8-600~22.04 \
-        libigdgmm12=22.3.5-601~22.04
+        intel-level-zero-gpu=1.3.26241.33-647~22.04 \
+        level-zero=1.11.0-647~22.04 \
+        intel-igc-cm=1.0.176-647~22.04 \
+        libigc1=1.0.13822.8-647~22.04 \
+        libigdfcl1=1.0.13822.8-647~22.04 \
+        libigdgmm12=22.3.5-647~22.04
     ```
 
 - Add the Intel® oneAPI library repositories to your Ubuntu installation:
@@ -162,7 +161,7 @@ The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version
 
 * ##### System environment install 
 
-    If you prefer install tensorflow in $HOME, append `--user` to the commands.
+    If you prefer to install tensorflow in $HOME, append `--user` to the commands.
     ```bash
     $ pip install --user 'tensorflow==2.13.0'
     ```
@@ -210,7 +209,7 @@ Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.
 $ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/992857b9-624c-45de-9701-f6445d845359/l_BaseKit_p_2023.2.0.49397_offline.sh
 # 3 components are necessary: DPC++/C++ Compiler, DPC++ Library and oneMKL
 # if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too (Intel® oneAPI MPI Library will be installed automatically as its dependency)
-$ sudo sh l_BaseKit_p_2023.2.0.49397_offline.sh
+$ sudo sh ./l_BaseKit_p_2023.2.0.49397_offline.sh
 ```
 
 For any more details, please follow the procedure in [Intel® oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html).
