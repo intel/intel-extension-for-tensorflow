@@ -17,36 +17,42 @@ declare -A ubuntu_version_list
 ubuntu_version_list[1.0.0]="20.04"
 ubuntu_version_list[1.1.0]="20.04 22.04"
 ubuntu_version_list[1.2.0]="20.04 22.04"
+ubuntu_version_list[2.13.0]="20.04 22.04"
 ubuntu_version_list[latest]="20.04 22.04"
 
 declare -A redhat_version_list
 redhat_version_list[1.0.0]="8.5"
 redhat_version_list[1.1.0]="8.6"
 redhat_version_list[1.2.0]="8.6"
-redhat_version_list[latest]="8.6"
+redhat_version_list[2.13.0]="8.7 8.8"
+redhat_version_list[latest]="8.7 8.8"
 
 declare -A sles_version_list
 sles_version_list[1.1.0]="15.3 15.4"
 sles_version_list[1.2.0]="15.3 15.4"
+sles_version_list[2.13.0]="15.3 15.4"
 sles_version_list[latest]="15.3 15.4"
 
 declare -A min_python_version
 min_python_version[1.0.0]=7
 min_python_version[1.1.0]=7
 min_python_version[1.2.0]=8
+min_python_version[2.13.0]=8
 min_python_version[latest]=8
 
 declare -A max_python_version
 max_python_version[1.0.0]=10
 max_python_version[1.1.0]=10
 max_python_version[1.2.0]=11
+max_python_version[2.13.0]=11
 max_python_version[latest]=11
 
 declare -A min_tensorflow_version
 min_tensorflow_version[1.0.0]=10
 min_tensorflow_version[1.1.0]=10
 min_tensorflow_version[1.2.0]=12
-min_tensorflow_version[latest]=12
+min_tensorflow_version[2.13.0]=13
+min_tensorflow_version[latest]=13
 
 driver_list_for_ubuntu=(
   "intel-level-zero-gpu"
@@ -152,19 +158,50 @@ itex_1_2_driver_version_sles=(
   "22.3.5-i601"
 )
 
+# ITEX v2.13.0 GPU Driver Version
+itex_1_3_driver_version_ubuntu=(
+  "1.3.26241.33-647~22.04",
+  "23.17.26241.33-647~22.04",
+  "1.11.0-647~22.04",
+  "1.0.13822.8-647~22.04",
+  "1.0.13822.8-647~22.04",
+  "22.3.5-647~22.04"
+)
+
+itex_1_3_driver_version_rhel=(
+  "1.0.13822.8-647.el8",
+  "1.0.13822.8-647.el8",
+  "22.3.5-i647.el8",
+  "23.17.26241.33-647.el8",
+  "1.11.0-647.el8",
+  "1.11.0-647.el8"
+)
+
+itex_1_3_driver_version_sles=(
+  "1.3.26241.33-647",
+  "23.17.26241.33-647",
+  "1.11.0-i647",
+  "1.0.13822.8-647",
+  "1.0.13822.8-647",
+  "22.3.5-i647"
+)
+
 declare -A driver_version_ubuntu
 driver_version_ubuntu[1.0.0]=${itex_1_0_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.1.0]=${itex_1_1_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.2.0]=${itex_1_2_driver_version_ubuntu[@]}
+driver_version_ubuntu[2.13.0]=${itex_1_3_driver_version_ubuntu[@]}
 
 declare -A driver_version_rhel
 driver_version_rhel[1.0.0]=${itex_1_0_driver_version_rhel[@]}
 driver_version_rhel[1.1.0]=${itex_1_1_driver_version_rhel[@]}
 driver_version_rhel[1.2.0]=${itex_1_2_driver_version_rhel[@]}
+driver_version_rhel[1.3.0]=${itex_1_3_driver_version_rhel[@]}
 
 declare -A driver_version_sles
 driver_version_sles[1.1.0]=${itex_1_1_driver_version_sles[@]}
 driver_version_sles[1.2.0]=${itex_1_2_driver_version_sles[@]}
+driver_version_sles[1.3.0]=${itex_1_3_driver_version_sles[@]}
 
 itex_1_0_oneapi_version=(
   "2022.2.0-8734"
@@ -183,10 +220,17 @@ itex_1_2_oneapi_version=(
   "2021.9.0-43543"
 )
 
+itex_1_3_oneapi_version=(
+  "2023.2.0-49495"
+  "2023.2.0-49495"
+  "2021.10.0-49084"
+)
+
 declare -A oneapi_version
 oneapi_version[1.0.0]=${itex_1_0_oneapi_version[@]}
 oneapi_version[1.1.0]=${itex_1_1_oneapi_version[@]}
 oneapi_version[1.2.0]=${itex_1_2_oneapi_version[@]}
+oneapi_version[2.13.0]=${itex_1_3_oneapi_version[@]}
 
 tf_require_list=(
   "absl-py"
@@ -241,7 +285,7 @@ cat << EOM
 Usage: ./env_check.sh [--detail]
 
 Mandatory arguments to long options are mandatory for short options too.
-  -d, --detail       print tensorflow and itex required python libraries' installed status.
+  -d, --detail       print Tensorflow and Intel® Extension for TensorFlow* required python libraries' installed status.
 
 EOM
 }
@@ -286,21 +330,21 @@ check_os() {
         if [[ "${ubuntu_version_list[$itex_version]}"  =~ "${os_version}" ]]; then
           info "OS ${os_name}:${os_version} is Supported"
         else
-          die "Intel GPU Driver Does Not Support OS ${os_name}:${os_version} yet" " Check OS Failed"
+          die "Intel GPU driver does not support OS ${os_name}:${os_version} yet" " Check OS Failed"
         fi
         ;;
       rhel)
         if [[ "${redhat_version_list[$itex_version]}"  =~ "${os_version}" ]]; then
           info "OS ${os_name}:${os_version} is Supported"
         else
-          die "Intel GPU Driver Does Not Support OS ${os_name}:${os_version} yet" " Check OS Failed"
+          die "Intel GPU driver does not support OS ${os_name}:${os_version} yet" " Check OS Failed"
         fi
         ;;
       sles)
         if [[ "${sles_version_list[$itex_version]}"  =~ "${os_version}" ]]; then
           info "OS ${os_name}:${os_version} is Supported"
         else
-          die "Intel GPU Driver Does Not Support OS ${os_name}:${os_version} yet" " Check OS Failed"
+          die "Intel GPU driver does not support OS ${os_name}:${os_version} yet" " Check OS Failed"
         fi
         ;;
       *)
@@ -393,7 +437,7 @@ check_device_availability() {
     done
     echo ""
 
-    die "Enable OCL_ICD_ENABLE_TRACE=1 OCL_ICD_DEBUG=2 to obtain detail information when using ITEX" "Check Devices Availability Failed"
+    die "Enable OCL_ICD_ENABLE_TRACE=1 OCL_ICD_DEBUG=2 to obtain detail information when using Intel® Extension for TensorFlow*" "Check Devices Availability Failed"
   fi
   echo ""
   echo -e "====================== \033[32m Check Devices Availability Passed \033[0m ======================="
@@ -405,14 +449,14 @@ installed_status_oneapi() {
   if [ $? -eq 0 ]; then
     echo -e "\033[33m $2 is installed. \033[0m"
   else
-    echo -e "\033[31m Can't find $1, $2 is uninstalled supported version $4 or unset relevant environment viriables, such as $3. \033[0m"
+    echo -e "\033[31m Can't find $1, $2 is uninstalled supported version $4 or unset relevant environment variables, such as $3. \033[0m"
     IS_FAILED=1
   fi
 }
 
 check_intel_oneapi() {
   echo ""
-  echo -e "===================== \033[33m Check Intel OneApi \033[0m ====================="
+  echo -e "===================== \033[33m Check Intel oneAPI \033[0m ====================="
   echo ""
 
   LOAD_LIBS=/tmp/loadlibs
@@ -422,14 +466,14 @@ check_intel_oneapi() {
   do
     case "${oneapi}" in
         compiler)
-          installed_status_oneapi "libsycl.so" "Intel(R) OneAPI DPC++/C++ Compiler" "CMPLR_ROOT" ${current_oneapi_list[0]}
+          installed_status_oneapi "libsycl.so" "Intel(R) oneAPI DPC++/C++ Compiler" "CMPLR_ROOT" ${current_oneapi_list[0]}
           ;;
         mkl)
-          installed_status_oneapi "libmkl_sycl.so" "Intel(R) OneAPI Math Kernel Library" "MKLROOT" ${current_oneapi_list[1]}
+          installed_status_oneapi "libmkl_sycl.so" "Intel(R) oneAPI Math Kernel Library" "MKLROOT" ${current_oneapi_list[1]}
           ;;
         ccl)
           if [[ ${IS_DETAIL} -eq 1 ]]; then
-            installed_status_oneapi "libccl.so" "Intel(R) OneAPI Collective Communications Library" "CCL_ROOT" ${current_oneapi_list[2]}
+            installed_status_oneapi "libccl.so" "Intel(R) oneAPI Collective Communications Library" "CCL_ROOT" ${current_oneapi_list[2]}
           fi
           ;;
         esac
@@ -437,11 +481,11 @@ check_intel_oneapi() {
 
   if [[ ${IS_FAILED} -eq 1 ]]; then
     echo ""
-    echo -e "================= \033[31m Check Intel OneApi Failed \033[0m =================="
+    echo -e "================= \033[31m Check Intel oneAPI Failed \033[0m =================="
     echo ""
   else
     echo ""
-    echo -e "================= \033[32m Check Intel OneApi Passed \033[0m =================="
+    echo -e "================= \033[32m Check Intel oneAPI Passed \033[0m =================="
     echo ""
 
     check_device_availability
@@ -490,7 +534,7 @@ check_tensorflow() {
 
   v1=$(pip show tensorflow 2>/dev/null|grep Version|awk -F '[ :.]' '{print $3}')
   v2=$(pip show tensorflow 2>/dev/null|grep Version|awk -F '[ :.]' '{print $4}')
-  echo -e "\033[33m tensorflow${v1}.${v2} is installed. \033[0m"
+  echo -e "\033[33m Tensorflow${v1}.${v2} is installed. \033[0m"
 
   if [[ ${v2} = "" ]]; then
     die "Tensorflow is not installed!" "Check Tensorflow Failed"
