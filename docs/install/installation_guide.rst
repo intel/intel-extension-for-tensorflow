@@ -7,7 +7,7 @@ Intel® Extension for TensorFlow\* can be installed from the following channels 
 - `Intel® CPU Software Installation <install_for_cpu.html>`_
 - `Conda Install for GPU Distributed Training <experimental/install_for_gpu_conda.html>`_
 - `Install from Source Build <how_to_build.html>`_
-- `Install C/C++ Calling Interface from Source Build <install_for_cpp.md>`_
+- `Install C/C++ Calling Interface from Source Build <install_for_cpp.html>`_
 
 .. toctree::
    :hidden:

@@ -1,0 +1,15 @@
+#sphinx==3.5.4
+sphinx-autobuild==2021.3.14
+#sphinx-rtd-theme
+#recommonmark
+#sphinx-markdown-tables==0.0.15
+#sphinx-md
+sphinxemoji
+
+sphinx==6.1.1
+sphinx_rtd_theme
+recommonmark
+sphinx-markdown-tables
+sphinx-md
+sphinx-autoapi
+setuptools_scm[toml]==6.2
