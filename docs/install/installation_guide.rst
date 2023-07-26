@@ -4,6 +4,7 @@ Installation Guide
 Intel® Extension for TensorFlow\* can be installed from the following channels in order to match with different CPU and GPU software stack. User can choose the environent setup by PyPI, Docker container or even build from source code. 
 
 - `Intel® GPU Software Installation <install_for_gpu.html>`_
+- `Intel® XPU Software Installation <install_for_xpu.html>`_
 - `Intel® CPU Software Installation <experimental/install_for_cpu.html>`_
 - `Conda Install for GPU Distributed Training <experimental/install_for_gpu_conda.html>`_
 - `Install from Source Build <how_to_build.html>`_
