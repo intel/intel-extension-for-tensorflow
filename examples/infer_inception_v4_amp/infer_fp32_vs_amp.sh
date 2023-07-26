@@ -43,7 +43,7 @@ if [ ! -d $ENV_NAME ]; then
     echo "Create env $ENV_NAME ..."
     bash set_env_${device_type}.sh
 else
-    echo "Already created env $ENV_NAME, skip craete env"
+    echo "Already created env $ENV_NAME, skip creating env"
 fi
 
 source $ENV_NAME/bin/activate
