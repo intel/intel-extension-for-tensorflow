@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gf5bb54c documentation</title>
+  <title>Accelerate Deep Learning Training and Inference for Model Zoo Workloads on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gc5aa641 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -73,7 +73,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU</li>
+      <li class="breadcrumb-item active">Accelerate Deep Learning Training and Inference for Model Zoo Workloads on Intel GPU</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/examples/model_zoo_example/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -83,92 +83,29 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="accelerating-deep-learning-inference-for-model-zoo-workloads-on-intel-cpu-and-gpu">
-<h1>Accelerating Deep Learning Inference for Model Zoo Workloads on Intel CPU and GPU<a class="headerlink" href="#accelerating-deep-learning-inference-for-model-zoo-workloads-on-intel-cpu-and-gpu" title="Permalink to this heading"></a></h1>
+  <section id="accelerate-deep-learning-training-and-inference-for-model-zoo-workloads-on-intel-gpu">
+<h1>Accelerate Deep Learning Training and Inference for Model Zoo Workloads on Intel GPU<a class="headerlink" href="#accelerate-deep-learning-training-and-inference-for-model-zoo-workloads-on-intel-gpu" title="Permalink to this heading"></a></h1>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
-<p>This example shows the guideline to run Model Zoo workloads on Intel CPU and GPU with the optimizations from Intel® Extension for TensorFlow*, without any model code changes.</p>
+<p>This example shows the guideline to run Model Zoo workloads using TensorFlow* framework on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.</p>
 </section>
-<section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
-<p>For Intel CPU, refer to <a class="reference external" href="../../docs/install/install_for_cpu.md#intel-cpu-software-installation">Intel CPU software installation</a>.
-For Intel GPU, refer to <a class="reference external" href="../../docs/install/install_for_xpu.md#intel-gpu-software-installation">Intel XPU software installation</a>.</p>
-</section>
-<section id="execute">
-<h2>Execute<a class="headerlink" href="#execute" title="Permalink to this heading"></a></h2>
-<section id="prepare-the-codes">
-<h3>Prepare the Codes<a class="headerlink" href="#prepare-the-codes" title="Permalink to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/IntelAI/models
-<span class="nb">cd</span><span class="w"> </span>models
-git<span class="w"> </span>checkout<span class="w"> </span>v2.8.0
-</pre></div>
-</div>
-</section>
-<section id="sample-use-cases">
-<h3>Sample Use cases<a class="headerlink" href="#sample-use-cases" title="Permalink to this heading"></a></h3>
-<table border="1" class="docutils">
-<thead>
-<tr>
-<th>Model</th>
-<th>Mode</th>
-<th>Model Documentation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Inception V3</td>
-<td>Inference</td>
-<td><a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/inceptionv3/inference/fp32/README.md">FP32</a>  <a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/inceptionv3/inference/int8/README.md">INT8</a></td>
-</tr>
-<tr>
-<td>Inception V4</td>
-<td>Inference</td>
-<td><a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/inceptionv4/inference/fp32/README.md">FP32</a>  <a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/inceptionv4/inference/int8/README.md">INT8</a></td>
-</tr>
-<tr>
-<td>ResNet50 V1.5</td>
-<td>Inference</td>
-<td><a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/resnet50v1_5/inference/fp32/README.md">FP32</a>  <a href="https://github.com/IntelAI/models/blob/v2.8.0/benchmarks/image_recognition/tensorflow/resnet50v1_5/inference/int8/README.md">INT8</a></td>
-</tr>
-</tbody>
-</table></section>
-<section id="performance-optimization">
-<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permalink to this heading"></a></h3>
+<section id="quick-start-guide">
+<h2>Quick Start Guide<a class="headerlink" href="#quick-start-guide" title="Permalink to this heading"></a></h2>
+<section id="run-models-in-the-docker-container">
+<h3>Run Models in the Docker Container<a class="headerlink" href="#run-models-in-the-docker-container" title="Permalink to this heading"></a></h3>
 <ul>
-<li><p>FP16/BF16 INT8 Inference Optimization</p>
-<p>Refer to the above FP32 model documentation, and only set one extra environment variable to enable advanced auto mixed precision Graph optimization before running inference.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ITEX_AUTO_MIXED_PRECISION</span><span class="o">=</span><span class="m">1</span>
-</pre></div>
-</div>
+<li><p>For Intel® Data Center GPU Flex Series</p>
+<p>Refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/containers/model-zoo-flex-series-containers.html">AI Model Zoo Containers on Flex Series</a> to run optimized Deep Learning inference workloads.</p>
 </li>
-<li><p>INT8 Inference Optimization</p>
-<p>To avoid memory copy on GPU, we provide a tool to convert the const to host const for INT8 pretrained-models.</p>
-<p>Take the ResNet50 v1.5 INT8 pb for example,</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
-<span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">storage</span><span class="o">.</span><span class="n">googleapis</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">optimized</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">v1_8</span><span class="o">/</span><span class="n">resnet50v1_5_int8_pretrained_model</span><span class="o">.</span><span class="n">pb</span>
-
-<span class="n">python</span> <span class="n">host_const</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">i</span> <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">the</span> <span class="n">frozen</span> <span class="n">graph</span> <span class="n">downloaded</span> <span class="n">above</span><span class="o">&gt;/</span><span class="n">resnet50v1_5_int8_pretrained_model</span><span class="o">.</span><span class="n">pb</span> <span class="o">-</span><span class="n">b</span> <span class="o">-</span><span class="n">o</span> <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">save</span> <span class="n">the</span> <span class="n">converted</span> <span class="n">frozen</span> <span class="n">graph</span><span class="o">&gt;/</span><span class="n">resnet50v1_5_int8_pretrained_model</span><span class="o">-</span><span class="n">hostconst</span><span class="o">.</span><span class="n">pb</span>
-</pre></div>
-</div>
-<p>Use the new INT8 pb for INT8 inference, After converting to the new INT8 pb.</p>
+<li><p>For Intel® Data Center GPU Max Series</p>
+<p>Refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/containers/model-zoo-max-series-containers/model-zoo-max-series-containers.html">AI Model Zoo Containers on Max Series</a> to run optimized Deep Learning training and inference workloads.</p>
 </li>
 </ul>
 </section>
+<section id="run-models-on-bare-metal">
+<h3>Run Models on Bare Metal<a class="headerlink" href="#run-models-on-bare-metal" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="https://github.com/IntelAI/models/tree/master#intel-data-center-gpu-workloads">AI Model Zoo Examples on Intel® Data Center GPU</a> to run optimized Deep Learning training and inference workloads on bare metal.</p>
 </section>
-<section id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
-<ol class="simple">
-<li><p>During the Inception V3 INT8 batch inference, if running with real data, you might encounter a message “Running out of images from dataset”. It is a known issue of Model Zoo script.</p></li>
-</ol>
-<p>Solution:</p>
-<ul class="simple">
-<li><p>Option 1: Please use dummy data instead.</p></li>
-<li><p>Option 2: If you want to run inference with real data, use the command below. And comment the last line of below int8_batch_inference.sh script to unspecify the warmup_steps and steps.</p></li>
-</ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>models
-vi<span class="w"> </span>./quickstart/image_recognition/tensorflow/inceptionv3/inference/cpu/int8/int8_batch_inference.sh
-</pre></div>
-</div>
 </section>
 </section>
 

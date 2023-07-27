@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>INT8 Quantization &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gf5bb54c documentation</title>
+  <title>INT8 Quantization &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gc5aa641 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -111,8 +111,7 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
 <p>Quantization is a very popular deep learning model optimization technique invented for improving the speed of inference. It minimizes the number of bits required by converting a set of real-valued numbers into a lower bit data representation, such as INT8, mainly on inference phase with minimal to no loss in accuracy. Using a lower bit data representation reduces the memory requirement, cache miss rate, and computational cost of using neural networks and also provides higher inference performance.</p>
 <p>Intel® Extension for TensorFlow* co-works with <a class="reference external" href="https://github.com/intel/neural-compressor">Intel® Neural Compressor</a> v2.0 or newer to provide INT8 quantization solutions for both GPU and CPU.</p>
-<p>On GPU, Intel® Extension for Tensorflow* uses legacy compatible TensorFlow INT8 quantization solution. Refer to <a class="reference internal" href="../../examples/accelerate_alexnet_by_quantization/README.html"><span class="doc">accelerating AlexNet quantization example</span></a>.</p>
-<p>On CPU, Intel® Extension for Tensorflow* integrates and adopts new <a class="reference external" href="https://spec.oneapi.io/onednn-graph/latest/introduction.html">oneDNN Graph API</a> in INT8 quantization for better out of box performance as shown in the following example.</p>
+<p>Intel® Extension for Tensorflow* integrates and adopts new <a class="reference external" href="https://spec.oneapi.io/onednn-graph/latest/introduction.html">oneDNN Graph API</a> in INT8 quantization for better out of box performance as shown in the following example.</p>
 </section>
 <section id="workflow">
 <h2>Workflow<a class="headerlink" href="#workflow" title="Permalink to this heading"></a></h2>
@@ -126,7 +125,7 @@ The green subgraph is one of the supported oneDNN Graph INT8 patterns. The opera
 </section>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
-<p>oneDNN Graph optimization pass is enabled on INT8 quantization by default on CPU.</p>
+<p>oneDNN Graph optimization pass is enabled on INT8 quantization by default on GPU and CPU.</p>
 <p>For better performance in INT8 models execution, TF grappler constant folding optimization must be disabled by the following environment variable setting.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">ITEX_TF_CONSTANT_FOLDING</span><span class="o">=</span><span class="mi">0</span>
 </pre></div>

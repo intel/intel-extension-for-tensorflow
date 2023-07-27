@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quantize Inception V3 by Intel® Extension for Tensorflow* on Intel® Xeon® &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gf5bb54c documentation</title>
+  <title>Quantize Inception V3 by Intel® Extension for Tensorflow* on Intel® Xeon® &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gc5aa641 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -97,18 +97,18 @@
 <ol class="simple">
 <li><p>Train an Inception V3 model with a flower photo dataset by transfer learning.</p></li>
 <li><p>Execute the calibration by Intel® Neural Compressor.</p></li>
-<li><p>Quantize and accelerate the inference by Intel® Extension for Tensorflow* for CPU.</p></li>
+<li><p>Quantize and accelerate the inference by Intel® Extension for Tensorflow* for GPU and CPU.</p></li>
 </ol>
 </section>
 <section id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h2>
 <section id="intel-extension-for-tensorflow-version">
 <h3>Intel® Extension for Tensorflow* Version<a class="headerlink" href="#intel-extension-for-tensorflow-version" title="Permalink to this heading"></a></h3>
-<p>Install Intel® Extension for Tensorflow* &gt; 1.1.0 for this feature.</p>
+<p>Install Intel® Extension for Tensorflow* &gt; 2.13.0 for this feature.</p>
 </section>
 <section id="enable-onednn-graph">
 <h3>Enable oneDNN Graph<a class="headerlink" href="#enable-onednn-graph" title="Permalink to this heading"></a></h3>
-<p>By default, oneDNN Graph is enabled in Intel® Extension for Tensorflow* on CPU for INT8 models.</p>
+<p>By default, oneDNN Graph is enabled in Intel® Extension for Tensorflow* for INT8 models.</p>
 <p>Enable it explicitly by:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="kn">import</span> <span class="nn">os</span>
   <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;ITEX_ONEDNN_GRAPH&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
@@ -141,6 +141,7 @@
 </section>
 <section id="hardware-environment">
 <h2>Hardware Environment<a class="headerlink" href="#hardware-environment" title="Permalink to this heading"></a></h2>
+<p>Support: Intel® Xeon® CPU &amp; Intel® Data Center Flex Series GPU.</p>
 <section id="cpu">
 <h3>CPU<a class="headerlink" href="#cpu" title="Permalink to this heading"></a></h3>
 <p>It’s recommended to run the example on the Intel® Xeon® processors, which supports Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions.</p>
@@ -162,9 +163,17 @@
 <p>You are expected to see <code class="docutils literal notranslate"><span class="pre">amx_bf16</span></code> and <code class="docutils literal notranslate"><span class="pre">amx_int8</span></code>, otherwise your processors do not support Intel® Advanced Matrix Extensions.</p>
 </section>
 </section>
+<section id="gpu">
+<h3>GPU<a class="headerlink" href="#gpu" title="Permalink to this heading"></a></h3>
+<p>Support: Intel® Data Center Flex Series GPU.</p>
+<section id="local-server">
+<h4>Local Server<a class="headerlink" href="#local-server" title="Permalink to this heading"></a></h4>
+<p>Install the GPU driver and oneAPI packages by referring to <a class="reference external" href="/docs/install/install_for_gpu">Intel GPU Software Installation</a>.</p>
+</section>
+</section>
 <section id="intel-devcloud">
 <h3>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Permalink to this heading"></a></h3>
-<p>If you have no CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions, you could register on Intel® DevCloud and try this example on an second generation Intel® Xeon based processors or newer. To learn more about working with Intel® DevCloud, refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a></p>
+<p>If you have no CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions or no Intel GPU support INT8, you could register on Intel® DevCloud and try this example on an second generation Intel® Xeon based processors or newer. To learn more about working with Intel® DevCloud, refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a></p>
 </section>
 </section>
 <section id="running-environment">
