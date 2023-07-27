@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gc5aa641 documentation</title>
+  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gff904ce documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -87,30 +87,34 @@
 <h1>Intel® Extension for TensorFlow* Docker Container Guide<a class="headerlink" href="#intel-extension-for-tensorflow-docker-container-guide" title="Permalink to this heading"></a></h1>
 <section id="description">
 <h2>Description<a class="headerlink" href="#description" title="Permalink to this heading"></a></h2>
-<p>This document has instruction for running TensorFlow using Intel® Extension for TensorFlow* in docker container.</p>
+<p>This document has instructions for running TensorFlow using Intel® Extension for TensorFlow* in a Docker container.</p>
 <p>Assumptions:</p>
 <ul class="simple">
-<li><p>Host machine installs Intel GPU.</p></li>
-<li><p>Host machine installs Linux kernel that is compatible with GPU drivers.</p></li>
-<li><p>Host machine has Intel GPU driver.</p></li>
-<li><p>Host machine installs Docker software.</p></li>
+<li><p>Host machine contains an Intel GPU.</p></li>
+<li><p>Host machine uses a Linux kernel that is compatible with GPU drivers.</p></li>
+<li><p>Host machine has a compatible Intel GPU driver installed</p></li>
+<li><p>Host machine has Docker software installed.</p></li>
 </ul>
 <p>Refer to <a class="reference internal" href="../docs/install/install_for_xpu.html"><span class="doc">Install for XPU</span></a> and <a class="reference internal" href="../docs/install/install_for_cpu.html"><span class="doc">Install for CPU</span></a> for detail.</p>
 </section>
 <section id="binaries-preparation">
 <h2>Binaries Preparation<a class="headerlink" href="#binaries-preparation" title="Permalink to this heading"></a></h2>
-<p>Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory.</p>
+<p>Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory. You can get the intel-extension-for-tensorflow wheel link from https://pypi.org/project/intel-extension-for-tensorflow/#files, and intel-extension-for-tensorflow-lib wheel link from https://pypi.org/project/intel-extension-for-tensorflow-lib/#files.</p>
+<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well. You can get the intel-optimization-for-horovod wheel link from https://pypi.org/project/intel-optimization-for-horovod/#files.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
+<span class="n">cd</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
+<span class="n">wget</span> <span class="o">&lt;</span><span class="n">download</span> <span class="n">link</span> <span class="kn">from</span> <span class="nn">https</span><span class="p">:</span><span class="o">//</span><span class="n">pypi</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">project</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="c1">#files&gt;</span>
+<span class="n">wget</span> <span class="o">&lt;</span><span class="n">download</span> <span class="n">link</span> <span class="kn">from</span> <span class="nn">https</span><span class="p">:</span><span class="o">//</span><span class="n">pypi</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">project</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">-</span><span class="n">lib</span><span class="o">/</span><span class="c1">#files&gt;</span>
+<span class="n">wget</span> <span class="o">&lt;</span><span class="n">download</span> <span class="n">link</span> <span class="kn">from</span> <span class="nn">https</span><span class="p">:</span><span class="o">//</span><span class="n">pypi</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">project</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span><span class="o">/</span><span class="c1">#files&gt;</span>
 </pre></div>
 </div>
-<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well.</p>
 </section>
 <section id="usage-of-docker-container">
 <h2>Usage of Docker Container<a class="headerlink" href="#usage-of-docker-container" title="Permalink to this heading"></a></h2>
 <section id="i-customize-build-script">
-<h3>I. Customize build script<a class="headerlink" href="#i-customize-build-script" title="Permalink to this heading"></a></h3>
-<p><a class="reference external" href="./build.sh">build.sh</a> is provided as docker container build script. While OS version and some software version (such as Python and TensorFlow) is hard coded inside the script. If you prefer to use newer or later version, you can edit this script.</p>
-<p>For example, to build docker container with Python 3.10 and TensorFlow 2.13 on Ubuntu 22.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as below.</p>
+<h3>I. Customize Build Script<a class="headerlink" href="#i-customize-build-script" title="Permalink to this heading"></a></h3>
+<p>We provide <a class="reference external" href="./build.sh">build.sh</a> as the Docker container build script. The OS version and some software versions (such as Python and TensorFlow) are hard coded inside the script. If you’re using a different version, you can edit this script.</p>
+<p>For example, to build a Docker container with Python 3.10 and TensorFlow 2.13 on an Ubuntu 22.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as shown below.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">IMAGE_NAME</span><span class="o">=</span>intel-extension-for-tensorflow:cpu-ubuntu
 <span class="w">        </span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VERSION</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">PYTHON</span><span class="o">=</span>python3.10<span class="w"> </span><span class="se">\</span>
@@ -122,15 +126,15 @@
 </div>
 </section>
 <section id="ii-build-the-container">
-<h3>II. Build the container<a class="headerlink" href="#ii-build-the-container" title="Permalink to this heading"></a></h3>
-<p>To build the docker container, enter into <a class="reference external" href="./">docker</a> folder and run below commands:</p>
+<h3>II. Build the Container<a class="headerlink" href="#ii-build-the-container" title="Permalink to this heading"></a></h3>
+<p>To build the Docker container, enter into <a class="reference external" href="./">docker</a> folder and run below commands:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./build.sh<span class="w"> </span><span class="o">[</span>xpu/cpu<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="iii-running-container">
-<h3>III. Running container<a class="headerlink" href="#iii-running-container" title="Permalink to this heading"></a></h3>
-<p>Run following commands to start docker container. You can use -v option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using –device /dev/dri option and run the container:</p>
+<section id="iii-running-the-container">
+<h3>III. Running the Container<a class="headerlink" href="#iii-running-the-container" title="Permalink to this heading"></a></h3>
+<p>Run the following commands to start the Docker container. You can use the <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into the container. To make the GPU available in the container, attach the GPU to the container using <code class="docutils literal notranslate"><span class="pre">--device</span> <span class="pre">/dev/dri</span></code> option and run the container:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">IMAGE_NAME</span><span class="o">=</span>intel-extension-for-tensorflow:xpu
 docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </span>&lt;your-local-dir&gt;:/workspace<span class="w"> </span><span class="se">\</span>
 <span class="w">           </span>-v<span class="w"> </span>/dev/dri/by-path:/dev/dri/by-path<span class="w"> </span><span class="se">\</span>
@@ -146,13 +150,13 @@ docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </sp
 </div>
 </section>
 </section>
-<section id="verify-if-intel-gpu-is-accessible-from-tensorflow">
-<h2>Verify if Intel GPU is accessible from TensorFlow<a class="headerlink" href="#verify-if-intel-gpu-is-accessible-from-tensorflow" title="Permalink to this heading"></a></h2>
-<p>You are inside container now. Run following command to verify Intel GPU is visible to TensorFlow:</p>
+<section id="verify-that-intel-gpu-is-accessible-from-tensorflow">
+<h2>Verify That Intel GPU is Accessible From TensorFlow<a class="headerlink" href="#verify-that-intel-gpu-is-accessible-from-tensorflow" title="Permalink to this heading"></a></h2>
+<p>You are inside the container now. Run this command to verify the Intel GPU is visible to TensorFlow:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())&quot;</span>
 </pre></div>
 </div>
-<p>You should be able to see GPU device in list of devices. Sample output looks like below:</p>
+<p>You should see your GPU device in the list of devices. Sample output looks like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;/device:CPU:0&quot;</span>
 <span class="n">device_type</span><span class="p">:</span> <span class="s2">&quot;CPU&quot;</span>
 <span class="n">memory_limit</span><span class="p">:</span> <span class="mi">268435456</span>
