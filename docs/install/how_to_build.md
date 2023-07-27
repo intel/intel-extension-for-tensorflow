@@ -16,7 +16,7 @@
     - [Configure For CPU](#configure-for-cpu)
     - [Configure For GPU/XPU](#configure-for-gpuxpu)
   - [Build Source Code](#build-source-code)
-- [Additional](#addtional)
+- [Additional](#additional)
   - [Configure Example For CPU](#configure-example-for-gpu-or-xpu)
   - [Configure Example For GPU or XPU](#configure-example-for-gpu-or-xpu)
 
