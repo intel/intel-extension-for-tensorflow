@@ -3,31 +3,35 @@ Intel® Extension for TensorFlow* Docker Container Guide
 
 ## Description
 
-This document has instruction for running TensorFlow using Intel® Extension for TensorFlow* in docker container.
+This document has instructions for running TensorFlow using Intel® Extension for TensorFlow* in a Docker container.
 
 Assumptions:
-* Host machine installs Intel GPU.
-* Host machine installs Linux kernel that is compatible with GPU drivers.
-* Host machine has Intel GPU driver.
-* Host machine installs Docker software.
+* Host machine contains an Intel GPU.
+* Host machine uses a Linux kernel that is compatible with GPU drivers.
+* Host machine has a compatible Intel GPU driver installed
+* Host machine has Docker software installed.
 
 Refer to [Install for XPU](../docs/install/install_for_xpu.md) and [Install for CPU](../docs/install/install_for_cpu.md) for detail.
 
 ## Binaries Preparation
 
-Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory.
+Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory. You can get the intel-extension-for-tensorflow wheel link from https://pypi.org/project/intel-extension-for-tensorflow/#files, and intel-extension-for-tensorflow-lib wheel link from https://pypi.org/project/intel-extension-for-tensorflow-lib/#files.
+
+To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well. You can get the intel-optimization-for-horovod wheel link from https://pypi.org/project/intel-optimization-for-horovod/#files.
 
 ```
 mkdir ./models/binaries
+cd ./models/binaries
+wget <download link from https://pypi.org/project/intel-extension-for-tensorflow/#files>
+wget <download link from https://pypi.org/project/intel-extension-for-tensorflow-lib/#files>
+wget <download link from https://pypi.org/project/intel-optimization-for-horovod/#files>
 ```
 
-To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well.
-
 ## Usage of Docker Container
-### I. Customize build script
-[build.sh](./build.sh) is provided as docker container build script. While OS version and some software version (such as Python and TensorFlow) is hard coded inside the script. If you prefer to use newer or later version, you can edit this script.
+### I. Customize Build Script
+We provide [build.sh](./build.sh) as the Docker container build script. The OS version and some software versions (such as Python and TensorFlow) are hard coded inside the script. If you're using a different version, you can edit this script.
 
-For example, to build docker container with Python 3.10 and TensorFlow 2.13 on Ubuntu 22.04 layer, update [build.sh](./build.sh) as below.
+For example, to build a Docker container with Python 3.10 and TensorFlow 2.13 on an Ubuntu 22.04 layer, update [build.sh](./build.sh) as shown below.
 
 ```bash
 IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
@@ -39,16 +43,16 @@ IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
                                 -f itex-cpu.Dockerfile .
 ```
 
-### II. Build the container
+### II. Build the Container
 
-To build the docker container, enter into [docker](./) folder and run below commands:
+To build the Docker container, enter into [docker](./) folder and run below commands:
 
 ```bash
 ./build.sh [xpu/cpu]
 ```
-### III. Running container
+### III. Running the Container
 
-Run following commands to start docker container. You can use -v option to mount your local directory into container. To make GPU available in the container, attach the GPU to the container using --device /dev/dri option and run the container:
+Run the following commands to start the Docker container. You can use the `-v` option to mount your local directory into the container. To make the GPU available in the container, attach the GPU to the container using `--device /dev/dri` option and run the container:
 
 ```bash
 IMAGE_NAME=intel-extension-for-tensorflow:xpu
@@ -64,13 +68,13 @@ docker run -v <your-local-dir>:/workspace \
            $IMAGE_NAME bash
 ```
 
-## Verify if Intel GPU is accessible from TensorFlow
-You are inside container now. Run following command to verify Intel GPU is visible to TensorFlow:
+## Verify That Intel GPU is Accessible From TensorFlow
+You are inside the container now. Run this command to verify the Intel GPU is visible to TensorFlow:
 
 ```
 python -c "from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())"
 ```
-You should be able to see GPU device in list of devices. Sample output looks like below:
+You should see your GPU device in the list of devices. Sample output looks like this:
 
 ```
 [name: "/device:CPU:0"
