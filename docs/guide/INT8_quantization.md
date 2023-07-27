@@ -5,9 +5,7 @@ Quantization is a very popular deep learning model optimization technique invent
 
 Intel® Extension for TensorFlow\* co-works with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) v2.0 or newer to provide INT8 quantization solutions for both GPU and CPU. 
 
-On GPU, Intel® Extension for Tensorflow\* uses legacy compatible TensorFlow INT8 quantization solution. Refer to [accelerating AlexNet quantization example](../../examples/accelerate_alexnet_by_quantization/README.md). 
-
-On CPU, Intel® Extension for Tensorflow\* integrates and adopts new [oneDNN Graph API](https://spec.oneapi.io/onednn-graph/latest/introduction.html) in INT8 quantization for better out of box performance as shown in the following example. 
+Intel® Extension for Tensorflow\* integrates and adopts new [oneDNN Graph API](https://spec.oneapi.io/onednn-graph/latest/introduction.html) in INT8 quantization for better out of box performance as shown in the following example. 
 
 ## Workflow 
 ![](images/INT8_flow.png)
@@ -19,7 +17,7 @@ The workflow contains 2 parts: graph optimization and graph executor.
 
 
 ## Usage
-oneDNN Graph optimization pass is enabled on INT8 quantization by default on CPU. 
+oneDNN Graph optimization pass is enabled on INT8 quantization by default on GPU and CPU. 
 
 For better performance in INT8 models execution, TF grappler constant folding optimization must be disabled by the following environment variable setting.
 
