@@ -13,7 +13,7 @@ Verified Hardware Platforms:
    
 ## Prerequisites
  
-This example only applies to stock TensorFlow* >=2.13.0 and Intel® Extension for TensorFlow* >=1.2.0. 
+This example only applies to stock TensorFlow* >=2.13.0 and Intel® Extension for TensorFlow* >=2.13.0.0.
 
 ### Prepare the Codes
 ```bash

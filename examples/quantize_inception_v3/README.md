@@ -24,7 +24,7 @@ The example shows an end-to-end pipeline:
 
 ### Intel® Extension for Tensorflow* Version
 
-Install Intel® Extension for Tensorflow* > 2.13.0 for this feature.
+Install Intel® Extension for Tensorflow* >= 2.13.0.0 for this feature.
 
 ### Enable oneDNN Graph
 
