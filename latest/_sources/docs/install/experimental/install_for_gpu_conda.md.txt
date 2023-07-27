@@ -1,6 +1,6 @@
 # Conda Environment Installation Instructions
 
-This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.2.0 and Intel® Optimization for Horovod* v0.5.0 deployment for distributed training on Conda environment.    
+This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v2.13.0.0 and Intel® Optimization for Horovod* v0.28.1.0 deployment for distributed training on Conda environment.
 
 ## Preconditions
 We assume you have installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per [instructions](../install_for_xpu.md#install_oneapi_base_toolkit_packages) successfully.
@@ -57,10 +57,10 @@ python3 -c "import intel_extension_for_tensorflow as itex; print(itex.version.GI
 ```
 Expected result:
 ```
-v1.2.0-8e0294ba
+v2.13.0.0-142f5f29
 ```
 
-In order to install Intel® Optimization for Horovod* v0.5.0 for distributed training, you should install oneCCL after you install oneAPI Basekit.
+In order to install Intel® Optimization for Horovod* v0.28.1.0 for distributed training, you should install oneCCL after you install oneAPI Basekit.
 
 ```
 source /path/to/intel/oneapi/mpi/latest/env/vars.sh

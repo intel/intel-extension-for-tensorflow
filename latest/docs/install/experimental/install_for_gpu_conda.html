@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conda Environment Installation Instructions &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gff904ce documentation</title>
+  <title>Conda Environment Installation Instructions &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g8a593c7 documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
@@ -102,7 +102,7 @@
              
   <section id="conda-environment-installation-instructions">
 <h1>Conda Environment Installation Instructions<a class="headerlink" href="#conda-environment-installation-instructions" title="Permalink to this heading"></a></h1>
-<p>This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v1.2.0 and Intel® Optimization for Horovod* v0.5.0 deployment for distributed training on Conda environment.</p>
+<p>This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v2.13.0.0 and Intel® Optimization for Horovod* v0.28.1.0 deployment for distributed training on Conda environment.</p>
 <section id="preconditions">
 <h2>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this heading"></a></h2>
 <p>We assume you have installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per <a class="reference external" href="../install_for_xpu.md#install_oneapi_base_toolkit_packages">instructions</a> successfully.</p>
@@ -151,10 +151,10 @@ You can use the following command to install Miniconda. During installation, you
 </pre></div>
 </div>
 <p>Expected result:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v1</span><span class="mf">.2.0</span><span class="o">-</span><span class="mf">8e0294</span><span class="n">ba</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v2</span><span class="mf">.13.0.0</span><span class="o">-</span><span class="mi">142</span><span class="n">f5f29</span>
 </pre></div>
 </div>
-<p>In order to install Intel® Optimization for Horovod* v0.5.0 for distributed training, you should install oneCCL after you install oneAPI Basekit.</p>
+<p>In order to install Intel® Optimization for Horovod* v0.28.1.0 for distributed training, you should install oneCCL after you install oneAPI Basekit.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">mpi</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
 <span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">ccl</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
 

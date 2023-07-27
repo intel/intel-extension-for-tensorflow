@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Online Documentation Build Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gff904ce documentation</title>
+  <title>Online Documentation Build Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g8a593c7 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -98,31 +98,35 @@
 <section id="create-release-version">
 <h2>Create Release Version<a class="headerlink" href="#create-release-version" title="Permalink to this heading"></a></h2>
 <p>When releasing a new product version, a git tag must be added to main branch. The release version will be the same as the <code class="docutils literal notranslate"><span class="pre">tag</span></code> name.</p>
-<p>It needs to be triggered and commit to branch <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> manually.</p>
-<p>`
-git clone https://github.com/intel/intel-extension-for-tensorflow.git
-git checkout tag??
-cd intel-extension-for-tensorflow/docs/build_docs
-./build.sh version</p>
-<p>cd ../../build_tmp/gh-pages
-git add .
-git commit -m “add version ???”
-git push
-`</p>
+<p>Generating the publishing the documentation for a release must be triggered manually, and the resulting HTML content committed to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch manually. (The github.io site will be updated automatically when this <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch is updated.)</p>
+<p>Note: Only GitHub users with write permission to the repo are able to update the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch content.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">git</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">&lt;</span><span class="n">release</span> <span class="n">tag</span> <span class="n">name</span><span class="o">&gt;</span>
+<span class="n">cd</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">build_docs</span>
+<span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="n">version</span>
+
+<span class="n">cd</span> <span class="o">../../</span><span class="n">build_tmp</span><span class="o">/</span><span class="n">gh</span><span class="o">-</span><span class="n">pages</span>
+<span class="n">git</span> <span class="n">add</span> <span class="o">.</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;add version &lt;release tag name&gt;&quot;</span>
+<span class="n">git</span> <span class="n">push</span>
+</pre></div>
+</div>
 </section>
 <section id="build-to-local-test">
 <h2>Build to Local Test<a class="headerlink" href="#build-to-local-test" title="Permalink to this heading"></a></h2>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/intel/intel-extension-for-tensorflow.git
-change code??
-cd intel-extension-for-tensorflow/docs/build_docs
+<p>Before submitting a PR that modifies documentation, you should test
+your changes by building the documentation locally.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">git</span>
+<span class="c1"># make your documentation changes</span>
+<span class="n">cd</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">build_docs</span>
 
-./build.sh local
-cd ../../build_tmp/draft/latest
-python3 -m http.server 9000
+<span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="n">local</span>
+<span class="n">cd</span> <span class="o">../../</span><span class="n">build_tmp</span><span class="o">/</span><span class="n">draft</span><span class="o">/</span><span class="n">latest</span>
+<span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">http</span><span class="o">.</span><span class="n">server</span> <span class="mi">9000</span>
 </pre></div>
 </div>
-<p>Use Chrome to open ‘127.0.0.1:9000’ to check the latest version documents.</p>
-<p>Note, the ‘version.html’ is not present in this case for latest version.</p>
+<p>Use your web browser (e.g., Chrome) to open <code class="docutils literal notranslate"><span class="pre">127.0.0.1:9000</span></code> or <code class="docutils literal notranslate"><span class="pre">localhost:9000</span></code> to check your locally generated HTML content.</p>
+<p>Note, the <code class="docutils literal notranslate"><span class="pre">version.html</span></code> version picker is not functional for locally generated documentation.</p>
 <p>If you want to test version switching functionality using <code class="docutils literal notranslate"><span class="pre">version.html</span></code>, build for <code class="docutils literal notranslate"><span class="pre">version</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/intel/intel-extension-for-tensorflow.git
 # make your documentation changes
