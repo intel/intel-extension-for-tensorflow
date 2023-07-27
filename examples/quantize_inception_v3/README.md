@@ -17,18 +17,18 @@ The example shows an end-to-end pipeline:
 
 2. Execute the calibration by Intel® Neural Compressor.
 
-3. Quantize and accelerate the inference by Intel® Extension for Tensorflow* for CPU.
+3. Quantize and accelerate the inference by Intel® Extension for Tensorflow* for GPU and CPU.
   
 
 ## Configuration
 
 ### Intel® Extension for Tensorflow* Version
 
-Install Intel® Extension for Tensorflow* > 1.1.0 for this feature.
+Install Intel® Extension for Tensorflow* > 2.13.0 for this feature.
 
 ### Enable oneDNN Graph
 
-By default, oneDNN Graph is enabled in Intel® Extension for Tensorflow* on CPU for INT8 models.
+By default, oneDNN Graph is enabled in Intel® Extension for Tensorflow* for INT8 models.
  
 Enable it explicitly by:
  
@@ -65,6 +65,7 @@ tf.compat.v1.keras.backend.set_session(session)
 ```
 
 ## Hardware Environment
+Support: Intel® Xeon® CPU & Intel® Data Center Flex Series GPU.
 
 ### CPU
 
@@ -91,9 +92,17 @@ lscpu | grep amx
 ```
 You are expected to see `amx_bf16` and `amx_int8`, otherwise your processors do not support Intel® Advanced Matrix Extensions.
 
+### GPU
+
+Support: Intel® Data Center Flex Series GPU.
+
+#### Local Server
+
+Install the GPU driver and oneAPI packages by referring to [Intel GPU Software Installation](/docs/install/install_for_gpu.md).
+
 ### Intel® DevCloud
 
-If you have no CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions, you could register on Intel® DevCloud and try this example on an second generation Intel® Xeon based processors or newer. To learn more about working with Intel® DevCloud, refer to [Intel® DevCloud](https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html)
+If you have no CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions or no Intel GPU support INT8, you could register on Intel® DevCloud and try this example on an second generation Intel® Xeon based processors or newer. To learn more about working with Intel® DevCloud, refer to [Intel® DevCloud](https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html)
 
 
 ## Running Environment
