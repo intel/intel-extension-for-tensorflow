@@ -18,25 +18,30 @@ If the PR doesn't impact documentation (for example, it only contains code chang
 
 When releasing a new product version, a git tag must be added to main branch. The release version will be the same as the `tag` name.
 
-It needs to be triggered and commit to branch `gh-pages` manually.
+Generating the publishing the documentation for a release must be triggered manually, and the resulting HTML content committed to the `gh-pages` branch manually. (The github.io site will be updated automatically when this `gh-pages` branch is updated.)
 
-`
+Note: Only GitHub users with write permission to the repo are able to update the `gh-pages` branch content.
+
+```
 git clone https://github.com/intel/intel-extension-for-tensorflow.git
-git checkout tag??
+git checkout <release tag name>
 cd intel-extension-for-tensorflow/docs/build_docs
 ./build.sh version
 
 cd ../../build_tmp/gh-pages
 git add .
-git commit -m "add version ???"
+git commit -m "add version <release tag name>"
 git push
-`
+```
 
 ## Build to Local Test
 
+Before submitting a PR that modifies documentation, you should test
+your changes by building the documentation locally.
+
 ```
 git clone https://github.com/intel/intel-extension-for-tensorflow.git
-change code??
+# make your documentation changes
 cd intel-extension-for-tensorflow/docs/build_docs
 
 ./build.sh local
@@ -44,9 +49,9 @@ cd ../../build_tmp/draft/latest
 python3 -m http.server 9000
 ```
 
-Use Chrome to open '127.0.0.1:9000' to check the latest version documents.
+Use your web browser (e.g., Chrome) to open `127.0.0.1:9000` or `localhost:9000` to check your locally generated HTML content.
 
-Note, the 'version.html' is not present in this case for latest version.
+Note, the `version.html` version picker is not functional for locally generated documentation.
 
 If you want to test version switching functionality using `version.html`, build for `version`:
 
