@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Features &mdash; Intel® Extension for TensorFlow* v2.13.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Customized Operators" href="itex_ops.html" />
+    <link rel="prev" title="Infrastructure" href="infrastructure.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.13.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#operator-optimization">Operator Optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="itex_ops.html">Customized Operators</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#graph-optimization">Graph Optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="itex_fusion.html">Graph fusion</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-auto-mixed-precision-amp">Advanced Auto Mixed Precision (AMP)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="advanced_auto_mixed_precision.html">Advanced Auto Mixed Precision</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ease-of-use-python-api">Ease-of-use Python API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="python_api.html">Python APIs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="environment_variables.html">Environment Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#gpu-profiler">GPU Profiler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="how_to_enable_profiler.html">GPU Profiler</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#cpu-launcher-experimental">CPU Launcher [Experimental]</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="launch.html">Launch Script User Guide</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#int8-quantization">INT8 Quantization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="INT8_quantization.html">INT8 Quantization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="XPUAutoShard.html">XPUAutoShard on GPU [Experimental]</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="OpenXLA_Support_on_GPU.html">OpenXLA Support on GPU via PJRT</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Features</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/features.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="features">
+<h1>Features<a class="headerlink" href="#features" title="Permalink to this heading"></a></h1>
+<section id="operator-optimization">
+<h2>Operator Optimization<a class="headerlink" href="#operator-optimization" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* optimizes operators in CPU and implements all GPU operators with Intel® oneAPI DPC++ Compiler. Users can get these operator optimization benefits by default without any additional setting.</p>
+<p>Besides, several customized operators for performance boost with <cite>itex.ops</cite> namespace are developed to extend TensorFlow public APIs implementation for better performance. Please refer to <a class="reference external" href="itex_ops.html">Customized OPs</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="graph-optimization">
+<h2>Graph Optimization<a class="headerlink" href="#graph-optimization" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* provides graph optimization to fuse specified op pattern to new single op for better performance, such as Conv2D+ReLU, Linear+ReLU, etc.  The benefit of the fusions are delivered to users in a transparant fashion.</p>
+<p>Users can get the graph optimization benefits by default without any additional setting. Please refer to <a class="reference external" href="itex_fusion.html">Graph Optimization</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="advanced-auto-mixed-precision-amp">
+<h2>Advanced Auto Mixed Precision (AMP)<a class="headerlink" href="#advanced-auto-mixed-precision-amp" title="Permalink to this heading"></a></h2>
+<p>Low precision data type bfloat16 and float16 are natively supported from the 3rd Generation Xeon® Scalable Processors (aka Cooper Lake) with AVX512 instruction set and Intel® Data Center GPU with further boosted performance and with less memory consumption. The lower-precision data types support of Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.</p>
+<p>Please refer to  <a class="reference external" href="advanced_auto_mixed_precision.html">Advanced Auto Mixed Precision</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="ease-of-use-python-api">
+<h2>Ease-of-use Python API<a class="headerlink" href="#ease-of-use-python-api" title="Permalink to this heading"></a></h2>
+<p>Generally, the default configuration of Intel® Extension for TensorFlow* can get the good performance without any code changes. At the same time, Intel® Extension for TensorFlow* also provides simple frontend Python APIs and utilities for advanced users to get more performance optimizations with minor code changes for different kinds of application scenarios. Typically, only two to three clauses are required to be added to the original code.</p>
+<p>Please check <a class="reference external" href="python_api.html">Python APIs</a> page for details of API functions and <a class="reference external" href="environment_variables.html">Environment Variables</a> page for environment setting.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="gpu-profiler">
+<h2>GPU Profiler<a class="headerlink" href="#gpu-profiler" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* provides support for TensorFlow* profiler with almost same with TensorFlow Profiler(<a class="reference external" href="https://www.tensorflow.org/guide/profiler">https://www.tensorflow.org/guide/profiler</a>), one more thing to enable the profiler is exposing three environment variables (<cite>export ZE_ENABLE_TRACING_LAYER=1</cite>, <cite>export UseCyclesPerSecondTimer=1</cite>, <cite>export ENABLE_TF_PROFILER=1</cite>).</p>
+<p>Please refer to <a class="reference external" href="how_to_enable_profiler.html">GPU Profiler</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="cpu-launcher-experimental">
+<h2>CPU Launcher [Experimental]<a class="headerlink" href="#cpu-launcher-experimental" title="Permalink to this heading"></a></h2>
+<p>There are several factors that influence performance. Setting configuration options properly contributes to a performance boost. However, there is no unified configuration that is optimal to all topologies. Users need to try different combinations.</p>
+<p>Intel® Extension for TensorFlow* provides a CPU launcher to automate these configuration settings to free users from the complicated work. This guide helps you to learn the <em>launch</em> script common usage and provides examples that cover many optimized configuration cases as well.</p>
+<p>Please refer to <a class="reference external" href="launch.html">CPU Launcher</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="int8-quantization">
+<h2>INT8 Quantization<a class="headerlink" href="#int8-quantization" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* co-works with Intel® Neural Compressor(<a class="reference external" href="https://github.com/intel/neural-compressor">https://github.com/intel/neural-compressor</a>) to provide compatible TensorFlow INT8 quantization solution support with same user experience.</p>
+<p>Please refer to <a class="reference external" href="INT8_quantization.html">INT8 Quantization</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="xpuautoshard-on-gpu-experimental">
+<h2>XPUAutoShard on GPU [Experimental]<a class="headerlink" href="#xpuautoshard-on-gpu-experimental" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* provides XPUAutoShard feature to automatically shard the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage.</p>
+<p>Please refer to <a class="reference external" href="XPUAutoShard.html">XPUAutoShard</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="openxla-support-on-gpu-experimental">
+<h2>OpenXLA Support on GPU [Experimental]<a class="headerlink" href="#openxla-support-on-gpu-experimental" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* adopts a uniform Device API PJRT(<a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md</a>) as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA experimental support.</p>
+<p>Please refer to <a class="reference external" href="OpenXLA_Support_on_GPU.html">OpenXLA_Support_on_GPU</a> for details.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="infrastructure.html" class="btn btn-neutral float-left" title="Infrastructure" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="itex_ops.html" class="btn btn-neutral float-right" title="Customized Operators" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

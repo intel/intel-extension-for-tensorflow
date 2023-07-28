@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Experimental: Intel® Arc™ A-Series GPU Software Installation &mdash; Intel® Extension for TensorFlow* v2.13.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">v2.13.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><em>Experimental:</em> Intel® Arc™ A-Series GPU Software Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/docs/install/experimental/install_for_arc_gpu.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="experimental-intel-arc-a-series-gpu-software-installation">
+<h1><em>Experimental:</em> Intel® Arc™ A-Series GPU Software Installation<a class="headerlink" href="#experimental-intel-arc-a-series-gpu-software-installation" title="Permalink to this heading"></a></h1>
+<section id="experimental-release">
+<h2><em>Experimental Release</em><a class="headerlink" href="#experimental-release" title="Permalink to this heading"></a></h2>
+<p>The Intel® Extension for TensorFlow* has early <em>experimental only support</em> for Intel® Arc™ A-Series GPUs on Windows Subsystem for Linux 2 with Ubuntu Linux installed and native Ubuntu Linux.</p>
+<p>Issues opened for the Intel® Extension for TensorFlow* on Intel® Arc™ A-Series GPUs will be addressed on a best-effort basis, but no guarantee is provided as to when these issues will be fixed.</p>
+</section>
+<section id="hardware-requirements">
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<p>Hardware Platforms with Experimental Only Support:</p>
+<ul class="simple">
+<li><p>Intel® Arc™ A-Series GPUs</p></li>
+</ul>
+</section>
+<section id="software-requirements">
+<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Permalink to this heading"></a></h2>
+<section id="windows-subsystem-for-linux-2-wsl2">
+<h3>Windows Subsystem for Linux 2 (WSL2)<a class="headerlink" href="#windows-subsystem-for-linux-2-wsl2" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>For <a class="reference external" href="https://www.microsoft.com/en-us/windows/get-windows-10">Windows 10</a> or <a class="reference external" href="https://www.microsoft.com/en-us/windows/windows-11">Windows 11</a>:</p>
+<ul>
+<li><p><a class="reference external" href="https://learn.microsoft.com/en-us/windows/wsl/about">Windows Subystem for Linux 2</a> (WSL2) with Ubuntu 22.04 (64-bit)</p></li>
+<li><p>Windows GPU Drivers: <a class="reference external" href="https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html">Intel® Arc™ Graphics Windows Driver 31.0.101.4255</a> or later (installation instructions below)</p></li>
+</ul>
+</li>
+<li><p>For Ubuntu Linux 22.04 within WSL2:</p>
+<ul>
+<li><p>Linux Runtime Libraries: Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a> (installation instructions below)</p></li>
+<li><p>Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)</p></li>
+<li><p>TensorFlow 2.13.0</p></li>
+<li><p>Python 3.8-3.11</p></li>
+<li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="native-linux-running-directly-on-hardware">
+<h3>Native Linux Running Directly on Hardware<a class="headerlink" href="#native-linux-running-directly-on-hardware" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Ubuntu 22.04 (64-bit)</p></li>
+<li><p>Intel® GPU Drivers for Linux (installation instructions below)</p>
+<ul>
+<li><p>Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a></p></li>
+</ul>
+</li>
+<li><p>Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)</p></li>
+<li><p>TensorFlow 2.13.0</p></li>
+<li><p>Python 3.8-3.11</p></li>
+<li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
+</ul>
+</section>
+</section>
+<section id="step-by-step-instructions">
+<h2>Step-By-Step Instructions<a class="headerlink" href="#step-by-step-instructions" title="Permalink to this heading"></a></h2>
+<section id="install-gpu-drivers">
+<h3>1. Install GPU Drivers<a class="headerlink" href="#install-gpu-drivers" title="Permalink to this heading"></a></h3>
+<section id="id1">
+<h4>Windows Subsystem for Linux 2 (WSL2)<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h4>
+<p>When using WSL2, the GPU drivers are installed in the Windows OS and runtime components such as <a class="reference external" href="https://github.com/oneapi-src/level-zero">Level-Zero</a> are installed within Linux (in WSL2).</p>
+<section id="windows-gpu-drivers">
+<h5>Windows GPU Drivers<a class="headerlink" href="#windows-gpu-drivers" title="Permalink to this heading"></a></h5>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>OS</th>
+<th>Intel GPU</th>
+<th>Install Intel GPU Driver</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows 10, Windows 11</td>
+<td>Intel® Arc™ A-Series GPUs</td>
+<td><a href="https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html">Intel® Arc™ Graphics Windows DCH Driver</a></td>
+</tr>
+</tbody>
+</table><p>Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.</p>
+</section>
+<section id="ubuntu-linux-installed-in-wsl2">
+<h5>Ubuntu Linux Installed in WSL2<a class="headerlink" href="#ubuntu-linux-installed-in-wsl2" title="Permalink to this heading"></a></h5>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>OS</th>
+<th>Intel GPU</th>
+<th>Install Intel Compute Runtime Components</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ubuntu 22.04 installed in WSL2</td>
+<td>Intel® Arc™ A-Series GPUs</td>
+<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please be sure to append the specific version after components, as is done below.</td>
+</tr>
+</tbody>
+</table><p>The steps to install the runtime components in Ubuntu Linux (within WSL2) are:</p>
+<ul>
+<li><p>Add the repositories.intel.com/graphics package repository to your Ubuntu installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>gpg-agent<span class="w"> </span>wget
+wget<span class="w"> </span>-qO<span class="w"> </span>-<span class="w"> </span>https://repositories.intel.com/graphics/intel-graphics.key<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>gpg<span class="w"> </span>--dearmor<span class="w"> </span>--output<span class="w"> </span>/usr/share/keyrings/intel-graphics.gpg
+<span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy arc&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w">  </span>/etc/apt/sources.list.d/intel.gpu.jammy.list
+sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+</pre></div>
+</div>
+</li>
+<li><p>Install the necessary runtime packages:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>intel-opencl-icd<span class="o">=</span><span class="m">23</span>.17.26241.33-647~22.04<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>intel-level-zero-gpu<span class="o">=</span><span class="m">1</span>.3.26241.33-647~22.04<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>level-zero<span class="o">=</span><span class="m">1</span>.11.0-647~22.04<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>intel-igc-cm<span class="o">=</span><span class="m">1</span>.0.176-647~22.04<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">libigc1</span><span class="o">=</span><span class="m">1</span>.0.13822.8-647~22.04<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">libigdfcl1</span><span class="o">=</span><span class="m">1</span>.0.13822.8-647~22.04<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">libigdgmm12</span><span class="o">=</span><span class="m">22</span>.3.5-647~22.04
+</pre></div>
+</div>
+</li>
+<li><p>Add the Intel® oneAPI library repositories to your Ubuntu installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>-O-<span class="w"> </span>https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>gpg<span class="w"> </span>--dearmor<span class="w"> </span>--output<span class="w"> </span>/usr/share/keyrings/oneapi-archive-keyring.gpg
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/apt/sources.list.d/oneAPI.list
+sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+</pre></div>
+</div>
+</li>
+<li><p>Install the necessary Intel® oneAPI library packages:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>intel-oneapi-runtime-dpcpp-cpp<span class="w"> </span>intel-oneapi-runtime-mkl
+</pre></div>
+</div>
+</li>
+</ul>
+<p>The above commands install only runtime libraries for Intel® oneAPI that are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section <a class="reference external" href="#optional-install-full-intel%C2%AE-oneapi">Optional: Install Full Intel® oneAPI Base Toolkit Packages</a>.</p>
+</section>
+</section>
+<section id="id2">
+<h4>Native Linux Running Directly on Hardware<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>OS</th>
+<th>Intel GPU</th>
+<th>Install Intel GPU Driver</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ubuntu 22.04</td>
+<td>Intel® Arc™ A-Series GPUs</td>
+<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb</code></td>
+</tr>
+</tbody>
+</table><p>The steps to install the runtime components in Ubuntu Linux are:</p>
+<ul>
+<li><p>The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html">Installation Guides for Intel Arc GPUs</a>. When installing the Intel® Arc™ A-Series GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please be sure to append the specific version after components, such as <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb</span></code>|</p></li>
+<li><p>Install the Intel® oneAPI libraries</p>
+<ul>
+<li><p>Add the Intel® oneAPI library repositories to your Ubuntu installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>-O-<span class="w"> </span>https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>gpg<span class="w"> </span>--dearmor<span class="w"> </span>--output<span class="w"> </span>/usr/share/keyrings/oneapi-archive-keyring.gpg
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/apt/sources.list.d/oneAPI.list
+sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Install the necessary Intel® oneAPI library packages:</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>intel-oneapi-runtime-dpcpp-cpp<span class="w"> </span>intel-oneapi-runtime-mkl
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+<p>The above commands install only runtime libraries for Intel® oneAPI that are used by the Intel® Extension for TensorFlow*.  If you would instead prefer to install the full Intel® oneAPI, see section <a class="reference external" href="#optional-install-full-intel%C2%AE-oneapi">Optional: Install Full Intel® oneAPI Base Toolkit Packages</a>.</p>
+</section>
+</section>
+<section id="install-tensorflow-via-pypi-wheel-in-linux">
+<h3>2. Install TensorFlow* via PyPI Wheel in Linux<a class="headerlink" href="#install-tensorflow-via-pypi-wheel-in-linux" title="Permalink to this heading"></a></h3>
+<p>The following steps can be used to install the TensorFlow framework and other necessary software in Ubuntu Linux running native (installed directly on hardware) or running within Windows Subsystem for Linux 2.</p>
+<section id="install-tensorflow">
+<h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h4>
+<p>The Python development and virtual environment setup recommendation by TensorFlow is to isolate package installation from the system.</p>
+<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.13.0.</p>
+<ul class="simple">
+<li></li>
+</ul>
+<section id="virtual-environment-install">
+<h5>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this heading"></a></h5>
+<p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
+<p>On Linux, it is often necessary to first update pip to a version that supports manylinux2014 wheels.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+</pre></div>
+</div>
+<p>To install in virtual environment, you can run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;tensorflow==2.13.0&#39;</span>
+</pre></div>
+</div>
+</section>
+<li></li>
+<section id="system-environment-install">
+<h5>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this heading"></a></h5>
+<p>If you prefer to install tensorflow in $HOME, append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span><span class="s1">&#39;tensorflow==2.13.0&#39;</span>
+</pre></div>
+</div>
+<p>And the following system environment install for Intel® Extension for TensorFlow* will also append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
+</section>
+</section>
+</section>
+<section id="install-intel-extension-for-tensorflow">
+<h3>3. Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h3>
+<p>To install a GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>gpu<span class="o">]</span>
+</pre></div>
+</div>
+<p>To install a <code class="docutils literal notranslate"><span class="pre">weekly</span></code> GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow-weekly<span class="o">[</span>gpu<span class="o">]</span><span class="w"> </span>-f<span class="w"> </span>https://developer.intel.com/itex-whl-weekly
+</pre></div>
+</div>
+<p>Check the environment for GPU:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>bash<span class="w"> </span>/path<span class="w"> </span>to<span class="w"> </span>site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+</pre></div>
+</div>
+</section>
+<section id="verify-the-installation">
+<h3>4. Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
+</pre></div>
+</div>
+<p>You can also run a <a class="reference internal" href="../../../examples/quick_example.html"><span class="doc">quick_example</span></a> to verify the installation.</p>
+</section>
+<section id="optional-install-full-intel-oneapi">
+<h3>Optional: Install Full Intel® oneAPI<a class="headerlink" href="#optional-install-full-intel-oneapi" title="Permalink to this heading"></a></h3>
+<p>If you prefer to have access to full Intel® oneAPI, you need to install at least the following:</p>
+<ul class="simple">
+<li><p>Intel® oneAPI DPC++ Compiler</p></li>
+<li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
+</ul>
+<p>Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://registrationcenter-download.intel.com/akdlm/IRC_NAS/992857b9-624c-45de-9701-f6445d845359/l_BaseKit_p_2023.2.0.49397_offline.sh
+<span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Library and oneMKL</span>
+<span class="c1"># if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too (Intel® oneAPI MPI Library will be installed automatically as its dependency)</span>
+$<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>./l_BaseKit_p_2023.2.0.49397_offline.sh
+</pre></div>
+</div>
+<p>For any more details, please follow the procedure in <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html">Intel® oneAPI Base Toolkit</a>.</p>
+<section id="setup-environment-variables">
+<h4>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Permalink to this heading"></a></h4>
+<p>When using the full Intel® oneAPI Base Toolkit, you will need to set up necessary environment variables with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>/opt/intel/oneapi/setvars.sh
+</pre></div>
+</div>
+<p>You may install more components than Intel® Extension for TensorFlow* needs, and if required, <code class="docutils literal notranslate"><span class="pre">setvars.sh</span></code> can be customized to point to a specific directory by using a <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-programming-guide/top/oneapi-development-environment-setup/use-the-setvars-script-with-linux-or-macos/use-a-config-file-for-setvars-sh-on-linux-or-macos.html">configuration file</a>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>/opt/intel/oneapi/setvars.sh<span class="w"> </span>--config<span class="o">=</span><span class="s2">&quot;full/path/to/your/config.txt&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

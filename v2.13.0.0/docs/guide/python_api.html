@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python APIs &mdash; Intel® Extension for TensorFlow* v2.13.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Environment Variables" href="environment_variables.html" />
+    <link rel="prev" title="Advanced Auto Mixed Precision" href="advanced_auto_mixed_precision.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.13.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#graph-optimization">Graph Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#advanced-auto-mixed-precision-amp">Advanced Auto Mixed Precision (AMP)</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="features.html#ease-of-use-python-api">Ease-of-use Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Python APIs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#prerequisite-import-intel-extension-for-tensorflow-as-itex">Prerequisite: <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">intel_extension_for_tensorflow</span> <span class="pre">as</span> <span class="pre">itex</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#python-apis-and-environment-variable-names">Python APIs and Environment Variable Names</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#python-apis-and-preserved-environment-variable-names">Python APIs and preserved environment variable Names</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#intel-extension-for-tensorflow-config-protocol">Intel® Extension for TensorFlow* Config Protocol</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#itex-configproto">itex.ConfigProto</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-gpuoptions">itex.GPUOptions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-graphoptions">itex.GraphOptions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-automixedprecisionoptions">itex.AutoMixedPrecisionOptions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-shardingconfig">itex.ShardingConfig</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-debugoptions">itex.DebugOptions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-set-config">itex.set_config</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#itex-get-config">itex.get_config</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-operators">itex operators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-ops-override">itex ops override</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-graph">itex graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#itex-version">itex version</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="environment_variables.html">Environment Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gpu-profiler">GPU Profiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="features.html">Features</a></li>
+      <li class="breadcrumb-item active">Python APIs</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/python_api.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="python-apis">
+<h1>Python APIs<a class="headerlink" href="#python-apis" title="Permalink to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* provides flexible Python APIs to configure settings for different types of application scenarios.</p>
+<section id="prerequisite-import-intel-extension-for-tensorflow-as-itex">
+<h3>Prerequisite: <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">intel_extension_for_tensorflow</span> <span class="pre">as</span> <span class="pre">itex</span></code><a class="headerlink" href="#prerequisite-import-intel-extension-for-tensorflow-as-itex" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="#itexconfigproto"><em>itex.ConfigProto</em></a>: ProtocolMessage for XPU configuration under different types of backends and optimization options.</p></li>
+<li><p><a class="reference external" href="#itexgraphoptions"><em>itex.GraphOptions</em></a>: ProtocolMessage for graph configuration optimization options.</p></li>
+<li><p><a class="reference external" href="#itexautomixedprecisionoptions"><em>itex.AutoMixedPrecisionOptions</em></a>: ProtocolMessage for auto mixed precision optimization options.</p></li>
+<li><p><a class="reference external" href="#itexshardingconfig"><em>itex.ShardingConfig</em></a>: ProtocolMessage for XPUAutoShard optimization options.</p></li>
+<li><p><a class="reference external" href="#itexdebugoptions"><em>itex.DebugOptions</em></a>: ProtocolMessage for debug options.</p></li>
+<li><p><a class="reference external" href="#itexset_config"><em>itex.set_config</em></a>: Public API for setting ConfigProto.</p></li>
+<li><p><a class="reference external" href="#itexget_config"><em>itex.get_config</em></a>: Public API for getting ConfigProto.</p></li>
+<li><p><a class="reference external" href="#itex-operators"><em>itex.ops</em></a>: Public API for extended XPU operations.</p></li>
+<li><p><a class="reference external" href="#itex-ops-override"><em>itex.experimental_ops_override</em></a>: Public API for override TensorFlow operations with ITEX ones.</p></li>
+<li><p><a class="reference external" href="#itex-version"><em>itex.version</em></a>: Public API for Intel® Extension for TensorFlow* and components version information.</p></li>
+</ul>
+</section>
+</section>
+<section id="python-apis-and-environment-variable-names">
+<h2>Python APIs and Environment Variable Names<a class="headerlink" href="#python-apis-and-environment-variable-names" title="Permalink to this heading"></a></h2>
+<p>You can easily configure and tune Intel® Extension for TensorFlow* run models using Python APIs and environment variables. We recommend Python APIs.</p>
+<section id="python-apis-and-preserved-environment-variable-names">
+<h3>Python APIs and preserved environment variable Names<a class="headerlink" href="#python-apis-and-preserved-environment-variable-names" title="Permalink to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Python APIs</th>
+<th>Default value</th>
+<th>Environment Variables</th>
+<th>Default value</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>itex.ConfigProto</code></td>
+<td><code>OFF</code><br><code>ON</code><br><code>ON</code><br/><code>OFF</code><br/><code>OFF</code><br/></td>
+<td><code>ITEX_ONEDNN_GRAPH</code> <br><code>ITEX_LAYOUT_OPT</code><br><code>ITEX_REMAPPER</code><br><code>ITEX_AUTO_MIXED_PRECISION</code><br><code>ITEX_SHARDING</code></td>
+<td><code>0</code><br><code>1</code>*<br><code>1</code><br/><code>0</code><br/><code>0</code><br/></td>
+<td>Set configuration options for specific backend type (<code>CPU</code>/<code>GPU</code>) and graph optimization. <br/> *<code>ITEX_LAYOUT_OPT</code> default <code>ON</code> in Intel GPU (except Intel® Data Center GPU Max Series) and default <code>OFF</code> in Intel CPU by hardware attributes</td>
+</tr>
+<tr>
+<td><code>itex.experimental_ops_override</code></td>
+<td><code>N/A</code></td>
+<td><code>N/A</code></td>
+<td>OFF</td>
+<td>Call this function to automatically override the operators with same name in TensorFlow by <code>itex.ops</code>.</td>
+</tr>
+</tbody>
+</table><p><strong>Notes:</strong></p>
+<ol class="simple">
+<li><p>The priority for setting values is as follows: Python APIs &gt; Environment Variables &gt; Default value.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">intel-extension-for-tensorflow[xpu]</span></code>, both GPU and CPU backends will be installed, the default backend will be selected by the platform device situation. If the platform with Intel GPU, the activate backend will be <code class="docutils literal notranslate"><span class="pre">GPU</span></code>, otherwise, <code class="docutils literal notranslate"><span class="pre">CPU</span></code>. If GPU backend was installed by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">intel-extension-for-tensorflow[gpu]</span></code>, the backend will be <code class="docutils literal notranslate"><span class="pre">GPU</span></code>. If CPU backend was installed by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">intel-extension-for-tensorflow[cpu]</span></code>, the backend is <code class="docutils literal notranslate"><span class="pre">CPU</span></code>.</p></li>
+</ol>
+</section>
+</section>
+<section id="intel-extension-for-tensorflow-config-protocol">
+<h2>Intel® Extension for TensorFlow* Config Protocol<a class="headerlink" href="#intel-extension-for-tensorflow-config-protocol" title="Permalink to this heading"></a></h2>
+<p><strong>itex.ConfigProto: ProtocolMessage for XPU configuration under different types of backends and optimization options.</strong></p>
+<p><strong>enum class</strong></p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>enum class</th>
+<th>Descriptions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enum ITEXDataType {<br/>  DEFAULT_DATA_TYPE = 0;<br/>  FLOAT16 = 1;<br/>  BFLOAT16 = 2;<br/>}</td>
+<td>Datatype options of advanced auto mixed precision. You could set datatype for advanced auto mixed precision on CPUs or GPUs.</td>
+</tr>
+<tr>
+<td>enum Toggle {<br/>    DEFAULT = 0;<br/>    ON = 1;<br/>    OFF = 2;<br/>}</td>
+<td>Configuration options for the graph optimizer. Unless otherwise noted, these configuration options do not apply to explicitly triggered optimization passes in the optimizers field.</td>
+</tr>
+</tbody>
+</table><p><strong>Functions</strong></p>
+<section id="itex-configproto">
+<h3>itex.ConfigProto<a class="headerlink" href="#itex-configproto" title="Permalink to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>graph_options</code></td>
+<td>GraphOptions protocolMessage, graph optimization options.</td>
+</tr>
+</tbody>
+</table></section>
+<section id="itex-gpuoptions">
+<h3>itex.GPUOptions<a class="headerlink" href="#itex-gpuoptions" title="Permalink to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>None</code></td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table></section>
+<section id="itex-graphoptions">
+<h3>itex.GraphOptions<a class="headerlink" href="#itex-graphoptions" title="Permalink to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>onednn_graph</code></td>
+<td>Toggle onednn_graph<br><br>Override the environment variable <code>ITEX_ONEDNN_GRAPH</code>. Set to enable or disable oneDNN graph(LLGA) optimization. The default value is <code>OFF</code>.<br>  <br> * If <code>ON</code>, will enable oneDNN graph in Intel® Extension for TensorFlow<em>.<br> * If <code>OFF</code>, will disable oneDNN graph in Intel® Extension for TensorFlow</em>.</td>
+</tr>
+<tr>
+<td><code>layout_opt</code></td>
+<td>Toggle layout_opt <br><br>Override the environment variable <code>ITEX_LAYOUT_OPT</code>. Set if oneDNN layout optimization is enabled to benefit from oneDNN block format.<br> Enable or disable the oneDNN layout. The default value is <code>OFF</code>.<br>  <br> * If <code>ON</code>, will enable oneDNN layout optimization.<br> * If <code>OFF</code>, will disable oneDNN layout optimization.</td>
+</tr>
+<tr>
+<td><code>remapper</code></td>
+<td>Toggle remapper <br/><br/>Override the environment variable <code>ITEX_REMAPPER</code>. Set if remapper optimization is enabled to benefit from sub-graph fusion.<br/> Enable or disable the remapper. The default value is <code>ON</code>.<br/>  <br/> * If <code>ON</code>, will enable remapper optimization.<br/> * If <code>OFF</code>, will disable remapper optimization.</td>
+</tr>
+<tr>
+<td><code>auto_mixed_precision</code></td>
+<td>Toggle auto_mixed_precision <br/><br/>Override the environment variable <code>ITEX_AUTO_MIXED_PRECISION</code>. Set if mixed precision is enabled to benefit from using both 16-bit and 32-bit floating-point types to accelerate modes.<br/>Enable or disable the  auto mixed precision. The default value is <code>OFF</code>.<br/>  <br/> * If <code>ON</code>, will enable auto mixed precision optimization.<br/> * If <code>OFF</code>, will disable auto mixed precision optimization.</td>
+</tr>
+<tr>
+<td><code>sharding</code></td>
+<td>Toggle sharding <br/><br/>Currently only supports Intel GPUs with multi-tiles. Override the environment variable <code>ITEX_SHARDING</code>. Set if XPUAutoShard is enabled to benefit from sharding input data/graph to maximize hardware usage.<br/>Enable or disable the XPUAutoShard. The default value is <code>OFF</code>.<br/>  <br/> * If <code>ON</code>, will enable XPUAutoShard optimization.<br/> * If <code>OFF</code>, will disable XPUAutoShard optimization.</td>
+</tr>
+</tbody>
+</table><p>Examples:</p>
+<p>I. Setting the options while creating the config protocol object</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># TensorFlow and Intel® Extension for TensorFlow*</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+
+<span class="n">graph_opts</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span><span class="p">)</span>
+<span class="n">config</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">graph_options</span><span class="o">=</span><span class="n">graph_opts</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then the log will output the information like below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">graph_options</span> <span class="p">{</span>
+  <span class="n">onednn_graph</span><span class="p">:</span> <span class="n">ON</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>II. Setting the options after creating the config protocol object</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># TensorFlow and Intel® Extension for TensorFlow*</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+
+<span class="n">config</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">()</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span>
+<span class="n">config</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">layout_opt</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">OFF</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then the log will output the information like below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">graph_options</span> <span class="p">{</span>
+  <span class="n">onednn_graph</span><span class="p">:</span> <span class="n">ON</span>
+  <span class="n">layout_opt</span><span class="p">:</span> <span class="n">OFF</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="itex-automixedprecisionoptions">
+<h3>itex.AutoMixedPrecisionOptions<a class="headerlink" href="#itex-automixedprecisionoptions" title="Permalink to this heading"></a></h3>
+<p>ProtocolMessage for auto mixed precision optimization options.</p>
+<p>Refer to <a class="reference internal" href="advanced_auto_mixed_precision.html"><span class="doc">Advanced Auto Mixed Precision</span></a>.</p>
+</section>
+<section id="itex-shardingconfig">
+<h3>itex.ShardingConfig<a class="headerlink" href="#itex-shardingconfig" title="Permalink to this heading"></a></h3>
+<p>ProtocolMessage for XPUAutoShard optimization options. Currently only supports Intel GPUs with multi-tiles.</p>
+<p>Refer to <a class="reference internal" href="XPUAutoShard.html"><span class="doc">XPUAutoShard on GPU</span></a>.</p>
+</section>
+<section id="itex-debugoptions">
+<h3>itex.DebugOptions<a class="headerlink" href="#itex-debugoptions" title="Permalink to this heading"></a></h3>
+<p>ProtocolMessage for debug options.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Python APIs</th>
+<th>Environment Variables</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto_mixed_precision_log_path</code></td>
+<td><code>ITEX_AUTO_MIXED_PRECISION_LOG_PATH</code></td>
+<td>Save auto mixed precision "pre-optimization" and "post-optimization" graph to log path.</td>
+</tr>
+<tr>
+<td><code>xpu_force_sync</code></td>
+<td><code>ITEX_SYNC_EXEC</code></td>
+<td>Run the graph with sync mode. The default value is <code>OFF</code>. If <code>ON</code>, the whole model will be run with sync mode, which will hurt performance.</td>
+</tr>
+</tbody>
+</table></section>
+<section id="itex-set-config">
+<h3>itex.set_config<a class="headerlink" href="#itex-set-config" title="Permalink to this heading"></a></h3>
+<p>Set Config Protocol. Note that the protocol is a global value, so this API is not thread safe.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>| Args                   |                                     Description                         |
+| ———————–| ————————————————————————|
+| <code class="docutils literal notranslate"><span class="pre">config</span></code>      | <a class="reference external" href="(#ITEX-config-protocol)">ConfigProto</a> object|</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Raises</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ValueError</code></td>
+<td>If argument validation fails.</td>
+</tr>
+</tbody>
+</table></section>
+<section id="itex-get-config">
+<h3>itex.get_config<a class="headerlink" href="#itex-get-config" title="Permalink to this heading"></a></h3>
+<p>Get Config Protocol.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">itex</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+</pre></div>
+</div>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Raises</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Returns</code></td>
+<td>Return the current config.</td>
+</tr>
+</tbody>
+</table><p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+
+<span class="n">graph_opts</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">onednn_graph</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span><span class="p">)</span>
+<span class="n">config</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">graph_options</span><span class="o">=</span><span class="n">graph_opts</span><span class="p">)</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">get_config</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Then the log will output the information like below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">graph_options</span> <span class="p">{</span>
+  <span class="n">onednn_graph</span><span class="p">:</span> <span class="n">ON</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="itex-operators">
+<h2>itex operators<a class="headerlink" href="#itex-operators" title="Permalink to this heading"></a></h2>
+<p><strong>itex.ops: Public API for extended XPU ops(operations) for itex.ops namespace.</strong></p>
+<p>For details, refer to <a class="reference internal" href="itex_ops.html"><span class="doc">Customized Operators</span></a>.</p>
+</section>
+<section id="itex-ops-override">
+<h2>itex ops override<a class="headerlink" href="#itex-ops-override" title="Permalink to this heading"></a></h2>
+<p><strong>itex.experimental_ops_override: Public API to override TensorFlow specific operators with same name by Customized Operators in itex.ops namespace.</strong></p>
+<p>For details, refer to <a class="reference internal" href="itex_ops_override.html"><span class="doc">Intel® Extension for TensorFlow* ops override</span></a>.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">experimental_ops_override</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">gelu</span> <span class="o">==</span> <span class="n">itex</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">gelu</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then it will output the result “True”.</p>
+</section>
+<section id="itex-graph">
+<h2>itex graph<a class="headerlink" href="#itex-graph" title="Permalink to this heading"></a></h2>
+<p><strong>itex.graph: Public API for extended ITEX graph optimization operations.</strong></p>
+<p>N/A</p>
+</section>
+<section id="itex-version">
+<h2>itex version<a class="headerlink" href="#itex-version" title="Permalink to this heading"></a></h2>
+<p><strong>itex.version: Public API for itex.version namespace.</strong></p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Other Members</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VERSION</code></td>
+<td>The release version. For example, <code>0.3.0</code></td>
+</tr>
+<tr>
+<td><code>GIT_VERSION</code></td>
+<td>The git version. For example, <code>v0.3.0-7112d33</code></td>
+</tr>
+<tr>
+<td><code>ONEDNN_CPU_GIT_VERSION</code></td>
+<td>The oneDNN git version of CPU. For example, <code>v2.5.2-a930253</code></td>
+</tr>
+<tr>
+<td><code>ONEDNN_GPU_GIT_VERSION</code></td>
+<td>The oneDNN git version of GPU. For example, <code>v2.5.2-a930253</code></td>
+</tr>
+<tr>
+<td><code>COMPILER_VERSION</code></td>
+<td>The compiler version. For example, <code>gcc-8.2.1 20180905, dpcpp-2022.1.0.122</code></td>
+</tr>
+<tr>
+<td><code>TF_COMPATIBLE_VERSION</code></td>
+<td>The compatible TensorFlow versions. For example, <code>tensorflow &gt;= 2.5.0, &lt; 2.7.0, !=2.5.3, ~=2.6</code></td>
+</tr>
+</tbody>
+</table><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">VERSION</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">GIT_VERSION</span><span class="p">)</span>
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="s2">&quot;ONEDNN_CPU_GIT_VERSION&quot;</span><span class="p">):</span>
+  <span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">ONEDNN_CPU_GIT_VERSION</span><span class="p">)</span>    <span class="c1"># For CPU or XPU</span>
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="s2">&quot;ONEDNN_GPU_GIT_VERSION&quot;</span><span class="p">):</span>
+  <span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">ONEDNN_GPU_GIT_VERSION</span><span class="p">)</span>    <span class="c1"># For GPU or XPU</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">COMPILER_VERSION</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">itex</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">TF_COMPATIBLE_VERSION</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="advanced_auto_mixed_precision.html" class="btn btn-neutral float-left" title="Advanced Auto Mixed Precision" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="environment_variables.html" class="btn btn-neutral float-right" title="Environment Variables" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
