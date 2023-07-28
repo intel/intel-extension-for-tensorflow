@@ -13,11 +13,11 @@ import subprocess
 
 # See https://pypi.org/project/setuptools-scm/#programmatic-usage
 try:
-    version = get_version(root='../..', relative_to=__file__)
-except:
     output = subprocess.check_output("git describe --tags --abbrev=0", shell=True)
     output = output[:-1]
     version = output.decode('utf-8')
+except:
+    version = get_version(root='../..', relative_to=__file__)
 
 release = version
 
