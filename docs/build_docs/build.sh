@@ -90,7 +90,7 @@ cp -f "../CODE_OF_CONDUCT.md" "./source/"
 #sed -i 's/docs\/guide/guide/g' ./source/docs/get_started.md
 
 sed -i 's/.md/.html/g' ./source/get_started.md
-sed -i 's/.md/.html/g' ./source/docs/install/experimental/install_for_cpp.md
+sed -i 's/.md/.html/g' ./source/docs/install/install_for_cpp.md
 
 sed -i 's/pluggable-device-for-tensorflow.html/pluggable-device-for-tensorflow.md/g' ./source/get_started.md
 sed -i 's/third-party-programs\/THIRD-PARTY-PROGRAMS/https:\/\/github.com\/intel\/intel-extension-for-tensorflow\/blob\/main\/third-party-programs\/THIRD-PARTY-PROGRAMS/g' ./source/get_started.md

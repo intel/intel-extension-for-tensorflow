@@ -16,3 +16,4 @@ __pycache__
 /build/
 [Bb]uild/
 *.whl
+build_tmp

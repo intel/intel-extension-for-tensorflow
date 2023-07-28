@@ -9,7 +9,16 @@ sys.path.insert(0, os.path.abspath('../../itex/'))
 from datetime import datetime
 from setuptools_scm import get_version
 # See https://pypi.org/project/setuptools-scm/#programmatic-usage
-version = get_version(root='../..', relative_to=__file__)
+import subprocess
+
+# See https://pypi.org/project/setuptools-scm/#programmatic-usage
+try:
+    version = get_version(root='../..', relative_to=__file__)
+except:
+    output = subprocess.check_output("git describe --tags --abbrev=0", shell=True)
+    output = output[:-1]
+    version = output.decode('utf-8')
+
 release = version
 
 with open("version.txt", "w") as f:
