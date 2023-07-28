@@ -4,11 +4,11 @@ This guide shows how to build an Intel® Extension for TensorFlow* CC library fr
 
 ## Prepare
 
-Refer to [Build from Source Code -> Prepare](../how_to_build.md#prepare)
+Refer to [Build from Source Code -> Prepare](../how_to_build.html#prepare)
 
 ## Configure the build
 
-Refer to [Build from Source Code -> Configure the build](../how_to_build.md#configure-the-build)
+Refer to [Build from Source Code -> Configure the build](../how_to_build.html#configure-the-build)
 
 ## Build the CC library
 
