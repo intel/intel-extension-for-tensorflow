@@ -163,8 +163,8 @@ int64 MinLogLevelFromEnv() {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
   return itex::NUM_SEVERITIES;
 #else
-  const char* tf_env_var_val = getenv("TF_CPP_MIN_LOG_LEVEL");
-  return LogLevelStrToInt(tf_env_var_val);
+  const char* itex_env_var_val = getenv("ITEX_CPP_MIN_LOG_LEVEL");
+  return LogLevelStrToInt(itex_env_var_val);
 #endif
 }
 
@@ -206,8 +206,7 @@ LogMessage::~LogMessage() {
   // Read the min log level once during the first call to logging.
   // TODO(itex): Temporarily ignore TF min log limitation, will fix later
   //             after figured out where the limiation is.
-  // static int64 min_log_level = MinLogLevelFromEnv();
-  static int64 min_log_level = itex::INFO;
+  static int64 min_log_level = MinLogLevelFromEnv();
   if (severity_ >= min_log_level) {
     GenerateLogMessage();
   }
