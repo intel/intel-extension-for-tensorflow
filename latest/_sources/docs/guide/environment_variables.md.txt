@@ -12,6 +12,7 @@ Intel® Extension for TensorFlow* provides environment variables for users to qu
 | ITEX_FP32_MATH_MODE            | `FP32`        | Sets oneDNN primitive floating-point math mode. The value can be `FP32` or `TF32` in GPU device and  `FP32` or `BF32` in CPU device. Default will be `FP32`.|
 | ITEX_AUTO_MIXED_PRECISION_LOG_PATH | `auto_mixed_precision_log_path` | Sets log path         |
 | ITEX_VERBOSE                       | `1`                       | Same semantics as `TF_CPP_MAX_VLOG_LEVEL`, but only works with Intel® Extension for TensorFlow* |
+| ITEX_CPP_MIN_LOG_LEVEL                       | `0`                       | Same semantics as `TF_CPP_MIN_LOG_LEVEL`, but only works with Intel® Extension for TensorFlow* |
 
 #### ITEX_VERBOSE level definition
 * Level 1 is basic verbose information including device, graph, kernel and other infrastructure initialization logs, displayed only once.
