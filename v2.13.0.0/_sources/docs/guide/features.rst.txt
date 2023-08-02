@@ -118,3 +118,18 @@ Please refer to `OpenXLA_Support_on_GPU <OpenXLA_Support_on_GPU.html>`_ for deta
    :maxdepth: 1
 
    OpenXLA_Support_on_GPU.md
+
+TensorFlow Serving
+-----------------------------------------------------------
+[TensorFlow Serving](https://www.tensorflow.org/tfx/guide/serving) is an open-source system designed by Google that acts as a bridge between trained machine learning models and the applications that need to use them, streamlining the process of deploying and serving models in a production environment while maintaining efficiency and scalability.
+
+It's easy to get started using TensorFlow Serving with Intel® Extension for TensorFlow*.
+
+Please refer to `Install TensorFlow Serving with Intel® Extension for TensorFlow* <tf_serving_install.html>`_ for details.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   tf_serving_install.md
