@@ -108,8 +108,9 @@ def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0
         use_dropout = (dropout_p != 0.0)
         use_mask = (atten_mask is not None)
         if use_dropout:
-            uniform_sampler = functools.partial(stateless_random_ops.stateless_random_uniform, seed=seed)            
-            random_tensor = uniform_sampler(shape=[batch_size, num_heads, from_seq_len, to_seq_len], dtype=i_dtype)
+            uniform_sampler = functools.partial(stateless_random_ops.stateless_random_uniform, seed=seed)
+            uniform_sampler_input = tf.compat.v1.placeholder(i_dtype, shape=[batch_size, num_heads, from_seq_len, to_seq_len])
+            random_tensor = uniform_sampler(shape=tf.shape(uniform_sampler_input), dtype=i_dtype)    
             dropout_mask = math_ops.greater_equal(random_tensor, dropout_p)
         else:
             dropout_mask = 0

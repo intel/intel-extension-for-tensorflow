@@ -35,7 +35,7 @@ import functools
 
 
 @keras.utils.generic_utils.register_keras_serializable(package="Itex")
-class FusedDenseBiasAddGelu(tf.compat.v1.layers.Dense):
+class FusedDenseBiasAddGelu(Dense):
     """Just your regular densely-connected NN layer.
 
     `Dense` implements the operation:

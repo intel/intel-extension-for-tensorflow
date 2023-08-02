@@ -196,6 +196,8 @@ class AutoMixedPrecisionLists {
       "_ITEXConv3D",
       "ScaledDotProductAttention",
       "ScaledDotProductAttentionGrad",
+      "FusedDenseBiasAddGelu",
+      "FusedDenseBiasAddGeluGrad",
   };
 
   // The default Infer list of FP16 and BF16.

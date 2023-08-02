@@ -192,7 +192,7 @@ void mha_backward(OpKernelContext* context, const Tensor& query,
 #define CAST(ptr, src_t, dst_t) \
   reinterpret_cast<dst_t*>(const_cast<src_t*>(ptr))
 
-  if (num_keys == 512 && num_queries == 512 && head_size == 64) {
+  if (num_keys <= 512 && num_queries <= 512 && head_size <= 64) {
     gpu::xetla::mha::mha_backward_impl<gpu::xetla::mha_policy_32x512x128, InT>(
         sycl_queue, CAST(query_ptr, T, InT), CAST(key_ptr, T, InT),
         CAST(value_ptr, T, InT), CAST(attn_ptr, T, InT),
