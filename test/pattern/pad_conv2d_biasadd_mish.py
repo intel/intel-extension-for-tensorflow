@@ -48,12 +48,12 @@ class FusedConv2DTest(test_util.TensorFlowTestCase):
         with self.session(use_gpu=True) as sess:
             
             x = array_ops.identity(x)
-            p = constant_op.constant(pad_value, dtype=dtypes.int32)
-            x_pad = array_ops.pad(x, p)
+            paddings = tf.compat.v1.placeholder(tf.int32, shape=(4, 2))
+            x_pad = array_ops.pad(x, paddings)
             fused_graph = tf.nn.bias_add(tf.nn.conv2d(x_pad, w, strides=[1, 2, 2, 1], padding='VALID', data_format='NHWC'), b)
             fused_graph = tf.math.multiply(fused_graph, tf.tanh(tf.math.softplus(fused_graph)))
             fused = array_ops.identity(fused_graph)
-            result = sess.run(fused,options=run_options, run_metadata=metadata)
+            result = sess.run(fused, feed_dict={paddings: pad_value}, options=run_options, run_metadata=metadata)
             # Graph should contain fused op.
             graph = metadata.partition_graphs[0]
             found_fused_op = False
