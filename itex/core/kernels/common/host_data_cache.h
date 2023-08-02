@@ -32,7 +32,6 @@ limitations under the License.
 typedef Eigen::GpuDevice GPUDevice;
 namespace itex {
 
-#ifdef ITEX_ONEDNN_3_0
 template <typename Device, typename T>
 class HostDataCache {
  public:
@@ -94,7 +93,6 @@ class HostDataCache {
   Tensor gpu_tensor_;
   size_t gpu_capacity_;
 };
-#endif
 
 }  // namespace itex
 

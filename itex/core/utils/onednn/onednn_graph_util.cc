@@ -92,10 +92,10 @@ dnnl::graph::logical_tensor::data_type GetOneDnnGraphDataType(DataType dt) {
     case DT_QUINT8:
       return dnnl::graph::logical_tensor::data_type::u8;
       // TODO(itex): bring boolean back, once gc backend merge in master
-#ifndef ITEX_ONEDNN_3_0
-    case DT_BOOL:
-      return dnnl::graph::logical_tensor::data_type::boolean;
-#endif
+      // #ifndef ITEX_ONEDNN_3_0
+      //     case DT_BOOL:
+      //       return dnnl::graph::logical_tensor::data_type::boolean;
+      // #endif
     default:
       return dnnl::graph::logical_tensor::data_type::undef;
   }

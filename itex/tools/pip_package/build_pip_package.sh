@@ -18,8 +18,6 @@
 
 onednn_gpu_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_gpu/include/oneapi/dnnl/ -name dnnl_version.h | head -1)
 onednn_cpu_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_cpu/include/oneapi/dnnl/ -name dnnl_version.h | head -1)
-onednn_gpu_v2_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_gpu_v2//include/oneapi/dnnl/ -name dnnl_version.h | head -1)
-onednn_cpu_v2_path=$(find bazel-out/k8-opt-ST-*/bin/external/onednn_cpu_v2//include/oneapi/dnnl/ -name dnnl_version.h | head -1)
 
 itex_tmp_folder_name="itex.tmp"
 lib_tmp_folder_name="lib.tmp"
@@ -81,21 +79,9 @@ function emit_version_info() {
       echo "ONEDNN_GPU_GIT_VERSION = '${onednn_gpu_git_version}'" >> $1
     fi
     onednn_version_check=$(($onednn_version_check + 1))
-  elif [ ! -z "${onednn_gpu_v2_path}" ] && [ -f "${onednn_gpu_v2_path}" ]; then
-    onednn_gpu_git_version=`get_onednn_git_version ${onednn_gpu_v2_path}`
-    if [ ${onednn_gpu_git_version} != "none" ]; then
-      echo "ONEDNN_GPU_GIT_VERSION = '${onednn_gpu_git_version}'" >> $1
-    fi
-    onednn_version_check=$(($onednn_version_check + 1))
   fi
   if [ ! -z "${onednn_cpu_path}" ] && [ -f "${onednn_cpu_path}" ]; then
     onednn_cpu_git_version=`get_onednn_git_version ${onednn_cpu_path}`
-    if [ ${onednn_cpu_git_version} != "none" ]; then
-      echo "ONEDNN_CPU_GIT_VERSION = '${onednn_cpu_git_version}'" >> $1
-    fi
-    onednn_version_check=$(($onednn_version_check + 1))
-  elif [ ! -z "${onednn_cpu_v2_path}" ] && [ -f "${onednn_cpu_v2_path}" ]; then
-    onednn_cpu_git_version=`get_onednn_git_version ${onednn_cpu_v2_path}`
     if [ ${onednn_cpu_git_version} != "none" ]; then
       echo "ONEDNN_CPU_GIT_VERSION = '${onednn_cpu_git_version}'" >> $1
     fi

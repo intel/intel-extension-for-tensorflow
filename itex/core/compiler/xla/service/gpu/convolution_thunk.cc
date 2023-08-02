@@ -32,12 +32,6 @@ limitations under the License.
 namespace itex_xla {
 namespace gpu {
 
-#ifndef ITEX_ONEDNN_3_0
-using ConvFwdDesc = dnnl::convolution_forward::desc;
-using ConvBwdInputDesc = dnnl::convolution_backward_data::desc;
-using ConvBwdFilterDesc = dnnl::convolution_backward_weights::desc;
-#endif
-
 using ConvFwdPd = dnnl::convolution_forward::primitive_desc;
 using ConvBwdInputPd = dnnl::convolution_backward_data::primitive_desc;
 using ConvBwdFilterPd = dnnl::convolution_backward_weights::primitive_desc;
@@ -396,25 +390,6 @@ Status CreateOneDnnPrimitive(
     onednn_primitive->dst_memory = dnnl::sycl_interop::make_memory(
         dst_md, onednn_primitive->engine, kind, output_data);
 
-#ifndef ITEX_ONEDNN_3_0
-    ConvFwdDesc fwd_desc = ConvFwdDesc(
-        dnnl::prop_kind::forward, dnnl::algorithm::convolution_direct, src_md,
-        filter_md_prefer, dst_md, stride_dims, dilation_dims, padding_dims_l,
-        padding_dims_r);
-    if (bias_data != nullptr && conv_result_scale_one) {
-      auto bias_md =
-          dnnl::memory::desc(bias_dims, data_type, dnnl::memory::format_tag::x);
-      fwd_desc = ConvFwdDesc(dnnl::prop_kind::forward,
-                             dnnl::algorithm::convolution_direct, src_md,
-                             filter_md_prefer, bias_md, dst_md, stride_dims,
-                             dilation_dims, padding_dims_l, padding_dims_r);
-      onednn_primitive->bias_memory = dnnl::sycl_interop::make_memory(
-          bias_md, onednn_primitive->engine, kind, bias_data);
-      onednn_primitive->fwd_primitives_args.insert(
-          {DNNL_ARG_BIAS, onednn_primitive->bias_memory});
-    }
-#endif
-
     // if alpha is 1:
     //   out = activation(conv(x, w, bias) + beta * side)
     //   po.append_sum(beta)
@@ -428,12 +403,7 @@ Status CreateOneDnnPrimitive(
     dnnl::post_ops po;
     dnnl::primitive_attr post_ops_attr;
     if (!conv_result_scale_one)
-#ifdef ITEX_ONEDNN_3_0
-      po.append_eltwise(dnnl::algorithm::eltwise_linear, conv_result_scale,
-#else
-      po.append_eltwise(1, dnnl::algorithm::eltwise_linear, conv_result_scale,
-#endif
-                        0);
+      po.append_eltwise(dnnl::algorithm::eltwise_linear, conv_result_scale, 0);
     if (side_input_data && !side_input_scale_zero)
       po.append_sum(side_input_scale);
     if (!conv_result_scale_one && bias_data) {
@@ -449,32 +419,16 @@ Status CreateOneDnnPrimitive(
     if (conv_descriptor.kind == CudnnConvKind::kForwardActivation) {
       switch (conv_descriptor.activation) {
         case mlir::lmhlo_gpu::Activation::Sigmoid:
-#ifdef ITEX_ONEDNN_3_0
           po.append_eltwise(dnnl::algorithm::eltwise_logistic, 1, 0);
-#else
-          po.append_eltwise(1, dnnl::algorithm::eltwise_logistic, 1, 0);
-#endif
           break;
         case mlir::lmhlo_gpu::Activation::Relu:
-#ifdef ITEX_ONEDNN_3_0
           po.append_eltwise(dnnl::algorithm::eltwise_relu, 0, 0);
-#else
-          po.append_eltwise(1, dnnl::algorithm::eltwise_relu, 0, 0);
-#endif
           break;
         case mlir::lmhlo_gpu::Activation::Relu6:
-#ifdef ITEX_ONEDNN_3_0
           po.append_eltwise(dnnl::algorithm::eltwise_clip_v2, 0, 6);
-#else
-          po.append_eltwise(1, dnnl::algorithm::eltwise_clip_v2, 0, 6);
-#endif
           break;
         case mlir::lmhlo_gpu::Activation::Tanh:
-#ifdef ITEX_ONEDNN_3_0
           po.append_eltwise(dnnl::algorithm::eltwise_tanh, 0, 0);
-#else
-          po.append_eltwise(1, dnnl::algorithm::eltwise_tanh, 0, 0);
-#endif
           break;
         case mlir::lmhlo_gpu::Activation::None:
           break;
@@ -493,7 +447,6 @@ Status CreateOneDnnPrimitive(
 
     if (conv_descriptor.kind == CudnnConvKind::kForward ||
         conv_descriptor.kind == CudnnConvKind::kForwardActivation) {
-#ifdef ITEX_ONEDNN_3_0
       ConvFwdPd fwd_pd =
           ConvFwdPd(onednn_primitive->engine, dnnl::prop_kind::forward,
                     dnnl::algorithm::convolution_direct, src_md,
@@ -512,10 +465,6 @@ Status CreateOneDnnPrimitive(
         onednn_primitive->fwd_primitives_args.insert(
             {DNNL_ARG_BIAS, onednn_primitive->bias_memory});
       }
-#else
-      ConvFwdPd fwd_pd =
-          ConvFwdPd(fwd_desc, post_ops_attr, onednn_primitive->engine);
-#endif
 
       onednn_primitive->fwd_primitive = dnnl::convolution_forward(fwd_pd);
       size_t scratchpad_size = fwd_pd.scratchpad_desc().get_size();
@@ -558,29 +507,17 @@ Status CreateOneDnnPrimitive(
 
     } else if (conv_descriptor.kind == CudnnConvKind::kBackwardInput) {
       // TODO(ITEX): handle post_ops_attr.
-#ifdef ITEX_ONEDNN_3_0
       ConvFwdPd fwd_pd = ConvFwdPd(
           onednn_primitive->engine, dnnl::prop_kind::forward,
           dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
           stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
-#else
-      ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, onednn_primitive->engine);
-      ConvBwdInputDesc bwd_input_desc = ConvBwdInputDesc(
-          dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
-          stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
-#endif
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       ConvBwdInputPd bwd_input_pd = ConvBwdInputPd(
           onednn_primitive->engine, dnnl::algorithm::convolution_direct, src_md,
           filter_md_prefer, dst_md, stride_dims, dilation_dims, padding_dims_l,
           padding_dims_r, fwd_pd, attr);
-#else
-      ConvBwdInputPd bwd_input_pd = ConvBwdInputPd(
-          bwd_input_desc, attr, onednn_primitive->engine, fwd_pd);
-#endif
 
       size_t scratchpad_size = bwd_input_pd.scratchpad_desc().get_size();
       void* workspace;
@@ -627,29 +564,17 @@ Status CreateOneDnnPrimitive(
 
     } else if (conv_descriptor.kind == CudnnConvKind::kBackwardFilter) {
       // TODO(ITEX): handle post_ops_attr.
-#ifdef ITEX_ONEDNN_3_0
       ConvFwdPd fwd_pd = ConvFwdPd(
           onednn_primitive->engine, dnnl::prop_kind::forward,
           dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
           stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
-#else
-      ConvFwdPd fwd_pd = ConvFwdPd(fwd_desc, onednn_primitive->engine);
-      ConvBwdFilterDesc bwd_filter_desc = ConvBwdFilterDesc(
-          dnnl::algorithm::convolution_direct, src_md, filter_md_prefer, dst_md,
-          stride_dims, dilation_dims, padding_dims_l, padding_dims_r);
-#endif
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       ConvBwdFilterPd bwd_filter_pd = ConvBwdFilterPd(
           onednn_primitive->engine, dnnl::algorithm::convolution_direct, src_md,
           filter_md_prefer, dst_md, stride_dims, dilation_dims, padding_dims_l,
           padding_dims_r, fwd_pd, attr);
-#else
-      ConvBwdFilterPd bwd_filter_pd = ConvBwdFilterPd(
-          bwd_filter_desc, attr, onednn_primitive->engine, fwd_pd);
-#endif
 
       size_t scratchpad_size = bwd_filter_pd.scratchpad_desc().get_size();
       void* workspace;

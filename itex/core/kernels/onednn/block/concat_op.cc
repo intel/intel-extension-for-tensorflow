@@ -283,11 +283,7 @@ class OneDnnConcatOp : public OpKernel {
         }
         srcs_pd.push_back(src_md);
       }
-#ifdef ITEX_ONEDNN_3_0
       dnnl::memory::dims dst_dims = srcs_pd[0].get_dims();
-#else
-      dnnl::memory::dims dst_dims = srcs_pd[0].dims();
-#endif
       // Only difference between output dims and each input dims is the concat
       // dim
       dst_dims[axis_in_onednn] = output_concat_dim;
@@ -300,24 +296,14 @@ class OneDnnConcatOp : public OpKernel {
       // Set scales for each input
       if (quantized_input) {
         for (int src_idx = 0; src_idx < N; ++src_idx) {
-#ifdef ITEX_ONEDNN_3_0
           attr.set_scales_mask(DNNL_ARG_MULTIPLE_SRC + src_idx, 0);
-#else
-          attr.set_scales(DNNL_ARG_MULTIPLE_SRC + src_idx, 0,
-                          {requant_scales[src_idx]});
-#endif
         }
       }
 
       dnnl::concat::primitive_desc concat_pd;
       if (has_onednn_input) {
-#ifdef ITEX_ONEDNN_3_0
         concat_pd = dnnl::concat::primitive_desc(onednn_engine, axis_in_onednn,
                                                  srcs_pd, attr);
-#else
-        concat_pd = dnnl::concat::primitive_desc(axis_in_onednn, srcs_pd,
-                                                 onednn_engine, attr);
-#endif
       } else {
         // For all plain layout input, we need to explicitly choose the output
         // memory desc, otherwise OneDnn may automatically choose format we
@@ -325,13 +311,8 @@ class OneDnnConcatOp : public OpKernel {
         // format chosen by OneDnn may be "acdb"
         dnnl::memory::desc dst_md =
             CreatePlainMemDescWithFormatTag<T>(dst_dims);
-#ifdef ITEX_ONEDNN_3_0
         concat_pd = dnnl::concat::primitive_desc(onednn_engine, dst_md,
                                                  axis_in_onednn, srcs_pd, attr);
-#else
-        concat_pd = dnnl::concat::primitive_desc(dst_md, axis_in_onednn,
-                                                 srcs_pd, onednn_engine, attr);
-#endif
       }
 
       Tensor scratchpad_tensor;
@@ -366,7 +347,6 @@ class OneDnnConcatOp : public OpKernel {
                 &context->input(src_idx + values_input_start_index_)));
         net_args.insert({DNNL_ARG_MULTIPLE_SRC + src_idx, src_mem});
       }
-#ifdef ITEX_ONEDNN_3_0
       if (quantized_input) {
         float* requant_scale_ptr = requant_scale_cache_.GetCachedPtr(
             context, requant_scales.data(), requant_scales.size());
@@ -380,7 +360,6 @@ class OneDnnConcatOp : public OpKernel {
           net_args.insert({DNNL_ARG_MULTIPLE_SRC + src_idx, cur_scales_mem});
         }
       }
-#endif
       auto onednn_stream = CreateDnnlStream(*context, onednn_engine);
       concat_prim.execute(onednn_stream, net_args);
     } catch (dnnl::error& e) {
@@ -413,9 +392,7 @@ class OneDnnConcatOp : public OpKernel {
   int values_input_start_index_;
   int values_input_end_index_;
   int axis_input_index_;
-#ifdef ITEX_ONEDNN_3_0
   HostDataCache<Device, float> requant_scale_cache_;
-#endif
 };
 
 #ifndef INTEL_CPU_ONLY

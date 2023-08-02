@@ -133,7 +133,6 @@ class OneDnnDequantizeOp : public OpKernel {
 
       // Set the scale factor for quantize
       primitive_attr post_ops_attr;
-#ifdef ITEX_ONEDNN_3_0
       float* scale_factor_ptr = output_scale_cache_.GetCachedPtr(
           context, scale_factor.data(), num_slices);
       int32* zero_point_ptr = zero_point_cache_.GetCachedPtr(
@@ -157,20 +156,6 @@ class OneDnnDequantizeOp : public OpKernel {
           post_ops_attr.set_zero_points_mask(DNNL_ARG_SRC, mask);
         }
       }
-#else
-      if (num_slices == 1) {
-        post_ops_attr.set_output_scales(0, scale_factor);
-        if (mode_ == QuantizeMode::MIN_FIRST) {
-          post_ops_attr.set_zero_points(DNNL_ARG_SRC, 0, zero_points);
-        }
-      } else {
-        int mask = static_cast<int>(std::pow(2, axis_));
-        post_ops_attr.set_output_scales(mask, scale_factor);
-        if (mode_ == QuantizeMode::MIN_FIRST) {
-          post_ops_attr.set_zero_points(DNNL_ARG_SRC, mask, zero_points);
-        }
-      }
-#endif
       // Create Reorder primitive
       auto fwd_pd = reorder::primitive_desc(
           onednn_engine, src_md, onednn_engine, dst_md, post_ops_attr);
@@ -200,10 +185,8 @@ class OneDnnDequantizeOp : public OpKernel {
       std::unordered_map<int, memory> fwd_primitive_args = {
           {DNNL_ARG_SRC, src_mem},
           {DNNL_ARG_DST, dst_mem},
-#ifdef ITEX_ONEDNN_3_0
           {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, output_scales_mem},
           {DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC, zero_points_mem},
-#endif
       };
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
     } catch (dnnl::error& e) {
@@ -220,10 +203,8 @@ class OneDnnDequantizeOp : public OpKernel {
   QuantizeMode mode_;
   int axis_;
   bool narrow_range_;
-#ifdef ITEX_ONEDNN_3_0
   HostDataCache<Device, float> output_scale_cache_;
   HostDataCache<Device, int32> zero_point_cache_;
-#endif
 };
 
 #ifndef INTEL_CPU_ONLY

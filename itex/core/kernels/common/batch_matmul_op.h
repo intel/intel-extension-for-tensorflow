@@ -244,7 +244,6 @@ class BatchMatMulOp : public OpKernel {
       if (post_op_util_.HasBias()) {
         fwd_primitive_args_.emplace(DNNL_ARG_BIAS, bias_mem_);
       }
-#ifdef ITEX_ONEDNN_3_0
       if (post_op_util_.HasOutputScales()) {
         float alpha = post_op_util_.GetOutputScale()[0];
         float* output_scale_ptr =
@@ -255,7 +254,6 @@ class BatchMatMulOp : public OpKernel {
         fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
                                     scale_mem);
       }
-#endif
       is_init_ = true;
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
@@ -381,7 +379,6 @@ class BatchMatMulOp : public OpKernel {
     }
 
     post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
-#ifdef ITEX_ONEDNN_3_0
     if (post_op_util_.HasBias()) {
       return matmul::primitive_desc(onednn_engine_, src_desc, weights_desc,
                                     bias_desc, dst_desc, post_ops_attr);
@@ -389,15 +386,6 @@ class BatchMatMulOp : public OpKernel {
       return matmul::primitive_desc(onednn_engine_, src_desc, weights_desc,
                                     dst_desc, post_ops_attr);
     }
-#else
-    if (post_op_util_.HasBias()) {
-      auto fwd_desc = matmul::desc(src_desc, weights_desc, bias_desc, dst_desc);
-      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
-    } else {
-      auto fwd_desc = matmul::desc(src_desc, weights_desc, dst_desc);
-      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine_);
-    }
-#endif  // ITEX_ONEDNN_3_0
   }
 
  private:
@@ -439,9 +427,7 @@ class BatchMatMulOp : public OpKernel {
   TensorShape dst_shape_;
   dnnl::stream onednn_stream_;
   dnnl::engine onednn_engine_;
-#ifdef ITEX_ONEDNN_3_0
   HostDataCache<Device, float> output_scale_cache_;
-#endif
 };
 
 // V2 is for latest Intel TF BatchMatMul INT8 new API.

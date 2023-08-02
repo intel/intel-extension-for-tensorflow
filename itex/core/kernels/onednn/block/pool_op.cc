@@ -115,17 +115,9 @@ class OneDnnPoolOp : public OneDnnPoolOpBase<T> {
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       auto fwd_pd = pooling_forward::primitive_desc(
           onednn_engine, pooling_prop_kind, alg, src_md, dst_md, strides,
           filter_dims, dilation_dims, padding_left, padding_right, attr);
-#else
-      auto fwd_desc =
-          pooling_forward::desc(pooling_prop_kind, alg, src_md, dst_md, strides,
-                                filter_dims, padding_left, padding_right);
-      auto fwd_pd =
-          pooling_forward::primitive_desc(fwd_desc, attr, onednn_engine);
-#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
@@ -286,7 +278,6 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
       // Create primitive.
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       auto fwd_pd = pooling_forward::primitive_desc(
           onednn_engine, prop_kind::forward_training, alg, src_md,
           diff_dst_md_any, strides, filter_dims, dilation_dims, padding_left,
@@ -294,17 +285,6 @@ class OneDnnPoolGradOp : public OneDnnPoolOpBase<T> {
       auto pooling_bwd_pd = pooling_backward::primitive_desc(
           onednn_engine, alg, src_md, diff_dst_md_any, strides, filter_dims,
           dilation_dims, padding_left, padding_right, fwd_pd, attr);
-#else
-      auto bwd_desc =
-          pooling_backward::desc(alg, src_md, diff_dst_md_any, strides,
-                                 filter_dims, padding_left, padding_right);
-      auto fwd_desc = pooling_forward::desc(
-          prop_kind::forward_training, alg, src_md, diff_dst_md_any, strides,
-          filter_dims, padding_left, padding_right);
-      auto fwd_pd = pooling_forward::primitive_desc(fwd_desc, onednn_engine);
-      auto pooling_bwd_pd = pooling_backward::primitive_desc(
-          bwd_desc, attr, onednn_engine, fwd_pd);
-#endif
 
       Tensor scratchpad_tensor;
       int64 scratchpad_size =

@@ -110,10 +110,6 @@ Status DoGemm(int64_t batch_size, const se::blas::MatrixDescriptor& lhs,
 
   auto dnnl_engine =
       itex::FindOrCreateEngine(stream_executor::gpu::AsGpuStreamValue(stream));
-#ifndef ITEX_ONEDNN_3_0
-  auto matmul_desc =
-      std::make_shared<dnnl::matmul::desc>(src_md, weights_md, dst_md);
-#endif
 
   dnnl::primitive_attr post_ops_attr;
   post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
@@ -127,21 +123,12 @@ Status DoGemm(int64_t batch_size, const se::blas::MatrixDescriptor& lhs,
   dnnl::post_ops post_ops = dnnl::post_ops();
   // C = alpha * MatMul(A, B) + beta * C
   if (fabs(alpha - 1.0f) > 1e-6)
-#ifdef ITEX_ONEDNN_3_0
     post_ops.append_eltwise(dnnl::algorithm::eltwise_linear, alpha, 0.0f);
-#else
-    post_ops.append_eltwise(1, dnnl::algorithm::eltwise_linear, alpha, 0.0f);
-#endif
   if (fabs(beta - 0.0f) > 1e-6) post_ops.append_sum(beta);
   post_ops_attr.set_post_ops(post_ops);
 
-#ifdef ITEX_ONEDNN_3_0
   auto matmul_pd = std::make_shared<dnnl::matmul::primitive_desc>(
       dnnl_engine, src_md, weights_md, dst_md, post_ops_attr);
-#else
-  auto matmul_pd = std::make_shared<dnnl::matmul::primitive_desc>(
-      *matmul_desc, post_ops_attr, dnnl_engine);
-#endif
   std::unordered_map<int, dnnl::memory> fwd_primitive_args;
 
   void* workspace;

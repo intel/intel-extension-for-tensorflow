@@ -677,14 +677,8 @@ struct EinsumHelper {
 
       dnnl::primitive_attr post_ops_attr;
       post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       dnnl::matmul::primitive_desc matmul_pd(dnnl_engine, src_md, weights_md,
                                              dst_md, post_ops_attr);
-#else
-      dnnl::matmul::desc matmul_desc(src_md, weights_md, dst_md);
-      dnnl::matmul::primitive_desc matmul_pd(matmul_desc, post_ops_attr,
-                                             dnnl_engine);
-#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
           matmul_pd.scratchpad_desc().get_size() / sizeof(T);

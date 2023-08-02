@@ -75,18 +75,10 @@ class LRNOp : public OpKernel {
       // OneDNN also supports normalization within channel.
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       auto fwd_pd = dnnl::lrn_forward::primitive_desc(
           onednn_engine, dnnl::prop_kind::forward,
           dnnl::algorithm::lrn_across_channels, src_md, src_md, kernel_size,
           new_alpha, beta_, bias_, attr);
-#else
-      auto lrn_desc = dnnl::lrn_forward::desc(
-          dnnl::prop_kind::forward, dnnl::algorithm::lrn_across_channels,
-          src_md, kernel_size, new_alpha, beta_, bias_);
-      auto fwd_pd =
-          dnnl::lrn_forward::primitive_desc(lrn_desc, attr, onednn_engine);
-#endif
       dnnl::primitive fwd_primitive = dnnl::lrn_forward(fwd_pd);
 
       Tensor scratchpad_tensor;
@@ -196,7 +188,6 @@ class LRNGradOp : public OpKernel {
       // OneDNN also supports normalization within channel.
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       auto fwd_pd = dnnl::lrn_forward::primitive_desc(
           onednn_engine, dnnl::prop_kind::forward,
           dnnl::algorithm::lrn_across_channels, src_md, src_md, kernel_size,
@@ -205,19 +196,6 @@ class LRNGradOp : public OpKernel {
       auto bwd_pd = dnnl::lrn_backward::primitive_desc(
           onednn_engine, dnnl::algorithm::lrn_across_channels, src_md, src_md,
           src_md, kernel_size, new_alpha, beta_, bias_, fwd_pd, attr);
-#else
-      auto fwd_desc = dnnl::lrn_forward::desc(
-          dnnl::prop_kind::forward, dnnl::algorithm::lrn_across_channels,
-          src_md, kernel_size, new_alpha, beta_, bias_);
-      auto fwd_pd =
-          dnnl::lrn_forward::primitive_desc(fwd_desc, attr, onednn_engine);
-
-      auto bwd_desc = dnnl::lrn_backward::desc(
-          dnnl::algorithm::lrn_across_channels, src_md, src_md, kernel_size,
-          new_alpha, beta_, bias_);
-      auto bwd_pd = dnnl::lrn_backward::primitive_desc(bwd_desc, attr,
-                                                       onednn_engine, fwd_pd);
-#endif
       dnnl::primitive fwd_primitive = dnnl::lrn_forward(fwd_pd);
       dnnl::primitive bwd_primitive = dnnl::lrn_backward(bwd_pd);
 

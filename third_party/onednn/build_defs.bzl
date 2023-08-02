@@ -19,9 +19,8 @@ def omp_deps():
 
     """
 
-    return selects.with_or({
-        ("//third_party/onednn:onednn_v3_and_cpu", "@intel_extension_for_tensorflow//itex:cpu_build_with_onednn_v3"): ["//third_party/onednn:intel_binary_blob"],
-        ("//third_party/onednn:onednn_v2_and_cpu", "@intel_extension_for_tensorflow//itex:cpu_build_with_onednn_v2"): ["//third_party/onednn_v2:intel_binary_blob"],
+    return select({
+        "@intel_extension_for_tensorflow//itex:cpu_build": ["//third_party/onednn:intel_binary_blob"],
         "//conditions:default": [],
     })
 
@@ -32,11 +31,10 @@ def onednn_deps():
       a select evaluating to a list of library dependencies, suitable for
       inclusion in the deps attribute of rules.
     """
-    return selects.with_or({
-        ("//third_party/onednn:onednn_v3_and_gpu", "@intel_extension_for_tensorflow//itex:gpu_build_with_onednn_v3"): ["@onednn_gpu//:onednn_gpu"],
-        ("//third_party/onednn:onednn_v2_and_gpu", "@intel_extension_for_tensorflow//itex:gpu_build_with_onednn_v2"): ["@onednn_gpu_v2//:onednn_gpu"],
-        ("//third_party/onednn:onednn_v3_and_cpu", "@intel_extension_for_tensorflow//itex:cpu_build_with_onednn_v3"): ["@onednn_cpu//:onednn_cpu"],
-        "//conditions:default": ["@onednn_cpu_v2//:onednn_cpu"],
+    return select({
+        "@intel_extension_for_tensorflow//itex:gpu_build": ["@onednn_gpu//:onednn_gpu"],
+        "@intel_extension_for_tensorflow//itex:cpu_build": ["@onednn_cpu//:onednn_cpu"],
+        "//conditions:default": ["@onednn_cpu//:onednn_cpu"],
     })
 
 def if_llga_debug(if_true, if_false = []):
@@ -68,9 +66,8 @@ def onednn_graph_deps():
       a select evaluating to a list of library dependencies, suitable for
       inclusion in the deps attribute of rules.
     """
-    return selects.with_or({
-        ("//third_party/onednn:onednn_v3_and_gpu", "@intel_extension_for_tensorflow//itex:gpu_build_with_onednn_v3"): ["@onednn_gpu//:onednn_graph_gpu"],
-        ("//third_party/onednn:onednn_v2_and_gpu", "@intel_extension_for_tensorflow//itex:gpu_build_with_onednn_v2"): ["@onednn_graph//:onednn_graph_gpu"],
-        ("//third_party/onednn:onednn_v3_and_cpu", "@intel_extension_for_tensorflow//itex:cpu_build_with_onednn_v3"): ["@onednn_cpu//:onednn_graph_cpu"],
-        "//conditions:default": ["@onednn_graph//:onednn_graph_cpu"],
+    return select({
+        "@intel_extension_for_tensorflow//itex:gpu_build": ["@onednn_gpu//:onednn_graph_gpu"],
+        "@intel_extension_for_tensorflow//itex:cpu_build": ["@onednn_cpu//:onednn_graph_cpu"],
+        "//conditions:default": ["@onednn_cpu//:onednn_graph_cpu"],
     })

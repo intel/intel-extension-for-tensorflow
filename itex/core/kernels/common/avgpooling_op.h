@@ -77,7 +77,6 @@ class AvgPoolGradOp : public PoolingBackwardOpBase<T> {
                                      this->data_format_onednn_);
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       dnnl::pooling_forward::primitive_desc pooling_fwd_pd(
           onednn_engine, prop, dnnl::algorithm::pooling_avg_exclude_padding,
           src_md, diff_dst_md, strides, filter_dims, dilation_dims,
@@ -86,18 +85,6 @@ class AvgPoolGradOp : public PoolingBackwardOpBase<T> {
           onednn_engine, dnnl::algorithm::pooling_avg_exclude_padding, src_md,
           diff_dst_md, strides, filter_dims, dilation_dims, padding_left,
           padding_right, pooling_fwd_pd, attr);
-#else
-      dnnl::pooling_backward::desc pooling_bwd_desc(
-          dnnl::algorithm::pooling_avg_exclude_padding, src_md, diff_dst_md,
-          strides, filter_dims, padding_left, padding_right);
-      dnnl::pooling_forward::desc pooling_fwd_desc(
-          prop, dnnl::algorithm::pooling_avg_exclude_padding, src_md,
-          diff_dst_md, strides, filter_dims, padding_left, padding_right);
-      dnnl::pooling_forward::primitive_desc pooling_fwd_pd(pooling_fwd_desc,
-                                                           onednn_engine);
-      dnnl::pooling_backward::primitive_desc pooling_bwd_pd(
-          pooling_bwd_desc, attr, onednn_engine, pooling_fwd_pd);
-#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size =
           pooling_bwd_pd.scratchpad_desc().get_size() / sizeof(T);

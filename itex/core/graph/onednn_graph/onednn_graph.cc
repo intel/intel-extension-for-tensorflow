@@ -425,11 +425,7 @@ Status SetAttr(const utils::MutableNodeView* node_view,
   if (params.is_conv) {
     (*onednn_graph_node)->set_attr(dnnl::graph::op::attr::dilations, dilations);
     (*onednn_graph_node)
-#ifdef ITEX_ONEDNN_3_0
         ->set_attr(dnnl::graph::op::attr::weights_format, std::string("XIO"));
-#else
-        ->set_attr(dnnl::graph::op::attr::filter_format, std::string("XIO"));
-#endif
     if (node_def->op() == "DepthwiseConv2dNative") {
       // We can get group size based on weight shape
       NodeDef* weight_node;
@@ -640,18 +636,10 @@ void SetStaticShapeAttr(const OneDnnGraphContext* ctx,
 
     if (node_def->op() == "Conv2DBackpropInput") {
       (*onednn_graph_node)
-#ifdef ITEX_ONEDNN_3_0
           ->set_attr(dnnl::graph::op::attr::dst_shape, size_value);
-#else
-          ->set_attr(dnnl::graph::op::attr::output_shape, size_value);
-#endif
     } else if (node_def->op() == "Conv2DBackpropFilter") {
       (*onednn_graph_node)
-#ifdef ITEX_ONEDNN_3_0
           ->set_attr(dnnl::graph::op::attr::weights_shape, size_value);
-#else
-          ->set_attr(dnnl::graph::op::attr::filter_shape, size_value);
-#endif
     } else if (node_def->op() == "Min" || node_def->op() == "Max" ||
                node_def->op() == "Sum" || node_def->op() == "Mean") {
       (*onednn_graph_node)->set_attr(dnnl::graph::op::attr::axes, size_value);
@@ -724,11 +712,7 @@ Status TranslateConv2DBackpropInput(const OneDnnGraphContext* ctx,
 
   auto* node_def = node_view->node();
   *onednn_graph_node = new dnnl::graph::op(
-#ifdef ITEX_ONEDNN_3_0
       node_index, dnnl::graph::op::kind::ConvolutionBackwardData,
-#else
-      node_index, dnnl::graph::op::kind::ConvolutionBackpropData,
-#endif
       node_def->name());
 
   TF_ABORT_IF_ERROR(
@@ -762,11 +746,7 @@ Status TranslateConv2DBackpropFilter(const OneDnnGraphContext* ctx,
 
   auto* node_def = node_view->node();
   *onednn_graph_node = new dnnl::graph::op(
-#ifdef ITEX_ONEDNN_3_0
       node_index, dnnl::graph::op::kind::ConvolutionBackwardWeights,
-#else
-      node_index, dnnl::graph::op::kind::ConvolutionBackpropFilters,
-#endif
       node_def->name());
 
   TF_ABORT_IF_ERROR(
@@ -867,11 +847,7 @@ Status TranslateBNGrad(const OneDnnGraphContext* ctx, const int node_index,
   TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "is_training", &is_training));
   TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "data_format", &tf_data_format));
   *onednn_graph_node = new dnnl::graph::op(
-#ifdef ITEX_ONEDNN_3_0
       node_index, dnnl::graph::op::kind::BatchNormTrainingBackward,
-#else
-      node_index, dnnl::graph::op::kind::BatchNormTrainingBackprop,
-#endif
       node_def->name());
 
   float epsilon;
@@ -998,11 +974,7 @@ Status TranslateLNGrad(const OneDnnGraphContext* ctx, const int node_index,
   TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "is_training", &is_training));
   TF_ABORT_IF_ERROR(GetNodeAttr(*node_def, "data_format", &tf_data_format));
   *onednn_graph_node = new dnnl::graph::op(
-#ifdef ITEX_ONEDNN_3_0
       node_index, dnnl::graph::op::kind::LayerNormBackward, node_def->name());
-#else
-      node_index, dnnl::graph::op::kind::LayerNormBackprop, node_def->name());
-#endif
 
   // TODO(itex): support more axis option, currently OneDnn only supports
   // last axis
@@ -1182,11 +1154,7 @@ Status TranslateMaxPoolGrad(const OneDnnGraphContext* ctx, const int node_index,
 
   auto* node_def = node_view->node();
   *onednn_graph_node = new dnnl::graph::op(
-#ifdef ITEX_ONEDNN_3_0
       node_index, dnnl::graph::op::kind::MaxPoolBackward, node_def->name());
-#else
-      node_index, dnnl::graph::op::kind::MaxPoolBackprop, node_def->name());
-#endif
 
   TF_ABORT_IF_ERROR(
       SetAttr(node_view, onednn_graph_node, LayerParams{false, true}));
@@ -1209,11 +1177,7 @@ Status TranslateMaxPoolGrad(const OneDnnGraphContext* ctx, const int node_index,
 
 //   auto* node_def = node_view->node();
 //   *onednn_graph_node = new dnnl::graph::op(
-// #ifdef ITEX_ONEDNN_3_0
 //       node_index, dnnl::graph::op::kind::AvgPoolBackward,
-// #else
-//       node_index, dnnl::graph::op::kind::AvgPoolBackprop,
-// #endif
 //       node_def->name());
 
 //   TF_ABORT_IF_ERROR(SetAttr(node_view, onednn_graph_node, false, false));
@@ -1237,26 +1201,17 @@ Status TranslateEltwise(const OneDnnGraphContext* ctx, const int node_index,
       {"Elu", kind::Elu},
       {"Gelu", kind::GELU},
       {"ITEXGelu", kind::GELU},
-#ifdef ITEX_ONEDNN_3_0
       {"GeluGrad", kind::GELUBackward},
       {"ITEXGeluGrad", kind::GELUBackward},
-#else
-      {"GeluGrad", kind::GELUBackprop},
-      {"ITEXGeluGrad", kind::GELUBackprop},
-#endif
       {"LeakyRelu", kind::LeakyReLU},
       {"_ITEXMish", kind::Mish},
       {"Sigmoid", kind::Sigmoid},
       {"Relu", kind::ReLU},
-#ifdef ITEX_ONEDNN_3_0
       {"ReluGrad", kind::ReLUBackward},
-#else
-      {"ReluGrad", kind::ReLUBackprop},
-#endif
       {"Relu6", kind::Clamp},
-#ifndef ITEX_ONEDNN_3_0
-      {"Rsqrt", kind::Rsqrt},
-#endif
+      // #ifndef ITEX_ONEDNN_3_0
+      //       {"Rsqrt", kind::Rsqrt},
+      // #endif
       {"Square", kind::Square},
       {"Tanh", kind::Tanh}};
 
@@ -1377,11 +1332,7 @@ Status TranslateBiasAddGrad(const OneDnnGraphContext* ctx, const int node_index,
 
   auto* node_def = node_view->node();
   *onednn_graph_node = new dnnl::graph::op(
-#ifdef ITEX_ONEDNN_3_0
       node_index, dnnl::graph::op::kind::BiasAddBackward, node_def->name());
-#else
-      node_index, dnnl::graph::op::kind::BiasAddBackprop, node_def->name());
-#endif
   return Status::OK();
 }
 
@@ -1761,22 +1712,22 @@ Status TranslateReduce(const OneDnnGraphContext* ctx, const int node_index,
   return Status::OK();
 }
 
-#ifndef ITEX_ONEDNN_3_0
-Status TranslateSelect(const OneDnnGraphContext* ctx, const int node_index,
-                       const utils::MutableNodeView* node_view,
-                       dnnl::graph::op** onednn_graph_node) {
-  if (IsOpOutputFolded(ctx, node_view)) {
-    onednn_graph_node = nullptr;
-    return Status::OK();
-  }
+// #ifndef ITEX_ONEDNN_3_0
+// Status TranslateSelect(const OneDnnGraphContext* ctx, const int node_index,
+//                        const utils::MutableNodeView* node_view,
+//                        dnnl::graph::op** onednn_graph_node) {
+//   if (IsOpOutputFolded(ctx, node_view)) {
+//     onednn_graph_node = nullptr;
+//     return Status::OK();
+//   }
 
-  auto* node_def = node_view->node();
-  *onednn_graph_node = new dnnl::graph::op(
-      node_index, dnnl::graph::op::kind::Select, node_def->name());
+//   auto* node_def = node_view->node();
+//   *onednn_graph_node = new dnnl::graph::op(
+//       node_index, dnnl::graph::op::kind::Select, node_def->name());
 
-  return Status::OK();
-}
-#endif
+//   return Status::OK();
+// }
+// #endif
 
 Status TranslateWildcard(const OneDnnGraphContext* ctx, const int node_index,
                          const utils::MutableNodeView* node_view,
@@ -1826,10 +1777,10 @@ const TranslationMap& getTranslationMap() {
       {"MaxPoolGrad", TranslateMaxPoolGrad},
       ////// activation
       {"Elu", TranslateEltwise},
-  // TODO(itex): check why this op is missing in oneDNN master
-#ifndef ITEX_ONEDNN_3_0
-      {"Rsqrt", TranslateEltwise},
-#endif
+      // TODO(itex): check why this op is missing in oneDNN master
+      // #ifndef ITEX_ONEDNN_3_0
+      //       {"Rsqrt", TranslateEltwise},
+      // #endif
       {"Relu6", TranslateEltwise},
       {"LeakyRelu", TranslateEltwise},
       // Disable LLGA Square, before we root cause the Bert training NAN issue
@@ -1867,17 +1818,17 @@ const TranslationMap& getTranslationMap() {
       {"Mean", TranslateReduce},
       {"Sum", TranslateReduce},
 
-  ////// variadic input op
-  // TODO(itex): Enable concat op, once root cause the crash with input num
-  // > 64 and hang issue in TLT.
-  // {"ConcatV2", TranslateConcat},
+      ////// variadic input op
+      // TODO(itex): Enable concat op, once root cause the crash with input num
+      // > 64 and hang issue in TLT.
+      // {"ConcatV2", TranslateConcat},
 
-  ////// conditional op
-  // TODO(itex): enable it once graph compiler & boolean datatype is merged
-  // to oneDNN master
-#ifndef ITEX_ONEDNN_3_0
-      {"Select", TranslateSelect},
-#endif
+      ////// conditional op
+      // TODO(itex): enable it once graph compiler & boolean datatype is merged
+      // to oneDNN master
+      // #ifndef ITEX_ONEDNN_3_0
+      //       {"Select", TranslateSelect},
+      // #endif
 
       {"Wildcard", TranslateWildcard},
       {"Unhandled", TranslateUnhandled}};
@@ -2370,11 +2321,7 @@ Status FuseFwPartitionWithLLGA(
   // handle input
   ITEX_VLOG(2) << "Handle inputs";
   std::vector<dnnl::graph::logical_tensor> input_logical_tensors =
-#ifdef ITEX_ONEDNN_3_0
       p.get_input_ports();
-#else
-      p.get_in_ports();
-#endif
   ITEX_VLOG(2) << "partition input number: " << input_logical_tensors.size();
 
   // All inputs are defaultly can be inplaced
@@ -2519,11 +2466,7 @@ Status FuseFwPartitionWithLLGA(
   // handle output
   ITEX_VLOG(2) << "Handle outputs";
   std::vector<dnnl::graph::logical_tensor> output_logical_tensors =
-#ifdef ITEX_ONEDNN_3_0
       p.get_output_ports();
-#else
-      p.get_out_ports();
-#endif
   ITEX_VLOG(2) << "partition output number: " << output_logical_tensors.size();
 
   for (int i = 0; i < output_logical_tensors.size(); ++i) {
@@ -3233,9 +3176,7 @@ Status RunRewritePass(OneDnnGraphContext* ctx) {
                  &wildcard_nodes, &rewrite_nodes, true, &graph_ctx,
                  &edge_manager, &addtional_args, onednn_graph_all_type_flag));
 
-#ifdef ITEX_ONEDNN_3_0
   graph_ctx.finalize();
-#endif
 
   auto l_partition_list =
       graph_ctx.get_partitions(dnnl::graph::partition::policy::fusion);

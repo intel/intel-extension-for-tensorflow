@@ -175,13 +175,8 @@ class AddNOp : public OpKernel {
       // Allocate output
       std::vector<float> coeff(num_inputs_, 1.0);
       dnnl::primitive_attr attr;
-#ifdef ITEX_ONEDNN_3_0
       auto sum_pd =
           dnnl::sum::primitive_desc(onednn_engine, coeff, srcs_pd, attr);
-#else
-      auto sum_pd =
-          dnnl::sum::primitive_desc(coeff, srcs_pd, onednn_engine, attr);
-#endif
 
       // Create Sum op, and submit for execution.
       sum_op_ = dnnl::sum(sum_pd);

@@ -153,11 +153,7 @@ void PostOpUtil::SetPostOpScale(const absl::string_view name, float scale) {
 
 void PostOpUtil::SetOutputScale(const std::vector<float>& scales) {
   if (scales.size() > 1) {
-#ifdef ITEX_ONEDNN_3_0
     int mask = 1;
-#else
-    int mask = 2;
-#endif
     output_scale_param_.mask = mask;
     output_scale_param_.scales = scales;
     this->has_output_scales_ = true;
@@ -209,11 +205,7 @@ void PostOpUtil::SetPostOp(dnnl::post_ops* post_ops,
         beta = this->linear_beta_;
         ITEX_CHECK(!std::isnan(beta)) << "PostOpUtil: Linear beta is never set";
       }
-#ifdef ITEX_ONEDNN_3_0
       post_ops->append_eltwise(info->alg, alpha, beta);
-#else
-      post_ops->append_eltwise(scale, info->alg, alpha, beta);
-#endif
     } else if (op_kind == kind::sum) {
       post_ops->append_sum(scale);
     } else if (op_kind == kind::binary) {
@@ -241,13 +233,8 @@ void PostOpUtil::SetPostOpAttr(dnnl::primitive_attr* attr,
 
   if (has_output_scales_) {
     if (output_scale_param_.scales.size()) {
-#ifdef ITEX_ONEDNN_3_0
       // if use DNNL_ARG_DST, dst scales should be 1/scale
       attr->set_scales_mask(DNNL_ARG_WEIGHTS, output_scale_param_.mask);
-#else
-      attr->set_output_scales(output_scale_param_.mask,
-                              output_scale_param_.scales);
-#endif
     }
   }
 }

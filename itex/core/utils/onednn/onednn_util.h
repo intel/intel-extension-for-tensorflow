@@ -550,17 +550,11 @@ class BiasCacheManager {
 
   // Cache the scaled bias buffer as persistent tensors.
   // Only one thread can execute this method at any given time.
-#ifdef ITEX_ONEDNN_3_0
   void SetCache(OpKernelContext* context, const dnnl::memory::desc& bias_md,
                 const dnnl::primitive_attr& bias_attr, void* bias_data,
                 const dnnl::engine& onednn_engine,
                 const dnnl::memory& scales_mem = dnnl::memory())
       TF_LOCKS_EXCLUDED(mu_);
-#else
-  void SetCache(OpKernelContext* context, const dnnl::memory::desc& bias_md,
-                const dnnl::primitive_attr& bias_attr, void* bias_data,
-                const dnnl::engine& onednn_engine) TF_LOCKS_EXCLUDED(mu_);
-#endif
 
   // Get the cached bias buffer
   T* GetCache(OpKernelContext* context) TF_LOCKS_EXCLUDED(mu_);

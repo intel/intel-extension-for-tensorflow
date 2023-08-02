@@ -2,6 +2,7 @@
 build:cpu --define=build_with_onednn=true
 build:cpu --define=build_with_onednn_graph=true
 build:cpu --define=build_with_graph_compiler=true
+build:cpu -c opt
 build:cpu --copt=-DINTEL_CPU_ONLY
 build:cpu --copt=-D__STDC_FORMAT_MACROS
 build:cpu --copt=-mfma --copt=-O3 --copt=-mavx --copt=-mavx2
@@ -9,8 +10,6 @@ build:cpu --copt=-mfma --copt=-O3 --copt=-mavx --copt=-mavx2
 build:cpu --cxxopt=-std=c++17
 build:cpu --host_cxxopt=-std=c++17
 build:cpu --define=device=cpu
-build:cpu --config=onednn_v3
-build:cpu -c opt
 # TODO(itex): Enable TBB by default once it's ready.
 # build:cpu --define=build_with_tbb=true
 
@@ -19,7 +18,6 @@ build:gpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
 build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true
 build:gpu --define=build_with_onednn_graph=true
 build:gpu --define=device=gpu
-build:gpu --config=onednn_v3
 
 # This config option is used for XPU backend.
 build:xpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
@@ -27,10 +25,6 @@ build:xpu --define=using_xetla=true
 build:xpu --define=build_as_xpu=true
 build:xpu --define=build_with_onednn_graph=true
 build:xpu --define=build_with_graph_compiler=true
-build:xpu --config=onednn_v3
-
-# This config build with oneDNN V3 API, which is enabled by default
-build:onednn_v3 --copt=-DITEX_ONEDNN_3_0 --define=onednn_version=3
 
 # This config option is used for LLGA (OneDnnGraph) debugging
 build:llga-debug --define=build_with_llga_debug=true
@@ -42,7 +36,6 @@ build:jax --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
 build:jax --define=using_dpcpp=true --define=build_with_dpcpp=true
 build:jax --define=build_with_onednn_graph=false
 build:jax --define=device=gpu
-build:jax --config=onednn_v3
 build:jax --copt=-DITEX_BUILD_JAX
 build:jax --copt=-DINTEL_GPU_ONLY --linkopt=-DINTEL_GPU_ONLY
 build:jax --define=build_for_jax=true

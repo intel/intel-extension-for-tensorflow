@@ -451,26 +451,12 @@ class MatMulOp : public OpKernel {
         const Tensor& bias_tensor = context->input(kBiasIndex_);
         bias_mem_ = CreateDnnlMemory(bias_md, dnnl_engine_,
                                      GetTensorBuffer<Tpost>(&bias_tensor));
-#ifndef ITEX_ONEDNN_3_0
-        auto matmul_desc =
-            dnnl::matmul::desc(src_md, weights_md_prefer, bias_md, dst_md);
-        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
-                                                 dnnl_engine_);
-#else
         matmul_pd = dnnl::matmul::primitive_desc(dnnl_engine_, src_md,
                                                  weights_md_prefer, bias_md,
                                                  dst_md, post_ops_attr);
-#endif
       } else {
-#ifndef ITEX_ONEDNN_3_0
-        auto matmul_desc =
-            dnnl::matmul::desc(src_md, weights_md_prefer, dst_md);
-        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
-                                                 dnnl_engine_);
-#else
         matmul_pd = dnnl::matmul::primitive_desc(
             dnnl_engine_, src_md, weights_md_prefer, dst_md, post_ops_attr);
-#endif
       }
 
       // Handle Add fusion and decide output tensor buffer.
@@ -507,7 +493,6 @@ class MatMulOp : public OpKernel {
                                                          &dst_tensor_));
       }
 
-#ifdef ITEX_ONEDNN_3_0
       if (post_op_util_.HasOutputScales()) {
         float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
             context, post_op_util_.GetOutputScale().data(), 1);
@@ -517,7 +502,6 @@ class MatMulOp : public OpKernel {
         fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
                                     scale_mem);
       }
-#endif
 
       // Do weight cache only if Reorder is needed and weight is const.
       weights_mem_input_ = CreateDnnlMemory(
@@ -645,9 +629,7 @@ class MatMulOp : public OpKernel {
   dnnl::fpmath_mode fp32_math_mode_ = dnnl::fpmath_mode::strict;
   dnnl::stream dnnl_stream_;
   dnnl::engine dnnl_engine_;
-#ifdef ITEX_ONEDNN_3_0
   HostDataCache<Device, float> output_scale_cache_;
-#endif
 };
 
 template <typename Device, typename T, typename Tout, typename Tpost,
@@ -843,26 +825,12 @@ class MatMulFunctor {
                                     params->bias_strides);
         bias_mem_ = CreateDnnlMemory(bias_md, dnnl_engine_, bias_tensor_data);
         // Reassigin desc if it has bias.
-#ifdef ITEX_ONEDNN_3_0
         matmul_pd = dnnl::matmul::primitive_desc(dnnl_engine_, src_md,
                                                  weights_md_prefer, bias_md,
                                                  dst_md, post_ops_attr);
-#else
-        auto matmul_desc =
-            dnnl::matmul::desc(src_md, weights_md_prefer, bias_md, dst_md);
-        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
-                                                 dnnl_engine_);
-#endif
       } else {
-#ifndef ITEX_ONEDNN_3_0
-        auto matmul_desc =
-            dnnl::matmul::desc(src_md, weights_md_prefer, dst_md);
-        matmul_pd = dnnl::matmul::primitive_desc(matmul_desc, post_ops_attr,
-                                                 dnnl_engine_);
-#else
         matmul_pd = dnnl::matmul::primitive_desc(
             dnnl_engine_, src_md, weights_md_prefer, dst_md, post_ops_attr);
-#endif
       }
 
       // Handle Add fusion and decide output tensor buffer.
@@ -878,8 +846,6 @@ class MatMulFunctor {
         ReorderMemory(*context, &fuse_add_src_mem_, &fuse_add_dst_mem_,
                       dnnl_engine_);
       }
-
-#ifdef ITEX_ONEDNN_3_0
       if (post_op_util_.HasOutputScales()) {
         float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
             context, post_op_util_.GetOutputScale().data(), 1);
@@ -889,7 +855,6 @@ class MatMulFunctor {
         fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
                                     scale_mem);
       }
-#endif
 
       // Do weight cache only if Reorder is needed and weight is const.
       weights_mem_input_ =
@@ -1025,9 +990,7 @@ class MatMulFunctor {
   dnnl::engine dnnl_engine_;
 
   OpKernelContext* context_;
-#ifdef ITEX_ONEDNN_3_0
   HostDataCache<Device, float> output_scale_cache_;
-#endif
 };
 
 template <typename Device, typename T, typename Tgrad>
@@ -1163,24 +1126,12 @@ class FusedMatMulGradOp : public OpKernel {
           diff_weight_dims, OneDnnType<T>(), diff_weight_format_prefer);
       auto diff_bias_md = dnnl::memory::desc(
           diff_bias_dims, OneDnnType<Tgrad>(), dnnl::memory::format_tag::x);
-#ifdef ITEX_ONEDNN_3_0
       auto fwd_pd = dnnl::inner_product_forward::primitive_desc(
           onednn_engine_, dnnl::prop_kind::forward, src_md,
           diff_weight_md_prefer, diff_bias_md, diff_dst_md, attr);
       auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
           onednn_engine_, src_md, diff_weight_md_prefer, diff_bias_md,
           diff_dst_md, fwd_pd, attr);
-#else
-      auto fwd_desc = dnnl::inner_product_forward::desc(
-          dnnl::prop_kind::forward, src_md, diff_weight_md_prefer, diff_bias_md,
-          diff_dst_md);
-      auto fwd_pd = dnnl::inner_product_forward::primitive_desc(fwd_desc, attr,
-                                                                onednn_engine_);
-      auto bwd_desc = dnnl::inner_product_backward_weights::desc(
-          src_md, diff_weight_md_prefer, diff_bias_md, diff_dst_md);
-      auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
-          bwd_desc, attr, onednn_engine_, fwd_pd);
-#endif
       matmul_bwd_primitive_ =
           dnnl::inner_product_backward_weights(matmul_bwd_pd);
 

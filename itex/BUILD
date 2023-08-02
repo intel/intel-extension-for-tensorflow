@@ -75,38 +75,6 @@ selects.config_setting_group(
     ],
 )
 
-selects.config_setting_group(
-    name = "gpu_build_with_onednn_v3",
-    match_all = [
-        ":gpu_build",
-        "//third_party/onednn:onednn_v3",
-    ],
-)
-
-selects.config_setting_group(
-    name = "gpu_build_with_onednn_v2",
-    match_all = [
-        ":gpu_build",
-        "//third_party/onednn:onednn_v2",
-    ],
-)
-
-selects.config_setting_group(
-    name = "cpu_build_with_onednn_v3",
-    match_all = [
-        ":cpu_build",
-        "//third_party/onednn:onednn_v3",
-    ],
-)
-
-selects.config_setting_group(
-    name = "cpu_build_with_onednn_v2",
-    match_all = [
-        ":cpu_build",
-        "//third_party/onednn:onednn_v2",
-    ],
-)
-
 config_setting(
     name = "tf_version_2_12",
     define_values = {"tf_main_version": "2.12"},

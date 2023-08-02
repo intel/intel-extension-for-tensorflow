@@ -220,17 +220,9 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
       dnnl::primitive_attr post_ops_attr;
       this->post_op_util_.SetPostOpAttr(&post_ops_attr);
       post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       fwd_pd_ = dnnl::inner_product_forward::primitive_desc(
           onednn_engine_, dnnl::prop_kind::forward_inference, src_md,
           weight_exec_md, bias_md, dst_md, post_ops_attr);
-#else
-      auto fwd_desc = dnnl::inner_product_forward::desc(
-          dnnl::prop_kind::forward_inference, src_md, weight_exec_md, bias_md,
-          dst_md);
-      fwd_pd_ = dnnl::inner_product_forward::primitive_desc(
-          fwd_desc, post_ops_attr, onednn_engine_);
-#endif
       fwd_primitive_ = dnnl::inner_product_forward(fwd_pd_);
 
       // Allocate output Tensor.
@@ -301,7 +293,6 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
                              {DNNL_ARG_WEIGHTS, weight_mem_},
                              {DNNL_ARG_DST, dst_mem_},
                              {DNNL_ARG_SCRATCHPAD, scratchpad_mem_}};
-#ifdef ITEX_ONEDNN_3_0
       if (this->post_op_util_.HasOutputScales()) {
         float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
             context, this->post_op_util_.GetOutputScale().data(),
@@ -315,7 +306,6 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
         fwd_primitive_args_.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
                                     scale_mem);
       }
-#endif
 
       // Note: The asymmetric compensation is calculate in bias handle
       Tensor scaled_bias_tensor;
@@ -581,7 +571,6 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
           for (int i = 0; i < k; ++i) {
             sum += wt_buf[i * n + j];
           }
-#ifdef ITEX_ONEDNN_3_0
           // No need to quantize bias after onednn 3.0, y = scale*wx + b
           if (std::is_same<Toutput, float>::value ||
               std::is_same<Toutput, Eigen::bfloat16>::value ||
@@ -609,21 +598,11 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
                 static_cast<float>(input_bias[j]) * scales[j] +
                 (sum * q_min_input));
           }
-#else
-          adjusted_bias[j] =
-              static_cast<Tbias>(static_cast<float>(input_bias[j]) * scales[j] +
-                                 (sum * q_min_input));
-#endif
         }
       } else {
         dnnl::primitive_attr bias_attr;
-#ifdef ITEX_ONEDNN_3_0
         (num_weight_scales == 1) ? bias_attr.set_scales_mask(DNNL_ARG_SRC, 0)
                                  : bias_attr.set_scales_mask(DNNL_ARG_SRC, 1);
-#else
-        (num_weight_scales == 1) ? bias_attr.set_output_scales(0, bias_scales)
-                                 : bias_attr.set_output_scales(1, bias_scales);
-#endif
         memory::dims input_bias_dims =
             memory::dims({1, bias_tensor.shape().dim_size(0)});
         auto input_bias_md = dnnl::memory::desc(
@@ -636,7 +615,6 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
 
         auto scaled_bias_mem =
             dnnl::memory(scaled_bias_md, onednn_engine_, scaled_bias_buf);
-#ifdef ITEX_ONEDNN_3_0
         float* bias_scales_ptr = bias_scale_cache_.GetCachedPtr(
             context, bias_scales.data(), num_weight_scales);
         dnnl::memory bias_scales_mem = dnnl::memory(
@@ -644,15 +622,12 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
              dnnl::memory::data_type::f32,
              dnnl::memory::format_tag::x},
             onednn_engine_, reinterpret_cast<void*>(bias_scales_ptr));
-#endif
         auto reorder_prim =
             dnnl::reorder(input_bias_mem, scaled_bias_mem, bias_attr);
         std::unordered_map<int, memory> reorder_net_args = {
             {DNNL_ARG_SRC, input_bias_mem},
             {DNNL_ARG_DST, scaled_bias_mem},
-#ifdef ITEX_ONEDNN_3_0
             {DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC, bias_scales_mem},
-#endif
         };
         auto onednn_stream = CreateDnnlStream(*context, onednn_engine_);
         reorder_prim.execute(onednn_stream, reorder_net_args);
@@ -756,13 +731,10 @@ class LegacyQuantizedMatMulOpBase : public OpKernel {
   dnnl::primitive fwd_primitive_;
   dnnl::inner_product_forward::primitive_desc fwd_pd_;
   std::unordered_map<int, memory> fwd_primitive_args_;
-#ifdef ITEX_ONEDNN_3_0
   HostDataCache<Device, float> output_scale_cache_;
   HostDataCache<Device, float> bias_scale_cache_;
-#endif
 };
 
-#ifdef ITEX_ONEDNN_3_0
 template <typename Device, typename Tinput, typename Tweight, typename Toutput>
 class LegacyQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32, Toutput>
     : public OpKernel {
@@ -1436,7 +1408,6 @@ class LegacyQuantizedMatMulOpBase<Device, Tinput, Tweight, qint32, Toutput>
   HostDataCache<Device, float> output_scale_cache_;
   HostDataCache<Device, float> bias_scale_cache_;
 };
-#endif
 
 template <typename Device, typename Tinput, typename Tweight, typename Tbias,
           typename Toutput>

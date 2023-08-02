@@ -35,56 +35,6 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-config_setting(
-    name = "onednn_v3",
-    define_values = {
-        "onednn_version": "3",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "onednn_v2",
-    define_values = {
-        "onednn_version": "2",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "onednn_v3_and_gpu",
-    define_values = {
-        "device": "gpu",
-        "onednn_version": "3",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "onednn_v2_and_gpu",
-    define_values = {
-        "device": "gpu",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "onednn_v3_and_cpu",
-    define_values = {
-        "device": "cpu",
-        "onednn_version": "3",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "onednn_v2_and_cpu",
-    define_values = {
-        "device": "cpu",
-    },
-    visibility = ["//visibility:public"],
-)
-
 bzl_library(
     name = "build_defs_bzl",
     srcs = ["build_defs.bzl"],

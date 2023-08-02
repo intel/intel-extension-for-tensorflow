@@ -274,27 +274,13 @@ class OneDnnMatMulOp : public OneDnnMatMulBaseOp<Device, T> {
       if (this->post_op_util_.HasBias()) {
         memory::desc bias_any_md = memory::desc(
             {1, weight_dims[1]}, OneDnnType<T>(), memory::format_tag::ab);
-#ifdef ITEX_ONEDNN_3_0
         fwd_pd_ =
             matmul::primitive_desc(onednn_engine_, src_exec_md, weight_exec_md,
                                    bias_any_md, dst_exec_md, post_op_attr);
-#else
-        matmul::desc matmul_d =
-            matmul::desc(src_exec_md, weight_exec_md, bias_any_md, dst_exec_md);
-        fwd_pd_ =
-            matmul::primitive_desc(matmul_d, post_op_attr, onednn_engine_);
-#endif
       } else {
-#ifdef ITEX_ONEDNN_3_0
         fwd_pd_ =
             matmul::primitive_desc(onednn_engine_, src_exec_md, weight_exec_md,
                                    dst_exec_md, post_op_attr);
-#else
-        matmul::desc matmul_d =
-            matmul::desc(src_exec_md, weight_exec_md, dst_exec_md);
-        fwd_pd_ =
-            matmul::primitive_desc(matmul_d, post_op_attr, onednn_engine_);
-#endif
       }
       fwd_primitive_ = matmul(fwd_pd_);
       // Create src memory, check if src needs to be reordered
@@ -601,24 +587,12 @@ class OneDnnFusedMatMulGradOp : public OpKernel {
       if (std::is_same<T, float>::value) {
         attr.set_fpmath_mode(fp32_math_mode_);
       }
-#ifdef ITEX_ONEDNN_3_0
       auto fwd_pd = dnnl::inner_product_forward::primitive_desc(
           onednn_engine, dnnl::prop_kind::forward, src_md_any,
           diff_weight_md_any, diff_bias_md, diff_dst_md_any, attr);
       auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
           onednn_engine, src_md_any, diff_weight_md_any, diff_bias_md,
           diff_dst_md_any, fwd_pd, attr);
-#else
-      auto fwd_desc = dnnl::inner_product_forward::desc(
-          dnnl::prop_kind::forward, src_md_any, diff_weight_md_any,
-          diff_bias_md, diff_dst_md_any);
-      auto fwd_pd = dnnl::inner_product_forward::primitive_desc(fwd_desc, attr,
-                                                                onednn_engine);
-      auto bwd_desc = dnnl::inner_product_backward_weights::desc(
-          src_md_any, diff_weight_md_any, diff_bias_md, diff_dst_md_any);
-      auto matmul_bwd_pd = dnnl::inner_product_backward_weights::primitive_desc(
-          bwd_desc, attr, onednn_engine, fwd_pd);
-#endif
       auto matmul_bwd_primitive =
           dnnl::inner_product_backward_weights(matmul_bwd_pd);
 

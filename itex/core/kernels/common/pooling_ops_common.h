@@ -604,18 +604,9 @@ class PoolingOp : public PoolingForwardOpBase<T> {
 
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-#ifdef ITEX_ONEDNN_3_0
       dnnl::pooling_forward::primitive_desc fwd_pd(
           onednn_engine, pooling_prop_kind, algo, src_md, dst_md, strides,
           filter_dims, dilation_dims, padding_left, padding_right, attr);
-#else
-      dnnl::pooling_forward::desc fwd_desc(pooling_prop_kind, algo, src_md,
-                                           dst_md, strides, filter_dims,
-                                           padding_left, padding_right);
-
-      dnnl::pooling_forward::primitive_desc fwd_pd(fwd_desc, attr,
-                                                   onednn_engine);
-#endif
       Tensor scratchpad_tensor;
       int64 scratchpad_size = fwd_pd.scratchpad_desc().get_size() / sizeof(T);
       OP_REQUIRES_OK(context,

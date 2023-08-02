@@ -298,7 +298,6 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       if (this->post_op_util_.HasBias()) {
         fwd_primitive_args.emplace(DNNL_ARG_BIAS, bias_mem);
       }
-#ifdef ITEX_ONEDNN_3_0
       if (this->post_op_util_.HasOutputScales()) {
         float alpha = this->post_op_util_.GetOutputScale()[0];
         float* output_scale_ptr =
@@ -309,7 +308,6 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
         fwd_primitive_args.emplace(DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS,
                                    scale_mem);
       }
-#endif
       fwd_primitive.execute(onednn_stream, fwd_primitive_args);
     } catch (dnnl::error& e) {
       string error_msg = "Status: " + std::to_string(e.status) +
@@ -384,7 +382,6 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
     }
 
     this->post_op_util_.SetPostOpAttr(&post_ops_attr, md_list);
-#ifdef ITEX_ONEDNN_3_0
     if (this->post_op_util_.HasBias()) {
       return matmul::primitive_desc(onednn_engine, src_md, wei_md, bias_md,
                                     dst_md, post_ops_attr);
@@ -392,23 +389,12 @@ class OneDnnBatchMatMulV2Op : public OneDnnMatMulBaseOp<Device, Trhs> {
       return matmul::primitive_desc(onednn_engine, src_md, wei_md, dst_md,
                                     post_ops_attr);
     }
-#else
-    if (this->post_op_util_.HasBias()) {
-      auto fwd_desc = matmul::desc(src_md, wei_md, bias_md, dst_md);
-      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
-    } else {
-      auto fwd_desc = matmul::desc(src_md, wei_md, dst_md);
-      return matmul::primitive_desc(fwd_desc, post_ops_attr, onednn_engine);
-    }
-#endif
   }
 
  private:
   static const int kSrcIndex_ = 0, kWeightIndex_ = 1, kBiasIndex_ = 2,
                    kDstIndex_ = 0, kMaxBinaryNum_ = 2;
-#ifdef ITEX_ONEDNN_3_0
   HostDataCache<Device, float> output_scale_cache_;
-#endif
 };
 
 template <typename Device, typename Tlhs, typename Trhs, typename Toutput>

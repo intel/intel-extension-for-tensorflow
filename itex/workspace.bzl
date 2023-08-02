@@ -64,18 +64,6 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     )
 
     new_git_repository(
-        name = "onednn_cpu_v2",
-        # Align to SPR gold release.
-        commit = "b1ea77cdb7468ca334d50dbc19f72aed44435507",
-        remote = "https://github.com/oneapi-src/oneDNN.git",
-        build_file = clean_dep("//third_party/onednn_v2:onednn_cpu.BUILD"),
-        verbose = True,
-        patch_cmds = [
-            "git log -1 --format=%H > COMMIT",
-        ],
-    )
-
-    new_git_repository(
         name = "onednn_cpu",
         # v3.2-rc
         commit = "f7bceb51946ab3e8a9ceb93e17e1b2c81640fce4",
@@ -184,36 +172,12 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     )
 
     new_git_repository(
-        name = "onednn_gpu_v2",
-        commit = "5c7d2549efd4cde805931ef3214ffebff5ef1d1c",
-        remote = "https://github.com/oneapi-src/oneDNN.git",
-        build_file = clean_dep("//third_party/onednn_v2:onednn_gpu.BUILD"),
-        verbose = True,
-        patch_cmds = [
-            "git log -1 --format=%H > COMMIT",
-        ],
-    )
-
-    new_git_repository(
         name = "onednn_gpu",
         # rls-v3.3-pc
         commit = "67bc621a2da4aefc51f0a59b2af2398fa1d3e1c8",
         remote = "https://github.com/oneapi-src/oneDNN.git",
         build_file = clean_dep("//third_party/onednn:onednn_gpu.BUILD"),
         verbose = True,
-        patch_cmds = [
-            "git log -1 --format=%H > COMMIT",
-        ],
-    )
-
-    new_git_repository(
-        name = "onednn_graph",
-        # llga public dev-graph-beta-3 branch
-        commit = "147d9bcec306738be5f223028b181e0ba592caf7",
-        remote = "https://github.com/oneapi-src/oneDNN.git",
-        build_file = clean_dep("//third_party/onednn_graph:onednn_graph.BUILD"),
-        verbose = True,
-        patch_args = ["-p1"],
         patch_cmds = [
             "git log -1 --format=%H > COMMIT",
         ],
