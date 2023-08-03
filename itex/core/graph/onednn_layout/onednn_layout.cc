@@ -84,7 +84,7 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
       {"Conv3DBackpropInputV2", "_OneDnnConv3DBackpropInputV2", CopyAttrsAll,
        RewriteBackwardDataType},
       {"DepthwiseConv2dNative", "_OneDnnDepthwiseConv2dNative",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+       CopyAttrsAllCheckConstFilter, RewriteOneDnnConv},
       {"DepthwiseConv2dNativeBackpropFilter",
        "_OneDnnDepthwiseConv2dNativeBackpropFilter", CopyAttrsAll,
        RewriteBackwardDataType},

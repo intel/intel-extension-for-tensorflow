@@ -140,6 +140,21 @@ static const std::vector<string>* GetPotentialOneDnnOpList() {
 }
 
 bool RewriteOneDnnConv(const utils::MutableNodeView& node_view) {
+  // If next node of conv is bn, we enforce conv + bn to plain format
+  for (auto const& fanout : node_view.GetRegularFanouts()) {
+    if (fanout.size() < 1) continue;
+    for (auto const& fanout_i : fanout) {
+      auto const* fanout_node_view = fanout_i.node_view();
+      if (!fanout_node_view) continue;
+      auto const& crt_op_name = fanout_node_view->node()->op();
+      const std::string onednn_op = "FusedBatchNorm";
+      if (crt_op_name.find(onednn_op) != string::npos) {
+        return false;
+      }
+    }
+  }
+
+  // RewriteWithBlockInput
   for (int i = 0; i < node_view.NumRegularFanins(); ++i) {
     const NodeDef* input_node_def =
         node_view.GetRegularFanin(i).node_view()->node();
