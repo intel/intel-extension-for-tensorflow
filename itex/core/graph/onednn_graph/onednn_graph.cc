@@ -2660,7 +2660,8 @@ Status AddRetNode(OneDnnGraphContext* ctx) {
   return Status::OK();
 }
 
-// Remove AssignAddVariableOp, AssignSubVariableOp and AssignVariableOp.
+// Remove AssignAddVariableOp, AssignSubVariableOp and AssignVariableOp before
+// Cast.
 Status RemoveAssignXVariable(OneDnnGraphContext* ctx) {
   TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
   TF_ABORT_IF_ERROR(ctx->node_type_map.Init(*ctx->graph_view.graph()));
@@ -2673,6 +2674,17 @@ Status RemoveAssignXVariable(OneDnnGraphContext* ctx) {
     if (node_def->name() == "AssignAddVariableOp" ||
         node_def->name() == "AssignSubVariableOp" ||
         node_def->name() == "AssignVariableOp") {
+      auto control_fanouts = node_view->GetControlledFanouts();
+      if (control_fanouts.size() != 1) {
+        return Status::OK();
+      }
+      for (int i = 0; i < control_fanouts.size(); ++i) {
+        auto out_node_view = control_fanouts[i].node_view();
+        auto* out_node_def = out_node_view->node();
+        if (out_node_def->name() != "Cast") {
+          return Status::OK();
+        }
+      }
       for (int i = 0; i < node_view->NumRegularFanins(); ++i) {
         auto* input_node_view = node_view->GetRegularFanin(i).node_view();
         const NodeDef* input_node = input_node_view->node();
@@ -2682,7 +2694,6 @@ Status RemoveAssignXVariable(OneDnnGraphContext* ctx) {
                      << input_node_view->NumRegularFanins();
         mutation->RemoveNode(input_node_view);
       }
-      auto control_fanouts = node_view->GetControlledFanouts();
       for (int i = 0; i < control_fanouts.size(); ++i) {
         auto out_node_view = control_fanouts[i].node_view();
         mutation->RemoveControllingFanin(out_node_view, node_def->name());
