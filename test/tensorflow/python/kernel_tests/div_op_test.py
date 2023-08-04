@@ -29,9 +29,9 @@ class DivTest(test.TestCase):
       y = np.linspace(20, -5, 15).reshape(1, 3, 5).astype(dtype)
       self._compareBoth(x, y)
     for dtype in complex_dtypes:
-      x = np.complex(1, 1) * np.linspace(-10, 10, 6).reshape(1, 3, 2).astype(
+      x = complex(1, 1) * np.linspace(-10, 10, 6).reshape(1, 3, 2).astype(
         dtype)
-      y = np.complex(1, 1) * np.linspace(20, -20, 6).reshape(1, 3, 2).astype(
+      y = complex(1, 1) * np.linspace(20, -20, 6).reshape(1, 3, 2).astype(
         dtype)
       self._compareBoth(x, y)
 

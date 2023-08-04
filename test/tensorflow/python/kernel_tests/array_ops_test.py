@@ -445,7 +445,7 @@ class ReverseV2Test(test_util.TensorFlowTestCase):
   @test_util.run_deprecated_v1
   def testReverse1DimAuto(self):
     for dtype in [
-        np.uint8, np.int8, np.uint16, np.int16, np.int32, np.int64, np.bool,
+        np.uint8, np.int8, np.uint16, np.int16, np.int32, np.int64, np.bool_,
         np.float16, np.float32, np.float64, np.complex64, np.complex128
     ]:
       self._reverse1DimAuto(dtype)
@@ -453,7 +453,7 @@ class ReverseV2Test(test_util.TensorFlowTestCase):
   @test_util.run_deprecated_v1
   def testReverse2DimAuto(self):
     for dtype in [
-        np.uint8, np.int8, np.uint16, np.int16, np.int32, np.int64, np.bool,
+        np.uint8, np.int8, np.uint16, np.int16, np.int32, np.int64, np.bool_,
         np.float16, np.float32, np.float64, np.complex64, np.complex128
     ]:
       self._reverse2DimAuto(dtype)

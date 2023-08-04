@@ -99,7 +99,7 @@ class BinaryOpTest(test.TestCase):
         np_var_left = self.evaluate(tf_func(x, var_y))
         np_var_right = self.evaluate(tf_func(var_x, y))
 
-    if np_ans.dtype != np.object:
+    if np_ans.dtype != np.object_:
       self.assertAllClose(np_ans, tf_cpu)
       self.assertAllClose(np_ans, np_left)
       self.assertAllClose(np_ans, np_right)

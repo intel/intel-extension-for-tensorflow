@@ -300,7 +300,7 @@ class Relu6Test(test.TestCase):
     self.assertShapeEqual(np_relu6, tf_relu6)
 
   def testNumbersGPU(self):
-    for t in [dtypes.bfloat16.as_numpy_dtype, np.float, np.float16]:
+    for t in [dtypes.bfloat16.as_numpy_dtype, np.float32, np.float64, np.float16]:
       if (not test.is_gpu_available()) and t == np.float16:
         continue
       self._testRelu6(

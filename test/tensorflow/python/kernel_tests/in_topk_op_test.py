@@ -29,7 +29,7 @@ from tensorflow.python.ops import gen_nn_ops
 class InTopKTest(test.TestCase):
 
   def _validateInTopK(self, predictions, target, k, expected):
-    np_ans = np.array(expected, np.bool)
+    np_ans = np.array(expected, np.bool_)
     with self.cached_session(use_gpu=True):
       precision = nn_ops.in_top_k(predictions, target, k)
       out = self.evaluate(precision)
@@ -87,7 +87,7 @@ class InTopKTest(test.TestCase):
 class InTopKLegacyTest(test.TestCase):
 
   def _validateInTopK(self, predictions, target, k, expected):
-    np_ans = np.array(expected, np.bool)
+    np_ans = np.array(expected, np.bool_)
     with self.cached_session(use_gpu=True):
       precision = gen_nn_ops.in_top_k(predictions, target, k)
       out = self.evaluate(precision)

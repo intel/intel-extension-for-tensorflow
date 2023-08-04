@@ -1190,7 +1190,7 @@ class NdtriTest(test.TestCase):
 
   def assertAllFinite(self, x):
     is_finite = np.isfinite(x)
-    all_true = np.ones_like(is_finite, dtype=np.bool)
+    all_true = np.ones_like(is_finite, dtype=np.bool_)
     self.assertAllEqual(all_true, is_finite)
 
   @test_util.run_in_graph_and_eager_modes

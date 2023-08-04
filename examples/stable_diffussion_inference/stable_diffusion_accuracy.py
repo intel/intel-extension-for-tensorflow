@@ -58,7 +58,7 @@ def text2image(plot=False):
     
     if args.load_ref_result and args.ref_result_dir:
         print(f"loading reference result from {args.ref_result_dir}")
-        real_img_lst = np.reshape(np.loadtxt(args.ref_result_dir, dtype=np.int), [len(prompt_lst), 512, 512, 3])
+        real_img_lst = np.reshape(np.loadtxt(args.ref_result_dir, dtype=np.int_), [len(prompt_lst), 512, 512, 3])
     else:
         print("regenerating real images")        
         real_img_lst = []
