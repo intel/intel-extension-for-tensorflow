@@ -28,6 +28,7 @@ limitations under the License.
 #include "absl/synchronization/mutex.h"
 #include "itex/core/utils/allocator.h"
 #include "itex/core/utils/annotated_traceme.h"
+#include "itex/core/utils/control_flow.h"
 #include "itex/core/utils/cpu_info.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/kernel_def_util.h"
@@ -320,7 +321,6 @@ class OpKernelContext {
   //
   //  Status set_output_ref(StringPiece name, mutex* mu, Tensor*
   //  tensor_for_ref);
-
   // Status mutable_output(StringPiece name, Tensor** tensor);
   Tensor* mutable_output(int index);
 
@@ -363,6 +363,14 @@ class OpKernelContext {
 
   void SetStatus(const Status& s);
 
+  uint64_t GetFrameId() const { return TF_GetFrameId(ctx_); }
+  int64_t GetIterId() const { return TF_GetIterId(ctx_); }
+  int64_t GetStepId() const { return TF_GetStepId(ctx_); }
+  int GetDeviceId() const { return TF_GetDeviceId(ctx_); }
+
+  FrameAndIter frame_iter() const {
+    return FrameAndIter(GetFrameId(), GetIterId());
+  }
   static constexpr int kNeverForward = -2;
   static constexpr int kNoReservation = -1;
 

@@ -2202,6 +2202,22 @@ itex_xpu_library(
     alwayslink = True,
 )
 
+itex_xpu_library(
+    name = "temporary_variable_ops",
+    srcs = select({
+        "@local_config_dpcpp//dpcpp:using_nextpluggable": ["variable_ops.cc"],
+        "//conditions:default": [],
+    }),
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+    ],
+    alwayslink = True,
+)
+
 GPU_KERNELS = [
     ":aggregate_ops",
     ":argmax_op",
@@ -2321,6 +2337,7 @@ GPU_KERNELS = [
     ":isTensorFloat32Enabled_op",
     ":tensor_to_hash_bucket_op",
     ":test_ops",
+    ":temporary_variable_ops",
 ]
 
 itex_xpu_library(

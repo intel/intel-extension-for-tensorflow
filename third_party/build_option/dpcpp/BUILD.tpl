@@ -18,6 +18,13 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "using_nextpluggable",
+    values = {
+        "define": "using_nextpluggable=true",
+    },
+)
+
 cc_library(
     name = "itex_gpu_headers",
     hdrs = glob([
