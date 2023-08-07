@@ -42,7 +42,7 @@ class SoftsignTest(test.TestCase):
     self.assertShapeEqual(np_softsign, softsign)
 
   def testNumbers(self):
-    for t in [np.float, dtypes.bfloat16.as_numpy_dtype, np.float16, np.float64]:
+    for t in [np.float32, dtypes.bfloat16.as_numpy_dtype, np.float16, np.float64]:
       self._testSoftsign(
           np.array([[-9, 7, -5, 3, -1], [1, -3, 5, -7, 9]]).astype(t))
 
