@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g274b241 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Accelerate BERT-Large Pretraining on Intel GPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/pretrain_bert/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="accelerate-bert-large-pretraining-on-intel-gpu">
+<h1>Accelerate BERT-Large Pretraining on Intel GPU<a class="headerlink" href="#accelerate-bert-large-pretraining-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
+This example shows BERT-Large Pretraining.</p>
+<p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Training on Intel GPU.</p>
+</section>
+<section id="hardware-requirements">
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<p>Verified Hardware Platforms:</p>
+<ul class="simple">
+<li><p>Intel® Data Center GPU Max Series</p></li>
+</ul>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<section id="model-code-change">
+<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
+<p>We set up BERT-Large pretraining based on nvidia-bert. We optimized nvidia-bert, for example, using custom kernels, fusing some ops to reduce op number, and adding bf16 mode for the model.</p>
+<p>To get better performance, instead of installing official nvidia-bert, you can clone nvidia-bert, apply the patch, then install it as shown here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow2</span><span class="o">/</span><span class="n">LanguageModeling</span><span class="o">/</span><span class="n">BERT</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># When applying this patch, please move it to the above BERT dir first.</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-for-gpu">
+<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="../common_guide_running.md##Prepare">Prepare</a>.</p>
+</section>
+<section id="setup-running-environment">
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Setup for GPU</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./pip_set_env.sh
+</pre></div>
+</div>
+</section>
+<section id="enable-running-environment">
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
+<ul class="simple">
+<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.md##Running">Running</a></p></li>
+</ul>
+</section>
+<section id="prepare-dataset">
+<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
+<p>nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training. You can run below to download datasets for fine-tuning and pretraining.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">scripts</span><span class="o">/</span><span class="n">data_download</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span>
+</pre></div>
+</div>
+<p>For more details about downloading and processing the dataset, you can reference <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#quick-start-guide">downloading</a> and <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#getting-the-data">processing</a> part. After downloading and processing, the datasets are supposed in the following locations by default</p>
+<ul class="simple">
+<li><p>SQuAD v1.1 - <code class="docutils literal notranslate"><span class="pre">data/download/squad/v1.1</span></code></p></li>
+<li><p>SQuAD v2.0 - <code class="docutils literal notranslate"><span class="pre">data/download/squad/v2.0</span></code></p></li>
+<li><p>BERT-Large - <code class="docutils literal notranslate"><span class="pre">data/download/google_pretrained_weights/uncased_L-24_H-1024_A-16</span></code></p></li>
+<li><p>BERT-Base - <code class="docutils literal notranslate"><span class="pre">data/download/google_pretrained_weights/uncased_L-12_H-768_A-12</span></code></p></li>
+<li><p>Wikipedia + BookCorpus TFRecords - <code class="docutils literal notranslate"><span class="pre">data/tfrecords/books_wiki_en_corpus</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="execute-the-example">
+<h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
+<p>Bert pretraining is very time-consuming, as nvidia-bert repository says, training BERT-Large from scratch on 16 V100 using FP16 datatype takes around 4.5 days. So Here we only provide single-tile pretraining scripts within a day to show performance.</p>
+<section id="pretraining-command">
+<h3>Pretraining Command<a class="headerlink" href="#pretraining-command" title="Permalink to this heading"></a></h3>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code></p>
+<ul class="simple">
+<li><p>BFloat16 DataType</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">bf16</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Float32 DataType</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
+</pre></div>
+</div>
+<p><strong>Final Scripts</strong></p>
+<ul class="simple">
+<li><p>We use <a class="reference external" href="https://arxiv.org/pdf/1904.00962.pdf">LAMB</a> as the optimizer and pretraining has two phases. The maximum sequence length of phase1 and phase2 is 128 and 512, respectively. For the whole process of pretraining, you can use scripts in <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#training-process">nvidia-bert</a>.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=60
+TRAIN_BATCH_SIZE_PHASE2=32
+EVAL_BATCH_SIZE=8
+LEARNING_RATE_PHASE1=7.5e-4
+LEARNING_RATE_PHASE2=5e-4
+DATATYPE=$DATATYPE
+USA_XLA=false
+NUM_GPUS=1
+WARMUP_STEPS_PHASE1=660
+WARMUP_STEPS_PHASE2=66
+TRAIN_STEPS=2600
+SAVE_CHECKPOINT_STEPS=100
+NUM_ACCUMULATION_STEPS_PHASE1=64
+NUM_ACCUMULATION_STEPS_PHASE2=60
+BERT_MODEL=large
+
+GBS1=$(expr $TRAIN_BATCH_SIZE_PHASE1 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE1)
+GBS2=$(expr $TRAIN_BATCH_SIZE_PHASE2 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE2)
+
+PRETRAIN_RESULT_DIR=./results/tf_bert_pretraining_lamb_${BERT_MODEL}_${$DATATYPE}_gbs1_${GBS1}_gbs2_${GBS2}
+DATA_DIR=$DATA_DIR
+
+bash scripts/run_pretraining_lamb.sh \
+    $TRAIN_BATCH_SIZE_PHASE1 \
+    $TRAIN_BATCH_SIZE_PHASE2 \
+    $EVAL_BATCH_SIZE \
+    $LEARNING_RATE_PHASE1 \
+    $LEARNING_RATE_PHASE2 \
+    $DATATYPE \
+    $USA_XLA \
+    $NUM_GPUS \
+    $WARMUP_STEPS_PHASE1 \
+    $WARMUP_STEPS_PHASE2 \
+    $TRAIN_STEPS \
+    $SAVE_CHECKPOINT_STEPS \
+    $NUM_ACCUMULATION_STEPS_PHASE1 \
+    $NUM_ACCUMULATION_STEPS_PHASE2 \
+    $BERT_MODEL \
+    $DATA_DIR \
+    $PRETRAIN_RESULT_DIR \
+    |&amp; tee pretrain_lamb.log
+</pre></div>
+</div>
+</section>
+<section id="finetune-command">
+<h3>Finetune Command<a class="headerlink" href="#finetune-command" title="Permalink to this heading"></a></h3>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. After getting the pretraining checkpoint, you can use it for finetuning.</p>
+<ul class="simple">
+<li><p>BFloat16 DataType</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">bf16</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Float32 DataType</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
+</pre></div>
+</div>
+<p><strong>Final Scripts</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>NUM_GPUS=1
+BATCH_SIZE_PER_GPU=12
+LEARNING_RATE_PER_GPU=5e-6
+DATATYPE=$DATATYPE
+USE_XLA=true
+SQUAD_VERSION=1.1
+EPOCHS=2
+USE_MYTRAIN=true
+BERT_MODEL=large
+PRETRAIN_PATH=$PRETRAIN_RESULT_DIR/phase_2/pretrained/bert_model.ckpt-1
+DATA_DIR=$DATA_DIR
+RESULT_DIR=./results/tf_bert_finetune_${BERT_MODEL}_${$DATATYPE}
+bash scripts/run_squad.sh \
+    $NUM_GPUS \
+    $BATCH_SIZE_PER_GPU \
+    $LEARNING_RATE_PER_GPU \
+    $DATATYPE \
+    $USE_XLA \
+    $BERT_MODEL \
+    $SQUAD_VERSION \
+    $EPOCHS \
+    $USE_MYTRAIN \
+    $PRETRAIN_PATH \
+    $DATA_DIR \
+    $RESULT_DIR \
+    |&amp; tee finetune.log
+</pre></div>
+</div>
+</section>
+</section>
+<section id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
+<ol class="simple">
+<li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tensorflow</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">framework</span><span class="o">.</span><span class="n">errors_impl</span><span class="o">.</span><span class="n">NotFoundError</span><span class="p">:</span> <span class="n">libmkl_sycl</span><span class="o">.</span><span class="n">so</span><span class="mf">.2</span><span class="p">:</span> <span class="n">cannot</span> <span class="nb">open</span> <span class="n">shared</span> <span class="nb">object</span> <span class="n">file</span><span class="p">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
