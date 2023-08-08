@@ -351,6 +351,16 @@ struct FusedBatchNormGradEx {
   int fwd_fused_batch_norm = kMissingIndex;
 };
 
+struct PadWithTransposeConv {
+  PadWithTransposeConv() = default;
+  PadWithTransposeConv(int pad, int transpose)
+      : pad(pad), transpose(transpose) {}
+  int pad = kMissingIndex;
+  int transpose = kMissingIndex;
+  bool NCDHWToNDHWC = false;
+  bool NCHWToNHWC = false;
+};
+
 // Pad with `VALID` padding Conv2D/_ITEXFusedConv2D/DepthwiseConv2DNative.
 // Only `Pad` is supported rather than PadV2/MirrorPad.
 struct PadWithContraction {
@@ -2092,6 +2102,83 @@ bool FindFusedBatchNormGradEx(const RemapperContext& ctx, int node_index,
   }
 
   return false;
+}
+
+bool FindPadWithTransposeConv(const RemapperContext& ctx, int node_index,
+                              PadWithTransposeConv* matched,
+                              bool check_device_compatible = true) {
+  const std::vector<int32> NCDHWToNDHWC = {0, 2, 3, 4, 1};
+  // const std::vector<int> NDHWCToNCDHW = {0,4,1,2,3};
+  const std::vector<int32> NCHWToNHWC = {0, 2, 3, 1};
+  // const std::vector<int> NHWCToNCHW = {0,3,1,2};
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  const auto* node_def = node_view->node();
+  if (HasControlFaninOrFanout(*node_view) ||
+      node_view->NumRegularFanouts() != 1 || IsInPreserveSet(ctx, node_def))
+    return false;
+
+  if (!IsTranspose(*node_def) || node_view->NumRegularFanins() != 2)
+    return false;
+
+  const auto* const_node_view = node_view->GetRegularFanin(1).node_view();
+  const auto* const_node_def = const_node_view->node();
+  if (!IsConstant(*const_node_def)) return false;
+  Tensor transpose_index;
+  ITEX_CHECK_OK(GetTensorFromConstant(const_node_def, &transpose_index));
+  if (transpose_index.NumElements() != 4 && transpose_index.NumElements() != 5)
+    return false;
+
+  DataType const_dtype = GetDataTypeFromAttr(*node_def, "Tperm");
+  std::vector<int32> transpose_value;
+  if (const_dtype == DT_INT32) {
+    for (int i = 0; i < transpose_index.NumElements(); i++) {
+      transpose_value.push_back(transpose_index.flat<int32>()(i));
+    }
+  } else if (const_dtype == DT_INT64) {
+    for (int i = 0; i < transpose_index.NumElements(); i++) {
+      transpose_value.push_back(
+          static_cast<int32>(transpose_index.flat<int64>()(i)));
+    }
+  } else {
+    return false;
+  }
+
+  const auto* pad_node_view = node_view->GetRegularFanin(0).node_view();
+  const auto* pad_node_def = pad_node_view->node();
+  const auto* conv_node_view = node_view->GetRegularFanout(0)[0].node_view();
+  const auto* conv_node_def = conv_node_view->node();
+
+  const bool is_ok =
+      IsConv2D(*conv_node_def) || conv_node_def->op() == kFusedConv2D ||
+      IsConv3D(*conv_node_def) || conv_node_def->op() == kFusedConv3D;
+  if (!is_ok) {
+    return false;
+  }
+  // Only Pad is allowed, PadV2 will be prevented.
+  if (pad_node_def->op() != "Pad") return false;
+
+  if (HasControlFanin(*pad_node_view) ||
+      pad_node_view->NumRegularFanouts() != 1 ||
+      IsInPreserveSet(ctx, pad_node_def) ||
+      pad_node_view->NumRegularFanins() != 2)
+    return false;
+  if (!IsConstant(*pad_node_view->GetRegularFanin(1).node_view()->node()))
+    return false;
+
+  // Check that data type and data format are supported on assigned device.
+  PadWithTransposeConv pattern{pad_node_view->node_index(), node_index};
+  if (check_device_compatible && !IsDeviceCompatible(ctx, pattern))
+    return false;
+
+  if (transpose_value == NCDHWToNDHWC)
+    pattern.NCDHWToNDHWC = true;
+  else if (transpose_value == NCHWToNHWC)
+    pattern.NCHWToNHWC = true;
+  else
+    return false;
+  *matched = pattern;
+
+  return true;
 }
 
 /*
@@ -4812,6 +4899,68 @@ Status AddPadWithContractionFwdBwd(RemapperContext* ctx,
   return Status::OK();
 }
 
+// Pad + Transpose + Conv.
+Status AddPadWithTransposeConv(RemapperContext* ctx,
+                               const PadWithTransposeConv& matched,
+                               std::vector<bool>* invalidated_nodes,
+                               std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& pad = graph->node(matched.pad);
+  const NodeDef& transpose = graph->node(matched.transpose);
+
+  NodeDef vec_permute;
+  vec_permute.set_name(pad.name() + "_permute");
+  vec_permute.set_device(pad.device());
+  vec_permute.add_input(pad.input(1));
+  vec_permute.set_op("DataFormatVecPermute");
+  AttrValue src_format, dst_format, attr_dtype;
+  attr_dtype.set_type(GetDataTypeFromAttr(pad, "Tpaddings"));
+  vec_permute.mutable_attr()->insert({"T", attr_dtype});
+  if (matched.NCDHWToNDHWC) {
+    src_format.set_s("NCDHW");
+    dst_format.set_s("NDHWC");
+    vec_permute.mutable_attr()->insert({"src_format", src_format});
+    vec_permute.mutable_attr()->insert({"dst_format", dst_format});
+  } else if (matched.NCHWToNHWC) {
+    src_format.set_s("NCHW");
+    dst_format.set_s("NHWC");
+    vec_permute.mutable_attr()->insert({"src_format", src_format});
+    vec_permute.mutable_attr()->insert({"dst_format", dst_format});
+  } else {
+    ITEX_CHECK(false);
+  }
+
+  NodeDef new_pad;
+  new_pad.set_name(transpose.name());
+  new_pad.set_device(pad.device());
+  new_pad.add_input(transpose.input(0));
+  new_pad.add_input(vec_permute.name());
+  new_pad.set_op("Pad");
+  CopyAllAttrs(pad, &new_pad);
+
+  NodeDef new_transpose;
+  new_transpose.set_name(pad.name());
+  new_transpose.set_device(transpose.device());
+  new_transpose.add_input(pad.input(0));
+  new_transpose.add_input(transpose.input(1));
+  new_transpose.set_op("Transpose");
+  CopyAllAttrs(transpose, &new_transpose);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+
+  mutation->AddNode(std::move(new_pad), &status);
+  mutation->AddNode(std::move(vec_permute), &status);
+  mutation->AddNode(std::move(new_transpose), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.pad] = true;
+  (*invalidated_nodes)[matched.transpose] = true;
+
+  return Status::OK();
+}
+
 // Pad + Contraction.
 Status AddPadWithContraction(RemapperContext* ctx,
                              const PadWithContraction& matched,
@@ -6619,6 +6768,14 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
         TF_ABORT_IF_ERROR(
             AddFusedBatchNormGradExNode(&ctx, fused_batch_norm_grad_ex,
                                         &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
+
+      PadWithTransposeConv pad_with_transpose_conv;
+      if (FindPadWithTransposeConv(ctx, i, &pad_with_transpose_conv)) {
+        TF_ABORT_IF_ERROR(AddPadWithTransposeConv(&ctx, pad_with_transpose_conv,
+                                                  &invalidated_nodes,
+                                                  &nodes_to_delete));
         continue;
       }
 
