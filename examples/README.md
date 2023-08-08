@@ -14,3 +14,4 @@ A wide variety of examples are provided to demonstrate the usage of Intel® Exte
 |[ResNet50 and Mnist training with Horovod](./train_horovod)|ResNet50 and Mnist distributed training examples on Intel GPU.|GPU|
 |[Stable Diffusion Inference for Text2Image on Intel GPU](./stable_diffussion_inference)|Example for running Stable Diffusion Text2Image inference on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.|GPU|
 |[Accelerate ResNet50 Training by XPUAutoShard on Intel GPU](./train_resnet50_with_autoshard)|Example on running ResNet50 training on Intel GPU with the XPUAutoShard feature.|GPU|
+|[Accelerate BERT-Large Pretraining on Intel GPU](./pretrain_bert)|Example on running BERT-Large pretraining on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.|GPU|
