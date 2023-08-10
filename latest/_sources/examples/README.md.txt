@@ -15,3 +15,4 @@ A wide variety of examples are provided to demonstrate the usage of Intel® Exte
 |[Stable Diffusion Inference for Text2Image on Intel GPU](./stable_diffussion_inference)|Example for running Stable Diffusion Text2Image inference on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.|GPU|
 |[Accelerate ResNet50 Training by XPUAutoShard on Intel GPU](./train_resnet50_with_autoshard)|Example on running ResNet50 training on Intel GPU with the XPUAutoShard feature.|GPU|
 |[Accelerate BERT-Large Pretraining on Intel GPU](./pretrain_bert)|Example on running BERT-Large pretraining on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.|GPU|
+|[Accelerate 3D-UNet Training w/o horovod for medical image segmentation on Intel GPU](./train_3d_unet)|Example on running 3D-UNet training for medical image segmentation on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.|GPU|

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1cf4e36 documentation</title>
+  <title>Accelerate 3D-Unet Training w/o horovod for medical image segmentation on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1cf4e36 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -73,9 +73,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Accelerate BERT-Large Pretraining on Intel GPU</li>
+      <li class="breadcrumb-item active">Accelerate 3D-Unet Training w/o horovod for medical image segmentation on Intel GPU</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../../_sources/examples/pretrain_bert/README.md.txt" rel="nofollow"> View page source</a>
+            <a href="../../_sources/examples/train_3d_unet/README.md.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -83,12 +83,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="accelerate-bert-large-pretraining-on-intel-gpu">
-<h1>Accelerate BERT-Large Pretraining on Intel GPU<a class="headerlink" href="#accelerate-bert-large-pretraining-on-intel-gpu" title="Permalink to this heading"></a></h1>
+  <section id="accelerate-3d-unet-training-w-o-horovod-for-medical-image-segmentation-on-intel-gpu">
+<h1>Accelerate 3D-Unet Training w/o horovod for medical image segmentation on Intel GPU<a class="headerlink" href="#accelerate-3d-unet-training-w-o-horovod-for-medical-image-segmentation-on-intel-gpu" title="Permalink to this heading"></a></h1>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
-This example shows BERT-Large Pretraining.</p>
+This example shows 3D-UNet Training for medical image segmentation. It contains single-tile training scripts and multi-tile training scripts with horovod.</p>
 <p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Training on Intel GPU.</p>
 </section>
 <section id="hardware-requirements">
@@ -102,11 +102,11 @@ This example shows BERT-Large Pretraining.</p>
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
 <section id="model-code-change">
 <h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
-<p>We set up BERT-Large pretraining based on nvidia-bert. We optimized nvidia-bert, for example, using custom kernels, fusing some ops to reduce op number, and adding bf16 mode for the model.</p>
-<p>To get better performance, instead of installing official nvidia-bert, you can clone nvidia-bert, apply the patch, then install it as shown here:</p>
+<p>To get better performance, instead of installing the official repository, you can apply the patch and install it as shown here. You can choose one patch from single-tile patch <code class="docutils literal notranslate"><span class="pre">3dunet_itex.patch</span></code> and multi-tile patch <code class="docutils literal notranslate"><span class="pre">3dunet_itex_with_horovod.patch</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
-<span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow2</span><span class="o">/</span><span class="n">LanguageModeling</span><span class="o">/</span><span class="n">BERT</span>
-<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># When applying this patch, please move it to the above BERT dir first.</span>
+<span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow</span><span class="o">/</span><span class="n">Segmentation</span><span class="o">/</span><span class="n">UNet_3D_Medical</span><span class="o">/</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="mi">88</span><span class="n">eb3cff2f03dad85035621d041e23a14345999e</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># When applying this patch, please move it to the above 3D-UNet dir first.</span>
 </pre></div>
 </div>
 </section>
@@ -116,10 +116,22 @@ This example shows BERT-Large Pretraining.</p>
 </section>
 <section id="setup-running-environment">
 <h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">./pip_set_env.sh</span></code> to setup for GPU. It contains the following two steps: creating virtual environment and installing python packages.</p>
 <ul class="simple">
-<li><p>Setup for GPU</p></li>
+<li><p>Create Virtual Environment</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./pip_set_env.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">env_itex</span>
+<span class="n">source</span> <span class="n">source</span> <span class="n">env_itex</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Install</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">tfa</span><span class="o">-</span><span class="n">nightly</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">dllogger</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
 </section>
@@ -132,128 +144,55 @@ This example shows BERT-Large Pretraining.</p>
 </section>
 <section id="prepare-dataset">
 <h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
-<p>nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training. You can run below to download datasets for fine-tuning and pretraining.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">scripts</span><span class="o">/</span><span class="n">data_download</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span>
-</pre></div>
-</div>
-<p>For more details about downloading and processing the dataset, you can reference <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#quick-start-guide">downloading</a> and <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#getting-the-data">processing</a> part. After downloading and processing, the datasets are supposed in the following locations by default</p>
-<ul class="simple">
-<li><p>SQuAD v1.1 - <code class="docutils literal notranslate"><span class="pre">data/download/squad/v1.1</span></code></p></li>
-<li><p>SQuAD v2.0 - <code class="docutils literal notranslate"><span class="pre">data/download/squad/v2.0</span></code></p></li>
-<li><p>BERT-Large - <code class="docutils literal notranslate"><span class="pre">data/download/google_pretrained_weights/uncased_L-24_H-1024_A-16</span></code></p></li>
-<li><p>BERT-Base - <code class="docutils literal notranslate"><span class="pre">data/download/google_pretrained_weights/uncased_L-12_H-768_A-12</span></code></p></li>
-<li><p>Wikipedia + BookCorpus TFRecords - <code class="docutils literal notranslate"><span class="pre">data/tfrecords/books_wiki_en_corpus</span></code></p></li>
-</ul>
+<p>We use <a class="reference external" href="https://www.med.upenn.edu/cbica/brats-2019/">Brain Tumor Segmentation 2019 dataset</a> for 3D-UNet training. Upon registration, the challenge’s data is made available through the <code class="docutils literal notranslate"><span class="pre">https//ipp.cbica.upenn.edu</span></code> service.</p>
+<p>The training and test datasets are given as 3D <code class="docutils literal notranslate"><span class="pre">nifti</span></code> volumes that can be read using the Nibabel library and NumPy. It can be converted from <code class="docutils literal notranslate"><span class="pre">nifti</span></code> to <code class="docutils literal notranslate"><span class="pre">tfrecord</span></code> using <code class="docutils literal notranslate"><span class="pre">./dataset/preprocess_data.py</span></code> script.</p>
 </section>
 </section>
 <section id="execute-the-example">
 <h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
-<p>Bert pretraining is very time-consuming, as nvidia-bert repository says, training BERT-Large from scratch on 16 V100 using FP16 datatype takes around 4.5 days. So Here we only provide single-tile pretraining scripts within a day to show performance.</p>
-<section id="pretraining-command">
-<h3>Pretraining Command<a class="headerlink" href="#pretraining-command" title="Permalink to this heading"></a></h3>
-<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code></p>
-<ul class="simple">
-<li><p>BFloat16 DataType</p></li>
-</ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">bf16</span>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/train_maskrcnn/DeepLearningExamples/TensorFlow/Segmentation/UNet_3D_Medical/</span></code>.</p>
+<p>Here we provide single-tile training scripts and multi-tile training scripts with horovod. The datatype can be float32 or bfloat16.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATASET_DIR</span><span class="o">=/</span><span class="n">the</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">dataset</span>
+<span class="n">OUTPUT_DIR</span><span class="o">=/</span><span class="n">the</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">output_dir</span>
+</pre></div>
+</div>
+<section id="single-tile">
+<h3>Single Tile<a class="headerlink" href="#single-tile" title="Permalink to this heading"></a></h3>
+<p>First apply patch.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">apply</span> <span class="mi">3</span><span class="n">dunet_itex</span><span class="o">.</span><span class="n">patch</span>
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Float32 DataType</p></li>
+<li><p>float32</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python main.py --benchmark --data_dir $DATASET_DIR --model_dir $OUTPUT_DIR --exec_mode train --batch_size $BATCH_SIZE --warmup_steps 150 --max_steps 1000 --log_every 1 
 </pre></div>
 </div>
-<p><strong>Final Scripts</strong></p>
 <ul class="simple">
-<li><p>We use <a class="reference external" href="https://arxiv.org/pdf/1904.00962.pdf">LAMB</a> as the optimizer and pretraining has two phases. The maximum sequence length of phase1 and phase2 is 128 and 512, respectively. For the whole process of pretraining, you can use scripts in <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#training-process">nvidia-bert</a>.</p></li>
+<li><p>bfloat16</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=60
-TRAIN_BATCH_SIZE_PHASE2=32
-EVAL_BATCH_SIZE=8
-LEARNING_RATE_PHASE1=7.5e-4
-LEARNING_RATE_PHASE2=5e-4
-DATATYPE=$DATATYPE
-USA_XLA=false
-NUM_GPUS=1
-WARMUP_STEPS_PHASE1=660
-WARMUP_STEPS_PHASE2=66
-TRAIN_STEPS=2600
-SAVE_CHECKPOINT_STEPS=100
-NUM_ACCUMULATION_STEPS_PHASE1=64
-NUM_ACCUMULATION_STEPS_PHASE2=60
-BERT_MODEL=large
-
-GBS1=$(expr $TRAIN_BATCH_SIZE_PHASE1 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE1)
-GBS2=$(expr $TRAIN_BATCH_SIZE_PHASE2 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE2)
-
-PRETRAIN_RESULT_DIR=./results/tf_bert_pretraining_lamb_${BERT_MODEL}_${$DATATYPE}_gbs1_${GBS1}_gbs2_${GBS2}
-DATA_DIR=$DATA_DIR
-
-bash scripts/run_pretraining_lamb.sh \
-    $TRAIN_BATCH_SIZE_PHASE1 \
-    $TRAIN_BATCH_SIZE_PHASE2 \
-    $EVAL_BATCH_SIZE \
-    $LEARNING_RATE_PHASE1 \
-    $LEARNING_RATE_PHASE2 \
-    $DATATYPE \
-    $USA_XLA \
-    $NUM_GPUS \
-    $WARMUP_STEPS_PHASE1 \
-    $WARMUP_STEPS_PHASE2 \
-    $TRAIN_STEPS \
-    $SAVE_CHECKPOINT_STEPS \
-    $NUM_ACCUMULATION_STEPS_PHASE1 \
-    $NUM_ACCUMULATION_STEPS_PHASE2 \
-    $BERT_MODEL \
-    $DATA_DIR \
-    $PRETRAIN_RESULT_DIR \
-    |&amp; tee pretrain_lamb.log
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python main.py --benchmark --data_dir $DATASET_PATH --model_dir $OUTPUT_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE --log_every 1 --amp
 </pre></div>
 </div>
 </section>
-<section id="finetune-command">
-<h3>Finetune Command<a class="headerlink" href="#finetune-command" title="Permalink to this heading"></a></h3>
-<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. After getting the pretraining checkpoint, you can use it for finetuning.</p>
-<ul class="simple">
-<li><p>BFloat16 DataType</p></li>
-</ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">bf16</span>
+<section id="multi-tile-with-horovod">
+<h3>Multi-tile with horovod<a class="headerlink" href="#multi-tile-with-horovod" title="Permalink to this heading"></a></h3>
+<p>First apply patch.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">apply</span> <span class="mi">3</span><span class="n">dunet_itex_with_horovod</span><span class="o">.</span><span class="n">patch</span>
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Float32 DataType</p></li>
+<li><p>float32</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpirun -np 2 -prepend-rank -ppn 2 \
+  python main.py --data_dir=$DATASET_DIR --benchmark --model_dir=$MODEL_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE
 </pre></div>
 </div>
-<p><strong>Final Scripts</strong></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>NUM_GPUS=1
-BATCH_SIZE_PER_GPU=12
-LEARNING_RATE_PER_GPU=5e-6
-DATATYPE=$DATATYPE
-USE_XLA=true
-SQUAD_VERSION=1.1
-EPOCHS=2
-USE_MYTRAIN=true
-BERT_MODEL=large
-PRETRAIN_PATH=$PRETRAIN_RESULT_DIR/phase_2/pretrained/bert_model.ckpt-1
-DATA_DIR=$DATA_DIR
-RESULT_DIR=./results/tf_bert_finetune_${BERT_MODEL}_${$DATATYPE}
-bash scripts/run_squad.sh \
-    $NUM_GPUS \
-    $BATCH_SIZE_PER_GPU \
-    $LEARNING_RATE_PER_GPU \
-    $DATATYPE \
-    $USE_XLA \
-    $BERT_MODEL \
-    $SQUAD_VERSION \
-    $EPOCHS \
-    $USE_MYTRAIN \
-    $PRETRAIN_PATH \
-    $DATA_DIR \
-    $RESULT_DIR \
-    |&amp; tee finetune.log
+<ul class="simple">
+<li><p>bf16</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpirun -np 2 -prepend-rank -ppn 2 \
+  python main.py --data_dir=$DATASET_DIR --benchmark --model_dir=$MODEL_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE --amp
 </pre></div>
 </div>
 </section>
