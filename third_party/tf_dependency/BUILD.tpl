@@ -259,6 +259,8 @@ cc_proto(
     src = "tensor.proto",
     deps = [
         ":resource_handle_proto",
+        ":types_proto",
+        ":tensor_shape_proto",
     ],
 )
 
@@ -335,6 +337,9 @@ cc_proto(
     name = "op_performance_data",
     src = "op_performance_data.proto",
     deps = [
+        ":tensor_proto",
+        ":tensor_shape_proto",
+        ":types_proto",
         ":attr_value_proto",
         ":device_properties_proto",
     ],
