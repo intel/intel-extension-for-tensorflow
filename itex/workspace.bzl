@@ -65,8 +65,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     new_git_repository(
         name = "onednn_cpu",
-        # 2023/7/12 master
-        commit = "9a5e574768166682e7d8fb31ed6cb30aa3df071a",
+        # 2023/8/9 master
+        commit = "8f2a00d86546e44501c61c38817138619febbb10",
         remote = "https://github.com/oneapi-src/oneDNN.git",
         build_file = clean_dep("//third_party/onednn:onednn_cpu.BUILD"),
         verbose = True,
