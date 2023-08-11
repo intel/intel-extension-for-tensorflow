@@ -17,14 +17,25 @@ limitations under the License.
 
 #include <limits>
 
+#define SYSTEM_RESERVED_MEMORY \
+  (800 * 1024 * 1024)  // Leave 800MB memory for system like proper did.
+#define SYSTEM_RESERVED_MEMORY_FOR_XE_HPC \
+  (1800 * 1024 * 1024)  // Leave 1800MB memory for pvc as in some situations pvc
+                        // needs more memory for system.
+
 namespace itex {
 
 BFCAllocator::BFCAllocator(ITEX_GPUDevice* device) : Allocator() {
   device_ = device;
   memory_limit_ = device_->get_info<sycl::info::device::global_mem_size>();
   if (AllocMode() == 1) {
-    // Leave 800MB memory for system like proper did.
-    memory_limit_ -= 800 * 1024 * 1024;
+    if (IsXeHPC(device)) {
+      ITEX_CHECK_GT(memory_limit_, SYSTEM_RESERVED_MEMORY_FOR_XE_HPC);
+      memory_limit_ -= SYSTEM_RESERVED_MEMORY_FOR_XE_HPC;
+    } else {
+      ITEX_CHECK_GT(memory_limit_, SYSTEM_RESERVED_MEMORY);
+      memory_limit_ -= SYSTEM_RESERVED_MEMORY;
+    }
   }
   ITEX_VLOG(1) << "Set memory limit to " << memory_limit_ << " Bytes";
   curr_region_allocation_bytes_ = RoundedBytes(memory_limit_);
