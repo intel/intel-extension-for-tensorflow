@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1471c56 documentation</title>
+  <title>Accelerate Mask R-CNN Training w/o horovod on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1471c56 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -73,9 +73,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU</li>
+      <li class="breadcrumb-item active">Accelerate Mask R-CNN Training w/o horovod on Intel GPU</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../../_sources/examples/train_bert_fp8/README.md.txt" rel="nofollow"> View page source</a>
+            <a href="../../_sources/examples/train_maskrcnn/README.md.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -83,12 +83,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="fp8-bert-large-fine-tuning-for-classifying-text-on-intel-gpu">
-<h1>FP8 BERT-Large Fine-tuning for Classifying Text on Intel GPU<a class="headerlink" href="#fp8-bert-large-fine-tuning-for-classifying-text-on-intel-gpu" title="Permalink to this heading"></a></h1>
+  <section id="accelerate-mask-r-cnn-training-w-o-horovod-on-intel-gpu">
+<h1>Accelerate Mask R-CNN Training w/o horovod on Intel GPU<a class="headerlink" href="#accelerate-mask-r-cnn-training-w-o-horovod-on-intel-gpu" title="Permalink to this heading"></a></h1>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
-This example shows FP8 BERT-Large Fine-tuning for Classifying Text.</p>
+This example shows Mask R-CNN Training. It contains single-tile training scripts and multi-tile training scripts with horovod.</p>
 <p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Training on Intel GPU.</p>
 </section>
 <section id="hardware-requirements">
@@ -96,30 +96,43 @@ This example shows FP8 BERT-Large Fine-tuning for Classifying Text.</p>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series</p></li>
-<li><p>Intel® Data Center GPU Flex Series 170</p></li>
 </ul>
 </section>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
 <section id="model-code-change">
 <h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
-<p>We set up FP8 BERT-Large fine-tuning based on official google-bert. If you want to check the accuracy of FP8 BERT-Large fine-tuning, please clone google-bert and apply patch:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">google</span><span class="o">-</span><span class="n">research</span><span class="o">/</span><span class="n">bert</span><span class="o">.</span><span class="n">git</span>
-<span class="n">cd</span> <span class="n">bert</span>
-<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>
+<p>To get better performance, instead of installing the official repository, you can apply the patch and install it as shown here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow2</span><span class="o">/</span><span class="n">Segmentation</span><span class="o">/</span><span class="n">MaskRCNN</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">c481324031ecf0f70f8939516c02e16cac60446d</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># When applying this patch, please move it to the above MaskRCNN dir first.</span>
 </pre></div>
 </div>
 </section>
 <section id="prepare-for-gpu">
 <h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
-<p>Refer to <a class="reference external" href="../common_guide_running.md##Prepare">Prepare</a></p>
+<p>Refer to <a class="reference external" href="../common_guide_running.md##Prepare">Prepare</a>.</p>
 </section>
 <section id="setup-running-environment">
 <h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">./pip_set_env.sh</span></code> to setup for GPU. It contains the following two steps: creating virtual environment and installing python packages.</p>
 <ul class="simple">
-<li><p>Setup for GPU</p></li>
+<li><p>Create Virtual Environment</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./pip_set_env.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">env_itex</span>
+<span class="n">source</span> <span class="n">source</span> <span class="n">env_itex</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Install</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">opencv</span><span class="o">-</span><span class="n">python</span><span class="o">-</span><span class="n">headless</span> <span class="n">pybind11</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;git+https://github.com/NVIDIA/cocoapi#egg=pycocotools&amp;subdirectory=PythonAPI&quot;</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;git+https://github.com/NVIDIA/dllogger#egg=dllogger&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -130,45 +143,66 @@ This example shows FP8 BERT-Large Fine-tuning for Classifying Text.</p>
 <li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.md##Running">Running</a></p></li>
 </ul>
 </section>
+<section id="prepare-dataset">
+<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/train_maskrcnn/DeepLearningExamples/TensorFlow2/Segmentation/MaskRCNN</span></code>. So as the following parts.</p>
+<ul class="simple">
+<li><p>Download and preprocess the <a class="reference external" href="http://cocodataset.org/#download">COCO 2017 dataset</a>.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">dataset</span>
+<span class="n">bash</span> <span class="n">download_and_preprocess_coco</span><span class="o">.</span><span class="n">sh</span> <span class="o">./</span><span class="n">data</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Download the pre-trained ResNet-50 weights.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">download_weights</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">save_dir</span><span class="o">=./</span><span class="n">weights</span>
+</pre></div>
+</div>
+</section>
+</section>
 <section id="execute-the-example">
-<h3>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h3>
-<section id="bf16-fp8-fine-tuning">
-<h4>BF16 + FP8 Fine-tuning<a class="headerlink" href="#bf16-fp8-fine-tuning" title="Permalink to this heading"></a></h4>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export BERT_LARGE_DIR=/path/to/bert-large-dir
-export SQUAD_DIR=/path/to/squad-dir
-export OUTPUT_DIR=/path/to/output-dir
-python run_squad.py \
-   --vocab_file=$BERT_LARGE_DIR/vocab.txt \
-   --bert_config_file=$BERT_LARGE_DIR/bert_config.json \
-   --init_checkpoint=$BERT_LARGE_DIR/bert_model.ckpt \
-   --do_train=True \
-   --train_file=$SQUAD_DIR/train-v1.1.json \
-   --do_predict=True \
-   --predict_file=$SQUAD_DIR/dev-v1.1.json \
-   --train_batch_size=32 \
-   --learning_rate=3e-5 \
-   --num_train_epochs=2.0 \
-   --max_seq_length=512 \
-   --doc_stride=128 \
-   --output_dir=$OUTPUT_DIR \
-   --use_tpu=False \
-   --tpu_name=$TPU_NAME \
-   --precision=bfloat16 \
+<h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
+<p>Here we provide single-tile training scripts and multi-tile training scripts with horovod. The datatype can be float32 or bfloat16.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATASET_DIR</span><span class="o">=./</span><span class="n">data</span>
+<span class="n">PRETRAINED_DIR</span><span class="o">=./</span><span class="n">weights</span>
+<span class="n">OUTPUT_DIR</span><span class="o">=/</span><span class="n">the</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">output_dir</span>
 </pre></div>
 </div>
-</section>
-<section id="accuracy">
-<h4>Accuracy<a class="headerlink" href="#accuracy" title="Permalink to this heading"></a></h4>
-<p>The dev set predictions will be saved into a file called predictions.json in the output_dir using the above command,</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span><span class="nv">$SQUAD_DIR</span>/evaluate-v1.1.py<span class="w"> </span><span class="nv">$SQUAD_DIR</span>/dev-v1.1.json<span class="w"> </span><span class="nv">$OUTPUT_DIR</span>/predictions.json
+<ul class="simple">
+<li><p>Single tile with fp32</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python main.py train \
+--data_dir $DATASET_DIR \
+--model_dir=$OUTPUT_DIR \
+--train_batch_size 4 \
+--seed=0 --use_synthetic_data \
+--epochs 1 --steps_per_epoch 20 --log_every=1 --log_warmup_steps=1
 </pre></div>
 </div>
-<p>Which should produce an output like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;f1&quot;</span><span class="p">:</span> <span class="mf">88.41249612335034</span><span class="p">,</span> <span class="s2">&quot;exact_match&quot;</span><span class="p">:</span> <span class="mf">81.2488174077578</span><span class="p">}</span>
+<ul class="simple">
+<li><p>Single tile with bf16, it requires <code class="docutils literal notranslate"><span class="pre">--amp</span></code> flag.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python main.py train \
+--data_dir $DATASET_DIR \
+--model_dir=$OUTPUT_DIR \
+--train_batch_size 4 \
+--amp --seed=0 --use_synthetic_data \
+--epochs 1 --steps_per_epoch 20 --log_every=1 --log_warmup_steps=1
 </pre></div>
 </div>
-</section>
-</section>
+<ul class="simple">
+<li><p>Multi-tile with horovod.  Default datatype is fp32. You can use <code class="docutils literal notranslate"><span class="pre">--amp</span></code> flag for bf16.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpirun -np 2 -prepend-rank -ppn 1 \
+python main.py train \
+--data_dir $DATASET_DIR \
+--model_dir=$OUTPUT_DIR \
+--train_batch_size 4 \
+--seed=0 --use_synthetic_data \
+--epochs 1 --steps_per_epoch 20 --log_every=1 --log_warmup_steps=1
+</pre></div>
+</div>
 </section>
 <section id="faq">
 <h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
