@@ -108,6 +108,7 @@ void Register_ITEXTensorArraySize();
 void Register_ITEXTensorArrayClose();
 void Register_LayerNormOp();
 void Register_ITEXGroupNormOp();
+void Register_ITEXRMSNormOp();
 void Register_LayerNormGradOp();
 void Register_ITEXRnnOp();
 void Register_ITEXRnnGradOp();

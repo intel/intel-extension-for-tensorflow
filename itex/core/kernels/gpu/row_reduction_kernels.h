@@ -283,7 +283,7 @@ struct SubGroupRowReduction {
     int lane_id = sg.get_local_id();
     int SubGroupPerGroup = item.get_local_range(0) / SubGroupSize;
     int x_index = group_id * SubGroupPerGroup + subgroup_id;
-    if (x_index >= extend_x_ * extend_y_) return;
+    if (x_index >= extend_x_) return;
 
     InitValueT aggregate = init_;
     int start_offset = x_index * extend_y_;

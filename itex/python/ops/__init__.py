@@ -19,6 +19,7 @@ from intel_extension_for_tensorflow.python.ops import ops_grad as _ops_grad
 from intel_extension_for_tensorflow.python.ops.optimizers import AdamWithWeightDecayOptimizer
 from intel_extension_for_tensorflow.python.ops.layer_norm import LayerNormalization
 from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
+from intel_extension_for_tensorflow.python.ops.rms_norm import RMSNormalization
 from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM
 from intel_extension_for_tensorflow.python.ops.mlp import FusedDenseBiasAddGelu
 from intel_extension_for_tensorflow.python.ops.multi_head_attention import scaled_dot_product_attention

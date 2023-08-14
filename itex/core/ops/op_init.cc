@@ -184,6 +184,7 @@ void RegisterOps() {
   Register_ITEXLayerNormOp();
   Register_ITEXLayerNormGradOp();
   Register_ITEXGroupNormOp();
+  Register_ITEXRMSNormOp();
   Register_ITEXLeakyReluGradOp();
   Register_ITEXLeakyReluOp();
   Register_ITEXMatMul();

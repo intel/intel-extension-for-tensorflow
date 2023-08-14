@@ -2150,6 +2150,23 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "rms_norm_ops",
+    srcs = [
+        "rms_norm_op.cc",
+    ],
+    hdrs = [
+        "rms_norm_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "tensorarray_ops",
     srcs = [
         "concat_lib.cc",
@@ -2224,6 +2241,7 @@ GPU_KERNELS = [
     ":batchtospace_op",
     ":batch_norm_ops",
     ":group_norm_ops",
+    ":rms_norm_ops",
     ":betainc_op",
     ":spacetodepth_op",
     ":bucketize_op",

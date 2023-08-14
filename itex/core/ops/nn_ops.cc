@@ -3023,6 +3023,28 @@ void Register_ITEXGroupNormOp() {
   }
 }
 
+void Register_ITEXRMSNormOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ItexRmsNorm");
+    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "scale: U");
+    TF_OpDefinitionBuilderAddInput(op_builder, "offset: U");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "y: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "U: {float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_scale: bool = true");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_center: bool = false");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unchanged_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ITEXRMSNorm op registration failed: ";
+  }
+}
+
 void Register_ITEXLayerNormOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
