@@ -2432,11 +2432,34 @@ Status FuseFwPartitionWithLLGA(
         // means _Arg value cannot be modifid, then it can be regarded as Const.
         // TODO(itex): we may relax restriction to no outputs are variable
         // modification ops, such as AssignAddVariable
-        if (IsArg(*arg_node_def) && arg_node_view->NumRegularFanouts() == 1) {
-          is_constant_input_edge.push_back(true);
-        } else {
-          is_constant_input_edge.push_back(false);
+        bool freeze = false;
+        if (IsEnter(*arg_node_def)) {
+          arg_node_view = arg_node_view->GetRegularFanin(0).node_view();
+          arg_node_def = arg_node_view->node();
         }
+        if (IsArg(*arg_node_def)) {
+          if (arg_node_view->NumRegularFanouts() == 1) {
+            freeze = true;
+          } else {
+            // read variable inside while loop
+            //        _Arg
+            //        /   \
+            //     Enter ReadVariable
+            //       |
+            //  ReadVariable
+            bool is_legal_arg = true;
+            for (const auto& fanout_i : arg_node_view->GetRegularFanouts()) {
+              for (const auto fanout : fanout_i) {
+                if (!IsEnter(*(fanout.node_view()->node())) &&
+                    !IsReadVariableOp(*(fanout.node_view()->node()))) {
+                  is_legal_arg = false;
+                }
+              }
+            }
+            freeze = is_legal_arg;
+          }
+        }
+        is_constant_input_edge.push_back(freeze);
       } else {
         is_constant_input_edge.push_back(false);
       }

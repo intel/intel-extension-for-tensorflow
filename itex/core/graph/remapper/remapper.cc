@@ -3875,7 +3875,9 @@ Status AddKerasDenseLayerFwdBMM(RemapperContext* ctx,
     new_bmm.set_device(matmul.device());
     new_bmm.add_input(reshape_0.input(0));
     new_bmm.add_input(matmul.input(1));
-    CopyAllAttrs(matmul, &new_bmm);
+    new_bmm.mutable_attr()->insert({"adj_x", matmul.attr().at("transpose_a")});
+    new_bmm.mutable_attr()->insert({"adj_y", matmul.attr().at("transpose_b")});
+    new_bmm.mutable_attr()->insert({"T", matmul.attr().at("T")});
 
     utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
     Status status;
