@@ -109,44 +109,6 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
        RewriteFusedBatchNormEx},
       {"_FusedMatMul", "_ITEXFusedMatMul", CopyAttrsAllCheckConstFilter,
        AlwaysRewrite},
-      // Remapper can generate these Ops directly, but the attribute
-      // "is_filter_const" is set by layout pass, which affects weight cache.
-      // Thus, these Ops are rewritten as themselves.
-      // TODO(yifeng): Remove this quick fix after formal solution is done.
-      {"_ITEXAccMatMul", "_ITEXAccMatMul", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_ITEXFusedAccMatMul", "_ITEXFusedAccMatMul",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
-      {"_ITEXFusedAccMatMulWithSum", "_ITEXFusedAccMatMulWithSum",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
-      {"_ITEXFusedBatchMatMulV2", "_ITEXFusedBatchMatMulV2",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
-      {"_ITEXFusedConv2D", "_ITEXFusedConv2D", CopyAttrsAllCheckConstFilter,
-       RewriteFusedConv},
-      {"_ITEXFusedConv2DWithSum", "_ITEXFusedConv2DWithSum",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
-      {"_ITEXFusedConv3D", "_ITEXFusedConv3D", CopyAttrsAllCheckConstFilter,
-       RewriteFusedConv},
-      {"_ITEXFusedDepthwiseConv2dNative", "_ITEXFusedDepthwiseConv2dNative",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
-      {"_ITEXFusedMatMul", "_ITEXFusedMatMul", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_ITEXFusedMatMulWithSum", "_ITEXFusedMatMulWithSum",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
-      {"_ITEXAUGRUCell", "_ITEXAUGRUCell", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_ITEXGRUCell", "_ITEXGRUCell", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_ITEXPadWithConv2D", "_ITEXPadWithConv2D", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_ITEXPadWithConv3D", "_ITEXPadWithConv3D", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_ITEXPadWithDepthwiseConv2dNative", "_ITEXPadWithDepthwiseConv2dNative",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
-      {"_ITEXPadWithFusedConv2D", "_ITEXPadWithFusedConv2D",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
-      {"_ITEXPadWithFusedConv3D", "_ITEXPadWithFusedConv3D",
-       CopyAttrsAllCheckConstFilter, RewriteFusedConv},
       // Intel-TF ops. Usually these ops should always be rewritten.
       // This part is for compatibility of legacy Intel-TF models, it will be
       // removed in future.
@@ -401,14 +363,6 @@ Status RewriteNode(NativeFormatContext* ctx, const int node_index,
 
   // Add workspace inputs if needed.
   AddWorkspace(node_view, &new_node_def);
-
-  // TODO(yifeng): Remove this check after formal solution
-  // for is_filter_const setting is done.
-  if (ri->name == ri->new_name) {
-    bool is_filter_const = false;
-    ITEX_CHECK(
-        TryGetNodeAttr(new_node_def, "is_filter_const", &is_filter_const));
-  }
 
   SetConstFilterAttr(node_view, &new_node_def, ctx->nodes_to_preserve);
 

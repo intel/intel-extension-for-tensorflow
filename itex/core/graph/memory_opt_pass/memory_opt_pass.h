@@ -81,6 +81,8 @@ void InplaceInference(MemoryOptContext* ctx, const MutableNodeView* node_view);
 
 void StaticInplaceOpt(MemoryOptContext* ctx, const char* device_name);
 
+void WeightCacheOpt(MemoryOptContext* ctx);
+
 Status RunMemoryOptPass(OptimizerContext* opt_ctx, const GrapplerItem& item,
                         const GraphDef& graph_def, GraphDef* optimized_graph);
 

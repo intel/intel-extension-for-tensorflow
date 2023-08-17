@@ -455,6 +455,29 @@ void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
   }
 }
 
+void CheckConstFilter(const utils::MutableNodeView* node_view,
+                      const std::unordered_set<string>& nodes_to_preserve) {
+  const NodeDef* node_def = node_view->node();
+
+  if (!HasNodeAttr(*node_def, "is_filter_const")) return;
+
+  auto checklist = GetConstFilterCheckList(node_view->node()->op());
+
+  bool is_filter_const = true;
+  for (int index = 0; index < checklist.size(); index++) {
+    const NodeDef* filter_node =
+        node_view->GetRegularFanin(checklist[index]).node_view()->node();
+    if (!IsConstant(*filter_node) ||
+        nodes_to_preserve.count(filter_node->name()) > 0) {
+      is_filter_const = false;
+      break;
+    }
+  }
+
+  auto* new_attr = node_view->node()->mutable_attr();
+  SetAttrValue(is_filter_const, &(*new_attr)["is_filter_const"]);
+}
+
 void CopyAttrsAllCheckConstFilter(const utils::MutableNodeView* orig_node_view,
                                   NodeDef* new_node) {
   CopyAttrsAll(orig_node_view, new_node);

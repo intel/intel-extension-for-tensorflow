@@ -356,6 +356,16 @@ void StaticInplaceOpt(MemoryOptContext* ctx, const char* device_name) {
   }
 }
 
+void WeightCacheOpt(MemoryOptContext* ctx) {
+  int num_nodes = ctx->graph_view.graph()->node_size();
+
+  for (int node_index = num_nodes - 1; node_index >= 0; --node_index) {
+    const auto* node_view = ctx->graph_view.GetNode(node_index);
+
+    CheckConstFilter(node_view, ctx->nodes_to_preserve);
+  }
+}
+
 Status RunMemoryOptPass(OptimizerContext* opt_ctx, const GrapplerItem& item,
                         const GraphDef& graph_def, GraphDef* optimized_graph) {
   Status status;
@@ -368,6 +378,8 @@ Status RunMemoryOptPass(OptimizerContext* opt_ctx, const GrapplerItem& item,
       ctx.graph_view.SortTopologically(/*ignore_cycles=*/false, {}));
 
   StaticInplaceOpt(&ctx, opt_ctx->device_name);
+
+  WeightCacheOpt(&ctx);
 
   // Introduce more optimization if needed.
 
