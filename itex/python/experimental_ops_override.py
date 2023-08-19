@@ -468,6 +468,7 @@ def experimental_ops_override():
     from tensorflow.nn import gelu # pylint: disable=import-outside-toplevel
     gelu = itex_gelu
     tf.nn.gelu = itex_gelu
+    tf.keras.activations.gelu = itex_gelu
     tf.keras.layers.LSTM.call = itex_lstm_call
     tf.keras.layers.LSTM.build = itex_lstm_build
     logger.info("itex experimental ops override is enabled.")
