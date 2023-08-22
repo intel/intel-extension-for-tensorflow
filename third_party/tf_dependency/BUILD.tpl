@@ -269,6 +269,8 @@ cc_proto(
     src = "attr_value.proto",
     deps = [
         ":tensor_proto",
+        ":tensor_shape_proto",
+        ":types_proto",
     ],
 )
 
@@ -297,6 +299,8 @@ cc_proto(
     deps = [
         ":attr_value_proto",
         ":full_type_proto",
+        ":resource_handle_proto",
+        ":types_proto",
     ],
 )
 
@@ -312,6 +316,7 @@ cc_proto(
     name = "function",
     src = "function.proto",
     deps = [
+        ":attr_value_proto",
         ":node_def_proto",
         ":op_def_proto",
     ],
