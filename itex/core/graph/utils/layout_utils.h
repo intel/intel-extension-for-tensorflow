@@ -140,10 +140,6 @@ void CopyAttrsCast(const utils::MutableNodeView* orig_node_view,
 void CopyAttrsAll(const utils::MutableNodeView* orig_node_view,
                   NodeDef* new_node);
 
-// Generic function to copy all attributes and check if filter is const.
-void CopyAttrsAllCheckConstFilter(const utils::MutableNodeView* orig_node_view,
-                                  NodeDef* new_node);
-
 void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
                              NodeDef* new_node);
 
@@ -172,10 +168,6 @@ OpDef GetOpDef(const NodeDef& node_def);
 // Check and set filter attribute
 void CheckConstFilter(const utils::MutableNodeView* node_view,
                       const std::unordered_set<string>& nodes_to_preserve);
-
-void SetConstFilterAttr(const utils::MutableNodeView* orig_node_view,
-                        NodeDef* new_node,
-                        const std::unordered_set<string>& nodes_to_preserve);
 
 }  // namespace graph
 }  // namespace itex

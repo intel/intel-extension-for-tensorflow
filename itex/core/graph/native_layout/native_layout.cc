@@ -40,24 +40,22 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"AvgPool3D", "_ITEXAvgPool3D", CopyAttrsAll, RewritePool},
       {"AvgPool3DGrad", "_ITEXAvgPool3DGrad", CopyAttrsAll, AlwaysRewrite},
       {"AvgPoolGrad", "_ITEXAvgPoolGrad", CopyAttrsAll, AlwaysRewrite},
-      {"BatchMatMul", "_ITEXBatchMatMul", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"BatchMatMulV2", "_ITEXBatchMatMulV2", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"Conv2D", "_ITEXConv2D", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"BatchMatMul", "_ITEXBatchMatMul", CopyAttrsAll, AlwaysRewrite},
+      {"BatchMatMulV2", "_ITEXBatchMatMulV2", CopyAttrsAll, AlwaysRewrite},
+      {"Conv2D", "_ITEXConv2D", CopyAttrsAll, AlwaysRewrite},
       {"Conv2DBackpropFilter", "_ITEXConv2DBackpropFilter", CopyAttrsAll,
        RewriteBackwardDataType},
       {"Conv2DBackpropInput", "_ITEXConv2DBackpropInput", CopyAttrsAll,
        RewriteConv2DBackprop},
-      {"Conv3D", "_ITEXConv3D", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"Conv3D", "_ITEXConv3D", CopyAttrsAll, AlwaysRewrite},
       {"Conv3DBackpropFilterV2", "_ITEXConv3DBackpropFilterV2", CopyAttrsAll,
        RewriteBackwardDataType},
       {"Conv3DBackpropInput", "_ITEXConv3DBackpropInput", CopyAttrsAll,
        RewriteBackwardDataType},
       {"Conv3DBackpropInputV2", "_ITEXConv3DBackpropInputV2", CopyAttrsAll,
        RewriteBackwardDataType},
-      {"DepthwiseConv2dNative", "_ITEXDepthwiseConv2dNative",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"DepthwiseConv2dNative", "_ITEXDepthwiseConv2dNative", CopyAttrsAll,
+       AlwaysRewrite},
       {"DepthwiseConv2dNativeBackpropFilter",
        "_ITEXDepthwiseConv2dNativeBackpropFilter", CopyAttrsAll,
        RewriteBackwardDataType},
@@ -80,8 +78,7 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
        AlwaysRewrite},
       {"FusedInstanceNorm", "_ITEXFusedInstanceNorm", CopyAttrsAll,
        AlwaysRewrite},
-      {"GRUBlockCell", "_ITEXGRUCell", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
+      {"GRUBlockCell", "_ITEXGRUCell", CopyAttrsAll, AlwaysRewrite},
       {"Gelu", "ITEXGelu", CopyAttrsAll, AlwaysRewrite},
       {"GeluGrad", "ITEXGeluGrad", CopyAttrsAll, RewriteBackwardDataType},
       {"LayerNorm", "ITEXLayerNorm", CopyAttrsAll, RewriteLayerNorm},
@@ -90,7 +87,7 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"LeakyRelu", "_ITEXLeakyRelu", CopyAttrsAll, AlwaysRewrite},
       {"LeakyReluGrad", "_ITEXLeakyReluGrad", CopyAttrsAll,
        RewriteBackwardDataType},
-      {"MatMul", "_ITEXMatMul", CopyAttrsAllCheckConstFilter, AlwaysRewrite},
+      {"MatMul", "_ITEXMatMul", CopyAttrsAll, AlwaysRewrite},
       {"MaxPool", "_ITEXMaxPool", CopyAttrsAll, RewritePool},
       {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool},
       {"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
@@ -107,17 +104,14 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"Transpose", "_ITEXTranspose", CopyAttrsAll, AlwaysRewrite},
       {"_FusedBatchNormEx", "_ITEXFusedBatchNormEx", CopyAttrsAll,
        RewriteFusedBatchNormEx},
-      {"_FusedMatMul", "_ITEXFusedMatMul", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
+      {"_FusedMatMul", "_ITEXFusedMatMul", CopyAttrsAll, AlwaysRewrite},
       // Intel-TF ops. Usually these ops should always be rewritten.
       // This part is for compatibility of legacy Intel-TF models, it will be
       // removed in future.
-      {"MklAUGRU", "_ITEXForwardAUGRU", CopyAttrsAllCheckConstFilter,
+      {"MklAUGRU", "_ITEXForwardAUGRU", CopyAttrsAll, AlwaysRewrite},
+      {"MklGRU", "_ITEXForwardGRU", CopyAttrsAll, AlwaysRewrite},
+      {"_MklFusedBatchMatMulV2", "_ITEXFusedBatchMatMulV2", CopyAttrsAll,
        AlwaysRewrite},
-      {"MklGRU", "_ITEXForwardGRU", CopyAttrsAllCheckConstFilter,
-       AlwaysRewrite},
-      {"_MklFusedBatchMatMulV2", "_ITEXFusedBatchMatMulV2",
-       CopyAttrsAllCheckConstFilter, AlwaysRewrite},
       {"_MklLayerNorm", "_ITEXMklLayerNorm", CopyAttrsAll, AlwaysRewrite},
 
       // INT8 op
@@ -363,8 +357,6 @@ Status RewriteNode(NativeFormatContext* ctx, const int node_index,
 
   // Add workspace inputs if needed.
   AddWorkspace(node_view, &new_node_def);
-
-  SetConstFilterAttr(node_view, &new_node_def, ctx->nodes_to_preserve);
 
   // Incoming data edges from 'orig_node' node to new 'new_node' node are
   // already copied in BuildNode. We need to handle control edges now.
