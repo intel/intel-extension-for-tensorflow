@@ -362,6 +362,11 @@ void WeightCacheOpt(MemoryOptContext* ctx) {
   for (int node_index = num_nodes - 1; node_index >= 0; --node_index) {
     const auto* node_view = ctx->graph_view.GetNode(node_index);
 
+    // Filter of Quantized ops must be constant and `is_filter_const` must be
+    // defaulted as True.
+    if (node_view->node()->op().find("Quantized") != std::string::npos)
+      continue;
+
     CheckConstFilter(node_view, ctx->nodes_to_preserve);
   }
 }
