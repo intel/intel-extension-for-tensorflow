@@ -71,8 +71,14 @@ class PerDeviceCollector {
   void CreateXEvent(const zePluggableTracerEventList& event_list,
                     XPlaneBuilder* plane, XLineBuilder* line) {
     for (const zePluggableTracerEvent& event : event_list) {
-      if (event.host_start_time + start_gpu_ns_ < start_walltime_ns_) continue;
       std::string kernel_name = event.kernel_name;
+      if (event.append_time + start_gpu_ns_ < start_walltime_ns_) {
+        ITEX_VLOG(2) << "Skip events have abnormal timestamps:"
+                     << event.kernel_name
+                     << " start time(ns): " << event.append_time + start_gpu_ns_
+                     << " start wall time(ns): " << start_walltime_ns_;
+        continue;
+      }
       XEventMetadata* event_metadata =
           plane->GetOrCreateEventMetadata(std::move(kernel_name));
       XEventBuilder xevent = line->AddEvent(*event_metadata);
