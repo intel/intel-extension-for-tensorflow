@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g605d414 documentation</title>
+  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gb9973d1 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -192,9 +192,14 @@ Run the following command to pull Intel® Extension for TensorFlow* Docker conta
 $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:xpu
 </pre></div>
 </div>
-<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">xpu-horovod</span></code>) to your local machine by the following command.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:xpu-horovod
-$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:xpu-horovod
+<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">xpu</span></code>) to your local machine and set the required environment variables after creating the container by the following command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:xpu
+$ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:xpu
+$ export LD_LIBRARY_PATH=/opt/intel/oneapi/lib:/opt/intel/oneapi/lib/intel64:/opt/intel/oneapi/lib/intel64/libfabric:$LD_LIBRARY_PATH
+$ export PATH=/opt/intel/oneapi/lib/intel64/bin:$PATH
+$ export I_MPI_ROOT=/opt/intel/oneapi/lib/intel64/
+$ export CCL_ROOT=/opt/intel/oneapi/lib/intel64/
+$ export FI_PROVIDER_PATH=/opt/intel/oneapi/lib/intel64/libfabric/
 </pre></div>
 </div>
 <p>Then go to your browser on http://localhost:8888/</p>
