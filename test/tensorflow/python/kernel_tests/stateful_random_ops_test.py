@@ -46,7 +46,6 @@ from tensorflow.python.framework import config
 from tensorflow.python.framework import test_util
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.ops.stateless_random_ops import Algorithm
 from tensorflow.python.platform import test
 
 g_seeded = None
@@ -242,7 +241,7 @@ class StatefulRandomOpsTest(test.TestCase, parameterized.TestCase):
       resource_variable_ops.variable_accessed(state)
       gen_stateful_random_ops.rng_skip(
               state.handle,
-              algorithm=math_ops.cast(Algorithm.PHILOX.value, dtypes.int64),
+              algorithm=math_ops.cast(tf.random.Algorithm.PHILOX.value, dtypes.int64),
               delta=math_ops.cast(delta, dtypes.int64))
       new_counter = state[0]
       self.assertAllEqual(counter + delta * 256, new_counter)
@@ -257,7 +256,7 @@ class StatefulRandomOpsTest(test.TestCase, parameterized.TestCase):
       gen = random.Generator.from_seed(1234)
       state = gen.state
       resource_variable_ops.variable_accessed(state)
-      algorithm = math_ops.cast(Algorithm.PHILOX.value, dtypes.int64)
+      algorithm = math_ops.cast(tf.random.Algorithm.PHILOX.value, dtypes.int64)
       x = gen_stateful_random_ops.stateful_standard_normal_v2(
       state.handle, algorithm, shape, dtype).numpy()
 

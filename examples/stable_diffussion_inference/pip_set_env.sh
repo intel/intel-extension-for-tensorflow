@@ -23,4 +23,5 @@ python -m venv $ENV_NAME
 source $ENV_NAME/bin/activate
 pip install --upgrade pip
 pip install scikit-image
+pip install scipy==1.11.1
 pip install --upgrade intel-extension-for-tensorflow[gpu]

@@ -139,11 +139,11 @@ class FusedDenseBiasAddGeluTest(keras_parameterized.TestCase):
             model = layer
             for i in range(1, level + 1):
                 layers = (
-                    [keras.layers.InputLayer(input_shape, dtype=dtype), model]
+                    [tf.keras.layers.InputLayer(input_shape, dtype=dtype), model]
                     if (i == 1)
                     else [model]
                 )
-                model = keras.models.Sequential(layers)
+                model = tf.keras.models.Sequential(layers)
                 if i > 1:
                     model.build((None,) + input_shape)
             return model

@@ -46,6 +46,7 @@ from tensorflow.python.framework import tensor_util
 from tensorflow.python.framework import test_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import control_flow_ops
+from tensorflow.python.ops import while_loop
 from tensorflow.python.ops import custom_gradient
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.ops import handle_data_util
@@ -157,12 +158,12 @@ class ResourceVariableOpsTest(test_util.TensorFlowTestCase,
   def testInitializeVariableUsingInitializedValue(self):
     var1 = resource_variable_ops.ResourceVariable(1.0, name="var1")
     var2 = resource_variable_ops.ResourceVariable(
-        control_flow_ops.cond(
+        tf.cond(
             is_variable_initialized(var1), var1.read_value,
             lambda: var1.initial_value),
         name="var2")
     self.assertAllEqual(
-        control_flow_ops.cond(
+        tf.cond(
             is_variable_initialized(var2), var2.read_value,
             lambda: var2.initial_value), 1.0)
 
@@ -401,9 +402,9 @@ class ResourceVariableOpsTest(test_util.TensorFlowTestCase,
         return x + v
       def false():
         return 2.0 * v
-      return i + 1, control_flow_ops.cond(i > 0, true, false)
+      return i + 1, tf.cond(i > 0, true, false)
 
-    _, x = control_flow_ops.while_loop(cond, body, [0, 0.0])
+    _, x = while_loop.while_loop(cond, body, [0, 0.0])
     # Computing gradients does not produce an exception:
     g = gradients_impl.gradients(x, v)
     self.evaluate(variables.global_variables_initializer())
@@ -921,7 +922,7 @@ class ResourceVariableOpsTest(test_util.TensorFlowTestCase,
       # But attempts to use initialized_value will result in errors.
       with self.assertRaises(ValueError):
         self.evaluate(
-            control_flow_ops.cond(
+            tf.cond(
                 is_variable_initialized(v), v.read_value,
                 lambda: v.initial_value))
 

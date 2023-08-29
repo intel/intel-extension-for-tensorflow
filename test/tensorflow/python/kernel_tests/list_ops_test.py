@@ -39,7 +39,7 @@ from tensorflow.python.framework import errors
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
+from tensorflow.python.ops import while_loop
 from tensorflow.python.ops import gen_list_ops
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.ops import list_ops
@@ -783,7 +783,7 @@ class ListOpsTest(test_util.TensorFlowTestCase, parameterized.TestCase):
         i += 1
         return i, t1
 
-      i, t1 = control_flow_ops.while_loop(lambda i, t1: math_ops.less(i, 4),
+      i, t1 = while_loop.while_loop(lambda i, t1: math_ops.less(i, 4),
                                           body, [i, t1])
       s1 = list_ops.tensor_list_stack(t1, element_dtype=dtypes.int32)
       self.assertAllEqual(self.evaluate(s1), [0, 1, 2, 3])
@@ -796,7 +796,7 @@ class ListOpsTest(test_util.TensorFlowTestCase, parameterized.TestCase):
       m = constant_op.constant([1, 2, 3], dtype=dtypes.float32)
 
       def body(list_, m):
-        list_ = control_flow_ops.cond(
+        list_ = tf.cond(
             math_ops.equal(list_ops.tensor_list_length(list_), 0),
             lambda: list_ops.empty_tensor_list(m.shape, m.dtype), lambda: list_)
         list_ = list_ops.tensor_list_push_back(list_, m)
@@ -818,7 +818,7 @@ class ListOpsTest(test_util.TensorFlowTestCase, parameterized.TestCase):
       m = constant_op.constant([1, 2, 3], dtype=dtypes.float32)
 
       def body(i, m, t1):
-        t1 = control_flow_ops.cond(
+        t1 = tf.cond(
             math_ops.equal(list_ops.tensor_list_length(t1), 0),
             lambda: list_ops.empty_tensor_list(m.shape, m.dtype), lambda: t1)
 
@@ -826,7 +826,7 @@ class ListOpsTest(test_util.TensorFlowTestCase, parameterized.TestCase):
         i += 1.0
         return i, m, t1
 
-      i, m, t1 = control_flow_ops.while_loop(
+      i, m, t1 = while_loop.while_loop(
           lambda i, m, t1: math_ops.less(i, 4), body, [i, m, t1])
       s1 = list_ops.tensor_list_stack(t1, element_dtype=dtypes.float32)
       np_s1 = np.vstack([np.arange(1, 4) * i for i in range(4)])

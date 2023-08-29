@@ -153,19 +153,19 @@ class LSTMTest(keras_parameterized.TestCase):
         def make_nested_seq_model(input_shape, layer, level=1):
             model = layer
             for i in range(1, level + 1):
-                layers = [keras.layers.InputLayer(input_shape), model
+                layers = [tf.keras.layers.InputLayer(input_shape), model
                           ] if (i == 1) else [model]
-                model = keras.models.Sequential(layers)
+                model = tf.keras.models.Sequential(layers)
                 if i > 1:
                     model.build((None, ) + input_shape)
             return model
 
         # example: make_nested_func_model((1,), Dense(10), level=2).summary()
         def make_nested_func_model(input_shape, layer, level=1):
-            model_input = keras.layers.Input(input_shape)
+            model_input = tf.keras.layers.Input(input_shape)
             model = layer
             for _ in range(level):
-                model = keras.models.Model(model_input, model(model_input))
+                model = tf.keras.models.Model(model_input, model(model_input))
             return model
 
         if model_type == 'func':
