@@ -27,7 +27,7 @@ pip install .
 
 ### Prepare for GPU (Skip this step for CPU)
 
-Refer to [Prepare](../common_guide_running.md##Prepare)
+Refer to [Prepare](../common_guide_running.html##Prepare)
 
 ### Setup Running Environment
 
@@ -41,7 +41,7 @@ Refer to [Prepare](../common_guide_running.md##Prepare)
 
 Enable oneAPI running environment (only for GPU) and virtual running environment.
 
-   * For GPU, refer to [Running](../common_guide_running.md##Running)
+   * For GPU, refer to [Running](../common_guide_running.html##Running)
 
 ### Running the Jupyter Notebook
    * Add kernel for env_itex environment:

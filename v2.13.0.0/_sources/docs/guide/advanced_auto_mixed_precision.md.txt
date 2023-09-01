@@ -26,7 +26,7 @@ Intel® Extension for TensorFlow* provides two ways to support mixed precision:
 
 I. Keras Mixed Precision
 
-Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API available in Stock TensorFlow. To learn about Keras mixed precision, refer to [Keras Mixed Precision](/docs/guide/keras_mixed_precision.md).
+Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API available in Stock TensorFlow. To learn about Keras mixed precision, refer to [Keras Mixed Precision](/docs/guide/keras_mixed_precision.html).
 
 II. Advanced Auto Mixed Precision
 
@@ -87,7 +87,7 @@ Advanced AMP based on Intel® Extension for TensorFlow* has more features to imp
 In most cases, with default configuration, Advanced AMP delivers good results with balanced performance and accuracy. 
 For advanced users with more knowledge of model and TensorFlow, it is possible to manually tune Advanced AMP for special cases or custom operations.
 
-Refer to [Tune Advanced Auto Mixed Precision](aamp_tune.md) for advanced operations. 
+Refer to [Tune Advanced Auto Mixed Precision](aamp_tune.html) for advanced operations. 
 
 ## Usage
 
@@ -95,7 +95,7 @@ I. Install Intel® Extension for TensorFlow* in running environment.
 
 After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.
 
-Refer to [installation](../../get_started.md##Install) instructions for more details.
+Refer to [installation](../../get_started.html##Install) instructions for more details.
 
 II. Enable Advanced AMP.
 
@@ -112,7 +112,7 @@ III. Use the Python API or environment variables to manually tune Advanced AMP f
 |-|-|-|
 |Advanced Configuration|`auto_mixed_precision_options.allowlist_add= "AvgPool3D,AvgPool"`<br>`auto_mixed_precision_options.inferlist_remove = "AvgPool3D,AvgPool"`|`export ITEX_AUTO_MIXED_PRECISION_ALLOWLIST_ADD="AvgPool3D,AvgPool"`<br>`export ITEX_AUTO_MIXED_PRECISION_INFERLIST_REMOVE="AvgPool3D,AvgPool"`|
 
-Refer to [Usage](aamp_tune.md#usage)
+Refer to [Usage](aamp_tune.html#usage)
 
 ## Example
 
@@ -122,7 +122,7 @@ Train model for BF16 with Advanced AMP on GPU device.
 
 #### Setup
 
-Install Intel® Extension for TensorFlow*, refer to [installation](../../get_started.md##Install).
+Install Intel® Extension for TensorFlow*, refer to [installation](../../get_started.html##Install).
 
 #### Enable Advanced AMP
 
@@ -189,10 +189,10 @@ It will trigger Intel® Extension for TensorFlow* to save the post optimization 
 
 Use this to check the structure of the final graph to learn the mixed precision status. It also helps to know the rules to convert operations from FP32 to BF16.
 
-For detailed introduction, refer to [Tuning Performance Example by Advanced AMP Configure List Manually](aamp_tune.md#tuning-performance-example-by-advanced-amp-configure-list-manually)
+For detailed introduction, refer to [Tuning Performance Example by Advanced AMP Configure List Manually](aamp_tune.html#tuning-performance-example-by-advanced-amp-configure-list-manually)
 
 ### Custom Operation
 
 When writing a custom operation, add it to the configuration list to enable Advanced AMP.
 
-Refer to [Tune Advanced Auto Mixed Precision](aamp_tune.md#tune-advanced-auto-mixed-precision) for more details.
+Refer to [Tune Advanced Auto Mixed Precision](aamp_tune.html#tune-advanced-auto-mixed-precision) for more details.

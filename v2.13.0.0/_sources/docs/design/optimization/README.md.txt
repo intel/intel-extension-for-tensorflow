@@ -1,3 +1,3 @@
 # Optimizations Design
 
-[oneDNN object cache](oneDNN_object_cache.md)
+[oneDNN object cache](oneDNN_object_cache.html)

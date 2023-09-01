@@ -50,7 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -88,7 +88,7 @@
 <section id="prerequisite">
 <h2>1.  Prerequisite<a class="headerlink" href="#prerequisite" title="Permalink to this heading"></a></h2>
 <ul>
-<li><p>Before code changes, please make sure the environment setting and source code build pass by  <a class="reference internal" href="../install/how_to_build.html"><span class="doc">build procedure</span></a>.</p></li>
+<li><p>Before code changes, please make sure the environment setting and source code build pass by  <a class="reference external" href="../install/how_to_build.html">build procedure</a>.</p></li>
 <li><p>Check TensorFlow version.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import tensorflow as tf;print(tf.__version__)</span>
 </pre></div>
@@ -99,7 +99,7 @@
 $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">ONEDNN_VERBOSE</span><span class="o">=</span><span class="m">1</span>
 </pre></div>
 </div>
-<p>Refer to <a class="reference internal" href="../../examples/quick_example.html"><span class="doc">quick example</span></a>.<br />Refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-extension-for-tensorflow-code.html">Intel® Extension for Tensorflow* Code Guide</a> to familiar with source code architecture. Custom op is built into all Intel® Extension for Tensorflow* library.<br />Refer to <a class="reference external" href="https://www.tensorflow.org/guide/create_op">TensorFlow Guide for Creating OP</a> for TensorFlow offcial doc.</p>
+<p>Refer to <a class="reference external" href="../../examples/quick_example.html">quick example</a>.<br />Refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-extension-for-tensorflow-code.html">Intel® Extension for Tensorflow* Code Guide</a> to familiar with source code architecture. Custom op is built into all Intel® Extension for Tensorflow* library.<br />Refer to <a class="reference external" href="https://www.tensorflow.org/guide/create_op">TensorFlow Guide for Creating OP</a> for TensorFlow offcial doc.</p>
 </li>
 </ul>
 </section>
@@ -225,7 +225,7 @@ $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><
 <span class="w">      </span><span class="p">}</span>
 <span class="w">      </span><span class="p">......</span>
 <span class="w">      </span><span class="c1">// Create an eltwise forward descriptor and primitive descriptor</span>
-<span class="w">      </span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">desc</span><span class="w"> </span><span class="n">fwd_desc</span><span class="p">(</span><span class="n">prop_kind</span><span class="o">::</span><span class="n">forward</span><span class="p">,</span><span class="w"> </span><span class="n">alg_kind_</span><span class="p">,</span><span class="w"> </span><span class="n">src_md</span><span class="p">,</span>
+<span class="w">      </span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">desc</span><span class="w"> </span><span class="n">fwd_desc</span><span class="p">(</span><span class="n">prop_kind</span><span class="o">::</span><span class="n">forward</span><span class="p">,</span><span class="w"> </span><span class="n">alg_kind_</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="p">.</span><span class="n">html</span><span class="p">,</span>
 <span class="w">                                     </span><span class="n">alpha_</span><span class="p">,</span><span class="w"> </span><span class="n">beta_</span><span class="p">);</span>
 <span class="w">      </span><span class="n">dnnl</span><span class="o">::</span><span class="n">primitive_attr</span><span class="w"> </span><span class="n">attr</span><span class="p">;</span>
 <span class="w">      </span><span class="n">attr</span><span class="p">.</span><span class="n">set_scratchpad_mode</span><span class="p">(</span><span class="n">dnnl</span><span class="o">::</span><span class="n">scratchpad_mode</span><span class="o">::</span><span class="n">user</span><span class="p">);</span>
@@ -329,7 +329,7 @@ $<span class="w"> </span>bazel<span class="w"> </span>build<span class="w"> </sp
 $<span class="w"> </span>bazel-bin/itex/tools/pip_package/build_pip_package<span class="w"> </span>./
 </pre></div>
 </div>
-<p>Refer to <a class="reference internal" href="../install/how_to_build.html"><span class="doc">here</span></a> for more details.</p>
+<p>Refer to <a class="reference external" href="../install/how_to_build.html">here</a> for more details.</p>
 </section>
 <section id="install-and-verify">
 <h2>9.  Install and Verify<a class="headerlink" href="#install-and-verify" title="Permalink to this heading"></a></h2>

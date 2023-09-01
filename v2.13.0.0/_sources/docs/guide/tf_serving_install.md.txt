@@ -90,7 +90,7 @@ The generated `libitex_cpu_cc.so` or `libitex_gpu_cc.so` binary are found in the
   The generated `tensorflow_model_server` will be found in the `serving/bazel-bin/tensorflow_serving/model_servers/` directory. 
 
 ### Build Docker image from Dockerfile
-Refer to [Intel® Extension for TensorFlow* Serving Docker Container Guide](../../docker/tensorflow-serving/README.md) to build docker image from dockerfile.
+Refer to [Intel® Extension for TensorFlow* Serving Docker Container Guide](../../docker/tensorflow-serving/README.html) to build docker image from dockerfile.
 
 ## Run sample
 - Train and export TensorFlow model

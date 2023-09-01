@@ -114,7 +114,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -175,7 +175,7 @@
 </ul>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
-<p>As introduced in the <a class="reference internal" href="practice_guide.html"><span class="doc">Practice Guide</span></a>, there are several factors that influence performance. Setting configuration options properly contributes to a performance boost. However, there is no unified configuration that is optimal to all topologies. Users need to try different combinations. A <em>launch</em> script is provided to automate these configuration settings to free users from this complicated work. This guide helps you to learn the <em>launch</em> script common usage and provides examples that cover many optimized configuration cases as well.</p>
+<p>As introduced in the <a class="reference external" href="practice_guide.html">Practice Guide</a>, there are several factors that influence performance. Setting configuration options properly contributes to a performance boost. However, there is no unified configuration that is optimal to all topologies. Users need to try different combinations. A <em>launch</em> script is provided to automate these configuration settings to free users from this complicated work. This guide helps you to learn the <em>launch</em> script common usage and provides examples that cover many optimized configuration cases as well.</p>
 <p>The configurations are mainly around the following perspectives.</p>
 <ul class="simple">
 <li><p>NUMA Control: numactl specifies NUMA scheduling and memory placement policy</p></li>
@@ -392,7 +392,7 @@ run_20210712212258_instance_0_cores_0-43.log
 <section id="environment-variables">
 <h3>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading"></a></h3>
 <p>The <em>launch</em> script respects existing environment variables on launch. If you prefer some certain environment variables, you can set them before executing the <em>launch</em> script. Intel OpenMP library uses an environment variable <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em> to control its behavior. Different settings bring different performance. By default, the <em>launch</em> script will set <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em> to “granularity=fine,verbose,compact,1,0” or “granularity=fine,verbose,compact,” depending on whether hyper threading is on or off. If you want to try other values, you can use <em><code class="docutils literal notranslate"><span class="pre">export</span></code></em> command on Linux to set <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em> before you run the <em>launch</em> script. In this case, the script will not set the default value but take the existing value of <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em>, and print a message to stdout.</p>
-<p>Our launcher also automatically sets some environment variables related to TensorFlow and Intel® Extension for TensorFlow*. By default, <em><code class="docutils literal notranslate"><span class="pre">TF_NUM_INTEROP_THREADS</span></code></em> and <em><code class="docutils literal notranslate"><span class="pre">TF_NUM_INTRAOP_THREADS</span></code></em> are set to <em><code class="docutils literal notranslate"><span class="pre">1</span></code></em> and number of cores per instance. <a class="reference internal" href="advanced_auto_mixed_precision.html"><span class="doc">ITEX AMP</span></a> and <a class="reference external" href="practice_guide.md#memory-layout-format">Intel® Extension for TensorFlow* layout optimization</a> are disabled.
+<p>Our launcher also automatically sets some environment variables related to TensorFlow and Intel® Extension for TensorFlow*. By default, <em><code class="docutils literal notranslate"><span class="pre">TF_NUM_INTEROP_THREADS</span></code></em> and <em><code class="docutils literal notranslate"><span class="pre">TF_NUM_INTRAOP_THREADS</span></code></em> are set to <em><code class="docutils literal notranslate"><span class="pre">1</span></code></em> and number of cores per instance. <a class="reference external" href="advanced_auto_mixed_precision.html">ITEX AMP</a> and <a class="reference external" href="practice_guide.html#memory-layout-format">Intel® Extension for TensorFlow* layout optimization</a> are disabled.
 Users can change them by the following knobs.</p>
 <table border="1" class="docutils">
 <thead>

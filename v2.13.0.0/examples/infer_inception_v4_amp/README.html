@@ -50,7 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
@@ -88,7 +88,7 @@
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>Advanced Automatic Mixed Precision (Advanced AMP) uses lower-precision data types (such as float16 or bfloat16) to make model run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption in CPU and GPU.</p>
-<p>For detailed info, please refer to <a class="reference internal" href="../../docs/guide/advanced_auto_mixed_precision.html"><span class="doc">Advanced Automatic Mixed Precision</span></a></p>
+<p>For detailed info, please refer to <a class="reference external" href="../../docs/guide/advanced_auto_mixed_precision.html">Advanced Automatic Mixed Precision</a></p>
 <p>This example shows the acceleration of inference by Advanced AMP on Intel CPU or GPU via Docker container or bare metal.</p>
 <p>In this example, we will test and compare the performance of FP32 and Advanced AMP (mix BF16/FP16 and FP32) on Intel CPU or GPU.</p>
 </section>
@@ -130,10 +130,10 @@
 <h3>Prepare for GPU (Skip this Step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this heading"></a></h3>
 <ul>
 <li><p>If Running via Docker Container,</p>
-<p>Refer to <a class="reference external" href="../../docs/install/install_for_gpu.md#install-gpu-drivers">Install GPU Drivers</a>.</p>
+<p>Refer to <a class="reference external" href="../../docs/install/install_for_gpu.html#install-gpu-drivers">Install GPU Drivers</a>.</p>
 </li>
 <li><p>If Running on Bare Metal,</p>
-<p>Refer to <a class="reference external" href="../common_guide_running.md#prepare">Prepare</a> to install both Intel GPU driver and Intel® oneAPI Base Toolkit.</p>
+<p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a> to install both Intel GPU driver and Intel® oneAPI Base Toolkit.</p>
 </li>
 </ul>
 </section>
@@ -206,7 +206,7 @@ cd /ws1/examples/infer_inception_v4_amp
 </li>
 <li><p>If Running on Bare Metal,</p>
 <ul class="simple">
-<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.md#running">Running</a></p></li>
+<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html#running">Running</a></p></li>
 <li><p>For CPU,</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">env_itex</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>

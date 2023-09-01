@@ -22,11 +22,11 @@ We welcome community contributions to Intel® Extension for TensorFlow*. Before 
 
   More information about the process can be found in the dedicated[`rfcs`](https://github.com/intel/intel-extension-for-tensorflow/tree/rfcs) branch.
 
-**See also:** [Contributor Covenant](../../../CODE_OF_CONDUCT.md) code of conduct.
+**See also:** [Contributor Covenant](../../../CODE_OF_CONDUCT.html) code of conduct.
 
 ## Developing Intel® Extension for TensorFlow\*
 
-Refer to a full set of [instructions](../install/how_to_build.md) on installing Intel® Extension for TensorFlow\* from source.
+Refer to a full set of [instructions](../install/how_to_build.html) on installing Intel® Extension for TensorFlow\* from source.
 
 ## Tips and Debugging
 
@@ -68,7 +68,7 @@ Intel® Extension for TensorFlow* follows the same code style guide as  [TensorF
 
 ### Python coding style
 
-Ensure the Python code changes are consistent with the [Python coding standards](https://github.com/google/styleguide/blob/gh-pages/pyguide.md).
+Ensure the Python code changes are consistent with the [Python coding standards](https://github.com/google/styleguide/blob/gh-pages/pyguide.html).
 
 Use `pylint` to check your Python changes. To install `pylint` and check a file with `pylint` against custom style definition from the Intel® Extension for TensorFlow* source code root directory:
 
@@ -116,8 +116,8 @@ To check bazel files manually:
 
 ```bash
 # install go
-wget https://golang.org/dl/go1.15.3.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.15.3.linux-amd64.tar.gz
+wget https://golang.org/dl/go1.15.3.linux-.html64.tar.gz
+sudo tar -C /usr/local -xzf go1.15.3.linux-.html64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 
 # install buildifier

@@ -15,7 +15,7 @@
 
 ## Overview
 
-As introduced in the [Practice Guide](practice_guide.md), there are several factors that influence performance. Setting configuration options properly contributes to a performance boost. However, there is no unified configuration that is optimal to all topologies. Users need to try different combinations. A *launch* script is provided to automate these configuration settings to free users from this complicated work. This guide helps you to learn the *launch* script common usage and provides examples that cover many optimized configuration cases as well.
+As introduced in the [Practice Guide](practice_guide.html), there are several factors that influence performance. Setting configuration options properly contributes to a performance boost. However, there is no unified configuration that is optimal to all topologies. Users need to try different combinations. A *launch* script is provided to automate these configuration settings to free users from this complicated work. This guide helps you to learn the *launch* script common usage and provides examples that cover many optimized configuration cases as well.
 
 The configurations are mainly around the following perspectives.
 
@@ -119,7 +119,7 @@ This script provides users three memory allocator types, specified with the foll
 
 The *launch* script respects existing environment variables on launch. If you prefer some certain environment variables, you can set them before executing the *launch* script. Intel OpenMP library uses an environment variable *`KMP_AFFINITY`* to control its behavior. Different settings bring different performance. By default, the *launch* script will set *`KMP_AFFINITY`* to "granularity=fine,verbose,compact,1,0" or "granularity=fine,verbose,compact," depending on whether hyper threading is on or off. If you want to try other values, you can use *```export```* command on Linux to set *`KMP_AFFINITY`* before you run the *launch* script. In this case, the script will not set the default value but take the existing value of *`KMP_AFFINITY`*, and print a message to stdout.
 
-Our launcher also automatically sets some environment variables related to TensorFlow and Intel® Extension for TensorFlow*. By default, *`TF_NUM_INTEROP_THREADS`* and *`TF_NUM_INTRAOP_THREADS`* are set to *`1`* and number of cores per instance. [ITEX AMP](advanced_auto_mixed_precision.md) and [Intel® Extension for TensorFlow* layout optimization](practice_guide.md#memory-layout-format) are disabled.
+Our launcher also automatically sets some environment variables related to TensorFlow and Intel® Extension for TensorFlow*. By default, *`TF_NUM_INTEROP_THREADS`* and *`TF_NUM_INTRAOP_THREADS`* are set to *`1`* and number of cores per instance. [ITEX AMP](advanced_auto_mixed_precision.html) and [Intel® Extension for TensorFlow* layout optimization](practice_guide.html#memory-layout-format) are disabled.
 Users can change them by the following knobs.
 
 | Knob | Type | Default Value | Description |

@@ -21,7 +21,6 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Install TensorFlow Serving with Intel® Extension for TensorFlow*" href="tf_serving_install.html" />
-    <link rel="next" title="Installation Guide" href="../install/installation_guide.html" />
     <link rel="prev" title="XPUAutoShard on GPU [Experimental]" href="XPUAutoShard.html" /> 
 </head>
 
@@ -79,7 +78,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
@@ -118,7 +117,7 @@
 <p>This guide introduces the overview of OpenXLA high level integration structure, and demonstrates how to build Intel® Extension for TensorFlow* and run JAX example with OpenXLA.</p>
 <section id="overview">
 <h2>1. Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
-<p>Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which seamlessly runs JAX models on Intel GPU. The PJRT API simplified the integration, which allowed the Intel GPU plugin to be developed separately and quickly integrated into JAX. This same PJRT implementation also enables initial Intel GPU support for TensorFlow and PyTorch models with XLA acceleration. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">OpenXLA PJRT Plugin RFC</a> for more details.</p>
+<p>Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which seamlessly runs JAX models on Intel GPU. The PJRT API simplified the integration, which allowed the Intel GPU plugin to be developed separately and quickly integrated into JAX. This same PJRT implementation also enables initial Intel GPU support for TensorFlow and PyTorch models with XLA acceleration. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.html">OpenXLA PJRT Plugin RFC</a> for more details.</p>
 <p><img alt="xla" src="../../_images/xla.png" /></p>
 <ul>
 <li><p><a class="reference external" href="https://jax.readthedocs.io/en/latest/">JAX</a> provides a familiar NumPy-style API, includes composable function transformations for compilation, batching, automatic differentiation, and parallelization, and  the same code executes on multiple backends.</p></li>
@@ -188,7 +187,7 @@
 </section>
 <section id="build-library-for-jax">
 <h2>3. Build Library for JAX<a class="headerlink" href="#build-library-for-jax" title="Permalink to this heading"></a></h2>
-<p>There are some differences from   <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.md">source build procedure</a></p>
+<p>There are some differences from   <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.html">source build procedure</a></p>
 <ul>
 <li><p>Make sure get Intel® Extension for TensorFlow* main branch code and python version &gt;=3.8.</p></li>
 <li><p>In TensorFlow installation steps, make sure to install jax and jaxlib at the same time.</p>
@@ -298,7 +297,6 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="XPUAutoShard.html" class="btn btn-neutral float-left" title="XPUAutoShard on GPU [Experimental]" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="tf_serving_install.html" class="btn btn-neutral float-right" title="Install TensorFlow Serving with Intel® Extension for TensorFlow*" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="../install/installation_guide.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

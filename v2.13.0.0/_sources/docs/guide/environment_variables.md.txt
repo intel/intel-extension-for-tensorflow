@@ -47,12 +47,12 @@ node {
 
 ### Backend and Config Protocol
 
-Refer to [Python APIs and preserved environment variable Names](python_api.md#python-apis-and-preserved-environment-variable-names).
+Refer to [Python APIs and preserved environment variable Names](python_api.html#python-apis-and-preserved-environment-variable-names).
 
 
 ### Auto Mixed Precision Options
 
-Refer to [Advanced Auto Mixed Precision](advanced_auto_mixed_precision.md).
+Refer to [Advanced Auto Mixed Precision](advanced_auto_mixed_precision.html).
 
 <!Customized Operators Experimental Override
-Refer to [Customized Operators Experimental Override](itex_ops_override.md).>
+Refer to [Customized Operators Experimental Override](itex_ops_override.html).>

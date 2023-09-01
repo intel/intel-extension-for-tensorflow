@@ -19,7 +19,7 @@ Verified Hardware Platforms:
 
 ### Prepare for GPU (Skip this step for CPU)
 
-Refer to [Prepare](../common_guide_running.md##Prepare)
+Refer to [Prepare](../common_guide_running.html##Prepare)
 
 ### Setup Running Environment
 
@@ -38,7 +38,7 @@ Refer to [Prepare](../common_guide_running.md##Prepare)
 
 1. Enable oneAPI running environment (only for GPU) and virtual running environment.
 
-   * For GPU, refer to [Running](../common_guide_running.md##Running)
+   * For GPU, refer to [Running](../common_guide_running.html##Running)
 
    * For CPU, 
 ```bash

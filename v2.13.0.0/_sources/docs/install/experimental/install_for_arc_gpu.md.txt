@@ -71,7 +71,7 @@ The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
     ```bash
     sudo apt-get install -y gpg-agent wget
     wget -qO - https://repositories.intel.com/graphics/intel-graphics.key | sudo gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-    echo 'deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy arc' | sudo tee  /etc/apt/sources.list.d/intel.gpu.jammy.list
+    echo 'deb [arch=.html64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy arc' | sudo tee  /etc/apt/sources.list.d/intel.gpu.jammy.list
     sudo apt-get update
     ```
 
@@ -109,11 +109,11 @@ The above commands install only runtime libraries for Intel® oneAPI that are us
 
 |OS|Intel GPU|Install Intel GPU Driver|
 |-|-|-|
-|Ubuntu 22.04|Intel® Arc™ A-Series GPUs| Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb`|
+|Ubuntu 22.04|Intel® Arc™ A-Series GPUs| Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb`|
 
 The steps to install the runtime components in Ubuntu Linux are:
 
-- The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in [Installation Guides for Intel Arc GPUs](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html). When installing the Intel® Arc™ A-Series GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please be sure to append the specific version after components, such as `sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb`|
+- The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in [Installation Guides for Intel Arc GPUs](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html). When installing the Intel® Arc™ A-Series GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please be sure to append the specific version after components, such as `sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb`|
 
 - Install the Intel® oneAPI libraries
 
@@ -192,7 +192,7 @@ Check the environment for GPU:
 python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
 ```
 
-You can also run a [quick_example](../../../examples/quick_example.md) to verify the installation.
+You can also run a [quick_example](../../../examples/quick_example.html) to verify the installation.
 
 
 ### Optional: Install Full Intel® oneAPI

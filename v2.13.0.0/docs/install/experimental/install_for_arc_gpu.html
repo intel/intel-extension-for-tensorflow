@@ -50,7 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../guide/infrastructure.html">Infrastructure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation_guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/README.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/practice_guide.html">Practice Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../guide/FAQ.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../community/releases.html">Releases</a></li>
@@ -183,7 +183,7 @@
 <li><p>Add the repositories.intel.com/graphics package repository to your Ubuntu installation:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>gpg-agent<span class="w"> </span>wget
 wget<span class="w"> </span>-qO<span class="w"> </span>-<span class="w"> </span>https://repositories.intel.com/graphics/intel-graphics.key<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>gpg<span class="w"> </span>--dearmor<span class="w"> </span>--output<span class="w"> </span>/usr/share/keyrings/intel-graphics.gpg
-<span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy arc&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w">  </span>/etc/apt/sources.list.d/intel.gpu.jammy.list
+<span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;deb [arch=.html64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy arc&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w">  </span>/etc/apt/sources.list.d/intel.gpu.jammy.list
 sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 </pre></div>
 </div>
@@ -230,12 +230,12 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 <tr>
 <td>Ubuntu 22.04</td>
 <td>Intel® Arc™ A-Series GPUs</td>
-<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb</code></td>
+<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb</code></td>
 </tr>
 </tbody>
 </table><p>The steps to install the runtime components in Ubuntu Linux are:</p>
 <ul>
-<li><p>The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html">Installation Guides for Intel Arc GPUs</a>. When installing the Intel® Arc™ A-Series GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please be sure to append the specific version after components, such as <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb</span></code>|</p></li>
+<li><p>The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html">Installation Guides for Intel Arc GPUs</a>. When installing the Intel® Arc™ A-Series GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please be sure to append the specific version after components, such as <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb</span></code>|</p></li>
 <li><p>Install the Intel® oneAPI libraries</p>
 <ul>
 <li><p>Add the Intel® oneAPI library repositories to your Ubuntu installation:</p>
@@ -310,7 +310,7 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
 </pre></div>
 </div>
-<p>You can also run a <a class="reference internal" href="../../../examples/quick_example.html"><span class="doc">quick_example</span></a> to verify the installation.</p>
+<p>You can also run a <a class="reference external" href="../../../examples/quick_example.html">quick_example</a> to verify the installation.</p>
 </section>
 <section id="optional-install-full-intel-oneapi">
 <h3>Optional: Install Full Intel® oneAPI<a class="headerlink" href="#optional-install-full-intel-oneapi" title="Permalink to this heading"></a></h3>
