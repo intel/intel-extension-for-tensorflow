@@ -29,7 +29,7 @@ git apply patch  # When applying this patch, please move it to the above BERT di
 
 ### Prepare for GPU
 
-Refer to [Prepare](../common_guide_running.html##Prepare).
+Refer to [Prepare](../common_guide_running.html#prepare).
 
 ### Setup Running Environment
 
@@ -44,7 +44,7 @@ Refer to [Prepare](../common_guide_running.html##Prepare).
 
 Enable oneAPI running environment (only for GPU) and virtual running environment.
 
-   * For GPU, refer to [Running](../common_guide_running.html##Running)
+   * For GPU, refer to [Running](../common_guide_running.html#running)
 
 ### Prepare Dataset
 

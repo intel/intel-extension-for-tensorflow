@@ -25,7 +25,7 @@ git apply ../shard.patch
  
 ### Prepare for GPU
 
-Refer to [Prepare](../common_guide_running.html##Prepare)
+Refer to [Prepare](../common_guide_running.html#prepare)
 
 ### Install Other Required Packages
 
@@ -35,7 +35,7 @@ pip install -r official/requirements.txt
 
 ### Enable Running Environment
 
-Refer to [Running](../common_guide_running.html##Running) to enable oneAPI running environment and virtual running environment.
+Refer to [Running](../common_guide_running.html#running) to enable oneAPI running environment and virtual running environment.
 
 ### Setup PYTHONPATH
 Modify `/path/to/tf-models` accordingly, here `~/tf-models` as an example.
