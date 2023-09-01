@@ -28,7 +28,7 @@ git apply patch  # When applying this patch, please move it to the above MaskRCN
 
 ### Prepare for GPU
 
-Refer to [Prepare](../common_guide_running.md##Prepare).
+Refer to [Prepare](../common_guide_running.md#prepare).
 
 ### Setup Running Environment
 
@@ -56,7 +56,7 @@ pip install -e "git+https://github.com/NVIDIA/dllogger#egg=dllogger"
 
 Enable oneAPI running environment (only for GPU) and virtual running environment.
 
-   * For GPU, refer to [Running](../common_guide_running.md##Running)
+   * For GPU, refer to [Running](../common_guide_running.md#running)
 
 ### Prepare Dataset
 

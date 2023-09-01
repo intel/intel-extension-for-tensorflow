@@ -25,7 +25,7 @@ git apply patch
 
 ### Prepare for GPU
 
-Refer to [Prepare](../common_guide_running.md##Prepare)
+Refer to [Prepare](../common_guide_running.md#prepare)
 
 ### Setup Running Environment
 
@@ -39,7 +39,7 @@ Refer to [Prepare](../common_guide_running.md##Prepare)
 
 Enable oneAPI running environment (only for GPU) and virtual running environment.
 
-   * For GPU, refer to [Running](../common_guide_running.md##Running)
+   * For GPU, refer to [Running](../common_guide_running.md#running)
 
 
 ### Execute the Example

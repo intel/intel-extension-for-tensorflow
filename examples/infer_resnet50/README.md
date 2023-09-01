@@ -4,7 +4,7 @@
 
 ### Prepare for GPU (Skip this step for CPU)
 
-Refer to [Prepare](../common_guide_running.md##Prepare)
+Refer to [Prepare](../common_guide_running.md#prepare)
 
 ### Setup Running Environment
 
@@ -20,7 +20,7 @@ Refer to [Prepare](../common_guide_running.md##Prepare)
 
 ### Enable Running Environment
 
-* For GPU, refer to [Running](../common_guide_running.md##Running)
+* For GPU, refer to [Running](../common_guide_running.md#running)
 
 * For CPU, 
 ```bash
