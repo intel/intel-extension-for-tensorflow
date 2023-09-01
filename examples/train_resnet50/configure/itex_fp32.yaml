@@ -8,7 +8,7 @@ runtime:
 train_dataset:
   name: 'imagenet2012'
   data_dir: None
-  builder: 'synthetic'
+  builder: 'records'
   split: 'train'
   one_hot: False
   image_size: 224
@@ -18,11 +18,11 @@ train_dataset:
   use_per_replica_batch_size: True
   mean_subtract: False
   standardize: False
-  dtype: 'bfloat16'
+  dtype: 'float32'
 validation_dataset:
   name: 'imagenet2012'
   data_dir: None
-  builder: 'synthetic'
+  builder: 'records'
   split: 'validation'
   one_hot: False
   image_size: 224
@@ -32,7 +32,7 @@ validation_dataset:
   use_per_replica_batch_size: True
   mean_subtract: False
   standardize: False
-  dtype: 'bfloat16'
+  dtype: 'float32'
 model:
   name: 'resnet'
   model_params:
