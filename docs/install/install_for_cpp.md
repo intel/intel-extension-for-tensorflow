@@ -1,18 +1,167 @@
 # Intel® Extension for TensorFlow* for C++
 
-This guide shows how to build an Intel® Extension for TensorFlow* CC library from source and how to work with tensorflow_cc to build bindings for C/C++ languages on Ubuntu 20.04 (64-bit).
+This guide shows how to build an Intel® Extension for TensorFlow* CC library from source and how to work with tensorflow_cc to build bindings for C/C++ languages on Ubuntu.
 
-## Prepare
+## Requirements
 
-Refer to [Build from Source Code -> Prepare](../how_to_build.md#prepare)
+### Hardware Requirements
 
-## Configure the build
+Verified Hardware Platforms:
+ - Intel® CPU (Xeon, Core)
+ - [Intel® Data Center GPU Flex Series](https://www.intel.com/content/www/us/en/products/docs/discrete-gpus/data-center-gpu/flex-series/overview.html)
+ - [Intel® Data Center GPU Max Series](https://www.intel.com/content/www/us/en/products/docs/processors/max-series/overview.html)
+ - [Intel® Arc™ Graphics](https://www.intel.com/content/www/us/en/products/details/discrete-gpus/arc.html) (experimental)
 
-Refer to [Build from Source Code -> Configure the build](../how_to_build.md#configure-the-build)
+### Common Requirements
 
-## Build the CC library
+#### Install Bazel
 
-### GPU support
+To build Intel® Extension for TensorFlow*, install Bazel 5.3.0. Refer to [install Bazel](https://docs.bazel.build/versions/main/install-ubuntu.html).
+
+Here are the recommended commands:
+
+```bash
+$ wget https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
+$ bash bazel-5.3.0-installer-linux-x86_64.sh --user
+```
+
+Check Bazel is installed successfully and is version 5.3.0:
+
+```bash
+$ bazel --version
+```
+
+#### Download Source Code
+
+```bash
+$ git clone https://github.com/intel/intel-extension-for-tensorflow.git intel-extension-for-tensorflow
+$ cd intel-extension-for-tensorflow/
+```
+
+#### Create a Conda Environment
+
+1. Install [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+
+2. Create Virtual Running Environment
+
+```bash
+$ conda create -n itex_build python=3.10
+$ conda activate itex_build
+```
+
+Note, we support Python versions 3.8 through 3.11.
+
+#### Install TensorFlow
+
+Install TensorFlow 2.13.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
+
+```bash
+$ pip install tensorflow==2.13.0
+```
+
+Check TensorFlow was installed successfully and is version 2.13.0:
+
+```bash
+$ python -c "import tensorflow as tf;print(tf.__version__)"
+```
+
+### Extra Requirements for XPU/GPU Build Only
+
+#### Install Intel GPU Driver
+Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html)).
+
+Refer to [Install Intel GPU driver](install_for_xpu.md/#install-gpu-drivers) for details.
+
+Note:
+
+1. Make sure to [install developer runtime packages](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages) before building Intel® Extension for TensorFlow*.
+
+2. **AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html))**
+
+    AOT is a compiling option that reduces the initialization time of GPU kernels at startup time by creating the binary code for a specified hardware platform during compiling. AOT will make the installation package larger but improve performance time.
+
+    Without AOT, Intel® Extension for TensorFlow* will be translated to binary code for local hardware platform during startup. That will prolong startup time when using a GPU to several minutes or more.
+
+    For more information, refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html).
+
+#### Install oneAPI Base Toolkit
+
+We recommend you install the oneAPI base toolkit using `sudo` (or as root user) to the system directory `/opt/intel/oneapi`.
+
+The following commands assume the oneAPI base tookit is installed in `/opt/intel/oneapi`. If you installed it in some other folder, please update the oneAPI path as appropriate.
+
+Refer to [Install oneAPI Base Toolkit Packages](install_for_xpu.md#install-oneapi-base-toolkit-packages)
+
+The oneAPI base toolkit provides compiler and libraries needed by Intel® Extension for TensorFlow*.
+
+Enable oneAPI components:
+
+```bash
+$ source /opt/intel/oneapi/compiler/latest/env/vars.sh
+$ source /opt/intel/oneapi/mkl/latest/env/vars.sh
+```
+
+
+## Build Intel® Extension for TensorFlow* CC library
+
+### Configure
+
+#### Configure For CPU
+
+Configure the system build by running the `./configure` command at the root of your cloned Intel® Extension for TensorFlow* source tree.
+
+```bash
+$ ./configure
+```
+
+Choose `n` to build for CPU only. Refer to [Configure Example](how_to_build.md#configure-for-cpu).
+
+#### Configure For GPU
+
+Configure the system build by running the `./configure` command at the root of your cloned Intel® Extension for TensorFlow* source tree. This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).
+
+```bash
+$ ./configure
+```
+
+- Choose `Y` for Intel GPU support. Refer to [Configure Example](how_to_build.md#configure-example-for-gpu-or-xpu).
+
+- Specify the Location of Compiler (DPC++).
+
+  Default is `/opt/intel/oneapi/compiler/latest/linux/`, which is the default installed path. Click `Enter` to confirm default location.
+
+  If it's differenct, confirm the compiler (DPC++) installed path and fill the correct path.
+
+- Specify the Ahead of Time (AOT) Compilation Platforms.
+
+  Default is '', which means no AOT.
+
+  Fill one or more device type strings of special hardware platforms, such as `ats-m150`, `acm-g11`.
+
+  Here is the list of GPUs we've verified:
+
+  |GPU|device type|
+  |-|-|
+  |Intel® Data Center GPU Flex Series 170|ats-m150|
+  |Intel® Data Center GPU Flex Series 140|ats-m75|
+  |Intel® Data Center GPU Max Series|pvc|
+  |Intel® Arc™ A730M|acm-g10|
+  |Intel® Arc™ A380|acm-g11|
+
+  To learn how to get the device type, please refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html) or create an [issue](https://github.com/intel/intel-extension-for-tensorflow/issues) to ask support.
+
+- Choose to Build with oneMKL Support.
+
+  We recommend choosing `y`.
+
+  Default is `/opt/intel/oneapi/mkl/latest`, which is the default installed path. Click `Enter` to confirm default location.
+
+  If it's wrong, please confirm the oneMKL installed path and fill the correct path.
+
+
+### Build Source Code
+
+For GPU support
 
 ```bash
 $ bazel build -c opt --config=gpu //itex:libitex_gpu_cc.so
@@ -20,7 +169,7 @@ $ bazel build -c opt --config=gpu //itex:libitex_gpu_cc.so
 
 CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/libitex_gpu_cc.so`
 
-### CPU support
+For CPU support
 
 ```bash
 $ bazel build -c opt --config=cpu //itex:libitex_cpu_cc.so
@@ -240,5 +389,4 @@ $ ./example_test
 ```bash
 $ source /opt/intel/oneapi/compiler/latest/env/vars.sh
 $ source /opt/intel/oneapi/mkl/latest/env/vars.sh
-$ source /opt/intel/oneapi/tbb/latest/env/vars.sh
 ```
