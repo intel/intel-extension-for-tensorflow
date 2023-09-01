@@ -87,16 +87,16 @@ cp -rf "../examples" "./source/"
 cp -f "../SECURITY.md" "./source/"
 cp -f "../LICENSE.txt" "./source/"
 cp -f "../CODE_OF_CONDUCT.md" "./source/"
-#sed -i 's/docs\/guide/guide/g' ./source/docs/get_started.md
 
-sed -i 's/.md/.html/g' ./source/get_started.md
-sed -i 's/.md/.html/g' ./source/docs/install/install_for_cpp.md
-sed -i 's/.md/.html/g' ./source/examples/README.md
+all_md_files=`find ./source -name "*.md"`
+for md_file in ${all_md_files}
+do
+  sed -i 's/.md/.html/g' ${md_file}
+done
 
 sed -i 's/pluggable-device-for-tensorflow.html/pluggable-device-for-tensorflow.md/g' ./source/get_started.md
 sed -i 's/third-party-programs\/THIRD-PARTY-PROGRAMS/https:\/\/github.com\/intel\/intel-extension-for-tensorflow\/blob\/main\/third-party-programs\/THIRD-PARTY-PROGRAMS/g' ./source/get_started.md
 sed -i 's/# Intel® Extension for TensorFlow*/# Quick Get Started/g' ./source/get_started.md
-
 
 make clean
 make html
