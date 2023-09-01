@@ -52,4 +52,4 @@ itex.set_config(itex_cfg)
 You can dump the graph via setting `export ITEX_VERBOSE=4` and then `itex_optimizer_before_sharding.pbtxt` and `itex_optimizer_after_sharding.pbtxt` will be saved under current directory.
 
 ### Examples
-Please refer to [ResNet50 training example with XPUAutoShard](../../examples/train_resnet50_with_autoshard/README.md) for details.
+Please refer to [ResNet50 training example with XPUAutoShard](../../examples/train_resnet50_with_autoshard/README.html) for details.

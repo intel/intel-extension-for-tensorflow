@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OpenXLA Support on GPU via PJRT &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gebe4896 documentation</title>
+  <title>OpenXLA Support on GPU via PJRT &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gcbee3ff documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -121,7 +121,7 @@
 <p>This guide introduces the overview of OpenXLA high level integration structure, and demonstrates how to build Intel® Extension for TensorFlow* and run JAX example with OpenXLA.</p>
 <section id="overview">
 <h2>1. Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
-<p>Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which seamlessly runs JAX models on Intel GPU. The PJRT API simplified the integration, which allowed the Intel GPU plugin to be developed separately and quickly integrated into JAX. This same PJRT implementation also enables initial Intel GPU support for TensorFlow and PyTorch models with XLA acceleration. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">OpenXLA PJRT Plugin RFC</a> for more details.</p>
+<p>Intel® Extension for TensorFlow* includes  PJRT plugin implementation, which seamlessly runs JAX models on Intel GPU. The PJRT API simplified the integration, which allowed the Intel GPU plugin to be developed separately and quickly integrated into JAX. This same PJRT implementation also enables initial Intel GPU support for TensorFlow and PyTorch models with XLA acceleration. Refer to <a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.html">OpenXLA PJRT Plugin RFC</a> for more details.</p>
 <p><img alt="xla" src="../../_images/xla.png" /></p>
 <ul>
 <li><p><a class="reference external" href="https://jax.readthedocs.io/en/latest/">JAX</a> provides a familiar NumPy-style API, includes composable function transformations for compilation, batching, automatic differentiation, and parallelization, and  the same code executes on multiple backends.</p></li>
@@ -191,7 +191,7 @@
 </section>
 <section id="build-library-for-jax">
 <h2>3. Build Library for JAX<a class="headerlink" href="#build-library-for-jax" title="Permalink to this heading"></a></h2>
-<p>There are some differences from   <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.md">source build procedure</a></p>
+<p>There are some differences from   <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/how_to_build.html">source build procedure</a></p>
 <ul>
 <li><p>Make sure get Intel® Extension for TensorFlow* main branch code and python version &gt;=3.8.</p></li>
 <li><p>In TensorFlow installation steps, make sure to install jax and jaxlib at the same time.</p>
@@ -312,7 +312,7 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f4b49c8bfa0> 
+   <jinja2.runtime.BlockReference object at 0x7f0809c26350> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -42,7 +42,7 @@ Support: Intel® Data Center Flex Series GPU.
 
 #### Local Server
 
-Install the GPU driver and oneAPI packages by referring to [Intel GPU Software Installation](/docs/install/install_for_xpu.md).
+Install the GPU driver and oneAPI packages by referring to [Intel GPU Software Installation](/docs/install/install_for_xpu.html).
 
 #### Intel® DevCloud
 

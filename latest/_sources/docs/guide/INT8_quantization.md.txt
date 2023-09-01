@@ -25,4 +25,4 @@ For better performance in INT8 models execution, TF grappler constant folding op
 export ITEX_TF_CONSTANT_FOLDING=0
 ```
 
-Refer to [Inception V3 quantization example](../../examples/quantize_inception_v3/README.md) for details.
+Refer to [Inception V3 quantization example](../../examples/quantize_inception_v3/README.html) for details.

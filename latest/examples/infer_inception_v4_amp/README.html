@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU via Docker Container or Bare Metal &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gebe4896 documentation</title>
+  <title>Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU via Docker Container or Bare Metal &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gcbee3ff documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -92,7 +92,7 @@
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>Advanced Automatic Mixed Precision (Advanced AMP) uses lower-precision data types (such as float16 or bfloat16) to make model run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption in CPU and GPU.</p>
-<p>For detailed info, please refer to <a class="reference internal" href="../../docs/guide/advanced_auto_mixed_precision.html"><span class="doc">Advanced Automatic Mixed Precision</span></a></p>
+<p>For detailed info, please refer to <a class="reference external" href="../../docs/guide/advanced_auto_mixed_precision.html">Advanced Automatic Mixed Precision</a></p>
 <p>This example shows the acceleration of inference by Advanced AMP on Intel CPU or GPU via Docker container or bare metal.</p>
 <p>In this example, we will test and compare the performance of FP32 and Advanced AMP (mix BF16/FP16 and FP32) on Intel CPU or GPU.</p>
 </section>
@@ -134,10 +134,10 @@
 <h3>Prepare for GPU (Skip this Step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this heading"></a></h3>
 <ul>
 <li><p>If Running via Docker Container,</p>
-<p>Refer to <a class="reference external" href="../../docs/install/install_for_gpu.md#install-gpu-drivers">Install GPU Drivers</a>.</p>
+<p>Refer to <a class="reference external" href="../../docs/install/install_for_gpu.html#install-gpu-drivers">Install GPU Drivers</a>.</p>
 </li>
 <li><p>If Running on Bare Metal,</p>
-<p>Refer to <a class="reference external" href="../common_guide_running.md#prepare">Prepare</a> to install both Intel GPU driver and Intel® oneAPI Base Toolkit.</p>
+<p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a> to install both Intel GPU driver and Intel® oneAPI Base Toolkit.</p>
 </li>
 </ul>
 </section>
@@ -210,7 +210,7 @@ cd /ws1/examples/infer_inception_v4_amp
 </li>
 <li><p>If Running on Bare Metal,</p>
 <ul class="simple">
-<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.md#running">Running</a></p></li>
+<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html#running">Running</a></p></li>
 <li><p>For CPU,</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">env_itex</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
@@ -343,7 +343,7 @@ cd /ws1/examples/infer_inception_v4_amp
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f4b49f5b3d0> 
+   <jinja2.runtime.BlockReference object at 0x7f080a2b02e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

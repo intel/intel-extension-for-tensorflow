@@ -2,7 +2,7 @@
 # How to write custom op
 
 ## 1.  Prerequisite
-* Before code changes, please make sure the environment setting and source code build pass by  [build procedure](../install/how_to_build.md).
+* Before code changes, please make sure the environment setting and source code build pass by  [build procedure](../install/how_to_build.html).
 * Check TensorFlow version.
     ```bash
     $ python -c "import tensorflow as tf;print(tf.__version__)
@@ -12,7 +12,7 @@
     $ export ITEX_VERBOSE=1
     $ export ONEDNN_VERBOSE=1
     ```
-    Refer to [quick example](../../examples/quick_example.md).    
+    Refer to [quick example](../../examples/quick_example.html).    
     Refer to [Intel® Extension for Tensorflow* Code Guide](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-extension-for-tensorflow-code.html) to familiar with source code architecture. Custom op is built into all Intel® Extension for Tensorflow* library.    
     Refer to [TensorFlow Guide for Creating OP](https://www.tensorflow.org/guide/create_op) for TensorFlow offcial doc.
 
@@ -130,7 +130,7 @@ class EltwiseBaseOp : public OpKernel {
       }
       ......
       // Create an eltwise forward descriptor and primitive descriptor
-      eltwise_forward::desc fwd_desc(prop_kind::forward, alg_kind_, src_md,
+      eltwise_forward::desc fwd_desc(prop_kind::forward, alg_kind_, src.html,
                                      alpha_, beta_);
       dnnl::primitive_attr attr;
       attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
@@ -217,7 +217,7 @@ $ ./configure
 $ bazel build -c opt --config=gpu //itex/tools/pip_package:build_pip_package
 $ bazel-bin/itex/tools/pip_package/build_pip_package ./
 ```
-Refer to [here](../install/how_to_build.md) for more details.
+Refer to [here](../install/how_to_build.html) for more details.
 
 ## 9.  Install and Verify
 ```sh

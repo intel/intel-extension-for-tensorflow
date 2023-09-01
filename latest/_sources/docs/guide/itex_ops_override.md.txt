@@ -1,7 +1,7 @@
 # Operators Override
 
 <!Environment variable `ITEX_OPS_OVERRIDE` and>
-Python api `itex.experimental_ops_override()` is provided to automatically replace some TensorFlow operators by [Custom Operators](itex_ops.md) under `itex.ops` namespace, as well as to be compatible with existing trained parameters.
+Python api `itex.experimental_ops_override()` is provided to automatically replace some TensorFlow operators by [Custom Operators](itex_ops.html) under `itex.ops` namespace, as well as to be compatible with existing trained parameters.
 
 # Usage
 <!Once `ITEX_OPS_OVERRIDE=1` is set or >

@@ -110,13 +110,13 @@ graph_options {
 
 ProtocolMessage for auto mixed precision optimization options.
 
-Refer to [Advanced Auto Mixed Precision](advanced_auto_mixed_precision.md).
+Refer to [Advanced Auto Mixed Precision](advanced_auto_mixed_precision.html).
 
 ### itex.ShardingConfig
 
 ProtocolMessage for XPUAutoShard optimization options. Currently only supports Intel GPUs with multi-tiles.
 
-Refer to [XPUAutoShard on GPU](XPUAutoShard.md).
+Refer to [XPUAutoShard on GPU](XPUAutoShard.html).
 
 ### itex.DebugOptions
 
@@ -174,13 +174,13 @@ graph_options {
 
 **itex.ops: Public API for extended XPU ops(operations) for itex.ops namespace.**
 
-For details, refer to [Customized Operators](itex_ops.md).
+For details, refer to [Customized Operators](itex_ops.html).
 
 ## itex ops override
 
 **itex.experimental_ops_override: Public API to override TensorFlow specific operators with same name by Customized Operators in itex.ops namespace.**
 
-For details, refer to [Intel® Extension for TensorFlow* ops override](itex_ops_override.md).
+For details, refer to [Intel® Extension for TensorFlow* ops override](itex_ops_override.html).
 
 Example:
 

@@ -2,9 +2,9 @@
 
 ## Installation
 
-* If you are using a machine using more than one kind of processor or core and includes an the Intel GPU, please refer to [Intel XPU Software Installation](../docs/install/install_for_xpu.md)
+* If you are using a machine using more than one kind of processor or core and includes an the Intel GPU, please refer to [Intel XPU Software Installation](../docs/install/install_for_xpu.html)
 
-* Otherwise, please refer to [Intel CPU Software Installation](../docs/install/install_for_cpu.md)
+* Otherwise, please refer to [Intel CPU Software Installation](../docs/install/install_for_cpu.html)
 
 ## Code
 

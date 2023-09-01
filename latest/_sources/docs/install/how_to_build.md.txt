@@ -100,7 +100,7 @@ $ python -c "import tensorflow as tf;print(tf.__version__)"
 #### Install Intel GPU Driver
 Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html)).
 
-Refer to [Install Intel GPU driver](install_for_xpu.md/#install-gpu-drivers) for details.
+Refer to [Install Intel GPU driver](install_for_xpu.html/#install-gpu-drivers) for details.
 
 Note:
 
@@ -120,7 +120,7 @@ We recommend you install the oneAPI base toolkit using `sudo` (or as root user) 
 
 The following commands assume the oneAPI base tookit is installed in `/opt/intel/oneapi`. If you installed it in some other folder, please update the oneAPI path as appropriate.
 
-Refer to [Install oneAPI Base Toolkit Packages](install_for_xpu.md#install-oneapi-base-toolkit-packages)
+Refer to [Install oneAPI Base Toolkit Packages](install_for_xpu.html#install-oneapi-base-toolkit-packages)
 
 The oneAPI base toolkit provides compiler and libraries needed by Intel® Extension for TensorFlow*.
 

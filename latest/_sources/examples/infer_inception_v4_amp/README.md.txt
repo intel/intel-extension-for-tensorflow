@@ -3,7 +3,7 @@
 ## Introduction
 Advanced Automatic Mixed Precision (Advanced AMP) uses lower-precision data types (such as float16 or bfloat16) to make model run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption in CPU and GPU.
 
-For detailed info, please refer to [Advanced Automatic Mixed Precision](../../docs/guide/advanced_auto_mixed_precision.md)
+For detailed info, please refer to [Advanced Automatic Mixed Precision](../../docs/guide/advanced_auto_mixed_precision.html)
 
 This example shows the acceleration of inference by Advanced AMP on Intel CPU or GPU via Docker container or bare metal.
 
@@ -36,11 +36,11 @@ This example supports both types. Set the parameter according to the requirement
 
 * If Running via Docker Container,
 
-    Refer to [Install GPU Drivers](../../docs/install/install_for_gpu.md#install-gpu-drivers).
+    Refer to [Install GPU Drivers](../../docs/install/install_for_gpu.html#install-gpu-drivers).
 
 * If Running on Bare Metal,
 
-    Refer to [Prepare](../common_guide_running.md#prepare) to install both Intel GPU driver and Intel® oneAPI Base Toolkit.
+    Refer to [Prepare](../common_guide_running.html#prepare) to install both Intel GPU driver and Intel® oneAPI Base Toolkit.
 
 ### Clone the Repository
 ```
@@ -99,7 +99,7 @@ wget https://storage.googleapis.com/intel-optimized-tensorflow/models/v1_8/incep
     
 * If Running on Bare Metal,
 
-  * For GPU, refer to [Running](../common_guide_running.md#running)
+  * For GPU, refer to [Running](../common_guide_running.html#running)
 
   * For CPU,
   ```

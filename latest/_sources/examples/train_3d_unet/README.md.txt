@@ -28,7 +28,7 @@ git apply patch  # When applying this patch, please move it to the above 3D-UNet
 
 ### Prepare for GPU
 
-Refer to [Prepare](../common_guide_running.md##Prepare).
+Refer to [Prepare](../common_guide_running.html##Prepare).
 
 ### Setup Running Environment
 
@@ -55,7 +55,7 @@ pip install git+https://github.com/NVIDIA/dllogger.git
 
 Enable oneAPI running environment (only for GPU) and virtual running environment.
 
-   * For GPU, refer to [Running](../common_guide_running.md##Running)
+   * For GPU, refer to [Running](../common_guide_running.html##Running)
 
 ### Prepare Dataset
 

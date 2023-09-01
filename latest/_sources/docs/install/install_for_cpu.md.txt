@@ -17,7 +17,7 @@ Verified Hardware Platforms:
 
 #### Build Docker container from Dockerfile
 
-Run the following [Dockerfile build procedure](./../../../docker/README.md) to build the pip based deployment container.
+Run the following [Dockerfile build procedure](./../../../docker/README.html) to build the pip based deployment container.
 
 #### Get docker container from dockerhub
 

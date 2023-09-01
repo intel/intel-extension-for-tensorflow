@@ -10,7 +10,7 @@ To build the docker container, enter into [docker/tensorflow-serving](./) folder
 
 ### I. Binaries Preparation
 
-Refer to [Install for Tensorflow Serving](../../docs/guide/tensorflow_serving.md) to build the TensorFlow Serving binary, and refer to [Install for CPP](../../docs/install/install_for_cpp.md) to build the Intel® Extension for TensorFlow* CC library from source. Then package and copy these binaries into the `./models/binaries` directory, as shown below.
+Refer to [Install for Tensorflow Serving](../../docs/guide/tensorflow_serving.html) to build the TensorFlow Serving binary, and refer to [Install for CPP](../../docs/install/install_for_cpp.html) to build the Intel® Extension for TensorFlow* CC library from source. Then package and copy these binaries into the `./models/binaries` directory, as shown below.
 
 ```bash
 mkdir -p ./models/binaries
@@ -34,7 +34,7 @@ If you build the container using an Intel GPU, make sure you meet these assumpti
 * Host machine uses a Linux kernel that is compatible with GPU drivers.
 * Host machine has a compatible Intel GPU driver installed.
 
-Refer to [Install for GPU](../docs/install/install_for_xpu.md) for detail.
+Refer to [Install for GPU](../docs/install/install_for_xpu.html) for detail.
 
 Run the [build.sh](./build.sh), specifying either `gpu` or `cpu` as appropriate, to build the target Docker image.
 ```bash

@@ -9,7 +9,7 @@ Verified Hardware Platforms:
  - Intel® Data Center GPU Flex Series 170, Driver Version: [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html)
  - *Experimental:* Intel® Arc™ A-Series
 
-For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [Intel® Arc™ A-Series GPU Software Installation](experimental/install_for_arc_gpu.md) for details.
+For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [Intel® Arc™ A-Series GPU Software Installation](experimental/install_for_arc_gpu.html) for details.
 
 ## Software Requirements
 - Ubuntu 22.04, Red Hat 8.6 (64-bit)
@@ -35,7 +35,7 @@ The Docker container includes the Intel® oneAPI Base Toolkit, and all other sof
 
 #### Build Docker container from Dockerfile
 
-Run the following [Dockerfile build procedure](./../../docker/README.md) to build the pip based deployment container.
+Run the following [Dockerfile build procedure](./../../docker/README.html) to build the pip based deployment container.
 
 #### Get docker container from dockerhub
 
@@ -152,7 +152,7 @@ Then, you can get the information that both CPU and GPU backends are loaded succ
 **NOTE**: If Intel® Extension for TensorFlow* XPU package is installed on GPU support platform, both CPU and GPU backends will be loaded as pluggable device via TensorFlow. GPU backend will be activated as default backend.
 
 ## XPU for CPU only platform
-If Intel® Extension for TensorFlow* XPU package is installed on CPU only platform, only CPU backend will be loaded. Please refer to **Intel CPU Software Installation** [Hardware Requirements](./experimental/install_for_cpu.md#hardware-requirements) and [Software Requirements](./experimental/install_for_cpu.md#software-requirements) for the platform requirements.
+If Intel® Extension for TensorFlow* XPU package is installed on CPU only platform, only CPU backend will be loaded. Please refer to **Intel CPU Software Installation** [Hardware Requirements](./experimental/install_for_cpu.html#hardware-requirements) and [Software Requirements](./experimental/install_for_cpu.html#software-requirements) for the platform requirements.
 
 Verify the Installation
 ```

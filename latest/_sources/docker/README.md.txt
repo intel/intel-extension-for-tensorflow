@@ -11,7 +11,7 @@ Assumptions:
 * Host machine has a compatible Intel GPU driver installed
 * Host machine has Docker software installed.
 
-Refer to [Install for XPU](../docs/install/install_for_xpu.md) and [Install for CPU](../docs/install/install_for_cpu.md) for detail.
+Refer to [Install for XPU](../docs/install/install_for_xpu.html) and [Install for CPU](../docs/install/install_for_cpu.html) for detail.
 
 ## Binaries Preparation
 

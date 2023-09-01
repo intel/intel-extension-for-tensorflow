@@ -134,7 +134,7 @@ I. Install Intel® Extension for TensorFlow* in running environment.
 
 After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.
 
-Refer to [installation](../../README.md#Install) instructions for more details.
+Refer to [installation](../../README.html#Install) instructions for more details.
 
 II. Enable Advanced AMP.
 
@@ -155,7 +155,7 @@ III. Use the Python API or environment variables to manually tune Advanced AMP f
 
 ### End-to-end Example
 
-Train a CNN model with Advanced AMP on GPU, and show the performance improvement. The following guide shows how to tune AMP manually. [Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU](./../../examples/infer_inception_v4_amp/README.md)
+Train a CNN model with Advanced AMP on GPU, and show the performance improvement. The following guide shows how to tune AMP manually. [Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU](./../../examples/infer_inception_v4_amp/README.html)
 
 The first epoch may be slower because TensorFlow optimizes the model during the first run. In subsequent epochs, the run time will stabilize.
 
