@@ -29,4 +29,12 @@ void itex_set_config(const ConfigProto& config) { Configs() = config; }
 
 ConfigProto itex_get_config() { return Configs(); }
 
+bool isxehpc_value;
+ConfigProto itex_get_isxehpc() {
+  ConfigProto isxehpc_proto;
+  GraphOptions* isxehpc_graph = isxehpc_proto.mutable_graph_options();
+  isxehpc_graph->set_device_isxehpc(isxehpc_value);
+  return isxehpc_proto;
+}
+
 }  // namespace itex

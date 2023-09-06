@@ -23,6 +23,8 @@ limitations under the License.
 namespace itex {
 void itex_set_config(const ConfigProto& config);
 ConfigProto itex_get_config();
+extern bool isxehpc_value;
+ConfigProto itex_get_isxehpc();
 }  // namespace itex
 
 #endif  // ITEX_CORE_GRAPH_CONFIG_UTIL_H_

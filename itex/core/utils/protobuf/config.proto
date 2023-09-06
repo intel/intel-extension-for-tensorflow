@@ -49,6 +49,8 @@ message GraphOptions {
   // Shard single device graph on multiple devices.
   Toggle sharding = 6;
   ShardingConfig sharding_config = 7;
+  // Get device isXeHPC()
+  bool device_isxehpc = 8;
 }
 
 message ConfigProto {

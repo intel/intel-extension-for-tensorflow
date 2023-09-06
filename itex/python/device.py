@@ -19,9 +19,13 @@ from __future__ import division
 from __future__ import print_function
 
 from intel_extension_for_tensorflow.python._pywrap_itex import *
+from intel_extension_for_tensorflow.core.utils.protobuf import config_pb2
 
 def get_backend():
   return ITEX_GetBackend()
 
 def is_xehpc():
-  return ITEX_IsXeHPC()
+  isxehpc = ITEX_IsXeHPC()
+  isxehpc_proto = config_pb2.ConfigProto()
+  isxehpc_proto.ParseFromString(isxehpc)  
+  return isxehpc_proto.graph_options.device_isxehpc

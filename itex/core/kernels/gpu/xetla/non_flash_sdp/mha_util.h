@@ -17,6 +17,7 @@
 #ifndef ITEX_CORE_KERNELS_GPU_XETLA_NON_FLASH_SDP_MHA_UTIL_H_
 #define ITEX_CORE_KERNELS_GPU_XETLA_NON_FLASH_SDP_MHA_UTIL_H_
 
+#include <algorithm>
 #include <xetla.hpp>
 
 namespace gpu::xetla {
@@ -96,8 +97,8 @@ struct tile_mask_t {
     for (int i = 0; i < tile_size_y / block_size_y; i++) {
 #pragma unroll
       for (int j = 0; j < num_block_x; j++) {
-        uint32_t start_x = j * block_size_x;
-        uint32_t num_keep_blk = (start_x > num_keep) ? 0 : (num_keep - start_x);
+        int start_x = j * block_size_x;
+        int num_keep_blk = std::max(static_cast<int>(num_keep) - start_x, 0);
 
         if (num_keep_blk < block_size_x) {
           xetla_mask<block_size_x> mask =
@@ -122,8 +123,8 @@ struct tile_mask_t {
       constexpr uint32_t tail_block_elems = tail_size_y * block_size_x;
 #pragma unroll
       for (int j = 0; j < num_block_x; j++) {
-        uint32_t start_x = j * block_size_x;
-        uint32_t num_keep_blk = (start_x > num_keep) ? 0 : (num_keep - start_x);
+        int start_x = j * block_size_x;
+        int num_keep_blk = std::max(static_cast<int>(num_keep) - start_x, 0);
 
         if (num_keep_blk < block_size_x) {
           xetla_mask<block_size_x> mask =

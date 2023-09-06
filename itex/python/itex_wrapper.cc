@@ -40,19 +40,11 @@ static py::bytes ITEX_GetConfig() {
   return py::bytes(config_str);
 }
 
-static bool ITEX_IsXeHPC() {
-  // TODO(itex): __LIBSYCL_MINOR_VERSION == 1 is to limit compiler version as
-  // there is bug for __LIBSYCL_MINOR_VERSION == 2 remove this once the bug is
-  // fixed
-#ifndef INTEL_CPU_ONLY
-#if __LIBSYCL_MINOR_VERSION == 1
-  return IsXeHPC(nullptr);
-#else
-  return false;
-#endif
-#else
-  return false;
-#endif
+static py::bytes ITEX_IsXeHPC() {
+  std::string config_str;
+  ConfigProto config_proto = itex_get_isxehpc();
+  config_proto.SerializeToString(&config_str);
+  return py::bytes(config_str);
 }
 
 PYBIND11_MODULE(_pywrap_itex, m) {

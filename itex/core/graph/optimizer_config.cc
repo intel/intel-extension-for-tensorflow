@@ -41,6 +41,8 @@ void HelperSetEnvOptimzerConfig(std::string new_name, std::string old_name,
 
 }  // namespace
 
+extern bool itex::isxehpc_value;
+
 void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
   bool sharding_flag;
   bool onednn_graph_flag;
@@ -148,6 +150,10 @@ void SetOptimizerConfigFlags(OptimizerConfigFlags* opt_config_flags) {
 
   ITEX_CHECK_OK(itex::ReadBoolFromEnvVar(
       "_ITEX_TEST_MODE", enable_itex_test_mode, &test_mode_flag));
+
+#ifndef INTEL_CPU_ONLY
+  itex::isxehpc_value = IsXeHPC();
+#endif
 
 #undef USER_IS_ON
 #undef USER_IS_OFF

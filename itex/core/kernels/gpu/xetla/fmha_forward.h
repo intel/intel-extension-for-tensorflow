@@ -348,7 +348,8 @@ class fmha_forward_t {
     using tile_mask = tile_mask_t<matAccSij_t>;
 
     uint32_t sg_startT = startT + ctx.sg_idx * kSgBc;
-    uint32_t remainT = (args.uT < sg_startT) ? 0 : (args.uT - sg_startT);
+    uint32_t remainT =
+        std::max(static_cast<int>(args.uT) - static_cast<int>(sg_startT), 0);
     if (remainT < kSgBc) {
       tile_mask::padding_mask(matAccSij, remainT);
     }
@@ -582,7 +583,7 @@ class fmha_forward_t {
     matAccOi_t matAccOi(0);
 
     uint32_t startF = ei.get_group(1) * kBr;
-    uint32_t endF = (startF + kBr) > args.uF ? args.uF : (startF + kBr);
+    uint32_t endF = std::min(startF + kBr, args.uF);
 
     // iterate through the keys
     for (uint32_t startT = 0; startT < args.uT; startT += kBc) {

@@ -46,8 +46,25 @@ def _stateless_dropout(input_tensor, dropout_prob, seed):
   output = tf.nn.experimental.stateless_dropout(input_tensor, rate=dropout_prob, seed=seed)
   return output
 
+def _dropout(input_tensor, dropout_prob, seed):
+  """Perform dropout.
 
-def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0.0, seed=(2,3), is_causal=False, use_fast_attention=True):
+  Args:
+    input_tensor: float Tensor.
+    dropout_prob: Python float. The probability of dropping out a value (NOT of
+      *keeping* a dimension as in `tf.nn.dropout`).
+
+  Returns:
+    A version of `input_tensor` with dropout applied.
+  """
+  if dropout_prob is None or dropout_prob == 0.0:
+    return input_tensor
+
+  output = tf.nn.dropout(input_tensor, rate=dropout_prob, seed=seed)
+  return output
+
+
+def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0.0, seed=(2,3), is_causal=False, use_fast_attention=True, use_stateless_randomuniform=True):
     """Applies Dot-product attention with query, key, value tensors.
 
         Args:
@@ -88,7 +105,11 @@ def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0
         atten_probs = tf.nn.softmax(atten_scores, -1)
 
         if dropout_p != 0.0:
-            atten_probs = _stateless_dropout(atten_probs, dropout_p, seed)
+            if use_stateless_randomuniform:
+                atten_probs = _stateless_dropout(atten_probs, dropout_p, seed)
+            else:
+                atten_probs = _dropout(atten_probs, dropout_p, seed[0])
+
 
 # `atten_output` =[B, N, F, H]
         atten_output = tf.matmul(atten_probs, value)
@@ -98,7 +119,7 @@ def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0
         return output
     
     def fast_sdp():
-        batch_size = query.shape[0] 
+        batch_size = tf.shape(query)[0] 
         num_heads = query.shape[1]
         from_seq_len = query.shape[2]
         head_size = query.shape[3]
@@ -108,9 +129,11 @@ def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0
         use_dropout = (dropout_p != 0.0)
         use_mask = (atten_mask is not None)
         if use_dropout:
-            uniform_sampler = functools.partial(stateless_random_ops.stateless_random_uniform, seed=seed)
-            uniform_sampler_input = tf.compat.v1.placeholder(i_dtype, shape=[batch_size, num_heads, from_seq_len, to_seq_len])
-            random_tensor = uniform_sampler(shape=tf.shape(uniform_sampler_input), dtype=i_dtype)    
+            if use_stateless_randomuniform:
+                uniform_sampler = functools.partial(stateless_random_ops.stateless_random_uniform, seed=seed) 
+            else:
+                uniform_sampler = functools.partial(random_ops.random_uniform, seed=seed[0])
+            random_tensor = uniform_sampler(shape=[batch_size, num_heads, from_seq_len, to_seq_len], dtype=i_dtype)
             dropout_mask = math_ops.greater_equal(random_tensor, dropout_p)
         else:
             dropout_mask = 0

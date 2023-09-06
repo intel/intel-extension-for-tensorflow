@@ -269,7 +269,8 @@ class mha_forward_t {
     using tile_mask = tile_mask_t<matAcc_S_t>;
 
     uint32_t sg_startT = ctx.sg_idx * kSgTm;
-    uint32_t remainT = (args.uT < sg_startT) ? 0 : (args.uT - sg_startT);
+    uint32_t remainT =
+        std::max(static_cast<int>(args.uT) - static_cast<int>(sg_startT), 0);
     if (remainT < kSgTm) {
       tile_mask::padding_mask(matAcc_S, remainT);
     }
