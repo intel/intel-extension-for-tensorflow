@@ -68,6 +68,7 @@ if 'rc' in _VERSION:
 REQUIRED_PACKAGES.append('wheel')
 REQUIRED_PACKAGES.append('tensorflow>=2.13')
 REQUIRED_PACKAGES.append('numpy<1.25')
+REQUIRED_PACKAGES.append('protobuf<4.24')
 CONSOLE_SCRIPTS = []
 
 
