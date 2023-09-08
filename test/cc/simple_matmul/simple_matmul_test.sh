@@ -76,7 +76,6 @@ function run_test_case {
         exit 1
     fi
 
-    label_image.log.${test_target}
     export LD_LIBRARY_PATH=$itex_cc_dir:$LD_LIBRARY_PATH
     export ITEX_VERBOSE=3
     ./simple_matmul >& simple_matmul.log.${test_target}
