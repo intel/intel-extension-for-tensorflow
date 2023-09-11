@@ -276,6 +276,12 @@ bool NodeIsOnGpu(const NodeDef* node) {
          absl::StartsWith(GetDeviceBackendName(device.c_str()), DEVICE_GPU);
 }
 
+bool NodeIsOnXpu(const NodeDef* node) {
+  string task, device;
+  return DeviceNameUtils::SplitDeviceName(node->device(), &task, &device) &&
+         absl::StartsWith(GetDeviceBackendName(device.c_str()), DEVICE_XPU);
+}
+
 bool HasControlInputs(const NodeDef& node) {
   const int num_inputs = node.input_size();
   if (num_inputs > 0 && IsControlInput(node.input(num_inputs - 1))) {

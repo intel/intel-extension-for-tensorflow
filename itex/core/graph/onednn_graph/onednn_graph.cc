@@ -3166,6 +3166,11 @@ Status RunPrePass(OneDnnGraphContext* ctx) {
   return Status::OK();
 }
 
+const std::map<const std::string, dnnl::graph::engine::kind> device_map = {
+    {"XPU", dnnl::graph::engine::kind::gpu},
+    {"GPU", dnnl::graph::engine::kind::gpu},
+    {"CPU", dnnl::graph::engine::kind::cpu}};
+
 Status RunRewritePass(OneDnnGraphContext* ctx) {
   TF_ABORT_IF_ERROR(ctx->node_type_map.Clear());
   TF_ABORT_IF_ERROR(ctx->node_type_map.Init(*ctx->graph_view.graph()));
@@ -3174,11 +3179,23 @@ Status RunRewritePass(OneDnnGraphContext* ctx) {
   std::vector<bool> invalidated_nodes(num_nodes);
   std::vector<bool> nodes_to_delete(num_nodes);
 
-#ifdef INTEL_CPU_ONLY
-  dnnl::graph::graph graph_ctx{dnnl::graph::engine::kind::cpu};
-#else
-  dnnl::graph::graph graph_ctx{dnnl::graph::engine::kind::gpu};
-#endif
+  // If any node should run on GPU/XPU, initiate graph_ctx by this device
+  std::string dev_key = "CPU";
+  for (int idx = 0; idx < num_nodes; idx++) {
+    const auto* z_node_view = ctx->graph_view.GetNode(idx);
+    const auto* z_node_def = z_node_view->node();
+    if (NodeIsOnGpu(z_node_def)) {
+      dev_key = "GPU";
+      break;
+    }
+    if (NodeIsOnXpu(z_node_def)) {
+      dev_key = "XPU";
+      break;
+    }
+  }
+  auto it = device_map.find(dev_key);
+  ITEX_VLOG(2) << "RunRewritePass  device is " << dev_key;
+  dnnl::graph::graph graph_ctx{it->second};
 
   const TranslationMap& tf_to_onednn_graph_op_translation_map =
       getTranslationMap();
@@ -3275,6 +3292,23 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
   GraphDef multable_graph_def = graph_def;
   OneDnnGraphContext ctx(item, &multable_graph_def, &status);
   TF_ABORT_IF_ERROR(std::move(status));
+
+#ifdef INTEL_CPU_ONLY
+  for (int idx = 0; idx < ctx.graph_view.graph()->node_size(); idx++) {
+    auto* node_view = ctx.graph_view.GetNode(idx);
+    auto* node_def = node_view->node();
+    if (NodeIsOnGpu(node_def)) {
+      ITEX_VLOG(2) << "graph node (" << node_def->name()
+                   << ") should have placed on GPU, skipped LLGA CPU";
+      return Status::OK();
+    }
+    if (NodeIsOnXpu(node_def)) {
+      ITEX_VLOG(2) << "graph node (" << node_def->name()
+                   << ") should have placed on XPU, skipped LLGA CPU";
+      return Status::OK();
+    }
+  }
+#endif
 
   if (ITEX_VLOG_IS_ON(4)) {
     ITEX_VLOG(4) << "graph node before LLGA: "

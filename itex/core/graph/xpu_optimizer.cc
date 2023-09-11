@@ -62,7 +62,14 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
                         const TF_GrapplerItem* tf_item,
                         TF_Buffer* optimized_graph_buf, TF_Status* tf_status) {
   Status status;
+  std::string dev_name = (static_cast<Optimizer*>(optimizer))->device_name;
+#ifdef INTEL_CPU_ONLY
+  if (dev_name.find("CPU") == std::string::npos) return;
+#else
+  if (dev_name.find("CPU") != std::string::npos) return;
+#endif  // INTEL_CPU_ONLY
   OptimizerContext opt_ctx((static_cast<Optimizer*>(optimizer))->device_name);
+  ITEX_VLOG(2) << "Optimizer_Optimize  device is " << dev_name;
 
   // Used for calculating time consumption of ITEX graph optimization.
   std::chrono::steady_clock::time_point start, end;
