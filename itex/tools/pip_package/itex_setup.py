@@ -125,6 +125,7 @@ setup(
             'python/*.py',
             'python/fp8/*.py',
             'python/ops/*.py',
+            'python/optimize/*.py',
             'python/test_func/*.py',
             'python/transformer/*.py',
             'core/utils/protobuf/*.py',
