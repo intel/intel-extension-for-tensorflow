@@ -468,7 +468,8 @@ class LegacyQuantizedConvOpBase
           scaled_bias.flat<float>());
 
       const std::vector<float>& scale = this->post_op_util_.GetOutputScale();
-      float* bias_scales_ptr;
+      float* bias_scales_ptr = nullptr;
+
       if (std::is_same<Toutput, float>::value ||
           std::is_same<Toutput, Eigen::bfloat16>::value ||
           std::is_same<Toutput, Eigen::half>::value) {
