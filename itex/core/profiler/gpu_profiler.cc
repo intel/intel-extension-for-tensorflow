@@ -26,6 +26,7 @@ limitations under the License.
 #include "itex/core/profiler/ze_tracer.h"
 #include "itex/core/profiler/ze_utils.h"
 #include "itex/core/utils/annotation_stack.h"
+#include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/strcat.h"
 #include "protos/xplane.pb.h"
@@ -52,6 +53,16 @@ static bool IsItexProfilerEnabled() {
 
 void EnableProfiling() {
   assert(zeInit(ZE_INIT_FLAG_GPU_ONLY) == ZE_RESULT_SUCCESS);
+  std::string enable_immediate_commmand_list =
+      utils::GetEnv("SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS");
+  if (enable_immediate_commmand_list == "0") {
+    utils::ImmediateCommandListDisabled();
+  } else if (enable_immediate_commmand_list.empty()) {
+    if (!IsXeHPC()) {
+      utils::ImmediateCommandListDisabled();
+    }
+  }
+
   uint32_t flags = 0;
   flags |= (1 << TRACE_DEVICE_TIMING);
   flags |= (1 << TRACE_HOST_RUNTIME_TIMING);

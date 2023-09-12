@@ -46,6 +46,16 @@ limitations under the License.
 
 namespace utils {
 
+std::atomic<int> g_immediate_command_list_enabled(1);
+
+inline bool IsImmediateCommandListEnabled() {
+  return g_immediate_command_list_enabled.load(std::memory_order_acquire);
+}
+
+inline void ImmediateCommandListDisabled() {
+  g_immediate_command_list_enabled.store(0, std::memory_order_release);
+}
+
 struct Comparator {
   template <typename T>
   bool operator()(const T& left, const T& right) const {
