@@ -59,8 +59,8 @@ struct fused_dense_func {
       kernel::gemm_t<kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_t,
                      epilogue_t>;
 
-  static constexpr uint32_t barrier_count = gemm_op_t::brgemm_t::barrier_count;
-  static constexpr uint32_t slm_size = gemm_op_t::brgemm_t::slm_size;
+  static constexpr uint32_t barrier_count = gemm_op_t::get_barrier_count();
+  static constexpr uint32_t slm_size = gemm_op_t::get_slm_size();
 
   static inline void run(xetla_exec_item<3>* ei, dtype_a* A, dtype_b* B,
                          dtype_c* C, dtype_c* bias, uint32_t mat_m,
