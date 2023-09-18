@@ -46,6 +46,9 @@ class UniqueTest(test.TestCase):
             for in_size in tailed_no_tailed_size:
                 self._test_impl(in_size, dtype)
             self._test_impl(256, dtype)
+            self._test_impl(32768, dtype)
+            self._test_impl(65536, dtype)
+            self._test_impl(262144, dtype)
 
 if __name__ == '__main__':
     test.main()

@@ -20,6 +20,7 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/topk_op.h"
 #include "itex/core/kernels/gpu/unique_op_helpers.h"
+#include "itex/core/utils/device_radix_sort.h"
 #include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/group_radix_sort.h"
 #include "itex/core/utils/op_kernel.h"
@@ -454,21 +455,8 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
         stream, size, keys_in, indices_in, keys_out, indices_out, global_range,
         local_range, local_memory_size, num_bits);
   } else {
-    // TODO(itex): Kernel is too slow if inputs size is large. We temporary
-    // set group size as max value, and plan to optimize the kernel performance
-    // in the future.
-    int max_group_size =
-        stream->get_device()
-            .template get_info<sycl::info::device::max_work_group_size>();
-    Tensor tmp_keys_buffer;
-    TF_RETURN_IF_ERROR(context->allocate_temp(
-        DataTypeToEnum<KeyT>::value, TensorShape({size}), &tmp_keys_buffer));
-
-    ::itex::functor::DispatchToFallBackRadixSort(
-        stream, keys_in, keys_out, tmp_keys_buffer.flat<KeyT>().data(),
-        indices_out, indices_in, 1, size, max_group_size);
-
-    return Status::OK();
+    return DispatchDeviceRadixSort(context, keys_in, indices_in, keys_out,
+                                   indices_out, size);
   }
 }
 
