@@ -1,39 +1,41 @@
 # Frequently Asked Questions
 
-1. How to check whether GPU drivers are installed successfully?
+1. **How do I check that GPU drivers are installed successfully?**
 
-Run `import tensorflow` and it will show which platform you are running on: Intel Level-Zero(default) or Intel OpenCL.
+    Run `import tensorflow` and it will show which platform you are running on: Intel® oneAPI Level-Zero (default) or OpenCL™.
 
-And the high level API of TensorFlow `tf.config.experimental.list_physical_devices()` will tell you the device types that are registered to TensorFlow core.
+    The high level API of TensorFlow `tf.config.experimental.list_physical_devices()` will tell you the device types that are registered to TensorFlow core.
 
-```
-$ python
->>> import tensorflow as tf
-2021-07-01 06:40:55.510076: I itex/core/devices/gpu/dpcpp_runtime.cc:116] Selected platform: Intel(R) Level-Zero.
->>> tf.config.experimental.list_physical_devices()
-[PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU'), PhysicalDevice(name='/physical_device:XPU:0', device_type='XPU')]
-```
+    ```
+    $ python
+    >>> import tensorflow as tf
+    2021-07-01 06:40:55.510076: I itex/core/devices/gpu/dpcpp_runtime.cc:116] Selected platform: Intel(R) Level-Zero.
+    >>> tf.config.experimental.list_physical_devices()
+    [PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU'), PhysicalDevice(name='/physical_device:XPU:0', device_type='XPU')]
+    ```
 
-   
-2. How to know the configurations and rate of utilization of local GPU devices?
+2. **How can I see the configurations and rate of utilization of local GPU devices?**
 
-[System Monitoring Utility](https://github.com/intel/pti-gpu/tree/master/tools/sysmon) tool can be used to show the capability (clock frequency, EU count, amount of device memory, and so on) of your devices and usage of each sub-module (device memory, GPU engines, and so on).
+    Use the [System Monitoring Utility](https://github.com/intel/pti-gpu/tree/master/tools/sysmon) tool to show the capability (clock frequency, EU count, amount of device memory, and so on) of your devices and usage of each sub-module (device memory, GPU engines, and so on).
 
 
-3. What's the relationship of `TensorFlow*`, `Intel® Optimization of TensorFlow*` and `Intel® Extension for TensorFlow*`?
+3. **What's the relationship of TensorFlow\*, Intel® Optimization of TensorFlow\* and Intel® Extension for TensorFlow\*?**
 
-`Intel® Optimization of TensorFlow*` is designed to optimize for Intel CPU. It could replace `stock TensorFlow*` (`Google TensorFlow*`) for Intel CPU. All Intel optimizations are available in both `Intel® Optimization for TensorFlow*` and `stock TensorFlow*` (since 2.9) for Intel CPU. That means you only need to install one of them. **DO NOT** install them in same time, the impact is unknown.
+    - **TensorFlow** is an open-source machine learning library developed and maintained by Google. It is widely used for building and training machine learning models, particularly neural networks.<p/>
 
-`Intel® Extension for TensorFlow*` is an extension of `stock TensorFlow*` and help extend to accelerate on Intel CPU or support Intel GPU.
-`Intel® Extension for TensorFlow*` only co-works with `stock TensorFlow*`. Please **DO NOT** install Intel® Extension for TensorFlow* with Intel® Optimization for TensorFlow*.
+    - **Intel® Optimization of TensorFlow** is an optimized library to run TensorFlow on Intel CPUs and replaces stock TensorFlow\* for Intel CPUs. Since the TensorFlow 2.9 release, all Intel optimizations for Intel CPUs are upstreamed and available in stock TensorFlow. That means you only need to install stock TensorFlow. **DO NOT** install both at the same time, the impact is unknown.
 
-Starting in Q1 2024, Intel® Optimization for TensorFlow* will be discontinued. Intel optimization will be available only through `Intel® Extension for TensorFlow*` co-works with the `stock TensorFlow*`. Intel will continue to upstream advanced optimization to `stock TensorFlow*` in the future.
+      Starting in Q1 2024, the separate Intel® Optimization for TensorFlow* will be discontinued. Intel optimization will be available directly from continuing upstreamed contributions to stock TensorFlow*.
 
-Currently, Intel® Extension for TensorFlow* has two releases: CPU & GPU.
+    - **Intel® Extension for TensorFlow** is an extension of stock TensorFlow* and helps extend acceleration on Intel CPUs and supported Intel GPUs.
+      Intel® Extension for TensorFlow* co-works with stock TensorFlow* (that
+      includes upstreamed optimizations from Intel).
 
-For Intel CPU, `Intel® Extension for TensorFlow* for CPU` + `stock TensorFlow*` could replace `Intel® Optimization of TensorFlow*`. Install command: `pip install --upgrade intel-extension-for-tensorflow[cpu]`.
+      Currently, Intel® Extension for TensorFlow* has two releases: CPU & GPU.
 
-For Intel GPU, `Intel® Extension for TensorFlow* for GPU` + `stock TensorFlow*` is only way to make TensorFlow* support Intel GPU. Install command: `pip install --upgrade intel-extension-for-tensorflow[gpu]`.
+      - For Intel CPUs, Intel® Extension for TensorFlow* for CPU + stock TensorFlow\* provides the best performance of TensorFlow\* on Intel CPUs. Install command: `pip install --upgrade intel-extension-for-tensorflow[cpu]`.
+
+      - For Intel GPUs, Intel® Extension for TensorFlow* for GPU + stock TensorFlow\* provides the best performance of TensorFlow* on Intel GPUs. Install command: `pip install --upgrade intel-extension-for-tensorflow[gpu]`.
 
 ## Troubleshooting
 
