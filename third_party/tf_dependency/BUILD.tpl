@@ -223,22 +223,22 @@ template_rule(
 
 cc_proto(
     name = "types",
-    src = "types.proto",
+    src = "protos_all_src",
 )
 
 cc_proto(
     name = "tensor_shape",
-    src = "tensor_shape.proto",
+    src = "protos_all_src",
 )
 
 cc_proto(
     name = "versions",
-    src = "versions.proto",
+    src = "protos_all_src",
 )
 
 cc_proto(
     name = "cost_graph",
-    src = "cost_graph.proto",
+    src = "protos_all_src",
     deps = [
         ":tensor_shape_proto",
         ":types_proto",
@@ -247,7 +247,7 @@ cc_proto(
 
 cc_proto(
     name = "resource_handle",
-    src = "resource_handle.proto",
+    src = "protos_all_src",
     deps = [
         ":tensor_shape_proto",
         ":types_proto",
@@ -256,7 +256,7 @@ cc_proto(
 
 cc_proto(
     name = "tensor",
-    src = "tensor.proto",
+    src = "protos_all_src",
     deps = [
         ":resource_handle_proto",
         ":types_proto",
@@ -266,7 +266,7 @@ cc_proto(
 
 cc_proto(
     name = "attr_value",
-    src = "attr_value.proto",
+    src = "protos_all_src",
     deps = [
         ":tensor_proto",
         ":tensor_shape_proto",
@@ -276,12 +276,12 @@ cc_proto(
 
 cc_proto(
     name = "full_type",
-    src = "full_type.proto",
+    src = "protos_all_src",
 )
 
 cc_proto(
     name = "node_def",
-    src = "node_def.proto",
+    src = "protos_all_src",
     deps = [
         ":attr_value_proto",
         ":full_type_proto",
@@ -290,12 +290,12 @@ cc_proto(
 
 cc_proto(
     name = "graph_debug_info",
-    src = "graph_debug_info.proto",
+    src = "protos_all_src",
 )
 
 cc_proto(
     name = "op_def",
-    src = "op_def.proto",
+    src = "protos_all_src",
     deps = [
         ":attr_value_proto",
         ":full_type_proto",
@@ -306,7 +306,7 @@ cc_proto(
 
 cc_proto(
     name = "kernel_def",
-    src = "kernel_def.proto",
+    src = "protos_all_src",
     deps = [
         ":attr_value_proto",
     ],
@@ -314,7 +314,7 @@ cc_proto(
 
 cc_proto(
     name = "function",
-    src = "function.proto",
+    src = "protos_all_src",
     deps = [
         ":attr_value_proto",
         ":node_def_proto",
@@ -324,7 +324,7 @@ cc_proto(
 
 cc_proto(
     name = "graph",
-    src = "graph.proto",
+    src = "protos_all_src",
     deps = [
         ":function_proto",
         ":graph_debug_info_proto",
@@ -335,12 +335,12 @@ cc_proto(
 
 cc_proto(
     name = "device_properties",
-    src = "device_properties.proto",
+    src = "protos_all_src",
 )
 
 cc_proto(
     name = "op_performance_data",
-    src = "op_performance_data.proto",
+    src = "protos_all_src",
     deps = [
         ":tensor_proto",
         ":tensor_shape_proto",
@@ -352,7 +352,7 @@ cc_proto(
 
 cc_proto(
     name = "api_def",
-    src = "api_def.proto",
+    src = "protos_all_src",
     deps = [
         ":attr_value_proto",
     ],
@@ -360,14 +360,38 @@ cc_proto(
 
 cc_proto(
     name = "xplane",
-    src = "xplane.proto",
+    src = "protos_all_src",
 )
 
 cc_proto(
     name = "summary",
-    src = "summary.proto",
+    src = "protos_all_src",
     deps = [
         ":tensor_proto",
+    ],
+)
+
+filegroup(
+    name = "protos_all_src",
+    srcs = [
+        "include/protos/tensor_shape.proto",
+        "include/protos/types.proto",
+        "include/protos/versions.proto",
+        "include/protos/resource_handle.proto",
+        "include/protos/tensor.proto",
+        "include/protos/attr_value.proto",
+        "include/protos/api_def.proto",
+        "include/protos/graph_debug_info.proto",
+        "include/protos/full_type.proto",
+        "include/protos/node_def.proto",
+        "include/protos/op_def.proto",
+        "include/protos/function.proto",
+        "include/protos/graph.proto",
+        "include/protos/kernel_def.proto",
+        "include/protos/device_properties.proto",
+        "include/protos/op_performance_data.proto",
+        "include/protos/summary.proto",
+        "include/protos/xplane.proto",
     ],
 )
 

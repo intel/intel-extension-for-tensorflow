@@ -25,8 +25,8 @@ def cc_proto(name, src, deps = []):
                 -I$(GENDIR)/external/local_config_tf/include/protos \
                 -Ibazel-out/$(TARGET_CPU)-$(COMPILATION_MODE)/bin/external/local_config_tf/include/protos \
                 -Ibazel-out/$(TARGET_CPU)-$(COMPILATION_MODE)/bin/external/com_google_protobuf/python/ \
-                --cpp_out=$(GENDIR)/external/local_config_tf/include/protos $<",
-        srcs = ["include/protos/%s" % src],
+                --cpp_out=$(GENDIR)/external/local_config_tf/include/protos $(@D)/include/protos/%s.proto" % name,
+        srcs = ["@local_config_tf//:%s" % src],
         tools = ["@com_google_protobuf//:protoc"],
     )
     itex_cc_library(
