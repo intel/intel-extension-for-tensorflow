@@ -42,7 +42,7 @@ Modify `/path/to/tf-models` accordingly, here `~/tf-models` as an example.
 ```bash
 cd official/legacy/image_classification/resnet/
 mkdir output
-export PYTHONPATH=$PYTHONPATH:/path/to/tf-models:$PWD]
+export PYTHONPATH=$PYTHONPATH:/path/to/tf-models:$PWD
 ```
 
 ## Executes the Example with Python API
@@ -128,7 +128,7 @@ python resnet_ctl_imagenet_main.py \
 ```
 
 The following output log indicates XPUAutoShard has been enabled successfully:<br>
-`I itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.cc:289] Run AutoShard pass successfully`
+`I itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.cc:280] Run AutoShard pass successfully`
 
 ## Example Output
 With successful execution, it will print out the following results:

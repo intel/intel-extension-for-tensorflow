@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+ga916104 documentation</title>
+  <title>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g023b4fa documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -132,7 +132,7 @@ git<span class="w"> </span>apply<span class="w"> </span>../shard.patch
 <p>Modify <code class="docutils literal notranslate"><span class="pre">/path/to/tf-models</span></code> accordingly, here <code class="docutils literal notranslate"><span class="pre">~/tf-models</span></code> as an example.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>official/legacy/image_classification/resnet/
 mkdir<span class="w"> </span>output
-<span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:/path/to/tf-models:<span class="nv">$PWD</span><span class="o">]</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:/path/to/tf-models:<span class="nv">$PWD</span>
 </pre></div>
 </div>
 </section>
@@ -237,7 +237,7 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
 </pre></div>
 </div>
 <p>The following output log indicates XPUAutoShard has been enabled successfully:<br>
-<code class="docutils literal notranslate"><span class="pre">I</span> <span class="pre">itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.cc:289]</span> <span class="pre">Run</span> <span class="pre">AutoShard</span> <span class="pre">pass</span> <span class="pre">successfully</span></code></p>
+<code class="docutils literal notranslate"><span class="pre">I</span> <span class="pre">itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.cc:280]</span> <span class="pre">Run</span> <span class="pre">AutoShard</span> <span class="pre">pass</span> <span class="pre">successfully</span></code></p>
 </section>
 </section>
 </section>
@@ -275,7 +275,7 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f746a463a90> 
+   <jinja2.runtime.BlockReference object at 0x7ff066bcf400> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
