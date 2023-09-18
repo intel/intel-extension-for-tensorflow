@@ -5,6 +5,24 @@ package(
 )
 
 itex_xpu_library(
+    name = "control_flow_ops",
+    srcs = [
+        "control_flow_ops.cc",
+    ],
+    hdrs = [
+        "//itex/core/kernels/common:control_flow_hdrs",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/devices:xpu_device_util",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "conv_ops",
     srcs = [
         "conv_grad_filter_ops.cc",
@@ -403,6 +421,7 @@ CPU_KERNELS = [
     ":aggregate_ops",
     ":binary_op",
     ":batch_matmul_op",
+    ":control_flow_ops",
     ":conv_ops",
     ":dequantize_op",
     ":einsum_op",

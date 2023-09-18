@@ -35,6 +35,14 @@ filegroup(
 )
 
 filegroup(
+    name = "control_flow_hdrs",
+    srcs = [
+        "control_flow_ops.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "conv_hdrs",
     srcs = [
         "conv_grad_ops.h",

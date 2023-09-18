@@ -106,12 +106,12 @@ void Register_ITEXTensorArrayConcat();
 void Register_ITEXTensorArraySplit();
 void Register_ITEXTensorArraySize();
 void Register_ITEXTensorArrayClose();
-void Register_LayerNormOp();
 void Register_ITEXGroupNormOp();
 void Register_ITEXRMSNormOp();
-void Register_LayerNormGradOp();
 void Register_ITEXRnnOp();
 void Register_ITEXRnnGradOp();
+void Register_LayerNormOp();
+void Register_LayerNormGradOp();
 void Register_OneDnnGraphOp();
 
 // Native kernels
