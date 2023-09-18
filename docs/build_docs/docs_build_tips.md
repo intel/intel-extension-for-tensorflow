@@ -18,7 +18,7 @@ If the PR doesn't impact documentation (for example, it only contains code chang
 
 When releasing a new product version, a git tag must be added to main branch. The release version will be the same as the `tag` name.
 
-Generating the publishing the documentation for a release must be triggered manually, and the resulting HTML content committed to the `gh-pages` branch manually. (The github.io site will be updated automatically when this `gh-pages` branch is updated.)
+Generating and publishing the documentation for a release must be triggered manually, and the resulting HTML content is committed manually to the `gh-pages` branch. (The github.io site will be updated automatically when this `gh-pages` branch is updated.)
 
 Note: Only GitHub users with write permission to the repo are able to update the `gh-pages` branch content.
 
