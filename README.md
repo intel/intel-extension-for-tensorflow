@@ -110,7 +110,7 @@ This project is intended to be a safe, welcoming space for collaboration, and co
 - [TensorFlow GPU device plugins](https://www.tensorflow.org/install/gpu_plugins)
 - [Accelerating TensorFlow on Intel® Data Center GPU Flex Series](https://blog.tensorflow.org/2022/10/accelerating-tensorflow-on-intel-data-center-gpu-flex-series.html)
 - [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://cqpreview.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
-- [An Easy Introduction to Intel® Extension for TensorFlow*](https://www.intel.com/content/www/us/en/developer/articles/technical/introduction-to-intel-extension-for-tensorflow.html)
+- [Efficient TensorFlow Distributed Training on Intel Data Center GPU Max Series](https://medium.com/intel-analytics-software/efficient-tensorflow-distributed-training-on-intel-data-center-gpu-max-series-c01f3043a0cc)
 - [Accelerate JAX models on Intel GPUs via PJRT](https://opensource.googleblog.com/2023/06/accelerate-jax-models-on-intel-gpus-via-pjrt.html)
 - [Running TensorFlow Stable Diffusion on Intel Arc GPUs](https://medium.com/intel-analytics-software/running-tensorflow-stable-diffusion-on-intel-arc-gpus-e6ff0d2b7549)
 
