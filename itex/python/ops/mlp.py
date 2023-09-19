@@ -117,7 +117,8 @@ class FusedDenseBiasAddGelu(Dense):
     ):
         super(FusedDenseBiasAddGelu, self).__init__(
             units,
-            activation=functools.partial(gelu, approximate=True),
+            activation=tf.keras.layers.Lambda(
+                lambda x: gelu(x, approximate=True)),
             use_bias=True,
             kernel_initializer=kernel_initializer,
             bias_initializer=bias_initializer,
