@@ -31,6 +31,7 @@ limitations under the License.
 #include "itex/core/kernels/common/fill_functor.h"
 #include "itex/core/kernels/common/matmul_op.h"
 #include "itex/core/kernels/common/transpose_functor.h"
+#include "itex/core/kernels/common/transpose_op.h"
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/math_util.h"
@@ -400,7 +401,16 @@ struct EinsumHelper {
     TF_RETURN_IF_ERROR(
         ctx->allocate_temp(DataTypeToEnum<T>::value, transposed_shape, output));
     const Device& device = ctx->eigen_device<Device>();
-    TF_RETURN_IF_ERROR(DoTranspose(device, input, permutation, output));
+    auto transpose_functor = [&](OpKernelContext* ctx, const Tensor& input,
+                                 const std::vector<int>& permutation,
+                                 Tensor* output) -> Status {
+      if (input.dims() <= MAX_NDIMS) {
+        return TransposeND<Device, T>(ctx, input, output, permutation);
+      } else {
+        return DoTranspose(device, input, permutation, output);
+      }
+    };
+    TF_RETURN_IF_ERROR(transpose_functor(ctx, input, permutation, output));
     return Status::OK();
   }
 

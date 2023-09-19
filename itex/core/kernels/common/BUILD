@@ -196,6 +196,7 @@ filegroup(
         "fill_functor.h",
         "matmul_op.h",
         "transpose_functor.h",
+        "transpose_op.h",
     ],
     visibility = ["//visibility:public"],
 )
