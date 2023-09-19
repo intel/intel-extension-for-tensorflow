@@ -38,7 +38,7 @@ You can use `./pip_set_env.sh` to setup for GPU. It contains the following two s
 
 ```
 python -m venv env_itex
-source source env_itex/bin/activate
+source env_itex/bin/activate
 ```
 
 + Install
@@ -91,7 +91,7 @@ python main.py --benchmark --data_dir $DATASET_DIR --model_dir $OUTPUT_DIR --exe
 + bfloat16
 
 ```
-python main.py --benchmark --data_dir $DATASET_PATH --model_dir $OUTPUT_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE --log_every 1 --amp
+python main.py --benchmark --data_dir $DATASET_DIR --model_dir $OUTPUT_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE --log_every 1 --amp
 ```
 
 ### Multi-tile with horovod
