@@ -18,7 +18,6 @@ limitations under the License.
 #include "Python.h"
 #include "itex/core/devices/device_backend_util.h"
 #include "itex/core/graph/config_util.h"
-#include "itex/core/utils/hw_info.h"
 #include "pybind11/pybind11.h"
 
 namespace py = pybind11;

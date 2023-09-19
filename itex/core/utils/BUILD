@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "cc_library", "if_jax", "if_not_jax")
+load("//itex:itex.bzl", "cc_library", "if_jax", "if_not_jax", "itex_xpu_library")
 load(
     "//itex/core/utils:build_config.bzl",
     "tf_protobuf_deps",
@@ -417,7 +417,7 @@ cc_library(
     ]),
 )
 
-cc_library(
+itex_xpu_library(
     name = "hw_info",
     srcs = ["hw_info.cc"],
     hdrs = [

@@ -578,10 +578,6 @@ def _impl(ctx):
                     ACTION_NAMES.cpp_link_nodeps_dynamic_library,
                 ],
                 flag_groups = [
-                    flag_group(flags = ["-isystem"]),
-                    flag_group(flags = ["%{DPCPP_ROOT_DIR}/include/sycl"]),
-                    flag_group(flags = ["-isystem"]),
-                    flag_group(flags = ["%{DPCPP_ROOT_DIR}/include"]),
                     flag_group(flags = ["-iquote"]),
                     flag_group(flags = ["%{DPCPP_RUNTIME_INC}"]),
                     flag_group(flags = ["%{DPCPP_ISYSTEM_INC}"]),
