@@ -169,6 +169,8 @@ OpDef GetOpDef(const NodeDef& node_def);
 void CheckConstFilter(const utils::MutableNodeView* node_view,
                       const std::unordered_set<string>& nodes_to_preserve);
 
+void AdjustInputOrder(NodeDef* new_node);
+
 }  // namespace graph
 }  // namespace itex
 

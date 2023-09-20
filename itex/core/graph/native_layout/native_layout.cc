@@ -78,6 +78,8 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
        AlwaysRewrite},
       {"FusedInstanceNorm", "_ITEXFusedInstanceNorm", CopyAttrsAll,
        AlwaysRewrite},
+      {"FusedPadConv2D", "_ITEXPadWithConv2D", CopyAttrsAll, AlwaysRewrite,
+       AdjustInputOrder},
       {"GRUBlockCell", "_ITEXGRUCell", CopyAttrsAll, AlwaysRewrite},
       {"Gelu", "ITEXGelu", CopyAttrsAll, AlwaysRewrite},
       {"GeluGrad", "ITEXGeluGrad", CopyAttrsAll, RewriteBackwardDataType},
@@ -354,6 +356,8 @@ Status RewriteNode(NativeFormatContext* ctx, const int node_index,
   new_node_def.set_device(node_def->device());
 
   ri->copy_attrs(node_view, &new_node_def);
+
+  if (ri->post_process != nullptr) ri->post_process(&new_node_def);
 
   // Add workspace inputs if needed.
   AddWorkspace(node_view, &new_node_def);

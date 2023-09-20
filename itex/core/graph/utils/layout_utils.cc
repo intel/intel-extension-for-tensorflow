@@ -815,6 +815,13 @@ void CopyAllAttrs(const NodeDef& orig_node, NodeDef* new_node) {
   }
 }
 
+void AdjustInputOrder(NodeDef* new_node) {
+  auto tmp_input = new_node->input(1);
+  new_node->set_input(1, new_node->input(2));
+  new_node->set_input(2, tmp_input);
+  AddNodeAttr("Tpaddings", DT_INT32, new_node);
+}
+
 string GetInputName(const NodeDef* input, const int out_slot) {
   if (out_slot == 0)
     return input->name();

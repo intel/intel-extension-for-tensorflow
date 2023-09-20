@@ -54,6 +54,7 @@ typedef struct {
   std::function<void(const utils::MutableNodeView*, NodeDef*)> copy_attrs;
   // A rule under which to rewrite this node
   std::function<bool(const utils::MutableNodeView&)> rewrite_rule;
+  std::function<void(NodeDef*)> post_process;
 } NativeFormatInfo;
 
 const NativeFormatInfo* CheckForNodeNativeFormat(
