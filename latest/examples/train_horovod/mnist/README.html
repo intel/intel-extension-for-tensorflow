@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Distributed Training Example with Intel® Optimization for Horovod* on Intel® GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gbf01fd2 documentation</title>
+  <title>Distributed Training Example with Intel® Optimization for Horovod* on Intel® GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g970a10f documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
@@ -135,7 +135,8 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">apply</span> <span class="n">tensorflow2_keras_mnist</span><span class="o">.</span><span class="n">patch</span>
 </pre></div>
 </div>
-<p><strong>Notes</strong>:<br />Please refer to <a class="reference external" href="https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py">tensorflow2_keras_mnist.py</a> for other changes about how to enable horovod.</p>
+<p><strong>Notes</strong>:
+Please refer to <a class="reference external" href="https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py">tensorflow2_keras_mnist.py</a> for other changes about how to enable horovod.</p>
 </section>
 </section>
 <section id="execution">
@@ -148,10 +149,10 @@
 </div>
 <p>Note: to install oneAPI base toolkit, refer to <a class="reference external" href="/docs/install/install_for_xpu.html#install-oneapi-base-toolkit-packages">Intel GPU Software Installation</a></p>
 </section>
-<section id="device-count">
-<h3>Device Count<a class="headerlink" href="#device-count" title="Permalink to this heading"></a></h3>
+<section id="check-device-count-optional">
+<h3>Check Device Count (Optional)<a class="headerlink" href="#check-device-count-optional" title="Permalink to this heading"></a></h3>
 <p>Run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">tensorflow2_keras_mnist</span><span class="o">.</span><span class="n">py</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">horovodrun</span> <span class="o">-</span><span class="n">np</span> <span class="mi">1</span> <span class="o">-</span><span class="n">H</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">1</span> <span class="n">python</span> <span class="n">tensorflow2_keras_mnist</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
 <p>Check how many devices (XPUs) in local machine according output of above command, like:</p>
@@ -162,7 +163,8 @@
 </pre></div>
 </div>
 <p>The XPUs are <strong>2</strong> according to above log.</p>
-<p><strong>Notes</strong>:<br />In some Intel GPU (like Intel® Data Center GPU Max Series), there are more than 1 tile per GPU card. A tile is considered as 1 XPU device. So there are total 4 XPUs if there are 2 GPU cards and 2 tiles per GPU card.</p>
+<p><strong>Notes</strong>:
+In some Intel GPU (like Intel® Data Center GPU Max Series), there are more than 1 tile per GPU card. A tile is considered as 1 XPU device. So there are total 4 XPUs if there are 2 GPU cards and 2 tiles per GPU card.</p>
 </section>
 <section id="running-command">
 <h3>Running Command<a class="headerlink" href="#running-command" title="Permalink to this heading"></a></h3>
@@ -216,7 +218,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f7f147a4670> 
+   <jinja2.runtime.BlockReference object at 0x7faee22d2e00> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

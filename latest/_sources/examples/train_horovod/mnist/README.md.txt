@@ -31,7 +31,7 @@ wget https://github.com/intel/intel-extension-for-tensorflow/raw/main/examples/t
 ```
 git apply tensorflow2_keras_mnist.patch
 ```
-**Notes**:  
+**Notes**:
 Please refer to [tensorflow2_keras_mnist.py](https://github.com/horovod/horovod/blob/master/examples/tensorflow2/tensorflow2_keras_mnist.py) for other changes about how to enable horovod.
 ## Execution
 ### Enable oneAPI
@@ -41,11 +41,12 @@ source /opt/intel/oneapi/setvars.sh
 ```
 Note: to install oneAPI base toolkit, refer to [Intel GPU Software Installation](/docs/install/install_for_xpu.html#install-oneapi-base-toolkit-packages)
 
-### Device Count
+### Check Device Count (Optional)
 Run:
 ```
-python tensorflow2_keras_mnist.py
+horovodrun -np 1 -H localhost:1 python tensorflow2_keras_mnist.py
 ```
+
 Check how many devices (XPUs) in local machine according output of above command, like:
 ```
 ...
@@ -55,7 +56,7 @@ XPU: PhysicalDevice(name='/physical_device:XPU:1', device_type='XPU')
 ```
 The XPUs are **2** according to above log.
 
-**Notes**:  
+**Notes**:
 In some Intel GPU (like Intel® Data Center GPU Max Series), there are more than 1 tile per GPU card. A tile is considered as 1 XPU device. So there are total 4 XPUs if there are 2 GPU cards and 2 tiles per GPU card.
 
 ### Running Command
