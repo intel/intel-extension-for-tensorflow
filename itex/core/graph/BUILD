@@ -39,9 +39,11 @@ cc_library(
     textual_hdrs = ["//itex/core:itex_version_generator"],
     visibility = ["//visibility:public"],
     deps = [
+        ":config_util_hdr",
         ":optimizer_config",
         "//itex/core/devices:xpu_device_util",
         "//itex/core/graph:xpu_optimizer",
+        "//itex/core/utils:hw_info_hdr",
     ],
     alwayslink = True,
 )

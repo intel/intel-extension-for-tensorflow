@@ -23,15 +23,19 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/devices/xpu_device_util.h"
+#include "itex/core/graph/config_util.h"
 #include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/xpu_optimizer.h"
 #include "itex/core/utils/cpu_info.h"
 #include "itex/core/utils/env_var.h"
+#include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/numbers.h"
 #include "itex/core/utils/tf_version.h"
 #include "itex/core/version.h"
 #include "tensorflow/c/experimental/grappler/grappler.h"
+
+extern bool itex::isxehpc_value;
 
 void InitGlobalSetting(const OptimizerConfigFlags& config) {
   using env_pair = std::pair<std::string, bool>;
@@ -73,6 +77,10 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
   ITEX_VLOG(1) << "Intel Extension for Tensorflow version: "
                << itex_version->major << "." << itex_version->minor << "."
                << itex_version->patch << ", commit: " << itex_version->hash;
+
+#ifndef INTEL_CPU_ONLY
+  itex::isxehpc_value = IsXeHPC();
+#endif
 
 #ifdef INTEL_CPU_ONLY
   const int32_t cpu_num = itex::port::MaxParallelism();

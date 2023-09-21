@@ -420,10 +420,17 @@ cc_library(
 itex_xpu_library(
     name = "hw_info",
     srcs = ["hw_info.cc"],
-    hdrs = [
-        "hw_info.h",
-        "macros.h",
+    hdrs = ["hw_info.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":hw_info_hdr",
     ],
+)
+
+cc_library(
+    name = "hw_info_hdr",
+    srcs = ["hw_info.h"],
+    hdrs = ["macros.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/build_option/dpcpp:itex_gpu_header",
