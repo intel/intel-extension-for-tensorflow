@@ -25,5 +25,5 @@ pip install --upgrade pip
 pip install --upgrade intel-extension-for-tensorflow[gpu]
 pip install intel-optimization-for-horovod
 pip install opencv-python-headless pybind11
-pip install "git+https://github.com/NVIDIA/cocoapi#egg=pycocotools&subdirectory=PythonAPI"
+pip install pycocotools
 pip install -e "git+https://github.com/NVIDIA/dllogger#egg=dllogger"
