@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfc3bc1e documentation</title>
+  <title>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd1d9686 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -143,7 +143,7 @@ mkdir<span class="w"> </span>output
 <h3>Without XPUAutoShard<a class="headerlink" href="#without-xpuautoshard" title="Permalink to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTEROP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;<span class="w"> </span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTRAOP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;
-<span class="nb">export</span><span class="w"> </span><span class="nv">BS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">256</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">BS</span><span class="o">=</span><span class="m">256</span>
 python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span><span class="se">\</span>
 --num_gpus<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
 --batch_size<span class="o">=</span><span class="nv">$BS</span><span class="w"> </span><span class="se">\</span>
@@ -275,7 +275,7 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fbcf79ed630> 
+   <jinja2.runtime.BlockReference object at 0x7f05c16a4a00> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

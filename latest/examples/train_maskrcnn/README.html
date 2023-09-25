@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate Mask R-CNN Training w/o horovod on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfc3bc1e documentation</title>
+  <title>Accelerate Mask R-CNN Training on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd1d9686 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -77,7 +77,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Accelerate Mask R-CNN Training w/o horovod on Intel GPU</li>
+      <li class="breadcrumb-item active">Accelerate Mask R-CNN Training on Intel GPU</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/examples/train_maskrcnn/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -87,8 +87,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="accelerate-mask-r-cnn-training-w-o-horovod-on-intel-gpu">
-<h1>Accelerate Mask R-CNN Training w/o horovod on Intel GPU<a class="headerlink" href="#accelerate-mask-r-cnn-training-w-o-horovod-on-intel-gpu" title="Permalink to this heading"></a></h1>
+  <section id="accelerate-mask-r-cnn-training-on-intel-gpu">
+<h1>Accelerate Mask R-CNN Training on Intel GPU<a class="headerlink" href="#accelerate-mask-r-cnn-training-on-intel-gpu" title="Permalink to this heading"></a></h1>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
@@ -133,7 +133,6 @@ This example shows Mask R-CNN Training. It contains single-tile training scripts
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">gpu</span><span class="p">]</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">opencv</span><span class="o">-</span><span class="n">python</span><span class="o">-</span><span class="n">headless</span> <span class="n">pybind11</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">pycocotools</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;git+https://github.com/NVIDIA/dllogger#egg=dllogger&quot;</span>
@@ -157,19 +156,12 @@ This example shows Mask R-CNN Training. It contains single-tile training scripts
 <span class="n">bash</span> <span class="n">download_and_preprocess_coco</span><span class="o">.</span><span class="n">sh</span> <span class="o">./</span><span class="n">data</span>
 </pre></div>
 </div>
-<ul class="simple">
-<li><p>Download the pre-trained ResNet-50 weights.</p></li>
-</ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">download_weights</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">save_dir</span><span class="o">=./</span><span class="n">weights</span>
-</pre></div>
-</div>
 </section>
 </section>
 <section id="execute-the-example">
 <h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
 <p>Here we provide single-tile training scripts and multi-tile training scripts with horovod. The datatype can be float32 or bfloat16.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATASET_DIR</span><span class="o">=./</span><span class="n">data</span>
-<span class="n">PRETRAINED_DIR</span><span class="o">=./</span><span class="n">weights</span>
 <span class="n">OUTPUT_DIR</span><span class="o">=/</span><span class="n">the</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">output_dir</span>
 </pre></div>
 </div>
@@ -196,9 +188,14 @@ This example shows Mask R-CNN Training. It contains single-tile training scripts
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Multi-tile with horovod.  Default datatype is fp32. You can use <code class="docutils literal notranslate"><span class="pre">--amp</span></code> flag for bf16.</p></li>
+<li><p>Multi-tile with horovod.</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpirun -np 2 -prepend-rank -ppn 1 \
+<p>Install <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
+</pre></div>
+</div>
+<p>Default datatype is fp32. You can use <code class="docutils literal notranslate"><span class="pre">--amp</span></code> flag for bf16.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpirun -np 2 -prepend-rank -ppn 2 \
 python main.py train \
 --data_dir $DATASET_DIR \
 --model_dir=$OUTPUT_DIR \
@@ -207,6 +204,7 @@ python main.py train \
 --epochs 1 --steps_per_epoch 20 --log_every=1 --log_warmup_steps=1
 </pre></div>
 </div>
+<p><strong>Note:</strong> Only distributed workload needs <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code>. Please uninstall it if you want to run single tile workload.</p>
 </section>
 <section id="faq">
 <h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
@@ -233,7 +231,7 @@ python main.py train \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fbcf79ef1f0> 
+   <jinja2.runtime.BlockReference object at 0x7f05c16a5ba0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -44,7 +44,7 @@ Note: to install oneAPI base toolkit, refer to [Intel GPU Software Installation]
 ### Check Device Count (Optional)
 Run:
 ```
-horovodrun -np 1 -H localhost:1 python tensorflow2_keras_mnist.py
+mpirun -np 1 -prepend-rank -ppn 1 python tensorflow2_keras_mnist.py
 ```
 
 Check how many devices (XPUs) in local machine according output of above command, like:
@@ -62,11 +62,11 @@ In some Intel GPU (like Intel® Data Center GPU Max Series), there are more than
 ### Running Command
 For 2 XPUs:
 ```
-horovodrun -np 2 -H localhost:2 python ./tensorflow2_keras_mnist.py
+mpirun -np 2 -prepend-rank -ppn 2 python ./tensorflow2_keras_mnist.py
 ```
 For 4 XPUs:
 ```
-horovodrun -np 4 -H localhost:4 python ./tensorflow2_keras_mnist.py
+mpirun -np 4 -prepend-rank -ppn 4 python ./tensorflow2_keras_mnist.py
 ```
 ## Output
 ```

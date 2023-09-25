@@ -1,4 +1,4 @@
-# Accelerate Mask R-CNN Training w/o horovod on Intel GPU
+# Accelerate Mask R-CNN Training on Intel GPU
 
 ## Introduction
 
@@ -46,7 +46,6 @@ source env_itex/bin/activate
 ```
 pip install --upgrade pip
 pip install --upgrade intel-extension-for-tensorflow[gpu]
-pip install intel-optimization-for-horovod
 pip install opencv-python-headless pybind11
 pip install pycocotools
 pip install -e "git+https://github.com/NVIDIA/dllogger#egg=dllogger"
@@ -69,19 +68,12 @@ cd dataset
 bash download_and_preprocess_coco.sh ./data
 ```
 
-+ Download the pre-trained ResNet-50 weights.
-
-```
-python scripts/download_weights.py --save_dir=./weights
-```
-
 ## Execute the Example
 
 Here we provide single-tile training scripts and multi-tile training scripts with horovod. The datatype can be float32 or bfloat16.
 
 ```
 DATASET_DIR=./data
-PRETRAINED_DIR=./weights
 OUTPUT_DIR=/the/path/to/output_dir
 ```
 
@@ -107,10 +99,16 @@ python main.py train \
 --epochs 1 --steps_per_epoch 20 --log_every=1 --log_warmup_steps=1
 ```
 
-+ Multi-tile with horovod.  Default datatype is fp32. You can use `--amp` flag for bf16.
++ Multi-tile with horovod.
+
+Install `intel-optimization-for-horovod`.
+```
+pip install intel-optimization-for-horovod
+```
+Default datatype is fp32. You can use `--amp` flag for bf16.
 
 ```
-mpirun -np 2 -prepend-rank -ppn 1 \
+mpirun -np 2 -prepend-rank -ppn 2 \
 python main.py train \
 --data_dir $DATASET_DIR \
 --model_dir=$OUTPUT_DIR \
@@ -118,6 +116,8 @@ python main.py train \
 --seed=0 --use_synthetic_data \
 --epochs 1 --steps_per_epoch 20 --log_every=1 --log_warmup_steps=1
 ```
+
+**Note:** Only distributed workload needs `intel-optimization-for-horovod`. Please uninstall it if you want to run single tile workload.
 
 ## FAQ
 
