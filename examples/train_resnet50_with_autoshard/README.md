@@ -50,7 +50,7 @@ export PYTHONPATH=$PYTHONPATH:/path/to/tf-models:$PWD
 ```bash
 export TF_NUM_INTEROP_THREADS=<number of physical core per socket> 
 export TF_NUM_INTRAOP_THREADS=<number of physical core per socket>
-export BS = 256
+export BS=256
 python resnet_ctl_imagenet_main.py \
 --num_gpus=1 \
 --batch_size=$BS \
