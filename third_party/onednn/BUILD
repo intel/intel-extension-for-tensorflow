@@ -1,6 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//lib:selects.bzl", "selects")
-load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 exports_files(["LICENSE"])
 
@@ -35,6 +34,22 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "build_with_threadpool",
+    define_values = {
+        "build_with_threadpool": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+selects.config_setting_group(
+    name = "cc_build_with_threadpool",
+    match_all = [
+        ":build_with_threadpool",
+        "//itex:cpu_cc_build",
+    ],
+)
+
 bzl_library(
     name = "build_defs_bzl",
     srcs = ["build_defs.bzl"],
@@ -54,6 +69,32 @@ cc_library(
     }),
 )
 
+cc_binary(
+    name = "onednn_cpu_so",
+    linkopts = ["-Wl,-rpath,$$ORIGIN/../_solib_k8/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp"],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":intel_binary_blob",
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["@onednn_cpu//:onednn_graph_cpu_lib"],
+        "//conditions:default": ["@onednn_cpu//:onednn_cpu_lib"],
+    }),
+)
+
+cc_binary(
+    name = "onednn_cpu_eigen_so",
+    linkopts = ["-Wl,-rpath,$$ORIGIN/../_solib_k8/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp"],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":intel_binary_blob",
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["@onednn_cpu_eigen//:onednn_graph_cpu_lib"],
+        "//conditions:default": ["@onednn_cpu_eigen//:onednn_cpu_lib"],
+    }),
+)
+
 py_binary(
     name = "gen_gpu_kernel_list",
     srcs = ["gen_gpu_kernel_list.py"],
@@ -67,6 +108,7 @@ py_binary(
     srcs = ["gen_onednn_version.py"],
     visibility = [
         "@onednn_cpu//:__subpackages__",
+        "@onednn_cpu_eigen//:__subpackages__",
         "@onednn_gpu//:__subpackages__",
     ],
 )

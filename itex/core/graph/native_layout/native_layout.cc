@@ -32,10 +32,10 @@ namespace graph {
 namespace {
 namespace protobuf = ::google::protobuf;
 
-const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
+std::vector<NativeFormatInfo>* GetCPUEigenNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
       // Proper OP
-      {"AddN", "_ITEXAddN", CopyAttrsAll, AlwaysRewrite},
+      // {"AddN", "_ITEXAddN", CopyAttrsAll, AlwaysRewrite},
       {"AvgPool", "_ITEXAvgPool", CopyAttrsAll, RewritePool},
       {"AvgPool3D", "_ITEXAvgPool3D", CopyAttrsAll, RewritePool},
       {"AvgPool3DGrad", "_ITEXAvgPool3DGrad", CopyAttrsAll, AlwaysRewrite},
@@ -63,8 +63,6 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
        "_ITEXDepthwiseConv2dNativeBackpropInput", CopyAttrsAll,
        RewriteBackwardDataType},
       {"Einsum", "_ITEXEinsum", CopyAttrsAll, AlwaysRewrite},
-      {"Elu", "_ITEXElu", CopyAttrsAll, AlwaysRewrite},
-      {"EluGrad", "_ITEXEluGrad", CopyAttrsAll, RewriteBackwardDataType},
       {"FusedBatchNorm", "_ITEXFusedBatchNorm", CopyAttrsAll, AlwaysRewrite},
       {"FusedBatchNormGrad", "_ITEXFusedBatchNormGrad", CopyAttrsAll,
        RewriteBackwardDataType},
@@ -86,9 +84,6 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"LayerNorm", "ITEXLayerNorm", CopyAttrsAll, RewriteLayerNorm},
       {"LayerNormGrad", "ITEXLayerNormGrad", CopyAttrsAll,
        RewriteLayerNormGrad},
-      {"LeakyRelu", "_ITEXLeakyRelu", CopyAttrsAll, AlwaysRewrite},
-      {"LeakyReluGrad", "_ITEXLeakyReluGrad", CopyAttrsAll,
-       RewriteBackwardDataType},
       {"MatMul", "_ITEXMatMul", CopyAttrsAll, AlwaysRewrite},
       {"MaxPool", "_ITEXMaxPool", CopyAttrsAll, RewritePool},
       {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool},
@@ -96,12 +91,6 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
       {"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll,
        RewriteRandomUniform},
-      {"Relu6Grad", "_ITEXRelu6Grad", CopyAttrsAll, RewriteBackwardDataType},
-      {"ReluGrad", "_ITEXReluGrad", CopyAttrsAll, RewriteBackwardDataType},
-      {"ResizeBilinear", "_ITEXResizeBilinear", CopyAttrsAll, RewriteResize},
-      {"ResizeBilinearGrad", "_ITEXResizeBilinearGrad", CopyAttrsAll,
-       RewriteResize},
-      {"Slice", "_ITEXSlice", CopyAttrsAll, AlwaysRewrite},
       {"Softmax", "_ITEXSoftmax", CopyAttrsAll, AlwaysRewrite},
       {"Transpose", "_ITEXTranspose", CopyAttrsAll, AlwaysRewrite},
       {"_FusedBatchNormEx", "_ITEXFusedBatchNormEx", CopyAttrsAll,
@@ -208,7 +197,24 @@ const std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
   return &rinfo;
 }
 
-const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
+std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
+  static std::vector<NativeFormatInfo> rinfo{
+      {"AddN", "_ITEXAddN", CopyAttrsAll, AlwaysRewrite},
+      {"Elu", "_ITEXElu", CopyAttrsAll, AlwaysRewrite},
+      {"EluGrad", "_ITEXEluGrad", CopyAttrsAll, RewriteBackwardDataType},
+      {"LeakyRelu", "_ITEXLeakyRelu", CopyAttrsAll, AlwaysRewrite},
+      {"LeakyReluGrad", "_ITEXLeakyReluGrad", CopyAttrsAll,
+       RewriteBackwardDataType},
+      {"Relu6Grad", "_ITEXRelu6Grad", CopyAttrsAll, RewriteBackwardDataType},
+      {"ReluGrad", "_ITEXReluGrad", CopyAttrsAll, RewriteBackwardDataType},
+      {"ResizeBilinear", "_ITEXResizeBilinear", CopyAttrsAll, RewriteResize},
+      {"ResizeBilinearGrad", "_ITEXResizeBilinearGrad", CopyAttrsAll,
+       RewriteResize},
+      {"Slice", "_ITEXSlice", CopyAttrsAll, AlwaysRewrite}};
+  return &rinfo;
+}
+
+std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
       {"MaxPool", "_ITEXMaxPool", CopyAttrsAll, RewritePool},
       {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool},
@@ -287,7 +293,7 @@ const std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
 }
 
 // Rewrite non-oneDNN op which is optimized in a customized manner.
-const std::vector<NativeFormatInfo>* GetCustomNativeFormatInfo() {
+std::vector<NativeFormatInfo>* GetCustomNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
       {"RandomUniform", "_ITEXRandomUniform", CopyAttrsAll,
        RewriteRandomUniform},
@@ -306,10 +312,21 @@ const NativeFormatInfo* CheckForNodeNativeFormat(
   // We now check if rewrite rule applies for this op. If rewrite rule passes
   // for this op, then we rewrite it to Native op.
   // Find matching NativeFormatInfo and then check that rewrite rule applies.
-  const std::vector<NativeFormatInfo>* rinfo;
+  std::vector<NativeFormatInfo>* rinfo;
   if (absl::StrContains("CPU", opt_ctx->device_name)) {
+    bool enable_omp = true;
+    ITEX_CHECK_OK(ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp));
+#ifdef CC_THREADPOOL_BUILD
+    enable_omp = false;
+#endif
     if (opt_ctx->enable_complete_opt) {
-      rinfo = GetCPUNativeFormatInfo();
+      if (enable_omp) {
+        rinfo = GetCPUEigenNativeFormatInfo();
+        rinfo->insert(rinfo->end(), GetCPUNativeFormatInfo()->begin(),
+                      GetCPUNativeFormatInfo()->end());
+      } else {
+        rinfo = GetCPUEigenNativeFormatInfo();
+      }
     } else {
       rinfo = GetCustomNativeFormatInfo();
     }

@@ -49,6 +49,12 @@ def if_cc_build(if_true, if_false = []):
         "//conditions:default": if_false,
     })
 
+def if_cc_threadpool_build(if_true, if_false = []):
+    return select({
+        "@intel_extension_for_tensorflow//third_party/onednn:cc_build_with_threadpool": if_true,
+        "//conditions:default": if_false,
+    })
+
 def if_gpu_backend(if_true, if_false = []):
     return selects.with_or({
         ("@local_config_dpcpp//dpcpp:using_dpcpp", "@intel_extension_for_tensorflow//itex:xpu_build"): if_true,
@@ -143,7 +149,7 @@ def cc_binary(name, set_target = None, srcs = [], deps = [], *argc, **kwargs):
     )
 
 def cc_library(name, srcs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"])
+    kwargs["copts"] = kwargs.get("copts", []) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"])
     kwargs["linkopts"] = kwargs.get("linkopts", []) + if_gpu_build(["-DINTEL_GPU_ONLY"])
     native.cc_library(
         name = name,
@@ -153,7 +159,7 @@ def cc_library(name, srcs = [], deps = [], *argc, **kwargs):
     )
 
 def itex_xetla_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_xetla(["--xetla"])
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_xetla(["--xetla"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"])
     kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_xetla(["--xetla"])
     native.cc_library(
         name = name,
@@ -180,7 +186,7 @@ def itex_xetla_binary(name, set_target = None, srcs = [], deps = [], *argc, **kw
     )
 
 def itex_xpu_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"])
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"])
     kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"])
     native.cc_library(
         name = name,

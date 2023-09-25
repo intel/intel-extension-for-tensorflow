@@ -104,7 +104,14 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
   const int32_t itex_inter_num = std::max((cpu_num + omp_num - 1) / omp_num, 1);
 
   // Set inter_op_parallelism_threads if it's not initialized.
-  setenv("TF_NUM_INTEROP_THREADS", std::to_string(itex_inter_num).c_str(), 0);
+  bool enable_omp = true;
+  ITEX_CHECK_OK(
+      itex::ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp));
+#ifdef CC_THREADPOOL_BUILD
+  enable_omp = false;
+#endif
+  if (enable_omp)
+    setenv("TF_NUM_INTEROP_THREADS", std::to_string(itex_inter_num).c_str(), 0);
 
   // Initialize CPU allocator:
   //   For stock TF version >= 2.9, stock TF will enable MklCPUAllocator by

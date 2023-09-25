@@ -40,6 +40,30 @@ namespace itex {
 
 using dnnl::memory;
 
+#ifdef INTEL_CPU_ONLY
+static Eigen::internal::CacheSizes cache_sizes = Eigen::internal::CacheSizes();
+
+inline int ExecuteNThreadedGemm(int64_t m, int64_t n, int64_t k, int bytes_in,
+                                int bytes_out) {
+  // Ideally we would like to determine blocking and then come up with
+  // a heuristic but what we are targeting are very small models whose
+  // total size is < x*L2. So we will do this simple calculation
+  // to determine if the matrix multiplication should be run on a single thread.
+  // TODO(Intel-tf): this needs to be vastly improved, perhaps at a lower level
+  // than the integration.
+  ptrdiff_t l2_size = cache_sizes.m_l2;
+  constexpr float kHeuristicMultiplier = 1.01;
+  const float mul_size = bytes_in * k * (m + n) + m * n * bytes_out;
+  const float l2_heur = l2_size * kHeuristicMultiplier;
+  if (mul_size < 0) return -1;
+  if (mul_size < l2_heur)
+    return 1;
+  else
+    return -1;
+}
+
+#endif
+
 // Simple wrapper over BCast specialized for MatMul.
 // Provides utilities for broadcasting across batch dimensions for binary
 // MatMul-like operations.
@@ -246,6 +270,14 @@ class MatMulOp : public OpKernel {
 
     ITEX_CHECK_OK(
         ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false, &enable_cache_));
+#ifdef INTEL_CPU_ONLY
+    ITEX_CHECK_OK(
+        ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp_));
+#endif
+
+#ifdef CC_THREADPOOL_BUILD
+    enable_omp_ = false;
+#endif
   }
 
   void InitOrSetMemory(OpKernelContext* context) {
@@ -387,6 +419,10 @@ class MatMulOp : public OpKernel {
     dst_shape_ = bcast.output_batch_shape();
     dst_shape_.AddDim(m);
     dst_shape_.AddDim(n);
+#ifdef INTEL_CPU_ONLY
+    if (!enable_omp_)
+      single_thread_ = ExecuteNThreadedGemm(m, n, k, sizeof(T), sizeof(Tout));
+#endif
     // The maximum number of dimensions for a tensor in DNNL is 6 on GPU.
     OP_REQUIRES(
         context, dst_shape_.dims() <= 6,
@@ -581,7 +617,11 @@ class MatMulOp : public OpKernel {
     dnnl_engine_ = CreateDnnlEngine<Device>(*context);
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
+#ifdef INTEL_CPU_ONLY
+    dnnl_stream_ = CreateDnnlStream(*context, dnnl_engine_, single_thread_);
+#else
     dnnl_stream_ = CreateDnnlStream(*context, dnnl_engine_);
+#endif
     scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context);
 
@@ -614,6 +654,10 @@ class MatMulOp : public OpKernel {
   WeightCacheManager<T> weight_cache_manager_;
 
  private:
+#ifdef INTEL_CPU_ONLY
+  int single_thread_ = -1;
+  bool enable_omp_;
+#endif
   mutex mu_compute_;
   std::unordered_map<int, memory> fwd_primitive_args_;
   memory src_mem_, weights_mem_, weights_mem_input_, dst_mem_, bias_mem_,
@@ -657,6 +701,13 @@ class MatMulFunctor {
 
     ITEX_CHECK_OK(
         ReadBoolFromEnvVar("ITEX_CACHE_ONEDNN_OBJECT", false, &enable_cache_));
+#ifdef INTEL_CPU_ONLY
+    ITEX_CHECK_OK(
+        ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp_));
+#endif
+#ifdef CC_THREADPOOL_BUILD
+    enable_omp_ = false;
+#endif
   }
 
   void InitOrSetMemory(OpKernelContext* context, T* input_tensor_data,
@@ -781,6 +832,11 @@ class MatMulFunctor {
     dst_shape_ = bcast.output_batch_shape();
     dst_shape_.AddDim(m);
     dst_shape_.AddDim(n);
+#ifdef INTEL_CPU_ONLY
+    if (!enable_omp_)
+      single_thread_ = ExecuteNThreadedGemm(m * bcast.output_batch_size(), n, k,
+                                            sizeof(T), sizeof(Tout));
+#endif
     // The maximum number of dimensions for a tensor in DNNL is 6 on GPU.
     OP_REQUIRES(
         context, dst_shape_.dims() <= 6,
@@ -940,7 +996,11 @@ class MatMulFunctor {
     dnnl_engine_ = CreateDnnlEngine<Device>(*context_);
     // onednn_stream has thread safety issue, need create a new one in
     // every compute.
+#ifdef INTEL_CPU_ONLY
+    dnnl_stream_ = CreateDnnlStream(*context_, dnnl_engine_, single_thread_);
+#else
     dnnl_stream_ = CreateDnnlStream(*context_, dnnl_engine_);
+#endif
     scratchpad_tensor_ = std::make_shared<Tensor>();
     InitOrSetMemory(context_, input_tensor_data, input_dims,
                     weights_tensor_data, weights_dims, is_filter_const,
@@ -975,6 +1035,10 @@ class MatMulFunctor {
 
  private:
   mutex mu_compute_;
+#ifdef INTEL_CPU_ONLY
+  int single_thread_ = -1;
+  bool enable_omp_;
+#endif
   std::unordered_map<int, memory> fwd_primitive_args_;
   memory src_mem_, weights_mem_, weights_mem_input_, dst_mem_, bias_mem_,
       add_mem_, fuse_add_src_mem_, fuse_add_dst_mem_, scratchpad_mem_;

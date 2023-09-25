@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "cc_library")
+load("//itex:itex.bzl", "cc_library", "if_cc_threadpool_build")
 load("//third_party/onednn:build_defs.bzl", "onednn_deps", "onednn_graph_deps")
 
 cc_library(
@@ -10,7 +10,7 @@ cc_library(
     hdrs = [
         "onednn_post_op_util.h",
         "onednn_util.h",
-    ],
+    ] + if_cc_threadpool_build(["//itex/core/utils/onednn/stream:mkl_threadpool"]),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [

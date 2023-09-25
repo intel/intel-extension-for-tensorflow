@@ -18,6 +18,7 @@ limitations under the License.
 
 #include "itex/core/devices/device_backend_util.h"
 #include "itex/core/utils/cpu_info.h"
+#include "itex/core/utils/env_var.h"
 #include "itex/core/utils/types.h"
 #include "tensorflow/c/experimental/grappler/grappler.h"
 #include "tensorflow/c/kernels.h"
@@ -31,6 +32,30 @@ void* LoadCpuLibrary() {
   if (itex_get_backend() == ITEX_BACKEND_DEFAULT) {
     itex_freeze_backend(ITEX_BACKEND_CPU);
   }
+  bool enable_omp;
+  void* onednn_handle;
+  ITEX_CHECK_OK(
+      itex::ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp));
+  if (enable_omp) {
+    onednn_handle = dlopen("libonednn_cpu_so.so", RTLD_NOW | RTLD_GLOBAL);
+    if (!onednn_handle) {
+      ITEX_LOG(FATAL) << dlerror();
+    }
+    onednn_handle = dlopen("libitex_stream_omp.so", RTLD_NOW | RTLD_GLOBAL);
+    if (!onednn_handle) {
+      ITEX_LOG(FATAL) << dlerror();
+    }
+  } else {
+    onednn_handle = dlopen("libonednn_cpu_eigen_so.so", RTLD_NOW | RTLD_GLOBAL);
+    if (!onednn_handle) {
+      ITEX_LOG(FATAL) << dlerror();
+    }
+    onednn_handle = dlopen("libitex_stream.so", RTLD_NOW | RTLD_GLOBAL);
+    if (!onednn_handle) {
+      ITEX_LOG(FATAL) << dlerror();
+    }
+  }
+
   if (itex::port::CPUIDAVX512()) {
     handle = dlopen("libitex_cpu_internal_avx512.so", RTLD_NOW | RTLD_LOCAL);
     if (!handle) {

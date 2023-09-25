@@ -124,12 +124,7 @@ template_rule(
     name = "dnnl_config_h",
     src = "include/oneapi/dnnl/dnnl_config.h.in",
     out = "include/oneapi/dnnl/dnnl_config.h",
-    substitutions = select({
-        "@intel_extension_for_tensorflow//third_party/onednn:build_with_tbb": _TBB_WITH_ONEDNN_GRAPH_LIST,
-        "@intel_extension_for_tensorflow//third_party/onednn:cc_build_with_threadpool": _THREADPOOL_WITH_ONEDNN_GRAPH_LIST,
-        #"@intel_extension_for_tensorflow//third_party/onednn:build_with_onednn_graph": _OMP_WITH_ONEDNN_GRAPH_LIST,
-        "//conditions:default": _OMP_WITH_ONEDNN_GRAPH_LIST,
-    }),
+    substitutions = _THREADPOOL_WITH_ONEDNN_GRAPH_LIST,
 )
 
 # Create the file dnnl_version.h with DNNL version numbers.
@@ -312,7 +307,7 @@ cc_library(
         ],
     ),
     # TODO(itex): find better way to include xbyak.h within onednn
-    copts = _GRAPH_COPTS_CPU_LIST + ["-I external/onednn_cpu/src/cpu/x64"],
+    copts = _GRAPH_COPTS_CPU_LIST + ["-I external/onednn_cpu_eigen/src/cpu/x64"],
     includes = _GRAPH_INCLUDES_LIST,
     visibility = ["//visibility:public"],
     deps = _GRAPH_DEPS_LIST + if_graph_compiler([":onednn_graph_cpu_special_lib"]) + [":onednn_cpu_lib"],

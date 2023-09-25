@@ -164,6 +164,9 @@ function prepare_src() {
   [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx2.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx2.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_cpu_internal_avx512.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_gpu_internal.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_stream.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_stream.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  [ -f "${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_stream_omp.so" ] && mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/libitex_stream_omp.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  [ -f "bazel-bin/third_party/onednn/libonednn_cpu_so.so" ] && cp -LR bazel-bin/third_party/onednn/libonednn_cpu*.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   cp ${RUNFILES}/../../../../core/kernels/libitex_common.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   xetla_lib=$(find ${RUNFILES} -name libitex_gpu_xetla.so)
   [ -f "${xetla_lib}" ] && cp ${xetla_lib} ${LIB_TMPDIR}/intel_extension_for_tensorflow/

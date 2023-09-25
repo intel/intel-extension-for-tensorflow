@@ -135,6 +135,34 @@ itex_xpu_binary(
     ),
 )
 
+cc_binary(
+    name = "libitex_stream.so",
+    srcs = [
+        "//itex/core/utils/onednn/stream:itex_stream",
+    ],
+    copts = ["-DINTEL_CPU_ONLY"],
+    linkshared = True,
+    set_target = "cpu_avx2_backend",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core/utils/onednn:onednn_util",
+    ],
+)
+
+cc_binary(
+    name = "libitex_stream_omp.so",
+    srcs = [
+        "//itex/core/utils/onednn/stream:itex_stream_omp",
+    ],
+    copts = ["-DINTEL_CPU_ONLY"],
+    linkshared = True,
+    set_target = "cpu_avx2_backend",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex/core/utils/onednn:onednn_util",
+    ],
+)
+
 itex_xpu_binary(
     name = "libitex_gpu_cc.so",
     linkshared = True,
