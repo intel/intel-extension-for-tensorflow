@@ -61,7 +61,7 @@ wget https://storage.googleapis.com/intel-optimized-tensorflow/models/v1_8/incep
 
   * For GPU,
     ```
-    docker pull intel/intel-extension-for-tensorflow:gpu
+    docker pull intel/intel-extension-for-tensorflow:xpu
     ```
     
   * For CPU,
@@ -78,7 +78,7 @@ wget https://storage.googleapis.com/intel-optimized-tensorflow/models/v1_8/incep
     
   * For CPU,
     ```
-    ./set_env_gpu.sh
+    ./set_env_cpu.sh
     ```
 
 ### Enable Running Environment
@@ -87,7 +87,7 @@ wget https://storage.googleapis.com/intel-optimized-tensorflow/models/v1_8/incep
 
   * For GPU,
     ```
-    docker run -it --rm -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path -v $ITEX_REPO:/ws1 --ipc host --privileged intel/intel-extension-for-tensorflow:gpu
+    docker run -it --rm -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path -v $ITEX_REPO:/ws1 --ipc host --privileged intel/intel-extension-for-tensorflow:xpu
     cd /ws1/examples/infer_inception_v4_amp
     ```
 
