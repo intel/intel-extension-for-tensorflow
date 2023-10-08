@@ -187,7 +187,10 @@ cc_library(
     linkopts = ["-lrt"],
     textual_hdrs = _TEXTUAL_HDRS_LIST,
     visibility = ["//visibility:public"],
-    deps = if_cc_build([":onednn_cpu_lib"]),
+    deps = if_cc_build([
+        ":onednn_cpu_lib",
+        ":onednn_libs_linux",
+    ]),
 )
 
 cc_library(
