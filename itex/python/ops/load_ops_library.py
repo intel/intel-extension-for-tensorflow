@@ -58,7 +58,7 @@ def _load_ops_library():
     py_tf.TF_DeleteBuffer(buf)
 
   # Get a unique name for the module.
-  module_name = hashlib.sha1(wrappers).hexdigest()
+  module_name = hashlib.sha512(wrappers).hexdigest()
   if module_name in sys.modules:
     return sys.modules[module_name]
   module = imp.new_module(module_name)
