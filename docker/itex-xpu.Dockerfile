@@ -106,12 +106,12 @@ COPY models/binaries/$WHEELS /tmp/whls/
 RUN pip install /tmp/whls/* && \
     rm -rf /tmp/whls
 
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/THIRD-PARTY-PROGRAMS.txt /licenses/
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/dpcpp-third-party-programs.txt /licenses/
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/oneccl-third-party-programs.txt /licenses/
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/onemkl-third-party-program-sub-tpp.txt /licenses/
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/onemkl-third-party-program.txt /licenses/
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-program-of-intel-extension-for-tensorflow.txt /licenses/
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-programs-of-intel-tensorflow.txt /licenses/
-ADD https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-programs-of-intel-optimization-for-horovod.txt /licenses/
-ADD https://raw.githubusercontent.com/oneapi-src/oneCCL/master/third-party-programs.txt /licenses/
+RUN wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/THIRD-PARTY-PROGRAMS.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/dpcpp-third-party-programs.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/oneccl-third-party-programs.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/onemkl-third-party-program-sub-tpp.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/onemkl-third-party-program.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-program-of-intel-extension-for-tensorflow.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-programs-of-intel-tensorflow.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/third-party-programs/dockerlayer/third-party-programs-of-intel-optimization-for-horovod.txt && \
+    wget -P /licenses https://raw.githubusercontent.com/oneapi-src/oneCCL/master/third-party-programs.txt
