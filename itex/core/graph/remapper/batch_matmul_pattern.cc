@@ -191,8 +191,7 @@ class BatchMatMulWithMulAndAddFusion : public BatchMatMulFusion {
   }
 };
 
-// Disable batchmatmul + mul + add fusion for cpu accuracy issue.
-// REGISTER_FUSION(BatchMatMulWithMulAndAddV2Fusion)
+REGISTER_FUSION(BatchMatMulWithMulAndAddV2Fusion)
 REGISTER_FUSION(BatchMatMulWithMulAndAddFusion)
 
 }  // namespace graph
