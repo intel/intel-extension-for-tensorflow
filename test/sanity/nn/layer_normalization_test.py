@@ -281,7 +281,9 @@ class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
     for epsilon in 1e-12, 1e-3:
       expected = self._expected_layer_norm(x, beta, gamma, batch_input_shape,
                                            axis, epsilon)
-      for dtype in 'float32', 'bfloat16':
+      for dtype in 'float32', 'bfloat16', 'float16':
+        if not test.is_gpu_available() and dtype == 'float16':
+            self.skipTest("Skip on CPU due to the pattern not supported")
         norm = layer_normalization.LayerNormalization(
             axis=axis, dtype=dtype, batch_input_shape=batch_input_shape,
             epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
@@ -292,7 +294,7 @@ class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
         if dtype == 'float32':
           tol = fp32_tol
         else:
-          assert dtype == 'bfloat16'
+          assert dtype == 'bfloat16' or dtype == 'float16'
           tol = fp16_tol
 
         # We use absolute tolerances in addition to relative tolerances, because
@@ -313,71 +315,78 @@ class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
     self._test_forward_pass((2, 2, 2, 2), (2, 3))
     self._test_forward_pass((2, 3, 4, 5), (3,))
 
-  def _test_backward_pass(self, batch_input_shape, axis, fp32_tol=1e-3):
-    """Tests the backwards pass of layer normalization.
+  def _build_backward_pass_model(self, layer):
+    model = keras.models.Sequential()
+    model.add(keras.layers.Lambda(lambda x: x))
+    model.add(layer)
+    return model
 
-    Args:
-      batch_input_shape: The input shape that will be used to test, including
-        the batch dimension.
-      axis: A list of axises to normalize. Will be passed to the `axis` argument
-        of LayerNormalization.
-      fp32_tol: The relative and absolute tolerance for float32.
-    """
+  def _test_backward_pass(self, batch_input_shape, axis, fp32_tol=1e-3, fp16_tol=1e-2):
     param_shape = [batch_input_shape[i] for i in axis]
     param_elems = 1
     for dim in param_shape:
       param_elems *= dim
     beta = np.arange(param_elems, dtype='float32').reshape(param_shape)
     gamma = np.arange(1, param_elems + 1, dtype='float32').reshape(param_shape)
-    x = np.random.normal(size=batch_input_shape)
-    itex_training_fp16 = False
-
     for epsilon in 1e-12, 1e-3:
-      # Now only support float32 training for onednn layernorm primitive.
-      dtype = 'float32'
+      for dtype in 'float32', 'bfloat16', 'float16':
+        if not test.is_gpu_available() and dtype == 'float16':
+          self.skipTest("Skip on CPU due to the pattern not supported")
+          
+        if dtype == 'float32':
+          policy_dtype = 'float32'
+        else:
+          policy_dtype = 'mixed_' + dtype # 'mixed_bfloat16'  'mixed_float16'
 
-      norm = layer_normalization.LayerNormalization(
-          axis=axis, dtype=dtype, batch_input_shape=batch_input_shape,
-          epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
-          gamma_initializer=keras.initializers.constant(gamma))
-      norm.build(x.shape)
+        x = tf.Variable(np.random.normal(size=batch_input_shape), dtype=dtype)
 
-      tf_norm = tf_layer_normalization.LayerNormalization(
-          axis=axis, dtype=dtype, batch_input_shape=batch_input_shape,
-          epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
-          gamma_initializer=keras.initializers.constant(gamma))
-      tf_norm.build(x.shape)
+        norm = layer_normalization.LayerNormalization(
+            axis=axis, dtype=policy_dtype, batch_input_shape=batch_input_shape,
+            epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
+            gamma_initializer=keras.initializers.constant(gamma))
 
-      # pylint: disable=cell-var-from-loop
-      def forward_fn(x, beta, gamma):
-        # We must monkey-patch the attributes of `norm` with the function
-        # arguments, so that the gradient checker will properly compute their
-        # gradients. The gradient checker computes gradients with respect to
-        # the input arguments of `f`.
-        with test.mock.patch.object(norm, 'beta', beta):
-          with test.mock.patch.object(norm, 'gamma', gamma):
-            return norm(x)
-      # pylint: enable=cell-var-from-loop
-      results = gradient_checker_v2.compute_gradient(
-          forward_fn, [keras.backend.cast(x, dtype), norm.beta, norm.gamma])
-      ([x_grad_t, beta_grad_t, gamma_grad_t],
-       [x_grad_n, beta_grad_n, gamma_grad_n]) = results
+        tf_norm = tf_layer_normalization.LayerNormalization(
+            axis=axis, dtype=policy_dtype, batch_input_shape=batch_input_shape,
+            epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
+            gamma_initializer=keras.initializers.constant(gamma))
 
-      def tf_forward_fn(x, beta, gamma):
-        with test.mock.patch.object(tf_norm, 'beta', beta):
-          with test.mock.patch.object(tf_norm, 'gamma', gamma):
-            return tf_norm(x)
-      # pylint: enable=cell-var-from-loop
-      tf_results = gradient_checker_v2.compute_gradient(tf_forward_fn,
-          [keras.backend.cast(x, dtype), tf_norm.beta, tf_norm.gamma])
-      ([tf_x_grad_t, tf_beta_grad_t, tf_gamma_grad_t],
-       [tf_x_grad_n, tf_beta_grad_n, tf_gamma_grad_n]) = tf_results
+        model = self._build_backward_pass_model(norm)
+        tf_model = self._build_backward_pass_model(tf_norm)
 
-      tol = fp32_tol
+        with tf.GradientTape(persistent=True) as tape1:
+            outputs = model(x, training=True)
+            loss = tf.reduce_sum(outputs * 2)
 
-      self.assertAllClose(x_grad_n, tf_x_grad_n, rtol=tol, atol=tol)
-      self.assertAllClose(beta_grad_n, tf_beta_grad_n, rtol=tol, atol=tol)
-      self.assertAllClose(gamma_grad_n, tf_gamma_grad_n, rtol=tol, atol=tol)
+        with tf.GradientTape(persistent=True) as tape2:
+            tf_outputs = tf_model(x, training=True)
+            tf_loss = tf.reduce_sum(tf_outputs * 2)
+
+        dx = tape1.gradient(loss, x)
+        dwei = tape1.gradient(loss, norm.trainable_variables)
+        gradients = dict(dx=dx, dwei=dwei)
+
+        dx_tf = tape2.gradient(tf_loss, x)
+        dwei_tf = tape2.gradient(tf_loss, tf_norm.trainable_variables)
+        gradients_tf = dict(dx=dx_tf, dwei=dwei_tf)
+        
+        if dtype == 'float32':
+          tol = fp32_tol
+        else:
+          assert dtype == 'bfloat16' or dtype == 'float16'
+          tol = fp16_tol
+
+        # double verify weight
+        self.assertAllClose(
+            norm.trainable_variables[0], tf_norm.trainable_variables[0], rtol=tol, atol=tol)
+        self.assertAllClose(
+            norm.trainable_variables[1], tf_norm.trainable_variables[1], rtol=tol, atol=tol)
+
+        # verify forward result
+        self.assertAllClose(outputs, tf_outputs, rtol=tol, atol=tol)
+        # verify backward result
+        self.assertAllClose(gradients["dx"], gradients_tf["dx"], rtol=tol, atol=tol)
+        self.assertAllClose(gradients["dwei"][0], gradients_tf["dwei"][0], rtol=tol, atol=tol)
+        self.assertAllClose(gradients["dwei"][1], gradients_tf["dwei"][1], rtol=tol, atol=tol)
 
   # The gradient_checker_v2 does not work properly with LayerNorm in graph mode.
   @testing_utils.run_v2_only

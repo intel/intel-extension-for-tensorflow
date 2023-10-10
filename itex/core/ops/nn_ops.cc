@@ -179,7 +179,7 @@ void Register_LayerNormGradOp() {
     TF_OpDefinitionBuilderAddOutput(op_builder, "offset_backprop: U");
     TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_3: U");
     TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_4: U");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
     TF_OpDefinitionBuilderAddAttr(op_builder, "U: {float}");
     TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");
@@ -3086,7 +3086,7 @@ void Register_ITEXLayerNormGradOp() {
     TF_OpDefinitionBuilderAddOutput(op_builder, "offset_backprop: U");
     TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_3: U");
     TF_OpDefinitionBuilderAddOutput(op_builder, "reserve_space_4: U");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
     TF_OpDefinitionBuilderAddAttr(op_builder, "U: {float}");
     TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_training: bool = true");

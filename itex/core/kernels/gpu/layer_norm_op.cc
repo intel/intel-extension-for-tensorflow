@@ -48,6 +48,7 @@ REGISTER_LAYERNORM_GPU(Eigen::half, float);
                           LayerNormGradOp<GPUDevice, T, U>);
 REGISTER_LAYERNORM_GRAD_GPU(float, float);
 REGISTER_LAYERNORM_GRAD_GPU(Eigen::bfloat16, float);
+REGISTER_LAYERNORM_GRAD_GPU(Eigen::half, float);
 #undef REGISTER_LAYERNORM_GRAD_CPU
 
 #define REGISTER_MKLLAYERNORM_GPU(T, U)                                \
