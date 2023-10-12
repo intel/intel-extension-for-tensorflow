@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Environment Variables &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gce47818 documentation</title>
+  <title>Environment Variables &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g383c86a documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -141,6 +141,11 @@
 <td>The default is <code>1</code>, which will configure every tile as TensorFlow individual device in the scenario of one GPU card with multiple tiles. If set to <code>0</code>, the whole GPU card will be treated as single TensorFlow device for execution.</td>
 </tr>
 <tr>
+<td>ITEX_OMP_THREADPOOL</td>
+<td><code>1</code></td>
+<td>By default, ITEX CPU uses OMP threadpool and sets the number of inter parallelism threads to be <code>1</code>. If the graph has large inter-op concurrency, it is recommended to set to <code>0</code>, which uses eigen threadpool.</td>
+</tr>
+<tr>
 <td>ITEX_FP32_MATH_MODE</td>
 <td><code>FP32</code></td>
 <td>Sets oneDNN primitive floating-point math mode. The value can be <code>FP32</code> or <code>TF32</code> in GPU device and  <code>FP32</code> or <code>BF32</code> in CPU device. Default will be <code>FP32</code>.</td>
@@ -226,7 +231,7 @@ Refer to [Customized Operators Experimental Override](itex_ops_override.html).><
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f687b2ad060> 
+   <jinja2.runtime.BlockReference object at 0x7f0e21b1a3e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

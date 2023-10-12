@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BERT Training for Classifying Text on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gce47818 documentation</title>
+  <title>BERT Training for Classifying Text on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g383c86a documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -124,6 +124,10 @@ This example uses the tutorial from tensorflow.org <a class="reference external"
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./set_env_cpu.sh
 </pre></div>
 </div>
+<p>If your system is Ubuntu22.04, we suggest you to install below g++ version in conda environment.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>gxx_linux-64<span class="o">==</span><span class="m">12</span>.1.0
+</pre></div>
+</div>
 </section>
 <section id="enable-running-environment">
 <h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
@@ -178,6 +182,12 @@ http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333
 TypeError: &#39;NoneType&#39; object is not callable
 </pre></div>
 </div>
+<ol class="simple">
+<li><p>Jupyter ipython kernel crash after import tf2.14 in Ubuntu22.04 is a known issue. You can install below g++ version in conda environment to solve this problem.</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>gxx_linux-64<span class="o">==</span><span class="m">12</span>.1.0
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -195,7 +205,7 @@ TypeError: &#39;NoneType&#39; object is not callable
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f687b23ffd0> 
+   <jinja2.runtime.BlockReference object at 0x7f0e21aea230> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
