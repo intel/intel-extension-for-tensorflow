@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g36d10e7 documentation</title>
+  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g58b6291 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -168,24 +168,31 @@ This example shows BERT-Large Pretraining.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
 </pre></div>
 </div>
+<ul class="simple">
+<li><p>TF32 DataType</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">ITEX_FP32_MATH_MODE</span><span class="o">=</span><span class="n">TF32</span>
+<span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
+</pre></div>
+</div>
 <p><strong>Final Scripts</strong></p>
 <ul class="simple">
 <li><p>We use <a class="reference external" href="https://arxiv.org/pdf/1904.00962.pdf">LAMB</a> as the optimizer and pretraining has two phases. The maximum sequence length of phase1 and phase2 is 128 and 512, respectively. For the whole process of pretraining, you can use scripts in <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#training-process">nvidia-bert</a>.</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=60
-TRAIN_BATCH_SIZE_PHASE2=32
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=312
+TRAIN_BATCH_SIZE_PHASE2=40
 EVAL_BATCH_SIZE=8
-LEARNING_RATE_PHASE1=7.5e-4
+LEARNING_RATE_PHASE1=8.12e-4
 LEARNING_RATE_PHASE2=5e-4
 DATATYPE=$DATATYPE
-USA_XLA=false
+USE_XLA=false
 NUM_GPUS=1
-WARMUP_STEPS_PHASE1=660
-WARMUP_STEPS_PHASE2=66
+WARMUP_STEPS_PHASE1=810
+WARMUP_STEPS_PHASE2=81
 TRAIN_STEPS=2600
 SAVE_CHECKPOINT_STEPS=100
-NUM_ACCUMULATION_STEPS_PHASE1=64
-NUM_ACCUMULATION_STEPS_PHASE2=60
+NUM_ACCUMULATION_STEPS_PHASE1=32
+NUM_ACCUMULATION_STEPS_PHASE2=96
 BERT_MODEL=large
 
 GBS1=$(expr $TRAIN_BATCH_SIZE_PHASE1 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE1)
@@ -201,7 +208,7 @@ bash scripts/run_pretraining_lamb.sh \
     $LEARNING_RATE_PHASE1 \
     $LEARNING_RATE_PHASE2 \
     $DATATYPE \
-    $USA_XLA \
+    $USE_XLA \
     $NUM_GPUS \
     $WARMUP_STEPS_PHASE1 \
     $WARMUP_STEPS_PHASE2 \
@@ -231,12 +238,19 @@ bash scripts/run_pretraining_lamb.sh \
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
 </pre></div>
 </div>
+<ul class="simple">
+<li><p>TF32 DataType</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">ITEX_FP32_MATH_MODE</span><span class="o">=</span><span class="n">TF32</span>
+<span class="n">DATATYPE</span><span class="o">=</span><span class="n">fp32</span>
+</pre></div>
+</div>
 <p><strong>Final Scripts</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>NUM_GPUS=1
 BATCH_SIZE_PER_GPU=12
 LEARNING_RATE_PER_GPU=5e-6
 DATATYPE=$DATATYPE
-USE_XLA=true
+USE_XLA=false
 SQUAD_VERSION=1.1
 EPOCHS=2
 USE_MYTRAIN=true
@@ -287,7 +301,7 @@ bash scripts/run_squad.sh \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f1bc7bdbdf0> 
+   <jinja2.runtime.BlockReference object at 0x7f0a2873c3d0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
