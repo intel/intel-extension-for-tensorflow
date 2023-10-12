@@ -15,7 +15,7 @@
 
 #!/bin/bash
 
-ENV_NAME=env_itex_gpu
+ENV_NAME=env_itex_xpu
 deactivate
 rm -rf $ENV_NAME
 python -m venv $ENV_NAME
@@ -23,5 +23,5 @@ source $ENV_NAME/bin/activate
 pip install --upgrade pip
 pip install notebook
 pip install tensorflow tensorflow_hub
-pip install --upgrade intel-extension-for-tensorflow[gpu]
+pip install --upgrade intel-extension-for-tensorflow[xpu]
 conda install -y -c conda-forge gxx_linux-64==12.1.0
