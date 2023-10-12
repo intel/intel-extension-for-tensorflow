@@ -63,7 +63,6 @@ python run_squad.py \
    --doc_stride=128 \
    --output_dir=$OUTPUT_DIR \
    --use_tpu=False \
-   --tpu_name=$TPU_NAME \
    --precision=bfloat16 \
 ```
 
