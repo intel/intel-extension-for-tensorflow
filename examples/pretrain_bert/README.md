@@ -82,25 +82,32 @@ DATATYPE=bf16
 DATATYPE=fp32
 ```
 
++ TF32 DataType
+
+```
+export ITEX_FP32_MATH_MODE=TF32
+DATATYPE=fp32
+```
+
 **Final Scripts**
 
 + We use [LAMB](https://arxiv.org/pdf/1904.00962.pdf) as the optimizer and pretraining has two phases. The maximum sequence length of phase1 and phase2 is 128 and 512, respectively. For the whole process of pretraining, you can use scripts in [nvidia-bert](https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#training-process).
 
 ```
-TRAIN_BATCH_SIZE_PHASE1=60
-TRAIN_BATCH_SIZE_PHASE2=32
+TRAIN_BATCH_SIZE_PHASE1=312
+TRAIN_BATCH_SIZE_PHASE2=40
 EVAL_BATCH_SIZE=8
-LEARNING_RATE_PHASE1=7.5e-4
+LEARNING_RATE_PHASE1=8.12e-4
 LEARNING_RATE_PHASE2=5e-4
 DATATYPE=$DATATYPE
-USA_XLA=false
+USE_XLA=false
 NUM_GPUS=1
-WARMUP_STEPS_PHASE1=660
-WARMUP_STEPS_PHASE2=66
+WARMUP_STEPS_PHASE1=810
+WARMUP_STEPS_PHASE2=81
 TRAIN_STEPS=2600
 SAVE_CHECKPOINT_STEPS=100
-NUM_ACCUMULATION_STEPS_PHASE1=64
-NUM_ACCUMULATION_STEPS_PHASE2=60
+NUM_ACCUMULATION_STEPS_PHASE1=32
+NUM_ACCUMULATION_STEPS_PHASE2=96
 BERT_MODEL=large
 
 GBS1=$(expr $TRAIN_BATCH_SIZE_PHASE1 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE1)
@@ -116,7 +123,7 @@ bash scripts/run_pretraining_lamb.sh \
     $LEARNING_RATE_PHASE1 \
     $LEARNING_RATE_PHASE2 \
     $DATATYPE \
-    $USA_XLA \
+    $USE_XLA \
     $NUM_GPUS \
     $WARMUP_STEPS_PHASE1 \
     $WARMUP_STEPS_PHASE2 \
@@ -146,6 +153,13 @@ DATATYPE=bf16
 DATATYPE=fp32
 ```
 
++ TF32 DataType
+
+```
+export ITEX_FP32_MATH_MODE=TF32
+DATATYPE=fp32
+```
+
 **Final Scripts**
 
 ```
@@ -153,7 +167,7 @@ NUM_GPUS=1
 BATCH_SIZE_PER_GPU=12
 LEARNING_RATE_PER_GPU=5e-6
 DATATYPE=$DATATYPE
-USE_XLA=true
+USE_XLA=false
 SQUAD_VERSION=1.1
 EPOCHS=2
 USE_MYTRAIN=true
