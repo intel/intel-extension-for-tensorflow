@@ -718,6 +718,11 @@ struct EinsumHelper {
   }
 };
 
+template <typename Device, typename T,
+          std::enable_if_t<!std::is_same_v<Device, GPUDevice>, bool> = true>
+bool MayFuseEinsum(OpKernelContext* ctx, string& equation,           // NOLINT
+                   OperandLabels& input_labels, Labels& out_label);  // NOLINT
+
 template <typename Device, typename T>
 class EinsumOp : public OpKernel {
  public:
@@ -744,6 +749,12 @@ class EinsumOp : public OpKernel {
                             &input_labels, &output_labels, &label_types,
                             &input_label_counts, &output_label_counts,
                             &label_to_dim_sizes));
+
+    // Fuse einsum only for gpu device.
+    if constexpr (!std::is_same_v<Device, CPUDevice>) {
+      if (MayFuseEinsum<Device, T>(ctx, equation_, input_labels, output_labels))
+        return;
+    }
 
     // The reduction phase (a) sums across reduction dimensions, (b) takes
     // generalized diagonals, and (c) reshapes it into shape
