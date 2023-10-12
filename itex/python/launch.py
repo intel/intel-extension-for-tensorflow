@@ -338,6 +338,8 @@ class MultiInstanceLauncher(Launcher):
     cores = []
     set_kmp_affinity = True
     enable_taskset = False
+    if args.enable_op_parallelism:
+      self.set_env("ITEX_OMP_THREADPOOL","0")
     if args.core_list:  # user specify what cores will be used by params
       cores = [int(x) for x in args.core_list.split(",")]
       if args.ncore_per_instance == -1:
@@ -631,7 +633,7 @@ def add_itex_params(parser):
                      help="Enable ITEX layout opt")
   group.add_argument("--enable_op_parallelism", action='store_true', \
                       default=False,
-                     help="If true, set TF_NUM_INTEROP_THREADS=2, by default it is 1.")
+                     help="If true, set ITEX_OMP_THREADPOOL=0, by default it is 1.")
 
 
 def add_memory_allocator_params(parser):
@@ -798,14 +800,6 @@ def main():
         "You should not use '--tune' parameter when number of interop threads "
         "is set")
     sys.exit()
-  if args.enable_op_parallelism and (
-    args.tf_num_interop_threads is not None or "TF_NUM_INTEROP_THREADS" in os.environ):
-    logger.error(
-        "You should not use '--enable_op_parallelism' parameter when number of interop threads "
-        "is set")
-    sys.exit()
-  if args.enable_op_parallelism:
-    args.tf_num_interop_threads = "2"
 
   # Verify LD_PRELOAD
   if "LD_PRELOAD" in os.environ:

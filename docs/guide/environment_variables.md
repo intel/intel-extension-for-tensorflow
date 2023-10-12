@@ -9,6 +9,7 @@ Intel® Extension for TensorFlow* provides environment variables for users to qu
 | Environment Variables Names    | Default Value | Definition | 
 | ------------------------------ | ------------- | ---------------------------------------------- | 
 | ITEX_TILE_AS_DEVICE            | `1`             | The default is `1`, which will configure every tile as TensorFlow individual device in the scenario of one GPU card with multiple tiles. If set to `0`, the whole GPU card will be treated as single TensorFlow device for execution.|
+| ITEX_OMP_THREADPOOL    | `1` | By default, ITEX CPU uses OMP threadpool and sets the number of inter parallelism threads to be `1`. If the graph has large inter-op concurrency, it is recommended to set to `0`, which uses eigen threadpool.| 
 | ITEX_FP32_MATH_MODE            | `FP32`        | Sets oneDNN primitive floating-point math mode. The value can be `FP32` or `TF32` in GPU device and  `FP32` or `BF32` in CPU device. Default will be `FP32`.|
 | ITEX_AUTO_MIXED_PRECISION_LOG_PATH | `auto_mixed_precision_log_path` | Sets log path         |
 | ITEX_VERBOSE                       | `1`                       | Same semantics as `TF_CPP_MAX_VLOG_LEVEL`, but only works with Intel® Extension for TensorFlow* |
