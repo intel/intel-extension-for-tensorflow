@@ -34,6 +34,11 @@ Refer to [Prepare](../common_guide_running.md#prepare)
 ./set_env_cpu.sh
 ```
 
+If your system is Ubuntu22.04, we suggest you to install below g++ version in conda environment.
+```bash
+conda install -c conda-forge gxx_linux-64==12.1.0
+```
+
 ### Enable Running Environment
 
 1. Enable oneAPI running environment (only for GPU) and virtual running environment.
@@ -83,4 +88,9 @@ Open the url:http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f
 Traceback (most recent call last):
   File "/home/xxx/xxx/env_itex/lib/python3.9/site-packages/tensorflow/python/training/tracking/util.py", line 174, in __del__
 TypeError: 'NoneType' object is not callable
+```
+
+2. Jupyter ipython kernel crash after import tf2.14 in Ubuntu22.04 is a known issue. You can install below g++ version in conda environment to solve this problem.
+```bash
+conda install -c conda-forge gxx_linux-64==12.1.0
 ```

@@ -25,3 +25,4 @@ pip install --upgrade pip
 pip install notebook
 pip install tensorflow tensorflow_hub
 pip install --upgrade intel-extension-for-tensorflow[cpu]
+conda install -y -c conda-forge gxx_linux-64==12.1.0
