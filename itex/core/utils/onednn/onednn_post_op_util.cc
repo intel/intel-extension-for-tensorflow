@@ -17,8 +17,6 @@ limitations under the License.
 
 namespace itex {
 
-using algorithm = dnnl::algorithm;
-using kind = dnnl::primitive::kind;
 using memory = dnnl::memory;
 
 const std::vector<PostOpInfo>& PostOpUtil::GetAllPostOpInfo() {
@@ -106,6 +104,10 @@ bool PostOpUtil::AddOps(const std::vector<string>& fused_ops) {
       // Simply record status of `BiasAdd` instead of putting it to table.
       if (name == "BiasAdd") {
         this->has_bias_ = true;
+      } else if (name == "FusedBatchNorm") {
+        // BatchNorm will also be fused in primitive construction.
+        // Just record it.
+        this->has_bn_ = true;
       } else if (name == "Quantized" || name == "Requantize" ||
                  name == "Dequantize") {
         // Handle Quantized kernel.
@@ -123,6 +125,59 @@ bool PostOpUtil::AddOps(const std::vector<string>& fused_ops) {
   }
 
   return true;
+}
+
+void PostOpUtil::BuildBNContext(memory::format_tag* data_layout,
+                                memory::dims* fuse_bn_dims,
+                                dnnl::engine* engine) {
+  auto reset_md = [&fuse_bn_dims,
+                   &data_layout](std::shared_ptr<dnnl::memory::desc>& ptr) {
+    ptr.reset(
+        new memory::desc({*fuse_bn_dims}, OneDnnType<float>(), *data_layout));
+  };
+  reset_md(bn_context_.bn_scale_md);
+  reset_md(bn_context_.bn_mean_md);
+  reset_md(bn_context_.bn_rsqrt_md);
+  reset_md(bn_context_.bn_offset_md);
+
+  auto reset_mem = [&engine](std::shared_ptr<dnnl::memory>& mem_ptr,
+                             std::shared_ptr<dnnl::memory::desc>& md_ptr) {
+    mem_ptr.reset(new memory(*md_ptr, *engine, nullptr));
+  };
+  reset_mem(bn_context_.bn_scale_mem, bn_context_.bn_scale_md);
+  reset_mem(bn_context_.bn_mean_mem, bn_context_.bn_mean_md);
+  reset_mem(bn_context_.bn_offset_mem, bn_context_.bn_offset_md);
+  reset_mem(bn_context_.bn_rsqrt_mem, bn_context_.bn_rsqrt_md);
+}
+
+void PostOpUtil::SetBNMemory(const Tensor& bn_scale_tensor,
+                             const Tensor& bn_mean_tensor,
+                             const Tensor& bn_offset_tensor,
+                             const Tensor& bn_rsqrt_tensor) {
+  bn_context_.bn_scale_mem->set_data_handle(
+      GetTensorBuffer<float>(&bn_scale_tensor));
+  bn_context_.bn_mean_mem->set_data_handle(
+      GetTensorBuffer<float>(&bn_mean_tensor));
+  bn_context_.bn_rsqrt_mem->set_data_handle(
+      GetTensorBuffer<float>(&bn_rsqrt_tensor));
+  bn_context_.bn_offset_mem->set_data_handle(
+      GetTensorBuffer<float>(&bn_offset_tensor));
+}
+
+void PostOpUtil::AddBNPrimArgs(
+    std::unordered_map<int, memory>* fwd_primitives_args_) {
+  fwd_primitives_args_->insert(
+      {DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1,
+       *bn_context_.bn_mean_mem});
+  fwd_primitives_args_->insert(
+      {DNNL_ARG_ATTR_MULTIPLE_POST_OP(1) | DNNL_ARG_SRC_1,
+       *bn_context_.bn_rsqrt_mem});
+  fwd_primitives_args_->insert(
+      {DNNL_ARG_ATTR_MULTIPLE_POST_OP(2) | DNNL_ARG_SRC_1,
+       *bn_context_.bn_scale_mem});
+  fwd_primitives_args_->insert(
+      {DNNL_ARG_ATTR_MULTIPLE_POST_OP(3) | DNNL_ARG_SRC_1,
+       *bn_context_.bn_offset_mem});
 }
 
 void PostOpUtil::SetLeakyReluAlpha(float alpha) {
@@ -234,6 +289,33 @@ void PostOpUtil::SetPostOpAttr(dnnl::primitive_attr* attr,
   if (has_output_scales_) {
     if (output_scale_param_.scales.size()) {
       // if use DNNL_ARG_DST, dst scales should be 1/scale
+      attr->set_scales_mask(DNNL_ARG_WEIGHTS, output_scale_param_.mask);
+    }
+  }
+}
+
+// Since batchnorm do the following for each input x:
+// scale * (x - mean) / sqrt(\sigma + \epsilon) + offset
+// BatchNorm can be decomposed into the following post ops:
+// 1. A sub op `x - mean`
+// 2. A mul op `1 / sqrt(\sigma + \epsilon) * x`
+// 3. A mul op `scale * x`,
+// 4. An add op `x + offset`
+// where x means the output of previous step.
+void PostOpUtil::SetBNPostOpAttr(dnnl::primitive_attr* attr,
+                                 const std::vector<memory::desc>& md_list) {
+  ITEX_DCHECK(attr);
+  dnnl::post_ops post_ops = dnnl::post_ops();
+  post_ops.append_binary(algorithm::binary_sub, *bn_context_.bn_mean_md);
+  post_ops.append_binary(algorithm::binary_mul, *bn_context_.bn_rsqrt_md);
+  post_ops.append_binary(algorithm::binary_mul, *bn_context_.bn_scale_md);
+  post_ops.append_binary(algorithm::binary_add, *bn_context_.bn_offset_md);
+  if (postop_scale_list_.size() != 0) {
+    SetPostOp(&post_ops, md_list);
+  }
+  attr->set_post_ops(post_ops);
+  if (has_output_scales_) {
+    if (output_scale_param_.scales.size()) {
       attr->set_scales_mask(DNNL_ARG_WEIGHTS, output_scale_param_.mask);
     }
   }

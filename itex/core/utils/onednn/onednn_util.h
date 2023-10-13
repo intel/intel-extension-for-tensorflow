@@ -298,7 +298,7 @@ inline dnnl::memory::format_tag OneDnnTensorFormatToTag(
 }
 
 /// Map TensorFlow data format into oneDNN data format. This is used in TF
-/// kernels which have `data_format` attributes, such as Conv/Batchnorm/...
+/// kernels which have `data_format` attributes, such as Conv/BatchNorm/...
 /// `TensorFormat` is original TF tensor attr, it's always NCHW or NHWC no
 /// matter the rank is 4D or 5D.
 ///
@@ -368,7 +368,7 @@ inline dnnl::memory::dims TFShapeToOneDnnDims(const TensorShape& shape) {
 ///
 /// Commonly used in below scenarios:
 /// 1) Create oneDNN primitive from TF tensor in kernel which has `data_format`
-///    attr, such as Conv/Batchnorm/Pooling;
+///    attr, such as Conv/BatchNorm/Pooling;
 /// 2) Reorder TF/oneDNN tensors to same oneDNN format in kernel which has
 ///    multiply inputs, such as AddN/Concat;
 ///

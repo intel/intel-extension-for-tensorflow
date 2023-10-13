@@ -121,6 +121,7 @@ bool IsImag(const NodeDef& node);
 bool IsImmutableConst(const NodeDef& node);
 bool IsInvGrad(const NodeDef& node);
 bool IsInstanceNorm(const NodeDef& node);
+bool IsITEXFusedBatchNorm(const NodeDef& node);
 bool IsLeakyRelu(const NodeDef& node);
 bool IsLeakyReluGrad(const NodeDef& node);
 bool IsLess(const NodeDef& node);

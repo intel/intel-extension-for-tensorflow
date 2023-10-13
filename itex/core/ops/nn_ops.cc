@@ -322,9 +322,11 @@ void Register_ITEXFusedConv2DOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "filter: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "args: num_args * T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "bn_args: num_bn_args * float");
     TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
     TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
     TF_OpDefinitionBuilderAddAttr(op_builder, "num_args: int >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_bn_args: int >= 0");
     TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int)");
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder,

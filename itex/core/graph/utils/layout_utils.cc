@@ -215,6 +215,13 @@ bool RewriteFusedConv(const utils::MutableNodeView& node_view) {
 }
 
 bool RewriteOneDnnFusedConv(const utils::MutableNodeView& node_view) {
+  const NodeDef& node_def = *(node_view.node());
+  std::vector<string> fused_ops;
+  ITEX_CHECK_OK(GetNodeAttr(node_def, "fused_ops", &fused_ops));
+  for (auto& post_op : fused_ops) {
+    if (post_op == "FusedBatchNorm") return false;
+  }
+
   return RewriteFusedConv(node_view) && RewriteOneDnnConv(node_view);
 }
 

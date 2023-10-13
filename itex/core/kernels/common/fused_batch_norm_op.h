@@ -523,7 +523,7 @@ class QuantizedFusedBatchNormOp
         context);
     if (out_dt_ == DT_QINT8) {
       // TODO(itex): here code may has some bugs. but we just follow Intel-TF
-      // implementation. It assumes the min/max of input & output of Batchnorm
+      // implementation. It assumes the min/max of input & output of BatchNorm
       // are the same. In reality, the assumption is not always true, but
       // currently, we don't receive model accuracy issue report.
       context->set_output(1, context->input(5));

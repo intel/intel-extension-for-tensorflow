@@ -43,6 +43,16 @@ using ConvFwdPd = dnnl::convolution_forward::primitive_desc;
 
 #define DNNL_SIZE_DTYPE int64_t
 
+namespace functor {
+template <typename Device, typename T>
+struct ComputeBNScale {
+  void operator()(const Device& d, typename TTypes<T>::Vec buffer,
+                  typename TTypes<T>::ConstVec var, T variance_epsilon) {
+    buffer.device(d) = (var + var.constant(variance_epsilon)).rsqrt().eval();
+  }
+};
+}  // namespace functor
+
 class OneDnnConvUtil {
  protected:
   OpKernelContext* context_;  // We don't own this.
@@ -740,6 +750,19 @@ class ConvOpBase : public OpKernel {
       bias_mem_.set_data_handle(bias_data);
     }
 
+    if (post_op_util_.HasBN()) {
+      const Tensor& bn_scale_tensor = context->input(kInputIndex_BN_Scale_);
+      const Tensor& bn_mean_tensor = context->input(kInputIndex_BN_Mean_);
+      const Tensor& bn_offset_tensor = context->input(kInputIndex_BN_Offset_);
+      const Tensor& bn_var_tensor = context->input(kInputIndex_BN_Variance_);
+      functor::ComputeBNScale<Device, float>()(
+          context->eigen_device<Device>(),
+          cached_bn_rsqrt_tensor_.tensor<float, 1>(),
+          bn_var_tensor.vec<float>(), bn_epsilon_);
+      post_op_util_.SetBNMemory(bn_scale_tensor, bn_mean_tensor,
+                                bn_offset_tensor, cached_bn_rsqrt_tensor_);
+    }
+
     // Reallocate scratchpad memory.
     OP_REQUIRES_OK(context,
                    context->allocate_temp(DataTypeToEnum<Tinput>::v(),
@@ -882,7 +905,6 @@ class ConvOpBase : public OpKernel {
       this->ExtendInt8PostOps(context);
       // Set post op attribution.
       dnnl::primitive_attr post_ops_attr;
-      post_op_util_.SetPostOpAttr(&post_ops_attr);
       post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<Tinput, float>::value) {
         post_ops_attr.set_fpmath_mode(fp32_math_mode_);
@@ -891,6 +913,40 @@ class ConvOpBase : public OpKernel {
           post_op_util_.GetOutputScale().size() > 1 && is_depthwise) {
         // For depthwise convolution mask should be 1<<0 + 1<<1 in onednn3.0
         post_ops_attr.set_scales_mask(DNNL_ARG_WEIGHTS, 3);
+      }
+
+      if (post_op_util_.HasBN()) {
+        // Since batchnorm do the following for each input x:
+        // scale * (x - mean) / sqrt(\sigma + \epsilon) + offset
+        // BatchNorm can be decomposed into four post ops:
+        // sub(mean), mul(rsqrt(\sigma + \epsilon)), mul(scale), add(offset)
+        const Tensor& bn_mean_tensor = context->input(kInputIndex_BN_Mean_);
+        // Inputs to FusedBatchNorm have same 1D shape
+        TensorShape fuse_bn_shape = bn_mean_tensor.shape();
+        OP_REQUIRES(context, fuse_bn_shape.dims() == 1,
+                    errors::InvalidArgument("FusedBatchNorm must be 1D, not: ",
+                                            fuse_bn_shape.DebugString()));
+
+        // Note: oneDNN expects {1, C, 1, 1} for binary post-op even for NHWC
+        memory::dims fuse_bn_dims = {1, fuse_bn_shape.dim_size(0), 1, 1};
+        post_op_util_.BuildBNContext(&data_layout, &fuse_bn_dims,
+                                     &onednn_engine_);
+
+        const Tensor& bn_scale_tensor = context->input(kInputIndex_BN_Scale_);
+        const Tensor& bn_offset_tensor = context->input(kInputIndex_BN_Offset_);
+        const Tensor& bn_var_tensor = context->input(kInputIndex_BN_Variance_);
+        OP_REQUIRES_OK(context, context->allocate_temp(
+                                    DataTypeToEnum<float>::v(), fuse_bn_shape,
+                                    &cached_bn_rsqrt_tensor_));
+        functor::ComputeBNScale<Device, float>()(
+            context->eigen_device<Device>(),
+            cached_bn_rsqrt_tensor_.tensor<float, 1>(),
+            bn_var_tensor.vec<float>(), bn_epsilon_);
+        post_op_util_.SetBNMemory(bn_scale_tensor, bn_mean_tensor,
+                                  bn_offset_tensor, cached_bn_rsqrt_tensor_);
+        post_op_util_.SetBNPostOpAttr(&post_ops_attr);
+      } else {
+        post_op_util_.SetPostOpAttr(&post_ops_attr);
       }
 
       fwd_pd_ =
@@ -1041,6 +1097,9 @@ class ConvOpBase : public OpKernel {
       fwd_primitives_args_.insert({DNNL_ARG_WEIGHTS, filter_mem_});
       fwd_primitives_args_.insert({DNNL_ARG_DST, dst_mem_opt_});
       fwd_primitives_args_.insert({DNNL_ARG_SCRATCHPAD, scratchpad_mem_});
+      if (post_op_util_.HasBN()) {
+        post_op_util_.AddBNPrimArgs(&fwd_primitives_args_);
+      }
       if (this->post_op_util_.HasOutputScales()) {
         float* output_scale_ptr = output_scale_cache_.GetCachedPtr(
             context, this->post_op_util_.GetOutputScale().data(),
@@ -1091,6 +1150,10 @@ class ConvOpBase : public OpKernel {
   std::vector<int64_t> explicit_paddings_;
   bool is_conv2d_;
   const int kSrcIndex_ = 0, kFilterIndex_ = 1, kBiasIndex_ = 2, kAddIndex_ = 3;
+  // Input indices for FusedBatchNorm
+  const int kInputIndex_BN_Scale_ = 2, kInputIndex_BN_Offset_ = 3;
+  const int kInputIndex_BN_Mean_ = 4, kInputIndex_BN_Variance_ = 5;
+
   const int kDstIndex_ = 0;
   PostOpUtil post_op_util_;
 
@@ -1139,6 +1202,8 @@ class ConvOpBase : public OpKernel {
   // This one for dnnl primitive weight when weight need reorder.
   Tensor tmp_weight_;
   std::shared_ptr<Tensor> scratchpad_tensor_;
+  Tensor cached_bn_rsqrt_tensor_;
+  float bn_epsilon_;
   int64_t scratchpad_size_ = 0;
 
   bool enable_cache_ = false;
@@ -1245,7 +1310,18 @@ class FusedConvOp : public ConvOpBase<Device, Tinput, Tfilter, Tbias, Toutput,
     OP_REQUIRES(
         context, this->post_op_util_.AddOps(fused_ops),
         errors::InvalidArgument("Found unsupported fusion in Fused Conv2D."));
-
+    if (this->post_op_util_.HasBN()) {
+      float epsilon;
+      int num_bn_args;
+      OP_REQUIRES_OK(context, context->GetAttr("epsilon", &epsilon));
+      OP_REQUIRES_OK(context, context->GetAttr("num_bn_args", &num_bn_args));
+      OP_REQUIRES(
+          context, num_bn_args == 4,
+          errors::InvalidArgument(
+              "Fused Conv2D with batchnorm must have 4 extra argument"));
+      this->post_op_util_.set_epsilon(epsilon);
+      this->bn_epsilon_ = epsilon;
+    }
     // Set alpha if get `LeakyRelu` after adding ops.
     if (this->post_op_util_.HasLeakyRelu()) {
       float alpha;

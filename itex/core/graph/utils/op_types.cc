@@ -418,6 +418,12 @@ bool IsInstanceNorm(const NodeDef& node) {
   return node.op() == "_ITEXInstanceNorm";
 }
 
+bool IsITEXFusedBatchNorm(const NodeDef& node) {
+  const auto& op = node.op();
+  return op == "_ITEXFusedBatchNorm" || op == "_ITEXFusedBatchNormV2" ||
+         op == "_ITEXFusedBatchNormV3";
+}
+
 bool IsLeakyRelu(const NodeDef& node) { return node.op() == "LeakyRelu"; }
 
 bool IsLeakyReluGrad(const NodeDef& node) {
