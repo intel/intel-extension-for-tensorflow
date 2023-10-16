@@ -92,7 +92,7 @@ def cpu_copts():
                 "-march=native",
             ],
             "//conditions:default": [],
-        })
+        }) + ["-fopenmp"]
     )
 
 def _copt_transition_impl(settings, attr):

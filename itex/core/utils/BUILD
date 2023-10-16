@@ -436,3 +436,11 @@ cc_library(
         "//third_party/build_option/dpcpp:itex_gpu_header",
     ],
 )
+
+cc_library(
+    name = "parallel_openmp",
+    hdrs = [
+        "parallel_openmp.h",
+    ],
+    visibility = ["//visibility:public"],
+)

@@ -362,6 +362,7 @@ void RegisterOps() {
   Register_FusedDenseBiasAddGeluGradOp();
   // scaled_dot_product_attention
   Register_SDPOp();
+  Register_SDPInfOp();
   Register_SDPGradOp();
 
   // FP8 kernels

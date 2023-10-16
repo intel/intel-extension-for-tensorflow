@@ -328,6 +328,7 @@ void Register_OneDnnTransposeOp();
 
 void Register_FusedDenseBiasAddGeluOp();
 void Register_FusedDenseBiasAddGeluGradOp();
+void Register_SDPInfOp();
 void Register_SDPOp();
 void Register_SDPGradOp();
 

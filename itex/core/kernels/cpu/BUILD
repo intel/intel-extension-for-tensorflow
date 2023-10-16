@@ -92,6 +92,22 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "mha_op",
+    srcs = ["mha_op.cc"],
+    hdrs = [
+        "mha_op.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cpu_blas",
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "matmul_op",
     srcs = ["matmul_op.cc"],
     hdrs = [
@@ -417,6 +433,21 @@ itex_xpu_library(
     alwayslink = True,
 )
 
+itex_xpu_library(
+    name = "cpu_blas",
+    srcs = ["cpu_blas.cc"],
+    hdrs = [
+        "cpu_blas.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
 CPU_KERNELS = [
     ":aggregate_ops",
     ":binary_op",
@@ -427,6 +458,7 @@ CPU_KERNELS = [
     ":einsum_op",
     ":fused_batch_norm_op",
     ":fused_binary_op",
+    ":mha_op",
     ":fused_random_op",
     ":gru_ops",
     ":instance_norm_ops",
@@ -444,6 +476,7 @@ CPU_KERNELS = [
     ":slice_op",
     ":softmax_op",
     ":transpose_op",
+    ":cpu_blas",
 ]
 
 itex_xpu_library(

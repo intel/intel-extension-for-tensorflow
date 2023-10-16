@@ -1848,7 +1848,7 @@ index 000000000..135b1b9c8
 +#endif // EIGEN_HALF_DPCPP_H
 diff --git a/Eigen/src/Core/arch/DPCPP/InteropHeaders.h b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
 new file mode 100644
-index 000000000..6b0cc530c
+index 000000000..7dfd19b52
 --- /dev/null
 +++ b/Eigen/src/Core/arch/DPCPP/InteropHeaders.h
 @@ -0,0 +1,530 @@
@@ -1879,7 +1879,7 @@ index 000000000..6b0cc530c
 +
 +// This funciton is to back compatible with old DPCPP compiler
 +template <typename T, int Dims = 1>
-+inline T* SYCLGetLocalAccPointer(
++EIGEN_ALWAYS_INLINE T* SYCLGetLocalAccPointer(
 +    const sycl::local_accessor<T, Dims>& accessor) {
 +  if constexpr (std::is_same_v<decltype(accessor.get_pointer()),
 +                               sycl::local_ptr<T>>) {
@@ -11641,7 +11641,7 @@ index ea286fee1..eeef4f73d 100644
    #endif
  };
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h b/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h
-index 9b0eb3e2f..4a2167be0 100644
+index 9b0eb3e2f..aeb2e0d12 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h
 @@ -141,7 +141,7 @@ struct preserve_inner_most_dims<ReducedDims, NumTensorDims, RowMajor>{
@@ -11698,7 +11698,7 @@ index 9b0eb3e2f..4a2167be0 100644
  // Default Generic reducer
  template <typename Self, typename Op, typename Device>
  struct GenericReducer {
-@@ -457,7 +457,7 @@ __global__ __launch_bounds__(1024) void OuterReductionKernel(R, const S, I_, I_,
+@@ -457,13 +457,23 @@ __global__ __launch_bounds__(1024) void OuterReductionKernel(R, const S, I_, I_,
   */
  template <typename Op, typename CoeffReturnType>
  struct ReductionReturnType {
@@ -11707,18 +11707,32 @@ index 9b0eb3e2f..4a2167be0 100644
    typedef typename remove_const<decltype(std::declval<Op>().initialize())>::type type;
  #else
    typedef typename remove_const<CoeffReturnType>::type type;
-@@ -516,7 +516,9 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+ #endif
+ };
+ 
++template <typename Device, typename ArgType>
++struct ReductionInputPacketAccess {
++  static constexpr bool value = TensorEvaluator<ArgType, Device>::PacketAccess;
++};
++
++template <typename ArgType>
++struct ReductionInputPacketAccess<Eigen::GpuDevice, ArgType> {
++  static constexpr bool value = false;
++};
++
+ }  // end namespace internal
+ 
+ 
+@@ -516,7 +526,7 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
    typedef typename internal::conditional<NumOutputDims==0, Sizes<>, DSizes<Index, NumOutputDims> >::type Dimensions;
    typedef typename XprType::Scalar Scalar;
    typedef TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>, Device> Self;
 -  static const bool InputPacketAccess = TensorEvaluator<ArgType, Device>::PacketAccess;
-+
-+  // TODO(itex): Reopen this vectorization implementation when its performance is not bad.
-+  static const bool InputPacketAccess = false;
++  static constexpr bool InputPacketAccess = internal::ReductionInputPacketAccess<Device, ArgType>::value;
    typedef typename internal::ReductionReturnType<Op, typename XprType::CoeffReturnType>::type CoeffReturnType;
    typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
    static const Index PacketSize = PacketType<CoeffReturnType, Device>::size;
-@@ -525,7 +527,7 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+@@ -525,7 +535,7 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
    typedef StorageMemory<CoeffReturnType, Device> Storage;
    typedef typename Storage::Type EvaluatorPointerType;
  
@@ -11727,7 +11741,7 @@ index 9b0eb3e2f..4a2167be0 100644
    // Indexed by output dimensions.
    static const int NumPreservedStrides = max_n_1<NumOutputDims>::size;
  
-@@ -545,6 +547,10 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+@@ -545,6 +555,10 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
    typedef internal::TensorBlockNotImplemented TensorBlock;
    //===--------------------------------------------------------------------===//
  
@@ -11738,7 +11752,7 @@ index 9b0eb3e2f..4a2167be0 100644
    static const bool ReducingInnerMostDims = internal::are_inner_most_dims<Dims, NumInputDims, Layout>::value;
    static const bool PreservingInnerMostDims = internal::preserve_inner_most_dims<Dims, NumInputDims, Layout>::value;
    static const bool RunningFullReduction = (NumOutputDims==0);
-@@ -724,7 +730,7 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+@@ -724,7 +738,7 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
            return (m_result != NULL);
          }
        }
@@ -11747,7 +11761,7 @@ index 9b0eb3e2f..4a2167be0 100644
        // If there is no Optimised version for SYCL, the reduction expression 
        // must break into two subexpression and use the SYCL generic Reducer on the device.
        if(RunningOnSycl) {
-@@ -801,7 +807,6 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+@@ -801,7 +815,6 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
    template<int LoadMode>
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const
    {
@@ -11755,7 +11769,7 @@ index 9b0eb3e2f..4a2167be0 100644
      eigen_assert(index + PacketSize - 1 < Index(internal::array_prod(dimensions())));
  
      if (RunningOnGPU && m_result) {
-@@ -856,13 +861,6 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+@@ -856,13 +869,6 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
    EIGEN_DEVICE_FUNC EvaluatorPointerType data() const { return m_result; }
    EIGEN_DEVICE_FUNC const TensorEvaluator<ArgType, Device>& impl() const { return m_impl; }
    EIGEN_DEVICE_FUNC const Device& device() const { return m_device; }
@@ -11769,7 +11783,7 @@ index 9b0eb3e2f..4a2167be0 100644
  
    private:
    template <int, typename, typename> friend struct internal::GenericDimReducer;
-@@ -890,6 +888,12 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+@@ -890,6 +896,12 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
   template <typename, typename, typename> friend struct internal::GenericReducer;
  #endif
  
@@ -11782,7 +11796,7 @@ index 9b0eb3e2f..4a2167be0 100644
  
    template <typename S, typename O, typename D> friend struct internal::InnerReducer;
  
-@@ -974,6 +978,10 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
+@@ -974,6 +986,10 @@ struct TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, M
  #elif defined(EIGEN_USE_SYCL)
  static const bool RunningOnSycl = internal::is_same<typename internal::remove_all<Device>::type, Eigen::SyclDevice>::value;
  static const bool RunningOnGPU = false;
@@ -11793,7 +11807,7 @@ index 9b0eb3e2f..4a2167be0 100644
  #else
    static const bool RunningOnGPU = false;
    static const bool RunningOnSycl = false;
-@@ -990,7 +998,28 @@ struct TensorEvaluator<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>,
+@@ -990,7 +1006,28 @@ struct TensorEvaluator<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>,
    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorEvaluator(const typename Base::XprType& op, const Device& device) : Base(op, device){}
  };
  
@@ -11801,7 +11815,7 @@ index 9b0eb3e2f..4a2167be0 100644
 +template<typename Op, typename Dims, typename ArgType, template <class> class MakePointer_>
 +struct TensorEvaluator<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>, Eigen::GpuDevice>
 +: public TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>, Eigen::GpuDevice> {
- 
++
 +  typedef TensorReductionEvaluatorBase<const TensorReductionOp<Op, Dims, ArgType, MakePointer_>, Eigen::GpuDevice> Base;
 +  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorEvaluator(const typename Base::XprType& op, const Eigen::GpuDevice& device) : Base(op, device){}
 +  // The coeff function in the base the recursive method which is not an standard layout and cannot be used in the SYCL kernel
@@ -11816,7 +11830,7 @@ index 9b0eb3e2f..4a2167be0 100644
 +    return internal::pload<typename Base::PacketReturnType>(this->data() + index);
 +  }
 +};
-+
+ 
 +
 +#endif
  template<typename Op, typename Dims, typename ArgType, template <class> class MakePointer_>

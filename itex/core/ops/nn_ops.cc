@@ -4758,6 +4758,7 @@ void Register_SDPOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_mask: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_dropout: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "dropout_prob: float = 0.0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_inference: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
 
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
@@ -4765,6 +4766,29 @@ void Register_SDPOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ScaledDotProductAttention op registration failed: ";
+  }
+}
+
+void Register_SDPInfOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ScaledDotProductAttentionInference");
+    TF_OpDefinitionBuilderAddInput(op_builder, "query: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "key: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "value: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "atten_mask: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_mask: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "use_causal: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_inference: bool = true");
+
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unknown_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ScaledDotProductAttentionInference op registration failed: ";
   }
 }
 

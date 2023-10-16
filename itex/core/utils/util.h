@@ -19,6 +19,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_UTIL_H_
 
 #include <string>
+#include <utility>
 
 #include "itex/core/utils/tensor_shape.h"
 
@@ -37,6 +38,29 @@ gtl::InlinedVector<T, 8> ComputeStride(const TensorShape& shape) {
     stride *= static_cast<T>(shape.dim_size(i));
   }
   return strides;
+}
+
+template <typename T>
+inline T DataIndexInit(T offset) {
+  return offset;
+}
+
+template <typename T, typename... Args>
+inline T DataIndexInit(T offset, T* x, const T& X, Args&&... args) {
+  offset = DataIndexInit(offset, std::forward<Args>(args)...);
+  *x = offset % X;
+  return offset / X;
+}
+
+inline bool DataIndexStep() { return true; }
+
+template <typename T, typename... Args>
+inline bool DataIndexStep(T* x, const T& X, Args&&... args) {
+  if (DataIndexStep(std::forward<Args>(args)...)) {
+    *x = ((*x + 1) == X) ? 0 : (*x + 1);
+    return *x == 0;
+  }
+  return false;
 }
 
 }  // namespace itex
