@@ -6037,9 +6037,13 @@ inline bool VerifyConstants(RemapperContext* ctx,
         DataType dtype = const_tensor.dtype();
         if (!(dtype == DT_FLOAT || dtype == DT_BFLOAT16 || dtype == DT_HALF))
           return false;
-        auto const_value = (dtype == DT_FLOAT)
-                               ? const_tensor.flat<float>()(0)
-                               : const_tensor.flat<Eigen::bfloat16>()(0);
+        auto const_value =
+            (dtype == DT_FLOAT)
+                ? const_tensor.flat<float>()(0)
+                : ((dtype == DT_BFLOAT16)
+                       ? const_tensor.flat<Eigen::bfloat16>()(0)
+                       : static_cast<float>(
+                             const_tensor.flat<Eigen::half>()(0)));
         // To compare float.
         if (std::abs(const_value - it->second) > 1e-2f) return false;
       } else {
