@@ -1149,10 +1149,11 @@ class ConvOpBase : public OpKernel {
  protected:
   std::vector<int64_t> explicit_paddings_;
   bool is_conv2d_;
-  const int kSrcIndex_ = 0, kFilterIndex_ = 1, kBiasIndex_ = 2, kAddIndex_ = 3;
+  const int kSrcIndex_ = 0, kFilterIndex_ = 1, kBiasIndex_ = 2;
+  int kAddIndex_ = 3;
   // Input indices for FusedBatchNorm
-  const int kInputIndex_BN_Scale_ = 2, kInputIndex_BN_Offset_ = 3;
-  const int kInputIndex_BN_Mean_ = 4, kInputIndex_BN_Variance_ = 5;
+  int kInputIndex_BN_Scale_ = 2, kInputIndex_BN_Offset_ = 3;
+  int kInputIndex_BN_Mean_ = 4, kInputIndex_BN_Variance_ = 5;
 
   const int kDstIndex_ = 0;
   PostOpUtil post_op_util_;
@@ -1310,6 +1311,10 @@ class FusedConvOp : public ConvOpBase<Device, Tinput, Tfilter, Tbias, Toutput,
     OP_REQUIRES(
         context, this->post_op_util_.AddOps(fused_ops),
         errors::InvalidArgument("Found unsupported fusion in Fused Conv2D."));
+    if (!this->post_op_util_.HasBias())
+      this->kAddIndex_ = 2;
+    else
+      this->kAddIndex_ = 3;
     if (this->post_op_util_.HasBN()) {
       float epsilon;
       int num_bn_args;
@@ -1321,6 +1326,12 @@ class FusedConvOp : public ConvOpBase<Device, Tinput, Tfilter, Tbias, Toutput,
               "Fused Conv2D with batchnorm must have 4 extra argument"));
       this->post_op_util_.set_epsilon(epsilon);
       this->bn_epsilon_ = epsilon;
+      if (this->post_op_util_.HasAdd()) {
+        this->kInputIndex_BN_Scale_ = 3;
+        this->kInputIndex_BN_Offset_ = 4;
+        this->kInputIndex_BN_Mean_ = 5;
+        this->kInputIndex_BN_Variance_ = 6;
+      }
     }
     // Set alpha if get `LeakyRelu` after adding ops.
     if (this->post_op_util_.HasLeakyRelu()) {

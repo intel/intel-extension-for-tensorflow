@@ -464,6 +464,10 @@ void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
 
 bool IsUnchangingVariable(const utils::MutableNodeView* node_view) {
   const NodeDef* node_def = node_view->node();
+  if (IsCast(*node_def) &&
+      IsReadVariableOp(*(node_view->GetRegularFanin(0).node_view()->node())) &&
+      GetOptimizerConfigFlags().enable_optimize_aggressive)
+    return true;
 
   if (!GetOptimizerConfigFlags().enable_optimize_aggressive ||
       !IsReadVariableOp(*node_def))

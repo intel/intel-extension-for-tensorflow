@@ -618,7 +618,8 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
                                               strides = [1, 1, 1, 1],
                                               dilations = [1, 1, 1, 1],
                                               data_format='NHWC',
-                                              activation=None):
+                                              activation=None,
+                                              has_add=False):
     os.environ['ITEX_LAYOUT_OPT'] = '0'
     is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
 
@@ -651,6 +652,8 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
                          padding=padding,
                          strides=strides,
                          dilations=dilations)
+      
+      add = tf.ones(conv_out.shape,dtype=conv_out.dtype)
 
       bn_sizes = weight_sizes[3]
       bn_scale = [0.2] * bn_sizes
@@ -661,6 +664,8 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
       out, _, _ = _batch_norm(conv_out, mean = bn_mean,
                         var = bn_var, offset=bn_offset,
                         scale=bn_scale, data_format=data_format)
+      if has_add:
+        out = out + add
 
       if activation == 'GeluExact':
         out = Activation_op_dict[activation](out, approximate=False)
@@ -669,10 +674,11 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
       out = array_ops.identity(out)
 
       tol = 1e-5 if precision == 'float32' else 1e-2
+      expect_fused_ops = ['FusedBatchNorm']
+      if has_add:
+        expect_fused_ops.append('Add')
       if activation:
-        expect_fused_ops = ['FusedBatchNorm', activation]
-      else:
-        expect_fused_ops = ['FusedBatchNorm']
+        expect_fused_ops.append(activation)
       self._verify_value(out, 'FusedConv2D', expect_fused_ops, tol, tol)
 
   @test_util.run_deprecated_v1
@@ -771,6 +777,15 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
       input_sizes=[1, 3, 6, 1],
       weight_sizes=[2, 2, 1, 1],
       activation='GeluExact')
+
+  @test_util.run_deprecated_v1
+  @test_util.disable_xla('This test does not pass with XLA')
+  def test_conv2d_batchnorm_add_fusion(self):
+    self._build_fused_conv2d_batchnorm_activation(
+      input_sizes=[1, 3, 6, 1],
+      weight_sizes=[2, 2, 1, 1],
+      activation='Relu',
+      has_add=True)
     
 if __name__ == '__main__':
   test.main()

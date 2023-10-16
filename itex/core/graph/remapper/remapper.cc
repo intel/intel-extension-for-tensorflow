@@ -330,6 +330,27 @@ struct ContractionWithBatchNormAndActivation {
   float epsilon = 0.0;
 };
 
+struct ContractionWithBatchNormAndAddV2AndActivation {
+  ContractionWithBatchNormAndAddV2AndActivation() = default;
+  ContractionWithBatchNormAndAddV2AndActivation(int contraction,
+                                                int fused_batch_norm, int add,
+                                                int activation, int add_port,
+                                                float epsilon = 0.0)
+      : contraction(contraction),
+        fused_batch_norm(fused_batch_norm),
+        add(add),
+        activation(activation),
+        add_port(add_port),
+        epsilon(epsilon) {}
+
+  int contraction = kMissingIndex;
+  int fused_batch_norm = kMissingIndex;
+  int add = kMissingIndex;
+  int activation = kMissingIndex;
+  int add_port = 0;
+  float epsilon = 0.0;
+};
+
 struct ContractionWithBiasAndActivationAdd {
   ContractionWithBiasAndActivationAdd() = default;
   ContractionWithBiasAndActivationAdd(int contraction, int bias_add,
@@ -1744,6 +1765,60 @@ bool FindConv2DWithBatchNormAndActivation(
   matched->activation = node_index;
   matched->epsilon = base.epsilon;
 
+  return true;
+}
+
+bool FindConv2DWithBatchNormAndAddV2AndActivation(
+    const RemapperContext& ctx, int node_index,
+    ContractionWithBatchNormAndAddV2AndActivation* matched) {
+  const auto* node_view = ctx.graph_view.GetNode(node_index);
+  if (HasControlFaninOrFanout(*node_view)) return false;
+
+  // Root of the pattern must be an activation node.
+  const auto* node_def = node_view->node();
+  if (!IsSupportedActivation(*node_def)) return false;
+
+  // OneDnn activation op only supports float, float16 and bfloat16 data types
+  // on GPU.
+  if (!HasDataType(node_def, DT_FLOAT) && !HasDataType(node_def, DT_BFLOAT16) &&
+      !HasDataType(node_def, DT_HALF))
+    return false;
+
+  // And input to activation must match ContractionWithBiasAddAndAdd pattern.
+  if (node_view->NumRegularFanins() < 1) return false;
+  const auto* add_node_view = node_view->GetRegularFanin(0).node_view();
+  const auto* add_node_def = add_node_view->node();
+
+  if (!IsAddV2(*add_node_def)) return false;
+  auto* batch_norm_node_view = add_node_view->GetRegularFanin(0).node_view();
+
+  ContractionWithBatchNorm base;
+  if (!FindConv2DWithBatchNorm(ctx, batch_norm_node_view->node_index(),
+                               &base)) {
+    batch_norm_node_view = add_node_view->GetRegularFanin(1).node_view();
+    if (!FindConv2DWithBatchNorm(ctx, batch_norm_node_view->node_index(),
+                                 &base))
+      return false;
+    else
+      matched->add_port = 1;
+  } else {
+    matched->add_port = 0;
+  }
+
+  const auto* fused_batch_norm_node_view =
+      ctx.graph_view.GetNode(base.fused_batch_norm);
+  const auto* fused_batch_norm_node_def = fused_batch_norm_node_view->node();
+  if (!HasAtMostOneFanoutAtPort0(*fused_batch_norm_node_view) ||
+      !HaveSameDataType(node_def, fused_batch_norm_node_def) ||
+      IsInPreserveSet(ctx, fused_batch_norm_node_def))
+    return false;
+
+  // We successfully found a Conv2D+FusedBatchNorm+AddV2+Activation pattern.
+  matched->contraction = base.contraction;
+  matched->fused_batch_norm = base.fused_batch_norm;
+  matched->activation = node_index;
+  matched->add = add_node_view->node_index();
+  matched->epsilon = base.epsilon;
   return true;
 }
 
@@ -4764,6 +4839,56 @@ Status AddFusedConv2DNode(RemapperContext* ctx,
   return Status::OK();
 }
 
+Status AddFusedConv2DNode(
+    RemapperContext* ctx,
+    const ContractionWithBatchNormAndAddV2AndActivation& matched,
+    std::vector<bool>* invalidated_nodes, std::vector<bool>* nodes_to_delete) {
+  const GraphDef* graph = ctx->graph_view.graph();
+  const NodeDef& contraction = graph->node(matched.contraction);
+
+  ITEX_DCHECK(IsConv2D(contraction)) << "Only Conv2D supported for now";
+
+  const NodeDef& activation = graph->node(matched.activation);
+  const NodeDef& add = graph->node(matched.add);
+  const NodeDef& fused_batch_norm = graph->node(matched.fused_batch_norm);
+  ITEX_VLOG(2) << "Fuse Conv2D with BatchNorm and " << activation.op()
+               << ": activation=" << activation.name() << " add=" << add.name()
+               << " batch_norm=" << fused_batch_norm.name()
+               << " conv2d=" << contraction.name();
+
+  NodeDef fused_conv2d;
+  fused_conv2d.set_name(activation.name());
+  fused_conv2d.set_op(kFusedConv2D);
+  fused_conv2d.set_device(contraction.device());
+  fused_conv2d.add_input(contraction.input(0));             // 0: input
+  fused_conv2d.add_input(contraction.input(1));             // 1: filter
+  fused_conv2d.add_input(add.input(1 - matched.add_port));  // 1: AddV2
+  fused_conv2d.add_input(fused_batch_norm.input(1));        // 2: scale
+  fused_conv2d.add_input(fused_batch_norm.input(2));        // 3: offset
+  fused_conv2d.add_input(fused_batch_norm.input(3));        // 4: mean
+  fused_conv2d.add_input(fused_batch_norm.input(4));        // 5: variance
+
+  CopyAllAttrs(contraction, &fused_conv2d);
+  SetFusedOpAttributesWithActivation(&fused_conv2d, &activation,
+                                     {"FusedBatchNorm", "Add"}, 1);
+  auto* attr = fused_conv2d.mutable_attr();
+  SetAttrValue(matched.epsilon, &(*attr)["epsilon"]);
+  SetAttrValue(4, &(*attr)["num_bn_args"]);
+
+  utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+  Status status;
+  mutation->AddNode(std::move(fused_conv2d), &status);
+  TF_ABORT_IF_ERROR(status);
+  TF_ABORT_IF_ERROR(mutation->Apply());
+
+  (*invalidated_nodes)[matched.activation] = true;
+  (*nodes_to_delete)[matched.contraction] = true;
+  (*nodes_to_delete)[matched.fused_batch_norm] = true;
+  (*nodes_to_delete)[matched.add] = true;
+
+  return Status::OK();
+}
+
 // Contraction + Mul(scale).
 // TODO(itex): Try to combine this function with Conv + BiasAdd
 Status AddFusedContractionNode(RemapperContext* ctx,
@@ -6967,6 +7092,18 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
       // NOTE: We can only fuse BatchNorm into Conv2D nodes. In theory we can do
       // it for MatMul as well, but in practice this pattern does not appear in
       // real Tensorflow graphs.
+
+      // Remap Conv2D+FusedBatchNorm+AddV2+Activation into the _FusedConv2D;
+      ContractionWithBatchNormAndAddV2AndActivation
+          contract_with_batch_norm_and_addv2_and_activation;
+      if (!is_layout_opt &&
+          FindConv2DWithBatchNormAndAddV2AndActivation(
+              ctx, i, &contract_with_batch_norm_and_addv2_and_activation)) {
+        TF_RETURN_IF_ERROR(AddFusedConv2DNode(
+            &ctx, contract_with_batch_norm_and_addv2_and_activation,
+            &invalidated_nodes, &nodes_to_delete));
+        continue;
+      }
 
       // Remap Conv2D+FusedBatchNorm+Activation into the _FusedConv2D;
       ContractionWithBatchNormAndActivation
