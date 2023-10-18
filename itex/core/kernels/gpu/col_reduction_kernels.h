@@ -288,13 +288,17 @@ void TreeColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
   bool is_full_occu = (extend_x * num_segments_z) >
                       (64 * (max_group_size / (num_sg * SubGroupSize)));
 
-  if (!is_full_occu) {
+  static constexpr int MAX_ELEMENTS_PER_THREAD_FOR_SMALL_REDUCE = 4;
+  int elems_per_thread = DivUp(extend_y, tile_y);
+
+  if (!is_full_occu &&
+      elems_per_thread > MAX_ELEMENTS_PER_THREAD_FOR_SMALL_REDUCE) {
     int max_elems_per_thread =
         DivUp(num_segments_z * extend_x * (extend_y / tile_y),
               (4 * 64 * (max_group_size / (num_sg * SubGroupSize))));
     int min_elems_per_thread =
         DivUp(DivUp(extend_y, tile_y) * tile_z, max_group_size * 16);
-    int elems_per_thread = std::max(max_elems_per_thread, min_elems_per_thread);
+    elems_per_thread = std::max(max_elems_per_thread, min_elems_per_thread);
 
     int num_segments_y = DivUp(extend_y, tile_y * elems_per_thread);
     Tensor scratch_tensor;
@@ -347,7 +351,6 @@ void TreeColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
   } else {
     sycl::range<3> local(1, 1, num_sg * SubGroupSize);
     sycl::range<3> global(extend_x, 1, num_segments_z * local[2]);
-    int elems_per_thread = DivUp(extend_y, tile_y);
 
     stream->submit([&](sycl::handler& cgh) {
       reduciton_helper::LocalAcc<InitValueT> scratch(tile_y * tile_z, cgh);
