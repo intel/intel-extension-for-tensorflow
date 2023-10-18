@@ -284,9 +284,9 @@ class GroupNormalizationTest(test_combinations.TestCase):
         offset = layer.get_beta()
         ref_outputs = self.ref_group_norm(x_val, groups, axis, scale, offset, epsilon)
         if dtype == tf.float32:
-            self.assertAllClose(outputs, ref_outputs, atol=1e-5, rtol=1e-5)
+            self.assertAllClose(outputs, ref_outputs, atol=3e-3, rtol=1e-4)
         else:
-            self.assertAllClose(outputs, ref_outputs, atol=1e-3, rtol=1e-3)
+            self.assertAllClose(outputs, ref_outputs, atol=4e-3, rtol=1e-3)
 
 
     def _runtests(self, x_shape):

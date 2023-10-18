@@ -17,6 +17,9 @@
 import tensorflow.compat.v2 as tf
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from tensorflow.python.framework import config
+from tensorflow.python.framework import dtypes
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import array_ops
 from tensorflow.python import keras
 from tensorflow.python.framework import config
 
@@ -33,6 +36,8 @@ except ImportError:
 
 # isort: off
 from tensorflow.python.util.tf_export import keras_export
+
+from intel_extension_for_tensorflow.python.ops.layer_norm import _layer_norm
 
 
 @keras_export("keras.layers.GroupNormalization", v1=[])
@@ -118,10 +123,11 @@ class GroupNormalization(Layer):
         tf_utils.validate_axis(self.axis, input_shape)
         rank = len(input_shape)
         self.axis = (self.axis + rank) % rank
+        self.use_gpu = config.list_logical_devices('XPU')
         
         # fused_group_norm only support GPU backend and NHWC and axis=-1 currently
         # TODO(itex): support channel first and rank==any
-        self.use_fused_group_norm = config.list_logical_devices('XPU') and (rank == 4) and (self.axis == rank - 1)
+        self.use_fused_group_norm = self.use_gpu and (rank == 4) and (self.axis == rank - 1)
 
         dim = input_shape[self.axis]
         if dim is None:
@@ -184,6 +190,8 @@ class GroupNormalization(Layer):
                 use_scale=self.scale,
                 use_center=self.center,
             )
+        elif not self.use_gpu:
+            normalized_inputs = self.itex_group_norm_call(inputs)
         else:
             reshaped_inputs = self._reshape_into_groups(inputs)
             normalized_inputs = self._apply_normalization(
@@ -191,6 +199,79 @@ class GroupNormalization(Layer):
             normalized_inputs = tf.reshape(normalized_inputs, input_shape)
 
         return normalized_inputs
+
+    def itex_group_norm_call(self, inputs):
+        """
+        This is implemented by itex_layer_norm.
+        The GroupNormalization takes the axis as input,
+        and the size of gamma and beta is the size of the specified axis.
+        """
+        input_shape = array_ops.shape(inputs)
+        reshaped_inputs = self._reshape_into_groups(inputs)
+        group_shape = array_ops.shape(reshaped_inputs)
+        ndims = len(input_shape)
+        group_ndims = len(group_shape)
+        axis = self.axis
+        if axis < 0:
+            axis = ndims + axis
+        broadcast_shape = [1] * len(input_shape)
+        broadcast_shape[axis] = input_shape[axis]
+
+        if axis != 1:
+            # Because itex_layer_norm computes mean and variance across the last axis,
+            # But the InstanceNorm in tensorflow_addons pkg computes them on axes
+            # except for the first and the specified axis, So for convenience transpose
+            # the specified axis to the axis at subscript 1 position, and collapse subsequent
+            # axes as the last axis.
+            perm_shape = list(range(0, group_ndims))
+            perm_shape.pop(axis)
+            perm_shape.insert(1, axis)
+            reshaped_inputs = array_ops.transpose(reshaped_inputs, perm_shape)
+
+        # Collapse dims after 1.
+        in_dim = 1
+        tensor_shape = array_ops.shape(reshaped_inputs)
+        for dim in range(0, group_ndims):
+            dim_tensor = tensor_shape[dim]
+            if dim > 1:
+                in_dim = in_dim * dim_tensor
+
+        squeezed_shape = [tensor_shape[0], tensor_shape[1], in_dim]
+        inputs = array_ops.reshape(reshaped_inputs, squeezed_shape)
+
+        # self.gamma and self.beta have the wrong shape for layer_norm, so
+        # we cannot pass them as the scale and offset parameters. Therefore, we
+        # create two constant tensors in correct shapes for layer_norm and
+        # later construct a separate calculation on the scale and offset.
+        scale = array_ops.ones([in_dim], dtype=dtypes.float32)
+        offset = array_ops.zeros([in_dim], dtype=dtypes.float32)
+
+        outputs, _, _ = _layer_norm(inputs,
+                                    scale=scale,
+                                    offset=offset,
+                                    epsilon=self.epsilon,
+                                    is_training=True)
+        outputs = array_ops.reshape(outputs, tensor_shape)
+        if axis != 1:
+            perm_back_shape = list(range(0, group_ndims))
+            perm_back_shape.pop(1)
+            perm_back_shape.insert(axis, 1)
+            outputs = array_ops.transpose(outputs, perm_back_shape)
+
+        outputs = array_ops.reshape(outputs, input_shape)
+
+        if self.scale:
+            gamma = array_ops.reshape(self.gamma, broadcast_shape)
+            outputs = outputs * math_ops.cast(gamma, outputs.dtype)
+        if self.center:
+            if axis == ndims - 1:
+                # Use biasadd to avoid Sum in bwd process to improve perf.
+                outputs = tf.nn.bias_add(outputs, math_ops.cast(self.beta, outputs.dtype))
+            else:
+                beta = array_ops.reshape(self.beta, broadcast_shape)
+                outputs = outputs + math_ops.cast(beta, outputs.dtype)
+
+        return outputs
 
     def _reshape_into_groups(self, inputs):
         input_shape = tf.shape(inputs)

@@ -39,6 +39,7 @@ from intel_extension_for_tensorflow.python.ops.layer_norm import _layer_norm
 from intel_extension_for_tensorflow.python.ops.activations import gelu as itex_gelu
 from intel_extension_for_tensorflow.python.ops.recurrent import gpu_lstm
 from intel_extension_for_tensorflow.python.ops.recurrent import is_itex_supported_inputs
+from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
 
 format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=format_str)
@@ -482,12 +483,14 @@ def experimental_ops_override():
       keras.src.layers.normalization.layer_normalization.LayerNormalization.build = itex_layer_norm_build
       keras.src.layers.rnn.lstm.LSTM.call = itex_lstm_call
       keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
+      keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
     else:
       keras.layers.core.dense.Dense.call = itex_dense_layer_call
       keras.layers.LayerNormalization.call = itex_layer_norm_call
       keras.layers.LayerNormalization.build = itex_layer_norm_build
       keras.layers.LSTM.call = itex_lstm_call
       keras.layers.LSTM.build = itex_lstm_build
+      keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
   
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long
