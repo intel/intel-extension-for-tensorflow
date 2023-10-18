@@ -71,7 +71,10 @@ cc_library(
 
 cc_binary(
     name = "onednn_cpu_so",
-    linkopts = ["-Wl,-rpath,$$ORIGIN/../_solib_k8/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp"],
+    linkopts = [
+        "-Wl,-rpath,$$ORIGIN/../_solib_$(TARGET_CPU)/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp",
+        "-Wl,-rpath,$$ORIGIN/../_solib_local/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp",
+    ],
     linkshared = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -84,7 +87,10 @@ cc_binary(
 
 cc_binary(
     name = "onednn_cpu_eigen_so",
-    linkopts = ["-Wl,-rpath,$$ORIGIN/../_solib_k8/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp"],
+    linkopts = [
+        "-Wl,-rpath,$$ORIGIN/../_solib_$(TARGET_CPU)/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp",
+        "-Wl,-rpath,$$ORIGIN/../_solib_local/_U@onednn_Ucpu_S_S_Conednn_Ulibs_Ulinux___Uexternal_Sllvm_Uopenmp",
+    ],
     linkshared = True,
     visibility = ["//visibility:public"],
     deps = [
