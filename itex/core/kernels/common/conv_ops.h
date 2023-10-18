@@ -905,6 +905,9 @@ class ConvOpBase : public OpKernel {
       this->ExtendInt8PostOps(context);
       // Set post op attribution.
       dnnl::primitive_attr post_ops_attr;
+      if (!post_op_util_.HasBN()) {
+        post_op_util_.SetPostOpAttr(&post_ops_attr);
+      }
       post_ops_attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
       if (std::is_same<Tinput, float>::value) {
         post_ops_attr.set_fpmath_mode(fp32_math_mode_);
@@ -945,8 +948,6 @@ class ConvOpBase : public OpKernel {
         post_op_util_.SetBNMemory(bn_scale_tensor, bn_mean_tensor,
                                   bn_offset_tensor, cached_bn_rsqrt_tensor_);
         post_op_util_.SetBNPostOpAttr(&post_ops_attr);
-      } else {
-        post_op_util_.SetPostOpAttr(&post_ops_attr);
       }
 
       fwd_pd_ =
