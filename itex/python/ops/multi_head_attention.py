@@ -14,16 +14,13 @@
 #== == == == == == == == == == == == == == == == == == == == == == == == == == \
 """Keras-based multi-head attention layer."""
 
-
-import collections
-import math
 import string
 import functools
+import tensorflow as tf
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops
-import numpy as np
-import tensorflow as tf
 from tensorflow.python.ops import math_ops
+from tensorflow.python.framework import config
 from intel_extension_for_tensorflow.python.device import is_xehpc
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 
@@ -64,7 +61,16 @@ def _dropout(input_tensor, dropout_prob, seed):
   return output
 
 
-def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0.0, seed=(2,3), is_causal=False, use_fast_attention=True, use_stateless_randomuniform=True):
+def scaled_dot_product_attention(query,
+                                 key,
+                                 value,
+                                 atten_mask=None,
+                                 dropout_p=0.0,
+                                 seed=(2,3),
+                                 is_causal=False,
+                                 use_fast_attention=True,
+                                 use_stateless_randomuniform=True,
+                                 is_training=True):
     """Applies Dot-product attention with query, key, value tensors.
 
         Args:
@@ -85,8 +91,15 @@ def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0
 #TODO : remove is_causal limitation once flash attention backward is supported  
     q_seq_len = query.shape[2]
     head_size = query.shape[3]
-    can_use_fast_sdp = is_xehpc() and (query.dtype == tf.bfloat16 or query.dtype == tf.float16) and (is_causal == False) and  \
-        (q_seq_len <= 512) and (head_size <= 128)
+    use_xpu = config.list_logical_devices('XPU')
+    # If run on cpu, fast sdp kernel only support inference. If run on xpu, fmha can properly run in the forward kernel,
+    # but in the backward kernel, it can be only available when the q_seq_len <= 512 and head_size <= 128.
+    can_use_fast_sdp = (not use_xpu and not is_training) or \
+                        (use_xpu and is_xehpc() and \
+                        (query.dtype == tf.bfloat16 or query.dtype == tf.float16) and \
+                        is_causal == False and \
+                        (not is_training or (q_seq_len <= 512 and head_size <= 128)))
+
     def sdp():
         i_dtype = query.dtype
         
@@ -128,6 +141,7 @@ def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0
         i_dtype = query.dtype
         use_dropout = (dropout_p != 0.0)
         use_mask = (atten_mask is not None)
+        actual_atten_mask = atten_mask if use_mask else 0
         if use_dropout:
             if use_stateless_randomuniform:
                 uniform_sampler = functools.partial(stateless_random_ops.stateless_random_uniform, seed=seed) 
@@ -136,18 +150,28 @@ def scaled_dot_product_attention(query, key, value, atten_mask=None, dropout_p=0
             random_tensor = uniform_sampler(shape=[batch_size, num_heads, from_seq_len, to_seq_len], dtype=i_dtype)
             dropout_mask = math_ops.greater_equal(random_tensor, dropout_p)
         else:
-            dropout_mask = 0
-        output, atten, atten_dp = load_ops_library.scaled_dot_product_attention(
-            query=query, 
-            key=key, 
-            value=value, 
-            atten_mask=atten_mask, 
-            dropout_mask=dropout_mask,
-            dropout_prob=dropout_p,
-            use_mask=use_mask,
-            use_dropout=use_dropout)
+            dropout_mask = False
+        if not is_training:
+            output = load_ops_library.scaled_dot_product_attention_inference(
+                query=query, 
+                key=key, 
+                value=value, 
+                atten_mask=actual_atten_mask, 
+                use_mask=use_mask,
+                use_causal=False,
+                is_inference=True)
+        else:
+            output, atten, atten_dp = load_ops_library.scaled_dot_product_attention(
+                query=query, 
+                key=key, 
+                value=value, 
+                atten_mask=actual_atten_mask, 
+                dropout_mask=dropout_mask,
+                dropout_prob=dropout_p,
+                use_mask=use_mask,
+                use_dropout=use_dropout)
         return output
-       
+
     if use_fast_attention and can_use_fast_sdp:
         output = fast_sdp()
     else:

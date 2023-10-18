@@ -48,8 +48,8 @@ struct fmha_policy_8x256x256 : fmha_policy_base {
   static constexpr uint32_t thread_num = (kBr / kSgBr) * (kBc / kSgBc);
 };
 
-struct fmha_policy_64x256x256 : fmha_policy_base {
-  static constexpr uint32_t kBr = 64;
+struct fmha_policy_32x256x256 : fmha_policy_base {
+  static constexpr uint32_t kBr = 32;
   static constexpr uint32_t kSgBr = 16;
   static constexpr uint32_t kBc = 256;
   static constexpr uint32_t kSgBc = 32;
@@ -58,11 +58,11 @@ struct fmha_policy_64x256x256 : fmha_policy_base {
   static constexpr uint32_t thread_num = (kBr / kSgBr) * (kBc / kSgBc);
 };
 
-struct fmha_policy_64x128x256 : fmha_policy_base {
+struct fmha_policy_64x512x256 : fmha_policy_base {
   static constexpr uint32_t kBr = 64;
   static constexpr uint32_t kSgBr = 16;
-  static constexpr uint32_t kBc = 128;
-  static constexpr uint32_t kSgBc = 16;
+  static constexpr uint32_t kBc = 512;
+  static constexpr uint32_t kSgBc = 64;
   static constexpr uint32_t kHm = 256;
   static constexpr uint32_t kSgHm = 32;
   static constexpr uint32_t thread_num = (kBr / kSgBr) * (kBc / kSgBc);

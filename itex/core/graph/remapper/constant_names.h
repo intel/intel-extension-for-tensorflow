@@ -61,9 +61,11 @@ constexpr char kReshape[] = "Reshape";
 constexpr char kResizeNearestNeighbor[] = "ResizeNearestNeighbor";
 constexpr char kResizeNearestNeighborGrad[] = "ResizeNearestNeighborGrad";
 constexpr char kRsqrt[] = "Rsqrt";
+constexpr char kSelectV2[] = "SelectV2";
 constexpr char kShape[] = "Shape";
 constexpr char kSigmoid[] = "Sigmoid";
 constexpr char kSlice[] = "Slice";
+constexpr char kSoftmax[] = "Softmax";
 constexpr char kSoftplus[] = "Softplus";
 constexpr char kSplit[] = "Split";
 constexpr char kSplitV[] = "SplitV";
@@ -73,6 +75,7 @@ constexpr char kSquaredDifference[] = "SquaredDifference";
 constexpr char kSub[] = "Sub";
 constexpr char kSwish[] = "_ITEXSwish";
 constexpr char kTanh[] = "Tanh";
+constexpr char kTranspose[] = "Transpose";
 
 // ITEX specific fused op names.
 constexpr char kAccMatMul[] = "_ITEXAccMatMul";

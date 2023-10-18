@@ -26,6 +26,7 @@ itex_xetla_library(
     hdrs = [
         "fmha_forward.h",
         "fmha_policy.h",
+        "fmha_utils.h",
         "mha_op.h",
         "non_flash_sdp/mha_backward.h",
         "non_flash_sdp/mha_forward.h",

@@ -19,6 +19,16 @@ REGISTER_MHA_GPU(Eigen::bfloat16);
 REGISTER_MHA_GPU(Eigen::half);
 #undef REGISTER_MHA_GPU
 
+#define REGISTER_MHA_INF_GPU(type)                                   \
+  REGISTER_KERNEL_BUILDER(Name("ScaledDotProductAttentionInference") \
+                              .Device(DEVICE_GPU)                    \
+                              .TypeConstraint<type>("T"),            \
+                          ScaledDotProductAttentionOp<GPUDevice, type>);
+
+REGISTER_MHA_INF_GPU(Eigen::bfloat16);
+REGISTER_MHA_INF_GPU(Eigen::half);
+#undef REGISTER_MHA_INF_GPU
+
 #define REGISTER_MHA_GRAD_GPU(type)                             \
   REGISTER_KERNEL_BUILDER(Name("ScaledDotProductAttentionGrad") \
                               .Device(DEVICE_GPU)               \

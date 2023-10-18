@@ -461,7 +461,6 @@ class fmha_forward_t {
   /// @brief permuted store Oi to global memory. [B,F,N,H]
   inline void permute_store_Oi(const xetla_exec_item<3>& ei,
                                matAccOi_t* matAccOi, const arguments_t& args) {
-    int b = ei.get_group(0) / args.uN;
     int n = ei.get_group(0) % args.uN;
     int f = ctx.sg_idy * kSgBr + ei.get_group(1) * kBr;
     int h = ctx.sg_idx * kSgHm;
@@ -480,8 +479,7 @@ class fmha_forward_t {
     xetla_fill_tdesc<scalar_t, kSgHm, 1, 1>(
         transpose_tdecs.xetla_format<uint32_t>(), args.O_ptr, args.uH, height,
         args.uH, h, offset_height);
-
-    using load_t = load_tile_t<matAccOi_t>;
+    using load_t = subgroup::tile_t<scalar_t, matAccOi_t>;
     for (uint32_t i = 0; i < kSgBr && (f + i < args.uF); ++i) {
       // load data from matAccOi
       xetla_vector<accum_t, kSgHm> v_acc;

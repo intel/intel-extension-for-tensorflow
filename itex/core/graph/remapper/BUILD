@@ -12,6 +12,7 @@ cc_library(
         "gru_pattern.cc",
         "instance_norm_pattern.cc",
         "layer_norm_pattern.cc",
+        "mha_pattern.cc",
         "pad_conv3d_with_cast_pattern.cc",
         "pad_conv_pattern.cc",
         "remapper.cc",

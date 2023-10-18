@@ -6,6 +6,7 @@ from tensorflow.python.ops import array_ops
 
 from tensorflow.python.ops import variables
 from tensorflow.python.framework import constant_op
+from tensorflow.python.framework import config
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import gen_math_ops
 from tensorflow.python.ops import stateless_random_ops
@@ -38,6 +39,21 @@ def spd(q, k, v, mask, dropout_p, seed, dtype, use_fast_attention=False):
     dv = tape.gradient(loss, v_tf)
     return outputs, dq, dk, dv
 
+def spd_inference(q, k, v, seed, dtype, use_fast_attention=False):
+    q_tf = tf.Variable(q, dtype=dtype)
+    k_tf = tf.Variable(k, dtype=dtype)
+    v_tf = tf.Variable(v, dtype=dtype)
+    outputs = scaled_dot_product_attention(
+        q_tf,
+        k_tf,
+        v_tf,
+        None,
+        0.0,
+        seed,
+        use_fast_attention=use_fast_attention,
+        is_training=False,
+    )
+    return outputs
 
 def test_func(
     batch_size,
@@ -110,6 +126,23 @@ def test_func(
         print("dk accuracy verify failed")
         print(err)
 
+    ref_outputs = spd_inference(
+        q, k, v, seed, dtype, use_fast_attention=False
+    )
+
+    outputs = spd_inference(
+        q, k, v, seed, dtype, use_fast_attention=True
+    )
+
+    if dtype == tf.float16 or dtype == tf.bfloat16:
+        outputs = tf.cast(outputs, tf.float32)
+        ref_outputs = tf.cast(ref_outputs, tf.float32)
+        atol = rtol = 1e-2
+    else:
+        atol = rtol = 1e-5
+
+    np.testing.assert_allclose(outputs, ref_outputs, rtol=rtol, atol=atol)
+
 def test_perf(
     batch_size,
     from_seq_len,
@@ -149,9 +182,12 @@ def test_perf(
 # V	16x4096x40	16x77x40	16x1024x80	16x77x80	16x256x160	16x77x160	16x64x160	16x77x160
 
 if __name__ == "__main__":
-    dtype = tf.float16
-    # test_func(1, 64, 64, 8, 160, dtype, False, False)
-    # test_func(1, 256, 256, 8, 160, dtype, False, False)
-    # test_func(1, 1024, 1024, 8, 80, dtype, False, False)
-    test_func(1, 512, 512, 2, 64, dtype, True, True)
-    # test_func(1, 512, 512, 2, 64, dtype, True, True)
+    dtypes = [tf.float32, tf.bfloat16]
+    if config.list_logical_devices('XPU'):
+        dtypes = [tf.float16]
+    for dtype in dtypes:
+        # test_func(1, 64, 64, 8, 160, dtype, False, False)
+        # test_func(1, 256, 256, 8, 160, dtype, False, False)
+        # test_func(1, 1024, 1024, 8, 80, dtype, False, False)
+        test_func(1, 512, 512, 2, 64, dtype, True, True)
+        # test_func(1, 512, 512, 2, 64, dtype, True, True)
