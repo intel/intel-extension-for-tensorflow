@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/wrapper/itex_cpu_wrapper.h"
+
 #include <cpuid.h>
 #include <dlfcn.h>
 
@@ -29,11 +31,10 @@ static void* LoadCpuLibrary() __attribute__((constructor));
 static void UnloadCpuLibrary() __attribute__((destructor));
 
 void* LoadCpuLibrary() {
+  bool enable_omp;
   if (itex_get_backend() == ITEX_BACKEND_DEFAULT) {
     itex_freeze_backend(ITEX_BACKEND_CPU);
   }
-  bool enable_omp;
-  void* onednn_handle;
   ITEX_CHECK_OK(
       itex::ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp));
   if (enable_omp) {
@@ -41,16 +42,8 @@ void* LoadCpuLibrary() {
     if (!onednn_handle) {
       ITEX_LOG(FATAL) << dlerror();
     }
-    onednn_handle = dlopen("libitex_stream_omp.so", RTLD_NOW | RTLD_GLOBAL);
-    if (!onednn_handle) {
-      ITEX_LOG(FATAL) << dlerror();
-    }
   } else {
     onednn_handle = dlopen("libonednn_cpu_eigen_so.so", RTLD_NOW | RTLD_GLOBAL);
-    if (!onednn_handle) {
-      ITEX_LOG(FATAL) << dlerror();
-    }
-    onednn_handle = dlopen("libitex_stream.so", RTLD_NOW | RTLD_GLOBAL);
     if (!onednn_handle) {
       ITEX_LOG(FATAL) << dlerror();
     }

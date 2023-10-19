@@ -58,8 +58,6 @@ COMMON_PIP_DEPS = [
     "//itex:libitex_gpu_internal.so",
 ]) + if_cpu_backend([
     # TODO(itex): need refine if_cpu_onednn
-    "//itex:libitex_stream.so",
-    "//itex:libitex_stream_omp.so",
     "//itex:libitex_cpu.so",
     "//itex:libitex_cpu_internal_avx512.so",
     "//itex:libitex_cpu_internal_avx2.so",

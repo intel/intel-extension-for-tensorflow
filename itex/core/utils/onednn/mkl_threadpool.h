@@ -15,8 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef ITEX_CORE_UTILS_ONEDNN_STREAM_MKL_THREADPOOL_H_
-#define ITEX_CORE_UTILS_ONEDNN_STREAM_MKL_THREADPOOL_H_
+#ifndef ITEX_CORE_UTILS_ONEDNN_MKL_THREADPOOL_H_
+#define ITEX_CORE_UTILS_ONEDNN_MKL_THREADPOOL_H_
 
 #include <algorithm>
 #include <list>
@@ -125,4 +125,4 @@ struct MklDnnThreadPool : public threadpool_iface {
 
 }  // namespace itex
 
-#endif  // ITEX_CORE_UTILS_ONEDNN_STREAM_MKL_THREADPOOL_H_
+#endif  // ITEX_CORE_UTILS_ONEDNN_MKL_THREADPOOL_H_

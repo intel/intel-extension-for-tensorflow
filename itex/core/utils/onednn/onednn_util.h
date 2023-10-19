@@ -16,6 +16,8 @@ limitations under the License.
 #ifndef ITEX_CORE_UTILS_ONEDNN_ONEDNN_UTIL_H_
 #define ITEX_CORE_UTILS_ONEDNN_ONEDNN_UTIL_H_
 
+#include <dlfcn.h>
+
 #include <map>
 #include <string>
 #include <utility>
@@ -28,17 +30,21 @@ limitations under the License.
 #endif                    // INTEL_CPU_ONLY
 
 #include "itex/core/utils/logging.h"
+#include "itex/core/utils/onednn/mkl_threadpool.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
 #include "itex/core/utils/status.h"
 #include "itex/core/utils/strcat.h"
 #include "itex/core/utils/tensor_format.h"
 #include "itex/core/utils/tensor_shape.h"
-#ifdef CC_THREADPOOL_BUILD
-#include "itex/core/utils/onednn/stream/mkl_threadpool.h"
-#endif
+#include "itex/core/wrapper/itex_cpu_wrapper.h"
 
 namespace itex {
+static std::once_flag read_env_once_flag;
+static bool enable_omp = true;
+typedef dnnl_status_t (*dnnl_stream_create_internal)(dnnl_stream_t*,
+                                                     dnnl_engine_t, void*);
+static dnnl_stream_create_internal make_stream;
 
 using GPUDevice = Eigen::GpuDevice;
 using CPUDevice = Eigen::ThreadPoolDevice;
@@ -226,7 +232,6 @@ inline dnnl::engine& CreateDnnlEngine<CPUDevice>(const OpKernelContext& ctx) {
   return cpu_engine;
 }
 
-#if defined(CC_BUILD) || !defined(INTEL_CPU_ONLY)
 inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
                                      const dnnl::engine& engine,
                                      int num_thread = -1) {
@@ -235,24 +240,30 @@ inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
     auto* ITEX_GPU_stream = ctx.GetDeviceStream();
     return dnnl::sycl_interop::make_stream(engine, *ITEX_GPU_stream);
   }
+#else
+  std::call_once(read_env_once_flag, []() {
+    ITEX_CHECK_OK(
+        itex::ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp));
+    if (!enable_omp) {
+      make_stream = reinterpret_cast<dnnl_stream_create_internal>(
+          dlsym(onednn_handle, "dnnl_threadpool_interop_stream_create"));
+    }
+  });
+  if (enable_omp) {
+    ITEX_CHECK(engine.get_kind() == dnnl::engine::kind::cpu)
+        << "Create oneDNN stream for unsupported engine.";
+    return dnnl::stream(engine);
+  } else {
+    if (num_thread == 1) return dnnl::stream(engine);
+
+    MklDnnThreadPool* eigen_tp = new MklDnnThreadPool(&ctx, num_thread);
+    dnnl_stream_t c_stream;
+    make_stream(&c_stream, engine.get(), eigen_tp);
+    dnnl::stream tp_stream = dnnl::stream(c_stream);
+    return tp_stream;
+  }
 #endif  // INTEL_CPU_ONLY
-#ifdef CC_THREADPOOL_BUILD
-  if (num_thread == 1) return dnnl::stream(engine);
-  MklDnnThreadPool* eigen_tp = new MklDnnThreadPool(&ctx, num_thread);
-  dnnl::stream tp_stream =
-      dnnl::stream(dnnl::threadpool_interop::make_stream(engine, eigen_tp));
-  return tp_stream;
-#else
-  // Default path, always assume it's CPU engine.
-  ITEX_CHECK(engine.get_kind() == dnnl::engine::kind::cpu)
-      << "Create oneDNN stream for unsupported engine.";
-  return dnnl::stream(engine);
-#endif  // CC_THREADPOOL_BUILD
 }
-#else
-dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
-                              const dnnl::engine& engine, int num_thread = -1);
-#endif
 
 #endif  // ITEX_BUILD_JAX
 inline dnnl::memory CreateDnnlMemory(const dnnl::memory::desc& md,
