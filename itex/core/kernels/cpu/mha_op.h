@@ -28,6 +28,7 @@ limitations under the License.
 #include "itex/core/utils/macros.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
+#include "itex/core/utils/parallel.h"
 #include "itex/core/utils/parallel_openmp.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/tensor_shape.h"
@@ -90,7 +91,7 @@ class FmhaFunctor {
     int64_t q_split_size = qSplitSize > q_seq_len ? q_seq_len : qSplitSize;
     int64_t kv_split_size = kvSplitSize > k_seq_len ? k_seq_len : kvSplitSize;
     int64_t q_slice = (q_seq_len - 1) / q_split_size + 1;
-    int64_t num_thread = omp_get_max_threads();
+    int64_t num_thread = GetNumThreads();
 
     // Allocate per thread temp buf (float type).
     // Use float for intermediate computation to avoid overflow issues.
@@ -117,21 +118,34 @@ class FmhaFunctor {
     T* buf_reduced_data =
         is_reduced_type ? buf_reduced.flat<T>().data() : nullptr;
 
-    parallel_for(
-        0, batch_size * num_heads * q_slice, 1,
+    int64_t kv_blocks = k_seq_len / kvSplitSize;
+
+    double load_cost =
+        (2 * q_split_size * head_size * kv_blocks + k_seq_len * head_size +
+         5 * q_split_size * k_seq_len + 8 * q_split_size * kv_blocks) *
+        sizeof(T);
+    double store_cost = load_cost;
+    double compute_cost =
+        (2 * k_seq_len * head_size + 20 * k_seq_len + 16 +
+         2 * head_size * kv_blocks + 2 * head_size * k_seq_len) *
+        q_split_size / Eigen::internal::packet_traits<T>::size;
+    Eigen::TensorOpCost cost(load_cost, store_cost, compute_cost);
+
+    ParallelFor(
+        batch_size * num_heads * q_slice, cost,
         [&](int64_t begin, int64_t end) {
           int64_t i = 0, j = 0, k = 0;
           DataIndexInit(begin, &i, batch_size, &j, num_heads, &k, q_slice);
 
-          int omp_idx = omp_get_thread_num();
-          float* buf_ptr = buf_data + omp_idx * size_per_thread;
+          int thread_idx = GetThreadNum();
+          float* buf_ptr = buf_data + thread_idx * size_per_thread;
           float* qk_data = buf_ptr;
           float* qk_max_data = qk_data + q_split_size * kv_split_size;
           float* qk_sum_data = qk_max_data + q_split_size;
           float* dst_data = qk_sum_data + q_split_size;
           T* qk_reduced_data =
               is_reduced_type
-                  ? buf_reduced_data + omp_idx * q_split_size * kv_split_size
+                  ? buf_reduced_data + thread_idx * q_split_size * kv_split_size
                   : nullptr;
 
           for (int x = begin; x < end; ++x) {

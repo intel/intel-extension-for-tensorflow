@@ -444,3 +444,11 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "parallel",
+    hdrs = [
+        "parallel.h",
+    ],
+    visibility = ["//visibility:public"],
+)

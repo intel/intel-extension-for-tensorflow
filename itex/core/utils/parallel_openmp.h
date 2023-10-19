@@ -24,7 +24,7 @@ limitations under the License.
 
 namespace itex {
 
-int get_num_threads() {
+inline int GetOmpNumThreads() {
 #ifdef _OPENMP
   return omp_get_max_threads();
 #else
@@ -32,7 +32,15 @@ int get_num_threads() {
 #endif
 }
 
-bool in_parallel_region() {
+inline int GetOmpThreadNum() {
+#ifdef _OPENMP
+  return omp_get_thread_num();
+#else
+  return 0;
+#endif
+}
+
+inline bool InParallelRegion() {
 #ifdef _OPENMP
   return omp_in_parallel();
 #else
@@ -40,19 +48,19 @@ bool in_parallel_region() {
 #endif
 }
 
-inline int64_t divup(int64_t x, int64_t y) { return (x + y - 1) / y; }
+inline int64_t DivUp(int64_t x, int64_t y) { return (x + y - 1) / y; }
 
 #ifdef _OPENMP
 template <typename F>
-inline void parallel_for(int64_t begin, int64_t end, int64_t grain_size,
-                         const F& f) {
+inline void OmpParallelFor(int64_t begin, int64_t end, int64_t grain_size,
+                           const F& f) {
   if (begin >= end) {
     return;
   }
 
   const auto numiter = end - begin;
   const bool use_parallel = (numiter > grain_size && numiter > 1 &&
-                             !in_parallel_region() && get_num_threads() > 1);
+                             !InParallelRegion() && GetOmpNumThreads() > 1);
   if (!use_parallel) {
     f(begin, end);
     return;
@@ -62,11 +70,11 @@ inline void parallel_for(int64_t begin, int64_t end, int64_t grain_size,
   {
     int64_t num_threads = omp_get_num_threads();
     if (grain_size > 0) {
-      num_threads = std::min(num_threads, divup((end - begin), grain_size));
+      num_threads = std::min(num_threads, DivUp((end - begin), grain_size));
     }
 
     int64_t tid = omp_get_thread_num();
-    int64_t chunk_size = divup((end - begin), num_threads);
+    int64_t chunk_size = DivUp((end - begin), num_threads);
     int64_t begin_tid = begin + tid * chunk_size;
     if (begin_tid < end) {
       f(begin_tid, std::min(end, chunk_size + begin_tid));
