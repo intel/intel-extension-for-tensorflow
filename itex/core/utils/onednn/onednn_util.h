@@ -236,10 +236,10 @@ inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
                                      const dnnl::engine& engine,
                                      int num_thread = -1) {
 #ifndef INTEL_CPU_ONLY
-  if (engine.get_kind() == dnnl::engine::kind::gpu) {
-    auto* ITEX_GPU_stream = ctx.GetDeviceStream();
-    return dnnl::sycl_interop::make_stream(engine, *ITEX_GPU_stream);
-  }
+  ITEX_CHECK(engine.get_kind() == dnnl::engine::kind::gpu)
+      << "Create oneDNN stream for unsupported engine.";
+  auto* ITEX_GPU_stream = ctx.GetDeviceStream();
+  return dnnl::sycl_interop::make_stream(engine, *ITEX_GPU_stream);
 #else
   std::call_once(read_env_once_flag, []() {
     ITEX_CHECK_OK(

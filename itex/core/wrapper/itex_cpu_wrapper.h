@@ -17,4 +17,4 @@ limitations under the License.
 #include "itex/core/utils/env_var.h"
 
 static void* onednn_handle;
-#endif // ITEX_CORE_WRAPPER_ITEX_CPU_WRAPPER_H_
+#endif  // ITEX_CORE_WRAPPER_ITEX_CPU_WRAPPER_H_

@@ -4075,33 +4075,6 @@ void Register_ITEXForwardAUGRUOp() {
   }
 }
 
-void Register_QuantizedMaxPool3DOp() {
-  itex::StatusUniquePtr status(TF_NewStatus());
-  {
-    TF_OpDefinitionBuilder* op_builder =
-        TF_NewOpDefinitionBuilder("_QuantizedMaxPool3D");
-    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
-    TF_OpDefinitionBuilderAddInput(op_builder, "min_input: float");
-    TF_OpDefinitionBuilderAddInput(op_builder, "max_input: float");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "output: T");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "min_output: float");
-    TF_OpDefinitionBuilderAddOutput(op_builder, "max_output: float");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "T: quantizedtype");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "ksize: list(int) >= 5");
-    TF_OpDefinitionBuilderAddAttr(op_builder, "strides: list(int) >= 5");
-    TF_OpDefinitionBuilderAddAttr(op_builder,
-                                  GetPaddingAttrStringWithExplicit());
-    TF_OpDefinitionBuilderAddAttr(op_builder, GetExplicitPaddingsAttrString());
-
-    // TODO(itex): Implement maxpool_shape_fn in the future
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
-    TF_RegisterOpDefinition(op_builder, status.get());
-    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
-        << "_QuantizedMaxPool3D op registration failed: ";
-  }
-}
-
 void Register_ITEXQuantizedMaxPool3DOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

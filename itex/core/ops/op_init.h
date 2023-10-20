@@ -40,7 +40,6 @@ void Register_QuantizedFusedBatchMatMulV2AndDequantizeOp();
 void Register_QuantizedFusedMatMulOp();
 void Register_QuantizedFusedMatMulAndRequantizeOp();
 void Register_QuantizedFusedMatMulAndDequantizeOp();
-void Register_QuantizedMaxPool3DOp();
 void Register_QuantizedTransposeOp();
 
 // TODO(itex): remove this op definition, once this op is upstreamed from
