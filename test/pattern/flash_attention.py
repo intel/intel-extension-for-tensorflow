@@ -78,9 +78,9 @@ class AttentionInKerasStableDiffusionModel():
         cc = keras.backend.batch_dot(aa, bb)
         return tf.reshape(cc, (-1, a.shape[1], cc.shape[1], cc.shape[2]))
 
-class MHAFusionForKerasStableDiffusionModelTest(test_util.TensorFlowTestCase):
+class MHAFusionWithReshapeMatmulTest(test_util.TensorFlowTestCase):
 
-    def testReshapeReshapeMatMulReshapeBiasAddRelu(self):
+    def testMHAFusionWithReshapeMatmul(self):
         tf.random.set_seed(0)
         datatypes = [tf.float32, tf.bfloat16]
         if config.list_logical_devices('XPU'):
@@ -111,6 +111,55 @@ class MHAFusionForKerasStableDiffusionModelTest(test_util.TensorFlowTestCase):
 
             print("real type: ", real.dtype)
             self.assertAllCloseAccordingToType(real, predict)
+
+
+class MHAPatternWithMulAndAddTest(test_util.TensorFlowTestCase):
+
+    def testMHAPatternWithMulAndAdd(self):
+        tf.random.set_seed(0)
+        datatypes = [tf.float32, tf.bfloat16]
+        if config.list_logical_devices('XPU'):
+            datatypes = [tf.float16, tf.bfloat16]
+
+        q_in=np.random.rand(1, 8, 1024, 64)
+        k_in=np.random.rand(1, 8, 1024, 64)
+        v_in=np.random.rand(1, 8, 1024, 64)
+        mask_in = np.random.rand(1, 8, 1, 1024)
+
+        run_options = config_pb2.RunOptions(output_partition_graphs=True)
+        metadata = config_pb2.RunMetadata()
+
+        for dtype in datatypes:
+            q = tf.constant(q_in, dtype=dtype)
+            k = tf.constant(k_in, dtype=dtype)
+            v = tf.constant(v_in, dtype=dtype)
+            mask = tf.constant(mask_in, dtype=dtype)
+
+            qk = tf.matmul(q, k, transpose_b=True)
+            qk = qk * 0.125
+            qk = qk + mask
+            qk = tf.nn.softmax(qk)
+            qk = tf.matmul(qk, v)
+            out = tf.transpose(qk, [0, 2, 1, 3])
+            out = tf.identity(out)
+
+            os.environ['ITEX_REMAPPER'] = '0'
+            with self.session(use_gpu=True) as sess:
+                real = sess.run(out)
+
+            os.environ['ITEX_REMAPPER'] = '1'
+            with self.session(use_gpu=True) as sess:
+                predict = sess.run(out, options=run_options, run_metadata=metadata)
+
+            print("real type: ", real.dtype)
+            graph = metadata.partition_graphs[0]
+            found_fused_op = False
+            for node in graph.node:
+                if "ScaledDotProductAttentionInference" in node.op:
+                    found_fused_op = True
+                    break
+            self.assertTrue(found_fused_op, "Not found fused ScaledDotProductAttentionInference op")
+            self.assertAllCloseAccordingToType(real, predict, half_atol=2e-2, bfloat16_rtol=2e-2)
 
 
 if __name__ == '__main__':

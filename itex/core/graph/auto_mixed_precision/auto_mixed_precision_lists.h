@@ -195,6 +195,7 @@ class AutoMixedPrecisionLists {
       /*Below ops have more attrs compared to original TF ops.*/
       "_ITEXConv3D",
       "ScaledDotProductAttention",
+      "ScaledDotProductAttentionInference",
       "ScaledDotProductAttentionGrad",
       "FusedDenseBiasAddGelu",
       "FusedDenseBiasAddGeluGrad",

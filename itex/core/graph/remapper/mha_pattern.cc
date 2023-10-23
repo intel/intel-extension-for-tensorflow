@@ -225,6 +225,110 @@ class MHAFusionWithReshapeMatmul : public Fusion {
   }
 };
 
+class MHAPatternWithMulAndAdd : public Fusion {
+ public:
+  MHAPatternWithMulAndAdd() : Fusion() {
+    using utils::NodeStatus;
+    using utils::OpTypePattern;
+
+    OpTypePattern query = {kAny, "query", NodeStatus::kRemain};
+    OpTypePattern key = {kAny, "key", NodeStatus::kRemain};
+    OpTypePattern value = {kAny, "value", NodeStatus::kRemain};
+    OpTypePattern batch_matmul = {kBatchMatMulV2, "batch_matmul",
+                                  NodeStatus::kRemove};
+    OpTypePattern scale = {kConst, "scale", NodeStatus::kRemain};
+    OpTypePattern mask = {kAny, "mask", NodeStatus::kRemain};
+    OpTypePattern mul = {kMul, "mul", NodeStatus::kRemove};
+    OpTypePattern add = {kAddV2, "add", NodeStatus::kRemove};
+    OpTypePattern softmax = {kSoftmax, "softmax", NodeStatus::kRemove};
+    OpTypePattern batch_matmul_1 = {kBatchMatMulV2, "batch_matmul_1",
+                                    NodeStatus::kRemove};
+    OpTypePattern perm = {kConst, "perm", NodeStatus::kRemain};
+    OpTypePattern output = {kTranspose, "output", NodeStatus::kReplace};
+
+    batch_matmul.AddInput(query).AddInput(key);
+    mul.AddInput(batch_matmul).AddInput(scale);
+    add.AddInput(mask).AddInput(mul);
+    softmax.AddInput(add);
+    batch_matmul_1.AddInput(softmax).AddInput(value);
+    output.AddInput(batch_matmul_1).AddInput(perm);
+
+    pattern_ = InternalPattern(std::move(output));
+  }
+
+  ~MHAPatternWithMulAndAdd() {}
+
+  std::string Name() override { return "mha_pattern_with_mul_and_add"; }
+
+  MatchedProperties Check(RemapperContext* ctx,
+                          const int node_index) const override {
+    auto& graph_view = ctx->graph_view;
+
+    MatchedProperties ret = FillProperties(
+        &graph_view, graph_view.GetNode(node_index), pattern_, false);
+
+    bool is_ok = !ret.Empty() && CheckShapes(ctx, ret);
+
+    if (!is_ok) return ret.ToEmpty();
+
+    return ret;
+  }
+
+  bool CheckShapes(RemapperContext* ctx,
+                   const MatchedProperties& properties) const {
+    int perm_index = properties.map.at("perm");
+    NodeDef* perm_node = ctx->graph_view.GetNode(perm_index)->node();
+    Tensor perm_t;
+    perm_t.FromProto(perm_node->attr().at("value").tensor());
+    if (perm_t.NumElements() != 4) {
+      return false;
+    }
+    auto perm_flat = perm_t.flat<int32>();
+    if (!(perm_flat(0) == 0 && perm_flat(1) == 2 && perm_flat(2) == 1 &&
+          perm_flat(3) == 3)) {
+      return false;
+    }
+    return true;
+  }
+
+  Status Update(RemapperContext* ctx /** in and out **/,
+                const MatchedProperties& properties) const override {
+    auto* output = ctx->graph_view.GetNode(properties.map.at("output"))->node();
+    auto* batch_matmul =
+        ctx->graph_view.GetNode(properties.map.at("batch_matmul"))->node();
+    auto* batch_matmul_1 =
+        ctx->graph_view.GetNode(properties.map.at("batch_matmul_1"))->node();
+    auto* mask = ctx->graph_view.GetNode(properties.map.at("mask"))->node();
+
+    NodeDef fused_node;
+    fused_node.set_name(output->name());
+    fused_node.set_op("ScaledDotProductAttentionInference");
+    fused_node.set_device(output->device());
+    fused_node.add_input(batch_matmul->input(0));
+    fused_node.add_input(batch_matmul->input(1));
+    fused_node.add_input(batch_matmul_1->input(1));
+    fused_node.add_input(mask->name());
+
+    AttrValue attr_dtype, attr_inf, attr_causal, attr_mask;
+    attr_dtype.set_type(GetDataTypeFromAttr(*batch_matmul, "T"));
+    attr_inf.set_b(true);
+    attr_causal.set_b(false);
+    attr_mask.set_b(true);
+    fused_node.mutable_attr()->insert({"T", attr_dtype});
+    fused_node.mutable_attr()->insert({"use_mask", attr_mask});
+    fused_node.mutable_attr()->insert({"use_causal", attr_causal});
+    fused_node.mutable_attr()->insert({"is_inference", attr_inf});
+
+    utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
+    Status status;
+    mutation->AddNode(std::move(fused_node), &status);
+    TF_RETURN_IF_ERROR(status);
+    TF_RETURN_IF_ERROR(mutation->Apply());
+    return Status::OK();
+  }
+};
+
+REGISTER_FUSION(MHAPatternWithMulAndAdd)
 REGISTER_FUSION(MHAFusionWithReshapeMatmul)
 
 }  // namespace graph
