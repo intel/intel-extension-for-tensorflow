@@ -29,7 +29,6 @@ RUN apt-get update && \
     apt-utils \
     ca-certificates \
     clinfo \
-    curl \
     git \
     gnupg2 \
     gpg-agent \

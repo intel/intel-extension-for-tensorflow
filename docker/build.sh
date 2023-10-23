@@ -35,8 +35,8 @@ then
 				-f itex-xpu.Dockerfile .
 else
         IMAGE_NAME=intel-extension-for-tensorflow:$IMAGE_TYPE
-        docker build --no-cache --build-arg UBUNTU_VERSION=20.04 \
-                                --build-arg PYTHON=python3.9 \
+        docker build --no-cache --build-arg UBUNTU_VERSION=22.04 \
+                                --build-arg PYTHON=python3.10 \
                                 --build-arg TF_VER=2.13 \
                                 --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \

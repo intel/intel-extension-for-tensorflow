@@ -27,7 +27,6 @@ RUN apt-get update && \
     apt-utils \
     ca-certificates \
     clinfo \
-    curl \
     git \
     gnupg2 \
     gpg-agent \
@@ -42,21 +41,21 @@ RUN echo "intelpython=exclude" > $HOME/cfg.txt
 
 ENV LANG=C.UTF-8
 
-ARG PYTHON=python3.9
+ARG PYTHON=python3.10
 
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     ${PYTHON} lib${PYTHON} python3-pip && \
     apt-get clean && \
     rm -rf  /var/lib/apt/lists/*
 
-RUN pip --no-cache-dir install --upgrade \
-    pip \
-    setuptools
-
 RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/local/bin/python3 && \
     ln -sf $(which ${PYTHON}) /usr/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python3
+
+RUN pip --no-cache-dir install --upgrade \
+    pip \
+    setuptools
 
 ARG TF_VER="2.13"
 
