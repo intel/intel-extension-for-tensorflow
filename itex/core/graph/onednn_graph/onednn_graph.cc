@@ -3288,6 +3288,9 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
     setenv("_DNNL_DISABLE_DNNL_BACKEND", "1", 0);
   }
 
+  // Enable oneDNN Graph constant cache
+  setenv("_ONEDNN_CONSTANT_CACHE", "1", 0);
+
   Status status;
   GraphDef multable_graph_def = graph_def;
   OneDnnGraphContext ctx(item, &multable_graph_def, &status);
