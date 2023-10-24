@@ -7096,8 +7096,7 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
       // Remap Conv2D+FusedBatchNorm+AddV2+Activation into the _FusedConv2D;
       ContractionWithBatchNormAndAddV2AndActivation
           contract_with_batch_norm_and_addv2_and_activation;
-      if (!is_layout_opt &&
-          FindConv2DWithBatchNormAndAddV2AndActivation(
+      if (FindConv2DWithBatchNormAndAddV2AndActivation(
               ctx, i, &contract_with_batch_norm_and_addv2_and_activation)) {
         TF_RETURN_IF_ERROR(AddFusedConv2DNode(
             &ctx, contract_with_batch_norm_and_addv2_and_activation,
@@ -7108,8 +7107,7 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
       // Remap Conv2D+FusedBatchNorm+Activation into the _FusedConv2D;
       ContractionWithBatchNormAndActivation
           contract_with_batch_norm_and_activation;
-      if (!is_layout_opt &&
-          FindConv2DWithBatchNormAndActivation(
+      if (FindConv2DWithBatchNormAndActivation(
               ctx, i, &contract_with_batch_norm_and_activation)) {
         TF_RETURN_IF_ERROR(
             AddFusedConv2DNode(&ctx, contract_with_batch_norm_and_activation,
@@ -7119,8 +7117,7 @@ Status RunRemapper(OptimizerContext* opt_ctx, const GrapplerItem& item,
 
       // Remap Conv2D+FusedBatchNorm into the _FusedConv2D;
       ContractionWithBatchNorm contract_with_batch_norm;
-      if (!is_layout_opt &&
-          FindConv2DWithBatchNorm(ctx, i, &contract_with_batch_norm)) {
+      if (FindConv2DWithBatchNorm(ctx, i, &contract_with_batch_norm)) {
         TF_RETURN_IF_ERROR(AddFusedConv2DNode(&ctx, contract_with_batch_norm,
                                               &invalidated_nodes,
                                               &nodes_to_delete));
