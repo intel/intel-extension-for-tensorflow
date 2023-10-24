@@ -17,8 +17,6 @@ limitations under the License.
 
 #include "itex/core/kernels/gpu/sparse_to_dense_op_gpu.h"
 
-#include "itex/core/compiler/xla/stream_executor/device_memory.h"
-#include "itex/core/compiler/xla/types.h"
 #include "itex/core/utils/gpu_device_functions.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/op_requires.h"
@@ -218,7 +216,6 @@ void LaunchSparseToDense<T, Index>::operator()(
 
     IndicesValidStatus valid_status;
     int valid_status_size = sizeof(valid_status) / sizeof(int);
-    int valid_status_bytes = sizeof(valid_status);
 
     Tensor valid_status_tensor;
     OP_REQUIRES_OK(c,
@@ -226,10 +223,7 @@ void LaunchSparseToDense<T, Index>::operator()(
                                     &valid_status_tensor));
 
     auto status_ptr = valid_status_tensor.template flat<int>().data();
-    itex_xla::se::DeviceMemoryBase valid_status_ptr(status_ptr,
-                                                    valid_status_bytes);
-    stream->memset(valid_status_ptr.opaque(), INT_MAX, valid_status_bytes)
-        .wait();
+    stream->memset(status_ptr, INT_MAX, valid_status_size).wait();
 
     device.stream()->submit([&](sycl::handler& cgh) {
       auto max_group_size =
@@ -248,8 +242,7 @@ void LaunchSparseToDense<T, Index>::operator()(
     });
     stream
         ->memcpy(reinterpret_cast<int*>(&valid_status),
-                 reinterpret_cast<int*>(valid_status_ptr.opaque()),
-                 valid_status_bytes)
+                 reinterpret_cast<int*>(status_ptr), valid_status_size)
         .wait();
 
     OP_REQUIRES_OK(

@@ -2,7 +2,6 @@
 
 _TF_HEADER_DIR = "TF_HEADER_DIR"
 _TF_SHARED_LIBRARY_DIR = "TF_SHARED_LIBRARY_DIR"
-_JAX_SHARED_LIBRARY_DIR = "JAX_SHARED_LIBRARY_DIR"
 
 def _tpl(repository_ctx, tpl, substitutions = {}, out = None):
     if not out:
@@ -232,31 +231,10 @@ def _tf_pip_impl(repository_ctx):
             ["lib_tensorflow_internal.so"],
         )
 
-    jax_shared_library_dir = "dummy"
-    if repository_ctx.os.environ.get(_JAX_SHARED_LIBRARY_DIR) != None:
-        jax_shared_library_dir = repository_ctx.os.environ[_JAX_SHARED_LIBRARY_DIR]
-    jax_shared_library_name = "dummy"
-    jax_shared_library_rule = ""
-    if _dir_exists(repository_ctx, jax_shared_library_dir):
-        jax_shared_library_name = "xla_extension.so"
-        jax_shared_library_path = "%s/%s" % (
-            jax_shared_library_dir,
-            jax_shared_library_name,
-        )
-        jax_shared_library_rule = _symlink_genrule_for_dir(
-            repository_ctx,
-            None,
-            "",
-            jax_shared_library_name,
-            [jax_shared_library_path],
-            [jax_shared_library_name],
-        )
     _tpl(repository_ctx, "BUILD", {
         "%{TF_HEADER_GENRULE}": tf_header_rule,
         "%{TF_SHARED_LIBRARY_GENRULE}": tf_shared_library_rule,
         "%{TF_SHARED_LIBRARY_NAME}": tf_shared_library_name,
-        "%{JAX_SHARED_LIBRARY_GENRULE}": jax_shared_library_rule,
-        "%{JAX_SHARED_LIBRARY_NAME}": jax_shared_library_name,
     })
 
 tf_configure = repository_rule(

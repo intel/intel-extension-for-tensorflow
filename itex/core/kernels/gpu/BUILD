@@ -1556,8 +1556,6 @@ itex_xpu_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "//itex/core/compiler/xla:types",
-        "//itex/core/compiler/xla/stream_executor:stream_executor_headers",
         "//itex/core/kernels/common:fill_functor",
         "//itex/core/utils/sparse:sparse_tensor",
     ],

@@ -106,7 +106,6 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
   link_flags.append("-Wl,-no-as-needed")
   link_flags.append("-Wl,--enable-new-dtags")
   link_flags.append("-Wl,-rpath=%{TF_SHARED_LIBRARY_DIR}/python")
-  link_flags.append("-Wl,-rpath=%{JAX_SHARED_LIBRARY_DIR}")
   link_flags.append("-L%{TF_SHARED_LIBRARY_DIR}/python/")
   if link and gpu_only and len(AOT_DEVICE) > 0 and not xetla:
     link_flags.append("-fsycl-targets=spir64_gen,spir64")

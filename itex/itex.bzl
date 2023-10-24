@@ -253,25 +253,3 @@ def cc_header_only_library(name, deps = [], includes = [], extra_deps = [], **kw
         deps = extra_deps,
         **kwargs
     )
-
-def if_not_jax(if_true, if_false = []):
-    """Shorthand for select()' on whether build .so for jax
-
-    Returns `if_true` if graph compiler is used.
-    graph compiler allows some accelerated kernel such as MHA in Bert
-    """
-    return select({
-        "//itex:build_for_jax": if_false,
-        "//conditions:default": if_true,
-    })
-
-def if_jax(if_true, if_false = []):
-    """Shorthand for select()' on whether build .so for jax
-
-    Returns `if_true` if graph compiler is used.
-    graph compiler allows some accelerated kernel such as MHA in Bert
-    """
-    return select({
-        "//itex:build_for_jax": if_true,
-        "//conditions:default": if_false,
-    })

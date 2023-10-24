@@ -14,7 +14,6 @@ string_flag(
         "cpu_cc_backend",
         "gpu_orig_backend",
         "gpu_cc_backend",
-        "xla_extension",
         "dummy",
         "",
     ],
@@ -120,19 +119,6 @@ itex_xpu_binary(
         "//itex/core/kernels:libitex_common",
         "@local_config_tf//:_pywrap_tensorflow_internal",
     ],
-)
-
-itex_xpu_binary(
-    name = "libitex_xla_extension.so",
-    linkshared = True,
-    set_target = "xla_extension",
-    visibility = ["//visibility:public"],
-    deps = if_dpcpp(
-        [
-            "//itex/core/compiler/xla/pjrt:xpu_pjrt_client",
-            "@local_config_tf//:jax_internal",
-        ],
-    ),
 )
 
 itex_xpu_binary(
@@ -242,12 +228,6 @@ config_setting(
 config_setting(
     name = "xpu_build",
     define_values = {"build_as_xpu": "true"},
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "build_for_jax",
-    define_values = {"build_for_jax": "true"},
     visibility = ["//visibility:public"],
 )
 

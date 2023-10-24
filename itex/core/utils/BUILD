@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "cc_library", "if_jax", "if_not_jax", "itex_xpu_library")
+load("//itex:itex.bzl", "cc_library", "itex_xpu_library")
 load(
     "//itex/core/utils:build_config.bzl",
     "tf_protobuf_deps",
@@ -83,6 +83,7 @@ cc_library(
     ),
     linkstatic = 1,
     deps = [
+        ":device_gpu_impl",
         "//itex/core/graph:config_util_hdr",
         "//itex/core/utils/gtl:gtl_libs",
         "//itex/core/utils/tensor_bundle:byteswaparray",
@@ -96,15 +97,10 @@ cc_library(
         "@com_googlesource_code_re2//:re2",
         "@double_conversion//:double-conversion",
         "@farmhash_archive//:farmhash",
-        "@nsync//:nsync_cpp",
-    ] + if_not_jax([
-        "@local_config_tf//:tf_header_lib",
         "@local_config_tf//:protos_all",
-        ":device_gpu_impl",
-    ]) + if_jax([
-        ":ctstring",
-        "//protos:tf_protos_all_cc",
-    ]),
+        "@local_config_tf//:tf_header_lib",
+        "@nsync//:nsync_cpp",
+    ],
 )
 
 cc_library(
@@ -135,11 +131,8 @@ cc_library(
     ],
     deps = [
         "@com_google_absl//absl/strings",
-    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
-    ]) + if_jax([
-        ":ctstring",
-    ]),
+    ],
 )
 
 cc_library(
@@ -164,11 +157,8 @@ cc_library(
     deps = [
         ":platform",
         ":tstring",
-    ] + if_not_jax([
         "@local_config_tf//:protos_all",
-    ]) + if_jax([
-        "//protos:tf_protos_all_cc",
-    ]),
+    ],
 )
 
 cc_library(
@@ -241,11 +231,8 @@ cc_library(
         ":types",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
-    ] + if_not_jax([
         "@local_config_tf//:protos_all",
-    ]) + if_jax([
-        "//protos:tf_protos_all_cc",
-    ]),
+    ],
 )
 
 cc_library(
@@ -274,12 +261,9 @@ cc_library(
         ":platform",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
-    ] + if_not_jax([
-        "@local_config_tf//:tf_header_lib",
         "@local_config_tf//:protos_all",
-    ]) + if_jax([
-        "//protos:tf_protos_all_cc",
-    ]),
+        "@local_config_tf//:tf_header_lib",
+    ],
 )
 
 cc_library(
@@ -299,12 +283,9 @@ cc_library(
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
         "@double_conversion//:double-conversion",
-    ] + if_not_jax([
-        "@local_config_tf//:tf_header_lib",
         "@local_config_tf//:protos_all",
-    ]) + if_jax([
-        "//protos:tf_protos_all_cc",
-    ]),
+        "@local_config_tf//:tf_header_lib",
+    ],
 )
 
 cc_library(
@@ -319,9 +300,8 @@ cc_library(
     deps = [
         ":platform",
         "@com_google_absl//absl/strings",
-    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
-    ]),
+    ],
 )
 
 cc_library(
@@ -386,9 +366,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/strings",
-    ] + if_not_jax([
         "@local_config_tf//:tf_header_lib",
-    ]),
+    ],
     alwayslink = True,
 )
 
@@ -410,11 +389,8 @@ cc_library(
         ":types",
         "//third_party/eigen3",
         "@com_google_absl//absl/strings",
-    ] + if_not_jax([
         "@local_config_tf//:protos_all",
-    ]) + if_jax([
-        "//protos:tf_protos_all_cc",
-    ]),
+    ],
 )
 
 itex_xpu_library(

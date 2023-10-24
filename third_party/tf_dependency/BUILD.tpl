@@ -416,12 +416,5 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
-    name = "jax_internal",
-    srcs = ["%{JAX_SHARED_LIBRARY_NAME}"],
-    visibility = ["//visibility:public"],
-)
-
 %{TF_HEADER_GENRULE}
 %{TF_SHARED_LIBRARY_GENRULE}
-%{JAX_SHARED_LIBRARY_GENRULE}

@@ -37,18 +37,8 @@ def git_hash(header_in):
 
   return "N/A" 
 
-def get_jax_version():
-  with open("bazel-out/volatile-status.txt", 'r') as f:
-    for line in f:
-      k, v = line.split(" ")
-      if k == "JAX_VERSION":
-        return v.strip()
-
-  return "0.0.0"
-
 def generate_version(header_in, header_out):
   hash_value = git_hash(header_in)
-  jax_version = get_jax_version()
 
   [major, minor, patch1, patch2] = version.__version__.split(".")
 
@@ -58,7 +48,6 @@ def generate_version(header_in, header_out):
     content = content.replace("@ITEX_VERSION_MINOR@", minor)
     content = content.replace("@ITEX_VERSION_PATCH@", ".".join([patch1, patch2]))
     content = content.replace("@ITEX_VERSION_HASH@", hash_value)
-    content = content.replace("@JAX_VERSION_STRING@", jax_version)
 
     header_out = os.path.expanduser(header_out)
     header_out_dir = os.path.dirname(header_out)
