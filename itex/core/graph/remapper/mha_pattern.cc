@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "itex/core/graph/config_util.h"
 #include "itex/core/graph/remapper/constant_names.h"
 #include "itex/core/graph/remapper/fusion.h"
 #include "itex/core/graph/remapper/remapper.h"
@@ -85,6 +86,11 @@ class MHAFusionWithReshapeMatmul : public Fusion {
     MatchedProperties ret =
         FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
 
+#ifndef INTEL_CPU_ONLY
+    if (!isxehpc_value) {
+      return ret.ToEmpty();
+    }
+#endif
     bool is_ok = !ret.Empty() && CheckShapes(ctx, ret);
 
     if (!is_ok) return ret.ToEmpty();
@@ -267,6 +273,11 @@ class MHAPatternWithMulAndAdd : public Fusion {
     MatchedProperties ret = FillProperties(
         &graph_view, graph_view.GetNode(node_index), pattern_, false);
 
+#ifndef INTEL_CPU_ONLY
+    if (!isxehpc_value) {
+      return ret.ToEmpty();
+    }
+#endif
     bool is_ok = !ret.Empty() && CheckShapes(ctx, ret);
 
     if (!is_ok) return ret.ToEmpty();
