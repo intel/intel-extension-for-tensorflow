@@ -169,6 +169,12 @@ $ bazel build -c opt --config=gpu //itex:libitex_gpu_cc.so
 
 CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/libitex_gpu_cc.so`
 
+NOTE: `libitex_gpu_cc.so` is depended on `libitex_gpu_xetla.so`, so `libitex_gpu_xetla.so` shoule be copied to the same diretcory of `libitex_gpu_cc.so`
+```bash
+$ cd <Path to intel-extension-for-tensorflow>
+$ cp bazel-out/k8-opt-ST-*/bin/itex/core/kernels/gpu/libitex_gpu_xetla.so bazel-bin/itex/
+```
+
 For CPU support
 
 ```bash

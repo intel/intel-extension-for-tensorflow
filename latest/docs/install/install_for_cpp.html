@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g949b526 documentation</title>
+  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gab902a7 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -308,6 +308,11 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 </pre></div>
 </div>
 <p>CC library location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">intel-extension-for-tensorflow&gt;/bazel-bin/itex/libitex_gpu_cc.so</span></code></p>
+<p>NOTE: <code class="docutils literal notranslate"><span class="pre">libitex_gpu_cc.so</span></code> is depended on <code class="docutils literal notranslate"><span class="pre">libitex_gpu_xetla.so</span></code>, so <code class="docutils literal notranslate"><span class="pre">libitex_gpu_xetla.so</span></code> shoule be copied to the same diretcory of <code class="docutils literal notranslate"><span class="pre">libitex_gpu_cc.so</span></code></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>&lt;Path<span class="w"> </span>to<span class="w"> </span>intel-extension-for-tensorflow&gt;
+$<span class="w"> </span>cp<span class="w"> </span>bazel-out/k8-opt-ST-*/bin/itex/core/kernels/gpu/libitex_gpu_xetla.so<span class="w"> </span>bazel-bin/itex/
+</pre></div>
+</div>
 <p>For CPU support</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>bazel<span class="w"> </span>build<span class="w"> </span>-c<span class="w"> </span>opt<span class="w"> </span>--config<span class="o">=</span>cpu<span class="w"> </span>//itex:libitex_cpu_cc.so
 </pre></div>
@@ -521,7 +526,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fd089eb9ba0> 
+   <jinja2.runtime.BlockReference object at 0x7f51c6f122f0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
