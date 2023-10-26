@@ -86,11 +86,6 @@ class MHAFusionWithReshapeMatmul : public Fusion {
     MatchedProperties ret =
         FillProperties(&graph_view, graph_view.GetNode(node_index), pattern_);
 
-#ifndef INTEL_CPU_ONLY
-    if (!isxehpc_value) {
-      return ret.ToEmpty();
-    }
-#endif
     bool is_ok = !ret.Empty() && CheckShapes(ctx, ret);
 
     if (!is_ok) return ret.ToEmpty();
@@ -100,6 +95,13 @@ class MHAFusionWithReshapeMatmul : public Fusion {
 
   bool CheckShapes(RemapperContext* ctx,
                    const MatchedProperties& properties) const {
+    int matmul_0_index = properties.map.at("batch_matmul_0");
+    NodeDef* matmul_0 = ctx->graph_view.GetNode(matmul_0_index)->node();
+    if (!NodeIsOnCpu(matmul_0) &&
+        (!isxehpc_value || matmul_0->attr().at("T").type() == DT_FLOAT)) {
+      // GPU fmha kernel doesn't support fp32.
+      return false;
+    }
     int reshape_0_index = properties.map.at("reshape_0");
     NodeDef* reshape_0 = ctx->graph_view.GetNode(reshape_0_index)->node();
     std::vector<OpInfo_TensorProperties> props;
@@ -273,11 +275,6 @@ class MHAPatternWithMulAndAdd : public Fusion {
     MatchedProperties ret = FillProperties(
         &graph_view, graph_view.GetNode(node_index), pattern_, false);
 
-#ifndef INTEL_CPU_ONLY
-    if (!isxehpc_value) {
-      return ret.ToEmpty();
-    }
-#endif
     bool is_ok = !ret.Empty() && CheckShapes(ctx, ret);
 
     if (!is_ok) return ret.ToEmpty();
@@ -287,6 +284,13 @@ class MHAPatternWithMulAndAdd : public Fusion {
 
   bool CheckShapes(RemapperContext* ctx,
                    const MatchedProperties& properties) const {
+    int matmul_0_index = properties.map.at("batch_matmul");
+    NodeDef* matmul_0 = ctx->graph_view.GetNode(matmul_0_index)->node();
+    if (!NodeIsOnCpu(matmul_0) &&
+        (!isxehpc_value || matmul_0->attr().at("T").type() == DT_FLOAT)) {
+      // GPU fmha kernel doesn't support fp32.
+      return false;
+    }
     int perm_index = properties.map.at("perm");
     NodeDef* perm_node = ctx->graph_view.GetNode(perm_index)->node();
     Tensor perm_t;
