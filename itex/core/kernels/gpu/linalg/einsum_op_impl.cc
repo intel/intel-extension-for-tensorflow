@@ -17,7 +17,7 @@ limitations under the License.
 
 #include "itex/core/kernels/common/einsum_op_impl.h"
 
-#include "itex/core/kernels/gpu/linalg/einsum_helper.h"
+#include "itex/core/kernels/gpu/linalg/fused_einsum_helper.h"
 
 namespace itex {
 

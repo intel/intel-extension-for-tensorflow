@@ -14,8 +14,8 @@
  * limitations under the License.
  ******************************************************************************/
 
-#ifndef ITEX_CORE_KERNELS_GPU_LINALG_FUSED_EINSUM_IMPL_H_
-#define ITEX_CORE_KERNELS_GPU_LINALG_FUSED_EINSUM_IMPL_H_
+#ifndef ITEX_CORE_KERNELS_GPU_XETLA_FUSED_EINSUM_IMPL_H_
+#define ITEX_CORE_KERNELS_GPU_XETLA_FUSED_EINSUM_IMPL_H_
 
 #include <xetla.hpp>
 
@@ -236,4 +236,4 @@ class FusedEinsumKernel {
 
 }  // namespace gpu::xetla
 
-#endif  // ITEX_CORE_KERNELS_GPU_LINALG_FUSED_EINSUM_IMPL_H_
+#endif  // ITEX_CORE_KERNELS_GPU_XETLA_FUSED_EINSUM_IMPL_H_

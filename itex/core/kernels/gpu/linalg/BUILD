@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "itex_xetla_library", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "itex_xpu_library", "tf_copts")
 
 itex_xpu_library(
     name = "linalg",
@@ -37,19 +37,14 @@ itex_xpu_library(
     alwayslink = True,
 )
 
-itex_xetla_library(
-    name = "fused_einsum_impl",
-    srcs = ["fused_einsum_impl.cc"],
-    hdrs = [
-        "einsum_helper.h",
-        "fused_einsum_impl.h",
-    ],
+itex_xpu_library(
+    name = "fused_einsum_hdrs",
+    hdrs = ["fused_einsum_helper.h"],
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
-        "@xetla//:xetla_header",
     ],
     alwayslink = True,
 )
@@ -58,7 +53,6 @@ itex_xpu_library(
     name = "einsum_op_impl",
     srcs = ["einsum_op_impl.cc"],
     hdrs = [
-        "einsum_helper.h",
         "//itex/core/kernels/common:einsum_hdrs",
     ],
     copts = tf_copts(),
@@ -66,9 +60,10 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/kernels/common:fill_functor",
+        "//itex/core/kernels/gpu:libitex_gpu_xetla",
         "//itex/core/kernels/gpu:matmul_op",
         "//itex/core/kernels/gpu:reduction_ops",
-        "//itex/core/kernels/gpu/linalg:fused_einsum_impl",
+        "//itex/core/kernels/gpu/linalg:fused_einsum_hdrs",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
     ],

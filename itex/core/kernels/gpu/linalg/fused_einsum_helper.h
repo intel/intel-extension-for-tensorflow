@@ -14,8 +14,8 @@
  * limitations under the License.
  ******************************************************************************/
 
-#ifndef ITEX_CORE_KERNELS_GPU_LINALG_EINSUM_HELPER_H_
-#define ITEX_CORE_KERNELS_GPU_LINALG_EINSUM_HELPER_H_
+#ifndef ITEX_CORE_KERNELS_GPU_LINALG_FUSED_EINSUM_HELPER_H_
+#define ITEX_CORE_KERNELS_GPU_LINALG_FUSED_EINSUM_HELPER_H_
 
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/plugin_tensor.h"
@@ -122,4 +122,4 @@ void Dispatch(Args<T>& args) {  // NOLINT
 }  // namespace functor
 }  // namespace itex
 
-#endif  // ITEX_CORE_KERNELS_GPU_LINALG_EINSUM_HELPER_H_
+#endif  // ITEX_CORE_KERNELS_GPU_LINALG_FUSED_EINSUM_HELPER_H_

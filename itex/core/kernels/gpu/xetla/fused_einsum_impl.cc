@@ -14,9 +14,9 @@
  * limitations under the License.
  ******************************************************************************/
 
-#include "itex/core/kernels/gpu/linalg/fused_einsum_impl.h"
+#include "itex/core/kernels/gpu/xetla/fused_einsum_impl.h"
 
-#include "itex/core/kernels/gpu/linalg/einsum_helper.h"
+#include "itex/core/kernels/gpu/linalg/fused_einsum_helper.h"
 #include "itex/core/utils/op_requires.h"
 
 namespace itex {

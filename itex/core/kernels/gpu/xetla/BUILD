@@ -43,3 +43,20 @@ itex_xetla_library(
     ],
     alwayslink = True,
 )
+
+itex_xetla_library(
+    name = "fused_einsum_impl",
+    srcs = ["fused_einsum_impl.cc"],
+    hdrs = [
+        "fused_einsum_impl.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/gpu/linalg:fused_einsum_hdrs",
+        "@xetla//:xetla_header",
+    ],
+    alwayslink = True,
+)
