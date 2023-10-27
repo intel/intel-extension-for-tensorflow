@@ -12,7 +12,7 @@ cc_library(
         "onednn_post_op_util.h",
         "onednn_util.h",
         "//itex/core/wrapper:itex_cpu_wrapper_hdr",
-    ] + if_cc_threadpool_build(["//itex/core/utils/onednn/stream:mkl_threadpool"]),
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [

@@ -236,11 +236,14 @@ inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
                                      const dnnl::engine& engine,
                                      int num_thread = -1) {
 #ifndef INTEL_CPU_ONLY
+  // GPU
   ITEX_CHECK(engine.get_kind() == dnnl::engine::kind::gpu)
       << "Create oneDNN stream for unsupported engine.";
   auto* ITEX_GPU_stream = ctx.GetDeviceStream();
   return dnnl::sycl_interop::make_stream(engine, *ITEX_GPU_stream);
 #else
+#ifndef CC_BUILD
+  // CPU and python build
   std::call_once(read_env_once_flag, []() {
     ITEX_CHECK_OK(
         itex::ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &enable_omp));
@@ -262,6 +265,23 @@ inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
     dnnl::stream tp_stream = dnnl::stream(c_stream);
     return tp_stream;
   }
+#else
+// CPU and C++ BUILD
+#ifdef CC_THREADPOOL_BUILD
+  // CPU and C++ BUILD with eigen thread pool
+  if (num_thread == 1) return dnnl::stream(engine);
+  MklDnnThreadPool* eigen_tp = new MklDnnThreadPool(&ctx, num_thread);
+  dnnl::stream tp_stream =
+      dnnl::stream(dnnl::threadpool_interop::make_stream(engine, eigen_tp));
+  return tp_stream;
+#else
+  // CPU and C++ BUILD with OMP thread pool
+  // Default path, always assume it's CPU engine.
+  ITEX_CHECK(engine.get_kind() == dnnl::engine::kind::cpu)
+      << "Create oneDNN stream for unsupported engine.";
+  return dnnl::stream(engine);
+#endif  // CC_THREADPOOL_BUILD
+#endif  // CC_BUILD
 #endif  // INTEL_CPU_ONLY
 }
 
