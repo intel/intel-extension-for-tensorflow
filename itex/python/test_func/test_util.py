@@ -131,6 +131,12 @@ try:
 except Exception:  # pylint: disable=broad-except
   pass
 
+try:
+  # For TensorFlow <= 2.14
+  from tensorflow.python.framework.ops import Tensor
+except ImportError:
+  # For TensorFlow >= 2.15
+  from tensorflow.python.framework.tensor import Tensor
 
 # Uses the same mechanism as above to selectively enable/disable MLIR
 # compilation.
@@ -406,7 +412,7 @@ def NHWCToNCHW(input_tensor):
   """
   # tensor dim -> new axis order
   new_axes = {3: [0, 2, 1], 4: [0, 3, 1, 2], 5: [0, 4, 1, 2, 3]}
-  if isinstance(input_tensor, ops.Tensor):
+  if isinstance(input_tensor, Tensor):
     ndims = input_tensor.shape.ndims
     return array_ops.transpose(input_tensor, new_axes[ndims])
   ndims = len(input_tensor)
@@ -430,7 +436,7 @@ def NHWCToNCHW_VECT_C(input_shape_or_tensor):
         divisible by 4.
   """
   permutations = {5: [0, 3, 1, 2, 4], 6: [0, 4, 1, 2, 3, 5]}
-  is_tensor = isinstance(input_shape_or_tensor, ops.Tensor)
+  is_tensor = isinstance(input_shape_or_tensor, Tensor)
   temp_shape = (
       input_shape_or_tensor.shape.as_list()
       if is_tensor else input_shape_or_tensor)
@@ -463,7 +469,7 @@ def NCHW_VECT_CToNHWC(input_shape_or_tensor):
     ValueError: if last dimension of `input_shape_or_tensor` is not 4.
   """
   permutations = {5: [0, 2, 3, 1, 4], 6: [0, 2, 3, 4, 1, 5]}
-  is_tensor = isinstance(input_shape_or_tensor, ops.Tensor)
+  is_tensor = isinstance(input_shape_or_tensor, Tensor)
   input_shape = (
       input_shape_or_tensor.shape.as_list()
       if is_tensor else input_shape_or_tensor)
@@ -489,7 +495,7 @@ def NCHWToNHWC(input_tensor):
   """
   # tensor dim -> new axis order
   new_axes = {4: [0, 2, 3, 1], 5: [0, 2, 3, 4, 1]}
-  if isinstance(input_tensor, ops.Tensor):
+  if isinstance(input_tensor, Tensor):
     ndims = input_tensor.shape.ndims
     return array_ops.transpose(input_tensor, new_axes[ndims])
   ndims = len(input_tensor)
@@ -831,7 +837,7 @@ def assert_no_new_tensors(f):
     def _is_tensorflow_object(obj):
       try:
         return isinstance(obj,
-                          (ops.Tensor, variables.Variable,
+                          (Tensor, variables.Variable,
                            tensor_shape.Dimension, tensor_shape.TensorShape))
       except (ReferenceError, AttributeError):
         # If the object no longer exists, we don't care about it.
@@ -1412,7 +1418,7 @@ def py_func_if_in_function(f):
     tensor_args = []
     tensor_indices = []
     for i, arg in enumerate(args):
-      if isinstance(arg, (ops.Tensor, variables.Variable)):
+      if isinstance(arg, (Tensor, variables.Variable)):
         tensor_args.append(arg)
         tensor_indices.append(i)
 
@@ -3443,7 +3449,7 @@ class TensorFlowTestCase(googletest.TestCase):
     """
     if not isinstance(np_array, (np.ndarray, np.generic)):
       raise TypeError("np_array must be a Numpy ndarray or Numpy scalar")
-    if not isinstance(tf_tensor, ops.Tensor):
+    if not isinstance(tf_tensor, Tensor):
       raise TypeError("tf_tensor must be a Tensor")
     self.assertAllEqual(
         np_array.shape, tf_tensor.get_shape().as_list(), msg=msg)
@@ -3466,7 +3472,7 @@ class TensorFlowTestCase(googletest.TestCase):
     """Converts `a` to a nested python list."""
     if isinstance(a, ragged_tensor.RaggedTensor):
       return self.evaluate(a).to_list()
-    elif isinstance(a, ops.Tensor):
+    elif isinstance(a, Tensor):
       a = self.evaluate(a)
       return a.tolist() if isinstance(a, np.ndarray) else a
     elif isinstance(a, np.ndarray):
