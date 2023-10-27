@@ -28,7 +28,7 @@ source env_itex_cpu/bin/activate
 ```
 
 ## Executes the Example with Python API
-If `intel-extension-for-tensorflow[cpu]` is installed, it will be executed on the CPU automatically, while if `intel-extension-for-tensorflow[gpu]` is installed, GPU will be the backend.
+If `intel-extension-for-tensorflow[cpu]` is installed, it will be executed on the CPU automatically, while if `intel-extension-for-tensorflow[xpu]` is installed, GPU will be the backend.
 ```
 python infer_resnet50.py
 ```

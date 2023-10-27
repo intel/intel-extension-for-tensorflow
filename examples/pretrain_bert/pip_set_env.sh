@@ -22,7 +22,7 @@ rm -rf $ENV_NAME
 python -m venv $ENV_NAME
 source $ENV_NAME/bin/activate
 pip install --upgrade pip
-pip install --upgrade intel-extension-for-tensorflow[gpu]
+pip install --upgrade intel-extension-for-tensorflow[xpu]
 pip install git+https://github.com/NVIDIA/dllogger
 pip install requests tqdm horovod sentencepiece tensorflow_hub wget progressbar 
 pip install tensorflow-addons  # Version details in https://github.com/tensorflow/addons

@@ -35,7 +35,7 @@ Refer to [Install Intel® oneAPI Base Toolkit](./../docs/install/install_for_xpu
 3. Install Intel® Extension for TensorFlow*
 
     ```
-    pip install --upgrade intel-extension-for-tensorflow[gpu]
+    pip install --upgrade intel-extension-for-tensorflow[xpu]
     ```
 
 ## Running

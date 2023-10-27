@@ -22,7 +22,7 @@ rm -rf $ENV_NAME
 python -m venv $ENV_NAME
 source $ENV_NAME/bin/activate
 pip install --upgrade pip
-pip install --upgrade intel-extension-for-tensorflow[gpu]
+pip install --upgrade intel-extension-for-tensorflow[xpu]
 pip install intel-optimization-for-horovod
 pip install opencv-python-headless pybind11
 pip install pycocotools

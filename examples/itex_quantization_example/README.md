@@ -15,7 +15,7 @@ Intel® Extension for Tensorflow* for Intel GPUs.
 
 ```shell
 pip install tensorflow
-pip install --upgrade intel-extension-for-tensorflow[gpu]
+pip install --upgrade intel-extension-for-tensorflow[xpu]
 ```
 
 Intel® Extension for Tensorflow* for Intel CPUs.

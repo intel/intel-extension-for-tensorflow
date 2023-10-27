@@ -53,13 +53,13 @@ Note, we support Python versions 3.8 through 3.11.
 
 #### Install TensorFlow
 
-Install TensorFlow 2.13.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
+Install TensorFlow 2.14.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
 
 ```bash
-$ pip install tensorflow==2.13.0
+$ pip install tensorflow==2.14.0
 ```
 
-Check TensorFlow was installed successfully and is version 2.13.0:
+Check TensorFlow was installed successfully and is version 2.14.0:
 
 ```bash
 $ python -c "import tensorflow as tf;print(tf.__version__)"
@@ -193,30 +193,30 @@ $ cp bazel-out/k8-opt-ST-*/bin/external/llvm_openmp/libiomp5.so bazel-bin/itex/
 
 ### Option 1: Extract from Tensorflow* python package (**Recommended**)
 
-a. Download Tensorflow* 2.13.0 python package
+a. Download Tensorflow* 2.14.0 python package
 
 ```bash
-$ wget https://files.pythonhosted.org/packages/ed/30/310fee0477ce46f722c561dd7e21eebca0d1d29bdb3cf4a2335b845fbba4/tensorflow-2.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+$ wget https://files.pythonhosted.org/packages/09/63/25e76075081ea98ec48f23929cefee58be0b42212e38074a9ec5c19e838c/tensorflow-2.14.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 ```
 
 b. Unzip Tensorflow* python package
 
 ```bash
-$ unzip tensorflow-2.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -d tensorflow_2.13.0
+$ unzip tensorflow-2.14.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -d tensorflow_src
 ```
 
 c. Create symbolic link
 
 ```bash
-$ cd ./tensorflow_2.13.0/tensorflow/
+$ cd ./tensorflow_src.13.0/tensorflow/
 $ ln -s libtensorflow_cc.so.2 libtensorflow_cc.so
 $ ln -s libtensorflow_framework.so.2 libtensorflow_framework.so
 ```
-libtensorflow_cc.so location: `<Path to tensorflow_2.13.0>/tensorflow/libtensorflow_cc.so`
+libtensorflow_cc.so location: `<Path to tensorflow_src>/tensorflow/libtensorflow_cc.so`
 
-libtensorflow_framework.so location: `<Path to tensorflow_2.13.0>/tensorflow/libtensorflow_framework.so`
+libtensorflow_framework.so location: `<Path to tensorflow_src>/tensorflow/libtensorflow_framework.so`
 
-Tensorflow header file location: `<Path to tensorflow_2.13.0>/tensorflow/include`
+Tensorflow header file location: `<Path to tensorflow_src>/tensorflow/include`
 
 ### Option 2: Build from TensorFlow* source code
 
@@ -225,7 +225,7 @@ a. Prepare TensorFlow* source code
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git
 $ cd tensorflow
-$ git checkout origin/r2.13 -b r2.13
+$ git checkout origin/r2.14 -b r2.14
 ```
 
 b. Build libtensorflow_cc.so
@@ -362,8 +362,8 @@ int main() {
 
 Place a `Makefile` file in the same directory of `example.cc` with the following contents:
 
-- Replace `<TF_INCLUDE_PATH>` with local **Tensorflow\* header file path**. e.g.  `<Path to tensorflow_2.13.0>/tensorflow/include`
-- Replace `<TFCC_PATH>` with local **Tensorflow\* CC library path**. e.g. `<Path to tensorflow_2.13.0>/tensorflow/`
+- Replace `<TF_INCLUDE_PATH>` with local **Tensorflow\* header file path**. e.g.  `<Path to tensorflow_src>/tensorflow/include`
+- Replace `<TFCC_PATH>` with local **Tensorflow\* CC library path**. e.g. `<Path to tensorflow_src>/tensorflow/`
 
 ```Makefile
 // Makefile
