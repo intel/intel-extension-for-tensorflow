@@ -13,7 +13,7 @@ source source env_itex/bin/activate
 ```
 ### Install
 ```
-pip install intel-extension-for-tensorflow[gpu]
+pip install intel-extension-for-tensorflow[xpu]
 pip install intel-optimization-for-horovod
 pip install gin gin-config tensorflow-addons tensorflow-model-optimization tensorflow-datasets
 ```

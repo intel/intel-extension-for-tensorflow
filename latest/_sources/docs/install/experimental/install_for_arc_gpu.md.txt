@@ -25,7 +25,7 @@ Hardware Platforms with Experimental Only Support:
 - For Ubuntu Linux 22.04 within WSL2:
     - Linux Runtime Libraries: Intel® Arc™ GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html) (installation instructions below)
     - Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)
-    - TensorFlow 2.13.0
+    - TensorFlow 2.14.0
     - Python 3.8-3.11
     - pip 19.0 or later (requires manylinux2014 support)
 
@@ -35,7 +35,7 @@ Hardware Platforms with Experimental Only Support:
 - Intel® GPU Drivers for Linux (installation instructions below)
     - Intel® Arc™ GPU Drivers [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html)
 - Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)
-- TensorFlow 2.13.0
+- TensorFlow 2.14.0
 - Python 3.8-3.11
 - pip 19.0 or later (requires manylinux2014 support)
 
@@ -143,7 +143,7 @@ The following steps can be used to install the TensorFlow framework and other ne
 
 The Python development and virtual environment setup recommendation by TensorFlow is to isolate package installation from the system.
 
-The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.13.0.
+The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.14.0.
 
 * ##### Virtual environment install 
 
@@ -156,30 +156,27 @@ The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version
 
     To install in virtual environment, you can run 
     ```bash
-    (tf)$ pip install 'tensorflow==2.13.0'
+    (tf)$ pip install 'tensorflow==2.14.0'
     ```
 
 * ##### System environment install 
 
     If you prefer to install tensorflow in $HOME, append `--user` to the commands.
     ```bash
-    $ pip install --user 'tensorflow==2.13.0'
+    $ pip install --user 'tensorflow==2.14.0'
     ```
     And the following system environment install for Intel® Extension for TensorFlow* will also append `--user` to the commands. 
 
 ### 3. Install Intel® Extension for TensorFlow*
 
-To install a GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
+To install a GPU version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
 
 ```bash
-(tf)$ pip install --upgrade intel-extension-for-tensorflow[gpu]
+(tf)$ pip install --upgrade intel-extension-for-tensorflow[xpu]
 ```
 
 To install a `weekly` GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
 
-```bash
-(tf)$ pip install --upgrade intel-extension-for-tensorflow-weekly[gpu] -f https://developer.intel.com/itex-whl-weekly
-```
 
 Check the environment for GPU:
 ```bash

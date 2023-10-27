@@ -31,11 +31,11 @@
       Intel® Extension for TensorFlow* co-works with stock TensorFlow* (that
       includes upstreamed optimizations from Intel).
 
-      Currently, Intel® Extension for TensorFlow* has two releases: CPU & GPU.
+      Currently, Intel® Extension for TensorFlow* has two releases: CPU & XPU.
 
       - For Intel CPUs, Intel® Extension for TensorFlow* for CPU + stock TensorFlow\* provides the best performance of TensorFlow\* on Intel CPUs. Install command: `pip install --upgrade intel-extension-for-tensorflow[cpu]`.
 
-      - For Intel GPUs, Intel® Extension for TensorFlow* for GPU + stock TensorFlow\* provides the best performance of TensorFlow* on Intel GPUs. Install command: `pip install --upgrade intel-extension-for-tensorflow[gpu]`.
+      - For Intel GPUs, Intel® Extension for TensorFlow* for XPU + stock TensorFlow\* provides the best performance of TensorFlow* on Intel GPUs. Install command: `pip install --upgrade intel-extension-for-tensorflow[xpu]`.
 
 ## Troubleshooting
 

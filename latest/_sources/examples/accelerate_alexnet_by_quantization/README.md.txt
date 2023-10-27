@@ -60,14 +60,14 @@ There are new requirements:
 
 1. Python should be 3.9 or newer version.
 
-2. TensorFlow should be 2.13.0
+2. TensorFlow should be 2.14.0
 
 ### Set up Intel® Extension for Tensorflow* for GPU
 
 Install Intel® Extension for Tensorflow* in the running environment:
 
 ```
-python -m pip install --upgrade intel-extension-for-tensorflow[gpu]
+python -m pip install --upgrade intel-extension-for-tensorflow[xpu]
 
 ```
 

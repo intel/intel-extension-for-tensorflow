@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g0ea229d documentation</title>
+  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g210b1d5 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -192,11 +192,11 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 </section>
 <section id="install-tensorflow">
 <h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h4>
-<p>Install TensorFlow 2.13.0, and refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a> for details.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.13.0
+<p>Install TensorFlow 2.14.0, and refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a> for details.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.14.0
 </pre></div>
 </div>
-<p>Check TensorFlow was installed successfully and is version 2.13.0:</p>
+<p>Check TensorFlow was installed successfully and is version 2.14.0:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import tensorflow as tf;print(tf.__version__)&quot;</span>
 </pre></div>
 </div>
@@ -329,30 +329,30 @@ $<span class="w"> </span>cp<span class="w"> </span>bazel-out/k8-opt-ST-*/bin/ext
 <h2>Prepare Tensorflow* CC library and header files<a class="headerlink" href="#prepare-tensorflow-cc-library-and-header-files" title="Permalink to this heading"></a></h2>
 <section id="option-1-extract-from-tensorflow-python-package-recommended">
 <h3>Option 1: Extract from Tensorflow* python package (<strong>Recommended</strong>)<a class="headerlink" href="#option-1-extract-from-tensorflow-python-package-recommended" title="Permalink to this heading"></a></h3>
-<p>a. Download Tensorflow* 2.13.0 python package</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://files.pythonhosted.org/packages/ed/30/310fee0477ce46f722c561dd7e21eebca0d1d29bdb3cf4a2335b845fbba4/tensorflow-2.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+<p>a. Download Tensorflow* 2.14.0 python package</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://files.pythonhosted.org/packages/09/63/25e76075081ea98ec48f23929cefee58be0b42212e38074a9ec5c19e838c/tensorflow-2.14.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 </pre></div>
 </div>
 <p>b. Unzip Tensorflow* python package</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>unzip<span class="w"> </span>tensorflow-2.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl<span class="w"> </span>-d<span class="w"> </span>tensorflow_2.13.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>unzip<span class="w"> </span>tensorflow-2.14.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl<span class="w"> </span>-d<span class="w"> </span>tensorflow_src
 </pre></div>
 </div>
 <p>c. Create symbolic link</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>./tensorflow_2.13.0/tensorflow/
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>./tensorflow_src.13.0/tensorflow/
 $<span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>libtensorflow_cc.so.2<span class="w"> </span>libtensorflow_cc.so
 $<span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>libtensorflow_framework.so.2<span class="w"> </span>libtensorflow_framework.so
 </pre></div>
 </div>
-<p>libtensorflow_cc.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.13.0&gt;/tensorflow/libtensorflow_cc.so</span></code></p>
-<p>libtensorflow_framework.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.13.0&gt;/tensorflow/libtensorflow_framework.so</span></code></p>
-<p>Tensorflow header file location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.13.0&gt;/tensorflow/include</span></code></p>
+<p>libtensorflow_cc.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/libtensorflow_cc.so</span></code></p>
+<p>libtensorflow_framework.so location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/libtensorflow_framework.so</span></code></p>
+<p>Tensorflow header file location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/include</span></code></p>
 </section>
 <section id="option-2-build-from-tensorflow-source-code">
 <h3>Option 2: Build from TensorFlow* source code<a class="headerlink" href="#option-2-build-from-tensorflow-source-code" title="Permalink to this heading"></a></h3>
 <p>a. Prepare TensorFlow* source code</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tensorflow/tensorflow.git
 $<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tensorflow
-$<span class="w"> </span>git<span class="w"> </span>checkout<span class="w"> </span>origin/r2.13<span class="w"> </span>-b<span class="w"> </span>r2.13
+$<span class="w"> </span>git<span class="w"> </span>checkout<span class="w"> </span>origin/r2.14<span class="w"> </span>-b<span class="w"> </span>r2.14
 </pre></div>
 </div>
 <p>b. Build libtensorflow_cc.so</p>
@@ -475,8 +475,8 @@ int main() {
 <h3>Build and run<a class="headerlink" href="#build-and-run" title="Permalink to this heading"></a></h3>
 <p>Place a <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> file in the same directory of <code class="docutils literal notranslate"><span class="pre">example.cc</span></code> with the following contents:</p>
 <ul class="simple">
-<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TF_INCLUDE_PATH&gt;</span></code> with local <strong>Tensorflow* header file path</strong>. e.g.  <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.13.0&gt;/tensorflow/include</span></code></p></li>
-<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TFCC_PATH&gt;</span></code> with local <strong>Tensorflow* CC library path</strong>. e.g. <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_2.13.0&gt;/tensorflow/</span></code></p></li>
+<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TF_INCLUDE_PATH&gt;</span></code> with local <strong>Tensorflow* header file path</strong>. e.g.  <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/include</span></code></p></li>
+<li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TFCC_PATH&gt;</span></code> with local <strong>Tensorflow* CC library path</strong>. e.g. <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/</span></code></p></li>
 </ul>
 <div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span>// Makefile
 target = example_test
@@ -526,7 +526,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f4ab883dcc0> 
+   <jinja2.runtime.BlockReference object at 0x7f8ebf541fc0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

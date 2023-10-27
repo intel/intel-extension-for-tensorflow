@@ -79,4 +79,4 @@ Finished
 
 ## Notes
 1. In this example, it is not necessary to import intel_extension_for_tensorflow, and no need to call any of its APIs.<br/>
-If installed as the `intel-extension-for-tensorflow[cpu]`, then the script will choose CPU as the backend and be executed on the CPU automatically; while if installed as `intel-extension-for-tensorflow[gpu]`, then the default backend will be GPU and the script will be executed on the GPU.
+If installed as the `intel-extension-for-tensorflow[cpu]`, then the script will choose CPU as the backend and be executed on the CPU automatically; while if installed as `intel-extension-for-tensorflow[xpu]`, then the default backend will be GPU and the script will be executed on the GPU.

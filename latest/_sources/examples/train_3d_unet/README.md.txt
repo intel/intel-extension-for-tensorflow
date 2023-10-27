@@ -45,7 +45,7 @@ source env_itex/bin/activate
 
 ```
 pip install --upgrade pip
-pip install --upgrade intel-extension-for-tensorflow[gpu]
+pip install --upgrade intel-extension-for-tensorflow[xpu]
 pip install intel-optimization-for-horovod
 pip install tfa-nightly
 pip install git+https://github.com/NVIDIA/dllogger.git
