@@ -2311,7 +2311,11 @@ Status FuseFwPartitionWithLLGA(
   auto f_index = *std::max_element(f_nodes.begin(), f_nodes.end());
   const auto* f_node_view = ctx->graph_view.GetNode(f_index);
   const auto* last_node_def = f_node_view->node();
+#ifdef INTEL_CPU_ONLY
+  onednn_graph_node.set_op("OneDnnGraphCPU");
+#else
   onednn_graph_node.set_op("OneDnnGraph");
+#endif
   string llga_op_name = last_node_def->name() + "_LLGA";
   onednn_graph_node.set_name(llga_op_name);
   onednn_graph_node.set_device(last_node_def->device());

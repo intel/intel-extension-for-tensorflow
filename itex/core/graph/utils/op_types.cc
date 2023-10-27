@@ -150,7 +150,11 @@ bool IsBiasAddGrad(const NodeDef& node) { return node.op() == "BiasAddGrad"; }
 bool IsBitcast(const NodeDef& node) { return node.op() == "Bitcast"; }
 
 bool IsBlockOneDnnGraph(const NodeDef& node) {
+#ifdef INTEL_CPU_ONLY
+  return node.op() == "_OneDnnGraphCPU";
+#else
   return node.op() == "_OneDnnGraph";
+#endif
 }
 
 bool IsBroadcastGradientArgs(const NodeDef& node) {
@@ -478,7 +482,11 @@ bool IsMulNoNan(const NodeDef& node) { return node.op() == "MulNoNan"; }
 bool IsAnyMul(const NodeDef& node) { return IsMul(node) || IsMulNoNan(node); }
 
 bool IsNativeOneDnnGraph(const NodeDef& node) {
+#ifdef INTEL_CPU_ONLY
   return node.op() == "OneDnnGraph";
+#else
+  return node.op() == "OneDnnGraphCPU";
+#endif
 }
 
 bool IsNeg(const NodeDef& node) { return node.op() == "Neg"; }

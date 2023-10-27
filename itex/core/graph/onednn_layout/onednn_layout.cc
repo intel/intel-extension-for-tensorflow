@@ -118,7 +118,8 @@ static const std::vector<RewriteInfo>* GetRewriteInfo() {
        RewriteMaxPoolGrad},
       {"MaxPoolGrad", "_OneDnnMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"Mul", "_OneDnnMul", CopyAttrsAll, RewriteBinary},
-      {"OneDnnGraph", "_OneDnnGraph", CopyAttrsOneDnnGraph, AlwaysRewrite},
+      {onednngrap_op_name, _onednngrap_op_name, CopyAttrsOneDnnGraph,
+       AlwaysRewrite},
       {"QuantizedConcatV2", "_OneDnnQuantizedConcatV2", CopyAttrsAll,
        AlwaysRewrite},
       {"Relu", "_OneDnnRelu", CopyAttrsAll, RewriteWithBlockInput},
@@ -464,7 +465,7 @@ const RewriteInfo* CheckForNodeRewrite(
     const utils::MutableNodeView& node_view) {
   NodeDef& node_def = *(node_view.node());
   // TODO(itex): Enable quantized.
-  if (node_def.op() != "OneDnnGraph") {
+  if (node_def.op() != onednngrap_op_name) {
     // First check if node along with its type is supported by OneDNN.
     // Do not rewrite an op if types are not supported.
     // E.g., OneDnnRelu does not support INT32.
@@ -510,7 +511,7 @@ Status InsertConversionNode(OneDnnLayoutContext* ctx, const int node_index) {
     // Check if src is OneDnnLayoutDependentOp
     if (!src_is_onednn_op) continue;
 
-    if (input_node_def->op() == "_OneDnnGraph") continue;
+    if (input_node_def->op() == _onednngrap_op_name) continue;
 
     TypeAttrId input_type_attr =
         ctx->node_type_map.GetInputTypeAttr(*node_def, idx);
@@ -619,7 +620,7 @@ Status InsertConversionForLLGANode(OneDnnLayoutContext* ctx,
   utils::Mutation* mutation = ctx->graph_view.GetMutationBuilder();
 
   // Check whether dst is PlainLayoutOp
-  bool dst_is_llga_op = (node_def->op() == "_OneDnnGraph");
+  bool dst_is_llga_op = (node_def->op() == _onednngrap_op_name);
   if (!dst_is_llga_op) return Status::OK();
 
   // Here we have "_OneDnnGraph" node, and half of inputs are meta nodes
@@ -628,7 +629,7 @@ Status InsertConversionForLLGANode(OneDnnLayoutContext* ctx,
     const auto* input_node_def = input_node_view->node();
 
     bool src_is_onednn_op = (IsOneDnnLayoutDependentOp(input_node_def->op()) &&
-                             input_node_def->op() != "_OneDnnGraph");
+                             input_node_def->op() != _onednngrap_op_name);
 
     // Check if src is OneDnnLayoutDependentOp
     if (!src_is_onednn_op) continue;
@@ -743,8 +744,7 @@ Status ConvertMetaNodeFromConstToHostConst(OneDnnLayoutContext* ctx,
 Status MarkOneDnnGraphEndNode(OneDnnLayoutContext* ctx, const int node_index) {
   const auto* node_view = ctx->graph_view.GetNode(node_index);
   const auto* node_def = node_view->node();
-
-  if (node_def->op() != "_OneDnnGraph") return Status::OK();
+  if (node_def->op() != _onednngrap_op_name) return Status::OK();
   // Can not use NumRegularFanouts here since the output edges of the last
   // node is not doubled.
   std::vector<DataType> Tout;
@@ -757,7 +757,7 @@ Status MarkOneDnnGraphEndNode(OneDnnLayoutContext* ctx, const int node_index) {
       const auto* output_node_view = output_node_view_list[i].node_view();
       const auto* output_node_def = output_node_view->node();
 
-      if (output_node_def->op() != "_OneDnnGraph") {
+      if (output_node_def->op() != _onednngrap_op_name) {
         is_end_node[idx] = true;
         break;
       }

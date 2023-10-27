@@ -72,6 +72,14 @@ Status RewriteNode(const char* device_name, OneDnnLayoutContext* ctx,
 Status RunOneDnnLayout(OptimizerContext* opt_ctx, const GrapplerItem& item,
                        const GraphDef& graph_def, GraphDef* optimized_graph);
 
+#ifdef INTEL_CPU_ONLY
+static constexpr const char* onednngrap_op_name = "OneDnnGraphCPU";
+static constexpr const char* _onednngrap_op_name = "_OneDnnGraphCPU";
+#else
+static constexpr const char* onednngrap_op_name = "OneDnnGraph";
+static constexpr const char* _onednngrap_op_name = "_OneDnnGraph";
+#endif
+
 }  // namespace graph
 }  // namespace itex
 

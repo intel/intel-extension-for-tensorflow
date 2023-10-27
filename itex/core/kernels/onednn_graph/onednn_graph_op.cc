@@ -484,9 +484,9 @@ class OneDnnGraphWithLayoutOp : public OpKernel {
 };
 
 #ifdef INTEL_CPU_ONLY
-REGISTER_KERNEL_BUILDER(Name("_OneDnnGraph").Device(DEVICE_CPU),
+REGISTER_KERNEL_BUILDER(Name("_OneDnnGraphCPU").Device(DEVICE_CPU),
                         OneDnnGraphWithLayoutOp<CPUDevice>);
-REGISTER_KERNEL_BUILDER(Name("OneDnnGraph").Device(DEVICE_CPU),
+REGISTER_KERNEL_BUILDER(Name("OneDnnGraphCPU").Device(DEVICE_CPU),
                         OneDnnGraphOp<CPUDevice>);
 #else
 REGISTER_KERNEL_BUILDER(Name("_OneDnnGraph")

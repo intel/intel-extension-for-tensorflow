@@ -46,8 +46,13 @@ const auto add_inplace_rule = gtl::FlatSet<string>{
     "_ITEXFusedConv2DWithSum", "_ITEXFusedAccMatMulWithSum",
     "_ITEXFusedMatMulWithSum", "_OneDnnFusedConv2D", "_OneDnnFusedMatMul"};
 
+#ifdef INTEL_CPU_ONLY
+const auto onednngraph_inplace_rule =
+    gtl::FlatSet<string>{"_OneDnnGraphCPU", "OneDnnGraphCPU"};
+#else
 const auto onednngraph_inplace_rule =
     gtl::FlatSet<string>{"_OneDnnGraph", "OneDnnGraph"};
+#endif
 
 static constexpr int MAX_LLGA_SEARCH_NODES = 50;
 

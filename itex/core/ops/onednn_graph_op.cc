@@ -23,7 +23,11 @@ void Register_OneDnnGraphOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {
     TF_OpDefinitionBuilder* op_builder =
+#ifdef INTEL_CPU_ONLY
+        TF_NewOpDefinitionBuilder("OneDnnGraphCPU");
+#else
         TF_NewOpDefinitionBuilder("OneDnnGraph");
+#endif
     TF_OpDefinitionBuilderAddInput(op_builder, "args: Tin");
     TF_OpDefinitionBuilderAddOutput(op_builder, "results: Tout");
     TF_OpDefinitionBuilderAddAttr(op_builder, "Tin: list(type) >= 0");
@@ -46,7 +50,11 @@ void Register_OneDnnGraphOp() {
   }
   {
     TF_OpDefinitionBuilder* op_builder =
+#ifdef INTEL_CPU_ONLY
+        TF_NewOpDefinitionBuilder("_OneDnnGraphCPU");
+#else
         TF_NewOpDefinitionBuilder("_OneDnnGraph");
+#endif
     TF_OpDefinitionBuilderAddInput(op_builder, "args: Tin");
     TF_OpDefinitionBuilderAddInput(op_builder, "args_meta: Tin_meta");
     TF_OpDefinitionBuilderAddOutput(op_builder, "results: Tout");
