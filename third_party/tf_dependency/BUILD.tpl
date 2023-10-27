@@ -216,6 +216,7 @@ template_rule(
     substitutions = {
         "package tensorflow;": "package itex;",
         "tensorflow/core/framework/tensor.proto": "tensor.proto",
+        "import public \"tsl/protobuf/histogram.proto\";": "",
         "import public \"tensorflow/tsl/protobuf/histogram.proto\";": "",
         "HistogramProto histo = 5;": "",
     },
