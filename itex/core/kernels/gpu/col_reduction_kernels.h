@@ -288,7 +288,7 @@ void TreeColReduction(OpKernelContext* ctx, InputT* in_data, OutputT* out_data,
   bool is_full_occu = (extend_x * num_segments_z) >
                       (64 * (max_group_size / (num_sg * SubGroupSize)));
 
-  static constexpr int MAX_ELEMENTS_PER_THREAD_FOR_SMALL_REDUCE = 4;
+  static constexpr int MAX_ELEMENTS_PER_THREAD_FOR_SMALL_REDUCE = 32;
   int elems_per_thread = DivUp(extend_y, tile_y);
 
   if (!is_full_occu &&
