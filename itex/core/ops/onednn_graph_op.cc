@@ -21,6 +21,7 @@ limitations under the License.
 
 void Register_OneDnnGraphOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
+#ifndef INTEL_CPU_ONLY
   {
     TF_OpDefinitionBuilder* op_builder =
 #ifdef INTEL_CPU_ONLY
@@ -48,6 +49,31 @@ void Register_OneDnnGraphOp() {
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "OneDnnGraph op registration failed: ";
   }
+#endif
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("OneDnnGraphCPU");
+    TF_OpDefinitionBuilderAddInput(op_builder, "args: Tin");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "results: Tout");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tin: list(type) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tout: list(type) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "partition_id: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "input_edge_ids: list(int) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "output_edge_ids: list(int) >= 0");
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder,
+        "is_constant_input_edge: list(bool) >= 0");  // Used for constant cache
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder,
+        "candidate_inplace_input_edge: list(bool) >= 0");  // Used for inplace
+    TF_OpDefinitionBuilderAddAttr(op_builder, "framework_ops: list(string)");
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "OneDnnGraphCPU op registration failed: ";
+  }
+#ifndef INTEL_CPU_ONLY
   {
     TF_OpDefinitionBuilder* op_builder =
 #ifdef INTEL_CPU_ONLY
@@ -79,5 +105,34 @@ void Register_OneDnnGraphOp() {
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "_OneDnnGraph op registration failed: ";
+  }
+#endif
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("_OneDnnGraphCPU");
+    TF_OpDefinitionBuilderAddInput(op_builder, "args: Tin");
+    TF_OpDefinitionBuilderAddInput(op_builder, "args_meta: Tin_meta");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "results: Tout");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "results_meta: Tout_meta");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tin: list(type) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tin_meta: list(type) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tout: list(type) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Tout_meta: list(type) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "partition_id: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "input_edge_ids: list(int) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "output_edge_ids: list(int) >= 0");
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder,
+        "is_constant_input_edge: list(bool) >= 0");  // Used for constant cache
+    TF_OpDefinitionBuilderAddAttr(
+        op_builder,
+        "candidate_inplace_input_edge: list(bool) >= 0");  // Used for inplace
+    TF_OpDefinitionBuilderAddAttr(op_builder, "is_end_node: list(bool) >= 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "framework_ops: list(string)");
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "_OneDnnGraphCPU op registration failed: ";
   }
 }
