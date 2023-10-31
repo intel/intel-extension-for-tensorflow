@@ -54,6 +54,7 @@ void Register_QuantizedFusedBatchNormOp();
 // Custom kernels
 void Register_GeluOp();
 void Register_GeluGradOp();
+void Register_QKRotaryPositionalEmbeddingOp();
 // There are similar ops called "_FusedConv2D" or in "_FusedMatMul" TF-Proper.
 // We use such custom ops in ITEX to enable more features.
 void Register_ITEXConv2DBackpropFilterWithBiasOp();

@@ -4832,3 +4832,27 @@ void Register_FusedDenseBiasAddGeluGradOp() {
         << "FusedDenseBiasAddGeluGrad op registration failed: ";
   }
 }
+
+void Register_QKRotaryPositionalEmbeddingOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("QKRotaryPositionalEmbedding");
+    TF_OpDefinitionBuilderAddInput(op_builder, "query: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "key: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "sin: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "cos: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output_query: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output_key: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "rotary_dim: int = 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_attention_heads: int = 0");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "head_dim: int = 0");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &rotary_embedding_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "QKRotaryPositionalEmbedding op registration failed: ";
+  }
+}

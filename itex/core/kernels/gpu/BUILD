@@ -2149,6 +2149,20 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "qk_rotary_ops",
+    srcs = [
+        "qk_rotary_pos_emb.cc",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "rms_norm_ops",
     srcs = [
         "rms_norm_op.cc",
@@ -2293,6 +2307,7 @@ GPU_KERNELS = [
     ":parameterized_truncated_normal_op",
     ":pooling_ops",
     ":population_count_op",
+    ":qk_rotary_ops",
     ":quantize_op",
     ":quantize_and_dequantize_op",
     ":quantized_concat_op",

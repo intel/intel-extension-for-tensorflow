@@ -144,6 +144,7 @@ void RegisterOps() {
   Register_ITEXRnnOp();
   Register_ITEXRnnGradOp();
   Register_OneDnnGraphOp();
+  Register_QKRotaryPositionalEmbeddingOp();
 
   // Native kernels
   Register_ITEXAddNOp();

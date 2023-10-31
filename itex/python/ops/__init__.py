@@ -15,6 +15,7 @@
 
 # pylint: disable=g-bad-import-order,unused-import,missing-module-docstring,unused-import,line-too-long
 from intel_extension_for_tensorflow.python.ops.activations import gelu
+from intel_extension_for_tensorflow.python.ops.rotary_embedding import qk_rotary_positional_embedding
 from intel_extension_for_tensorflow.python.ops import ops_grad as _ops_grad
 from intel_extension_for_tensorflow.python.ops.optimizers import AdamWithWeightDecayOptimizer
 from intel_extension_for_tensorflow.python.ops.layer_norm import LayerNormalization
