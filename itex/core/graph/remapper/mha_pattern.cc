@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "itex/core/graph/config_util.h"
+#include "itex/core/graph/optimizer_config.h"
 #include "itex/core/graph/remapper/constant_names.h"
 #include "itex/core/graph/remapper/fusion.h"
 #include "itex/core/graph/remapper/remapper.h"
@@ -286,8 +287,10 @@ class MHAPatternWithMulAndAdd : public Fusion {
                    const MatchedProperties& properties) const {
     int matmul_0_index = properties.map.at("batch_matmul");
     NodeDef* matmul_0 = ctx->graph_view.GetNode(matmul_0_index)->node();
+    auto config = GetOptimizerConfigFlags();
     if (!NodeIsOnCpu(matmul_0) &&
-        (!isxehpc_value || matmul_0->attr().at("T").type() == DT_FLOAT)) {
+        (!isxehpc_value || (matmul_0->attr().at("T").type() == DT_FLOAT &&
+                            !config.enable_auto_mixed_precision))) {
       // GPU fmha kernel doesn't support fp32.
       return false;
     }
