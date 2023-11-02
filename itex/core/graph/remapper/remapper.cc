@@ -1790,6 +1790,7 @@ bool FindConv2DWithBatchNormAndAddV2AndActivation(
   const auto* add_node_def = add_node_view->node();
 
   if (!IsAddV2(*add_node_def)) return false;
+  if (!HasAtMostOneFanoutAtPort0(*add_node_view)) return false;
   auto* batch_norm_node_view = add_node_view->GetRegularFanin(0).node_view();
 
   ContractionWithBatchNorm base;
