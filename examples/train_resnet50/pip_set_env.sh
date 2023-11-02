@@ -23,4 +23,5 @@ python -m venv $ENV_NAME
 source $ENV_NAME/bin/activate
 pip install --upgrade pip
 pip install scikit-image
+pip install gin gin-config tfa-nightly tensorflow-model-optimization tensorflow-datasets pyyaml
 pip install --upgrade intel-extension-for-tensorflow[xpu]
