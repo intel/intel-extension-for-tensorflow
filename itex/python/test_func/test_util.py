@@ -3379,6 +3379,8 @@ class TensorFlowTestCase(googletest.TestCase):
     target = self._GetNdArray(target)
     if not isinstance(target, list):
       arrays = [target]
+    else:
+      arrays = target
     for arr in arrays:
       self.assertEqual(arr.dtype, expected_dtype)
 

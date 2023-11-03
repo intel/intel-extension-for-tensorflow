@@ -844,9 +844,10 @@ def check_safe_workspace_path(workspace):
   normal_flag = True
   if workspace is None:
     normal_flag = False
-  for c in _DENY_PATH_LIST:
-    if c in workspace:
-      normal_flag = False
+  else:
+    for c in _DENY_PATH_LIST:
+      if c in workspace:
+        normal_flag = False
   if not normal_flag:
     remove_configure_file()
     raise Exception("Invalid workspace path!")
