@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1064a0d documentation</title>
+  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gb6710b0 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -136,8 +136,9 @@ This example shows BERT-Large Pretraining.</p>
 </section>
 <section id="prepare-dataset">
 <h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
-<p>nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training. You can run below to download datasets for fine-tuning and pretraining.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">scripts</span><span class="o">/</span><span class="n">data_download</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span>
+<p>Nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training.</p>
+<p>You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. And you should modify the environment varible <code class="docutils literal notranslate"><span class="pre">BERT_PREP_WORKING_DIR</span></code> in <code class="docutils literal notranslate"><span class="pre">data/create_datasets_from_start.sh</span></code> to your real data dir.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">data</span><span class="o">/</span><span class="n">create_datasets_from_start</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span>
 </pre></div>
 </div>
 <p>For more details about downloading and processing the dataset, you can reference <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#quick-start-guide">downloading</a> and <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#getting-the-data">processing</a> part. After downloading and processing, the datasets are supposed in the following locations by default</p>
@@ -301,7 +302,7 @@ bash scripts/run_squad.sh \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ff82e285c60> 
+   <jinja2.runtime.BlockReference object at 0x7f3689885ba0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

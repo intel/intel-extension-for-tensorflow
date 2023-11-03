@@ -48,10 +48,12 @@ Enable oneAPI running environment (only for GPU) and virtual running environment
 
 ### Prepare Dataset
 
-nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training. You can run below to download datasets for fine-tuning and pretraining.
+Nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training. 
+
+You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is `examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT`. And you should modify the environment varible `BERT_PREP_WORKING_DIR` in `data/create_datasets_from_start.sh` to your real data dir. 
 
 ```
-bash scripts/data_download.sh all
+bash data/create_datasets_from_start.sh all
 ```
 
 For more details about downloading and processing the dataset, you can reference [downloading](https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#quick-start-guide) and [processing](https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#getting-the-data) part. After downloading and processing, the datasets are supposed in the following locations by default

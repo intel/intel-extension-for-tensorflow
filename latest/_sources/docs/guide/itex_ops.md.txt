@@ -6,9 +6,8 @@ Public API for extended XPU operators is provided by the `itex.ops` namespace. T
 This optimizer implements the Adam algorithm with weight decay.
 ```python
 itex.ops.AdamWithWeightDecayOptimizer(
-    weight_decay_rate=0.001, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
-    epsilon=1e-07, name='Adam',
-    exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"], **kwargs
+    weight_decay=0.001, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
+    epsilon=1e-07, name='Adam', **kwargs
 )
 ```
 This is an implementation of the AdamW optimizer described in "Decoupled Weight Decay Regularization" by Loshch ilov & Hutter ([pdf](https://arxiv.org/abs/1711.05101)). This Python API `itex.ops.AdamWithWeightDecayOptimizer` replaces [tfa.optimizers.AdamW](https://www.tensorflow.org/addons/api_docs/python/tfa/optimizers/AdamW).
@@ -24,7 +23,31 @@ wd = lambda: 1e-4 * schedule(step)
 
 # ...
 
-optimizer = itex.ops.AdamWithWeightDecayOptimizer(learning_rate=lr, weight_decay_rate=wd)
+optimizer = itex.ops.AdamWithWeightDecayOptimizer(learning_rate=lr, weight_decay=wd)
+```
+
+## `itex.ops.LAMBOptimizer`
+This optimizer implements the LAMB algorithm.
+```python
+itex.ops.LAMBOptimizer(
+    learning_rate=0.001, beta_1=0.9, beta_2=0.999,
+    epsilon=1e-06, weight_decay=0.001, name='LAMB', **kwargs
+)
+```
+This is an implementation of the LAMB optimizer described in "Large Batch Optimization for Deep Learning: Training BERT in 76 minutes" ([pdf](https://arxiv.org/abs/1904.00962)). This Python API `itex.ops.LAMBOptimizer` replaces [tfa.optimizers.LAMB](https://www.tensorflow.org/addons/api_docs/python/tfa/optimizers/LAMB).
+
+For example:
+```python
+step = tf.Variable(0, trainable=False)
+schedule = tf.optimizers.schedules.PiecewiseConstantDecay(
+    [10000, 15000], [1e-0, 1e-1, 1e-2])
+# lr and wd can be a function or a tensor
+lr = 1e-1 * schedule(step)
+wd = lambda: 1e-4 * schedule(step)
+
+# ...
+
+optimizer = itex.ops.LAMBOptimizer(learning_rate=lr, weight_decay=wd)
 ```
 
 ## `itex.ops.LayerNormalization`
