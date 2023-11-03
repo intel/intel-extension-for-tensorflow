@@ -169,7 +169,9 @@ class trainingOpsTest(test.TestCase):
                 beta2,
                 epsilon,
                 weight_decay_rate,
-                grad)
+                v_t,
+                grad,
+                use_amsgrad=False)
         
         output = array_ops.identity(apply_adam_with_weight_decay)
     

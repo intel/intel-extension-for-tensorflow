@@ -1841,6 +1841,7 @@ itex_xpu_library(
         "training_op_gradient_descent.cc",
         "training_op_helpers.cc",
         "training_op_keras_momentum.cc",
+        "training_op_lamb.cc",
         "training_op_momentum.cc",
         "training_op_power_sign.cc",
         "training_op_proximal_adagrad.cc",
@@ -1849,6 +1850,7 @@ itex_xpu_library(
     ],
     hdrs = [
         "dense_update_functor.h",
+        "full_reduction_kernels.h",
         "training_op_helpers.h",
         "training_ops.h",
     ],

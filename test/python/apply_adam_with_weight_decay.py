@@ -72,7 +72,9 @@ class ApplyAdamWithWeightDecay(test.TestCase):
                 beta2,
                 epsilon,
                 weight_decay_rate,
-                grad)
+                v_t,
+                grad,
+                use_amsgrad=False)
         numpy_out = apply_adam_with_weight_decay_numpy(var,
                 m,
                 v,

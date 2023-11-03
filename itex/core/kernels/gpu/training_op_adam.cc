@@ -186,13 +186,14 @@ struct FusedApplyAdamITEX_GPU {
 template <typename T>
 struct ComputeAdamWeightDecayKernel {
   ComputeAdamWeightDecayKernel(const T* grad_ptr, T* m_ptr, T* v_ptr,
-                               T* var_ptr, const T* beta1_power,
+                               T* vhat_ptr, T* var_ptr, const T* beta1_power,
                                const T* beta2_power, const T* lr,
                                const T* beta1, const T* beta2, const T* epsilon,
-                               int total_size, const T* wd)
+                               int total_size, const T* wd, bool use_amsgrad)
       : grad_ptr_(grad_ptr),
         m_ptr_(m_ptr),
         v_ptr_(v_ptr),
+        vhat_ptr_(vhat_ptr),
         var_ptr_(var_ptr),
         beta1_power_(beta1_power),
         beta2_power_(beta2_power),
@@ -201,6 +202,7 @@ struct ComputeAdamWeightDecayKernel {
         beta2_(beta2),
         epsilon_(epsilon),
         wd_(wd),
+        use_amsgrad_(use_amsgrad),
         total_size_(total_size) {}
 
   void operator()(sycl::nd_item<1> item) const {
@@ -220,6 +222,11 @@ struct ComputeAdamWeightDecayKernel {
     auto v = v_ele + (grad_ele * grad_ele - v_ele) * beta2_sub;
     v_ptr_[id] = v;
     m_ptr_[id] = m;
+    if (use_amsgrad_) {
+      auto vhat = std::max(vhat_ptr_[id], v);
+      v = vhat;
+      vhat_ptr_[id] = vhat;
+    }
     auto var_ele = wd_sub * var_ptr_[id] -
                    (m * alpha) / (Eigen::numext::sqrt(v) + epsilon_[0]);
     var_ptr_[id] = var_ele;
@@ -229,6 +236,7 @@ struct ComputeAdamWeightDecayKernel {
   const T* grad_ptr_;
   T* m_ptr_;
   T* v_ptr_;
+  T* vhat_ptr_;
   T* var_ptr_;
   const T* beta1_power_;
   const T* beta2_power_;
@@ -237,6 +245,7 @@ struct ComputeAdamWeightDecayKernel {
   const T* beta2_;
   const T* epsilon_;
   const T* wd_;
+  bool use_amsgrad_;
   int total_size_;
 };
 
@@ -244,15 +253,16 @@ template <typename T>
 struct ComputeFusedAdamWeightDecayKernel {
   ComputeFusedAdamWeightDecayKernel(const T* mul_left_ptr,
                                     const T* mul_right_ptr, T* m_ptr, T* v_ptr,
-                                    T* var_ptr, const T* beta1_power,
-                                    const T* beta2_power, const T* lr,
-                                    const T* beta1, const T* beta2,
+                                    T* vhat_ptr, T* var_ptr,
+                                    const T* beta1_power, const T* beta2_power,
+                                    const T* lr, const T* beta1, const T* beta2,
                                     const T* epsilon, int total_size,
-                                    const T* wd)
+                                    const T* wd, bool use_amsgrad)
       : mul_left_ptr_(mul_left_ptr),
         mul_right_ptr_(mul_right_ptr),
         m_ptr_(m_ptr),
         v_ptr_(v_ptr),
+        vhat_ptr_(vhat_ptr),
         var_ptr_(var_ptr),
         beta1_power_(beta1_power),
         beta2_power_(beta2_power),
@@ -260,6 +270,7 @@ struct ComputeFusedAdamWeightDecayKernel {
         beta1_(beta1),
         beta2_(beta2),
         epsilon_(epsilon),
+        use_amsgrad_(use_amsgrad),
         total_size_(total_size),
         wd_(wd) {}
 
@@ -280,6 +291,11 @@ struct ComputeFusedAdamWeightDecayKernel {
     auto v = v_ele + (grad_ele * grad_ele - v_ele) * beta2_sub;
     v_ptr_[id] = v;
     m_ptr_[id] = m;
+    if (use_amsgrad_) {
+      auto vhat = std::max(vhat_ptr_[id], v);
+      v = vhat;
+      vhat_ptr_[id] = vhat;
+    }
     auto var_ele = wd_sub * var_ptr_[id] -
                    (m * alpha) / (Eigen::numext::sqrt(v) + epsilon_[0]);
     var_ptr_[id] = var_ele;
@@ -290,6 +306,7 @@ struct ComputeFusedAdamWeightDecayKernel {
   const T* mul_right_ptr_;
   T* m_ptr_;
   T* v_ptr_;
+  T* vhat_ptr_;
   T* var_ptr_;
   const T* beta1_power_;
   const T* beta2_power_;
@@ -297,6 +314,7 @@ struct ComputeFusedAdamWeightDecayKernel {
   const T* beta1_;
   const T* beta2_;
   const T* epsilon_;
+  bool use_amsgrad_;
   int total_size_;
   const T* wd_;
 };
@@ -306,10 +324,11 @@ class AdamWeightDecayKernel;
 
 template <typename T>
 struct ApplyAdamWeightDecayITEX_GPU {
-  void operator()(const GPUDevice& d, T* var, T* m, T* v, const T* beta1_power,
-                  const T* beta2_power, const T* lr, const T* beta1,
-                  const T* beta2, const T* epsilon, const T* grad,
-                  OpKernelContext* ctx, int elements, const T* wd) {
+  void operator()(const GPUDevice& d, T* var, T* m, T* v, T* vhat,
+                  const T* beta1_power, const T* beta2_power, const T* lr,
+                  const T* beta1, const T* beta2, const T* epsilon,
+                  const T* grad, OpKernelContext* ctx, int elements,
+                  const T* wd, bool use_amsgrad) {
     auto* stream = ctx->eigen_gpu_device().stream();
     auto total_threads =
         (*stream)
@@ -318,9 +337,9 @@ struct ApplyAdamWeightDecayITEX_GPU {
     auto num_workgroups = (elements + total_threads - 1) / total_threads;
 
     stream->submit([&](sycl::handler& cgh) {
-      ComputeAdamWeightDecayKernel<T> task(grad, m, v, var, beta1_power,
+      ComputeAdamWeightDecayKernel<T> task(grad, m, v, vhat, var, beta1_power,
                                            beta2_power, lr, beta1, beta2,
-                                           epsilon, elements, wd);
+                                           epsilon, elements, wd, use_amsgrad);
 
       cgh.parallel_for<AdamWeightDecayKernel<T, false>>(
           sycl::nd_range<1>(sycl::range<1>(total_threads * num_workgroups),
@@ -332,11 +351,11 @@ struct ApplyAdamWeightDecayITEX_GPU {
 
 template <typename T>
 struct FusedApplyAdamWeightDecayITEX_GPU {
-  void operator()(const GPUDevice& d, T* var, T* m, T* v, const T* beta1_power,
-                  const T* beta2_power, const T* lr, const T* beta1,
-                  const T* beta2, const T* epsilon, const T* mul_left,
-                  const T* mul_right, OpKernelContext* ctx, int elements,
-                  const T* wd) {
+  void operator()(const GPUDevice& d, T* var, T* m, T* v, T* vhat,
+                  const T* beta1_power, const T* beta2_power, const T* lr,
+                  const T* beta1, const T* beta2, const T* epsilon,
+                  const T* mul_left, const T* mul_right, OpKernelContext* ctx,
+                  int elements, const T* wd, bool use_amsgrad) {
     auto* stream = ctx->eigen_gpu_device().stream();
     auto total_threads =
         (*stream)
@@ -346,8 +365,8 @@ struct FusedApplyAdamWeightDecayITEX_GPU {
 
     stream->submit([&](sycl::handler& cgh) {
       ComputeFusedAdamWeightDecayKernel<T> task(
-          mul_left, mul_right, m, v, var, beta1_power, beta2_power, lr, beta1,
-          beta2, epsilon, elements, wd);
+          mul_left, mul_right, m, v, vhat, var, beta1_power, beta2_power, lr,
+          beta1, beta2, epsilon, elements, wd, use_amsgrad);
 
       cgh.parallel_for<AdamWeightDecayKernel<T, true>>(
           sycl::nd_range<1>(sycl::range<1>(total_threads * num_workgroups),
@@ -569,6 +588,7 @@ class ApplyAdamWithWeightDecayOp : public OpKernel {
   explicit ApplyAdamWithWeightDecayOp(OpKernelConstruction* ctx)
       : OpKernel(ctx) {
     OP_REQUIRES_OK(ctx, ctx->GetAttr("use_locking", &use_exclusive_lock_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("use_amsgrad", &use_amsgrad_));
   }
 
   void Compute(OpKernelContext* ctx) override {
@@ -603,8 +623,16 @@ class ApplyAdamWithWeightDecayOp : public OpKernel {
     const Tensor& epsilon_dev = ctx->input(8);
     const Tensor& wd_dev = ctx->input(9);
 
+    Tensor vhat;
+    T* vhat_ptr = nullptr;
+    if (use_amsgrad_) {
+      OP_REQUIRES_OK(ctx, GetInputTensorFromVariable<GPUDevice, T>(
+                              ctx, 10, use_exclusive_lock_, sparse, &vhat));
+      vhat_ptr = vhat.flat<T>().data();
+    }
+
     auto device = ctx->eigen_gpu_device();
-    const Tensor& grad = ctx->input(10);
+    const Tensor& grad = ctx->input(11);
 
     OP_REQUIRES(ctx, var.shape().IsSameSize(m.shape()),
                 errors::InvalidArgument("var and m do not have the same shape",
@@ -621,16 +649,17 @@ class ApplyAdamWithWeightDecayOp : public OpKernel {
                                 grad.shape().DebugString()));
     functor::ApplyAdamWeightDecayITEX_GPU<T>()(
         device, var.flat<T>().data(), m.flat<T>().data(), v.flat<T>().data(),
-        beta1_power_dev.flat<T>().data(), beta2_power_dev.flat<T>().data(),
-        lr_dev.flat<T>().data(), beta1_dev.flat<T>().data(),
-        beta2_dev.flat<T>().data(), epsilon_dev.flat<T>().data(),
-        grad.flat<T>().data(), ctx, grad.NumElements(),
-        wd_dev.flat<T>().data());
+        vhat_ptr, beta1_power_dev.flat<T>().data(),
+        beta2_power_dev.flat<T>().data(), lr_dev.flat<T>().data(),
+        beta1_dev.flat<T>().data(), beta2_dev.flat<T>().data(),
+        epsilon_dev.flat<T>().data(), grad.flat<T>().data(), ctx,
+        grad.NumElements(), wd_dev.flat<T>().data(), use_amsgrad_);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 
  private:
   bool use_exclusive_lock_;
+  bool use_amsgrad_;
 };
 
 template <typename Device, typename T>
@@ -639,6 +668,7 @@ class FusedApplyAdamWithWeightDecayOp : public OpKernel {
   explicit FusedApplyAdamWithWeightDecayOp(OpKernelConstruction* ctx)
       : OpKernel(ctx) {
     OP_REQUIRES_OK(ctx, ctx->GetAttr("use_locking", &use_exclusive_lock_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("use_amsgrad", &use_amsgrad_));
 
     OP_REQUIRES_OK(ctx, ctx->GetAttr("fused_ops", &fused_ops_));
     OP_REQUIRES(ctx, fused_ops_[0] == "Mul" && fused_ops_.size() == 1,
@@ -682,9 +712,17 @@ class FusedApplyAdamWithWeightDecayOp : public OpKernel {
     const Tensor& epsilon_dev = ctx->input(8);
     const Tensor& wd_dev = ctx->input(9);
 
+    Tensor vhat;
+    T* vhat_ptr = nullptr;
+    if (use_amsgrad_) {
+      OP_REQUIRES_OK(ctx, GetInputTensorFromVariable<GPUDevice, T>(
+                              ctx, 10, use_exclusive_lock_, sparse, &vhat));
+      vhat_ptr = vhat.flat<T>().data();
+    }
+
     // always treat the left input as a tenor, the right input as a scalar
-    int left_index = 10;
-    int right_index = 11;
+    int left_index = 11;
+    int right_index = 12;
     const TensorShape& left_shape = ctx->input(left_index).shape();
     const TensorShape& right_shape = ctx->input(right_index).shape();
 
@@ -696,8 +734,8 @@ class FusedApplyAdamWithWeightDecayOp : public OpKernel {
                                         left_shape.DebugString(), " ",
                                         right_shape.DebugString()));
     if (left_is_scalar) {
-      left_index = 11;
-      right_index = 10;
+      left_index = 12;
+      right_index = 11;
     }
 
     const Tensor& mul_left = ctx->input(left_index);
@@ -719,16 +757,18 @@ class FusedApplyAdamWithWeightDecayOp : public OpKernel {
     auto device = ctx->eigen_gpu_device();
     functor::FusedApplyAdamWeightDecayITEX_GPU<T>()(
         device, var.flat<T>().data(), m.flat<T>().data(), v.flat<T>().data(),
-        beta1_power_dev.flat<T>().data(), beta2_power_dev.flat<T>().data(),
-        lr_dev.flat<T>().data(), beta1_dev.flat<T>().data(),
-        beta2_dev.flat<T>().data(), epsilon_dev.flat<T>().data(),
-        mul_left.flat<T>().data(), mul_right.flat<T>().data(), ctx,
-        mul_left.NumElements(), wd_dev.flat<T>().data());
+        vhat_ptr, beta1_power_dev.flat<T>().data(),
+        beta2_power_dev.flat<T>().data(), lr_dev.flat<T>().data(),
+        beta1_dev.flat<T>().data(), beta2_dev.flat<T>().data(),
+        epsilon_dev.flat<T>().data(), mul_left.flat<T>().data(),
+        mul_right.flat<T>().data(), ctx, mul_left.NumElements(),
+        wd_dev.flat<T>().data(), use_amsgrad_);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 
  private:
   bool use_exclusive_lock_;
+  bool use_amsgrad_;
   std::vector<std::string> fused_ops_;
   int num_addn_inputs_;
 };

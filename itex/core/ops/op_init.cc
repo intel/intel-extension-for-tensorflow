@@ -72,11 +72,13 @@ void RegisterOps() {
 
   // Training kernels
   Register_ITEXApplyAdamWithWeightDecayOp();
+  Register_ITEXApplyLAMBOp();
   Register_ITEXApplyRMSPropComputeRMSOp();
   Register_ITEXApplyRMSPropVarUpdateOp();
   Register_ITEXFusedApplyAdamOp();
   Register_ITEXFusedApplyAdamWithWeightDecayOp();
   Register_ITEXResourceApplyAdamWithWeightDecayOp();
+  Register_ITEXResourceApplyLAMBOp();
   Register_ITEXFusedApplyMomentumOp();
   Register_ITEXFusedResourceApplyAdamOp();
   Register_ITEXFusedResourceApplyAdamWithWeightDecayOp();

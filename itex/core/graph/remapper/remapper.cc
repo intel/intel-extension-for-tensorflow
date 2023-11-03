@@ -842,9 +842,9 @@ int FindFusedTrainingOpInPort(const utils::MutableNodeView& mul_node_view,
     } else if (IsApplyAdamWithWeightDecay(*node_def) ||
                IsResourceApplyAdamWithWeightDecay(*node_def)) {
       // Input : var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon,
-      // weight_decay, grad
-      if (node_view->NumRegularFanins() != 11) return false;
-      input_index = 10;
+      // weight_decay, grad, vhat
+      if (node_view->NumRegularFanins() != 12) return false;
+      input_index = 11;
     } else {
       return false;
     }
@@ -2640,9 +2640,9 @@ bool FindFusedTrainingOp(const RemapperContext& ctx, int node_index,
   } else if (IsApplyAdamWithWeightDecay(*node_def) ||
              IsResourceApplyAdamWithWeightDecay(*node_def)) {
     // Input : var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon,
-    // weight_decay, grad
-    if (node_view->NumRegularFanins() != 11) return false;
-    input_index = 10;
+    // weight_decay, grad, vhat
+    if (node_view->NumRegularFanins() != 12) return false;
+    input_index = 11;
   } else {
     return false;
   }
@@ -5819,10 +5819,10 @@ Status AddFusedTrainingNode(RemapperContext* ctx,
     for (int i = 0; i < 9; i++) fused_op.add_input(training_op.input(i));
   } else if (IsApplyAdamWithWeightDecay(training_op)) {
     fused_op.set_op(kFusedApplyAdamWithWeightDecay);
-    for (int i = 0; i < 10; i++) fused_op.add_input(training_op.input(i));
+    for (int i = 0; i < 11; i++) fused_op.add_input(training_op.input(i));
   } else if (IsResourceApplyAdamWithWeightDecay(training_op)) {
     fused_op.set_op(kFusedResourceApplyAdamWithWeightDecay);
-    for (int i = 0; i < 10; i++) fused_op.add_input(training_op.input(i));
+    for (int i = 0; i < 11; i++) fused_op.add_input(training_op.input(i));
   } else if (IsApplyMomentum(training_op)) {
     fused_op.set_op(kFusedApplyMomentum);
     fused_op.add_input(training_op.input(0));

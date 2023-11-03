@@ -167,7 +167,9 @@ class resourceTraingingOpsTest(test.TestCase):
                 beta2,
                 epsilon,
                 weight_decay_rate,
-                grad)
+                v_t.handle,
+                grad,
+                use_amsgrad=False)
             
         run_options = config_pb2.RunOptions(output_partition_graphs=True)
         metadata = config_pb2.RunMetadata()
