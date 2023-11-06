@@ -16,15 +16,39 @@
 # ==============================================================================
 
 # pylint: disable=missing-module-docstring
+import numpy as np
 import tensorflow as tf
 from tensorflow.python import keras
 from tensorflow.python.framework import ops
+from typing import List, Optional, Union
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from tensorflow.python.framework import config
 
+def shape_list(tensor: Union[tf.Tensor, np.ndarray]) -> List[int]:
+    """
+    Deal with dynamic shape in tensorflow cleanly.
+
+    Args:
+        tensor (`tf.Tensor` or `np.ndarray`): The tensor we want the shape of.
+
+    Returns:
+        `List[int]`: The shape of the tensor as a list.
+    """
+    if isinstance(tensor, np.ndarray):
+        return list(tensor.shape)
+
+    dynamic = tf.shape(tensor)
+
+    if tensor.shape == tf.TensorShape(None):
+        return dynamic
+
+    static = tensor.shape.as_list()
+
+    return [dynamic[i] if s is None else s for i, s in enumerate(static)]
+
 def rotate_every_two(x: tf.Tensor) -> tf.Tensor:
     rotate_half_tensor = tf.stack((-x[:, :, :, 1::2], x[:, :, :, ::2]), axis=-1)
-    new_shape = rotate_half_tensor.get_shape().as_list()[:-2] + [tf.math.reduce_prod(rotate_half_tensor.get_shape().as_list()[-2:])]
+    new_shape = shape_list(rotate_half_tensor)[:-2] + [tf.math.reduce_prod(shape_list(rotate_half_tensor)[-2:])]
     rotate_half_tensor = tf.reshape(rotate_half_tensor, new_shape)
     return rotate_half_tensor
 
