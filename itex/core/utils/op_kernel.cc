@@ -639,6 +639,13 @@ string OpKernel::TraceString(const OpKernelContext& ctx) const {
   }
   return trace_string;
 }
+
+void AsyncOpKernel::Compute(OpKernelContext* context) {
+  Notification n;
+  this->ComputeAsync(context, [&n]() { n.Notify(); });
+  n.WaitForNotification();
+}
+
 KernelDefBuilder& KernelDefBuilder::Device(const char* backend) {
   backend_ = std::string(backend);
   return *this;
@@ -661,6 +668,12 @@ KernelDefBuilder& KernelDefBuilder::RegisterCreate(KernelCreateFunc func) {
 
 KernelDefBuilder& KernelDefBuilder::RegisterCompute(KernelComputeFunc func) {
   compute_func_ = func;
+  return *this;
+}
+
+KernelDefBuilder& KernelDefBuilder::RegisterComputeAsync(
+    KernelComputeAsyncFunc func) {
+  compute_async_func_ = func;
   return *this;
 }
 
@@ -688,9 +701,15 @@ void Name::Build(const char* device_name, const char* backend) {
 
   StatusUniquePtr status(TF_NewStatus());
   {
-    auto builder =
-        TF_NewKernelBuilder(op_name_.c_str(), device_name, create_func_,
-                            compute_func_, delete_func_);
+    TF_KernelBuilder* builder = nullptr;
+    if (compute_func_) {
+      builder = TF_NewKernelBuilder(op_name_.c_str(), device_name, create_func_,
+                                    compute_func_, delete_func_);
+    } else {
+      builder =
+          TF_NewAsyncKernelBuilder(op_name_.c_str(), device_name, create_func_,
+                                   compute_async_func_, delete_func_);
+    }
     OpTypeFactory::RegisterOpType(create_func_, op_name_);
     auto check_type_constraint = [&builder, &status, this](DataType dtype,
                                                            const char* name) {

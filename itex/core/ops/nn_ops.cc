@@ -4856,3 +4856,29 @@ void Register_QKRotaryPositionalEmbeddingOp() {
         << "QKRotaryPositionalEmbedding op registration failed: ";
   }
 }
+
+// All CollectiveOps must include `Send` in its OpName to pass
+// Tensorflow function_optimizer.cc's
+// IsExemptFromSideEffectsExecutionValidation(), otherwise CollectiveOps would
+// cause dead locks.
+void Register_ItexAllReduceSendOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ItexAllReduceSend");
+    TF_OpDefinitionBuilderAddInput(op_builder, "input: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "data: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "reduction: {'min', 'max', 'prod', 'sum'}");
+    TF_OpDefinitionBuilderAddAttr(op_builder,
+                                  "T: {bfloat16, half, float, int32}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_devices: int");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "shared_name: string");
+    TF_OpDefinitionBuilderSetIsStateful(op_builder, true);
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unchanged_shape_fn);
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ItexAllReduceSend op registration failed: ";
+  }
+}

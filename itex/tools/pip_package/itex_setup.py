@@ -129,6 +129,7 @@ setup(
             'python/optimize/*.py',
             'python/test_func/*.py',
             'python/transformer/*.py',
+            'python/distribute/*.py',
             'core/utils/protobuf/*.py',
             "third-party-programs/*",
         ],

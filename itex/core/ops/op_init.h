@@ -346,6 +346,9 @@ void Register_Fp8MatmulOp();
 void Register_Fp8ScaledDotProductAttentionOp();
 void Register_Fp8ScaledDotProductAttentionGradOp();
 
+// Collective Ops
+void Register_ItexAllReduceSendOp();
+
 #ifdef __cplusplus
 extern "C" {
 #endif

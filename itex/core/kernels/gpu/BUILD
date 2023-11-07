@@ -2250,6 +2250,23 @@ itex_xpu_library(
     alwayslink = True,
 )
 
+itex_xpu_library(
+    name = "collective_ops",
+    srcs = [
+        "collective_ops.cc",
+    ],
+    hdrs = [
+        "collective_ops.h",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
 GPU_KERNELS = [
     ":aggregate_ops",
     ":argmax_op",
@@ -2372,6 +2389,7 @@ GPU_KERNELS = [
     ":tensor_to_hash_bucket_op",
     ":test_ops",
     ":temporary_variable_ops",
+    ":collective_ops",
 ]
 
 itex_xpu_library(

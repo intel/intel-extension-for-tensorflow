@@ -378,4 +378,7 @@ void RegisterOps() {
   Register_Fp8MatmulOp();
   Register_Fp8ScaledDotProductAttentionOp();
   Register_Fp8ScaledDotProductAttentionGradOp();
+
+  // Collective Ops
+  Register_ItexAllReduceSendOp();
 }

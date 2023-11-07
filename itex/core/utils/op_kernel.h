@@ -34,6 +34,7 @@ limitations under the License.
 #include "itex/core/utils/kernel_def_util.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/mutex.h"
+#include "itex/core/utils/notification.h"
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/types.h"
 #include "protos/node_def.pb.h"
@@ -599,6 +600,14 @@ class OpKernel {
   absl::string_view op_type;
 };
 
+class AsyncOpKernel : public OpKernel {
+ public:
+  using OpKernel::OpKernel;  // Lift OpKernel constructors.
+  typedef std::function<void()> DoneCallback;
+  void Compute(OpKernelContext* context) override;
+  virtual void ComputeAsync(OpKernelContext* context, DoneCallback done) = 0;
+};
+
 class KernelDefBuilder {
  public:
   KernelDefBuilder() { priority_ = 0; }
@@ -620,10 +629,13 @@ class KernelDefBuilder {
 
   typedef void* (*KernelCreateFunc)(TF_OpKernelConstruction*);
   typedef void (*KernelComputeFunc)(void*, TF_OpKernelContext*);
+  typedef void (*KernelComputeAsyncFunc)(void*, TF_OpKernelContext*,
+                                         TF_AsyncOpKernelDoneCallback* done);
   typedef void (*KernelDeleteFunc)(void*);
 
   KernelDefBuilder& RegisterCreate(KernelCreateFunc func);
   KernelDefBuilder& RegisterCompute(KernelComputeFunc func);
+  KernelDefBuilder& RegisterComputeAsync(KernelComputeAsyncFunc func);
   KernelDefBuilder& RegisterDelete(KernelDeleteFunc func);
 
  protected:
@@ -635,6 +647,7 @@ class KernelDefBuilder {
 
   KernelCreateFunc create_func_;
   KernelComputeFunc compute_func_;
+  KernelComputeAsyncFunc compute_async_func_;
   KernelDeleteFunc delete_func_;
 
   // This is not the same with proper's KernelDefBuilder. Due to this args is
@@ -732,9 +745,15 @@ const char* const USES_FP64_MATH = "uses-fp64-math";
 const char* const ASPECT_FP64_IS_NOT_SUPPORTED = "aspect fp64 is not supported";
 const char* const FP64_ERROR_FROM_MKL = "double type is not supported";
 
-inline void RunWithSyncHandler(OpKernelContext* context, OpKernel* op) {
+inline void RunWithSyncHandler(
+    OpKernelContext* context, OpKernel* op,
+    AsyncOpKernel::DoneCallback* callback = nullptr) {
   try {
-    op->Compute(context);
+    if (callback) {
+      reinterpret_cast<AsyncOpKernel*>(op)->ComputeAsync(context, *callback);
+    } else {
+      op->Compute(context);
+    }
   } catch (const sycl::exception& e) {
     const string& err_msg = e.what();
     if (err_msg.find(USES_FP64_MATH) != std::string::npos ||
@@ -757,11 +776,21 @@ inline void RunWithSyncHandler(OpKernelContext* context, OpKernel* op) {
 }
 #endif
 
-inline void RunOrWaitUntilFinish(OpKernelContext* context, OpKernel* op) {
+inline void RunOrWaitUntilFinish(
+    OpKernelContext* context, OpKernel* op,
+    AsyncOpKernel::DoneCallback* callback = nullptr) {
 #ifndef INTEL_CPU_ONLY
   if (IsSyncExecEnabled()) {
     auto start = std::chrono::steady_clock::now();
-    RunWithSyncHandler(context, op);
+    if (callback) {  // callback != nullptr means running AsyncOpKernel
+      Notification n;
+      AsyncOpKernel::DoneCallback done = [&n]() { n.Notify(); };
+      RunWithSyncHandler(context, op, &done);
+      n.WaitForNotification();
+      (*callback)();
+    } else {  // callback == nullptr means running OpKernel
+      RunWithSyncHandler(context, op);
+    }
     auto stream = context->GetDeviceStream();
     auto error = ITEX_GPUStreamSynchronize(stream);
     if (error != ITEX_GPU_SUCCESS) {
@@ -780,18 +809,22 @@ inline void RunOrWaitUntilFinish(OpKernelContext* context, OpKernel* op) {
   } else {
     if (IsVerboseEnabled()) {
       auto start = std::chrono::steady_clock::now();
-      RunWithSyncHandler(context, op);
+      RunWithSyncHandler(context, op, callback);
       auto end = std::chrono::steady_clock::now();
       auto elapsed =
           std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
               .count();
       ITEX_VLOG(0) << op->type() << "," << op->name() << "," << elapsed;
     } else {
-      RunWithSyncHandler(context, op);
+      RunWithSyncHandler(context, op, callback);
     }
   }
 #else
-  op->Compute(context);
+  if (callback) {
+    reinterpret_cast<AsyncOpKernel*>(op)->ComputeAsync(context, *callback);
+  } else {
+    op->Compute(context);
+  }
 #endif
 }
 
@@ -854,6 +887,56 @@ class OpTypeFactory {
     kernel_builder.KernelClassName(#__VA_ARGS__)                            \
         .RegisterCreate(&Create_##ctr)                                      \
         .RegisterCompute(&Compute_##ctr)                                    \
+        .RegisterComputeAsync(nullptr)                                      \
+        .RegisterDelete(&Delete_##ctr)                                      \
+        .Build(device_name, backend);                                       \
+  }                                                                         \
+  TF_ATTRIBUTE_UNUSED static register_kernel::Registrar const               \
+      registrar_body_##ctr##_object(#__VA_ARGS__, &Register##ctr);
+
+#define REGISTER_ASYNC_KERNEL_BUILDER(kernel_builder, ...)               \
+  REGISTER_ASYNC_KERNEL_BUILDER_UNIQ_HELPER(__COUNTER__, kernel_builder, \
+                                            __VA_ARGS__)
+
+#define REGISTER_ASYNC_KERNEL_BUILDER_UNIQ_HELPER(ctr, kernel_builder, ...) \
+  REGISTER_ASYNC_KERNEL_BUILDER_UNIQ_HELP(ctr, kernel_builder, __VA_ARGS__)
+
+// In ComputeAsync_##ctr, we wrap shared_ptr of ctx in a lambda function named
+// `callback` to prolong ctx's life until `callback` is called.
+#define REGISTER_ASYNC_KERNEL_BUILDER_UNIQ_HELP(ctr, kernel_builder, ...)   \
+  static void* Create_##ctr(TF_OpKernelConstruction* ctx) {                 \
+    OpKernelConstruction context(ctx);                                      \
+    auto kernel = new __VA_ARGS__(&context);                                \
+    absl::string_view op_type =                                             \
+        OpTypeFactory::GetForKernelCreateFunc(&Create_##ctr);               \
+    kernel->set_type(op_type);                                              \
+    return kernel;                                                          \
+  }                                                                         \
+  static void Delete_##ctr(void* kernel) {                                  \
+    if (kernel) {                                                           \
+      delete (static_cast<__VA_ARGS__*>(kernel));                           \
+    }                                                                       \
+  }                                                                         \
+  static void ComputeAsync_##ctr(void* kernel, TF_OpKernelContext* ctx,     \
+                                 TF_AsyncOpKernelDoneCallback* done) {      \
+    auto context = std::make_shared<OpKernelContext>(ctx);                  \
+    AsyncOpKernel::DoneCallback real_done =                                 \
+        *(reinterpret_cast<AsyncOpKernel::DoneCallback*>(done));            \
+    AsyncOpKernel::DoneCallback callback = [real_done, context]() {         \
+      real_done();                                                          \
+    };                                                                      \
+    auto op = static_cast<__VA_ARGS__*>(kernel);                            \
+    ITEX_VLOG(3) << "Executing " << op->name() << " with op type "          \
+                 << op->type();                                             \
+    AnnotatedTraceMe activity(                                              \
+        [op, &context] { return op->TraceString(*context.get()); });        \
+    RunOrWaitUntilFinish(context.get(), op, &callback);                     \
+  }                                                                         \
+  static void Register##ctr(const char* device_name, const char* backend) { \
+    kernel_builder.KernelClassName(#__VA_ARGS__)                            \
+        .RegisterCreate(&Create_##ctr)                                      \
+        .RegisterCompute(nullptr)                                           \
+        .RegisterComputeAsync(&ComputeAsync_##ctr)                          \
         .RegisterDelete(&Delete_##ctr)                                      \
         .Build(device_name, backend);                                       \
   }                                                                         \
