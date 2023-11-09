@@ -75,6 +75,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         patch_cmds = [
             "git log -1 --format=%H > COMMIT",
         ],
+        patches = ["//third_party/onednn:onednn.patch"],
+        patch_args = ["-p1"],
     )
 
     new_git_repository(
@@ -86,6 +88,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         patch_cmds = [
             "git log -1 --format=%H > COMMIT",
         ],
+        patches = ["//third_party/onednn:onednn.patch"],
+        patch_args = ["-p1"],
     )
 
     # OneDNN cpu backend with TBB runtime.
