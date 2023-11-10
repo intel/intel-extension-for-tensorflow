@@ -23,6 +23,7 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 
 from absl.testing import parameterized
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.eager import backprop
 from tensorflow.python.eager import context
@@ -757,9 +758,9 @@ class DivAndModTest(test_util.TensorFlowTestCase):
   def testWithPythonValue(self):
     # Test case for https://github.com/tensorflow/tensorflow/issues/39475
     x = math_ops.divide(5, 2)
-    self.assertIsInstance(x, ops.Tensor)
+    self.assertIsInstance(x, tf.Tensor)
     x = math_ops.divide(5, array_ops.constant(2.0))
-    self.assertIsInstance(x, ops.Tensor)
+    self.assertIsInstance(x, tf.Tensor)
 
   def intEdgeTestData(self, dtype):
     """Edge-case test data for integer types."""

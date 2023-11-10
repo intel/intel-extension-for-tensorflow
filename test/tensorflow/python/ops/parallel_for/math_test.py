@@ -22,6 +22,8 @@ from __future__ import print_function
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
+import tensorflow as tf
+
 from absl.testing import parameterized
 
 from tensorflow.python.eager import backprop
@@ -164,7 +166,7 @@ class MathTest(PForTestCase, parameterized.TestCase):
 
   def test_binary_cwise_ops(self):
     # Enable tensor equality to test `equal` and `not_equal` ops below.
-    default_equality = framework_ops.Tensor._USE_EQUALITY
+    default_equality = tf.Tensor._USE_EQUALITY
     enable_tensor_equality()
     try:
       logical_ops = [

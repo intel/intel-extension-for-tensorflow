@@ -94,7 +94,7 @@ class LSTMTest(keras_parameterized.TestCase):
             time_major=True,
         )
 
-        layer = keras.layers.LSTM(units, **rnn_layer_kwargs)
+        layer = keras.layers.LSTMV1(units, **rnn_layer_kwargs)
         itex_layer = itex.ops.ItexLSTM(units, **rnn_layer_kwargs)
 
         model = self._make_nested_model(input_shape, layer, model_nest_level,

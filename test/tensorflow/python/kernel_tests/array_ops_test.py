@@ -580,7 +580,7 @@ class StridedSliceChecker(object):
         return x
 
     if isinstance(spec, bool) or \
-      (isinstance(spec, ops.Tensor) and spec.dtype == dtypes.bool) or \
+      (isinstance(spec, tf.Tensor) and spec.dtype == dtypes.bool) or \
       (isinstance(spec, np.ndarray) and spec.dtype == bool) or \
       (isinstance(spec, (list, tuple)) and np.asarray(spec).dtype == bool):
       tensor = self.test.evaluate(op)
@@ -1042,7 +1042,7 @@ class GradSliceChecker(object):
     # compute analytic gradient for slice
     np_val_grad = (2 * self.varnp * self.varnp)
     np_sliceval_grad = np.zeros(self.var.get_shape())
-    if isinstance(spec, ops.Tensor):
+    if isinstance(spec, tf.Tensor):
       spec = self.test.evaluate([spec])
       spec = tuple(spec)
     np_sliceval_grad[spec] = np_val_grad[spec]

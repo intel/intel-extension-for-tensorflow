@@ -29,7 +29,10 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gradient_checker
 from tensorflow.python.ops import gradients_impl
-from tensorflow.python.ops import nn_grad
+try:
+  from tensorflow.python.ops.nn_grad import _BatchNormGrad
+except ImportError:
+  from tensorflow.python.ops.nn_fused_batch_norm_grad import _BatchNormGrad
 from tensorflow.python.ops import nn_impl
 from tensorflow.python.ops import gen_nn_ops
 
@@ -124,7 +127,7 @@ class BatchNormalizationV2Test(test.TestCase):
         epsilon = y.op.get_attr('epsilon')
         data_format = y.op.get_attr('data_format')
         grad_vals = self.evaluate([grad_x, grad_scale, grad_offset])
-        grad_internal = nn_grad._BatchNormGrad(grad_y, x, scale, pop_mean,
+        grad_internal = _BatchNormGrad(grad_y, x, scale, pop_mean,
                                                pop_var, epsilon, data_format)
         grad_internal_vals = self.evaluate(list(grad_internal))
         for grad_val, grad_internal_val in zip(grad_vals, grad_internal_vals):
