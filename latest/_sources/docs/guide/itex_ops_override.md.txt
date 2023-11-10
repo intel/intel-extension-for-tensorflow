@@ -13,6 +13,7 @@ After `itex.experimental_ops_override()` is called, these TensorFlow APIs are au
 - [Gelu Activation](#gelu-activation)
 - [instance Normalization](#instance-normalization)
 - [LSTM](#lstm)
+- [AdamW](#adamw)
 
 ## Layer Normalization
 `tf.keras.layers.LayerNormalization` and `keras.layers.LayerNormalization` will be fused by Customized Operators of LayerNorm and LayerNormGrad. For example:
@@ -82,4 +83,20 @@ $ python
     bias_initializer='zeros', **kwargs
 )
 >>> # it will run by op ItexRnn
+```
+
+## AdamW
+If Intel® Extension for TensorFlow* backend is `XPU`, `tf.keras.optimizers.AdamW` and `keras.optimizers.AdamW` will be fused by `itex.ops.AdamWithWeightDecayOptimizer`. For examples:
+```sh
+$ python
+>>> import tensorflow as tf
+>>> import intel_extension_for_tensorflow as itex
+>>> itex.experimental_ops_override()
+>>> optimizer = tf.keras.optimizers.AdamW(
+    learning_rate=0.02,
+    weight_decay=0.01,
+    beta_1=0.9,
+    beta_2=0.999,
+    epsilon=1e-6)
+>>> # it will run by op ITEXResourceApplyAdamWithWeightDecay
 ```

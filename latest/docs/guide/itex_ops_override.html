@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Operators Override &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g8d1866f documentation</title>
+  <title>Operators Override &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g23ba30a documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -100,6 +100,7 @@
 <li><p><a class="reference external" href="#gelu-activation">Gelu Activation</a></p></li>
 <li><p><a class="reference external" href="#instance-normalization">instance Normalization</a></p></li>
 <li><p><a class="reference external" href="#lstm">LSTM</a></p></li>
+<li><p><a class="reference external" href="#adamw">AdamW</a></p></li>
 </ul>
 <section id="layer-normalization">
 <h2>Layer Normalization<a class="headerlink" href="#layer-normalization" title="Permalink to this heading"></a></h2>
@@ -176,6 +177,23 @@ tfa.layers.InstanceNormalization<span class="o">(</span>
 </pre></div>
 </div>
 </section>
+<section id="adamw">
+<h2>AdamW<a class="headerlink" href="#adamw" title="Permalink to this heading"></a></h2>
+<p>If Intel® Extension for TensorFlow* backend is <code class="docutils literal notranslate"><span class="pre">XPU</span></code>, <code class="docutils literal notranslate"><span class="pre">tf.keras.optimizers.AdamW</span></code> and <code class="docutils literal notranslate"><span class="pre">keras.optimizers.AdamW</span></code> will be fused by <code class="docutils literal notranslate"><span class="pre">itex.ops.AdamWithWeightDecayOptimizer</span></code>. For examples:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python
+&gt;&gt;&gt;<span class="w"> </span>import<span class="w"> </span>tensorflow<span class="w"> </span>as<span class="w"> </span>tf
+&gt;&gt;&gt;<span class="w"> </span>import<span class="w"> </span>intel_extension_for_tensorflow<span class="w"> </span>as<span class="w"> </span>itex
+&gt;&gt;&gt;<span class="w"> </span>itex.experimental_ops_override<span class="o">()</span>
+&gt;&gt;&gt;<span class="w"> </span><span class="nv">optimizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tf.keras.optimizers.AdamW<span class="o">(</span>
+<span class="w">    </span><span class="nv">learning_rate</span><span class="o">=</span><span class="m">0</span>.02,
+<span class="w">    </span><span class="nv">weight_decay</span><span class="o">=</span><span class="m">0</span>.01,
+<span class="w">    </span><span class="nv">beta_1</span><span class="o">=</span><span class="m">0</span>.9,
+<span class="w">    </span><span class="nv">beta_2</span><span class="o">=</span><span class="m">0</span>.999,
+<span class="w">    </span><span class="nv">epsilon</span><span class="o">=</span>1e-6<span class="o">)</span>
+&gt;&gt;&gt;<span class="w"> </span><span class="c1"># it will run by op ITEXResourceApplyAdamWithWeightDecay</span>
+</pre></div>
+</div>
+</section>
 </section>
 
 
@@ -192,7 +210,7 @@ tfa.layers.InstanceNormalization<span class="o">(</span>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f1416768a30> 
+   <jinja2.runtime.BlockReference object at 0x7fe524b38550> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
