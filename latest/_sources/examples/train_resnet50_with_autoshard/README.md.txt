@@ -19,7 +19,7 @@ This example only applies to stock TensorFlow* >=2.13.0 and Intel® Extension fo
 ```bash
 git clone https://github.com/tensorflow/models tf-models
 cd tf-models
-git checkout r2.13
+git checkout r2.13.0
 git apply ../shard.patch
 ```
  
