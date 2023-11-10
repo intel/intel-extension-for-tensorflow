@@ -16,8 +16,8 @@
 import os
 import sys
 
-import version
 
+__version__ = '2.14.0.1'
 
 def parse_args(argv):
   result = {}
@@ -40,7 +40,7 @@ def git_hash(header_in):
 def generate_version(header_in, header_out):
   hash_value = git_hash(header_in)
 
-  [major, minor, patch1, patch2] = version.__version__.split(".")
+  [major, minor, patch1, patch2] = __version__.split(".")
 
   with open(os.path.expanduser(header_in)) as inf:
     content = inf.read()

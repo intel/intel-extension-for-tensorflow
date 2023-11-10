@@ -16,4 +16,3 @@
 # ==============================================================================
 '''version information for Intel ® Extension for TensorFlow*'''
 
-__version__ = '2.14.0.1'
