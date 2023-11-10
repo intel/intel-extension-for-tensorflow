@@ -37,6 +37,7 @@ from tensorflow.python.util import compat
 from intel_extension_for_tensorflow.python.device import get_backend
 from intel_extension_for_tensorflow.python.ops.layer_norm import _layer_norm
 from intel_extension_for_tensorflow.python.ops.activations import gelu as itex_gelu
+from intel_extension_for_tensorflow.python.ops.optimizers import AdamWithWeightDecayOptimizer
 from intel_extension_for_tensorflow.python.ops.recurrent import gpu_lstm
 from intel_extension_for_tensorflow.python.ops.recurrent import is_itex_supported_inputs
 from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
@@ -211,6 +212,8 @@ def experimental_ops_override():
     tf_ln_call = copy_func(tf.keras.layers.LayerNormalization.call)
     tf_lstm_call = copy_func(tf.keras.layers.LSTM.call)
     tf_lstm_build = copy_func(tf.keras.layers.LSTM.build)
+    tf_adamw_apply_gradients = copy_func(tf.keras.optimizers.AdamW.apply_gradients)
+    tf_adamw_update_step = copy_func(tf.keras.optimizers.AdamW.update_step)
 
   except BaseException: # pylint: disable=broad-except
     return
@@ -456,6 +459,20 @@ def experimental_ops_override():
       return [output] + list(states)
     return output
 
+  def itex_adamw_apply_gradients(self, grads_and_vars, name=None):
+    # if is on CPU, fall back
+    if not config.list_logical_devices('XPU') or hasattr(AdamWithWeightDecayOptimizer,'_apply_sparse_shared'):
+      tf_adamw_apply_gradients(self, grads_and_vars)
+    else:
+      AdamWithWeightDecayOptimizer.apply_gradients(self, grads_and_vars)
+  
+  def itex_adamw_update_step(self, gradient, variable):
+    # if is on CPU, fall back
+    if not config.list_logical_devices('XPU') or hasattr(AdamWithWeightDecayOptimizer,'_apply_sparse_shared'):
+      tf_adamw_update_step(self, gradient, variable)
+    else:
+      AdamWithWeightDecayOptimizer.update_step(self, gradient, variable)
+
   try:
     import tensorflow_addons as tfa # pylint: disable=import-outside-toplevel
     tfa.layers.InstanceNormalization.call = itex_instance_norm_call
@@ -472,6 +489,8 @@ def experimental_ops_override():
     tf.keras.activations.gelu = itex_gelu
     tf.keras.layers.LSTM.call = itex_lstm_call
     tf.keras.layers.LSTM.build = itex_lstm_build
+    tf.keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
+    tf.keras.optimizers.AdamW.update_step = itex_adamw_update_step
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
     logger.error("Cannot override itex ops.")
@@ -484,6 +503,8 @@ def experimental_ops_override():
       keras.src.layers.rnn.lstm.LSTM.call = itex_lstm_call
       keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
       keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
+      keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
+      keras.optimizers.AdamW.update_step = itex_adamw_update_step
     else:
       keras.layers.core.dense.Dense.call = itex_dense_layer_call
       keras.layers.LayerNormalization.call = itex_layer_norm_call
