@@ -187,10 +187,11 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
             this test case on CPU'''
         if not test.is_gpu_available():
             self.skipTest("No GPU available")
-        optimizer = itex_AdamW(clipnorm=1)
-        grad = [np.array([100.0, 100.0])]
-        clipped_grad = optimizer._clip_gradients(grad)
-        self.assertAllClose(clipped_grad[0], [2**0.5 / 2, 2**0.5 / 2])
+        for dtype in DATA_TYPES:
+            optimizer = itex_AdamW(clipnorm=1)
+            grad = [np.array([100.0, 100.0], dtype=dtype.as_numpy_dtype)]
+            clipped_grad = optimizer._clip_gradients(grad)
+            self.assertAllClose(clipped_grad[0], [2**0.5 / 2, 2**0.5 / 2])
 
     def test_clip_value(self):
         '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
@@ -198,10 +199,11 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
             this test case on CPU'''
         if not test.is_gpu_available():
             self.skipTest("No GPU available")
-        optimizer = itex_AdamW(clipvalue=1)
-        grad = [np.array([100.0, 100.0])]
-        clipped_grad = optimizer._clip_gradients(grad)
-        self.assertAllClose(clipped_grad[0], [1.0, 1.0])
+        for dtype in DATA_TYPES:    
+            optimizer = itex_AdamW(clipvalue=1)
+            grad = [np.array([100.0, 100.0], dtype=dtype.as_numpy_dtype)]
+            clipped_grad = optimizer._clip_gradients(grad)
+            self.assertAllClose(clipped_grad[0], [1.0, 1.0])
 
 if __name__ == "__main__":
     test.main()
