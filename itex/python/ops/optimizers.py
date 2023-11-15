@@ -179,11 +179,10 @@ class AdamWithWeightDecayOptimizer(kerasoptimizer.Optimizer):
         var_key = self._var_key(variable)
         m = self._momentums[self._index_dict[var_key]]
         v = self._velocities[self._index_dict[var_key]]
-
-        alpha = lr * tf.sqrt(1 - beta_2_power) / (1 - beta_1_power)
         
         if isinstance(gradient, tf.IndexedSlices):
             # Sparse gradients.
+            alpha = lr * tf.sqrt(1 - beta_2_power) / (1 - beta_1_power)
             m.assign_add(-m * (1 - self.beta_1))
             m.scatter_add(
                 tf.IndexedSlices(
