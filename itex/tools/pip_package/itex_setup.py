@@ -66,7 +66,7 @@ if 'rc' in _VERSION:
   DEV_VERSION_SUFFIX = 'rc' + _VERSION.split("rc")[1]
   _VERSION = _VERSION.split("rc")[0]
 REQUIRED_PACKAGES.append('wheel')
-REQUIRED_PACKAGES.append('tensorflow>=2.14')
+REQUIRED_PACKAGES.append('tensorflow~=2.14.0')
 REQUIRED_PACKAGES.append('numpy<1.25')
 REQUIRED_PACKAGES.append('protobuf<4.24')
 REQUIRED_PACKAGES.append('absl-py==1.4.0')
