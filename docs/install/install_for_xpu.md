@@ -5,8 +5,8 @@ This guide shows how to use an Intel® Extension for TensorFlow* XPU package, wh
 ## Hardware Requirements
 
 Verified Hardware Platforms:
- - Intel® Data Center GPU Max Series, Driver Version: [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html)
- - Intel® Data Center GPU Flex Series 170, Driver Version: [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html)
+ - Intel® Data Center GPU Max Series, Driver Version: [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html)
+ - Intel® Data Center GPU Flex Series 170, Driver Version: [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html)
  - *Experimental:* Intel® Arc™ A-Series
 
 For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [Intel® Arc™ A-Series GPU Software Installation](experimental/install_for_arc_gpu.md) for details.
@@ -14,11 +14,11 @@ For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [I
 ## Software Requirements
 - Ubuntu 22.04, Red Hat 8.6 (64-bit)
   - Intel® Data Center GPU Flex Series
-- Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP3/SP4
+- Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP4/SP5
   - Intel® Data Center GPU Max Series
-- Intel® oneAPI Base Toolkit 2023.2
+- Intel® oneAPI Base Toolkit 2024.0
 - TensorFlow 2.14.0
-- Python 3.8-3.10
+- Python 3.9-3.11
 - pip 19.0 or later (requires manylinux2014 support)
 
 
@@ -26,8 +26,8 @@ For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [I
 
 |OS|Intel GPU|Install Intel GPU Driver|
 |-|-|-|
-|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.17.26241.33-647~22.04`|
-|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP3/SP4|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.17.26241.33-647~22.04`|
+|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.30.26918.50-736~22.04`|
+|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP4/SP5|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.30.26918.50-736~22.04`|
 
 ## Install via Docker container
 
@@ -73,10 +73,10 @@ Need to install components of Intel® oneAPI Base Toolkit:
 
 
 ```bash
-$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/992857b9-624c-45de-9701-f6445d845359/l_BaseKit_p_2023.2.0.49397_offline.sh
+$ wget https://registrationcenter-download.intel.com/akdlm//IRC_NAS/20f4e6a1-6b0b-4752-b8c1-e5eacba10e01/l_BaseKit_p_2024.0.0.49564.sh
 # 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL
 # if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too(Intel® oneAPI MPI Library will be installed automatically as its dependency)
-$ sudo sh l_BaseKit_p_2023.2.0.49397_offline.sh
+$ sudo sh l_BaseKit_p_2024.0.0.49564.sh
 ```
 
 For any more details, follow the procedure in https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html.

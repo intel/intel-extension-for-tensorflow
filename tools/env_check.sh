@@ -18,33 +18,38 @@ ubuntu_version_list[1.0.0]="20.04"
 ubuntu_version_list[1.1.0]="20.04 22.04"
 ubuntu_version_list[1.2.0]="20.04 22.04"
 ubuntu_version_list[2.13.0]="20.04 22.04"
-ubuntu_version_list[latest]="20.04 22.04"
+ubuntu_version_list[2.14.0]="22.04"
+ubuntu_version_list[latest]="22.04"
 
 declare -A redhat_version_list
 redhat_version_list[1.0.0]="8.5"
 redhat_version_list[1.1.0]="8.6"
 redhat_version_list[1.2.0]="8.6"
 redhat_version_list[2.13.0]="8.7 8.8"
-redhat_version_list[latest]="8.7 8.8"
+redhat_version_list[2.14.0]="8.6 8.8 9.0 9.2"
+redhat_version_list[latest]="8.6 8.8 9.0 9.2"
 
 declare -A sles_version_list
 sles_version_list[1.1.0]="15.3 15.4"
 sles_version_list[1.2.0]="15.3 15.4"
 sles_version_list[2.13.0]="15.3 15.4"
-sles_version_list[latest]="15.3 15.4"
+sles_version_list[2.14.0]="15.4 15.5"
+sles_version_list[latest]="15.4 15.5"
 
 declare -A min_python_version
 min_python_version[1.0.0]=7
 min_python_version[1.1.0]=7
 min_python_version[1.2.0]=8
 min_python_version[2.13.0]=8
-min_python_version[latest]=8
+min_python_version[2.14.0]=9
+min_python_version[latest]=9
 
 declare -A max_python_version
 max_python_version[1.0.0]=10
 max_python_version[1.1.0]=10
 max_python_version[1.2.0]=11
 max_python_version[2.13.0]=11
+max_python_version[2.14.0]=11
 max_python_version[latest]=11
 
 declare -A min_tensorflow_version
@@ -52,7 +57,8 @@ min_tensorflow_version[1.0.0]=10
 min_tensorflow_version[1.1.0]=10
 min_tensorflow_version[1.2.0]=12
 min_tensorflow_version[2.13.0]=13
-min_tensorflow_version[latest]=13
+min_tensorflow_version[2.14.0]=14
+min_tensorflow_version[latest]=14
 
 driver_list_for_ubuntu=(
   "intel-level-zero-gpu"
@@ -186,22 +192,53 @@ itex_1_3_driver_version_sles=(
   "22.3.5-i647"
 )
 
+# ITEX v2.14.0 GPU Driver Version
+itex_1_4_driver_version_ubuntu=(
+  "1.3.26918.50-736~22.04",
+  "23.30.26918.50-736~22.04",
+  "1.13.1-719~22.04",
+  "1.0.14828.26-736~22.04",
+  "1.0.14828.26-736~22.04",
+  "22.3.10-712~22.04"
+)
+
+itex_1_4_driver_version_rhel=(
+  "1.0.14828.26-736.el8",
+  "1.0.14828.26-736.el8",
+  "22.3.10-i721.el8",
+  "23.30.26918.50-736.el8",
+  "1.13.1-721.el8",
+  "1.13.1-721.el8"
+)
+
+itex_1_4_driver_version_sles=(
+  "1.3.26918.50-736",
+  "23.30.26918.50-736",
+  "1.13.1-i719",
+  "1.0.14828.26-736",
+  "1.0.14828.26-736",
+  "22.3.10-i712"
+)
+
 declare -A driver_version_ubuntu
 driver_version_ubuntu[1.0.0]=${itex_1_0_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.1.0]=${itex_1_1_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.2.0]=${itex_1_2_driver_version_ubuntu[@]}
 driver_version_ubuntu[2.13.0]=${itex_1_3_driver_version_ubuntu[@]}
+driver_version_ubuntu[2.14.0]=${itex_1_4_driver_version_ubuntu[@]}
 
 declare -A driver_version_rhel
 driver_version_rhel[1.0.0]=${itex_1_0_driver_version_rhel[@]}
 driver_version_rhel[1.1.0]=${itex_1_1_driver_version_rhel[@]}
 driver_version_rhel[1.2.0]=${itex_1_2_driver_version_rhel[@]}
 driver_version_rhel[1.3.0]=${itex_1_3_driver_version_rhel[@]}
+driver_version_rhel[1.4.0]=${itex_1_4_driver_version_rhel[@]}
 
 declare -A driver_version_sles
 driver_version_sles[1.1.0]=${itex_1_1_driver_version_sles[@]}
 driver_version_sles[1.2.0]=${itex_1_2_driver_version_sles[@]}
 driver_version_sles[1.3.0]=${itex_1_3_driver_version_sles[@]}
+driver_version_sles[1.4.0]=${itex_1_4_driver_version_sles[@]}
 
 itex_1_0_oneapi_version=(
   "2022.2.0-8734"
@@ -226,11 +263,19 @@ itex_1_3_oneapi_version=(
   "2021.10.0-49084"
 )
 
+itex_1_4_oneapi_version=(
+  "2024.0.0-49819"
+  "2024.0.0-49819"
+  "2021.11.0-49156"
+)
+
 declare -A oneapi_version
 oneapi_version[1.0.0]=${itex_1_0_oneapi_version[@]}
 oneapi_version[1.1.0]=${itex_1_1_oneapi_version[@]}
 oneapi_version[1.2.0]=${itex_1_2_oneapi_version[@]}
 oneapi_version[2.13.0]=${itex_1_3_oneapi_version[@]}
+oneapi_version[2.14.0]=${itex_1_4_oneapi_version[@]}
+
 
 tf_require_list=(
   "absl-py"
