@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Experimental: Intel® Arc™ A-Series GPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g2844f36 documentation</title>
+  <title>Experimental: Intel® Arc™ A-Series GPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g99defaa documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
@@ -114,7 +114,7 @@
 </li>
 <li><p>For Ubuntu Linux 22.04 within WSL2:</p>
 <ul>
-<li><p>Linux Runtime Libraries: Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a> (installation instructions below)</p></li>
+<li><p>Linux Runtime Libraries: Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a> (installation instructions below)</p></li>
 <li><p>Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)</p></li>
 <li><p>TensorFlow 2.14.0</p></li>
 <li><p>Python 3.8-3.11</p></li>
@@ -129,7 +129,7 @@
 <li><p>Ubuntu 22.04 (64-bit)</p></li>
 <li><p>Intel® GPU Drivers for Linux (installation instructions below)</p>
 <ul>
-<li><p>Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a></p></li>
+<li><p>Intel® Arc™ GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a></p></li>
 </ul>
 </li>
 <li><p>Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)</p></li>
@@ -179,7 +179,7 @@
 <tr>
 <td>Ubuntu 22.04 installed in WSL2</td>
 <td>Intel® Arc™ A-Series GPUs</td>
-<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please be sure to append the specific version after components, as is done below.</td>
+<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a>, please be sure to append the specific version after components, as is done below.</td>
 </tr>
 </tbody>
 </table><p>The steps to install the runtime components in Ubuntu Linux (within WSL2) are:</p>
@@ -234,12 +234,12 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 <tr>
 <td>Ubuntu 22.04</td>
 <td>Intel® Arc™ A-Series GPUs</td>
-<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb</code></td>
+<td>Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers <a href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb</code></td>
 </tr>
 </tbody>
 </table><p>The steps to install the runtime components in Ubuntu Linux are:</p>
 <ul>
-<li><p>The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html">Installation Guides for Intel Arc GPUs</a>. When installing the Intel® Arc™ A-Series GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html">647</a>, please be sure to append the specific version after components, such as <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb</span></code>|</p></li>
+<li><p>The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html">Installation Guides for Intel Arc GPUs</a>. When installing the Intel® Arc™ A-Series GPU Drivers <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a>, please be sure to append the specific version after components, such as <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">intel-opencl-icd_23.17.26241.33-647~22.04_.html64.deb</span></code>|</p></li>
 <li><p>Install the Intel® oneAPI libraries</p>
 <ul>
 <li><p>Add the Intel® oneAPI library repositories to your Ubuntu installation:</p>
@@ -321,10 +321,10 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 <li><p>Intel® oneAPI Math Kernel Library (oneMKL)</p></li>
 </ul>
 <p>Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://registrationcenter-download.intel.com/akdlm/IRC_NAS/992857b9-624c-45de-9701-f6445d845359/l_BaseKit_p_2023.2.0.49397_offline.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://registrationcenter-download.intel.com/akdlm//IRC_NAS/20f4e6a1-6b0b-4752-b8c1-e5eacba10e01/l_BaseKit_p_2024.0.0.49564.sh
 <span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Library and oneMKL</span>
 <span class="c1"># if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too (Intel® oneAPI MPI Library will be installed automatically as its dependency)</span>
-$<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>./l_BaseKit_p_2023.2.0.49397_offline.sh
+$<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>./l_BaseKit_p_2024.0.0.49564.sh
 </pre></div>
 </div>
 <p>For any more details, please follow the procedure in <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html">Intel® oneAPI Base Toolkit</a>.</p>
@@ -357,7 +357,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fdd4eefc610> 
+   <jinja2.runtime.BlockReference object at 0x7f05885d2560> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
