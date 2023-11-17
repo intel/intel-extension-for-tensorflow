@@ -33,7 +33,7 @@ except ImportError:
 # pylint: enable=g-import-not-at-top
 
 
-_DEFAULT_DPCPP_TOOLKIT_PATH = '/opt/intel/oneapi/compiler/latest/linux'
+_DEFAULT_DPCPP_TOOLKIT_PATH = '/opt/intel/oneapi/compiler/latest'
 _DEFAULT_MKL_PATH='/opt/intel/oneapi/mkl/latest'
 _DEFAULT_AOT_CONFIG = ''
 _DEFAULT_GCC_TOOLCHAIN_PATH = ''
