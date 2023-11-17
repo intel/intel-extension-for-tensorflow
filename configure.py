@@ -308,12 +308,12 @@ def setup_python(environ_cp):
         tf_major_version = version.split(".")[0]
         tf_minor_version = version.split(".")[1]
         write_to_bazelrc('build --define=tf_main_version=' + tf_major_version + '.' + tf_minor_version)
-        min_tf_version = convert_version_to_int("2.14.0")
+        min_tf_version = convert_version_to_int("2.15.0")
         if current_tensorflow_version < min_tf_version:
-          print('Make sure you installed tensorflow version >= 2.14.0')
+          print('Make sure you installed tensorflow version == 2.15.0')
           sys.exit(1)
     else:
-         print('Make sure you installed tensorflow version >= 2.14.0')
+         print('Make sure you installed tensorflow version == 2.15.0')
          sys.exit(1)
   # Write tools/python_bin_path.sh
   try:
