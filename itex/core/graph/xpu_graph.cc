@@ -131,10 +131,6 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
                    << "So can benefit from the optimization of the "
                       "MklCPUAllocator memory allocation.";
   }
-#else
-  // Set inter_op_parallelism_threads if it's not initialized.
-  // TODO(itex) remove this one to run OP in parallel
-  setenv("TF_NUM_INTEROP_THREADS", "1", 0);
 #endif  // INTEL_CPU_ONLY
 }
 
