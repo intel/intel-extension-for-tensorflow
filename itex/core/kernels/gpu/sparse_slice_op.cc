@@ -78,12 +78,10 @@ Status LaunchSparseSliceSelectKernel(const GPUDevice& d, const int dims,
     sycl::range<1> local_range(max_group_size);
     sycl::range<1> global_range(max_group_size * num_work_group);
 
-    d.stream()->submit([&](sycl::handler& cgh) {
-      SparseSliceSelectKernel task(dims, input_size, input_start_data,
-                                   input_size_data, input_indices, nonzeros);
-      cgh.parallel_for<SparseSliceSelectKernel>(
-          sycl::nd_range<1>(global_range, local_range), task);
-    });
+    SparseSliceSelectKernel task(dims, input_size, input_start_data,
+                                 input_size_data, input_indices, nonzeros);
+    cgh.parallel_for<SparseSliceSelectKernel>(
+        sycl::nd_range<1>(global_range, local_range), task);
   };
 
   d.stream()->submit(std::move(compute));
