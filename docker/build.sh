@@ -29,7 +29,7 @@ then
                                 --build-arg MKL_VER=2023.2.0-49495 \
                                 --build-arg CCL_VER=2021.10.0-49084 \
                                 --build-arg PYTHON=python3.10 \
-                                --build-arg TF_VER=2.13 \
+                                --build-arg TF_VER=2.14 \
                                 --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
 				-f itex-xpu.Dockerfile .
@@ -37,7 +37,7 @@ else
         IMAGE_NAME=intel-extension-for-tensorflow:$IMAGE_TYPE
         docker build --no-cache --build-arg UBUNTU_VERSION=22.04 \
                                 --build-arg PYTHON=python3.10 \
-                                --build-arg TF_VER=2.13 \
+                                --build-arg TF_VER=2.14 \
                                 --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
                                 -f itex-cpu.Dockerfile .
