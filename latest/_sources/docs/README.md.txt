@@ -41,10 +41,11 @@
   </thead>
   <tbody>
     <tr>
-        <td colspan="3" align="center"><a href="guide/environment_variables.html">Environment variables</a></td>
-		<td colspan="3" align="center"><a href="guide/python_api.html">Python API</a></td>
-        <td colspan="3" align="center"><a href="guide/advanced_auto_mixed_precision.html">Advanced auto mixed precision</a></td>
-        <td colspan="3" align="center"><a href="guide/itex_fusion.html">Graph optimization</a></td>
+        <td colspan="2" align="center"><a href="guide/environment_variables.html">Environment variables</a></td>
+		<td colspan="2" align="center"><a href="guide/python_api.html">Python API</a></td>
+        <td colspan="4" align="center"><a href="guide/advanced_auto_mixed_precision.html">Advanced auto mixed precision</a></td>
+        <td colspan="2" align="center"><a href="guide/itex_fusion.html">Graph optimization</a></td>
+        <td colspan="2" align="center"><a href="guide/threadpool.html">CPU Thread Pool</a></td>
     </tr>
     <tr>
     	<td colspan="2" align="center"><a href="guide/itex_ops.html">Custom operator</a></td>
@@ -98,6 +99,10 @@
 * Graph optimization
 
   Intel® Extension for TensorFlow\* provides graph optimization to fuse specific operator patterns to a new single operator for better performance, such as `Conv2D+ReLU` or `Linear+ReLU`.  The benefits of the fusions are delivered to users in a transparent fashion.
+
+* CPU Thread Pool
+
+  Intel® Extension for TensorFlow\* uses OMP thread pool by default since it has better performance and scaling for most cases. For workloads with large inter-op concurrency, you can switch to use Eigen thread pool (default in TensorFlow) by setting the environment variable `ITEX_OMP_THREADPOOL=0`.
 
 * Operator optimization
 
