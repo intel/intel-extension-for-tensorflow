@@ -39,9 +39,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf  /var/lib/apt/lists/*
 
-RUN wget -qO - https://repositories.intel.com/graphics/intel-graphics.key | \
+RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
     gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy max" | \
+RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy unified" | \
     tee /etc/apt/sources.list.d/intel-gpu-jammy.list
 
 ARG ICD_VER
@@ -94,7 +94,7 @@ RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python3
 
-ARG TF_VER="2.13"
+ARG TF_VER="2.14"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 
