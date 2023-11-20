@@ -20,13 +20,13 @@ Hardware Platforms with Experimental Only Support:
 
 - For [Windows 10](https://www.microsoft.com/en-us/windows/get-windows-10) or [Windows 11](https://www.microsoft.com/en-us/windows/windows-11):
     - [Windows Subystem for Linux 2](https://learn.microsoft.com/en-us/windows/wsl/about) (WSL2) with Ubuntu 22.04 (64-bit)
-    - Windows GPU Drivers: [Intel® Arc™ Graphics Windows Driver 31.0.101.4255](https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html) or later (installation instructions below)
+    - Windows GPU Drivers: [Intel® Arc™ Graphics Windows Driver 31.0.101.4953](https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html) or later (installation instructions below)
 
 - For Ubuntu Linux 22.04 within WSL2:
     - Linux Runtime Libraries: Intel® Arc™ GPU Drivers [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html) (installation instructions below)
-    - Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)
+    - Intel® oneAPI Base Toolkit 2024.0 (installation instructions below)
     - TensorFlow 2.14.0
-    - Python 3.8-3.11
+    - Python 3.9-3.11
     - pip 19.0 or later (requires manylinux2014 support)
 
 ### Native Linux Running Directly on Hardware
@@ -34,9 +34,9 @@ Hardware Platforms with Experimental Only Support:
 - Ubuntu 22.04 (64-bit)
 - Intel® GPU Drivers for Linux (installation instructions below)
     - Intel® Arc™ GPU Drivers [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html)
-- Intel® oneAPI Base Toolkit 2023.2 (installation instructions below)
+- Intel® oneAPI Base Toolkit 2024.0 (installation instructions below)
 - TensorFlow 2.14.0
-- Python 3.8-3.11
+- Python 3.9-3.11
 - pip 19.0 or later (requires manylinux2014 support)
 
 ## Step-By-Step Instructions
@@ -53,7 +53,7 @@ When using WSL2, the GPU drivers are installed in the Windows OS and runtime com
 
 |OS|Intel GPU|Install Intel GPU Driver|
 |-|-|-|
-|Windows 10, Windows 11|Intel® Arc™ A-Series GPUs|[Intel® Arc™ Graphics Windows DCH Driver](https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html)|
+|Windows 10, Windows 11|Intel® Arc™ A-Series GPUs|[Intel® Arc™ Graphics Windows Driver 31.0.101.4953](https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html)|
 
 Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.
 
@@ -70,8 +70,8 @@ The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
 
     ```bash
     sudo apt-get install -y gpg-agent wget
-    wget -qO - https://repositories.intel.com/graphics/intel-graphics.key | sudo gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-    echo 'deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/graphics/ubuntu jammy arc' | sudo tee  /etc/apt/sources.list.d/intel.gpu.jammy.list
+    wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | sudo gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
+    echo "deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy client" | sudo tee  /etc/apt/sources.list.d/intel.gpu.jammy.list
     sudo apt-get update
     ```
 
@@ -79,13 +79,13 @@ The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
 
     ```bash
     sudo apt-get install \
-        intel-opencl-icd=23.17.26241.33-647~22.04 \
-        intel-level-zero-gpu=1.3.26241.33-647~22.04 \
-        level-zero=1.11.0-647~22.04 \
-        intel-igc-cm=1.0.176-647~22.04 \
-        libigc1=1.0.13822.8-647~22.04 \
-        libigdfcl1=1.0.13822.8-647~22.04 \
-        libigdgmm12=22.3.5-647~22.04
+        intel-igc-cm=1.0.206-736~22.04 \
+        intel-level-zero-gpu=1.3.26918.50-736~22.04 \
+        intel-opencl-icd=23.30.26918.50-736~22.04 \
+        level-zero=1.13.1-719~22.04 \
+        libigc1=1.0.14828.26-736~22.04 \
+        libigdfcl1=1.0.14828.26-736~22.04 \
+        libigdgmm12=22.3.10-712~22.04
     ```
 
 - Add the Intel® oneAPI library repositories to your Ubuntu installation:
@@ -109,11 +109,11 @@ The above commands install only runtime libraries for Intel® oneAPI that are us
 
 |OS|Intel GPU|Install Intel GPU Driver|
 |-|-|-|
-|Ubuntu 22.04|Intel® Arc™ A-Series GPUs| Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb`|
+|Ubuntu 22.04|Intel® Arc™ A-Series GPUs| Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd=23.30.26918.50-736~22.04`|
 
 The steps to install the runtime components in Ubuntu Linux are:
 
-- The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in [Installation Guides for Intel Arc GPUs](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html). When installing the Intel® Arc™ A-Series GPU Drivers [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please be sure to append the specific version after components, such as `sudo apt-get install intel-opencl-icd_23.17.26241.33-647~22.04_amd64.deb`|
+- The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in [Installation Guides for Intel Arc GPUs](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-arc.html). When installing the Intel® Arc™ A-Series GPU Drivers [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please be sure to append the specific version after components, such as `sudo apt-get install intel-opencl-icd=23.30.26918.50-736~22.04`|
 
 - Install the Intel® oneAPI libraries
 
@@ -169,18 +169,15 @@ The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version
 
 ### 3. Install Intel® Extension for TensorFlow*
 
-To install a GPU version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
+To install an XPU version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
 
 ```bash
 (tf)$ pip install --upgrade intel-extension-for-tensorflow[xpu]
 ```
 
-To install a `weekly` GPU-only version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run
-
-
-Check the environment for GPU:
+Check the environment for XPU:
 ```bash
-(tf)$ bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+(tf)$ bash /path-to-site-packages/intel_extension_for_tensorflow/tools/env_check.sh
 ```
 
 ### 4. Verify the Installation 
@@ -203,7 +200,7 @@ If you prefer to have access to full Intel® oneAPI, you need to install at leas
 Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.
 
 ```bash
-$ wget https://registrationcenter-download.intel.com/akdlm//IRC_NAS/20f4e6a1-6b0b-4752-b8c1-e5eacba10e01/l_BaseKit_p_2024.0.0.49564.sh
+$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/20f4e6a1-6b0b-4752-b8c1-e5eacba10e01/l_BaseKit_p_2024.0.0.49564.sh
 # 3 components are necessary: DPC++/C++ Compiler, DPC++ Library and oneMKL
 # if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too (Intel® oneAPI MPI Library will be installed automatically as its dependency)
 $ sudo sh ./l_BaseKit_p_2024.0.0.49564.sh
