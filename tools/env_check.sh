@@ -647,7 +647,7 @@ EOM
   check_os
   check_tensorflow
 
-  if [ ${itex_lib_version: -1} -eq 1 ]; then
+  if [ ${itex_lib_version: -1} -ge 1 ]; then
     check_intel_gpu_driver
     check_intel_oneapi
   fi
