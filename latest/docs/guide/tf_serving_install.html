@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Install TensorFlow Serving with Intel® Extension for TensorFlow* &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g901c0b4 documentation</title>
+  <title>Install TensorFlow Serving with Intel® Extension for TensorFlow* &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1db4294 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -174,7 +174,7 @@
 <span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">tensorflow</span>
 
 <span class="c1"># checkout specific commit id</span>
-<span class="n">cd</span> <span class="n">tensorflow</span>   
+<span class="n">cd</span> <span class="n">tensorflow</span>
 <span class="n">git</span> <span class="n">checkout</span> <span class="n">xxxxx</span>
 </pre></div>
 </div>
@@ -210,15 +210,8 @@
 </li>
 <li><p>Patch TensorFlow Serving</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">serving</span>
-<span class="n">patch</span> <span class="o">-</span><span class="n">p1</span> <span class="o">-</span><span class="n">i</span> <span class="o">../</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">third_party</span><span class="o">/</span><span class="n">tf_serving</span><span class="o">/</span><span class="n">serving_plugin</span><span class="o">.</span><span class="n">patch</span>
-</pre></div>
-</div>
-</li>
-<li><p>Update <code class="docutils literal notranslate"><span class="pre">serving/WORKSPACE</span></code> to use local TensorFlow<br />Replace L24-L29 with below code to use local TensorFlow: https://github.com/tensorflow/serving/blob/master/WORKSPACE#L24</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_repository</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span> <span class="s2">&quot;org_tensorflow&quot;</span><span class="p">,</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;path to local tensorflow source code&quot;</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">r2</span><span class="mf">.14</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="o">../</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">third_party</span><span class="o">/</span><span class="n">tf_serving</span><span class="o">/</span><span class="n">serving_plugin</span><span class="o">.</span><span class="n">patch</span>
 </pre></div>
 </div>
 </li>
@@ -374,7 +367,7 @@ plugin library &quot;/itex/itex-bazel-bin/bin/itex/libitex_gpu_cc.so&quot; load 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5cdce79ff0> 
+   <jinja2.runtime.BlockReference object at 0x7fba356aa4d0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

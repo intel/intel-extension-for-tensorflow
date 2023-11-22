@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* Serving - Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g901c0b4 documentation</title>
+  <title>Intel® Extension for TensorFlow* Serving - Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1db4294 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -98,12 +98,14 @@
 <p>To build the docker container, enter into <a class="reference external" href="./">docker/tensorflow-serving</a> folder and follow these steps.</p>
 <section id="i-binaries-preparation">
 <h3>I. Binaries Preparation<a class="headerlink" href="#i-binaries-preparation" title="Permalink to this heading"></a></h3>
-<p>Refer to <a class="reference external" href="../../docs/guide/tensorflow_serving.html">Install for Tensorflow Serving</a> to build the TensorFlow Serving binary, and refer to <a class="reference external" href="../../docs/install/install_for_cpp.html">Install for CPP</a> to build the Intel® Extension for TensorFlow* CC library from source. Then package and copy these binaries into the <code class="docutils literal notranslate"><span class="pre">./models/binaries</span></code> directory, as shown below.</p>
+<p>Refer to <a class="reference external" href="../../docs/guide/tf_serving_install.html">Install for Tensorflow Serving</a> to build the TensorFlow Serving binary, and refer to <a class="reference external" href="../../docs/install/install_for_cpp.html">Install for CPP</a> to build the Intel® Extension for TensorFlow* CC library from source. Then package and copy these binaries into the <code class="docutils literal notranslate"><span class="pre">./models/binaries</span></code> directory, as shown below.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>./models/binaries
 
 <span class="c1"># Package and copy Intel® Extension for TensorFlow* CC library</span>
 mkdir<span class="w"> </span>-p<span class="w"> </span>itex-bazel-bin/
 cp<span class="w"> </span>-r<span class="w"> </span>&lt;path_to_itex&gt;/bazel-out/k8-opt-ST-*/bin/<span class="w"> </span>itex-bazel-bin/
+<span class="c1"># if you build with threadpool</span>
+cp<span class="w"> </span>-r<span class="w"> </span>&lt;path_to_itex&gt;/bazel-out/k8-opt-ST-*/bin/<span class="w"> </span>itex-bazel-bin/bin_threadpool/
 tar<span class="w"> </span>cvfh<span class="w"> </span>itex-bazel-bin.tar<span class="w"> </span>itex-bazel-bin/
 cp<span class="w"> </span>itex-bazel-bin.tar<span class="w">  </span>./models/binaries/
 
@@ -146,6 +148,7 @@ docker run -v &lt;your-local-dir&gt;:/workspace \
            $IMAGE_NAME
 </pre></div>
 </div>
+<p>NOTE: If you want to run docker with threadpool, you should add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">ITEX_OMP_THREADPOOL=0</span></code></p>
 </section>
 </section>
 
@@ -163,7 +166,7 @@ docker run -v &lt;your-local-dir&gt;:/workspace \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5cdce26860> 
+   <jinja2.runtime.BlockReference object at 0x7fba358a5f60> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

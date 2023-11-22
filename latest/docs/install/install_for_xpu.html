@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g901c0b4 documentation</title>
+  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g1db4294 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -199,11 +199,11 @@ $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-
 <p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">xpu</span></code>) to your local machine and set the required environment variables after creating the container by the following command.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:xpu
 $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:xpu
-$ export LD_LIBRARY_PATH=/opt/intel/oneapi/lib:/opt/intel/oneapi/lib/intel64:/opt/intel/oneapi/lib/intel64/libfabric:$LD_LIBRARY_PATH
-$ export PATH=/opt/intel/oneapi/lib/intel64/bin:$PATH
-$ export I_MPI_ROOT=/opt/intel/oneapi/lib/intel64/
-$ export CCL_ROOT=/opt/intel/oneapi/lib/intel64/
-$ export FI_PROVIDER_PATH=/opt/intel/oneapi/lib/intel64/libfabric/
+$ export LD_LIBRARY_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib:$LD_LIBRARY_PATH
+$ export PATH=/opt/intel/oneapi/redist/bin:$PATH
+$ export I_MPI_ROOT=/opt/intel/oneapi/redist/lib
+$ export CCL_ROOT=/opt/intel/oneapi/redist
+$ export FI_PROVIDER_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib/prov
 </pre></div>
 </div>
 <p>Then go to your browser on http://localhost:8888/</p>
@@ -328,7 +328,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5cdce6f700> 
+   <jinja2.runtime.BlockReference object at 0x7fba358a9e10> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -10,7 +10,7 @@ To build the docker container, enter into [docker/tensorflow-serving](./) folder
 
 ### I. Binaries Preparation
 
-Refer to [Install for Tensorflow Serving](../../docs/guide/tensorflow_serving.html) to build the TensorFlow Serving binary, and refer to [Install for CPP](../../docs/install/install_for_cpp.html) to build the Intel® Extension for TensorFlow* CC library from source. Then package and copy these binaries into the `./models/binaries` directory, as shown below.
+Refer to [Install for Tensorflow Serving](../../docs/guide/tf_serving_install.html) to build the TensorFlow Serving binary, and refer to [Install for CPP](../../docs/install/install_for_cpp.html) to build the Intel® Extension for TensorFlow* CC library from source. Then package and copy these binaries into the `./models/binaries` directory, as shown below.
 
 ```bash
 mkdir -p ./models/binaries
@@ -18,6 +18,8 @@ mkdir -p ./models/binaries
 # Package and copy Intel® Extension for TensorFlow* CC library
 mkdir -p itex-bazel-bin/
 cp -r <path_to_itex>/bazel-out/k8-opt-ST-*/bin/ itex-bazel-bin/
+# if you build with threadpool
+cp -r <path_to_itex>/bazel-out/k8-opt-ST-*/bin/ itex-bazel-bin/bin_threadpool/
 tar cvfh itex-bazel-bin.tar itex-bazel-bin/
 cp itex-bazel-bin.tar  ./models/binaries/
 
@@ -61,3 +63,4 @@ docker run -v <your-local-dir>:/workspace \
            -it \
            $IMAGE_NAME
 ```
+NOTE: If you want to run docker with threadpool, you should add `-e ITEX_OMP_THREADPOOL=0`
