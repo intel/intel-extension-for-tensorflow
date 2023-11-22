@@ -52,11 +52,11 @@ To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Comm
 ```
 $ docker pull intel/intel-extension-for-tensorflow:xpu
 $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:xpu
-$ export LD_LIBRARY_PATH=/opt/intel/oneapi/lib:/opt/intel/oneapi/lib/intel64:/opt/intel/oneapi/lib/intel64/libfabric:$LD_LIBRARY_PATH
-$ export PATH=/opt/intel/oneapi/lib/intel64/bin:$PATH
-$ export I_MPI_ROOT=/opt/intel/oneapi/lib/intel64/
-$ export CCL_ROOT=/opt/intel/oneapi/lib/intel64/
-$ export FI_PROVIDER_PATH=/opt/intel/oneapi/lib/intel64/libfabric/
+$ export LD_LIBRARY_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib:$LD_LIBRARY_PATH
+$ export PATH=/opt/intel/oneapi/redist/bin:$PATH
+$ export I_MPI_ROOT=/opt/intel/oneapi/redist/lib
+$ export CCL_ROOT=/opt/intel/oneapi/redist
+$ export FI_PROVIDER_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib/prov
 ```
 
 Then go to your browser on http://localhost:8888/
