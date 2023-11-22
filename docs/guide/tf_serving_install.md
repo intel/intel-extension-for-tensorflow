@@ -42,7 +42,7 @@ The generated `libitex_cpu_cc.so` or `libitex_gpu_cc.so` binary are found in the
     git clone https://github.com/tensorflow/tensorflow
 
     # checkout specific commit id
-    cd tensorflow   
+    cd tensorflow
     git checkout xxxxx
     ```
   - Add `alwayslink=1` for `kernels_experimental` library in local `tensorflow/tensorflow/c/BUILD` file:
@@ -72,15 +72,8 @@ The generated `libitex_cpu_cc.so` or `libitex_gpu_cc.so` binary are found in the
   - Patch TensorFlow Serving
     ```
     cd serving
-    patch -p1 -i ../intel-extension-for-tensorflow/third_party/tf_serving/serving_plugin.patch
-    ```
-  - Update `serving/WORKSPACE` to use local TensorFlow  
-    Replace L24-L29 with below code to use local TensorFlow: https://github.com/tensorflow/serving/blob/master/WORKSPACE#L24   
-    ```
-    local_repository(
-        name= "org_tensorflow",
-        path = "path to local tensorflow source code",
-    )
+    git checkout r2.14
+    git apply ../intel-extension-for-tensorflow/third_party/tf_serving/serving_plugin.patch
     ```
 
 - Build TensorFlow Serving

@@ -181,6 +181,12 @@ For CPU support
 $ bazel build -c opt --config=cpu //itex:libitex_cpu_cc.so
 ```
 
+If you want to build with threadpool, you should add buid options `--define=build_with_threadpool=true` and environment variables `ITEX_OMP_THREADPOOL=0`
+
+```bash
+$ bazel build -c opt --config=cpu --define=build_with_threadpool=true //itex:libitex_cpu_cc.so
+```
+
 CC library location: `<Path to intel-extension-for-tensorflow>/bazel-bin/itex/libitex_cpu_cc.so`
 
 NOTE: `libitex_cpu_cc.so` is depended on `libiomp5.so`, so `libiomp5.so` shoule be copied to the same diretcory of `libitex_cpu_cc.so`

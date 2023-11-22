@@ -57,10 +57,16 @@ RUN mkdir -p ${MODEL_BASE_PATH}
 ENV MODEL_NAME=my_model
 RUN mkdir -p ${MODEL_BASE_PATH}/${MODEL_NAME}
 
+ENV ITEX_OMP_THREADPOOL=1
 RUN echo '#!/bin/bash \n\n\
+if [ ${ITEX_OMP_THREADPOOL} == 1 ]; then \n\
+    DIR=/itex/itex-bazel-bin/bin/itex \n\
+else \n\
+    DIR=/itex/itex-bazel-bin/bin_threadpool/itex \n\
+fi \n\
 /usr/local/bin/tensorflow_model_server --port=8500 --rest_api_port=8501 \
 --model_name=${MODEL_NAME} --model_base_path=${MODEL_BASE_PATH}/${MODEL_NAME} \
---tensorflow_plugins=/itex/itex-bazel-bin/bin/itex \
+--tensorflow_plugins=${DIR} \
 "$@"' > /usr/bin/tf_serving_entrypoint.sh \
 && chmod +x /usr/bin/tf_serving_entrypoint.sh
 
