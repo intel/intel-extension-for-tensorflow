@@ -514,7 +514,7 @@ check_intel_oneapi() {
           installed_status_oneapi "libsycl.so" "Intel(R) oneAPI DPC++/C++ Compiler" "CMPLR_ROOT" ${current_oneapi_list[0]}
           ;;
         mkl)
-          installed_status_oneapi "libmkl_sycl.so" "Intel(R) oneAPI Math Kernel Library" "MKLROOT" ${current_oneapi_list[1]}
+          installed_status_oneapi "libmkl_sycl.*.so" "Intel(R) oneAPI Math Kernel Library" "MKLROOT" ${current_oneapi_list[1]}
           ;;
         ccl)
           if [[ ${IS_DETAIL} -eq 1 ]]; then
