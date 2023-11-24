@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU &mdash; Intel® Extension for TensorFlow* v2.14.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.14.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Accelerate ResNet50 Training by XPUAutoShard on Intel GPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/train_resnet50_with_autoshard/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="accelerate-resnet50-training-by-xpuautoshard-on-intel-gpu">
+<h1>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU<a class="headerlink" href="#accelerate-resnet50-training-by-xpuautoshard-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>The XPUAutoShard feature of Intel® Extension for TensorFlow* automatically shards the input data to the Intel® GPU devices. Currently, it supports applying the shards on multiple GPU tiles to maximize the hardware utilization and improve performance.</p>
+<p>This example shows ResNet50 training speedup with XPUAutoShard enabled.</p>
+</section>
+<section id="hardware-requirements">
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<p>Verified Hardware Platforms:</p>
+<ul class="simple">
+<li><p>Intel® Data Center GPU Max Series</p></li>
+</ul>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<p>This example only applies to stock TensorFlow* &gt;=2.13.0 and Intel® Extension for TensorFlow* &gt;=2.13.0.0.</p>
+<section id="prepare-the-codes">
+<h3>Prepare the Codes<a class="headerlink" href="#prepare-the-codes" title="Permalink to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tensorflow/models<span class="w"> </span>tf-models
+<span class="nb">cd</span><span class="w"> </span>tf-models
+git<span class="w"> </span>checkout<span class="w"> </span>r2.13.0
+git<span class="w"> </span>apply<span class="w"> </span>../shard.patch
+</pre></div>
+</div>
+</section>
+<section id="prepare-for-gpu">
+<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a></p>
+</section>
+<section id="install-other-required-packages">
+<h3>Install Other Required Packages<a class="headerlink" href="#install-other-required-packages" title="Permalink to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>official/requirements.txt
+</pre></div>
+</div>
+</section>
+<section id="enable-running-environment">
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="../common_guide_running.html#running">Running</a> to enable oneAPI running environment and virtual running environment.</p>
+</section>
+<section id="setup-pythonpath">
+<h3>Setup PYTHONPATH<a class="headerlink" href="#setup-pythonpath" title="Permalink to this heading"></a></h3>
+<p>Modify <code class="docutils literal notranslate"><span class="pre">/path/to/tf-models</span></code> accordingly, here <code class="docutils literal notranslate"><span class="pre">~/tf-models</span></code> as an example.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>official/legacy/image_classification/resnet/
+mkdir<span class="w"> </span>output
+<span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:/path/to/tf-models:<span class="nv">$PWD</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="executes-the-example-with-python-api">
+<h2>Executes the Example with Python API<a class="headerlink" href="#executes-the-example-with-python-api" title="Permalink to this heading"></a></h2>
+<section id="without-xpuautoshard">
+<h3>Without XPUAutoShard<a class="headerlink" href="#without-xpuautoshard" title="Permalink to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTEROP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;<span class="w"> </span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTRAOP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">BS</span><span class="o">=</span><span class="m">256</span>
+python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span><span class="se">\</span>
+--num_gpus<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--batch_size<span class="o">=</span><span class="nv">$BS</span><span class="w"> </span><span class="se">\</span>
+--train_epochs<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--train_steps<span class="o">=</span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+--steps_per_loop<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--log_steps<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--skip_eval<span class="w"> </span><span class="se">\</span>
+--use_synthetic_data<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+--distribution_strategy<span class="o">=</span>off<span class="w"> </span><span class="se">\</span>
+--use_tf_while_loop<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+--use_tf_function<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--enable_xla<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+--enable_tensorboard<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--enable_checkpoint_and_export<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+--data_format<span class="o">=</span>channels_last<span class="w"> </span>--single_l2_loss_op<span class="o">=</span>True<span class="w"> </span><span class="se">\</span>
+--model_dir<span class="o">=</span>output<span class="w"> </span><span class="se">\</span>
+--dtype<span class="o">=</span>bf16<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>resnet50.log
+</pre></div>
+</div>
+</section>
+<section id="with-xpuautoshard">
+<h3>With XPUAutoShard<a class="headerlink" href="#with-xpuautoshard" title="Permalink to this heading"></a></h3>
+<section id="python-api">
+<h4>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h4>
+<p>Intel® Extension for TensorFlow* provides Python APIs to enable XPUAutoShard feature as follws:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">config</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ShardingConfig</span><span class="p">()</span>
+<span class="n">config</span><span class="o">.</span><span class="n">auto_mode</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">device_gpu</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">add</span><span class="p">()</span>
+<span class="n">device_gpu</span><span class="o">.</span><span class="n">device_type</span> <span class="o">=</span> <span class="s2">&quot;gpu&quot;</span>
+<span class="n">device_gpu</span><span class="o">.</span><span class="n">device_num</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">device_gpu</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">256</span>
+<span class="n">device_gpu</span><span class="o">.</span><span class="n">stage_num</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">graph_opts</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">sharding</span><span class="o">=</span><span class="n">itex</span><span class="o">.</span><span class="n">ON</span><span class="p">,</span> <span class="n">sharding_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
+<span class="n">itex_cfg</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span><span class="n">graph_options</span><span class="o">=</span><span class="n">graph_opts</span><span class="p">)</span>
+<span class="n">itex</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span><span class="n">itex_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="sharding-parameters-setting">
+<h4>Sharding Parameters Setting<a class="headerlink" href="#sharding-parameters-setting" title="Permalink to this heading"></a></h4>
+<p>In this example, the above code has been added to <code class="docutils literal notranslate"><span class="pre">resnet_ctl_imagenet_main.py</span></code> with the patch and you can enable XPUAutoShard via simply adding <code class="docutils literal notranslate"><span class="pre">--use_itex_sharding=True</span></code> to the command-line. You can optionally modify the following parameters in the <code class="docutils literal notranslate"><span class="pre">ShardingConfig</span></code> based on your need.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Prameters</th>
+<th>Config Suggestions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>device_num</td>
+<td>2 for Intel® Data Center GPU Max Series with 2 tiles</td>
+</tr>
+<tr>
+<td>batch_size</td>
+<td>batch size on each device in each loop of each iteration</td>
+</tr>
+<tr>
+<td>stage_num</td>
+<td>number of training loops on each device with each iteration <br> before the All-reduce and weight updating on GPU devices, <br> set it &gt;=2 to improve scaling efficiency</td>
+</tr>
+</tbody>
+</table><p>The global batch size should be <code class="docutils literal notranslate"><span class="pre">device_num</span></code> * <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> * <code class="docutils literal notranslate"><span class="pre">stage_num</span></code>. In this example, the default global batch size is 2x256x10=5120.</p>
+</section>
+<section id="further-settings">
+<h4>Further Settings<a class="headerlink" href="#further-settings" title="Permalink to this heading"></a></h4>
+<p>For further performance speedup, you can enable multi-stream via setting <code class="docutils literal notranslate"><span class="pre">ITEX_ENABLE_MULTIPLE_STREAM=1</span></code> to create multiple queues for each device.</p>
+</section>
+<section id="executing-command">
+<h4>Executing Command<a class="headerlink" href="#executing-command" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTEROP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;<span class="w"> </span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTRAOP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">BS</span><span class="o">=</span><span class="m">5120</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ITEX_ENABLE_MULTIPLE_STREAM</span><span class="o">=</span><span class="m">1</span>
+python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span><span class="se">\</span>
+--num_gpus<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--batch_size<span class="o">=</span><span class="nv">$BS</span><span class="w"> </span><span class="se">\</span>
+--train_epochs<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--train_steps<span class="o">=</span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+--steps_per_loop<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--log_steps<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+--skip_eval<span class="w"> </span><span class="se">\</span>
+--use_synthetic_data<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+--distribution_strategy<span class="o">=</span>off<span class="w"> </span><span class="se">\</span>
+--use_tf_while_loop<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+--use_tf_function<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--enable_xla<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+--enable_tensorboard<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--enable_checkpoint_and_export<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+--data_format<span class="o">=</span>channels_last<span class="w"> </span>--single_l2_loss_op<span class="o">=</span>True<span class="w"> </span><span class="se">\</span>
+--model_dir<span class="o">=</span>output<span class="w"> </span><span class="se">\</span>
+--dtype<span class="o">=</span>bf16<span class="w"> </span><span class="se">\</span>
+--use_itex_sharding<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>resnet50_itex-shard.log
+</pre></div>
+</div>
+<p>The following output log indicates XPUAutoShard has been enabled successfully:<br>
+<code class="docutils literal notranslate"><span class="pre">I</span> <span class="pre">itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.cc:280]</span> <span class="pre">Run</span> <span class="pre">AutoShard</span> <span class="pre">pass</span> <span class="pre">successfully</span></code></p>
+</section>
+</section>
+</section>
+<section id="example-output">
+<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
+<p>With successful execution, it will print out the following results:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">20.594147</span> <span class="mi">140348344015936</span> <span class="n">keras_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">145</span><span class="p">]</span> <span class="n">TimeHistory</span><span class="p">:</span> <span class="n">xxxxx</span> <span class="n">seconds</span><span class="p">,</span> <span class="n">xxxxx</span> <span class="n">examples</span><span class="o">/</span><span class="n">second</span> <span class="n">between</span> <span class="n">steps</span> <span class="mi">0</span> <span class="ow">and</span> <span class="mi">1</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">20.597360</span> <span class="mi">140348344015936</span> <span class="n">controller</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">479</span><span class="p">]</span> <span class="n">train</span> <span class="o">|</span> <span class="n">step</span><span class="p">:</span>      <span class="mi">1</span> <span class="o">|</span> <span class="n">steps</span><span class="o">/</span><span class="n">sec</span><span class="p">:</span>    <span class="n">xxxxx</span> <span class="o">|</span> <span class="n">output</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;train_accuracy&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="mf">12.634554</span><span class="p">}</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">22.161625</span> <span class="mi">140348344015936</span> <span class="n">keras_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">145</span><span class="p">]</span> <span class="n">TimeHistory</span><span class="p">:</span> <span class="n">xxxxx</span> <span class="n">seconds</span><span class="p">,</span> <span class="n">xxxxx</span> <span class="n">examples</span><span class="o">/</span><span class="n">second</span> <span class="n">between</span> <span class="n">steps</span> <span class="mi">1</span> <span class="ow">and</span> <span class="mi">2</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">22.163815</span> <span class="mi">140348344015936</span> <span class="n">controller</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">479</span><span class="p">]</span> <span class="n">train</span> <span class="o">|</span> <span class="n">step</span><span class="p">:</span>      <span class="mi">2</span> <span class="o">|</span> <span class="n">steps</span><span class="o">/</span><span class="n">sec</span><span class="p">:</span>    <span class="n">xxxxx</span> <span class="o">|</span> <span class="n">output</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;train_accuracy&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="mf">12.634554</span><span class="p">}</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">23.790632</span> <span class="mi">140348344015936</span> <span class="n">keras_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">145</span><span class="p">]</span> <span class="n">TimeHistory</span><span class="p">:</span> <span class="n">xxxxx</span> <span class="n">seconds</span><span class="p">,</span> <span class="n">xxxxx</span> <span class="n">examples</span><span class="o">/</span><span class="n">second</span> <span class="n">between</span> <span class="n">steps</span> <span class="mi">2</span> <span class="ow">and</span> <span class="mi">3</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">23.792936</span> <span class="mi">140348344015936</span> <span class="n">controller</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">479</span><span class="p">]</span> <span class="n">train</span> <span class="o">|</span> <span class="n">step</span><span class="p">:</span>      <span class="mi">3</span> <span class="o">|</span> <span class="n">steps</span><span class="o">/</span><span class="n">sec</span><span class="p">:</span>    <span class="n">xxxxx</span> <span class="o">|</span> <span class="n">output</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;train_accuracy&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="mf">9.103148</span><span class="p">}</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">25.416651</span> <span class="mi">140348344015936</span> <span class="n">keras_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">145</span><span class="p">]</span> <span class="n">TimeHistory</span><span class="p">:</span> <span class="n">xxxxx</span> <span class="n">seconds</span><span class="p">,</span> <span class="n">xxxxx</span> <span class="n">examples</span><span class="o">/</span><span class="n">second</span> <span class="n">between</span> <span class="n">steps</span> <span class="mi">3</span> <span class="ow">and</span> <span class="mi">4</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">25.419072</span> <span class="mi">140348344015936</span> <span class="n">controller</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">479</span><span class="p">]</span> <span class="n">train</span> <span class="o">|</span> <span class="n">step</span><span class="p">:</span>      <span class="mi">4</span> <span class="o">|</span> <span class="n">steps</span><span class="o">/</span><span class="n">sec</span><span class="p">:</span>    <span class="n">xxxxx</span> <span class="o">|</span> <span class="n">output</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;train_accuracy&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="mf">5.3359284</span><span class="p">}</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">27.025180</span> <span class="mi">140348344015936</span> <span class="n">keras_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">145</span><span class="p">]</span> <span class="n">TimeHistory</span><span class="p">:</span> <span class="n">xxxxx</span> <span class="n">seconds</span><span class="p">,</span> <span class="n">xxxxx</span> <span class="n">examples</span><span class="o">/</span><span class="n">second</span> <span class="n">between</span> <span class="n">steps</span> <span class="mi">4</span> <span class="ow">and</span> <span class="mi">5</span>
+<span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">27.027671</span> <span class="mi">140348344015936</span> <span class="n">controller</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">479</span><span class="p">]</span> <span class="n">train</span> <span class="o">|</span> <span class="n">step</span><span class="p">:</span>      <span class="mi">5</span> <span class="o">|</span> <span class="n">steps</span><span class="o">/</span><span class="n">sec</span><span class="p">:</span>    <span class="n">xxxxx</span> <span class="o">|</span> <span class="n">output</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;train_accuracy&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="mf">5.3343554</span><span class="p">}</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fac1fe81580> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

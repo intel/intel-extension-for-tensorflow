@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Examples &mdash; Intel® Extension for TensorFlow* v2.14.0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Practice Guide" href="../docs/guide/practice_guide.html" />
+    <link rel="prev" title="Intel® Extension for TensorFlow* for C++" href="../docs/install/install_for_cpp.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../versions.html">v2.14.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prepare-for-running">Prepare for Running</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Examples</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h1>
+<section id="prepare-for-running">
+<h2>Prepare for Running<a class="headerlink" href="#prepare-for-running" title="Permalink to this heading"></a></h2>
+<p>Before running the training/inference code based on Intel® Extension for TensorFlow*, there are several prepare steps to be executed. Please refer to <a class="reference external" href="./common_guide_running.html">Common Guide for Running</a>.</p>
+</section>
+<section id="id1">
+<h2>Examples<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<p>A wide variety of examples are provided to demonstrate the usage of Intel® Extension for TensorFlow*.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Hardware</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="quick_example.html">Quick Example</a></td>
+<td>Quick example to verify Intel® Extension for TensorFlow* and running environment.</td>
+<td>CPU &amp; GPU</td>
+</tr>
+<tr>
+<td><a href="./infer_resnet50/README.html">ResNet50 Inference</a></td>
+<td>ResNet50 inference on Intel CPU or GPU without code changes.</td>
+<td>CPU &amp; GPU</td>
+</tr>
+<tr>
+<td><a href="./train_bert/README.html">BERT Training for Classifying Text</a></td>
+<td>BERT training with Intel® Extension for TensorFlow* on Intel CPU or GPU.<br>Use the TensorFlow official example without code change.</td>
+<td>CPU &amp; GPU</td>
+</tr>
+<tr>
+<td><a href="./infer_inception_v4_amp/README.html">Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision via Docker Container or Bare Metal</a></td>
+<td>Test and compare the performance of inference with FP32 and Advanced Automatic Mixed Precision (AMP) (mix BF16/FP16 and FP32).<br>Shows the acceleration of inference by Advanced AMP on Intel CPU and GPU via Docker Container or Bare Metal.</td>
+<td>CPU &amp; GPU</td>
+</tr>
+<tr>
+<td><a href="./accelerate_alexnet_by_quantization/README.html">Accelerate AlexNet by Quantization with Intel® Extension for TensorFlow*</a></td>
+<td>An end-to-end example to show a pipeline to build up a CNN model to <br>recognize handwriting number and speed up AI model with quantization <br>by Intel® Neural Compressor and Intel® Extension for TensorFlow* on Intel GPU.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./model_zoo_example/README.html">Accelerate Deep Learning Training and Inference for Model Zoo Workloads on Intel GPU</a></td>
+<td>Examples on running Model Zoo workloads on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./quantize_inception_v3/README.html">Quantize Inception V3 by Intel® Extension for TensorFlow* on Intel® Xeon®</a></td>
+<td>An end-to-end example to show how Intel® Extension for TensorFlow* provides quantization feature by cooperating with Intel® Neural Compressor and oneDNN Graph. It will provide better quantization: better performance and accuracy loss is in controlled.</td>
+<td>CPU</td>
+</tr>
+<tr>
+<td><a href="./train_horovod/mnist/README.html">Mnist training with Intel® Optimization for Horovod*</a></td>
+<td>Mnist distributed training example on Intel GPU.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./train_horovod/resnet50/README.html">ResNet50 training with Intel® Optimization for Horovod*</a></td>
+<td>ResNet50 distributed training example on Intel GPU.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./stable_diffussion_inference/README.html">Stable Diffusion Inference for Text2Image on Intel GPU</a></td>
+<td>Example for running Stable Diffusion Text2Image inference on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./train_resnet50_with_autoshard/README.html">Accelerate ResNet50 Training by XPUAutoShard on Intel GPU</a></td>
+<td>Example on running ResNet50 training on Intel GPU with the XPUAutoShard feature.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./pretrain_bert/README.html">Accelerate BERT-Large Pretraining on Intel GPU</a></td>
+<td>Example on running BERT-Large pretraining on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./train_maskrcnn/README.html">Accelerate Mask R-CNN Training w/o horovod on Intel GPU</a></td>
+<td>Example on running Mask R-CNN training on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td><a href="./train_3d_unet/README.html">Accelerate 3D-UNet Training w/o horovod for medical image segmentation on Intel GPU</a></td>
+<td>Example on running 3D-UNet training for medical image segmentation on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.</td>
+<td>GPU</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../docs/install/install_for_cpp.html" class="btn btn-neutral float-left" title="Intel® Extension for TensorFlow* for C++" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../docs/guide/practice_guide.html" class="btn btn-neutral float-right" title="Practice Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fac2019dca0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

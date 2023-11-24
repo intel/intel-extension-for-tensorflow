@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Example on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* v2.14.0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../versions.html">v2.14.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quick Example on Intel CPU and GPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/quick_example.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quick-example-on-intel-cpu-and-gpu">
+<h1>Quick Example on Intel CPU and GPU<a class="headerlink" href="#quick-example-on-intel-cpu-and-gpu" title="Permalink to this heading"></a></h1>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>If you are using a machine using more than one kind of processor or core and includes an the Intel GPU, please refer to <a class="reference external" href="../docs/install/install_for_xpu.html">Intel XPU Software Installation</a></p></li>
+<li><p>Otherwise, please refer to <a class="reference external" href="../docs/install/install_for_cpu.html">Intel CPU Software Installation</a></p></li>
+</ul>
+</section>
+<section id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this heading"></a></h2>
+<p>Use TensorFlow to compute graph: Conv -&gt; ReLU activation -&gt; Bias</p>
+<section id="quick-example-py">
+<h3>quick_example.py<a class="headerlink" href="#quick-example-py" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="c1"># Conv + ReLU activation + Bias</span>
+<span class="n">N</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">num_channel</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">input_width</span><span class="p">,</span> <span class="n">input_height</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">filter_width</span><span class="p">,</span> <span class="n">filter_height</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">input_width</span><span class="p">,</span> <span class="n">input_height</span><span class="p">,</span> <span class="n">num_channel</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">weight</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">filter_width</span><span class="p">,</span> <span class="n">filter_height</span><span class="p">,</span> <span class="n">num_channel</span><span class="p">,</span> <span class="n">num_channel</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">bias</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_channel</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">conv</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">conv2d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;SAME&#39;</span><span class="p">)</span>
+<span class="n">activation</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">conv</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">bias_add</span><span class="p">(</span><span class="n">activation</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Finished&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Execute the Code</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">quick_example</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="example-output">
+<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
+<p>With successful execution, it will print out the following results:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span>
+<span class="p">[[[[</span><span class="mf">3.479142</span>   <span class="mf">2.7296917</span>  <span class="mf">4.6456823</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">4.077278</span>   <span class="mf">3.9259825</span>  <span class="mf">5.3000765</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.3999124</span>  <span class="mf">3.0527704</span>  <span class="mf">4.0656753</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">2.85485</span>    <span class="mf">2.7297122</span>  <span class="mf">3.9373732</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">2.4818356</span>  <span class="mf">2.1455178</span>  <span class="mf">2.4929404</span> <span class="p">]]</span>
+
+  <span class="p">[[</span><span class="mf">3.6422923</span>  <span class="mf">2.718459</span>   <span class="mf">4.7090344</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.988714</span>   <span class="mf">3.3391027</span>  <span class="mf">4.875052</span>  <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.6461415</span>  <span class="mf">2.9349675</span>  <span class="mf">4.327398</span>  <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.298973</span>   <span class="mf">2.3905785</span>  <span class="mf">4.1704025</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">1.9154005</span>  <span class="mf">1.6926193</span>  <span class="mf">1.9677248</span> <span class="p">]]</span>
+
+  <span class="p">[[</span><span class="mf">3.481086</span>   <span class="mf">2.9746864</span>  <span class="mf">3.8941312</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.3221133</span>  <span class="mf">2.5479512</span>  <span class="mf">4.197306</span>  <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.305706</span>   <span class="mf">2.9873173</span>  <span class="mf">4.5597944</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.250221</span>   <span class="mf">3.118212</span>   <span class="mf">3.8672705</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">1.949225</span>   <span class="mf">1.2636094</span>  <span class="mf">1.5300783</span> <span class="p">]]</span>
+
+  <span class="p">[[</span><span class="mf">3.1403804</span>  <span class="mf">2.1729176</span>  <span class="mf">3.6628485</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">3.2607155</span>  <span class="mf">2.6342418</span>  <span class="mf">3.9381838</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">2.6761076</span>  <span class="mf">2.5063303</span>  <span class="mf">3.4718971</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">2.8880196</span>  <span class="mf">2.1658201</span>  <span class="mf">3.3787665</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">2.1193419</span>  <span class="mf">1.42261</span>    <span class="mf">2.318963</span>  <span class="p">]]</span>
+
+  <span class="p">[[</span><span class="mf">1.8809638</span>  <span class="mf">1.6514435</span>  <span class="mf">2.3549364</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">1.8598063</span>  <span class="mf">1.517385</span>   <span class="mf">1.9702091</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">1.9260886</span>  <span class="mf">1.3804817</span>  <span class="mf">2.381424</span>  <span class="p">]</span>
+   <span class="p">[</span><span class="mf">1.6027272</span>  <span class="mf">1.7787259</span>  <span class="mf">1.9631021</span> <span class="p">]</span>
+   <span class="p">[</span><span class="mf">0.93901324</span> <span class="mf">1.2134862</span>  <span class="mf">0.89942324</span><span class="p">]]]],</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">Finished</span>
+</pre></div>
+</div>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading"></a></h2>
+<ol class="simple">
+<li><p>In this example, it is not necessary to import intel_extension_for_tensorflow, and no need to call any of its APIs.<br/>
+If installed as the <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[cpu]</span></code>, then the script will choose CPU as the backend and be executed on the CPU automatically; while if installed as <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow[xpu]</span></code>, then the default backend will be GPU and the script will be executed on the GPU.</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fac201a0820> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

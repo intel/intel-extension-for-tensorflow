@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Launch Script User Guide &mdash; Intel® Extension for TensorFlow* v2.14.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="INT8 Quantization" href="INT8_quantization.html" />
+    <link rel="prev" title="GPU Profiler" href="how_to_enable_profiler.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.14.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#graph-optimization">Graph Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#advanced-auto-mixed-precision-amp">Advanced Auto Mixed Precision (AMP)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#ease-of-use-python-api">Ease-of-use Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gpu-profiler">GPU Profiler</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Launch Script User Guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#common-execution-mode">Common Execution Mode</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#latency-mode">Latency mode</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#throughput-mode">Throughput mode</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#basic-settings">Basic Settings</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#launch-log">Launch Log</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced-settings">Advanced Settings</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#multi-instance">Multi-instance</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#numa-control">NUMA Control</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#memory-allocator">Memory Allocator</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#single-instance-for-inference">Single instance for inference</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#i-use-all-physical-cores">I. Use all physical cores</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#ii-use-all-cores-including-logical-cores">II. Use all cores including logical cores</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#iii-use-physical-cores-on-one-node">III. Use physical cores on one node</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#iv-use-your-designated-number-of-cores">IV. Use your designated number of cores</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#multiple-instances-for-inference">Multiple instances for inference</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#v-throughput-mode">V. Throughput mode</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#vi-latency-mode">VI. Latency mode</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#vii-your-designated-number-of-instances">VII. Your designated number of instances</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#viii-your-designated-number-of-instances-and-instance-index">VIII. Your designated number of instances and instance index</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#set-environment-variables-for-inference">Set environment variables for inference</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#ix-set-environment-variable-tf-num-intraop-threads">IX. Set environment variable TF_NUM_INTRAOP_THREADS</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#x-set-environment-variable-tf-num-interop-threads">X. Set environment variable TF_NUM_INTEROP_THREADS</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#usage-of-tcmalloc-jemalloc-default-memory-allocator">Usage of TCMalloc/Jemalloc/Default memory allocator</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#jemalloc">Jemalloc</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#tcmalloc">TCMalloc</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#default-memory-allocator">Default memory allocator</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#tensorflow-serving">TensorFlow Serving</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="features.html">Features</a></li>
+      <li class="breadcrumb-item active">Launch Script User Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/launch.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="launch-script-user-guide">
+<h1>Launch Script User Guide<a class="headerlink" href="#launch-script-user-guide" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#overview">Overview</a></p></li>
+<li><p><a class="reference external" href="#common-execution-mode">Common Execution Mode</a></p>
+<ul>
+<li><p><a class="reference external" href="#latency-mode">Latency Mode</a></p></li>
+<li><p><a class="reference external" href="#throughput-mode">Throughput Mode</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#basic-settings">Basic Settings</a></p>
+<ul>
+<li><p><a class="reference external" href="#launch-log">Launch Log</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#advanced-settings">Advanced Settings</a></p>
+<ul>
+<li><p><a class="reference external" href="#multi-instance">Multi-instance</a></p></li>
+<li><p><a class="reference external" href="#numa-control">NUMA Control</a></p></li>
+<li><p><a class="reference external" href="#memory-allocator">Memory Allocator</a></p></li>
+<li><p><a class="reference external" href="#environment-variables">Environment Variables</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#examples">Examples</a></p></li>
+</ul>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p>As introduced in the <a class="reference external" href="practice_guide.html">Practice Guide</a>, there are several factors that influence performance. Setting configuration options properly contributes to a performance boost. However, there is no unified configuration that is optimal to all topologies. Users need to try different combinations. A <em>launch</em> script is provided to automate these configuration settings to free users from this complicated work. This guide helps you to learn the <em>launch</em> script common usage and provides examples that cover many optimized configuration cases as well.</p>
+<p>The configurations are mainly around the following perspectives.</p>
+<ul class="simple">
+<li><p>NUMA Control: numactl specifies NUMA scheduling and memory placement policy</p></li>
+<li><p>Number of instances: [Single instance (default) | Multiple instances]</p></li>
+<li><p>Memory allocator: [TCMalloc | JeMalloc | default Malloc] If unspecified, launcher will choose for user.</p></li>
+</ul>
+</section>
+<section id="common-execution-mode">
+<h2>Common Execution Mode<a class="headerlink" href="#common-execution-mode" title="Permalink to this heading"></a></h2>
+<p>The <em>launch</em> script is provided as a module of Intel® Extension for TensorFlow*. Run the following command to use it. If no knob is given, your script will be executed using all physical cores.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span><span class="o">[</span>knobs<span class="o">]</span><span class="w"> </span>&lt;your_script&gt;<span class="w"> </span><span class="o">[</span>your_script_args<span class="o">]</span>
+</pre></div>
+</div>
+<p>In most cases for better performance, <em><code class="docutils literal notranslate"><span class="pre">--latency_mode</span></code></em> or <em><code class="docutils literal notranslate"><span class="pre">--throughput_mode</span></code></em> is often enabled. The launcher script will automatically calculate the number of instances and number of cores used for each instance, so no manual setting is required. If you want to customize your execution, see <a class="reference external" href="#advanced-settings">Advanced Setting</a>.</p>
+<section id="latency-mode">
+<h3>Latency mode<a class="headerlink" href="#latency-mode" title="Permalink to this heading"></a></h3>
+<p>With <em><code class="docutils literal notranslate"><span class="pre">--latency_mode</span></code></em>, each instance uses 4 cores and all physical cores are used. This knob is mutually exclusive with <em><code class="docutils literal notranslate"><span class="pre">--throughput_mode</span></code></em>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--latency_mode<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+</section>
+<section id="throughput-mode">
+<h3>Throughput mode<a class="headerlink" href="#throughput-mode" title="Permalink to this heading"></a></h3>
+<p>With <em><code class="docutils literal notranslate"><span class="pre">--throughput_mode</span></code></em>, one numa node corresponds to one instance and all physical cores are used. This knob is mutually exclusive with <em><code class="docutils literal notranslate"><span class="pre">--latency_mode</span></code></em>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--throughput_mode<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+</section>
+</section>
+<section id="basic-settings">
+<h2>Basic Settings<a class="headerlink" href="#basic-settings" title="Permalink to this heading"></a></h2>
+<section id="launch-log">
+<h3>Launch Log<a class="headerlink" href="#launch-log" title="Permalink to this heading"></a></h3>
+<p>The <em>launch</em> script execution creates log files under a designated log directory, so that you can conduct some investigations afterward. By default, creating logs is disabled to avoid undesired log files. You can enable logging by setting knob <em><code class="docutils literal notranslate"><span class="pre">--log_path</span></code></em> to be:</p>
+<ul class="simple">
+<li><p>directory to save log files. Both absolute path and relative path are supported.</p></li>
+<li><p>types of log files to generate. One file (<em><code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_timestamp_instances.log</span></code></em>) contains command and information when the script was launched. Another type of file (<em><code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_timestamp_instance_N_core#-core#....log</span></code></em>) contain stdout print of each instance.</p></li>
+</ul>
+<p>For example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>run_20210712212258_instances.log
+run_20210712212258_instance_0_cores_0-43.log
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-settings">
+<h2>Advanced Settings<a class="headerlink" href="#advanced-settings" title="Permalink to this heading"></a></h2>
+<p>The following table lists all available knobs.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: left;">Knob</th>
+<th style="text-align: center;">Type</th>
+<th style="text-align: center;">Default Value</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><em><code>-m</code></em>, <em><code>--module</code></em></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">None</td>
+<td style="text-align: left;">Changes each process to interpret the launch script as a python module, executing with the same behavior as <em><code>python -m</code></em>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--no_python</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Useful when the script is not a Python script. Do not prepend your script with <em><code>python</code></em>, execute it directly.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--latency_mode</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">By default each instance uses 4 cores and all physical cores are used.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--throughput_mode</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">By default one numa node corresponds to one instance and all physical cores are used.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--log_path</code></em></td>
+<td style="text-align: center;">STRING</td>
+<td style="text-align: center;">""</td>
+<td style="text-align: left;">The log file path. Default path is '', which means disable logging to files.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--log_file_prefix</code></em></td>
+<td style="text-align: center;">STRING</td>
+<td style="text-align: center;">"run"</td>
+<td style="text-align: left;">Log file prefix.</td>
+</tr>
+</tbody>
+</table><p>If you want to set the number of instances, core allocation or some environment variables yourself, use the knobs described below, which are all exclusive to <em><code class="docutils literal notranslate"><span class="pre">--latency_mode</span></code></em> and <em><code class="docutils literal notranslate"><span class="pre">--throughput_mode</span></code></em>.</p>
+<section id="multi-instance">
+<h3>Multi-instance<a class="headerlink" href="#multi-instance" title="Permalink to this heading"></a></h3>
+<p>You may want to launch multiple instances for better performance, for example, when batch size is small. The following knobs will be helpful.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: left;">Knob</th>
+<th style="text-align: center;">Type</th>
+<th style="text-align: center;">Default Value</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><em><code>--ninstances</code></em></td>
+<td style="text-align: center;">INTEGER</td>
+<td style="text-align: center;">-1</td>
+<td style="text-align: left;">Number of instances.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--instance_idx</code></em></td>
+<td style="text-align: center;">INTEGER</td>
+<td style="text-align: center;">-1</td>
+<td style="text-align: left;">Run specified instance_idx instance among multiple instances (instance index starts at index 0). Useful when running each instance independently.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--ncore_per_instance</code></em></td>
+<td style="text-align: center;">INTEGER</td>
+<td style="text-align: center;">-1</td>
+<td style="text-align: left;">Cores per instance.</td>
+</tr>
+</tbody>
+</table></section>
+<section id="numa-control">
+<h3>NUMA Control<a class="headerlink" href="#numa-control" title="Permalink to this heading"></a></h3>
+<p>These knobs are used to set the NUMA policy to better utilize your hardware resource.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: left;">Knob</th>
+<th style="text-align: center;">Type</th>
+<th style="text-align: center;">Default Value</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><em><code>--node_id</code></em></td>
+<td style="text-align: center;">INTEGER</td>
+<td style="text-align: center;">-1</td>
+<td style="text-align: left;">Run on the specified node (node index starts at index 0).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--skip_cross_node_cores</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">When specifying --ncore_per_instance, set --skip_cross_node_cores to skip any cross-node cores.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--disable_numactl</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Disable numactl.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--disable_taskset</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Disable taskset.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--use_logical_core</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Whether use logical cores.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--core_list</code></em></td>
+<td style="text-align: center;">STRING</td>
+<td style="text-align: center;">None</td>
+<td style="text-align: left;">Specify the core list as <em><code>core_id, core_id, ....</code></em>.</td>
+</tr>
+</tbody>
+</table></section>
+<section id="memory-allocator">
+<h3>Memory Allocator<a class="headerlink" href="#memory-allocator" title="Permalink to this heading"></a></h3>
+<p>This script provides users three memory allocator types, specified with the following knobs. If not specified, the script will automatically check the installation of allocators on the execution machine, and then select in the order of TCMalloc/JeMalloc/Default Malloc.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: left;">Knob</th>
+<th style="text-align: center;">Type</th>
+<th style="text-align: center;">Default Value</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><em><code>--enable_tcmalloc</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Enable tcmalloc allocator. Ensure TCMalloc is installed before use.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--enable_jemalloc</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Enable jemalloc allocator. Ensure JeMalloc is installed before use.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--use_default_allocator</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Use default memory allocator.</td>
+</tr>
+</tbody>
+</table></section>
+<section id="environment-variables">
+<h3>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading"></a></h3>
+<p>The <em>launch</em> script respects existing environment variables on launch. If you prefer some certain environment variables, you can set them before executing the <em>launch</em> script. Intel OpenMP library uses an environment variable <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em> to control its behavior. Different settings bring different performance. By default, the <em>launch</em> script will set <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em> to “granularity=fine,verbose,compact,1,0” or “granularity=fine,verbose,compact,” depending on whether hyper threading is on or off. If you want to try other values, you can use <em><code class="docutils literal notranslate"><span class="pre">export</span></code></em> command on Linux to set <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em> before you run the <em>launch</em> script. In this case, the script will not set the default value but take the existing value of <em><code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY</span></code></em>, and print a message to stdout.</p>
+<p>Our launcher also automatically sets some environment variables related to TensorFlow and Intel® Extension for TensorFlow*. By default, <em><code class="docutils literal notranslate"><span class="pre">TF_NUM_INTEROP_THREADS</span></code></em> and <em><code class="docutils literal notranslate"><span class="pre">TF_NUM_INTRAOP_THREADS</span></code></em> are set to <em><code class="docutils literal notranslate"><span class="pre">1</span></code></em> and number of cores per instance. <a class="reference external" href="advanced_auto_mixed_precision.html">ITEX AMP</a> and <a class="reference external" href="practice_guide.html#memory-layout-format">Intel® Extension for TensorFlow* layout optimization</a> are disabled.
+Users can change them by the following knobs.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: left;">Knob</th>
+<th style="text-align: center;">Type</th>
+<th style="text-align: center;">Default Value</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><em><code>--enable_op_parallelism</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">When set to <code>True</code>, it sets environment variable <em><code>ITEX_OMP_THREADPOOL=0</code></em>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--tf_num_intraop_threads</code></em></td>
+<td style="text-align: center;">STRING</td>
+<td style="text-align: center;">None</td>
+<td style="text-align: left;">By Default, this argument is None, and set environment variable <em><code>TF_NUM_INTRAOP_THREADS</code></em> as the number of cores per instance.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--tf_num_interop_threads</code></em></td>
+<td style="text-align: center;">STRING</td>
+<td style="text-align: center;">None</td>
+<td style="text-align: left;">By Default, this argument is None, and set environment variable <em><code>TF_NUM_INTEROP_THREADS</code></em>=1.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--enable_itex_amp</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Set environment variable <em><code>ITEX_AUTO_MIXED_PRECISION=1</code></em>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><em><code>--enable_itex_layout_opt</code></em></td>
+<td style="text-align: center;">BOOLEAN</td>
+<td style="text-align: center;">False</td>
+<td style="text-align: left;">Set environment variable <em><code>ITEX_LAYOUT_OPT=0</code></em> or <em><code>1</code></em>.</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h2>
+<p>Example script <a class="reference external" href="../../examples/infer_resnet50/infer_resnet50.py">infer_resnet50.py</a> will be used in this guide.</p>
+<ul class="simple">
+<li><p>Single instance for inference</p>
+<ul>
+<li><p><a class="reference external" href="#i-use-all-physical-cores">I. Use all physical cores</a></p></li>
+<li><p><a class="reference external" href="#ii-use-all-cores-including-logical-cores">II. Use all cores including logical cores</a></p></li>
+<li><p><a class="reference external" href="#iii-use-physical-cores-on-one-node">III. Use physical cores on one node</a></p></li>
+<li><p><a class="reference external" href="#iv-use-your-designated-number-of-cores">IV. Use your designated number of cores</a></p></li>
+</ul>
+</li>
+<li><p>Multiple instances for inference</p>
+<ul>
+<li><p><a class="reference external" href="#v-throughput-mode">V. Throughput mode (i.e. number of numa node instances, each instance runs on 1 numa node)</a></p></li>
+<li><p><a class="reference external" href="#vi-latency-mode">VI. Latency mode (Use 4 cores for each instance)</a></p></li>
+<li><p><a class="reference external" href="#vii-your-designated-number-of-instances">VII. Your designated number of instances</a></p></li>
+<li><p><a class="reference external" href="#viii-your-designated-number-of-instances-and-instance-index">VIII. Your designated number of instances and instance index</a></p></li>
+</ul>
+</li>
+<li><p>Set environment variables for inference</p>
+<ul>
+<li><p><a class="reference external" href="#ix-set-environment-variable-tf_num_intraop_threads">IX. TF_NUM_INTRAOP_THREADS</a></p></li>
+<li><p><a class="reference external" href="#x-set-environment-variable-tf_num_interop_threads">X. TF_NUM_INTEROP_THREADS</a></p></li>
+</ul>
+</li>
+<li><p>Usage of Jemalloc/TCMalloc/Default memory allocator</p>
+<ul>
+<li><p><a class="reference external" href="#jemalloc">Jemalloc</a></p></li>
+<li><p><a class="reference external" href="#tcmalloc">TCMalloc</a></p></li>
+<li><p><a class="reference external" href="#default-memory-allocator">Default memory allocator</a></p></li>
+</ul>
+</li>
+</ul>
+<section id="single-instance-for-inference">
+<h3>Single instance for inference<a class="headerlink" href="#single-instance-for-inference" title="Permalink to this heading"></a></h3>
+<section id="i-use-all-physical-cores">
+<h4>I. Use all physical cores<a class="headerlink" href="#i-use-all-physical-cores" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009103552_instance_0_cores_0-43.log
+    └── run_20221009103552_instances.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009103552_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009103552_instances.log
+2022-10-09 10:35:53,136 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 10:35:53,136 - __main__ - INFO - OMP_NUM_THREADS=96
+2022-10-09 10:35:53,136 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 10:35:53,136 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 10:35:53,136 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 10:35:53,136 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=96
+2022-10-09 10:35:53,136 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 10:35:53,136 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 10:35:53,137 - __main__ - INFO - numactl --localalloc -C 0-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009103552_instance_0_cores_0-95.log
+</pre></div>
+</div>
+</section>
+<section id="ii-use-all-cores-including-logical-cores">
+<h4>II. Use all cores including logical cores<a class="headerlink" href="#ii-use-all-cores-including-logical-cores" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--use_logical_core<span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009104740_instances.log
+    └── run_20221009104740_instance_0_cores_0-191.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009104740_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009104740_instances.log
+2022-10-09 10:47:40,908 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 10:47:40,909 - __main__ - INFO - OMP_NUM_THREADS=192
+2022-10-09 10:47:40,909 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 10:47:40,909 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 10:47:40,909 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 10:47:40,909 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=192
+2022-10-09 10:47:40,909 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 10:47:40,909 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 10:47:40,909 - __main__ - INFO - numactl --localalloc -C 0-191 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009104740_instance_0_cores_0-191.log
+</pre></div>
+</div>
+</section>
+<section id="iii-use-physical-cores-on-one-node">
+<h4>III. Use physical cores on one node<a class="headerlink" href="#iii-use-physical-cores-on-one-node" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--node_id<span class="w"> </span><span class="m">1</span><span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009105044_instances.log
+    └── run_20221009105044_instance_0_cores_12-23.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009105044_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009105044_instances.log
+2022-10-09 10:50:44,693 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 10:50:44,693 - __main__ - INFO - OMP_NUM_THREADS=12
+2022-10-09 10:50:44,693 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 10:50:44,693 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 10:50:44,693 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 10:50:44,693 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=12
+2022-10-09 10:50:44,693 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 10:50:44,693 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 10:50:44,694 - __main__ - INFO - numactl --localalloc -C 12-23 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105044_instance_0_cores_12-23.log
+</pre></div>
+</div>
+</section>
+<section id="iv-use-your-designated-number-of-cores">
+<h4>IV. Use your designated number of cores<a class="headerlink" href="#iv-use-your-designated-number-of-cores" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--ninstances<span class="w"> </span><span class="m">1</span><span class="w"> </span>--ncore_per_instance<span class="w"> </span><span class="m">10</span><span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009105320_instances.log
+    └── run_20221009105320_instance_0_cores_0-9.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009105320_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009105320_instances.log
+2022-10-09 10:53:21,089 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 10:53:21,089 - __main__ - INFO - OMP_NUM_THREADS=10
+2022-10-09 10:53:21,089 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 10:53:21,089 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 10:53:21,089 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 10:53:21,089 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=10
+2022-10-09 10:53:21,089 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 10:53:21,089 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 10:53:21,090 - __main__ - INFO - numactl --localalloc -C 0-9 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105320_instance_0_cores_0-9.log
+</pre></div>
+</div>
+</section>
+</section>
+<section id="multiple-instances-for-inference">
+<h3>Multiple instances for inference<a class="headerlink" href="#multiple-instances-for-inference" title="Permalink to this heading"></a></h3>
+<section id="v-throughput-mode">
+<h4>V. Throughput mode<a class="headerlink" href="#v-throughput-mode" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--throughput_mode<span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009105838_instances.log
+    ├── run_20221009105838_instance_0_cores_0-11.log
+    ├── run_20221009105838_instance_1_cores_12-23.log
+    ├── run_20221009105838_instance_2_cores_24-35.log
+    ├── run_20221009105838_instance_3_cores_36-47.log
+    ├── run_20221009105838_instance_4_cores_48-59.log
+    ├── run_20221009105838_instance_5_cores_60-71.log
+    ├── run_20221009105838_instance_6_cores_72-83.log
+    └── run_20221009105838_instance_7_cores_84-95.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009105838_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009105838_instances.log
+2022-10-09 10:58:38,757 - __main__ - WARNING - --throughput_mode is exclusive to --ninstances, --ncore_per_instance, --node_id and --use_logical_core. They won&#39;t take effect even if they are set explicitly.
+2022-10-09 10:58:38,772 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 10:58:38,772 - __main__ - INFO - OMP_NUM_THREADS=12
+2022-10-09 10:58:38,772 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 10:58:38,772 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 10:58:38,772 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 10:58:38,772 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=12
+2022-10-09 10:58:38,772 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 10:58:38,772 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 10:58:38,772 - __main__ - INFO - numactl --localalloc -C 0-11 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_0_cores_0-11.log
+2022-10-09 10:58:38,784 - __main__ - INFO - numactl --localalloc -C 12-23 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_1_cores_12-23.log
+2022-10-09 10:58:38,795 - __main__ - INFO - numactl --localalloc -C 24-35 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_2_cores_24-35.log
+2022-10-09 10:58:38,806 - __main__ - INFO - numactl --localalloc -C 36-47 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_3_cores_36-47.log
+2022-10-09 10:58:38,817 - __main__ - INFO - numactl --localalloc -C 48-59 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_4_cores_48-59.log
+2022-10-09 10:58:38,828 - __main__ - INFO - numactl --localalloc -C 60-71 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_5_cores_60-71.log
+2022-10-09 10:58:38,839 - __main__ - INFO - numactl --localalloc -C 72-83 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_6_cores_72-83.log
+2022-10-09 10:58:38,850 - __main__ - INFO - numactl --localalloc -C 84-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009105838_instance_7_cores_84-95.log
+</pre></div>
+</div>
+</section>
+<section id="vi-latency-mode">
+<h4>VI. Latency mode<a class="headerlink" href="#vi-latency-mode" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--latency_mode<span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009110327_instances.log
+    ├── run_20221009110327_instance_0_cores_0-3.log
+    ├── run_20221009110327_instance_1_cores_4-7.log
+    ├── run_20221009110327_instance_2_cores_8-11.log
+    ├── run_20221009110327_instance_3_cores_12-15.log
+    ├── run_20221009110327_instance_4_cores_16-19.log
+    ├── run_20221009110327_instance_5_cores_20-23.log
+    ├── run_20221009110327_instance_6_cores_24-27.log
+    ├── run_20221009110327_instance_7_cores_28-31.log
+    ├── run_20221009110327_instance_8_cores_32-35.log
+    ├── run_20221009110327_instance_9_cores_36-39.log
+    ├── run_20221009110327_instance_10_cores_40-43.log
+    ├── run_20221009110327_instance_11_cores_44-47.log
+    ├── run_20221009110327_instance_12_cores_48-51.log
+    ├── run_20221009110327_instance_13_cores_52-55.log
+    ├── run_20221009110327_instance_14_cores_56-59.log
+    ├── run_20221009110327_instance_15_cores_60-63.log
+    ├── run_20221009110327_instance_16_cores_64-67.log
+    ├── run_20221009110327_instance_17_cores_68-71.log
+    ├── run_20221009110327_instance_18_cores_72-75.log
+    ├── run_20221009110327_instance_19_cores_76-79.log
+    ├── run_20221009110327_instance_20_cores_80-83.log
+    ├── run_20221009110327_instance_21_cores_84-87.log
+    ├── run_20221009110327_instance_22_cores_88-91.log
+    └── run_20221009110327_instance_23_cores_92-95.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009110327_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009110327_instances.log
+2022-10-09 11:03:27,198 - __main__ - WARNING - --latency_mode is exclusive to --ninstances, --ncore_per_instance, --node_id and --use_logical_core. They won&#39;t take effect even if they are set explicitly.
+2022-10-09 11:03:27,215 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 11:03:27,215 - __main__ - INFO - OMP_NUM_THREADS=4
+2022-10-09 11:03:27,215 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:03:27,215 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:03:27,215 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 11:03:27,215 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=4
+2022-10-09 11:03:27,215 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:03:27,215 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:03:27,216 - __main__ - INFO - numactl --localalloc -C 0-3 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_0_cores_0-3.log
+2022-10-09 11:03:27,229 - __main__ - INFO - numactl --localalloc -C 4-7 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_1_cores_4-7.log
+2022-10-09 11:03:27,241 - __main__ - INFO - numactl --localalloc -C 8-11 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_2_cores_8-11.log
+2022-10-09 11:03:27,254 - __main__ - INFO - numactl --localalloc -C 12-15 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_3_cores_12-15.log
+2022-10-09 11:03:27,266 - __main__ - INFO - numactl --localalloc -C 16-19 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_4_cores_16-19.log
+2022-10-09 11:03:27,278 - __main__ - INFO - numactl --localalloc -C 20-23 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_5_cores_20-23.log
+2022-10-09 11:03:27,290 - __main__ - INFO - numactl --localalloc -C 24-27 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_6_cores_24-27.log
+2022-10-09 11:03:27,302 - __main__ - INFO - numactl --localalloc -C 28-31 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_7_cores_28-31.log
+2022-10-09 11:03:27,315 - __main__ - INFO - numactl --localalloc -C 32-35 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_8_cores_32-35.log
+2022-10-09 11:03:27,327 - __main__ - INFO - numactl --localalloc -C 36-39 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_9_cores_36-39.log
+2022-10-09 11:03:27,339 - __main__ - INFO - numactl --localalloc -C 40-43 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_10_cores_40-43.log
+2022-10-09 11:03:27,351 - __main__ - INFO - numactl --localalloc -C 44-47 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_11_cores_44-47.log
+2022-10-09 11:03:27,364 - __main__ - INFO - numactl --localalloc -C 48-51 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_12_cores_48-51.log
+2022-10-09 11:03:27,376 - __main__ - INFO - numactl --localalloc -C 52-55 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_13_cores_52-55.log
+2022-10-09 11:03:27,388 - __main__ - INFO - numactl --localalloc -C 56-59 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_14_cores_56-59.log
+2022-10-09 11:03:27,400 - __main__ - INFO - numactl --localalloc -C 60-63 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_15_cores_60-63.log
+2022-10-09 11:03:27,413 - __main__ - INFO - numactl --localalloc -C 64-67 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_16_cores_64-67.log
+2022-10-09 11:03:27,425 - __main__ - INFO - numactl --localalloc -C 68-71 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_17_cores_68-71.log
+2022-10-09 11:03:27,438 - __main__ - INFO - numactl --localalloc -C 72-75 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_18_cores_72-75.log
+2022-10-09 11:03:27,452 - __main__ - INFO - numactl --localalloc -C 76-79 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_19_cores_76-79.log
+2022-10-09 11:03:27,465 - __main__ - INFO - numactl --localalloc -C 80-83 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_20_cores_80-83.log
+2022-10-09 11:03:27,480 - __main__ - INFO - numactl --localalloc -C 84-87 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_21_cores_84-87.log
+2022-10-09 11:03:27,494 - __main__ - INFO - numactl --localalloc -C 88-91 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_22_cores_88-91.log
+2022-10-09 11:03:27,509 - __main__ - INFO - numactl --localalloc -C 92-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110327_instance_23_cores_92-95.log
+</pre></div>
+</div>
+</section>
+<section id="vii-your-designated-number-of-instances">
+<h4>VII. Your designated number of instances<a class="headerlink" href="#vii-your-designated-number-of-instances" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--ninstances<span class="w"> </span><span class="m">4</span><span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009110849_instances.log
+    ├── run_20221009110849_instance_0_cores_0-10.log
+    ├── run_20221009110849_instance_1_cores_11-21.log
+    ├── run_20221009110849_instance_2_cores_22-32.log
+    └── run_20221009110849_instance_3_cores_33-43.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009110849_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009110849_instances.log
+2022-10-09 11:08:49,891 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 11:08:49,891 - __main__ - INFO - OMP_NUM_THREADS=24
+2022-10-09 11:08:49,891 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:08:49,891 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:08:49,892 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 11:08:49,892 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=24
+2022-10-09 11:08:49,892 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:08:49,892 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:08:49,892 - __main__ - INFO - numactl --localalloc -C 0-23 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110849_instance_0_cores_0-23.log
+2022-10-09 11:08:49,908 - __main__ - INFO - numactl --localalloc -C 24-47 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110849_instance_1_cores_24-47.log
+2022-10-09 11:08:49,930 - __main__ - INFO - numactl --localalloc -C 48-71 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110849_instance_2_cores_48-71.log
+2022-10-09 11:08:49,951 - __main__ - INFO - numactl --localalloc -C 72-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009110849_instance_3_cores_72-95.log
+</pre></div>
+</div>
+</section>
+<section id="viii-your-designated-number-of-instances-and-instance-index">
+<h4>VIII. Your designated number of instances and instance index<a class="headerlink" href="#viii-your-designated-number-of-instances-and-instance-index" title="Permalink to this heading"></a></h4>
+<p>Launcher by default runs all <code class="docutils literal notranslate"><span class="pre">ninstances</span></code> for multi-instance inference and training as shown above. You can specify <code class="docutils literal notranslate"><span class="pre">instance_idx</span></code> to independently run that instance only among <code class="docutils literal notranslate"><span class="pre">ninstances</span></code></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--ninstances<span class="w"> </span><span class="m">4</span><span class="w"> </span>--instance_idx<span class="w"> </span><span class="m">0</span><span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>you can confirm usage in log file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2022-10-09 11:10:34,586 - __main__ - INFO - assigning 24 cores for instance 0
+2022-10-09 11:10:34,604 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 11:10:34,604 - __main__ - INFO - OMP_NUM_THREADS=24
+2022-10-09 11:10:34,605 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:10:34,605 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:10:34,605 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 11:10:34,605 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=24
+2022-10-09 11:10:34,605 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:10:34,605 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:10:34,605 - __main__ - INFO - numactl --localalloc -C 0-23 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009111034_instance_0_cores_0-23.log
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--ninstances<span class="w"> </span><span class="m">4</span><span class="w"> </span>--instance_idx<span class="w"> </span><span class="m">1</span><span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>you can confirm usage in log file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2022-10-09 11:12:40,129 - __main__ - INFO - assigning 24 cores for instance 1
+2022-10-09 11:12:40,144 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 11:12:40,144 - __main__ - INFO - OMP_NUM_THREADS=24
+2022-10-09 11:12:40,144 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:12:40,144 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:12:40,144 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 11:12:40,144 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=24
+2022-10-09 11:12:40,144 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:12:40,144 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:12:40,145 - __main__ - INFO - numactl --localalloc -C 24-47 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009111239_instance_0_cores_24-47.log
+</pre></div>
+</div>
+</section>
+</section>
+<section id="set-environment-variables-for-inference">
+<h3>Set environment variables for inference<a class="headerlink" href="#set-environment-variables-for-inference" title="Permalink to this heading"></a></h3>
+<section id="ix-set-environment-variable-tf-num-intraop-threads">
+<h4>IX. Set environment variable TF_NUM_INTRAOP_THREADS<a class="headerlink" href="#ix-set-environment-variable-tf-num-intraop-threads" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--tf_num_intraop_threads<span class="w"> </span><span class="m">8</span><span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009111753_instances.log
+    ├── run_20221009111753_instance_0_cores_0-95.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009111753_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009111753_instances.log
+2022-10-09 11:17:53,947 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 11:17:53,947 - __main__ - INFO - OMP_NUM_THREADS=96
+2022-10-09 11:17:53,947 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:17:53,947 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:17:53,948 - __main__ - INFO - TF_NUM_INTEROP_THREADS=2
+2022-10-09 11:17:53,948 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=96
+2022-10-09 11:17:53,948 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:17:53,948 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:17:53,948 - __main__ - INFO - numactl --localalloc -C 0-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009111753_instance_0_cores_0-95.log
+</pre></div>
+</div>
+</section>
+<section id="x-set-environment-variable-tf-num-interop-threads">
+<h4>X. Set environment variable TF_NUM_INTEROP_THREADS<a class="headerlink" href="#x-set-environment-variable-tf-num-interop-threads" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--tf_num_interop_threads<span class="w"> </span><span class="m">2</span><span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>Check your log directory, its structure is as below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>.
+├── infer_resnet50.py
+└── logs
+    ├── run_20221009111951_instances.log
+    └── run_20221009111951_instance_0_cores_0-95.log
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">run_20221009111951_instances.log</span></code> contains information and command that were used for this execution launch.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat logs/run_20221009111951_instances.log
+2022-10-09 11:19:51,404 - __main__ - WARNING - Neither TCMalloc nor JeMalloc is found in $CONDA_PREFIX/lib or $VIRTUAL_ENV/lib or /.local/lib/ or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or /home/sdp/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance.
+2022-10-09 11:19:51,405 - __main__ - INFO - OMP_NUM_THREADS=96
+2022-10-09 11:19:51,405 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:19:51,405 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:19:51,405 - __main__ - INFO - TF_NUM_INTEROP_THREADS=2
+2022-10-09 11:19:51,405 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=96
+2022-10-09 11:19:51,405 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:19:51,405 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:19:51,405 - __main__ - INFO - numactl --localalloc -C 0-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009111951_instance_0_cores_0-95.log
+</pre></div>
+</div>
+</section>
+</section>
+<section id="usage-of-tcmalloc-jemalloc-default-memory-allocator">
+<h3>Usage of TCMalloc/Jemalloc/Default memory allocator<a class="headerlink" href="#usage-of-tcmalloc-jemalloc-default-memory-allocator" title="Permalink to this heading"></a></h3>
+<p>Memory allocator can influence performance. If users do not designate a desired memory allocator, the <em>launch</em> script searches them in the order of TCMalloc &gt; Jemalloc &gt; Tensorflow default memory allocator, and takes the first matched one.</p>
+<section id="jemalloc">
+<h4>Jemalloc<a class="headerlink" href="#jemalloc" title="Permalink to this heading"></a></h4>
+<p><strong>Note:</strong> You can set your preferred value to <em>MALLOC_CONF</em> before running the <em>launch</em> script if you do not want to use its default setting.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--enable_jemalloc<span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>you can confirm usage in log file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2022-10-09 11:27:20,549 - __main__ - INFO - Use JeMalloc memory allocator
+2022-10-09 11:27:20,550 - __main__ - INFO - MALLOC_CONF=oversize_threshold:1,background_thread:true,metadata_thp:auto
+2022-10-09 11:27:20,550 - __main__ - INFO - OMP_NUM_THREADS=96
+2022-10-09 11:27:20,550 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:27:20,550 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:27:20,550 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 11:27:20,550 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=96
+2022-10-09 11:27:20,550 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:27:20,550 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:27:20,550 - __main__ - INFO - numactl --localalloc -C 0-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009112720_instance_0_cores_0-95.log
+</pre></div>
+</div>
+</section>
+<section id="tcmalloc">
+<h4>TCMalloc<a class="headerlink" href="#tcmalloc" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--enable_tcmalloc<span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>you can confirm usage in log file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2022-10-09 11:29:05,206 - __main__ - INFO - Use TCMalloc memory allocator
+2022-10-09 11:29:05,207 - __main__ - INFO - OMP_NUM_THREADS=96
+2022-10-09 11:29:05,207 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:29:05,207 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:29:05,207 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 11:29:05,207 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=96
+2022-10-09 11:29:05,207 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:29:05,207 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:29:05,207 - __main__ - INFO - numactl --localalloc -C 0-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009112905_instance_0_cores_0-95.log
+</pre></div>
+</div>
+</section>
+<section id="default-memory-allocator">
+<h4>Default memory allocator<a class="headerlink" href="#default-memory-allocator" title="Permalink to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>intel_extension_for_tensorflow.python.launch<span class="w"> </span>--use_default_allocator<span class="w"> </span>--log_path<span class="w"> </span>./logs<span class="w"> </span>infer_resnet50.py
+</pre></div>
+</div>
+<p>you can confirm usage in log file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2022-10-09 11:29:56,911 - __main__ - INFO - OMP_NUM_THREADS=96
+2022-10-09 11:29:56,911 - __main__ - INFO - KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+2022-10-09 11:29:56,911 - __main__ - INFO - KMP_BLOCKTIME=1
+2022-10-09 11:29:56,911 - __main__ - INFO - TF_NUM_INTEROP_THREADS=1
+2022-10-09 11:29:56,911 - __main__ - INFO - TF_NUM_INTRAOP_THREADS=96
+2022-10-09 11:29:56,911 - __main__ - INFO - TF_ENABLE_ONEDNN_OPTS=1
+2022-10-09 11:29:56,911 - __main__ - INFO - ITEX_LAYOUT_OPT=0
+2022-10-09 11:29:56,911 - __main__ - INFO - numactl --localalloc -C 0-95 &lt;VIRTUAL_ENV&gt;/bin/python -u infer_resnet50.py 2&gt;&amp;1 | tee ./logs/run_20221009112956_instance_0_cores_0-95.log
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="how_to_enable_profiler.html" class="btn btn-neutral float-left" title="GPU Profiler" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="INT8_quantization.html" class="btn btn-neutral float-right" title="INT8 Quantization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fac1fba1790> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
