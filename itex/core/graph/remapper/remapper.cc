@@ -1586,7 +1586,8 @@ bool FindContractionWithBiasInPort(const RemapperContext& ctx,
   if (!FindContractionWithBias(ctx, bias_add_node_view->node_index(), base,
                                /*check_device_compatible=*/false))
     return false;
-  if (!HasAtMostOneFanoutAtPort0(*bias_add_node_view) ||
+  if (HasControlFaninOrFanout(*bias_add_node_view) ||
+      !HasAtMostOneFanoutAtPort0(*bias_add_node_view) ||
       !HaveSameDataType(&add_node_def, bias_add_node_def) ||
       IsInPreserveSet(ctx, bias_add_node_def))
     return false;

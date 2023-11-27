@@ -130,11 +130,12 @@ bool RewriteFusedBatchNormExGrad(const utils::MutableNodeView& node_view) {
 
 static const std::vector<string>* GetPotentialOneDnnOpList() {
   static std::vector<string> onednn_op_list{
-      "Add",       "AddN",           "AvgPool", "Cast",         "Concat",
-      "Conv",      "FusedBatchNorm", "Gelu",    "InstanceNorm", "Identity",
-      "LayerNorm", "MatMul",         "Mish",    "Mul",          "MaxPool",
-      "Quantize",  "Relu",           "Reshape", "Resize",       "Slice",
-      "Sub",       "Swish",
+      "Add",          "AddN",     "AvgPool",        "Cast",
+      "Concat",       "Conv",     "FusedBatchNorm", "Gelu",
+      "InstanceNorm", "Identity", "LayerNorm",      "MatMul",
+      "Mish",         "Mul",      "MaxPool",        "Quantize",
+      "RealDiv",      "Relu",     "Reshape",        "Resize",
+      "Slice",        "Sub",      "Swish",
   };
   return &onednn_op_list;
 }
