@@ -21,6 +21,9 @@ limitations under the License.
 #include "itex/core/devices/device_backend_util.h"
 #include "itex/core/utils/env_var.h"
 #include "itex/core/utils/types.h"
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#endif
 
 namespace itex {
 

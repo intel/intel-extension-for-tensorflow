@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//itex:itex.bzl", "cc_library")
+load("//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device")
 load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
 
 cc_library(
@@ -27,6 +27,8 @@ cc_library(
         "@local_config_tf//:tf_header_lib",
     ] + if_dpcpp(
         ["//itex/core/devices/gpu:gpu_device_impl"],
+    ) + if_using_nextpluggable_device(
+        ["//itex/core/devices/next_pluggable_device:next_pluggable_device"],
     ),
     alwayslink = True,
 )

@@ -26,7 +26,7 @@ cc_library(
         # TFG should be disabled when building with CPU, otherwise it will introduce llvm symbol conflict.
         # TFG depends on llvm-15, while CPU graph compiler needs llvm-13.
         [
-            "//itex/core/graph/tfg_optimizer_hook",
+            # "//itex/core/graph/tfg_optimizer_hook",
         ],
     ),
     alwayslink = True,

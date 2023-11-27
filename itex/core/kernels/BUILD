@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "cc_binary", "cc_library", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "cc_binary", "cc_library", "if_using_nextpluggable_device", "itex_xpu_library", "tf_copts")
 load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp", "if_xetla")
 
 XPU_KERNEL_DEPS = [
@@ -19,6 +19,9 @@ itex_xpu_library(
     name = "xpu_kernel",
     srcs = ["xpu_kernel.cc"],
     hdrs = ["xpu_kernel.h"],
+    copts = if_using_nextpluggable_device(
+        ["-DUSING_NEXTPLUGGABLE_DEVICE"],
+    ),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
@@ -30,6 +33,9 @@ itex_xpu_library(
 itex_xpu_library(
     name = "xpu_kernel_cc",
     srcs = ["xpu_kernel.cc"],
+    copts = if_using_nextpluggable_device(
+        ["-DUSING_NEXTPLUGGABLE_DEVICE"],
+    ),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [

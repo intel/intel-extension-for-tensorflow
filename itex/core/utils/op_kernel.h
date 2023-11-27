@@ -42,6 +42,10 @@ limitations under the License.
 
 #ifndef ITEX_BUILD_JAX
 #include "tensorflow/c/c_api.h"
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 #include "tensorflow/c/kernels.h"
 #include "tensorflow/c/kernels_experimental.h"
 #ifndef INTEL_CPU_ONLY
@@ -377,8 +381,16 @@ class OpKernelContext {
 
 #ifndef INTEL_CPU_ONLY
   ITEX_GPUStream* GetDeviceStream() const {
+#ifndef USING_NEXTPLUGGABLE_DEVICE
     return TF_GetStream(ctx_, status_)->stream_handle;
   }
+#else
+    int device_id = TF_GetDeviceId(ctx_);
+    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+    return static_cast<ITEX_GPUStream*>(
+        ITEXGetStreamFromPjRtDevice(device_id, pjrt_c_client));
+  }
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 #else
   void* GetDeviceStream() { return nullptr; }
 #endif  // INTEL_CPU_ONLY
@@ -405,10 +417,13 @@ class OpKernelContext {
     InternalDevice(TF_OpKernelContext* ctx, TF_Status* status)
         : status_(status),
           stream_(ctx,
+#ifndef USING_NEXTPLUGGABLE_DEVICE
                   &(static_cast<SP_Stream_st*>(TF_GetStream(ctx, status_))
                         ->stream_handle),
+#endif  // USING_NEXTPLUGGABLE_DEVICE
                   &tmp_tensors_),
-          eigen_gpu_device_(&stream_) {}
+          eigen_gpu_device_(&stream_) {
+    }
 #else
     InternalDevice(TF_OpKernelContext* ctx, TF_Status* status)
         : status_(status) {}

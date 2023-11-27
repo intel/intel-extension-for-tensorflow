@@ -24,6 +24,9 @@ limitations under the License.
 #include "itex/core/graph/config_util.h"
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/utils/gpu_resource_mgr_pool.h"
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#endif
 #endif
 #include "itex/core/utils/kernel_def_util.h"
 #include "itex/core/utils/op_requires.h"
@@ -160,7 +163,11 @@ Status OpKernelContext::input(StringPiece name, const Tensor** tensor) {
 void* OpKernelContext::tensor_data(int index) {
   TF_Tensor* tensor = nullptr;
   TF_GetInput(ctx_, index, &tensor, status_);
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  void* data = tensor_get_raw_data(tensor);
+#else
   void* data = TF_TensorData(tensor);
+#endif
   TF_DeleteTensor(tensor);
   return data;
 }
@@ -225,6 +232,30 @@ Status OpKernelContext::forward_input_or_allocate_output(
       candidate_input_indices.size(), output_index,
       output_shape.dim_sizes().data(), output_shape.dims(), forwarded_input,
       status_);
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  if (pointer_is_pjrt_tensor(tensor)) {
+    PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tensor, status_);
+    if (pjrt_c_buffer == nullptr) {
+      int device_id = TF_GetDeviceId(ctx_);
+      PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+      int rank = output_shape.dims();
+      std::vector<int64_t> dimensions(rank);
+      std::vector<int64_t> layout(rank);
+      for (int d = 0; d < rank; ++d) {
+        dimensions[d] = output_shape.dim_size(d);
+      }
+      std::iota(layout.rbegin(), layout.rend(), 0);
+      TF_CreatePjRtBuffer(
+          tensor,
+          ITEXCreatePjRtBuffer(device_id,
+                               DataTypeString(static_cast<DataType>(
+                                   expected_output_dtype(output_index))),
+                               dimensions, layout, pjrt_c_client),
+          "XPU", status_);
+    }
+  }
+#endif
+
   if (outputs_[output_index] == nullptr) {
     std::shared_ptr<Tensor> ptr = std::make_shared<Tensor>(
         static_cast<DataType>(expected_output_dtype(output_index)),
@@ -292,6 +323,26 @@ Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
   TF_Tensor* output = TF_AllocateOutput(
       ctx_, index, static_cast<TF_DataType>(out_type), shape.dim_sizes().data(),
       shape.dims(), shape.num_elements() * DataTypeSize(out_type), status_);
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  if (pointer_is_pjrt_tensor(output)) {
+    int device_id = TF_GetDeviceId(ctx_);
+    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+    int rank = shape.dims();
+    std::vector<int64_t> dimensions(rank);
+    std::vector<int64_t> layout(rank);
+    for (int d = 0; d < rank; ++d) {
+      dimensions[d] = shape.dim_size(d);
+    }
+    std::iota(layout.rbegin(), layout.rend(), 0);
+
+    TF_CreatePjRtBuffer(
+        output,
+        ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type), dimensions,
+                             layout, pjrt_c_client),
+        "XPU", status_);
+  }
+#endif
+
   if (outputs_[index] == nullptr) {
     std::shared_ptr<Tensor> ptr = std::make_shared<Tensor>(
         static_cast<DataType>(expected_output_dtype(index)), shape, output);
@@ -309,6 +360,26 @@ Status OpKernelContext::allocate_temp(
   TF_Tensor* tmp = TF_AllocateTemp(ctx_, static_cast<TF_DataType>(type),
                                    shape.dim_sizes().data(), shape.dims(),
                                    &allocator_attr.plugin_attr(), status_);
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  if (pointer_is_pjrt_tensor(tmp)) {
+    int device_id = TF_GetDeviceId(ctx_);
+    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+
+    int rank = shape.dims();
+    std::vector<int64_t> dimensions(rank);
+    std::vector<int64_t> layout(rank);
+    for (int d = 0; d < rank; ++d) {
+      dimensions[d] = shape.dim_size(d);
+    }
+    std::iota(layout.rbegin(), layout.rend(), 0);
+
+    TF_CreatePjRtBuffer(tmp,
+                        ITEXCreatePjRtBuffer(device_id, DataTypeString(type),
+                                             dimensions, layout, pjrt_c_client),
+                        "XPU", status_);
+  }
+#endif
+
   Tensor t(type, shape, tmp);
   *out_temp = std::move(t);
 

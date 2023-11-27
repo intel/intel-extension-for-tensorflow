@@ -82,7 +82,8 @@ class DevicePool {
   static ITEX_GPUError_t getDevice(ITEX_GPUDevice** device,
                                    int device_ordinal) {
     // absl::ReaderMutexLock lock(&mu_);
-    if (device_ordinal >= DevicePool::GetDevicesPool().size()) {
+    if (static_cast<size_t>(device_ordinal) >=
+        DevicePool::GetDevicesPool().size()) {
       return ITEX_GPU_ERROR_INVALID_DEVICE;
     } else {
       *device = &DevicePool::GetDevicesPool()[device_ordinal];
@@ -274,7 +275,7 @@ class StreamPool {
                                        ITEX_GPUStream* stream_handle) {
     if (stream_handle == nullptr) return ITEX_GPU_ERROR_INVALID_STREAM;
     auto stream_pool = StreamPool::GetStreamsPool(device_handle);
-    for (int i = 0; i < stream_pool.size(); i++) {
+    for (size_t i = 0; i < stream_pool.size(); i++) {
       if (stream_pool[i].get() == stream_handle) {
         stream_pool.erase(stream_pool.begin() + i);
         return ITEX_GPU_SUCCESS;
@@ -286,7 +287,7 @@ class StreamPool {
   static ITEX_GPUError_t getStreams(ITEX_GPUDevice* device_handle,
                                     std::vector<ITEX_GPUStream*>* streams) {
     auto stream_pool = StreamPool::GetStreamsPool(device_handle);
-    for (int i = 0; i < stream_pool.size(); i++) {
+    for (size_t i = 0; i < stream_pool.size(); i++) {
       streams->push_back(stream_pool[i].get());
     }
     return ITEX_GPU_SUCCESS;

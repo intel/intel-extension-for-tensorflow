@@ -15,7 +15,7 @@ itex_xetla_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex:core",
-        "@xetla//:xetla_header",
+        "@itex_xetla//:xetla_header",
     ],
     alwayslink = True,
 )
@@ -39,7 +39,7 @@ itex_xetla_library(
     deps = [
         "//itex:core",
         "//itex/core/kernels/common:fill_functor",
-        "@xetla//:xetla_header",
+        "@itex_xetla//:xetla_header",
     ],
     alwayslink = True,
 )
@@ -56,7 +56,7 @@ itex_xetla_library(
     deps = [
         "//itex:core",
         "//itex/core/kernels/gpu/linalg:fused_einsum_hdrs",
-        "@xetla//:xetla_header",
+        "@itex_xetla//:xetla_header",
     ],
     alwayslink = True,
 )

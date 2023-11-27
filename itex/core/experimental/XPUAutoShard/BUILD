@@ -1,5 +1,5 @@
 load("//itex:itex.bzl", "cc_library")
-load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
+load("@itex-llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -16,11 +16,11 @@ td_library(
     ],
     includes = ["src"],
     deps = [
-        "@llvm-project//mlir:CallInterfacesTdFiles",
-        "@llvm-project//mlir:ControlFlowInterfacesTdFiles",
-        "@llvm-project//mlir:InferTypeOpInterfaceTdFiles",
-        "@llvm-project//mlir:OpBaseTdFiles",
-        "@llvm-project//mlir:SideEffectInterfacesTdFiles",
+        "@itex-llvm-project//mlir:CallInterfacesTdFiles",
+        "@itex-llvm-project//mlir:ControlFlowInterfacesTdFiles",
+        "@itex-llvm-project//mlir:InferTypeOpInterfaceTdFiles",
+        "@itex-llvm-project//mlir:OpBaseTdFiles",
+        "@itex-llvm-project//mlir:SideEffectInterfacesTdFiles",
     ],
 )
 
@@ -36,7 +36,7 @@ gentbl_cc_library(
             "src/xpuautoshard/common/mlir/dialect.cpp.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "src/xpuautoshard/common/mlir/dialect.td",
     deps = [
         ":DialectTdFiles",
@@ -55,7 +55,7 @@ gentbl_cc_library(
             "src/xpuautoshard/common/mlir/attributes.cpp.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "src/xpuautoshard/common/mlir/attributes.td",
     deps = [":DialectTdFiles"],
 )
@@ -72,7 +72,7 @@ gentbl_cc_library(
             "src/xpuautoshard/common/mlir/ops.cpp.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "src/xpuautoshard/common/mlir/ops.td",
     deps = [":DialectTdFiles"],
 )
@@ -105,12 +105,12 @@ cc_library(
         "//itex/core/graph/utils:graph_properties",
         "//itex/core/ir:Dialect",
         "//itex/core/utils:logging",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:ControlFlowInterfacesIncGen",
-        "@llvm-project//mlir:Dialect",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:Pass",
-        "@llvm-project//mlir:Support",
+        "@itex-llvm-project//llvm:Support",
+        "@itex-llvm-project//mlir:ControlFlowInterfacesIncGen",
+        "@itex-llvm-project//mlir:Dialect",
+        "@itex-llvm-project//mlir:IR",
+        "@itex-llvm-project//mlir:Pass",
+        "@itex-llvm-project//mlir:Support",
     ],
     alwayslink = 1,
 )

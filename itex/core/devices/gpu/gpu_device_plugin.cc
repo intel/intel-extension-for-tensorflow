@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifndef USING_NEXTPLUGGABLE_DEVICE
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
 
 #include <memory>
@@ -378,3 +379,4 @@ void gpu_destroy_platform(SP_Platform* const platform) {}
 void gpu_destroy_platform_fns(SP_PlatformFns* const platform_fns) {}
 
 }  // namespace itex
+#endif  // USING_NEXTPLUGGABLE_DEVICE

@@ -13,16 +13,17 @@ def tf_copts(android_optimization_level_override = "-O2", is_external = False):
     # is currently only being set for Android.
     # To clear this value, and allow the CROSSTOOL default
     # to be used, pass android_optimization_level_override=None
-    return (
-        [
-            "-Wno-sign-compare",
-            "-Wno-unknown-pragmas",
-            # "-fno-exceptions", # TODO(itex): disable it first as we need expection in SE's dpcpp backend
-            "-ftemplate-depth=900",
-            "-msse3",
-            "-pthread",
-        ]
+    copts_list = [
+        "-Wno-sign-compare",
+        "-Wno-unknown-pragmas",
+        # "-fno-exceptions", # TODO(itex): disable it first as we need expection in SE's dpcpp backend
+        "-ftemplate-depth=900",
+        "-msse3",
+        "-pthread",
+    ] + if_using_nextpluggable_device(
+        ["-DUSING_NEXTPLUGGABLE_DEVICE"],
     )
+    return copts_list
 
 def if_cpu_build(if_true, if_false = []):
     return select({
@@ -149,8 +150,8 @@ def cc_binary(name, set_target = None, srcs = [], deps = [], *argc, **kwargs):
     )
 
 def cc_library(name, srcs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"])
-    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_gpu_build(["-DINTEL_GPU_ONLY"])
+    kwargs["copts"] = kwargs.get("copts", []) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY -DEIGEN_USE_GPU=1"]) + if_cc_build(["-DCC_BUILD"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
+    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
     native.cc_library(
         name = name,
         srcs = srcs,
@@ -159,8 +160,8 @@ def cc_library(name, srcs = [], deps = [], *argc, **kwargs):
     )
 
 def itex_xetla_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_xetla(["--xetla"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"])
-    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_xetla(["--xetla"])
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY -DEIGEN_USE_GPU=1"]) + if_cc_build(["-DCC_BUILD"]) + if_xetla(["--xetla"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
+    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_xetla(["--xetla"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
     native.cc_library(
         name = name,
         srcs = srcs,
@@ -176,8 +177,8 @@ def itex_xetla_binary(name, set_target = None, srcs = [], deps = [], *argc, **kw
         actual_binary = ":%s" % xpu_binary_name,
         set_target = set_target,
     )
-    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + if_xetla(["--xetla"])
-    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_xetla(["--xetla"])
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + if_xetla(["--xetla"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
+    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_xetla(["--xetla"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
     native.cc_binary(
         name = xpu_binary_name,
         srcs = srcs,
@@ -186,8 +187,8 @@ def itex_xetla_binary(name, set_target = None, srcs = [], deps = [], *argc, **kw
     )
 
 def itex_xpu_library(name, srcs = [], hdrs = [], deps = [], *argc, **kwargs):
-    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_cc_build(["-DCC_BUILD"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"])
-    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"])
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + cpu_copts() + if_gpu_build(["-DINTEL_GPU_ONLY -DEIGEN_USE_GPU=1"]) + if_cc_build(["-DCC_BUILD"]) + if_cc_threadpool_build(["-DCC_THREADPOOL_BUILD"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
+    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_gpu_build(["-DINTEL_GPU_ONLY"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
     native.cc_library(
         name = name,
         srcs = srcs,
@@ -203,8 +204,8 @@ def itex_xpu_binary(name, set_target = None, srcs = [], deps = [], *argc, **kwar
         actual_binary = ":%s" % xpu_binary_name,
         set_target = set_target,
     )
-    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"])
-    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"])
+    kwargs["copts"] = kwargs.get("copts", []) + if_dpcpp(["-dpcpp_compile"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
+    kwargs["linkopts"] = kwargs.get("linkopts", []) + if_dpcpp(["-link_stage"]) + if_using_nextpluggable_device(["-DUSING_NEXTPLUGGABLE_DEVICE"])
     native.cc_binary(
         name = xpu_binary_name,
         srcs = srcs,
@@ -253,3 +254,14 @@ def cc_header_only_library(name, deps = [], includes = [], extra_deps = [], **kw
         deps = extra_deps,
         **kwargs
     )
+
+def if_using_nextpluggable_device(if_true, if_false = []):
+    """Shorthand for select()' on whether build .so for nextpluggable device
+
+    Returns `if_true` if nextgluggable device is used.
+    """
+    return select({
+        "@intel_extension_for_tensorflow//itex:gpu_with_nextpluggable_device_build": if_true,
+        "@intel_extension_for_tensorflow//itex:cpu_build": [],
+        "//conditions:default": if_false,
+    })

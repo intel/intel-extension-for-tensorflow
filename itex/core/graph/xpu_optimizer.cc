@@ -29,9 +29,9 @@ limitations under the License.
 #include "itex/core/utils/op_kernel.h"
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
-#ifndef INTEL_CPU_ONLY
+#if 0
 #include "itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.h"
-#endif  // INTEL_CPU_ONLY
+#endif
 
 namespace itex {
 namespace graph {
@@ -125,9 +125,12 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
       if (ITEX_VLOG_IS_ON(4)) {
         DumpGraphDefToFile("itex_optimizer_before_sharding", graph_def, "./");
       }
+
+#if 0
       SET_STATUS_IF_ERROR(tf_status,
                           mlir::tfg::RunAutoShard(&opt_ctx, item, graph_def,
                                                   &optimized_graph_def));
+#endif
       if (ITEX_VLOG_IS_ON(4)) {
         DumpGraphDefToFile("itex_optimizer_after_sharding", optimized_graph_def,
                            "./");

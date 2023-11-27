@@ -1,4 +1,4 @@
-load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
+load("@itex-llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
 load("//itex:itex.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -7,7 +7,7 @@ td_library(
     name = "InterfacesTdFiles",
     srcs = ["interfaces.td"],
     deps = [
-        "@llvm-project//mlir:OpBaseTdFiles",
+        "@itex-llvm-project//mlir:OpBaseTdFiles",
     ],
 )
 
@@ -23,7 +23,7 @@ gentbl_cc_library(
             "interfaces.cc.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "interfaces.td",
     deps = [
         ":InterfacesTdFiles",
@@ -38,12 +38,12 @@ td_library(
         "ops.td",
     ],
     deps = [
-        "@llvm-project//mlir:CallInterfacesTdFiles",
-        "@llvm-project//mlir:ControlFlowInterfacesTdFiles",
-        "@llvm-project//mlir:FunctionInterfacesTdFiles",
-        "@llvm-project//mlir:InferTypeOpInterfaceTdFiles",
-        "@llvm-project//mlir:OpBaseTdFiles",
-        "@llvm-project//mlir:SideEffectInterfacesTdFiles",
+        "@itex-llvm-project//mlir:CallInterfacesTdFiles",
+        "@itex-llvm-project//mlir:ControlFlowInterfacesTdFiles",
+        "@itex-llvm-project//mlir:FunctionInterfacesTdFiles",
+        "@itex-llvm-project//mlir:InferTypeOpInterfaceTdFiles",
+        "@itex-llvm-project//mlir:OpBaseTdFiles",
+        "@itex-llvm-project//mlir:SideEffectInterfacesTdFiles",
     ],
 )
 
@@ -99,7 +99,7 @@ gentbl_cc_library(
             "attributes.cc.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "ops.td",
     deps = [
         ":DialectTdFiles",
@@ -129,11 +129,11 @@ cc_library(
         ":DialectIncGen",
         ":InterfacesIncGen",
         "//itex/core/ir/types:Dialect",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:ControlFlowInterfaces",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:InferTypeOpInterface",
-        "@llvm-project//mlir:Support",
+        "@itex-llvm-project//llvm:Support",
+        "@itex-llvm-project//mlir:ControlFlowInterfaces",
+        "@itex-llvm-project//mlir:IR",
+        "@itex-llvm-project//mlir:InferTypeOpInterface",
+        "@itex-llvm-project//mlir:Support",
     ],
 )
 
@@ -158,11 +158,11 @@ cc_library(
         "//itex/core/ir/importexport:graphdef_export",
         "//itex/core/ir/types:Dialect",
         "//itex/core/utils:common_utils",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:DerivedAttributeOpInterface",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:InferTypeOpInterface",
-        "@llvm-project//mlir:Support",
+        "@itex-llvm-project//llvm:Support",
+        "@itex-llvm-project//mlir:DerivedAttributeOpInterface",
+        "@itex-llvm-project//mlir:IR",
+        "@itex-llvm-project//mlir:InferTypeOpInterface",
+        "@itex-llvm-project//mlir:Support",
         "@local_config_tf//:protos_all",
     ],
 )

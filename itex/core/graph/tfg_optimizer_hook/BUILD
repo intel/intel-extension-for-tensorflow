@@ -7,7 +7,7 @@ cc_library(
     srcs = ["tfg_passes_builder.cc"],
     hdrs = ["tfg_passes_builder.h"],
     deps = [
-        "@llvm-project//mlir:Pass",
+        "@itex-llvm-project//mlir:Pass",
     ],
 )
 
@@ -30,7 +30,7 @@ cc_library(
         "//itex/core/ir/importexport:graphdef_export",
         "//itex/core/ir/importexport:graphdef_import",
         "//itex/core/utils:common_utils",
-        "@llvm-project//mlir:Pass",
-        "@llvm-project//mlir:Transforms",
+        "@itex-llvm-project//mlir:Pass",
+        "@itex-llvm-project//mlir:Transforms",
     ],
 )

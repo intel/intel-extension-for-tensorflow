@@ -16,6 +16,7 @@ limitations under the License.
 #ifndef ITEX_CORE_DEVICES_GPU_GPU_DEVICE_PLUGIN_H_
 #define ITEX_CORE_DEVICES_GPU_GPU_DEVICE_PLUGIN_H_
 
+#ifndef USING_NEXTPLUGGABLE_DEVICE
 #include "itex/core/utils/logging.h"
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 #include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
@@ -123,4 +124,5 @@ void gpu_memset32(const SP_Device* device, SP_Stream stream,
 TF_Bool gpu_host_callback(const SP_Device* device, SP_Stream stream,
                           SE_StatusCallbackFn callback_fn, void* callback_arg);
 }  // namespace itex
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 #endif  // ITEX_CORE_DEVICES_GPU_GPU_DEVICE_PLUGIN_H_

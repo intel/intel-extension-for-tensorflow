@@ -114,6 +114,31 @@ struct Helper<tstring> {
 
 }  // namespace
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+void* tensor_get_raw_data(TF_Tensor* tf_tensor) {
+  void* data_ptr = TF_TensorData(tf_tensor);
+  if (data_ptr == nullptr) return nullptr;
+  uintptr_t value = reinterpret_cast<uintptr_t>(data_ptr);
+
+  if (value & kTag) {
+    TF_Status* tf_status = TF_NewStatus();
+    PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tf_tensor, tf_status);
+    return ITEXOpaqueDataPointerFromPjRtBuffer(pjrt_c_buffer);
+  } else {
+    return data_ptr;
+  }
+}
+
+bool pointer_is_pjrt_tensor(TF_Tensor* tf_tensor) {
+  uintptr_t value = reinterpret_cast<uintptr_t>(TF_TensorData(tf_tensor));
+  if (value & kTag) {
+    return true;
+  } else {
+    return false;
+  }
+}
+#endif  // USING_NEXTPLUGGABLE_DEVICE
+
 void Tensor::CheckTypeAndIsAligned(DataType expected_dtype) const {
   ITEX_CHECK_EQ(dtype(), expected_dtype)
       << " " << DataTypeString(expected_dtype) << " expected, got "
@@ -334,8 +359,13 @@ void Tensor::AsProtoTensorContent(TensorProto* proto) const {
   shape_.AsProto(proto->mutable_tensor_shape());
   if (buf_) {
     TensorBuffer* tmp_buf_ = nullptr;
+#ifndef USING_NEXTPLUGGABLE_DEVICE
     tmp_buf_ =
         new itex::TensorBuffer(reinterpret_cast<void*>(TF_TensorData(buf_)));
+#else
+    tmp_buf_ = new itex::TensorBuffer(
+        reinterpret_cast<void*>(tensor_get_raw_data(buf_)));
+#endif
     CASES(dtype(), Helper<T>::Encode(tmp_buf_, shape_.num_elements(),
                                      proto->mutable_tensor_content()));
     tmp_buf_->Unref();

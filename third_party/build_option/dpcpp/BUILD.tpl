@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load(":platform.bzl", "dpcpp_library_path")
 load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
-load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device")
 
 config_setting(
     name = "using_dpcpp",
@@ -30,6 +30,9 @@ cc_library(
     hdrs = glob([
         "runtime/itex_gpu_runtime.h",
     ]),
+    copts = if_using_nextpluggable_device(
+      ["-DUSING_NEXTPLUGGABLE_DEVICE"],
+    ),
     includes = [
         ".",
         "include",

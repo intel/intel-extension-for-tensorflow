@@ -19,6 +19,9 @@ limitations under the License.
 #include "tensorflow/c/experimental/pluggable_profiler/pluggable_profiler.h"
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 #include "tensorflow/c/kernels.h"
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "tensorflow/core/common_runtime/next_pluggable_device/c/plugin_c_api.h"
+#endif
 
 static void* handle;
 static void* LoadGpuLibrary() __attribute__((constructor));
@@ -250,6 +253,7 @@ void gpu_destroy_profiler(TP_Profiler* profiler) {}
 
 void gpu_destroy_profiler_fns(TP_ProfilerFns* profiler_fns) {}
 
+#ifndef USING_NEXTPLUGGABLE_DEVICE
 void SE_InitPlugin(SE_PlatformRegistrationParams* const params,
                    TF_Status* const status) {
   typedef void (*se_initplugin_internal)(SE_PlatformRegistrationParams*,
@@ -283,7 +287,7 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* const params,
     params->destroy_platform_fns = xpu_destroy_platform_fns;
   }
 }
-
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 void TF_InitGraph(TP_OptimizerRegistrationParams* params, TF_Status* status) {
   typedef void (*tf_initgraph_internal)(TP_OptimizerRegistrationParams*,
                                         TF_Status*);
@@ -353,3 +357,76 @@ void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status) {
     params->destroy_profiler_fns = gpu_destroy_profiler_fns;
   }
 }
+
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+int32_t tfnpd_get_device_count(TF_Status* status) {
+  ITEX_LOG(ERROR) << "Could not load Intel Extension for Tensorflow* GPU "
+                     "backend, GPU will not be used.";
+  return 0;
+}
+
+void tfnpd_init_plugin_internal_device_states(TF_Status* status) {
+  // TF_CreateAndSetPjRtCApiClient("XPU", status);
+}
+
+void tfnpd_xla_shape_to_device_shape_representation(
+    XLA_Shape* serialized_xla_shape, int data_type, bool use_fast_memory,
+    XLA_LayoutPreference layout_preference, XLA_Shape* serialized_device_shape,
+    TF_Status* tf_status) {}
+
+const TFNPD_Api* TFNPD_InitPlugin(TFNPD_PluginParams* params,
+                                  TF_Status* tf_status) {
+  typedef const TFNPD_Api* (*tfnpd_init_internal)(TFNPD_PluginParams*,
+                                                  TF_Status*);
+  if (handle) {
+    auto tfnpd_init = reinterpret_cast<tfnpd_init_internal>(
+        dlsym(handle, "TFNPD_InitPlugin_Internal"));
+    if (*tfnpd_init != nullptr) {
+      return tfnpd_init(params, tf_status);
+    } else {
+      const char* error_msg = dlerror();
+      ITEX_LOG(FATAL) << error_msg;
+    }
+  } else {
+    params->struct_size = TFNPD_PLUGIN_PARAMS_STRUCT_SIZE;
+    params->device_type = "XPU";
+    params->compilation_device_name = "XLA_GPU_JIT";
+    params->is_pluggable_device = true;
+    params->use_pjrt_on_demand_compile = false;
+    params->priority = 0;
+    static TFNPD_Api tfnpd_api;
+
+    tfnpd_api.TFNPD_GetDeviceCount = tfnpd_get_device_count;
+    tfnpd_api.TFNPD_InitPluginInternalDeviceStates =
+        tfnpd_init_plugin_internal_device_states;
+    tfnpd_api.TFNPD_XlaShapeToDeviceShapeRepresentation =
+        tfnpd_xla_shape_to_device_shape_representation;
+    return &tfnpd_api;
+  }
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+const PJRT_Api* GetPjrtApi();
+#ifdef __cplusplus
+}
+#endif
+
+const PJRT_Api* GetPjrtApi() {
+  typedef const PJRT_Api* (*get_pjrt_api_internal)();
+  if (handle) {
+    auto get_pjrt_api =
+        reinterpret_cast<get_pjrt_api_internal>(dlsym(handle, "GetPjrtApi"));
+    if (*get_pjrt_api != nullptr) {
+      return get_pjrt_api();
+    } else {
+      const char* error_msg = dlerror();
+      ITEX_LOG(FATAL) << error_msg;
+      return nullptr;
+    }
+  } else {
+    return nullptr;
+  }
+}
+#endif  // USING_NEXTPLUGGABLE_DEVICE

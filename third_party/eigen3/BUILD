@@ -11,7 +11,7 @@ licenses([
 
 exports_files(["LICENSE"])
 
-load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library", "if_gpu_backend")
 
 #load("//third_party/mkl:build_defs.bzl", "if_mkl")
 
@@ -38,9 +38,10 @@ cc_library(
     includes = [],  #+ if_mkl(["./mkl_include"]),
     visibility = ["//visibility:public"],
     deps = [
+        "@itex_eigen_archive//:eigen",
+    ] + if_gpu_backend([
         "//third_party/build_option/dpcpp:eigen_itex_gpu_header",
-        "@eigen_archive//:eigen",
-    ],
+    ]),
 )
 
 filegroup(
@@ -61,7 +62,7 @@ filegroup(
 genrule(
     name = "install_eigen_headers",
     srcs = [
-        "@eigen_archive//:eigen_header_files",
+        "@itex_eigen_archive//:eigen_header_files",
         ":eigen_third_party_header_files",
     ],
     outs = ["include"],
@@ -69,7 +70,7 @@ genrule(
     mkdir $@
     for f in $(SRCS); do
       d="$${f%/*}"
-      d="$${d#*external/eigen_archive/}"
+      d="$${d#*external/itex_eigen_archive/}"
 
       mkdir -p "$@/$${d}"
       cp "$${f}" "$@/$${d}/"

@@ -17,8 +17,15 @@ limitations under the License.
 
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
+
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+namespace {
+constexpr uintptr_t kTag = 0x1ULL;
+}
+#endif
 
 struct Deleter {
   void operator()(TF_Status* s) {
@@ -27,6 +34,17 @@ struct Deleter {
     }
   }
 };
+
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+static bool pointer_is_pjrt_tensor(TF_Tensor* tf_tensor) {
+  uintptr_t value = reinterpret_cast<uintptr_t>(TF_TensorData(tf_tensor));
+  if (value & kTag) {
+    return true;
+  } else {
+    return false;
+  }
+}
+#endif
 
 void* PluginStreamDevice::allocate(size_t num_bytes) const {
   std::unique_ptr<TF_Status, Deleter> status(TF_NewStatus());
@@ -41,11 +59,40 @@ void* PluginStreamDevice::allocate(size_t num_bytes) const {
     return nullptr;
   }
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  if (pointer_is_pjrt_tensor(tmp_tensor)) {
+    int device_id = TF_GetDeviceId(context_);
+    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status.get());
+
+    std::vector<int64_t> dimensions(1);
+    std::vector<int64_t> layout(1);
+    dimensions[0] = num_bytes;
+    std::iota(layout.rbegin(), layout.rend(), 0);
+    TF_CreatePjRtBuffer(tmp_tensor,
+                        ITEXCreatePjRtBuffer(device_id, "uint8", dimensions,
+                                             layout, pjrt_c_client),
+                        "XPU", status.get());
+  }
+#endif
+
   if (tmp_tensors_ != nullptr) {
     tmp_tensors_->push_back(tmp_tensor);
   }
 
+#ifndef USING_NEXTPLUGGABLE_DEVICE
   void* ret = TF_TensorData(tmp_tensor);
+#else
+  void* ret;
+  void* data_ptr = TF_TensorData(tmp_tensor);
+  uintptr_t value = reinterpret_cast<uintptr_t>(data_ptr);
+  if (value & kTag) {
+    TF_Status* tf_status = TF_NewStatus();
+    PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tmp_tensor, tf_status);
+    ret = ITEXOpaqueDataPointerFromPjRtBuffer(pjrt_c_buffer);
+  } else {
+    ret = data_ptr;
+  }
+#endif
 
   if (ret == nullptr) {
     ITEX_LOG(ERROR)

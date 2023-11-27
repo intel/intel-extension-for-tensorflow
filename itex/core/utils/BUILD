@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "cc_library", "itex_xpu_library")
+load("//itex:itex.bzl", "cc_library", "if_gpu_backend", "if_using_nextpluggable_device", "itex_xpu_binary", "itex_xpu_library")
 load(
     "//itex/core/utils:build_config.bzl",
     "tf_protobuf_deps",
@@ -100,7 +100,10 @@ cc_library(
         "@local_config_tf//:protos_all",
         "@local_config_tf//:tf_header_lib",
         "@nsync//:nsync_cpp",
-    ],
+    ] + if_using_nextpluggable_device([
+        "//third_party/build_option/dpcpp:itex_gpu_header",
+        ":libintel_xla",
+    ]),
 )
 
 cc_library(
@@ -108,7 +111,9 @@ cc_library(
     deps = if_dpcpp([
         "//itex/core/devices/gpu:eigen_stream_device",
         "//itex/core/devices/gpu:gpu_device_impl",
-    ]),
+    ]) + if_using_nextpluggable_device(
+        ["//itex/core/devices/next_pluggable_device:next_pluggable_device"],
+    ),
 )
 
 cc_library(
@@ -411,6 +416,20 @@ cc_library(
     deps = [
         "//third_party/build_option/dpcpp:itex_gpu_header",
     ],
+)
+
+cc_import(
+    name = "libintel_xla",
+    shared_library = ":intel_xla",
+    visibility = ["//visibility:public"],
+)
+
+itex_xpu_binary(
+    name = "libintel_xla.so",
+    linkshared = True,
+    set_target = "gpu_orig_backend",
+    visibility = ["//visibility:public"],
+    deps = if_dpcpp(["@intel_xla//xla/pjrt:tf_pjrt_helper"]),
 )
 
 cc_library(

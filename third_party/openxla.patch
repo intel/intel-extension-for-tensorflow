@@ -1,0 +1,1545 @@
+diff --git a/third_party/tsl/third_party/grpc/upb_platform_fix.patch b/third_party/tsl/third_party/grpc/upb_platform_fix.patch
+index 6edd66067..022c9d155 100644
+--- a/third_party/tsl/third_party/grpc/upb_platform_fix.patch
++++ b/third_party/tsl/third_party/grpc/upb_platform_fix.patch
+@@ -11,3 +11,12 @@ index ad85b202..2311b2e4 100644
+  )
+ 
+  config_setting(
++@@ -24,7 +24,7 @@ exports_files([
++
++ CPPOPTS = [
++     # copybara:strip_for_google3_begin
++-    "-Werror",
+++    # "-Werror",
++     "-Wno-long-long",
++     # copybara:strip_end
++ ]
+diff --git a/third_party/tsl/third_party/llvm/build.patch b/third_party/tsl/third_party/llvm/build.patch
+index bbf8f587a..ab0df933f 100644
+--- a/third_party/tsl/third_party/llvm/build.patch
++++ b/third_party/tsl/third_party/llvm/build.patch
+@@ -2,6 +2,14 @@ diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llv
+ index 2b88729d748b..e12d979b4908 100644
+ --- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+ +++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
++@@ -25,6 +25,7 @@ exports_files(["LICENSE.TXT"])
++ # widely available feature to enable unlimited stack frame instead of using
++ # this `Make` variable.
++ llvm_copts = [
+++    "-fvisibility=hidden",
++     "$(STACK_FRAME_UNLIMITED)",
++ ]
++
+ @@ -207,13 +207,15 @@ cc_library(
+          "lib/Support/BLAKE3/llvm_blake3_prefix.h",
+      ] + select({
+@@ -44,3 +52,24 @@ index 2b88729d748b..e12d979b4908 100644
+          "//conditions:default": [
+              "BLAKE3_NO_AVX2",
+              "BLAKE3_NO_AVX512",
++diff --git a/mlir/lib/Bytecode/Reader/BytecodeReader.cpp b/mlir/lib/Bytecode/Reader/BytecodeReader.cpp
++index 177372c68046..40d49dc13b2f 100644
++--- a/mlir/lib/Bytecode/Reader/BytecodeReader.cpp
+++++ b/mlir/lib/Bytecode/Reader/BytecodeReader.cpp
++@@ -1549,6 +1549,8 @@ private:
++   const std::shared_ptr<llvm::SourceMgr> &bufferOwnerRef;
++ };
++
+++// TODO: Disable clang opt since it crashes with clang-17 compiler.
+++#pragma clang optimize off
++ LogicalResult BytecodeReader::Impl::read(
++     Block *block, llvm::function_ref<bool(Operation *)> lazyOpsCallback) {
++   EncodingReader reader(buffer.getBuffer(), fileLoc);
++@@ -1628,6 +1630,7 @@ LogicalResult BytecodeReader::Impl::read(
++   // Finally, process the IR section.
++   return parseIRSection(*sectionDatas[bytecode::Section::kIR], block);
++ }
+++#pragma clang optimize on
++
++ LogicalResult BytecodeReader::Impl::parseVersion(EncodingReader &reader) {
++   if (failed(reader.parseVarInt(version)))
+diff --git a/third_party/tsl/third_party/llvm/opt.patch b/third_party/tsl/third_party/llvm/opt.patch
+new file mode 100644
+index 000000000..49e5b3b7f
+--- /dev/null
++++ b/third_party/tsl/third_party/llvm/opt.patch
+@@ -0,0 +1,18 @@
++diff --git a/llvm/lib/Transforms/Scalar/MemCpyOptimizer.cpp b/llvm/lib/Transforms/Scalar/MemCpyOptimizer.cpp
++index d87f2fb59814..d2411cb33ecf 100644
++--- a/llvm/lib/Transforms/Scalar/MemCpyOptimizer.cpp
+++++ b/llvm/lib/Transforms/Scalar/MemCpyOptimizer.cpp
++@@ -2019,9 +2019,10 @@ PreservedAnalyses MemCpyOptPass::run(Function &F, FunctionAnalysisManager &AM) {
++   auto *PDT = &AM.getResult<PostDominatorTreeAnalysis>(F);
++   auto *MSSA = &AM.getResult<MemorySSAAnalysis>(F);
++ 
++-  bool MadeChange = runImpl(F, &TLI, AA, AC, DT, PDT, &MSSA->getMSSA());
++-  if (!MadeChange)
++-    return PreservedAnalyses::all();
+++  // FIXME: Disable MemCpyOptPass to avoid llvm.memcpy issue
+++ // bool MadeChange = runImpl(F, &TLI, AA, AC, DT, PDT, &MSSA->getMSSA());
+++ // if (!MadeChange)
+++ //   return PreservedAnalyses::all();
++ 
++   PreservedAnalyses PA;
++   PA.preserveSet<CFGAnalyses>();
+diff --git a/third_party/tsl/third_party/llvm/spirv.patch b/third_party/tsl/third_party/llvm/spirv.patch
+new file mode 100644
+index 000000000..dd2ebb8e1
+--- /dev/null
++++ b/third_party/tsl/third_party/llvm/spirv.patch
+@@ -0,0 +1,93 @@
++diff --git a/llvm/include/llvm/Analysis/TargetTransformInfoImpl.h b/llvm/include/llvm/Analysis/TargetTransformInfoImpl.h
++index c1ff314ae51c..a9d8b955629d 100644
++--- a/llvm/include/llvm/Analysis/TargetTransformInfoImpl.h
+++++ b/llvm/include/llvm/Analysis/TargetTransformInfoImpl.h
++@@ -461,7 +461,11 @@ public:
++     return ElementCount::get(0, IsScalable);
++   }
++ 
++-  unsigned getMaximumVF(unsigned ElemWidth, unsigned Opcode) const { return 0; }
+++  unsigned getMaximumVF(unsigned ElemWidth, unsigned Opcode) const {
+++    if (Opcode == Instruction::Load || Opcode == Instruction::Store)
+++        return 32 * 4 / ElemWidth;
+++    return (ElemWidth == 16) ? 2 : 1;
+++  }
++   unsigned getStoreMinimumVF(unsigned VF, Type *, Type *) const { return VF; }
++ 
++   bool shouldConsiderAddressTypePromotion(
++diff --git a/llvm/lib/Passes/PassBuilderPipelines.cpp b/llvm/lib/Passes/PassBuilderPipelines.cpp
++index 78e0e6353056..4f9f51164bfe 100644
++--- a/llvm/lib/Passes/PassBuilderPipelines.cpp
+++++ b/llvm/lib/Passes/PassBuilderPipelines.cpp
++@@ -183,6 +183,10 @@ static cl::opt<bool> EnableGlobalAnalyses(
++     "enable-global-analyses", cl::init(true), cl::Hidden,
++     cl::desc("Enable inter-procedural analyses"));
++ 
+++static cl::opt<bool>
+++    SYCLOptimizationMode("sycl-opt", cl::init(false), cl::Hidden,
+++                         cl::desc("Enable SYCL optimization mode."));
+++
++ static cl::opt<bool>
++     RunPartialInlining("enable-partial-inlining", cl::init(false), cl::Hidden,
++                        cl::desc("Run Partial inlinining pass"));
++@@ -406,6 +410,7 @@ PassBuilder::buildO1FunctionSimplificationPipeline(OptimizationLevel Level,
++   // Form canonically associated expression trees, and simplify the trees using
++   // basic mathematical properties. For example, this will form (nearly)
++   // minimal multiplication trees.
+++  if (!SYCLOptimizationMode) {
++   FPM.addPass(ReassociatePass());
++ 
++   // Add the primary loop simplification pipeline.
++@@ -477,7 +482,7 @@ PassBuilder::buildO1FunctionSimplificationPipeline(OptimizationLevel Level,
++   FPM.addPass(createFunctionToLoopPassAdaptor(std::move(LPM2),
++                                               /*UseMemorySSA=*/false,
++                                               /*UseBlockFrequencyInfo=*/false));
++-
+++  }
++   // Delete small array after loop unroll.
++   FPM.addPass(SROAPass(SROAOptions::ModifyCFG));
++ 
++@@ -580,6 +585,7 @@ PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
++   // Form canonically associated expression trees, and simplify the trees using
++   // basic mathematical properties. For example, this will form (nearly)
++   // minimal multiplication trees.
+++  if (!SYCLOptimizationMode) {
++   FPM.addPass(ReassociatePass());
++ 
++   if (EnableConstraintElimination)
++@@ -657,7 +663,7 @@ PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
++   FPM.addPass(createFunctionToLoopPassAdaptor(std::move(LPM2),
++                                               /*UseMemorySSA=*/false,
++                                               /*UseBlockFrequencyInfo=*/false));
++-
+++  }
++   // Delete small array after loop unroll.
++   FPM.addPass(SROAPass(SROAOptions::ModifyCFG));
++ 
++@@ -715,6 +721,9 @@ PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
++ 
++   invokeScalarOptimizerLateEPCallbacks(FPM, Level);
++ 
+++  if (SYCLOptimizationMode)
+++    FPM.addPass(SimplifyCFGPass());
+++  else
++   FPM.addPass(SimplifyCFGPass(SimplifyCFGOptions()
++                                   .convertSwitchRangeToICmp(true)
++                                   .hoistCommonInsts(true)
++@@ -1385,6 +1394,7 @@ PassBuilder::buildModuleOptimizationPipeline(OptimizationLevel Level,
++ 
++   invokeVectorizerStartEPCallbacks(OptimizePM, Level);
++ 
+++  if (!SYCLOptimizationMode) {
++   LoopPassManager LPM;
++   // First rotate loops that may have been un-rotated by prior passes.
++   // Disable header duplication at -Oz.
++@@ -1408,7 +1418,7 @@ PassBuilder::buildModuleOptimizationPipeline(OptimizationLevel Level,
++   OptimizePM.addPass(InjectTLIMappings());
++ 
++   addVectorPasses(Level, OptimizePM, /* IsFullLTO */ false);
++-
+++  }
++   // LoopSink pass sinks instructions hoisted by LICM, which serves as a
++   // canonicalization pass that enables other optimizations. As a result,
++   // LoopSink pass needs to be a very late IR pass to avoid undoing LICM
+diff --git a/third_party/tsl/third_party/llvm/workspace.bzl b/third_party/tsl/third_party/llvm/workspace.bzl
+index 30e3e13fd..131556f93 100644
+--- a/third_party/tsl/third_party/llvm/workspace.bzl
++++ b/third_party/tsl/third_party/llvm/workspace.bzl
+@@ -17,6 +17,8 @@ def repo(name):
+         ],
+         build_file = "//third_party/llvm:llvm.BUILD",
+         patch_file = [
++            "//third_party/llvm:spirv.patch",
++            "//third_party/llvm:opt.patch",
+             "//third_party/llvm:generated.patch",  # Autogenerated, don't remove.
+             "//third_party/llvm:build.patch",
+             "//third_party/llvm:mathextras.patch",
+diff --git a/third_party/tsl/tsl/framework/contraction/BUILD b/third_party/tsl/tsl/framework/contraction/BUILD
+index 220b751f4..63f82cca5 100644
+--- a/third_party/tsl/tsl/framework/contraction/BUILD
++++ b/third_party/tsl/tsl/framework/contraction/BUILD
+@@ -121,7 +121,7 @@ cc_library(
+         "//tsl:linux_ppc64le": [],
+         "//tsl:linux_s390x": [],
+         "//tsl:macos_arm64": [],
+-        "//conditions:default": ["@onednn//:mkl_dnn"],
++        "//conditions:default": [],
+     }),
+ )
+ 
+diff --git a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td
+index 3f4c95ed0..a070f3c22 100644
+--- a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td
++++ b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td
+@@ -322,6 +322,19 @@ def LHLOGPU_AllToAllDoneOp: LHLOGPU_Op<"all_to_all_done"> {
+   let arguments = (ins MHLO_Token:$token);
+ }
+ 
++
++def LHLOGPU_fusedQKVOp : LHLOGPU_Op<"fQKV"> {
++  let arguments = (ins
++    Arg<LHLO_Buffer, "", [MemRead]>:$input,
++    Arg<LHLO_Buffer, "", [MemRead]>:$weight,
++    Arg<LHLO_Buffer, "", [MemWrite]>:$bmm_output1,
++    Arg<LHLO_Buffer, "", [MemWrite]>:$bmm_output2,
++    Arg<LHLO_Buffer, "", [MemWrite]>:$bmm_output3,
++    MHLO_DotDimensionNumbers:$dot_dimension_numbers);
++}
++
++
++
+ def LHLOGPU_fusedMHAOp : LHLOGPU_Op<"fMHA", [AttrSizedOperandSegments]> {
+   let arguments = (ins
+     Arg<LHLO_Buffer, "", [MemRead]>:$lhs_bmm1,
+diff --git a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
+index d1c7c7ac5..31036ab45 100644
+--- a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
++++ b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
+@@ -137,6 +137,7 @@ def FusedMhaDagSoftmaxDropout : I32EnumAttrCase<"SoftmaxDropout", 5>;
+ def FusedMhaDagSoftmax : I32EnumAttrCase<"Softmax", 6>;
+ def FusedMhaDagScaleBiasSoftmaxDropout : I32EnumAttrCase<"ScaleBiasSoftmaxDropout", 7>;
+ def FusedMhaDagScaleBiasSoftmax : I32EnumAttrCase<"ScaleBiasSoftmax", 8>;
++def FusedMhaDagScaleSoftmax : I32EnumAttrCase<"ScaleSoftmax", 9>;
+ 
+ def FusedMhaBackwardDagScaleBiasSoftmaxDropout : I32EnumAttrCase<"BackwardScaleBiasSoftmaxDropout", 0>;
+ def FusedMhaBackwardDagScaleBiasSoftmax : I32EnumAttrCase<"BackwardScaleBiasSoftmax", 1>;
+@@ -153,7 +154,8 @@ def FusedMhaDagSignature: I32EnumAttr<"FusedMhaDagSignature",
+     FusedMhaDagSoftmaxDropout,
+     FusedMhaDagSoftmax,
+     FusedMhaDagScaleBiasSoftmaxDropout,
+-    FusedMhaDagScaleBiasSoftmax]> {
++    FusedMhaDagScaleBiasSoftmax,
++    FusedMhaDagScaleSoftmax]> {
+   let genSpecializedAttr = 0;
+   let cppNamespace = "::mlir::lmhlo_gpu";
+ }
+diff --git a/xla/pjrt/gpu/BUILD b/xla/pjrt/gpu/BUILD
+index fd18d73bf..93a5b61c4 100644
+--- a/xla/pjrt/gpu/BUILD
++++ b/xla/pjrt/gpu/BUILD
+@@ -89,7 +89,7 @@ cc_library(
+         "@tsl//tsl/platform:fingerprint",
+         "@tsl//tsl/profiler/lib:connected_traceme",
+         "@tsl//tsl/util:env_var",
+-    ] + if_cuda_or_rocm([
++    ] + if_cuda([
+         "//xla/service/gpu:gpu_compiler",
+     ]) + if_cuda([
+         ":nccl_id_store_cuda",
+@@ -239,16 +239,16 @@ cc_library(
+         "@tsl//tsl/platform:casts",
+         "@tsl//tsl/platform:errors",
+     ] + if_cuda([
++        "//xla/service/gpu:gpu_compiler",
++    ]) + if_cuda([
+         ":nccl_id_store_cuda",
+         "@local_config_cuda//cuda:cuda_headers",
+         "//xla/stream_executor/cuda:cuda_activation_header",
+         "//xla/stream_executor/gpu:gpu_cudamallocasync_allocator",
+-        "//xla/service/gpu:gpu_compiler",
+         "//xla/service/gpu:nvptx_compiler_impl",
+     ]) + if_rocm([
+         ":nccl_id_store_rocm",
+         "@local_config_rocm//rocm:rocm_headers",
+-        "//xla/service/gpu:gpu_compiler",
+         "//xla/service/gpu:amdgpu_compiler_impl",
+     ]),
+     alwayslink = True,
+diff --git a/xla/pjrt/gpu/gpu_helpers.cc b/xla/pjrt/gpu/gpu_helpers.cc
+index b7064ac25..dcb1efbd8 100644
+--- a/xla/pjrt/gpu/gpu_helpers.cc
++++ b/xla/pjrt/gpu/gpu_helpers.cc
+@@ -37,11 +37,12 @@ namespace xla {
+ StatusOr<LocalClient*> GetGpuXlaClient(
+     const std::optional<std::string>& platform_name,
+     const std::optional<std::set<int>>& allowed_devices) {
++  // SYCL: hardcode to xpu
+   TF_ASSIGN_OR_RETURN(
+       se::Platform * platform,
+-      PlatformUtil::GetPlatform(platform_name ? *platform_name : "gpu"));
++      PlatformUtil::GetPlatform(platform_name ? *platform_name : "xpu"));
+   if (platform->VisibleDeviceCount() <= 0) {
+-    return FailedPrecondition("No visible GPU devices.");
++    return FailedPrecondition("No visible XPU devices.");
+   }
+   LocalClientOptions options;
+   options.set_platform(platform);
+@@ -113,7 +114,8 @@ StatusOr<std::unique_ptr<tsl::BFCAllocator>> CreateBFCAllocator(
+   opts.allow_growth = !preallocate;
+   return std::make_unique<tsl::BFCAllocator>(
+       std::move(sub_allocator), allocator_memory,
+-      absl::StrCat("GPU_", device_ordinal, "_bfc"), opts);
++      // SYCL: hardcode to xpu
++      absl::StrCat("XPU_", device_ordinal, "_bfc"), opts);
+ }
+ 
+ // Returns a GPU pinned host memory allocator to use when staging host->GPU
+@@ -131,7 +133,8 @@ std::unique_ptr<tsl::BFCAllocator> GetGpuHostAllocator(
+   opts.allow_growth = true;
+   return std::make_unique<tsl::BFCAllocator>(std::move(sub_allocator),
+                                              kGpuHostMemoryLimitBytes,
+-                                             /*name=*/"xla_gpu_host_bfc", opts);
++                                             // SYCL: hardcode to xpu
++                                             /*name=*/"xla_xpu_host_bfc", opts);
+ }
+ 
+ }  // namespace xla
+diff --git a/xla/service/algebraic_simplifier.h b/xla/service/algebraic_simplifier.h
+index 232074497..adf401fa3 100644
+--- a/xla/service/algebraic_simplifier.h
++++ b/xla/service/algebraic_simplifier.h
+@@ -432,7 +432,7 @@ class AlgebraicSimplifierVisitor : public DfsHloRewriteVisitor {
+   virtual bool IsValidLayout(const Shape& shape) { return true; }
+   // Allow backend targets to determine whether a layout is inefficient.
+   virtual bool ShouldStrengthReduceDotToReduce(const HloInstruction* hlo) {
+-    return true;
++    return false;
+   }
+ 
+  protected:
+diff --git a/xla/service/dump.cc b/xla/service/dump.cc
+index 65a09e9fc..d3d90d242 100644
+--- a/xla/service/dump.cc
++++ b/xla/service/dump.cc
+@@ -620,6 +620,8 @@ void DumpToFileInDirOrStdout(const HloModule& module, string_view file_prefix,
+   if (opts.dumping_to_stdout()) return op->dump();
+ 
+   mlir::OpPrintingFlags print_flags = mlir::OpPrintingFlags().useLocalScope();
++  // Avoid printing large constant weight.
++  print_flags.elideLargeElementsAttrs(8);
+   // Enable debug info so that it is easier to see the corresponding HLO node.
+   if (file_prefix == "lmhlo") {
+     print_flags.enableDebugInfo(/*enable=*/true,
+diff --git a/xla/service/gpu/cublas_cudnn.cc b/xla/service/gpu/cublas_cudnn.cc
+index 2c6340c6c..7b1fa7a64 100644
+--- a/xla/service/gpu/cublas_cudnn.cc
++++ b/xla/service/gpu/cublas_cudnn.cc
+@@ -41,6 +41,7 @@ bool IsCublasLtMatmulF8(const HloInstruction& hlo) {
+          hlo.custom_call_target() == kCublasLtMatmulF8CallTarget;
+ }
+ 
++const absl::string_view kCudnnfQKVCallTarget = "__cudnn$fQKV";
+ const absl::string_view kGemmCallTarget = "__cublas$gemm";
+ const absl::string_view kCublasLtMatmulCallTarget = "__cublas$lt$matmul";
+ const absl::string_view kCublasLtMatmulF8CallTarget = "__cublas$lt$matmul$f8";
+@@ -69,6 +70,8 @@ const absl::string_view kCudnnfMHAScaleBiasMaskSoftmaxDropoutCallTarget =
+     "__cudnn$fhmaScaleBiasMaskSoftmaxDropout";
+ const absl::string_view kCudnnfMHAScaleBiasSoftmaxDropoutCallTarget =
+     "__cudnn$fhmaScaleBiasSoftmaxDropout";
++const absl::string_view kCudnnfMHAScaleSoftmaxCallTarget =
++    "__cudnn$fmhaScaleSoftmax";
+ const absl::string_view kCudnnfMHAScaleBiasSoftmaxCallTarget =
+     "__cudnn$fhmaScaleBiasSoftmax";
+ const absl::string_view kCudnnfMHAScaleMaskSoftmaxCallTarget =
+@@ -131,6 +134,7 @@ bool IsFwdCustomCallTofMHA(const HloInstruction& hlo) {
+          target == kCudnnfMHAScaleBiasMaskSoftmaxDropoutCallTarget ||
+          target == kCudnnfMHAScaleMaskSoftmaxCallTarget ||
+          target == kCudnnfMHAScaleMaskSoftmaxDropoutCallTarget ||
++         target == kCudnnfMHAScaleSoftmaxCallTarget ||target == kCudnnfMHAScaleSoftmaxCallTarget ||
+          target == kCudnnfMHASoftmaxDropoutCallTarget ||
+          target == kCudnnfMHAScaleBiasSoftmaxCallTarget ||
+          target == kCudnnfMHAScaleBiasSoftmaxDropoutCallTarget;
+@@ -163,6 +167,11 @@ bool MHACallHasDropout(const absl::string_view fmha_call_name) {
+          fmha_call_name == kCudnnfMHAScaleMaskSoftmaxDropoutBackwardCallTarget;
+ }
+ 
++bool IsCustomCallTofQKV(const HloInstruction& hlo) {
++  const auto& target = hlo.custom_call_target();
++  return target == kCudnnfQKVCallTarget;
++}
++
+ bool IsCustomCallTofMHA(const HloInstruction& hlo) {
+   return (IsFwdCustomCallTofMHA(hlo) || IsBwdCustomCallTofMHA(hlo));
+ }
+@@ -215,6 +224,8 @@ StatusOr<CudnnfMHAKind> GetCudnnfMHAKind(
+     return CudnnfMHAKind::kScaleMaskSoftmax;
+   if (target == kCudnnfMHAScaleMaskSoftmaxDropoutCallTarget)
+     return CudnnfMHAKind::kScaleMaskSoftmaxDropout;
++  if (target == kCudnnfMHAScaleSoftmaxCallTarget)
++    return CudnnfMHAKind::kScaleSoftmax;
+   if (target == kCudnnfMHASoftmaxDropoutCallTarget)
+     return CudnnfMHAKind::kSoftmaxDropout;
+   if (target == kCudnnfMHASoftmaxCallTarget) return CudnnfMHAKind::kSoftmax;
+@@ -264,6 +275,8 @@ std::string CudnnfMHAKindToString(CudnnfMHAKind kind) {
+       return "fmha_bias_softmax_with_dropout";
+     case CudnnfMHAKind::kScaleBiasSoftmax:
+       return "fmha_bias_softmax";
++    case CudnnfMHAKind::kScaleSoftmax:
++       return "fmha_scale_softmax";
+     // backward
+     case CudnnfMHAKind::kBackwardBmmBmm:
+       return "fused_batched_matmuls_backward";
+diff --git a/xla/service/gpu/cublas_cudnn.h b/xla/service/gpu/cublas_cudnn.h
+index 4feaf28bb..1b532b74a 100644
+--- a/xla/service/gpu/cublas_cudnn.h
++++ b/xla/service/gpu/cublas_cudnn.h
+@@ -56,6 +56,7 @@ enum class CudnnfMHAKind {
+   kScaleMaskSoftmaxDropout,
+   kSoftmaxDropout,
+   kSoftmax,
++  kScaleSoftmax,
+   kScaleBiasSoftmax,
+   kScaleBiasSoftmaxDropout,
+   kBackwardBmmBmm,
+@@ -166,6 +167,7 @@ bool IsCudnnConvolutionReorder(const HloInstruction& hlo);
+ // 7. BMM1 - Softmax - BMM2
+ // 8. BMM1 - scale - Bias - Softmax - BMM2
+ // Forward calls
++extern const absl::string_view kCudnnfQKVCallTarget;
+ extern const absl::string_view kCudnnfMHABmmBmmCallTarget;
+ extern const absl::string_view kCudnnfMHASoftmaxCallTarget;
+ extern const absl::string_view kCudnnfMHAScaleBiasMaskSoftmaxCallTarget;
+@@ -175,6 +177,7 @@ extern const absl::string_view kCudnnfMHAScaleMaskSoftmaxDropoutCallTarget;
+ extern const absl::string_view kCudnnfMHASoftmaxDropoutCallTarget;
+ extern const absl::string_view kCudnnfMHAScaleBiasSoftmaxDropoutCallTarget;
+ extern const absl::string_view kCudnnfMHAScaleBiasSoftmaxCallTarget;
++extern const absl::string_view kCudnnfMHAScaleSoftmaxCallTarget;
+ // Backward calls
+ extern const absl::string_view kCudnnfMHABmmBmmBackwardCallTarget;
+ extern const absl::string_view kCudnnfMHASoftmaxBackwardCallTarget;
+@@ -192,6 +195,8 @@ extern const absl::string_view kCudnnfMHAScaleBiasSoftmaxBackwardCallTarget;
+ bool IsFwdCustomCallTofMHA(const HloInstruction& hlo);
+ bool IsBwdCustomCallTofMHA(const HloInstruction& hlo);
+ bool IsCustomCallTofMHA(const HloInstruction& hlo);
++bool IsCustomCallTofQKV(const HloInstruction& hlo);
++
+ 
+ StatusOr<CudnnfMHAKind> GetCudnnfMHAKind(const HloCustomCallInstruction* instr);
+ 
+diff --git a/xla/service/gpu/gpu_layout_assignment.cc b/xla/service/gpu/gpu_layout_assignment.cc
+index ad2d7ffa6..06c8ab79b 100644
+--- a/xla/service/gpu/gpu_layout_assignment.cc
++++ b/xla/service/gpu/gpu_layout_assignment.cc
+@@ -69,7 +69,7 @@ HeuristicLayoutAssignment(const HloInstruction* instr,
+       std::make_tuple(DataLayout::kBatchDepthYX4, FilterLayout::kOutputInputYX4,
+                       DataLayout::kBatchDepthYX4);
+   constexpr auto kAllNHWC =
+-      std::make_tuple(DataLayout::kBatchYXDepth, FilterLayout::kOutputYXInput,
++      std::make_tuple(DataLayout::kBatchYXDepth, FilterLayout::kYXInputOutput,
+                       DataLayout::kBatchYXDepth);
+ 
+   // Integer convolution must use NHWC or NCHW_VECT_C.
+diff --git a/xla/service/gpu/ir_emission_utils.cc b/xla/service/gpu/ir_emission_utils.cc
+index 12264198a..268ee3962 100644
+--- a/xla/service/gpu/ir_emission_utils.cc
++++ b/xla/service/gpu/ir_emission_utils.cc
+@@ -80,11 +80,11 @@ bool IsMatrixMultiplication(const HloInstruction& dot) {
+   const DotDimensionNumbers& dim_numbers = dot.dot_dimension_numbers();
+ 
+   PrimitiveType output_primitive_type = dot.shape().element_type();
++  // Disable F64, C64, C128
+   bool type_is_allowed =
+       (output_primitive_type == F8E4M3FN || output_primitive_type == F8E5M2 ||
+        output_primitive_type == F16 || output_primitive_type == BF16 ||
+-       output_primitive_type == F32 || output_primitive_type == F64 ||
+-       output_primitive_type == C64 || output_primitive_type == C128) ||
++       output_primitive_type == F32) ||
+       (output_primitive_type == S32 && lhs_shape.element_type() == S8 &&
+        rhs_shape.element_type() == S8);
+   bool shapes_are_valid =
+@@ -232,6 +232,31 @@ llvm::Value* EmitNVPTXShflDown(llvm::Value* value, llvm::Value* offset,
+       intrinsic, {b->getInt32(-1), value, offset, b->getInt32(WarpSize() - 1)});
+ }
+ 
++// Helper function to emit call to NVPTX shfl_down intrinsic.
++llvm::Value* EmitSPIRShflDown(llvm::Value* value, llvm::Value* offset,
++                              llvm::IRBuilder<>* b) {
++  llvm::Module* module = b->GetInsertBlock()->getModule();
++  llvm::Intrinsic::ID llvm_intrinsic_id;
++  CHECK_EQ(value->getType()->getPrimitiveSizeInBits(), 32);
++  if (value->getType()->isFloatTy()) {
++    return EmitDeviceFunctionCall(
++        "__builtin_spirv_OpSubgroupShuffleDownINTEL_f32_f32_i32",
++        {value, value, offset}, {F32, F32, U32}, F32,
++        llvm::AttrBuilder(b->getContext())
++            .addAttribute(llvm::Attribute::NoUnwind)
++            .addAttribute(llvm::Attribute::Convergent),
++        b);
++  } else {
++    return EmitDeviceFunctionCall(
++        "__builtin_spirv_OpSubgroupShuffleDownINTEL_i32_i32_i32",
++        {value, value, offset}, {U32, U32, U32}, U32,
++        llvm::AttrBuilder(b->getContext())
++            .addAttribute(llvm::Attribute::NoUnwind)
++            .addAttribute(llvm::Attribute::Convergent),
++        b);
++  }
++}
++
+ llvm::Value* EmitFullWarpShuffleDown(llvm::Value* value, llvm::Value* offset,
+                                      llvm::IRBuilder<>* builder) {
+   int bit_width = value->getType()->getPrimitiveSizeInBits();
+@@ -244,6 +269,8 @@ llvm::Value* EmitFullWarpShuffleDown(llvm::Value* value, llvm::Value* offset,
+       return EmitNVPTXShflDown(value, offset, builder);
+     } else if (target_triple.getArch() == llvm::Triple::amdgcn) {
+       return EmitAMDGPUShflDown(value, offset, builder);
++    } else if (target_triple.isSPIR()) {
++      return EmitSPIRShflDown(value, offset, builder);
+     } else {
+       LOG(FATAL) << "Invalid triple " << target_triple.str();
+     }
+@@ -265,6 +292,9 @@ llvm::Value* EmitFullWarpShuffleDown(llvm::Value* value, llvm::Value* offset,
+     } else if (target_triple.getArch() == llvm::Triple::amdgcn) {
+       insert_val = EmitAMDGPUShflDown(builder->CreateExtractElement(x, i),
+                                       offset, builder);
++    } else if (target_triple.isSPIR()) {
++      insert_val = EmitSPIRShflDown(builder->CreateExtractElement(x, i), offset,
++                                    builder);
+     } else {
+       LOG(FATAL) << "Invalid triple " << target_triple.str();
+     }
+diff --git a/xla/service/gpu/matmul_utils.h b/xla/service/gpu/matmul_utils.h
+index 78c11c5bc..44a30e52d 100644
+--- a/xla/service/gpu/matmul_utils.h
++++ b/xla/service/gpu/matmul_utils.h
+@@ -44,6 +44,23 @@ limitations under the License.
+ #endif  // TF_HIPBLASLT
+ #endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+ 
++namespace stream_executor {
++namespace cuda {
++namespace BlasLt {
++enum class Epilogue {
++  kDefault = 1,                   // No special postprocessing
++  kReLU = 2,                      // Apply point-wise ReLU function
++  kBias = 4,                      // Add broadcasted bias vector
++  kBiasThenReLU = kBias | kReLU,  // Apply bias and then ReLU transform
++  kGELU = 32,                // Apply GELU point-wise transform to the results
++  kGELUWithAux = 32 | 1024,  // Apply GELU with auxiliary output.
++  kBiasThenGELU = kBias | kGELU,  // Apply bias and then approximate GELU.
++  kBiasThenGELUWithAux = kBiasThenGELU | 1024,
++};
++}
++}  // namespace cuda
++}  // namespace stream_executor
++
+ namespace xla {
+ namespace gpu {
+ 
+@@ -175,6 +192,7 @@ struct GemmConfig {
+   double beta;
+   std::optional<int64_t> algorithm;
+   int64_t compute_precision;
++  se::cuda::BlasLt::Epilogue epilogue;
+ };
+ 
+ StatusOr<se::blas::ComputationType> GetBlasComputationType(
+diff --git a/xla/service/gpu/parallel_loop_emitter.cc b/xla/service/gpu/parallel_loop_emitter.cc
+index 7577f166f..857f3cf4e 100644
+--- a/xla/service/gpu/parallel_loop_emitter.cc
++++ b/xla/service/gpu/parallel_loop_emitter.cc
+@@ -178,9 +178,7 @@ ParallelLoopEmitter::EmitIndexAndSetExitBasicBlock(absl::string_view loop_name,
+   // for that dimensions.  This helps LLVM generate vectorized codes
+   // in that cases.
+   llvm::Value* row_index = nullptr;
+-  if (!launch_config_.row_vectorized) {
+-    array_indices.emplace_back(linear_index_base, shape_, b_);
+-  } else {
++  if (launch_config_.row_vectorized) {
+     // Simpler index for row computation.
+     // This will allow LLVM to vectorize.
+     row_index = b_->CreateMul(
+@@ -192,19 +190,19 @@ ParallelLoopEmitter::EmitIndexAndSetExitBasicBlock(absl::string_view loop_name,
+     array_indices.emplace_back(linear_index_base, multidim, shape_, b_);
+   }
+ 
+-  for (int i = 1; i < launch_config_.unroll_factor; ++i) {
++  for (int i = 0; i < launch_config_.unroll_factor; ++i) {
+     llvm::Value* linear_index =
+         b_->CreateAdd(linear_index_base, llvm::ConstantInt::get(index_type, i),
+                       absl::StrCat("linear_index", i),
+                       /*HasNUW=*/true, /*HasNSW=*/true);
+-    if (!launch_config_.row_vectorized) {
+-      array_indices.emplace_back(linear_index, shape_, b_);
+-    } else {
++    if (launch_config_.row_vectorized && i > 0) {
+       std::vector<llvm::Value*> multidim(shape_.rank(), nullptr);
+       multidim.back() = b_->CreateAdd(
+           row_index, llvm::ConstantInt::get(index_type, i),
+           absl::StrCat("row_index_plus", i), /*HasNUW=*/true, /*HasNSW=*/true);
+       array_indices.emplace_back(linear_index, multidim, shape_, b_);
++    } else {
++      array_indices.emplace_back(linear_index, shape_, b_);
+     }
+   }
+ 
+diff --git a/xla/service/gpu/stream_executor_util.cc b/xla/service/gpu/stream_executor_util.cc
+index 7904e6d5e..1d8305c04 100644
+--- a/xla/service/gpu/stream_executor_util.cc
++++ b/xla/service/gpu/stream_executor_util.cc
+@@ -139,6 +139,13 @@ StreamExecutorConvLayoutsToXlaLayouts(const ConvolutionDimensionNumbers& dnums,
+                            dnums.kernel_spatial_dimensions().end());
+       filter_layout.push_back(dnums.kernel_input_feature_dimension());
+       break;
++    case FilterLayout::kYXInputOutput:  // HWIO
++      filter_layout.insert(filter_layout.end(),
++                           dnums.kernel_spatial_dimensions().begin(),
++                           dnums.kernel_spatial_dimensions().end());
++      filter_layout.push_back(dnums.kernel_input_feature_dimension());
++      filter_layout.push_back(dnums.kernel_output_feature_dimension());
++      break;
+     default:
+       return InternalError("Invalid filter layout %s for conv with dnums %s,",
+                            FilterLayoutString(filter),
+@@ -176,7 +183,7 @@ XlaConvShapesToStreamExecutorLayouts(const ConvolutionDimensionNumbers& dnums,
+   Layout nhwc_input, nhwc_filter, nhwc_output;
+   std::tie(nhwc_input, nhwc_filter, nhwc_output) =
+       StreamExecutorConvLayoutsToXlaLayouts(dnums, DataLayout::kBatchYXDepth,
+-                                            FilterLayout::kOutputYXInput,
++                                            FilterLayout::kYXInputOutput,
+                                             DataLayout::kBatchYXDepth)
+           .value();
+ 
+@@ -225,7 +232,7 @@ XlaConvShapesToStreamExecutorLayouts(const ConvolutionDimensionNumbers& dnums,
+           ConvolutionDimensionNumbersToString(dnums), vect_size);
+     }
+   } else if (LayoutUtil::Equal(filter.layout(), nhwc_filter)) {
+-    filter_layout = FilterLayout::kOutputYXInput;
++    filter_layout = FilterLayout::kYXInputOutput;
+   } else {
+     return InternalError(
+         "Invalid filter layout %s for conv with dnums %s, expected one of (%s, "
+@@ -328,7 +335,8 @@ StatusOr<std::unique_ptr<se::KernelBase>> CreateKernel(
+ 
+   if (!cubin_data.empty()) {
+     loader_spec.AddCudaCubinInMemory(
+-        reinterpret_cast<const char*>(cubin_data.data()), kernel_name);
++        reinterpret_cast<const char*>(cubin_data.data()), cubin_data.size(),
++        kernel_name);
+   }
+ 
+   auto kernel_base = std::make_unique<se::KernelBase>(stream_exec);
+diff --git a/xla/service/gpu/stream_executor_util.h b/xla/service/gpu/stream_executor_util.h
+index 4e291b5e9..89455d18f 100644
+--- a/xla/service/gpu/stream_executor_util.h
++++ b/xla/service/gpu/stream_executor_util.h
+@@ -106,6 +106,8 @@ StatusOr<se::dnn::FusedMHAKind> GetDNNFusedMHAKindFromCudnnfMHAKind(
+     CudnnfMHAKind kind);
+ 
+ StatusOr<se::dnn::DataType> GetDNNDataTypeFromPrimitiveType(PrimitiveType type);
++StatusOr<se::dnn::FusedMHAKind> GetDNNFusedMHAKindFromCudnnfMHAKind(
++    CudnnfMHAKind kind);
+ 
+ // Returns result with the smallest time which has not failed.
+ // If deterministic output is requested, returns first (not failing) result.
+diff --git a/xla/service/gpu/target_constants.h b/xla/service/gpu/target_constants.h
+index 92f31a6c1..ff12c19d9 100644
+--- a/xla/service/gpu/target_constants.h
++++ b/xla/service/gpu/target_constants.h
+@@ -54,6 +54,28 @@ inline const char* DataLayout() {
+ 
+ }  // namespace amdgpu
+ 
++namespace spir {
++// SYCL: The triple that represents our target on SPIR backend.
++inline const char* TargetTriple() {
++  static constexpr char kTargetTriple[] = "spir64-unknown-unknown";
++  return kTargetTriple;
++}
++
++// The data layout of the emitted module.
++inline const char* DataLayout() {
++  // Specifies the address space as global address space
++  // A1: Specifies the address space of objects created by ‘alloca’.
++  // P1: Specifies the address space that corresponds to program memory.
++  // G1: Specifies the address space of global variables.
++  static constexpr char kDataLayout[] =
++      "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:"
++      "32:32-f64:64:64-v16:16:16-v24:32:32-v32:32:32-v48:64:64-v64:64:64-v96:"
++      "128:128-v128:128:128-v192:256:256-v256:256:256-v512:512:512-v1024:1024:"
++      "1024";
++  return kDataLayout;
++}
++}  // namespace spir
++
+ }  // namespace gpu
+ }  // namespace xla
+ 
+diff --git a/xla/service/gpu/target_util.cc b/xla/service/gpu/target_util.cc
+index 12b12b3f1..987db5bbd 100644
+--- a/xla/service/gpu/target_util.cc
++++ b/xla/service/gpu/target_util.cc
+@@ -23,12 +23,12 @@ limitations under the License.
+ #include "llvm/IR/IntrinsicsAMDGPU.h"
+ #include "llvm/IR/IntrinsicsNVPTX.h"
+ #include "llvm/IR/MDBuilder.h"
++#include "tsl/platform/logging.h"
+ #include "xla/hlo/ir/hlo_opcode.h"
+ #include "xla/primitive_util.h"
+ #include "xla/service/llvm_ir/llvm_type_conversion_util.h"
+ #include "xla/service/llvm_ir/llvm_util.h"
+ #include "xla/status.h"
+-#include "tsl/platform/logging.h"
+ 
+ namespace xla {
+ namespace gpu {
+@@ -45,6 +45,10 @@ struct TargetIntrinsics {
+   std::variant<llvm::Intrinsic::ID,
+                std::function<llvm::CallInst*(llvm::IRBuilder<>*)>>
+       amdgpu_intrinsic_or_function;
++  // SYCL: Target for SPIRV.
++  absl::variant<llvm::Intrinsic::ID,
++                std::function<llvm::CallInst*(llvm::IRBuilder<>*)>>
++      spir_intrinsic_or_function;
+ };
+ 
+ // Gets the llvm intrinsic ids on different platforms (NVPTX, AMDGPU)
+@@ -52,32 +56,79 @@ struct TargetIntrinsics {
+ struct TargetIntrinsics GetIntrinsic(TargetIntrinsicID intrin) {
+   switch (intrin) {
+     case TargetIntrinsicID::kThreadIdx: {
+-      return {llvm::Intrinsic::nvvm_read_ptx_sreg_tid_x,
+-              llvm::Intrinsic::amdgcn_workitem_id_x};
++      return {
++          llvm::Intrinsic::nvvm_read_ptx_sreg_tid_x,
++          llvm::Intrinsic::amdgcn_workitem_id_x,
++          [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++            return EmitDeviceFunctionCall("__builtin_IB_get_local_id_x", {}, {},
++                                          U32, {b_->getContext()}, b_);
++          },
++      };
+     }
+     case TargetIntrinsicID::kThreadIdy: {
+-      return {llvm::Intrinsic::nvvm_read_ptx_sreg_tid_y,
+-              llvm::Intrinsic::amdgcn_workitem_id_y};
++      return {
++          llvm::Intrinsic::nvvm_read_ptx_sreg_tid_y,
++          llvm::Intrinsic::amdgcn_workitem_id_y,
++          [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++            return EmitDeviceFunctionCall("__builtin_IB_get_local_id_y", {}, {},
++                                          U32, {b_->getContext()}, b_);
++          },
++      };
+     }
+     case TargetIntrinsicID::kThreadIdz: {
+-      return {llvm::Intrinsic::nvvm_read_ptx_sreg_tid_z,
+-              llvm::Intrinsic::amdgcn_workitem_id_z};
++      return {
++          llvm::Intrinsic::nvvm_read_ptx_sreg_tid_z,
++          llvm::Intrinsic::amdgcn_workitem_id_z,
++          [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++            return EmitDeviceFunctionCall("__builtin_IB_get_local_id_z", {}, {},
++                                          U32, {b_->getContext()}, b_);
++          },
++      };
+     }
+     case TargetIntrinsicID::kBlockIdx: {
+-      return {llvm::Intrinsic::nvvm_read_ptx_sreg_ctaid_x,
+-              llvm::Intrinsic::amdgcn_workgroup_id_x};
++      return {
++          llvm::Intrinsic::nvvm_read_ptx_sreg_ctaid_x,
++          llvm::Intrinsic::amdgcn_workgroup_id_x,
++          [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++            return EmitDeviceFunctionCall("__builtin_IB_get_group_id",
++                                          {b_->getInt32(0)}, {U32}, U32,
++                                          {b_->getContext()}, b_);
++          },
++      };
+     }
+     case TargetIntrinsicID::kBlockIdy: {
+-      return {llvm::Intrinsic::nvvm_read_ptx_sreg_ctaid_y,
+-              llvm::Intrinsic::amdgcn_workgroup_id_y};
++      return {
++          llvm::Intrinsic::nvvm_read_ptx_sreg_ctaid_y,
++          llvm::Intrinsic::amdgcn_workgroup_id_y,
++          [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++            return EmitDeviceFunctionCall("__builtin_IB_get_group_id",
++                                          {b_->getInt32(1)}, {U32}, U32,
++                                          {b_->getContext()}, b_);
++          },
++      };
+     }
+     case TargetIntrinsicID::kBlockIdz: {
+-      return {llvm::Intrinsic::nvvm_read_ptx_sreg_ctaid_z,
+-              llvm::Intrinsic::amdgcn_workgroup_id_z};
++      return {
++          llvm::Intrinsic::nvvm_read_ptx_sreg_ctaid_z,
++          llvm::Intrinsic::amdgcn_workgroup_id_z,
++          [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++            return EmitDeviceFunctionCall("__builtin_IB_get_group_id",
++                                          {b_->getInt32(2)}, {U32}, U32,
++                                          {b_->getContext()}, b_);
++          },
++      };
+     }
+     case TargetIntrinsicID::kBarrierId: {
+-      return {llvm::Intrinsic::nvvm_barrier0,
+-              llvm::Intrinsic::amdgcn_s_barrier};
++      return {llvm::Intrinsic::nvvm_barrier0, llvm::Intrinsic::amdgcn_s_barrier,
++              [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++                return EmitDeviceFunctionCall(
++                    "__builtin_spirv_OpControlBarrier_i32_i32_i32",
++                    {b_->getInt32(2), b_->getInt32(2), b_->getInt32(272)},
++                    {U32, U32, U32}, VOID,
++                    llvm::AttrBuilder(b_->getContext())
++                        .addAttribute(llvm::Attribute::Convergent),
++                    b_);
++              }};
+     }
+     case TargetIntrinsicID::kBlockDimx: {
+       return {llvm::Intrinsic::nvvm_read_ptx_sreg_ntid_x,
+@@ -85,6 +136,11 @@ struct TargetIntrinsics GetIntrinsic(TargetIntrinsicID intrin) {
+                 return EmitDeviceFunctionCall("__ockl_get_local_size",
+                                               {b_->getInt32(0)}, {U32}, U64,
+                                               {b_->getContext()}, b_);
++              },
++              [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++                return EmitDeviceFunctionCall("__builtin_IB_get_local_size",
++                                              {b_->getInt32(0)}, {U32}, U32,
++                                              {b_->getContext()}, b_);
+               }};
+     }
+     case TargetIntrinsicID::kBlockDimy: {
+@@ -93,6 +149,11 @@ struct TargetIntrinsics GetIntrinsic(TargetIntrinsicID intrin) {
+                 return EmitDeviceFunctionCall("__ockl_get_local_size",
+                                               {b_->getInt32(1)}, {U32}, U64,
+                                               {b_->getContext()}, b_);
++              },
++              [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++                return EmitDeviceFunctionCall("__builtin_IB_get_local_size",
++                                              {b_->getInt32(1)}, {U32}, U32,
++                                              {b_->getContext()}, b_);
+               }};
+     }
+     case TargetIntrinsicID::kBlockDimz: {
+@@ -101,11 +162,26 @@ struct TargetIntrinsics GetIntrinsic(TargetIntrinsicID intrin) {
+                 return EmitDeviceFunctionCall("__ockl_get_local_size",
+                                               {b_->getInt32(2)}, {U32}, U64,
+                                               {b_->getContext()}, b_);
++              },
++              [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++                return EmitDeviceFunctionCall("__builtin_IB_get_local_size",
++                                              {b_->getInt32(2)}, {U32}, U32,
++                                              {b_->getContext()}, b_);
+               }};
+     }
+     case TargetIntrinsicID::kGroupBarrierId: {
+       return {llvm::Intrinsic::nvvm_bar_warp_sync,
+-              llvm::Intrinsic::amdgcn_wave_barrier};
++              llvm::Intrinsic::amdgcn_wave_barrier,
++              [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
++                // TODO: Fix it.
++                return EmitDeviceFunctionCall(
++                    "__builtin_spirv_OpControlBarrier_i32_i32_i32",
++                    {b_->getInt32(2), b_->getInt32(2), b_->getInt32(272)},
++                    {U32, U32, U32}, VOID,
++                    llvm::AttrBuilder(b_->getContext())
++                        .addAttribute(llvm::Attribute::Convergent),
++                    b_);
++              }};
+     }
+   }
+ }
+@@ -114,6 +190,7 @@ struct TargetIntrinsics GetIntrinsic(TargetIntrinsicID intrin) {
+ struct TargetDeviceFunction {
+   const std::string nvptx_root;
+   const std::string amdgpu_root;
++  const std::string spir_root;
+ };
+ 
+ // Gets the device function name on different platforms (NVPTX, AMDGPU)
+@@ -122,49 +199,49 @@ struct TargetDeviceFunction GetDeviceFunctionRoot(
+     TargetDeviceFunctionID func_id) {
+   switch (func_id) {
+     case TargetDeviceFunctionID::kAtan2: {
+-      return {"__nv_atan2", "__ocml_atan2"};
++      return {"__nv_atan2", "__ocml_atan2", "__builtin_spirv_OpenCL_atan2"};
+     }
+     case TargetDeviceFunctionID::kCos: {
+-      return {"__nv_cos", "__ocml_cos"};
++      return {"__nv_cos", "__ocml_cos", "__builtin_spirv_OpenCL_cos"};
+     }
+     case TargetDeviceFunctionID::kExp: {
+-      return {"__nv_exp", "__ocml_exp"};
++      return {"__nv_exp", "__ocml_exp", "__builtin_spirv_OpenCL_exp"};
+     }
+     case TargetDeviceFunctionID::kExpm1: {
+-      return {"__nv_expm1", "__ocml_expm1"};
++      return {"__nv_expm1", "__ocml_expm1", "__builtin_spirv_OpenCL_expm1"};
+     }
+     case TargetDeviceFunctionID::kFmod: {
+-      return {"__nv_fmod", "__ocml_fmod"};
++      return {"__nv_fmod", "__ocml_fmod", "__builtin_spirv_OpenCL_fmod"};
+     }
+     case TargetDeviceFunctionID::kHypot: {
+-      return {"__nv_hypot", "__ocml_hypot"};
++      return {"__nv_hypot", "__ocml_hypot", "__builtin_spirv_OpenCL_hypot"};
+     }
+     case TargetDeviceFunctionID::kLog: {
+-      return {"__nv_log", "__ocml_log"};
++      return {"__nv_log", "__ocml_log", "__builtin_spirv_OpenCL_log"};
+     }
+     case TargetDeviceFunctionID::kLog1p: {
+-      return {"__nv_log1p", "__ocml_log1p"};
++      return {"__nv_log1p", "__ocml_log1p", "__builtin_spirv_OpenCL_log1p"};
+     }
+     case TargetDeviceFunctionID::kPow: {
+-      return {"__nv_pow", "__ocml_pow"};
++      return {"__nv_pow", "__ocml_pow", "__builtin_spirv_OpenCL_pow"};
+     }
+     case TargetDeviceFunctionID::kRsqrt: {
+-      return {"__nv_rsqrt", "__ocml_rsqrt"};
++      return {"__nv_rsqrt", "__ocml_rsqrt", "__builtin_spirv_OpenCL_rsqrt"};
+     }
+     case TargetDeviceFunctionID::kSin: {
+-      return {"__nv_sin", "__ocml_sin"};
++      return {"__nv_sin", "__ocml_sin", "__builtin_spirv_OpenCL_sin"};
+     }
+     case TargetDeviceFunctionID::kSqrt: {
+-      return {"__nv_sqrt", "__ocml_sqrt"};
++      return {"__nv_sqrt", "__ocml_sqrt", "__builtin_spirv_OpenCL_sqrt"};
+     }
+     case TargetDeviceFunctionID::kTan: {
+-      return {"__nv_tan", "__ocml_tan"};
++      return {"__nv_tan", "__ocml_tan", "__builtin_spirv_OpenCL_tan"};
+     }
+     case TargetDeviceFunctionID::kTanh: {
+-      return {"__nv_tanh", "__ocml_tanh"};
++      return {"__nv_tanh", "__ocml_tanh", "__builtin_spirv_OpenCL_tanh"};
+     }
+     case TargetDeviceFunctionID::kCbrt: {
+-      return {"__nv_cbrt", "__ocml_cbrt"};
++      return {"__nv_cbrt", "__ocml_cbrt", "__builtin_spirv_OpenCL_cbrt"};
+     }
+   }
+ }
+@@ -231,6 +308,28 @@ std::string ObtainDeviceFunctionName(TargetDeviceFunctionID func_id,
+     } else {
+       LOG(FATAL) << "Unexpected type while getting device function name.";
+     }
++  } else if (target_triple.isSPIR()) {
++    if (output_type == F32) {
++      if (gpu_root_names.spir_root == "__builtin_spirv_OpenCL_hypot" ||
++          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_pow" ||
++          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_atan2" ||
++          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_fmod")
++        return StrCat(gpu_root_names.spir_root, "_f32_f32");
++      if (gpu_root_names.spir_root == "__imf_erfcinv")
++        return StrCat(gpu_root_names.spir_root, "f");
++      return StrCat(gpu_root_names.spir_root, "_f32");
++    } else if (output_type == F64) {
++      if (gpu_root_names.spir_root == "__builtin_spirv_OpenCL_hypot" ||
++          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_pow" ||
++          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_atan2" ||
++          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_fmod")
++        return StrCat(gpu_root_names.spir_root, "_f64_f64");
++      if (gpu_root_names.spir_root == "__imf_erfcinv")
++        return StrCat(gpu_root_names.spir_root, "d");
++      return StrCat(gpu_root_names.spir_root, "_f64");
++    } else {
++      LOG(FATAL) << "Unexpected type while getting device function name.";
++    }
+   } else {
+     LOG(FATAL) << "Invalid triple " << target_triple.str();
+   }
+@@ -243,6 +342,7 @@ llvm::CallInst* EmitDeviceFunctionCall(
+     absl::string_view name) {
+   std::vector<llvm::Type*> ir_input_types;
+   llvm::Module* module = b->GetInsertBlock()->getModule();
++  llvm::Triple target_triple = llvm::Triple(module->getTargetTriple());
+   for (PrimitiveType input_type : input_types) {
+     ir_input_types.push_back(
+         llvm_ir::PrimitiveTypeToIrType(input_type, module));
+@@ -260,6 +360,9 @@ llvm::CallInst* EmitDeviceFunctionCall(
+           .getCallee());
+ 
+   callee->addFnAttrs(attributes);
++  // SYCL: SPIR function
++  if (target_triple.isSPIR())
++    callee->setCallingConv(llvm::CallingConv::SPIR_FUNC);
+ 
+   return b->CreateCall(callee, llvm_ir::AsArrayRef(operands), name.data());
+ }
+@@ -285,6 +388,18 @@ llvm::CallInst* EmitCallToTargetIntrinsic(
+               &gpu_intrinsic_id.amdgpu_intrinsic_or_function);
+       return (*builder_func)(b);
+     }
++  } else if (target_triple.isSPIR()) {
++    llvm::Intrinsic::ID* llvm_intrinsic_id_ptr =
++        absl::get_if<llvm::Intrinsic::ID>(
++            &gpu_intrinsic_id.spir_intrinsic_or_function);
++    if (llvm_intrinsic_id_ptr) {
++      llvm_intrinsic_id = *llvm_intrinsic_id_ptr;
++    } else {
++      std::function<llvm::CallInst*(llvm::IRBuilder<>*)>* builder_func =
++          absl::get_if<std::function<llvm::CallInst*(llvm::IRBuilder<>*)>>(
++              &gpu_intrinsic_id.spir_intrinsic_or_function);
++      return (*builder_func)(b);
++    }
+   } else {
+     LOG(FATAL) << "Invalid triple " << target_triple.str();
+   }
+@@ -312,6 +427,8 @@ void AnnotateFunctionAsGpuKernel(llvm::Module* module, llvm::Function* func,
+     // Attach information so AMDGPU can recognize function as a AMDGPU kernel.
+     func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+     func->addFnAttr("amdgpu-flat-work-group-size", "1, 1024");
++  } else if (target_triple.isSPIR()) {
++    // Do nothing
+   } else {
+     LOG(FATAL) << "Invalid triple " << target_triple.str();
+   }
+diff --git a/xla/service/gpu/thunk.cc b/xla/service/gpu/thunk.cc
+index 0613debc4..421dcd121 100644
+--- a/xla/service/gpu/thunk.cc
++++ b/xla/service/gpu/thunk.cc
+@@ -78,6 +78,7 @@ Thunk::ExecuteParams::ExecuteParams(
+     CASE(kTriangularSolve);
+     CASE(kWhile);
+     CASE(kFusedMHA);
++    CASE(kFusedQKV);
+   }
+ }
+ 
+diff --git a/xla/service/gpu/thunk.h b/xla/service/gpu/thunk.h
+index 2bea9efc0..19b0f5a94 100644
+--- a/xla/service/gpu/thunk.h
++++ b/xla/service/gpu/thunk.h
+@@ -96,7 +96,8 @@ class Thunk {
+     kSequential,
+     kTriangularSolve,
+     kWhile,
+-    kFusedMHA
++    kFusedMHA,
++    kFusedQKV
+   };
+ 
+   struct ThunkInfo {
+diff --git a/xla/service/layout_normalization_test.cc b/xla/service/layout_normalization_test.cc
+index 7c972ebef..b5c34de31 100644
+--- a/xla/service/layout_normalization_test.cc
++++ b/xla/service/layout_normalization_test.cc
+@@ -580,6 +580,31 @@ ENTRY main {
+   )");
+ }
+ 
++TEST_F(LayoutNormalizationTest, ConstantAvoidRevisitOfUser) {
++  const char* hlo = R"(
++HloModule module
++
++ENTRY main {
++  c = f32[5,4]{0,1} constant({...})
++  s = f32[5,4]{0,1} sine(c)
++  t = f32[5,4]{0,1} tanh(s)
++  ROOT o = f32[5,4]{0,1} add(s, t)
++}
++)";
++  // If we allowed visiting the normalized user 's' of the constant, we would
++  // run into a CHECK failure, because the constant was normalized in-place and
++  // therefore would not be revisited.
++  CheckLayoutNormalization(hlo, R"(
++// CHECK: [[constant_2:%[^ ]+]] = f32[4,5]{1,0} constant({...})
++// CHECK-NEXT: [[sine:%[^ ]+]] = f32[4,5]{1,0} sine([[constant_2]])
++// CHECK-NEXT: [[bitcast_1:%[^ ]+]] = f32[5,4]{0,1} bitcast([[sine]])
++// CHECK-NEXT: [[bitcast_2:%[^ ]+]] = f32[4,5]{1,0} bitcast([[bitcast_1]])
++// CHECK-NEXT: [[tanh:%[^ ]+]] = f32[4,5]{1,0} tanh([[bitcast_2]])
++// CHECK-NEXT: [[add_3:%[^ ]+]] = f32[4,5]{1,0} add([[bitcast_2]], [[tanh]])
++// CHECK-NEXT: ROOT [[bitcast_3_4:%[^ ]+]] = f32[5,4]{0,1} bitcast([[add_3]])
++  )");
++}
++
+ TEST_F(LayoutNormalizationTest, Slice) {
+   const char* hlo = R"(
+ HloModule module
+diff --git a/xla/service/llvm_ir/fused_ir_emitter.cc b/xla/service/llvm_ir/fused_ir_emitter.cc
+index 006020e41..0add8fbe3 100644
+--- a/xla/service/llvm_ir/fused_ir_emitter.cc
++++ b/xla/service/llvm_ir/fused_ir_emitter.cc
+@@ -104,7 +104,7 @@ FusedIrEmitter::IndexedGenerator FusedIrEmitter::HandleConstant(
+       /*Initializer=*/initializer,
+       /*Name=*/"", /*InsertBefore=*/nullptr,
+       /*TLMode=*/llvm::GlobalValue::NotThreadLocal,
+-      /*AddressSpace=*/0,
++      /*AddressSpace=*/1,  // SYCL: Hardcode to global addrspace
+       /*isExternallyInitialized=*/false);
+   global->setUnnamedAddr(llvm::GlobalVariable::UnnamedAddr::Global);
+ 
+diff --git a/xla/service/llvm_ir/ir_array.cc b/xla/service/llvm_ir/ir_array.cc
+index 36794b4b7..4c255f762 100644
+--- a/xla/service/llvm_ir/ir_array.cc
++++ b/xla/service/llvm_ir/ir_array.cc
+@@ -24,6 +24,7 @@ limitations under the License.
+ #include "llvm/IR/Constants.h"
+ #include "llvm/IR/Instructions.h"
+ #include "llvm/IR/Value.h"
++#include "tsl/platform/logging.h"
+ #include "xla/layout_util.h"
+ #include "xla/permutation_util.h"
+ #include "xla/service/llvm_ir/llvm_type_conversion_util.h"
+@@ -32,7 +33,6 @@ limitations under the License.
+ #include "xla/statusor.h"
+ #include "xla/util.h"
+ #include "xla/xla_data.pb.h"
+-#include "tsl/platform/logging.h"
+ 
+ namespace xla {
+ namespace llvm_ir {
+@@ -496,9 +496,24 @@ llvm::Value* IrArray::EmitArrayElementAddress(const IrArray::Index& index,
+   if (use_linear_index && index.LinearValidOnShape(shape_)) {
+     llvm::Module* module = b->GetInsertBlock()->getParent()->getParent();
+     llvm::Type* type = PrimitiveTypeToIrType(shape_.element_type(), module);
+-    return b->CreateInBoundsGEP(
+-        type, b->CreateBitCast(base_ptr_, type->getPointerTo()), index.linear(),
+-        llvm_ir::AsStringRef(name));
++    
++    auto linear_index = llvm::dyn_cast<llvm::BinaryOperator>(index.linear());
++    // only separate const offset when having add
++    if (linear_index && (linear_index->getOpcode() == llvm::Instruction::Add)) {
++      llvm::Value* index_operand_0 = linear_index->getOperand(0);
++      // constant index
++      llvm::Value* index_operand_1 = linear_index->getOperand(1);
++      llvm::Value* ptr_address =
++          b->CreateGEP(type, b->CreateBitCast(base_ptr_, type->getPointerTo()),
++                       index_operand_0, "");
++
++      return b->CreateInBoundsGEP(type, ptr_address, index_operand_1,
++                                  llvm_ir::AsStringRef(name));
++    } else {
++      return b->CreateInBoundsGEP(
++          type, b->CreateBitCast(base_ptr_, type->getPointerTo()),
++          index.linear(), llvm_ir::AsStringRef(name));
++    }
+   }
+ 
+   std::vector<llvm::Value*> actual_index;
+diff --git a/xla/service/llvm_ir/llvm_util.cc b/xla/service/llvm_ir/llvm_util.cc
+index 676c9c379..5e07bee28 100644
+--- a/xla/service/llvm_ir/llvm_util.cc
++++ b/xla/service/llvm_ir/llvm_util.cc
+@@ -263,6 +263,8 @@ llvm::Type* PrimitiveTypeToIrType(PrimitiveType element_type,
+       // Tokens do not have a physical representation, but the compiler needs
+       // some placeholder type, so use int8_t*.
+       return llvm::Type::getInt8PtrTy(module->getContext());
++    case VOID:
++      return llvm::Type::getVoidTy(module->getContext());
+     default:
+       LOG(FATAL) << "unsupported type " << element_type;
+   }
+@@ -345,8 +347,9 @@ llvm::AllocaInst* EmitAllocaAtFunctionEntryWithCount(llvm::Type* type,
+   llvm::Function* function = b->GetInsertBlock()->getParent();
+   b->SetInsertPoint(&function->getEntryBlock(),
+                     function->getEntryBlock().getFirstInsertionPt());
++  // SYCL: Fix atomic issue by allocating on private addrspace
+   llvm::AllocaInst* alloca =
+-      b->CreateAlloca(type, element_count, AsStringRef(name));
++      b->CreateAlloca(type, /*addrspace*/5, element_count, AsStringRef(name));
+   if (alignment != 0) {
+     alloca->setAlignment(llvm::Align(alignment));
+   }
+@@ -465,6 +468,7 @@ void SetDereferenceableMetadataForLoad(llvm::LoadInst* load,
+ 
+ llvm::Instruction* AddRangeMetadata(int32_t lower, int32_t upper,
+                                     llvm::Instruction* inst) {
++  /* SYCL: This range is for NVPTX target only.
+   llvm::LLVMContext& context = inst->getParent()->getContext();
+   llvm::IntegerType* i32 = llvm::Type::getInt32Ty(context);
+   inst->setMetadata(
+@@ -473,6 +477,7 @@ llvm::Instruction* AddRangeMetadata(int32_t lower, int32_t upper,
+           context,
+           {llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(i32, lower)),
+            llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(i32, upper))}));
++  */
+   return inst;
+ }
+ 
+diff --git a/xla/stream_executor/build_defs.bzl b/xla/stream_executor/build_defs.bzl
+index 8e75a5532..38e2f5b7a 100644
+--- a/xla/stream_executor/build_defs.bzl
++++ b/xla/stream_executor/build_defs.bzl
+@@ -19,10 +19,12 @@ def tf_additional_cudnn_plugin_copts():
+ 
+ # Returns whether any GPU backend is configuered.
+ def if_gpu_is_configured(x):
+-    return if_cuda_is_configured(x) + if_rocm_is_configured(x)
++    # hardcode to enable sycl
++    return if_cuda_is_configured(x) + if_rocm_is_configured(x) + x
+ 
+ def if_cuda_or_rocm(x):
+-    return if_gpu_is_configured(x)
++    # hardcode to enable sycl
++    return if_gpu_is_configured(x) + x
+ 
+ # nvlink is not available via the pip wheels, disable it since it will create
+ # unnecessary dependency
+diff --git a/xla/stream_executor/cuda/cuda_driver.cc b/xla/stream_executor/cuda/cuda_driver.cc
+index dcb6a3c8c..981a66a82 100644
+--- a/xla/stream_executor/cuda/cuda_driver.cc
++++ b/xla/stream_executor/cuda/cuda_driver.cc
+@@ -892,6 +892,14 @@ GpuDriver::GraphNodeGetType(CUgraphNode node) {
+       "Feature not supported on CUDA platform (LoadHsaco)");
+ }
+ 
++/* static */ tsl::Status GpuDriver::LoadLevelzero(GpuContext* context,
++                                                  const char* spir_contents,
++                                                  const size_t size,
++                                                  CUmodule* module) {
++  LOG(ERROR) << "Feature not supported on CUDA platform (LoadLevelzero)";
++  return tsl::errors::Internal("Not Implemented");
++}
++
+ /* static */ tsl::Status GpuDriver::SynchronousMemsetUint8(GpuContext* context,
+                                                            CUdeviceptr location,
+                                                            uint8_t value,
+diff --git a/xla/stream_executor/gpu/BUILD b/xla/stream_executor/gpu/BUILD
+index c8cd4f558..9947a718a 100644
+--- a/xla/stream_executor/gpu/BUILD
++++ b/xla/stream_executor/gpu/BUILD
+@@ -344,7 +344,7 @@ cc_library(
+     name = "asm_compiler",
+     srcs = if_gpu_is_configured(["asm_compiler.cc"]),
+     hdrs = if_gpu_is_configured(["asm_compiler.h"]),
+-    copts = tsl_copts(),
++    copts = tsl_copts(allow_exceptions=True),
+     local_defines = if_cuda_is_configured(["GOOGLE_CUDA=1"]),
+     visibility = set_external_visibility([
+         "//third_party/py/jax:__subpackages__",
+diff --git a/xla/stream_executor/gpu/gpu_driver.h b/xla/stream_executor/gpu/gpu_driver.h
+index 292e9081a..42a75948c 100644
+--- a/xla/stream_executor/gpu/gpu_driver.h
++++ b/xla/stream_executor/gpu/gpu_driver.h
+@@ -457,6 +457,9 @@ class GpuDriver {
+   // (supported on ROCm only)
+   static tsl::Status LoadHsaco(GpuContext* context, const char* hsaco_contents,
+                                GpuModuleHandle* module);
++  static tsl::Status LoadLevelzero(GpuContext* context,
++                                   const char* spir_contents, const size_t size,
++                                   GpuModuleHandle* module);
+ 
+   // Retrieves a named kernel from a loaded module, and places the resulting
+   // handle into function (outparam) on success. Neither kernel_name nor
+diff --git a/xla/stream_executor/gpu/gpu_executor.h b/xla/stream_executor/gpu/gpu_executor.h
+index c93073ffd..cd33a406e 100644
+--- a/xla/stream_executor/gpu/gpu_executor.h
++++ b/xla/stream_executor/gpu/gpu_executor.h
+@@ -317,6 +317,11 @@ class GpuExecutor : public internal::StreamExecutorInterface {
+   tsl::Status LoadModuleFromHsaco(const char* hsaco, GpuModuleHandle* module)
+       TF_EXCLUSIVE_LOCKS_REQUIRED(in_memory_modules_mu_);
+ 
++  // (supported on SYCL only)
++  tsl::Status LoadModuleFromSpir(const char* spir, const size_t size,
++                                 GpuModuleHandle* module)
++      TF_EXCLUSIVE_LOCKS_REQUIRED(in_memory_modules_mu_);
++
+   bool UnloadGpuBinary(const void* gpu_binary)
+       TF_EXCLUSIVE_LOCKS_REQUIRED(in_memory_modules_mu_);
+ 
+diff --git a/xla/stream_executor/gpu/gpu_types.h b/xla/stream_executor/gpu/gpu_types.h
+index dea81d66a..f73bef66f 100644
+--- a/xla/stream_executor/gpu/gpu_types.h
++++ b/xla/stream_executor/gpu/gpu_types.h
+@@ -18,7 +18,20 @@ limitations under the License.
+ #ifndef XLA_STREAM_EXECUTOR_GPU_GPU_TYPES_H_
+ #define XLA_STREAM_EXECUTOR_GPU_GPU_TYPES_H_
+ 
+-#if TENSORFLOW_USE_ROCM
++#define TENSORFLOW_USE_SYCL 1
++
++#if TENSORFLOW_USE_SYCL
++
++#if __has_include(<sycl/sycl.hpp>)
++#include <sycl/sycl.hpp>
++#elif __has_include(<CL/sycl.hpp>)
++#include <CL/sycl.hpp>
++#else
++#error "Unsupported compiler"
++#endif
++#include <level_zero/ze_api.h>
++
++#elif TENSORFLOW_USE_ROCM
+ 
+ #define __HIP_DISABLE_CPP_FUNCTIONS__
+ 
+@@ -36,7 +49,30 @@ limitations under the License.
+ namespace stream_executor {
+ namespace gpu {
+ 
+-#if TENSORFLOW_USE_ROCM
++#if TENSORFLOW_USE_SYCL
++
++using GpuContextHandle = const void*;
++using GpuStreamHandle = ::sycl::queue*;
++using GpuEventHandle = ::sycl::event*;
++using GpuFunctionHandle = ::sycl::kernel*;
++using GpuFunctionAttribute = const void*;
++using GpuDeviceHandle = ::sycl::device*;
++using GpuDevicePtr = void*;
++using GpuDeviceAttribute = const void*;
++using GpuDeviceProperty = const void*;
++using GpuModuleHandle = ze_module_handle_t;
++using GpuStatus = const void*;
++using GpuFuncCachePreference = const void*;
++using GpuSharedMemConfig = const void*;
++using GpuComplexType = const void*;
++using GpuDoubleComplexType = const void*;
++using GpuRngHandle = const void*;
++using GpuGraphHandle = const void*;
++using GpuGraphExecHandle = const void*;
++using GpuGraphNodeHandle = const void*;
++
++
++#elif TENSORFLOW_USE_ROCM
+ 
+ using GpuContextHandle = hipCtx_t;
+ using GpuStreamHandle = hipStream_t;
+diff --git a/xla/stream_executor/kernel_spec.cc b/xla/stream_executor/kernel_spec.cc
+index f0fabf44d..e98b5c0bd 100644
+--- a/xla/stream_executor/kernel_spec.cc
++++ b/xla/stream_executor/kernel_spec.cc
+@@ -43,9 +43,9 @@ CudaCubinOnDisk::CudaCubinOnDisk(absl::string_view filename,
+                                  absl::string_view kernel_name)
+     : OnDiskKernelLoaderSpec(filename, kernel_name) {}
+ 
+-CudaCubinInMemory::CudaCubinInMemory(const char *bytes,
++CudaCubinInMemory::CudaCubinInMemory(const char *bytes, int size, 
+                                      absl::string_view kernel_name)
+-    : KernelLoaderSpec(kernel_name), bytes_(bytes) {}
++    : KernelLoaderSpec(kernel_name), size_(size),bytes_(bytes) {}
+ 
+ bool CompareComputeCapability(const std::tuple<int, int> &lhs,
+                               const std::tuple<int, int> &rhs) {
+@@ -174,9 +174,9 @@ MultiKernelLoaderSpec *MultiKernelLoaderSpec::AddCudaPtxOnDisk(
+ }
+ 
+ MultiKernelLoaderSpec *MultiKernelLoaderSpec::AddCudaCubinInMemory(
+-    const char *bytes, absl::string_view kernel_name) {
++    const char *bytes, int size, absl::string_view kernel_name) {
+   CHECK(cuda_cubin_in_memory_ == nullptr);
+-  cuda_cubin_in_memory_.reset(new CudaCubinInMemory{bytes, kernel_name});
++  cuda_cubin_in_memory_.reset(new CudaCubinInMemory{bytes, size, kernel_name});
+   return this;
+ }
+ 
+diff --git a/xla/stream_executor/kernel_spec.h b/xla/stream_executor/kernel_spec.h
+index 68f45a0ee..bc585d06b 100644
+--- a/xla/stream_executor/kernel_spec.h
++++ b/xla/stream_executor/kernel_spec.h
+@@ -224,13 +224,15 @@ class CudaPtxInMemory : public KernelLoaderSpec {
+ // Kernel loader specification for a CUBIN blob that resides in memory.
+ class CudaCubinInMemory : public KernelLoaderSpec {
+  public:
+-  CudaCubinInMemory(const char *bytes, absl::string_view kernel_name);
++  CudaCubinInMemory(const char *bytes,int size,  absl::string_view kernel_name);
+   ~CudaCubinInMemory() override {}
+ 
+   const char *bytes() const { return bytes_; }
+-
++  const int size() const { return size_; }
+  private:
+   const char *bytes_;
++  // SYCL: this is needed only for SPIRV
++  int size_;
+ 
+   CudaCubinInMemory(const CudaCubinInMemory &) = delete;
+   void operator=(const CudaCubinInMemory &) = delete;
+@@ -282,7 +284,7 @@ class MultiKernelLoaderSpec {
+                                           absl::string_view kernel_name);
+   MultiKernelLoaderSpec *AddCudaCubinOnDisk(absl::string_view filename,
+                                             absl::string_view kernel_name);
+-  MultiKernelLoaderSpec *AddCudaCubinInMemory(const char *cubin_bytes,
++  MultiKernelLoaderSpec *AddCudaCubinInMemory(const char *cubin_bytes, int size, 
+                                               absl::string_view kernel_name);
+   MultiKernelLoaderSpec *AddCudaPtxInMemory(absl::string_view ptx,
+                                             absl::string_view kernel_name);
+diff --git a/xla/stream_executor/rocm/rocm_driver.cc b/xla/stream_executor/rocm/rocm_driver.cc
+index d48ed7e38..68d147e87 100644
+--- a/xla/stream_executor/rocm/rocm_driver.cc
++++ b/xla/stream_executor/rocm/rocm_driver.cc
+@@ -771,6 +771,14 @@ GpuDriver::GraphNodeGetType(hipGraphNode_t node) {
+   return ret;
+ }
+ 
++/* static */ tsl::Status GpuDriver::LoadLevelzero(GpuContext* context,
++                                                  const char* spir_contents,
++                                                  const size_t size,
++                                                  hipModule_t* module) {
++  LOG(ERROR) << "Feature not supported on ROCm platform (LoadLevelzero)";
++  return tsl::errors::Internal("Not Implemented");
++}
++
+ /* static */ tsl::Status GpuDriver::SynchronousMemsetUint8(
+     GpuContext* context, hipDeviceptr_t location, uint8 value, size_t size) {
+   ScopedActivateContext activation{context};
+diff --git a/xla/stream_executor/rocm/rocm_gpu_executor.cc b/xla/stream_executor/rocm/rocm_gpu_executor.cc
+index 51a3a7916..9696e777a 100644
+--- a/xla/stream_executor/rocm/rocm_gpu_executor.cc
++++ b/xla/stream_executor/rocm/rocm_gpu_executor.cc
+@@ -389,6 +389,11 @@ tsl::Status GpuExecutor::LoadModuleFromHsaco(const char* hsaco,
+   return tsl::OkStatus();
+ }
+ 
++tsl::Status GpuExecutor::LoadModuleFromSpir(const char* spir, const size_t size,
++                                            hipModule_t* module) {
++  LOG(FATAL) << "Feature not supported on ROCM platform (LoadModuleFromSpir)";
++}
++
+ // This is a non-essential operation; if there's a failure, proceed without
+ // logging an error. It's nearly certain that in case of failures, we'd never
+ // get here in the first place; these are very low-impact routines.
+diff --git a/xla/stream_executor/stream_executor_pimpl.h b/xla/stream_executor/stream_executor_pimpl.h
+index f8903f1c9..83f8e5701 100644
+--- a/xla/stream_executor/stream_executor_pimpl.h
++++ b/xla/stream_executor/stream_executor_pimpl.h
+@@ -694,7 +694,8 @@ StreamExecutor::CreateTypedKernel(absl::string_view kernel_name,
+ 
+   if (!cubin_data.empty()) {
+     loader_spec.AddCudaCubinInMemory(
+-        reinterpret_cast<const char*>(cubin_data.data()), kernel_name);
++        reinterpret_cast<const char*>(cubin_data.data()), cubin_data.size(),
++        kernel_name);
+   }
+ 
+   TF_RETURN_IF_ERROR(GetKernel(loader_spec, kernel_base.get()));
+diff --git a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc
+index c46135e02..485aaa975 100644
+--- a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc
++++ b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc
+@@ -565,6 +565,10 @@ tsl::StatusOr<mlir::Operation*> LhloDialectEmitter::EmitCustomCallOp(
+     return EmitDnnfMHABackward(custom_call_instr);
+   }
+ 
++  if (xla::gpu::IsCustomCallTofQKV(*instr)) {
++    return EmitDnnfQKV(custom_call_instr);
++  }
++
+   // For custom call, if there are any token operands or results, they will not
+   // be represented in LHLO so we need to remember the mapping. First create
+   // operands where each token is replaced with a null Value.
+@@ -735,6 +739,8 @@ tsl::StatusOr<lmhlo_gpu::FusedMhaDagSignature> AsLhloFusedMhaDagSignature(
+       return lmhlo_gpu::FusedMhaDagSignature::SoftmaxDropout;
+     case xla::gpu::CudnnfMHAKind::kSoftmax:
+       return lmhlo_gpu::FusedMhaDagSignature::Softmax;
++    case xla::gpu::CudnnfMHAKind::kScaleSoftmax:
++      return lmhlo_gpu::FusedMhaDagSignature::ScaleSoftmax;
+     case xla::gpu::CudnnfMHAKind::kScaleBiasSoftmax:
+       return lmhlo_gpu::FusedMhaDagSignature::ScaleBiasSoftmax;
+     case xla::gpu::CudnnfMHAKind::kScaleBiasSoftmaxDropout:
+@@ -1212,12 +1218,18 @@ tsl::StatusOr<Operation*> LhloDialectEmitter::EmitDnnfMHA(
+       TF_RETURN_IF_ERROR(GetOrCreateView(custom_call, &operands));
+       auto fmha =
+           CreateOpWithoutAttrs<lmhlo_gpu::fusedMHAOp>(custom_call, operands);
++
++      fmha.setFmhaScaleAttr(
++          builder_.getF64FloatAttr(config.fmha_scale()));
+       return set_common_fmha_attributes(fmha);
+     }
+     case xla::gpu::CudnnfMHAKind::kSoftmaxDropout: {
+       TF_RETURN_IF_ERROR(GetOrCreateView(custom_call, &operands));
+       auto fmha =
+           CreateOpWithoutAttrs<lmhlo_gpu::fusedMHAOp>(custom_call, operands);
++      fmha.setFmhaScaleAttr(
++          builder_.getF64FloatAttr(config.fmha_scale()));
++
+       fmha.setDropoutRateAttr(builder_.getF64FloatAttr(config.dropout_rate()));
+       fmha.setSeedAttr(builder_.getI64IntegerAttr(config.seed()));
+       return set_common_fmha_attributes(fmha);
+@@ -1280,11 +1292,45 @@ tsl::StatusOr<Operation*> LhloDialectEmitter::EmitDnnfMHA(
+       has_bias = true;
+       return set_common_fmha_attributes(fmha);
+     }
++    case xla::gpu::CudnnfMHAKind::kScaleSoftmax: {
++      TF_RETURN_IF_ERROR(GetOrCreateView(custom_call, &operands));
++      auto fmha_softmax =
++          CreateOpWithoutAttrs<lmhlo_gpu::fusedMHAOp>(custom_call, operands);
++      fmha_softmax.setFmhaScaleAttr(
++          builder_.getF64FloatAttr(config.fmha_scale()));
++      return set_common_fmha_attributes(fmha_softmax);
++    }
++
+     default:
+       return xla::InternalError("Unknown forward fused MHA call.");
+   }
+ }
+ 
++
++tsl::StatusOr<Operation*> LhloDialectEmitter::EmitDnnfQKV(
++    const HloCustomCallInstruction* custom_call) {
++
++  TF_ASSIGN_OR_RETURN(
++      auto const config,
++      custom_call->backend_config<xla::gpu::GemmBackendConfig>());
++
++  if (custom_call->operand_count() != 2) {
++    return xla::InvalidArgument("GEMM custom call should have 2 operands");
++  }
++
++  // QKV GEMM have two operands.
++  TF_ASSIGN_OR_RETURN(
++      lmhlo_gpu::fusedQKVOp op,
++      CreateOpWithoutAttrs<lmhlo_gpu::fusedQKVOp>(custom_call,
++                                              /*num_operands=*/2));
++  op.setDotDimensionNumbersAttr(
++      GetDotDimensionNumbersAttr(builder_, config.dot_dimension_numbers()));
++
++  return op.getOperation();
++}
++
++
++
+ tsl::StatusOr<Operation*> LhloDialectEmitter::EmitDnnfMHABackward(
+     const HloCustomCallInstruction* custom_call) {
+   TF_ASSIGN_OR_RETURN(
+diff --git a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h
+index c355cb132..aacee29c8 100644
+--- a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h
++++ b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h
+@@ -90,6 +90,8 @@ class LhloDialectEmitter : public xla::ConstDfsHloVisitorWithDefault {
+       const xla::HloCustomCallInstruction* custom_call);
+   xla::StatusOr<Operation*> EmitDnnfMHA(
+       const xla::HloCustomCallInstruction* custom_call);
++  xla::StatusOr<Operation*> EmitDnnfQKV(
++      const xla::HloCustomCallInstruction* custom_call);
+   xla::StatusOr<Operation*> EmitDnnfMHABackward(
+       const xla::HloCustomCallInstruction* custom_call);
+   tsl::StatusOr<memref::GetGlobalOp> EmitConstant(
+diff --git a/xla/xla_data.proto b/xla/xla_data.proto
+index ba43906c9..498a41d0b 100644
+--- a/xla/xla_data.proto
++++ b/xla/xla_data.proto
+@@ -28,6 +28,7 @@ enum PrimitiveType {
+   // Invalid primitive type to serve as default.
+   PRIMITIVE_TYPE_INVALID = 0;
+ 
++  VOID = 100;
+   // Predicates are two-state booleans.
+   PRED = 1;
+ 

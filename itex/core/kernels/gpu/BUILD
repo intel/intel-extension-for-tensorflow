@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "cc_library", "itex_xetla_binary", "itex_xetla_library", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device", "itex_xetla_binary", "itex_xetla_library", "itex_xpu_library", "tf_copts")
 
 package(
     licenses = ["notice"],  # Apache 2.0
@@ -2236,10 +2236,9 @@ itex_xpu_library(
 
 itex_xpu_library(
     name = "temporary_variable_ops",
-    srcs = select({
-        "@local_config_dpcpp//dpcpp:using_nextpluggable": ["variable_ops.cc"],
-        "//conditions:default": [],
-    }),
+    srcs = if_using_nextpluggable_device(
+        ["variable_ops.cc"],
+    ),
     copts = tf_copts(),
     linkstatic = 1,
     visibility = ["//visibility:public"],

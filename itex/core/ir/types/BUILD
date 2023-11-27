@@ -1,4 +1,4 @@
-load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
+load("@itex-llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
 load("//itex:itex.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -13,13 +13,13 @@ td_library(
     ],
     includes = ["include"],
     deps = [
-        "@llvm-project//mlir:BuiltinDialectTdFiles",
-        "@llvm-project//mlir:CallInterfacesTdFiles",
-        "@llvm-project//mlir:ControlFlowInterfacesTdFiles",
-        "@llvm-project//mlir:InferTypeOpInterfaceTdFiles",
-        "@llvm-project//mlir:OpBaseTdFiles",
-        "@llvm-project//mlir:SideEffectInterfacesTdFiles",
-        "@llvm-project//mlir:SubElementInterfacesTdFiles",
+        "@itex-llvm-project//mlir:BuiltinDialectTdFiles",
+        "@itex-llvm-project//mlir:CallInterfacesTdFiles",
+        "@itex-llvm-project//mlir:ControlFlowInterfacesTdFiles",
+        "@itex-llvm-project//mlir:InferTypeOpInterfaceTdFiles",
+        "@itex-llvm-project//mlir:OpBaseTdFiles",
+        "@itex-llvm-project//mlir:SideEffectInterfacesTdFiles",
+        "@itex-llvm-project//mlir:SubElementInterfacesTdFiles",
     ],
 )
 
@@ -35,7 +35,7 @@ gentbl_cc_library(
             "dialect.cpp.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "dialect.td",
     deps = [
         ":DialectTdFiles",
@@ -62,7 +62,7 @@ gentbl_cc_library(
             "attributes_enum.cc.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "attributes.td",
     deps = [":DialectTdFiles"],
 )
@@ -79,7 +79,7 @@ gentbl_cc_library(
             "types.cc.inc",
         ),
     ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
+    tblgen = "@itex-llvm-project//mlir:mlir-tblgen",
     td_file = "types.td",
     deps = [":DialectTdFiles"],
 )
@@ -98,9 +98,9 @@ cc_library(
         ":DialectIncGen",
         ":TypesIncGen",
         "@com_google_absl//absl/strings",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:Dialect",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:Support",
+        "@itex-llvm-project//llvm:Support",
+        "@itex-llvm-project//mlir:Dialect",
+        "@itex-llvm-project//mlir:IR",
+        "@itex-llvm-project//mlir:Support",
     ],
 )

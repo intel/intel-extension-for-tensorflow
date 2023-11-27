@@ -599,7 +599,6 @@ def _impl(ctx):
                         "-DITEX_USE_MKL=%{TF_NEED_MKL}",
                         "-DITEX_ENABLE_DOUBLE=1",
                         "-DEIGEN_USE_DPCPP=1",
-                        "-DEIGEN_USE_GPU=1",
                         "-DEIGEN_USE_DPCPP_BUILD=1",
                         "-DEIGEN_USE_DPCPP_USM=1",
                         "-DDNNL_USE_DPCPP_USM=1",

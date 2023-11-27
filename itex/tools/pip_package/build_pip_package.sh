@@ -174,6 +174,9 @@ function prepare_src() {
   cp ${RUNFILES}/../../../../core/kernels/libitex_common.so ${LIB_TMPDIR}/intel_extension_for_tensorflow/
   xetla_lib=$(find ${RUNFILES} -name libitex_gpu_xetla.so)
   [ -f "${xetla_lib}" ] && cp ${xetla_lib} ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+  xla_so_lib=$(find ${RUNFILES} -iname libintel_xla.so)
+  [ -f "${xla_so_lib}" ] && cp ${xla_so_lib} ${LIB_TMPDIR}/intel_extension_for_tensorflow/
+
   mkdir ${LIB_TMPDIR}/intel_extension_for_tensorflow/python
   cp -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py ${LIB_TMPDIR}/intel_extension_for_tensorflow/python/
   mv ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/*wrap* ${LIB_TMPDIR}/intel_extension_for_tensorflow/python

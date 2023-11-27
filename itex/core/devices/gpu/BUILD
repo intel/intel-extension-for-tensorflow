@@ -2,16 +2,17 @@ package(
     licenses = ["notice"],  # Apache 2.0
 )
 
-load("//itex:itex.bzl", "cc_library")
+load("//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device")
 
 cc_library(
     name = "eigen_runtime_impl",
     srcs = ["eigen_itex_gpu_runtime.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//itex/core/utils:logging",
         "//third_party/build_option/dpcpp:eigen_itex_gpu_header",
         "@com_google_absl//absl/synchronization",
-        "@eigen_archive//:eigen",
+        "@itex_eigen_archive//:eigen",
     ],
     alwayslink = True,
 )
@@ -19,13 +20,14 @@ cc_library(
 cc_library(
     name = "itex_gpu_runtime_imp",
     srcs = ["itex_gpu_runtime.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":eigen_runtime_impl",
         "//itex/core/devices:xpu_device_util",
         "//itex/core/utils:logging",
         "//third_party/build_option/dpcpp:itex_gpu_header",
         "@com_google_absl//absl/synchronization",
-        "@eigen_archive//:eigen",
+        "@itex_eigen_archive//:eigen",
     ],
     alwayslink = True,
 )
@@ -67,7 +69,7 @@ cc_library(
     deps = [
         "//third_party/build_option/dpcpp:itex_gpu_header",
         "//third_party/eigen3",
-        "@eigen_archive//:eigen",
+        "@itex_eigen_archive//:eigen",
         "@local_config_tf//:tf_header_lib",
     ],
     alwayslink = True,
@@ -88,9 +90,11 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:cord",
         "@com_google_absl//absl/types:optional",
-        "@eigen_archive//:eigen",
+        "@itex_eigen_archive//:eigen",
         "@local_config_tf//:tf_header_lib",
-    ],
+    ] + if_using_nextpluggable_device(
+        ["//third_party/build_option/dpcpp:itex_gpu_header"],
+    ),
     alwayslink = True,
 )
 

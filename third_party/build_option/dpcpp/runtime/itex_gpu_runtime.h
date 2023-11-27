@@ -45,6 +45,25 @@ using ITEX_GPUDevice = sycl::device;
 using ITEX_GPUStream = sycl::queue;
 using ITEX_GPUEvent = sycl::event;
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+typedef struct PJRT_Buffer PJRT_Buffer;
+typedef struct PJRT_Client PJRT_Client;
+
+void* ITEXOpaqueDataPointerFromPjRtBuffer(PJRT_Buffer*);
+
+PJRT_Buffer* ITEXCreatePjRtBuffer(int device_id, std::string datatype,
+                                  std::vector<int64_t> dimentions,
+                                  std::vector<int64_t> layout, PJRT_Client*);
+
+void* ITEXGetStreamFromPjRtDevice(int device_id, PJRT_Client*);
+
+PJRT_Buffer* ITEXSameDevicePjRtBufferCopy(PJRT_Buffer* src_buffer,
+                                          PJRT_Client* c_client);
+
+void ITEXXlaShapeToDeviceShapeRepresentation(void* serialized_xla_shape,
+                                             void* serialized_device_shape);
+#endif  // USING_NEXTPLUGGABLE_DEVICE
+
 inline bool IsMultipleStreamEnabled() {
   bool is_multiple_stream_enabled = false;
   const char* env = std::getenv("ITEX_ENABLE_MULTIPLE_STREAM");

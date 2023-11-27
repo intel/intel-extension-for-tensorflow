@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//itex:itex.bzl", "cc_binary", "itex_xpu_binary", "itex_xpu_library", "tf_copts")
+load("//itex:itex.bzl", "cc_binary", "if_using_nextpluggable_device", "itex_xpu_binary", "itex_xpu_library", "tf_copts")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
 load("@bazel_skylib//lib:selects.bzl", "selects")
@@ -74,6 +74,14 @@ selects.config_setting_group(
     ],
 )
 
+selects.config_setting_group(
+    name = "gpu_with_nextpluggable_device_build",
+    match_all = [
+        "@intel_extension_for_tensorflow//itex:gpu_build",
+        "@local_config_dpcpp//dpcpp:using_nextpluggable",
+    ],
+)
+
 config_setting(
     name = "tf_version_2_12",
     define_values = {"tf_main_version": "2.12"},
@@ -85,6 +93,10 @@ cc_binary(
     srcs = [
         "//itex/core/wrapper:itex_gpu_wrapper",
     ],
+    copts = select({
+        "@local_config_dpcpp//dpcpp:using_nextpluggable": ["-DUSING_NEXTPLUGGABLE_DEVICE"],
+        "//conditions:default": [],
+    }),
     linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
     linkshared = True,
     set_target = "dummy",
@@ -118,7 +130,9 @@ itex_xpu_binary(
         "//itex/core:protos_all_cc",
         "//itex/core/kernels:libitex_common",
         "@local_config_tf//:_pywrap_tensorflow_internal",
-    ],
+    ] + if_using_nextpluggable_device([
+        "//itex/core/utils:libintel_xla",
+    ]),
 )
 
 itex_xpu_binary(
@@ -245,6 +259,10 @@ itex_xpu_library(
     ] + if_dpcpp(
         [
             "//itex/core/devices/gpu:eigen_stream_device",
+        ],
+    ) + if_using_nextpluggable_device(
+        ["//itex/core/devices/next_pluggable_device:next_pluggable_device"],
+        [
             "//itex/core/devices/gpu:gpu_device_impl",
         ],
     ),

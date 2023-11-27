@@ -1,5 +1,5 @@
 diff --git a/lib/SPIRV/SPIRVInternal.h b/lib/SPIRV/SPIRVInternal.h
-index 4f32cb780a53..f12e09456e21 100644
+index 94a088f0..69403106 100644
 --- a/lib/SPIRV/SPIRVInternal.h
 +++ b/lib/SPIRV/SPIRVInternal.h
 @@ -179,11 +179,12 @@ typedef SPIRVMap<Op, Op, IntBoolOpMapId> IntBoolOpMap;
@@ -18,11 +18,23 @@ index 4f32cb780a53..f12e09456e21 100644
    SPIRAS_GlobalDevice,
    SPIRAS_GlobalHost,
    SPIRAS_Input,
+diff --git a/lib/SPIRV/SPIRVRegularizeLLVM.cpp b/lib/SPIRV/SPIRVRegularizeLLVM.cpp
+index e9a42beb..9f550bde 100644
+--- a/lib/SPIRV/SPIRVRegularizeLLVM.cpp
++++ b/lib/SPIRV/SPIRVRegularizeLLVM.cpp
+@@ -426,7 +426,6 @@ bool SPIRVRegularizeLLVMBase::regularize() {
+           FI->dropAllReferences();
+           ToErase.push_back(FI);
+         }
+-
+         // Remove metadata not supported by SPIRV
+         static const char *MDs[] = {
+             "fpmath",
 diff --git a/lib/SPIRV/SPIRVWriter.cpp b/lib/SPIRV/SPIRVWriter.cpp
-index 60c9ab60..fc04c5a3 100644
+index 90b8c4e2..b049b125 100644
 --- a/lib/SPIRV/SPIRVWriter.cpp
 +++ b/lib/SPIRV/SPIRVWriter.cpp
-@@ -373,12 +373,6 @@ SPIRVType *LLVMToSPIRVBase::transType(Type *T) {
+@@ -367,12 +367,6 @@ SPIRVType *LLVMToSPIRVBase::transType(Type *T) {
    if (T->isArrayTy()) {
      // SPIR-V 1.3 s3.32.6: Length is the number of elements in the array.
      //                     It must be at least 1.
@@ -32,23 +44,6 @@ index 60c9ab60..fc04c5a3 100644
 -      OS << *T;
 -      SPIRVCK(T->getArrayNumElements() >= 1, InvalidArraySize, OS.str());
 -    }
-     return mapType(T, BM->addArrayType(
-                           transType(T->getArrayElementType()),
-                           static_cast<SPIRVConstant *>(transValue(
-diff --git a/lib/SPIRV/SPIRVRegularizeLLVM.cpp b/lib/SPIRV/SPIRVRegularizeLLVM.cpp
-index 82e42fbe..3c6be633 100644
---- a/lib/SPIRV/SPIRVRegularizeLLVM.cpp
-+++ b/lib/SPIRV/SPIRVRegularizeLLVM.cpp
-@@ -529,6 +529,11 @@ bool SPIRVRegularizeLLVMBase::regularize() {
-           if (isa<PossiblyExactOperator>(BO) && BO->isExact())
-             BO->setIsExact(false);
-         }
-+        if (auto FI = dyn_cast<FreezeInst>(&II)) {
-+          FI->replaceAllUsesWith(FI->getOperand(0));
-+          FI->dropAllReferences();
-+          ToErase.push_back(FI);
-+        }
-         // Remove metadata not supported by SPIRV
-         static const char *MDs[] = {
-             "fpmath",
-
+     Type *ElTy = T->getArrayElementType();
+     SPIRVType *TransType = BM->addArrayType(
+         transType(ElTy),

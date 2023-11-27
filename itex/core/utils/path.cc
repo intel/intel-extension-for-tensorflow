@@ -290,7 +290,7 @@ string CommonPathPrefix(absl::Span<const string> paths) {
     for (size_t prefix_size = 0; prefix_size < min_filename_size;
          prefix_size++) {
       char c = paths[0][prefix_size];
-      for (int f = 1; f < paths.size(); f++) {
+      for (size_t f = 1; f < paths.size(); f++) {
         if (paths[f][prefix_size] != c) {
           return prefix_size;
         }

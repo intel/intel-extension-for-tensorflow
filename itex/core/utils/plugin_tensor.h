@@ -34,10 +34,21 @@ limitations under the License.
 #ifndef ITEX_BUILD_JAX
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/tf_tensor.h"
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 
 namespace itex {
 class TensorProto;
 class TensorBuffer;
+
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+constexpr uintptr_t kTag = 0x1ULL;
+
+void* tensor_get_raw_data(TF_Tensor* tf_tensor);
+bool pointer_is_pjrt_tensor(TF_Tensor* tf_tensor);
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 
 /// Interface to access the raw ref-counted data buffer.
 class TensorBuffer : public core::RefCounted {
@@ -198,7 +209,12 @@ class Tensor {
   }
 
   bool IsInitialized() const {
+#ifndef USING_NEXTPLUGGABLE_DEVICE
     return buf_ != nullptr && TF_TensorData(buf_) != nullptr;
+#else
+    return buf_ != nullptr && TF_TensorData(buf_) != nullptr &&
+           tensor_get_raw_data(buf_) != nullptr;
+#endif
   }
 
   size_t TotalBytes() const;
@@ -206,9 +222,11 @@ class Tensor {
   size_t AllocatedBytes() const;
 
   bool IsAligned() const {
+#ifndef USING_NEXTPLUGGABLE_DEVICE
     if (buf_ != nullptr) {
       return TF_TensorIsAligned(buf_);
     }
+#endif
     return true;
   }
 
@@ -468,7 +486,12 @@ class Tensor {
 
   template <typename T>
   T* base() const {
+#ifndef USING_NEXTPLUGGABLE_DEVICE
     return NumElements() ? reinterpret_cast<T*>(TF_TensorData(buf_)) : nullptr;
+#else
+    return NumElements() ? reinterpret_cast<T*>(tensor_get_raw_data(buf_))
+                         : nullptr;
+#endif
   }
 
   inline void CopyFromInternal(const Tensor& other, const TensorShape& shape) {
@@ -715,5 +738,5 @@ typename TTypes<T, NDIMS>::ConstTensor Tensor::flat_inner_outer_dims(
 Status MakeShape(const Tensor& shape_t, TensorShape* out);
 
 }  // namespace itex
-#endif
+#endif  // ITEX_BUILD_JAX
 #endif  // ITEX_CORE_UTILS_PLUGIN_TENSOR_H_

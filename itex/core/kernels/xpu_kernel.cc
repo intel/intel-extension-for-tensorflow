@@ -25,6 +25,9 @@ limitations under the License.
 #include "itex/core/kernels/common.h"
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/kernels/gpu/gpu_kernel_init.h"
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
+#endif
 #else
 #include "itex/core/kernels/cpu/cpu_kernel_init.h"
 #endif  // INTEL_CPU_ONLY
@@ -44,9 +47,16 @@ void TF_InitKernel() {
       break;
     case ITEX_BACKEND_GPU:
 #ifndef INTEL_CPU_ONLY
+    {
       RegisterGPUKernels(itex::DEVICE_XPU);
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+      TF_Status* tf_status = TF_NewStatus();
+      TF_CreateAndSetPjRtCApiClient(itex::DEVICE_XPU, tf_status, nullptr, 0);
+      TF_DeleteStatus(tf_status);
+#endif
+    }
 #endif  // INTEL_CPU_ONLY
-      break;
+    break;
     case ITEX_BACKEND_AUTO:
       ITEX_LOG(ERROR) << "XPU-AUTO kernel not supported.";
       break;

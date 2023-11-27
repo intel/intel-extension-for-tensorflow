@@ -25,7 +25,7 @@ def workspace():
 
     # Load the raw llvm-project.  llvm does not have build rules set up by default,
     # but provides a script for setting up build rules via overlays.
-    llvm("llvm-raw")
+    llvm("itex-llvm-raw")
     llvm_16("llvm-raw-16")
 
 itex_workspace1 = workspace

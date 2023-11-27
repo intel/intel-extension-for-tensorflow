@@ -22,7 +22,6 @@ limitations under the License.
 #define SYSTEM_RESERVED_MEMORY_FOR_XE_HPC \
   (1800 * 1024 * 1024)  // Leave 1800MB memory for pvc as in some situations pvc
                         // needs more memory for system.
-
 namespace itex {
 
 BFCAllocator::BFCAllocator(ITEX_GPUDevice* device) : Allocator() {

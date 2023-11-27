@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-
+#ifndef USING_NEXTPLUGGABLE_DEVICE
 #ifndef CC_BUILD
 #include "itex/core/devices/xpu_device.h"
 #endif
@@ -795,3 +795,4 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* const params,
   // params->platform->use_bfc_allocator = true;
   itex::SE_InitXPUPluginFns(params, status);
 }
+#endif  // USING_NEXTPLUGGABLE_DEVICE

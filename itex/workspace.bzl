@@ -5,8 +5,6 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("//third_party/llvm_project:setup.bzl", "llvm_setup")
 load("//third_party/llvm_project:setup_16.bzl", "llvm_setup_16")
-load("//third_party:tf_runtime/workspace.bzl", tf_runtime = "repo")
-load("//third_party/stablehlo:workspace.bzl", stablehlo = "repo")
 load(
     "//third_party/farmhash:workspace.bzl",
     farmhash = "repo",
@@ -36,8 +34,7 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     """All external dependencies for TF builds"""
     dpcpp_configure(name = "local_config_dpcpp")
     syslibs_configure(name = "local_config_syslibs")
-    tf_runtime()
-    stablehlo()
+
     farmhash()
     absl()
 
@@ -101,14 +98,10 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
 
     tf_http_archive(
         name = "com_googlesource_code_re2",
-        build_file = clean_dep("//third_party:re2.BUILD"),
-        sha256 = "d070e2ffc5476c496a6a872a6f246bfddce8e7797d6ba605a7c8d72866743bf9",
-        strip_prefix = "re2-506cfa4bffd060c06ec338ce50ea3468daa6c814",
+        sha256 = "ef516fb84824a597c4d5d0d6d330daedb18363b5a99eda87d027e6bdd9cba299",
+        strip_prefix = "re2-03da4fc0857c285e3a26782f6bc8931c4c950df4",
         system_build_file = "//third_party/systemlibs:re2.BUILD",
-        urls = [
-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/google/re2/archive/506cfa4bffd060c06ec338ce50ea3468daa6c814.tar.gz",
-            "https://github.com/google/re2/archive/506cfa4bffd060c06ec338ce50ea3468daa6c814.tar.gz",
-        ],
+        urls = tf_mirror_urls("https://github.com/google/re2/archive/03da4fc0857c285e3a26782f6bc8931c4c950df4.tar.gz"),
     )
 
     tf_http_archive(
@@ -201,14 +194,14 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
     )
 
     # llvm built in bazel
-    llvm_setup(name = "llvm-project")
+    llvm_setup(name = "itex-llvm-project")
 
-    # llvm built in bazel
+    #llvm built in bazel
     llvm_setup_16(name = "llvm-project-16")
 
     EIGEN_COMMIT = "d10b27fe37736d2944630ecd7557cefa95cf87c9"
     tf_http_archive(
-        name = "eigen_archive",
+        name = "itex_eigen_archive",
         build_file = clean_dep("//third_party:eigen.BUILD"),
         patch_file = ["//third_party/eigen3:intel_ext.patch"],
         sha256 = "a3c10a8c14f55e9f09f98b0a0ac6874c21bda91f65b7469d9b1f6925990e867b",
@@ -243,40 +236,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         ],
     )
 
-    git_repository(
-        name = "mlir-hlo",
-        commit = "1b862a645b61b954c3353bca3469e51f3f3b1ca7",
-        remote = "https://github.com/tensorflow/mlir-hlo/",
-        verbose = True,
-        patches = ["//third_party/mlir_hlo:mlir_hlo.patch"],
-        patch_args = ["-p1"],
-        patch_cmds = [
-            "git log -1 --format=%H > COMMIT",
-        ],
-    )
-
-    git_repository(
-        name = "spir_headers",
-        commit = "93754d52d6cbbfd61f4e87571079e8a28e65f8ca",
-        remote = "https://github.com/KhronosGroup/SPIRV-Headers.git",
-        verbose = True,
-        patch_cmds = [
-            "git log -1 --format=%H > COMMIT",
-        ],
-    )
-
     new_git_repository(
-        name = "llvm_spir",
-        commit = "a3b372cb2d0250fbd5e395c3d32613f1644dfeb5",
-        remote = "https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git",
-        build_file = "//third_party/llvm_spir:llvm_spir.BUILD",
-        verbose = True,
-        patches = ["//third_party/llvm_spir:llvm_spir.patch"],
-        patch_args = ["-p1"],
-    )
-
-    new_git_repository(
-        name = "xetla",
+        name = "itex_xetla",
         commit =
             "2c29086eba7bf8369c49a6da8dd9b2912e954d20",
         remote =

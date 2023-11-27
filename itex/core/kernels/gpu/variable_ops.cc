@@ -14,8 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#include "itex/core/kernels/gpu/variable_ops.h"
-
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/op_kernel.h"

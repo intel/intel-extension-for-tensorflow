@@ -3796,7 +3796,7 @@ bool FindDilatedContraction(const RemapperContext& ctx, int node_index,
   std::vector<int> dilations;
   TF_ABORT_IF_ERROR(
       GetNodeAttr(*contraction_node_def, "dilations", &dilations));
-  for (int i = 0; i < dilations.size(); i++) {
+  for (size_t i = 0; i < dilations.size(); i++) {
     if (dilations[i] != 1) return false;
   }
 
