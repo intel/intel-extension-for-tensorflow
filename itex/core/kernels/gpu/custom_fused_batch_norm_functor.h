@@ -1880,7 +1880,7 @@ void BnormBwkReduction(OpKernelContext* context, const InT* in_data,
 }
 
 template <typename InT, typename ScaleT, int VecSizeSp, int VecSizeIc,
-          bool FuseNormRelu, bool FuseNormAddRelu>
+          bool FuseNormRelu, bool FuseNormAddRelu, bool Training>
 struct BnBackwardOptimizedKernel {
   BnBackwardOptimizedKernel(const InT* x_, const InT* dy_, const ScaleT* mean_,
                             const ScaleT* var_, const InT* y_,
@@ -1954,10 +1954,15 @@ struct BnBackwardOptimizedKernel {
       dscale_values[j] = sum_dy_x_center_value * inv;
 
       for (int i = 0; i < VecSizeSp; ++i) {
-        dx_values[i * VecSizeIc + j] =
-            scale[ic_idx[j]] * inv *
-            (dy_values[i * VecSizeIc + j] - (sum_dy_value / sp) -
-             coef * (x_values[i * VecSizeIc + j] - mean[ic_idx[j]]));
+        if (Training) {
+          dx_values[i * VecSizeIc + j] =
+              scale[ic_idx[j]] * inv *
+              (dy_values[i * VecSizeIc + j] - (sum_dy_value / sp) -
+               coef * (x_values[i * VecSizeIc + j] - mean[ic_idx[j]]));
+        } else {
+          dx_values[i * VecSizeIc + j] =
+              dy_values[i * VecSizeIc + j] * scale[ic_idx[j]] * inv;
+        }
       }
     }
 
@@ -1994,9 +1999,9 @@ struct BnBackwardOptimizedKernel {
 };
 
 template <typename ScaleT, int VecSizeSp, int VecSizeIc, bool FuseNormRelu,
-          bool FuseNormAddRelu>
+          bool FuseNormAddRelu, bool Training>
 struct BnBackwardOptimizedKernel<Eigen::bfloat16, ScaleT, VecSizeSp, VecSizeIc,
-                                 FuseNormRelu, FuseNormAddRelu> {
+                                 FuseNormRelu, FuseNormAddRelu, Training> {
   typedef Eigen::bfloat16 InT;
   typedef uint16_t T;
   BnBackwardOptimizedKernel(const InT* x_, const InT* dy_, const ScaleT* mean_,
@@ -2074,18 +2079,27 @@ struct BnBackwardOptimizedKernel<Eigen::bfloat16, ScaleT, VecSizeSp, VecSizeIc,
       dscale_values[j] = sum_dy_x_center_value * inv;
 
       for (int i = 0; i < VecSizeSp; ++i) {
-        ScaleT temp = scale[ic_idx[j]] * inv *
-                      ((Eigen::bfloat16_impl::bfloat16_to_float(
-                           Eigen::bfloat16_impl::raw_uint16_to_bfloat16(
-                               dy_values[i * VecSizeIc + j]))) -
-                       (sum_dy_value / sp) -
-                       (Eigen::bfloat16_impl::bfloat16_to_float(
+        if (Training) {
+          ScaleT temp = scale[ic_idx[j]] * inv *
+                        ((Eigen::bfloat16_impl::bfloat16_to_float(
+                             Eigen::bfloat16_impl::raw_uint16_to_bfloat16(
+                                 dy_values[i * VecSizeIc + j]))) -
+                         (sum_dy_value / sp) -
+                         (Eigen::bfloat16_impl::bfloat16_to_float(
+                              Eigen::bfloat16_impl::raw_uint16_to_bfloat16(
+                                  x_values[i * VecSizeIc + j])) -
+                          mean[ic_idx[j]]) *
+                             coef);
+          dx_values[i * VecSizeIc + j] =
+              Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(temp).value;
+        } else {
+          ScaleT temp = Eigen::bfloat16_impl::bfloat16_to_float(
                             Eigen::bfloat16_impl::raw_uint16_to_bfloat16(
-                                x_values[i * VecSizeIc + j])) -
-                        mean[ic_idx[j]]) *
-                           coef);
-        dx_values[i * VecSizeIc + j] =
-            Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(temp).value;
+                                dy_values[i * VecSizeIc + j])) *
+                        scale[ic_idx[j]] * inv;
+          dx_values[i * VecSizeIc + j] =
+              Eigen::bfloat16_impl::float_to_bfloat16_rtne<true>(temp).value;
+        }
       }
     }
 
@@ -2122,7 +2136,7 @@ struct BnBackwardOptimizedKernel<Eigen::bfloat16, ScaleT, VecSizeSp, VecSizeIc,
 };
 
 template <typename InT, typename ScaleT, int VecSizeSp, int VecSizeIc,
-          bool FuseNormRelu, bool FuseNormAddRelu>
+          bool FuseNormRelu, bool FuseNormAddRelu, bool Training>
 void bn_backward_optimized_kernel(
     ITEX_GPUStream* stream, const InT* x, const InT* dy, const ScaleT* mean,
     const ScaleT* var, const InT* y, const ScaleT* scale, const ScaleT* sum_dy,
@@ -2139,17 +2153,18 @@ void bn_backward_optimized_kernel(
 
   stream->submit([&](sycl::handler& cgh) {
     BnBackwardOptimizedKernel<InT, ScaleT, VecSizeSp, VecSizeIc, FuseNormRelu,
-                              FuseNormAddRelu>
+                              FuseNormAddRelu, Training>
         task(x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx, dscale,
              doffset, dside_x, sp, ic, epsilon);
-    cgh.parallel_for<BnBackwardOptimizedKernel<
-        InT, ScaleT, VecSizeSp, VecSizeIc, FuseNormRelu, FuseNormAddRelu>>(
+    cgh.parallel_for<
+        BnBackwardOptimizedKernel<InT, ScaleT, VecSizeSp, VecSizeIc,
+                                  FuseNormRelu, FuseNormAddRelu, Training>>(
         range, task);
   });
 }
 
 template <typename InT, typename ScaleT, int VecSizeSp, bool FuseNormRelu,
-          bool FuseNormAddRelu>
+          bool FuseNormAddRelu, bool Training>
 struct BnBackwardKernel {
   BnBackwardKernel(const InT* x_, const InT* dy_, const ScaleT* mean_,
                    const ScaleT* var_, const InT* y_, const ScaleT* scale_,
@@ -2207,9 +2222,13 @@ struct BnBackwardKernel {
 #pragma unroll
     for (int i = 0; i < VecSizeSp; ++i) {
       float mean_dy = sum_dy_value / sp;
-      dx_values[i] = static_cast<InT>(
-          scale[ic_idx] * inv *
-          (dy_values[i] - mean_dy - (x_values[i] - mean[ic_idx]) * coef));
+      if (Training) {
+        dx_values[i] = static_cast<InT>(
+            scale[ic_idx] * inv *
+            (dy_values[i] - mean_dy - (x_values[i] - mean[ic_idx]) * coef));
+      } else {
+        dx_values[i] = static_cast<InT>(dy_values[i] * scale[ic_idx] * inv);
+      }
     }
     if (sp_idx == 0) {
       doffset[ic_idx] = sum_dy_value;
@@ -2243,7 +2262,7 @@ struct BnBackwardKernel {
 };
 
 template <typename InT, typename ScaleT, int VecSizeSp, bool FuseNormRelu,
-          bool FuseNormAddRelu>
+          bool FuseNormAddRelu, bool Training>
 void bn_backward_kernel(ITEX_GPUStream* stream, const InT* x, const InT* dy,
                         const ScaleT* mean, const ScaleT* var, const InT* y,
                         const ScaleT* scale, const ScaleT* sum_dy,
@@ -2261,16 +2280,17 @@ void bn_backward_kernel(ITEX_GPUStream* stream, const InT* x, const InT* dy,
   sycl::nd_range<1> range(num_wg * group_size, group_size);
 
   stream->submit([&](sycl::handler& cgh) {
-    BnBackwardKernel<InT, ScaleT, VecSizeSp, FuseNormRelu, FuseNormAddRelu>
+    BnBackwardKernel<InT, ScaleT, VecSizeSp, FuseNormRelu, FuseNormAddRelu,
+                     Training>
         task(x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx, dscale,
              doffset, dside_x, sp, ic, epsilon);
     cgh.parallel_for<BnBackwardKernel<InT, ScaleT, VecSizeSp, FuseNormRelu,
-                                      FuseNormAddRelu>>(range, task);
+                                      FuseNormAddRelu, Training>>(range, task);
   });
 }
 
 template <typename InT, typename ScaleT, bool FuseNormRelu,
-          bool FuseNormAddRelu>
+          bool FuseNormAddRelu, bool Training>
 void BnBackward(OpKernelContext* context, const InT* x, const InT* dy,
                 const ScaleT* mean, const ScaleT* var, const InT* y,
                 const ScaleT* scale, const ScaleT* sum_dy,
@@ -2284,13 +2304,14 @@ void BnBackward(OpKernelContext* context, const InT* x, const InT* dy,
 
   if (use_optimized_impl) {
     bn_backward_optimized_kernel<InT, ScaleT, VecSizeSp, VecSizeIc,
-                                 FuseNormRelu, FuseNormAddRelu>(
+                                 FuseNormRelu, FuseNormAddRelu, Training>(
         stream, x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx, dscale,
         doffset, dside_x, sp, ic, epsilon);
   } else {
-    bn_backward_kernel<InT, ScaleT, VecSizeSp, FuseNormRelu, FuseNormAddRelu>(
-        stream, x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx, dscale,
-        doffset, dside_x, sp, ic, epsilon);
+    bn_backward_kernel<InT, ScaleT, VecSizeSp, FuseNormRelu, FuseNormAddRelu,
+                       Training>(stream, x, dy, mean, var, y, scale, sum_dy,
+                                 sum_dy_x_center, dx, dscale, doffset, dside_x,
+                                 sp, ic, epsilon);
   }
 }
 }  // namespace functor

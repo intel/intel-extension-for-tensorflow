@@ -269,7 +269,7 @@ class BatchNormalizationTest(test.TestCase):
             offset, scale_shape, y, x_shape)
       else:
         x32 = constant_op.constant(x_val, name='x32', dtype=dtypes.float32)
-        y32, _, _ = nn_impl.array_ops.identity_n(fused_batch_norm(
+        y32, _, _ = nn_impl.array_ops.identity_n(nn_impl.fused_batch_norm(
             x32,
             scale,
             offset,
@@ -569,28 +569,33 @@ class BatchNormalizationTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape1(self):
     x_shape = [1, 1, 6, 1]
-    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape2(self):
     x_shape = [1, 1, 6, 2]
-    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape3(self):
     x_shape = [1, 2, 1, 6]
-    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape4(self):
     x_shape = [5, 7, 11, 4]
-    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True)
+
+  @test_util.run_deprecated_v1
+  def testBatchNormGradInferenceShape11(self):
+    x_shape = [8, 4, 4, 4]
+    self._runtests(x_shape, is_training=False, gradient_test=True)
 
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test never passed for XLA')
   def testBatchNormGradInferenceShape5(self):
     x_shape = [0, 7, 11, 4]
-    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True)
 
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape6(self):
@@ -602,7 +607,7 @@ class BatchNormalizationTest(test.TestCase):
   @test_util.run_deprecated_v1
   def testBatchNormGradInferenceShape7(self):
     x_shape = [1, 2, 6, 1, 3]
-    self._runtests(x_shape, is_training=False, gradient_test=True, cpu_only=True)
+    self._runtests(x_shape, is_training=False, gradient_test=True)
   
   @test_util.run_deprecated_v1
   def testBatchNormGradTrainingShape1(self):

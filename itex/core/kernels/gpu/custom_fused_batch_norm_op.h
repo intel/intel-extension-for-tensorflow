@@ -144,7 +144,7 @@ struct ITEX_GPUFusedBatchNorm {
   }
 };
 
-template <typename Device, typename T, typename U>
+template <typename Device, typename T, typename U, bool Training>
 struct ITEX_GPUFusedBatchNormGrad {
   void operator()(OpKernelContext* context, const Tensor& y_backprop_input,
                   const Tensor& x_input, const Tensor& scale_input,
@@ -253,21 +253,21 @@ struct ITEX_GPUFusedBatchNormGrad {
     if (fuse_norm_relu) {
       BnormBwkReduction<T, U, true, false>(context, x, dy, mean, y, sum_dy,
                                            sum_dy_x_center, 1, sp, ic);
-      BnBackward<T, U, true, false>(context, x, dy, mean, var, y, scale, sum_dy,
-                                    sum_dy_x_center, dx, dscale, doffset,
-                                    dside_x, sp, ic, epsilon);
+      BnBackward<T, U, true, false, Training>(
+          context, x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx,
+          dscale, doffset, dside_x, sp, ic, epsilon);
     } else if (fuse_norm_add_relu) {
       BnormBwkReduction<T, U, false, true>(context, x, dy, mean, y, sum_dy,
                                            sum_dy_x_center, 1, sp, ic);
-      BnBackward<T, U, false, true>(context, x, dy, mean, var, y, scale, sum_dy,
-                                    sum_dy_x_center, dx, dscale, doffset,
-                                    dside_x, sp, ic, epsilon);
+      BnBackward<T, U, false, true, Training>(
+          context, x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx,
+          dscale, doffset, dside_x, sp, ic, epsilon);
     } else {
       BnormBwkReduction<T, U, false, false>(context, x, dy, mean, y, sum_dy,
                                             sum_dy_x_center, 1, sp, ic);
-      BnBackward<T, U, false, false>(context, x, dy, mean, var, y, scale,
-                                     sum_dy, sum_dy_x_center, dx, dscale,
-                                     doffset, dside_x, sp, ic, epsilon);
+      BnBackward<T, U, false, false, Training>(
+          context, x, dy, mean, var, y, scale, sum_dy, sum_dy_x_center, dx,
+          dscale, doffset, dside_x, sp, ic, epsilon);
     }
 
     if (tensor_format == FORMAT_NCHW) {
@@ -587,11 +587,19 @@ class CustomFusedBatchNormGradOp
 
     bool fuse_norm_relu = IsBatchNormEx && !has_side_input_;
     bool fuse_norm_add_relu = IsBatchNormEx && has_side_input_;
-    functor::ITEX_GPUFusedBatchNormGrad<Device, T, U>()(
-        context, diff_dst_tensor, src_tensor, scale_tensor, saved_mean,
-        saved_var, y_tensor, epsilon_, diff_src_tensor, diff_scale_tensor,
-        diff_offset_tensor, diff_side_input_tensor, tensor_format_,
-        fuse_norm_relu, fuse_norm_add_relu, sp, ic);
+    if (is_training_) {
+      functor::ITEX_GPUFusedBatchNormGrad<Device, T, U, true>()(
+          context, diff_dst_tensor, src_tensor, scale_tensor, saved_mean,
+          saved_var, y_tensor, epsilon_, diff_src_tensor, diff_scale_tensor,
+          diff_offset_tensor, diff_side_input_tensor, tensor_format_,
+          fuse_norm_relu, fuse_norm_add_relu, sp, ic);
+    } else {
+      functor::ITEX_GPUFusedBatchNormGrad<Device, T, U, false>()(
+          context, diff_dst_tensor, src_tensor, scale_tensor, saved_mean,
+          saved_var, y_tensor, epsilon_, diff_src_tensor, diff_scale_tensor,
+          diff_offset_tensor, diff_side_input_tensor, tensor_format_,
+          fuse_norm_relu, fuse_norm_add_relu, sp, ic);
+    }
   }
 
  private:
