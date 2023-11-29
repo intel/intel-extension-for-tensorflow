@@ -4715,6 +4715,26 @@ void Register_ITEXQuantizedBatchMatMulOp() {
   }
 }
 
+void Register_BeamSelectKVCacheOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("BeamSelectKVCache");
+    TF_OpDefinitionBuilderAddInput(op_builder, "cache: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "indices: Index");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "output_cache: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {bfloat16, half, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "Index: {int32,int64}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "input_length: int = 0");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
+                                                    &unchanged_shape_fn);
+
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "BeamSelectKVCache op registration failed: ";
+  }
+}
+
 void Register_SDPOp() {
   itex::StatusUniquePtr status(TF_NewStatus());
   {

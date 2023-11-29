@@ -289,6 +289,20 @@ itex_xpu_library(
 )
 
 itex_xpu_library(
+    name = "beam_select_ops",
+    srcs = [
+        "beam_select.cc",
+    ],
+    copts = tf_copts(),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+    ],
+    alwayslink = True,
+)
+
+itex_xpu_library(
     name = "depthtospace_op",
     srcs = [
         "depthtospace_op.cc",
@@ -2271,6 +2285,7 @@ GPU_KERNELS = [
     ":argmax_op",
     ":batchtospace_op",
     ":batch_norm_ops",
+    ":beam_select_ops",
     ":group_norm_ops",
     ":rms_norm_ops",
     ":betainc_op",

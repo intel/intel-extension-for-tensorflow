@@ -147,6 +147,7 @@ void RegisterOps() {
   Register_ITEXRnnGradOp();
   Register_OneDnnGraphOp();
   Register_QKRotaryPositionalEmbeddingOp();
+  Register_BeamSelectKVCacheOp();
 
   // Native kernels
   Register_ITEXAddNOp();

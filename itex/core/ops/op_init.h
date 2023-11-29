@@ -54,6 +54,7 @@ void Register_QuantizedMatMulOp();
 void Register_QuantizedFusedBatchNormOp();
 
 // Custom kernels
+void Register_BeamSelectKVCacheOp();
 void Register_GeluOp();
 void Register_GeluGradOp();
 void Register_QKRotaryPositionalEmbeddingOp();
