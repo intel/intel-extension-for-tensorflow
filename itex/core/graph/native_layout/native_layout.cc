@@ -216,12 +216,14 @@ std::vector<NativeFormatInfo>* GetCPUNativeFormatInfo() {
 
 std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
   static std::vector<NativeFormatInfo> rinfo{
+#ifndef USING_NEXTPLUGGABLE_DEVICE
       {"MaxPool", "_ITEXMaxPool", CopyAttrsAll, RewritePool},
       {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool},
       {"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll, RewriteMaxPoolGrad},
       {"MaxPoolV2", "_ITEXMaxPoolV2", CopyAttrsAll, AlwaysRewrite},
       {"MaxPoolGradV2", "_ITEXMaxPoolGradV2", CopyAttrsAll, RewriteMaxPoolGrad},
+#endif  // USING_NEXTPLUGGABLE_DEVICE
       {"TensorArray", "_ITEXTensorArray", CopyAttrsForTensorArray,
        AlwaysRewrite},
       {"TensorArrayClose", "_ITEXTensorArrayClose", CopyAttrsForTensorArray,
