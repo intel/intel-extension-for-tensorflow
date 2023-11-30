@@ -61,9 +61,7 @@ class OneHotOp : public OpKernel {
                 errors::InvalidArgument("off_value must be a scalar, but got: ",
                                         off_value.shape().DebugString()));
 
-    if (axis_ < 0) {
-      axis_ += output_dims;
-    }
+    const int axis = (axis_ == -1) ? indices_dims : axis_;
 
     // The one-hot dimension.
     const int32 depth_v = depth.scalar<int32>()();
@@ -78,7 +76,7 @@ class OneHotOp : public OpKernel {
                                 "], which exceeds 2**63 - 1 elements"));
 
     TensorShape output_shape = indices_shape;
-    output_shape.InsertDim(axis_, depth_v);
+    output_shape.InsertDim(axis, depth_v);
 
     auto on_value_t = on_value.scalar<T>();
     auto off_value_t = off_value.scalar<T>();
@@ -88,7 +86,7 @@ class OneHotOp : public OpKernel {
 
     if (output_shape.num_elements() > 0) {
       functor::OneHot<T, TI> onehot_functor;
-      onehot_functor.Compute(context, indices, on_value_t, off_value_t, axis_,
+      onehot_functor.Compute(context, indices, on_value_t, off_value_t, axis,
                              depth_v, output);
     }
   }
