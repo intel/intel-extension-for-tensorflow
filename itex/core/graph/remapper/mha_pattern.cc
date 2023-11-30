@@ -276,6 +276,10 @@ class MHAPatternWithMulAndAdd : public Fusion {
     MatchedProperties ret = FillProperties(
         &graph_view, graph_view.GetNode(node_index), pattern_, false);
 
+    if (!NodeIsOnGpu(graph_view.GetNode(node_index)->node())) {
+      return ret.ToEmpty();
+    }
+
     bool is_ok = !ret.Empty() && CheckShapes(ctx, ret);
 
     if (!is_ok) return ret.ToEmpty();
