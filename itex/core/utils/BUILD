@@ -429,7 +429,13 @@ itex_xpu_binary(
     linkshared = True,
     set_target = "gpu_orig_backend",
     visibility = ["//visibility:public"],
-    deps = if_dpcpp(["@intel_xla//xla/pjrt:tf_pjrt_helper"]),
+    deps = [
+        "@intel_xla//xla/pjrt:tf_pjrt_helper",
+        "@onednn_gpu",
+    ] + select({
+        "//third_party/onednn:build_with_onednn_graph": ["@onednn_gpu//:onednn_graph_gpu"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
