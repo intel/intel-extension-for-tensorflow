@@ -18,7 +18,7 @@ ubuntu_version_list[1.0.0]="20.04"
 ubuntu_version_list[1.1.0]="20.04 22.04"
 ubuntu_version_list[1.2.0]="20.04 22.04"
 ubuntu_version_list[2.13.0]="20.04 22.04"
-ubuntu_version_list[2.14.0]="22.04"
+ubuntu_version_list[2.14.0.1]="22.04"
 ubuntu_version_list[latest]="22.04"
 
 declare -A redhat_version_list
@@ -26,14 +26,14 @@ redhat_version_list[1.0.0]="8.5"
 redhat_version_list[1.1.0]="8.6"
 redhat_version_list[1.2.0]="8.6"
 redhat_version_list[2.13.0]="8.7 8.8"
-redhat_version_list[2.14.0]="8.6 8.8 9.0 9.2"
+redhat_version_list[2.14.0.1]="8.6 8.8 9.0 9.2"
 redhat_version_list[latest]="8.6 8.8 9.0 9.2"
 
 declare -A sles_version_list
 sles_version_list[1.1.0]="15.3 15.4"
 sles_version_list[1.2.0]="15.3 15.4"
 sles_version_list[2.13.0]="15.3 15.4"
-sles_version_list[2.14.0]="15.4 15.5"
+sles_version_list[2.14.0.1]="15.4 15.5"
 sles_version_list[latest]="15.4 15.5"
 
 declare -A min_python_version
@@ -41,7 +41,7 @@ min_python_version[1.0.0]=7
 min_python_version[1.1.0]=7
 min_python_version[1.2.0]=8
 min_python_version[2.13.0]=8
-min_python_version[2.14.0]=9
+min_python_version[2.14.0.1]=9
 min_python_version[latest]=9
 
 declare -A max_python_version
@@ -49,7 +49,7 @@ max_python_version[1.0.0]=10
 max_python_version[1.1.0]=10
 max_python_version[1.2.0]=11
 max_python_version[2.13.0]=11
-max_python_version[2.14.0]=11
+max_python_version[2.14.0.1]=11
 max_python_version[latest]=11
 
 declare -A min_tensorflow_version
@@ -57,7 +57,7 @@ min_tensorflow_version[1.0.0]=10
 min_tensorflow_version[1.1.0]=10
 min_tensorflow_version[1.2.0]=12
 min_tensorflow_version[2.13.0]=13
-min_tensorflow_version[2.14.0]=14
+min_tensorflow_version[2.14.0.1]=14
 min_tensorflow_version[latest]=14
 
 driver_list_for_ubuntu=(
@@ -225,20 +225,20 @@ driver_version_ubuntu[1.0.0]=${itex_1_0_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.1.0]=${itex_1_1_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.2.0]=${itex_1_2_driver_version_ubuntu[@]}
 driver_version_ubuntu[2.13.0]=${itex_1_3_driver_version_ubuntu[@]}
-driver_version_ubuntu[2.14.0]=${itex_1_4_driver_version_ubuntu[@]}
+driver_version_ubuntu[2.14.0.1]=${itex_1_4_driver_version_ubuntu[@]}
 
 declare -A driver_version_rhel
 driver_version_rhel[1.0.0]=${itex_1_0_driver_version_rhel[@]}
 driver_version_rhel[1.1.0]=${itex_1_1_driver_version_rhel[@]}
 driver_version_rhel[1.2.0]=${itex_1_2_driver_version_rhel[@]}
-driver_version_rhel[1.3.0]=${itex_1_3_driver_version_rhel[@]}
-driver_version_rhel[1.4.0]=${itex_1_4_driver_version_rhel[@]}
+driver_version_rhel[2.13.0]=${itex_1_3_driver_version_rhel[@]}
+driver_version_rhel[2.14.0.1]=${itex_1_4_driver_version_rhel[@]}
 
 declare -A driver_version_sles
 driver_version_sles[1.1.0]=${itex_1_1_driver_version_sles[@]}
 driver_version_sles[1.2.0]=${itex_1_2_driver_version_sles[@]}
-driver_version_sles[1.3.0]=${itex_1_3_driver_version_sles[@]}
-driver_version_sles[1.4.0]=${itex_1_4_driver_version_sles[@]}
+driver_version_sles[2.13.0]=${itex_1_3_driver_version_sles[@]}
+driver_version_sles[2.14.0.1]=${itex_1_4_driver_version_sles[@]}
 
 itex_1_0_oneapi_version=(
   "2022.2.0-8734"
@@ -274,7 +274,7 @@ oneapi_version[1.0.0]=${itex_1_0_oneapi_version[@]}
 oneapi_version[1.1.0]=${itex_1_1_oneapi_version[@]}
 oneapi_version[1.2.0]=${itex_1_2_oneapi_version[@]}
 oneapi_version[2.13.0]=${itex_1_3_oneapi_version[@]}
-oneapi_version[2.14.0]=${itex_1_4_oneapi_version[@]}
+oneapi_version[2.14.0.1]=${itex_1_4_oneapi_version[@]}
 
 
 tf_require_list=(
@@ -406,7 +406,7 @@ installed_status_driver() {
   case "${os_name}" in
     ubuntu)
       driver_list=(${driver_version_ubuntu[$itex_version]// / })
-      status=$(dpkg -s $1 2>/dev/null |grep Status|awk -F ':' '{print $2}'|grep "install ok installed"|sed 's/^\s*//g')
+      status=$(dpkg -s $1 2>/dev/null |grep Status|awk -F ':' '{print $2}'|grep "ok installed"|sed 's/^\s*//g')
       version=$(dpkg -s $1 2>/dev/null |grep Version|awk -F ':|~' '{print $2}'|sed 's/^\s*//g')
       ;;
     rhel)
@@ -504,7 +504,7 @@ check_intel_oneapi() {
   echo -e "===================== \033[33m Check Intel oneAPI \033[0m ====================="
   echo ""
 
-  LOAD_LIBS=/tmp/loadlibs
+  LOAD_LIBS=`mktemp /tmp/loadlibs.XXX`
   LD_DEBUG=libs ${python_bin_path} -c "import intel_extension_for_tensorflow"  2>>${LOAD_LIBS}
   current_oneapi_list=(${oneapi_version[$itex_version]// / })
   for oneapi in ${oneapi_list[@]}
