@@ -233,7 +233,7 @@ index 3f4c95ed0..a070f3c22 100644
    let arguments = (ins
      Arg<LHLO_Buffer, "", [MemRead]>:$lhs_bmm1,
 diff --git a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
-index d1c7c7ac5..31036ab45 100644
+index d1c7c7ac5..601bcd631 100644
 --- a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
 +++ b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
 @@ -137,6 +137,7 @@ def FusedMhaDagSoftmaxDropout : I32EnumAttrCase<"SoftmaxDropout", 5>;
@@ -325,6 +325,51 @@ index b7064ac25..dcb1efbd8 100644
  }
  
  }  // namespace xla
+diff --git a/xla/pjrt/local_device_state.cc b/xla/pjrt/local_device_state.cc
+index 69443f326..6161ec8c7 100644
+--- a/xla/pjrt/local_device_state.cc
++++ b/xla/pjrt/local_device_state.cc
+@@ -146,6 +146,7 @@ Status LocalDeviceState::ThenMemcpyDeviceToDevice(
+ void LocalDeviceState::ThenExecuteCallback(se::Stream* stream,
+                                            std::function<void()> callback) {
+   tsl::profiler::TraceMe traceme("ThenExecuteCallback");
++  se::Stream* other_stream = stream;
+   if (callback_stream_map_.has_value()) {
+     // Prevent concurrent updates to the callback stream map.
+     absl::MutexLock lock(&mu_);
+@@ -156,10 +157,14 @@ void LocalDeviceState::ThenExecuteCallback(se::Stream* stream,
+       callback_stream =
+           callback_stream_map_->insert({stream, std::move(new_stream)}).first;
+     }
+-    callback_stream->second->ThenWaitFor(stream);
+-    stream = callback_stream->second.get();
++    other_stream = callback_stream->second.get();
+   }
+-  stream->ThenDoHostCallback([this, callback{std::move(callback)}]() mutable {
++  // We should release mutex before submit barrier or host task to callback
++  // stream, otherwise will lead to dead lock.
++  if (other_stream != stream) {
++    other_stream->ThenWaitFor(stream);
++  }
++  other_stream->ThenDoHostCallback([this, callback{std::move(callback)}]() mutable {
+     callback_thread_->Schedule(std::move(callback));
+   });
+ }
+diff --git a/xla/pjrt/pjrt_stream_executor_client.h b/xla/pjrt/pjrt_stream_executor_client.h
+index b91269c3e..151ab678d 100644
+--- a/xla/pjrt/pjrt_stream_executor_client.h
++++ b/xla/pjrt/pjrt_stream_executor_client.h
+@@ -874,6 +874,10 @@ class PjRtStreamExecutorLoadedExecutable : public PjRtLoadedExecutable {
+     return executables_;
+   }
+ 
++  StatusOr<CompileOptions> GetCompileOptions() const override {
++    return compile_options_;
++  }
++
+  protected:
+   bool parameter_is_tupled_arguments() const {
+     return parameter_is_tupled_arguments_;
 diff --git a/xla/service/algebraic_simplifier.h b/xla/service/algebraic_simplifier.h
 index 232074497..adf401fa3 100644
 --- a/xla/service/algebraic_simplifier.h
@@ -351,6 +396,71 @@ index 65a09e9fc..d3d90d242 100644
    // Enable debug info so that it is easier to see the corresponding HLO node.
    if (file_prefix == "lmhlo") {
      print_flags.enableDebugInfo(/*enable=*/true,
+diff --git a/xla/service/float_normalization.cc b/xla/service/float_normalization.cc
+index 267a92383..dd966b883 100644
+--- a/xla/service/float_normalization.cc
++++ b/xla/service/float_normalization.cc
+@@ -206,17 +206,21 @@ Status FloatNormalizationVisitor::ChangeOutputTypeThenInsertConvertBack(
+                 HloInstruction::CreateConvert(original_subshape, leaf));
+           }));
+ 
++  std::vector<HloInstruction*> simplify_conversions;
+   for (auto* user : materialized_users) {
+     // If the user is a low-precision -> high-precision convert, we can replace
+     // it with `hlo`, which has its input changed to high-precision.
+     if (user->opcode() == HloOpcode::kConvert &&
+         user->shape().element_type() == to && to == HighPrecisionType() &&
+         from == LowPrecisionType()) {
+-      TF_RETURN_IF_ERROR(user->ReplaceAllUsesWith(hlo));
++      simplify_conversions.emplace_back(user);
+     } else {
+       TF_RETURN_IF_ERROR(hlo->ReplaceUseWithDifferentShape(user, new_hlo));
+     }
+   }
++  for (auto* convert : simplify_conversions) {
++    TF_RETURN_IF_ERROR(convert->ReplaceAllUsesWith(hlo));
++  }
+   if (is_root) {
+     computation->set_root_instruction(new_hlo, /*accept_different_shape=*/true);
+   }
+diff --git a/xla/service/float_normalization_test.cc b/xla/service/float_normalization_test.cc
+index 3a41960ba..eab7cdcbc 100644
+--- a/xla/service/float_normalization_test.cc
++++ b/xla/service/float_normalization_test.cc
+@@ -485,4 +485,33 @@ TEST_F(FloatNormalizationTest, ResolveIfUnsupportedF8e5m2) {
+   EXPECT_EQ(mul1->operand(0)->opcode(), HloOpcode::kConvert);
+ }
+ 
++TEST_F(FloatNormalizationTest, ConvertAfterOutput) {
++  auto builder = HloComputation::Builder(TestName());
++  Shape bf16_shape = ShapeUtil::MakeShape(BF16, {2, 4});
++  Shape f32_shape = ShapeUtil::MakeShape(F32, {2, 4});
++
++  HloInstruction* a = builder.AddInstruction(
++      HloInstruction::CreateParameter(0, bf16_shape, "a"));
++  HloInstruction* b =
++      builder.AddInstruction(HloInstruction::CreateParameter(1, bf16_shape, "b"));
++
++  HloInstruction* add = builder.AddInstruction(
++      HloInstruction::CreateBinary(bf16_shape, HloOpcode::kMultiply, a, b));
++
++  HloInstruction* convert = builder.AddInstruction(
++      HloInstruction::CreateConvert(f32_shape, add));
++
++  HloInstruction* tuple = builder.AddInstruction(
++      HloInstruction::CreateVariadic(ShapeUtil::MakeTupleShape({f32_shape, bf16_shape}), HloOpcode::kTuple, {convert, add}));
++
++  auto module = CreateNewVerifiedModule();
++  auto computation = module->AddEntryComputation(builder.Build());
++
++  EXPECT_TRUE(Normalize(module.get(), BF16));
++
++  EXPECT_EQ(computation->root_instruction()->opcode(), HloOpcode::kTuple);
++  EXPECT_EQ(computation->root_instruction()->operand(0)->shape().element_type(), F32);
++  EXPECT_EQ(computation->root_instruction()->shape().tuple_shapes(0).element_type(), F32);
++}
++
+ }  // namespace xla
 diff --git a/xla/service/gpu/cublas_cudnn.cc b/xla/service/gpu/cublas_cudnn.cc
 index 2c6340c6c..7b1fa7a64 100644
 --- a/xla/service/gpu/cublas_cudnn.cc
@@ -460,6 +570,26 @@ index ad2d7ffa6..06c8ab79b 100644
                        DataLayout::kBatchYXDepth);
  
    // Integer convolution must use NHWC or NCHW_VECT_C.
+diff --git a/xla/service/gpu/hlo_fusion_analysis.cc b/xla/service/gpu/hlo_fusion_analysis.cc
+index 36006855d..b7d3222f4 100644
+--- a/xla/service/gpu/hlo_fusion_analysis.cc
++++ b/xla/service/gpu/hlo_fusion_analysis.cc
+@@ -761,13 +761,8 @@ int HloFusionAnalysis::CalculateVirtualThreadScalingFactorForReduction(
+   int64_t dimx = reduction_dimensions.dimensions[kDimX];
+   if (reduction_dimensions.is_row_reduction && dimx <= 128) {
+     int rows_per_warp = RowReductionGetRowsPerWarp(dimx);
+-    const auto* cuda_cc = std::get_if<se::CudaComputeCapability>(
+-        &device_info_->gpu_compute_capability());
+-    if (cuda_cc != nullptr &&
+-        cuda_cc->IsAtLeast(se::CudaComputeCapability::AMPERE)) {
+-      return rows_per_warp * 3;
+-    }
+-    return rows_per_warp * 5;
++    // SYCL: larger thread number causes hang.
++    return rows_per_warp;
+   }
+   return 1;
+ }
 diff --git a/xla/service/gpu/ir_emission_utils.cc b/xla/service/gpu/ir_emission_utils.cc
 index 12264198a..268ee3962 100644
 --- a/xla/service/gpu/ir_emission_utils.cc
