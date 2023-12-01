@@ -137,3 +137,32 @@ void rotary_embedding_shape_fn(TF_ShapeInferenceContext* ctx,
   TF_ShapeInferenceContextSetOutput(ctx, 1, q_handle, status);
   TF_DeleteShapeHandle(q_handle);
 }
+
+void scaled_dot_product_attention_inf_shape_fn(TF_ShapeInferenceContext* ctx,
+                                               TF_Status* status) {
+  TF_SetStatus(status, TF_OK, "");
+  TF_ShapeHandle* q_handle = TF_NewShapeHandle();
+  TF_ShapeHandle* res_handle = TF_NewShapeHandle();
+  TF_ShapeHandle* n_handle = TF_NewShapeHandle();
+  TF_ShapeHandle* f_handle = TF_NewShapeHandle();
+  TF_ShapeHandle* h_handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 0, q_handle, status);
+  TF_ShapeInferenceContextSubshape(ctx, q_handle, 0, 1, res_handle, status);
+  TF_ShapeInferenceContextSubshape(ctx, q_handle, 1, 2, n_handle, status);
+  TF_ShapeInferenceContextSubshape(ctx, q_handle, 2, 3, f_handle, status);
+  TF_ShapeInferenceContextSubshape(ctx, q_handle, 3, 4, h_handle, status);
+  ITEX_CHECK_EQ(TF_OK, TF_GetCode(status));
+
+  TF_ShapeInferenceContextConcatenateShapes(ctx, res_handle, f_handle,
+                                            res_handle, status);
+  TF_ShapeInferenceContextConcatenateShapes(ctx, res_handle, n_handle,
+                                            res_handle, status);
+  TF_ShapeInferenceContextConcatenateShapes(ctx, res_handle, h_handle,
+                                            res_handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 0, res_handle, status);
+  TF_DeleteShapeHandle(q_handle);
+  TF_DeleteShapeHandle(res_handle);
+  TF_DeleteShapeHandle(n_handle);
+  TF_DeleteShapeHandle(f_handle);
+  TF_DeleteShapeHandle(h_handle);
+}

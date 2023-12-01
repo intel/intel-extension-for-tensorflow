@@ -4777,8 +4777,8 @@ void Register_SDPInfOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_causal: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_inference: bool = true");
 
-    TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unknown_shape_fn);
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(
+        op_builder, &scaled_dot_product_attention_inf_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ScaledDotProductAttentionInference op registration failed: ";

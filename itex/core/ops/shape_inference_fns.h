@@ -35,6 +35,8 @@ void apply_adam_with_weight_decay_shape_fn(TF_ShapeInferenceContext* ctx,
                                            TF_Status* status);
 void rotary_embedding_shape_fn(TF_ShapeInferenceContext* ctx,
                                TF_Status* status);
+void scaled_dot_product_attention_inf_shape_fn(TF_ShapeInferenceContext* ctx,
+                                               TF_Status* status);
 #ifdef __cplusplus
 }
 #endif
