@@ -31,9 +31,10 @@ def parse_args(argv):
 def git_hash(header_in):
   with open("bazel-out/volatile-status.txt", 'r') as f:
     for line in f:
+      if not line.startswith("ITEX_REVISION"):
+        continue
       k, v = line.split(" ")
-      if k == "ITEX_REVISION":
-        return v.strip()
+      return v.strip()
 
   return "N/A" 
 
