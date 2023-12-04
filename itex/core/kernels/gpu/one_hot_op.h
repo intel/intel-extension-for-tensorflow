@@ -27,12 +27,15 @@ typedef Eigen::GpuDevice GPUDevice;
 
 namespace impl {
 
-template <typename T, typename TI>
+template <typename T, typename TI, bool readInCol>
 struct OneHotEncodingKernel {
+  using FastDivisor = Eigen::internal::TensorIntDivisor<int>;
   OneHotEncodingKernel(int32 elem_cnts, int32 outElems_in_single_batch,
                        int32 final_depth, int32 indices_col,
                        const TI* indices_ptr, const T* on_value_ptr,
-                       const T* off_value_ptr, T* output_ptr, bool readInCol)
+                       const T* off_value_ptr,
+                       FastDivisor outElems_in_single_batch_fast_divisor,
+                       FastDivisor final_depth_fast_divisor, T* output_ptr)
       : elem_cnts(elem_cnts),
         outElems_in_single_batch(outElems_in_single_batch),
         final_depth(final_depth),
@@ -40,28 +43,36 @@ struct OneHotEncodingKernel {
         indices_ptr(indices_ptr),
         on_value_ptr(on_value_ptr),
         off_value_ptr(off_value_ptr),
-        output_ptr(output_ptr),
-        readInCol(readInCol) {}
+        outElems_in_single_batch_fast_divisor_(
+            outElems_in_single_batch_fast_divisor),
+        final_depth_fast_divisor_(final_depth_fast_divisor),
+        output_ptr(output_ptr) {}
   void operator()(sycl::nd_item<1> item) const {
     auto global_id = item.get_global_id(0);
     auto global_range = item.get_global_range(0);
     for (int32 i = global_id, step = global_range; i < elem_cnts; i += step) {
-      const int32 batch_index = i / outElems_in_single_batch;  // batch id
-      const int32 flatten_index = i % outElems_in_single_batch;
+      const int32 batch_index =
+          i / outElems_in_single_batch_fast_divisor_;  // batch id
+      const int32 flatten_index = i - outElems_in_single_batch * batch_index;
 
-      const int32 row = flatten_index / final_depth;
-      const int32 col = flatten_index % final_depth;
+      const int32 row = flatten_index / final_depth_fast_divisor_;
+      const int32 col = flatten_index - final_depth * row;
 
-      const int32 row_index =
-          batch_index * indices_col + row;  // row index in indices
-      const int32 col_index = batch_index * indices_col + col;
+      if (readInCol) {
+        const int32 col_index =
+            batch_index * indices_col + col;  // col index in indices
+        const int32 idx = indices_ptr[col_index];
 
-      int32 indice_id = readInCol ? col_index : row_index;
-      const int32 idx = indices_ptr[indice_id];
-      indice_id = readInCol ? row : col;  // renew index value
+        assert(idx >= 0 && idx < final_depth);
+        output_ptr[i] = (idx == row) ? *on_value_ptr : *off_value_ptr;
+      } else {
+        const int32 row_index =
+            batch_index * indices_col + row;  // row index in indices
+        const int32 idx = indices_ptr[row_index];
 
-      assert(idx >= 0 && idx < final_depth);
-      output_ptr[i] = (idx == indice_id) ? *on_value_ptr : *off_value_ptr;
+        assert(idx >= 0 && idx < final_depth);
+        output_ptr[i] = (idx == col) ? *on_value_ptr : *off_value_ptr;
+      }
     }
   }
 
@@ -73,8 +84,9 @@ struct OneHotEncodingKernel {
   const TI* indices_ptr;
   const T* on_value_ptr;
   const T* off_value_ptr;
+  FastDivisor outElems_in_single_batch_fast_divisor_;
+  FastDivisor final_depth_fast_divisor_;
   T* output_ptr;
-  bool readInCol;
 };
 /*
 @param: indices
@@ -115,24 +127,57 @@ struct OneHotDefaultKernel {
 
     int32 final_depth =
         1;  // change depth value and output format according to axis
-    bool readInCol = false;
     if (axis != output->shape().dims() - 1) {
       final_depth = indices_col;
-      readInCol = true;
+#define EigenFastDivisor(divisor, num)                     \
+  Eigen::internal::TensorIntDivisor<int> divisor;          \
+  if (num != 0) {                                          \
+    divisor = Eigen::internal::TensorIntDivisor<int>(num); \
+  }
+      EigenFastDivisor(outElems_in_single_batch_fast_divisor,
+                       outElems_in_single_batch);
+      EigenFastDivisor(final_depth_fast_divisor, final_depth);
+
+#undef EigenFastDivisor
+
+      stream->submit([&](sycl::handler& cgh) {
+        OneHotEncodingKernel<T, TI, true> task(
+            elem_cnts, outElems_in_single_batch, final_depth, indices_col,
+            indices_ptr, on_value_ptr, off_value_ptr,
+            outElems_in_single_batch_fast_divisor, final_depth_fast_divisor,
+            output_ptr);
+        cgh.parallel_for<OneHotEncodingKernel<T, TI, true>>(
+            sycl::nd_range<1>(sycl::range<1>(num_wg * max_group_size),
+                              sycl::range<1>(max_group_size)),
+            task);
+      });
     } else {
       final_depth = depth;
-      readInCol = false;
+
+#define EigenFastDivisor(divisor, num)                     \
+  Eigen::internal::TensorIntDivisor<int> divisor;          \
+  if (num != 0) {                                          \
+    divisor = Eigen::internal::TensorIntDivisor<int>(num); \
+  }
+      EigenFastDivisor(outElems_in_single_batch_fast_divisor,
+                       outElems_in_single_batch);
+      EigenFastDivisor(final_depth_fast_divisor, final_depth);
+
+#undef EigenFastDivisor
+
+      stream->submit([&](sycl::handler& cgh) {
+        OneHotEncodingKernel<T, TI, false> task(
+            elem_cnts, outElems_in_single_batch, final_depth, indices_col,
+            indices_ptr, on_value_ptr, off_value_ptr,
+            outElems_in_single_batch_fast_divisor, final_depth_fast_divisor,
+            output_ptr);
+        cgh.parallel_for<OneHotEncodingKernel<T, TI, false>>(
+            sycl::nd_range<1>(sycl::range<1>(num_wg * max_group_size),
+                              sycl::range<1>(max_group_size)),
+            task);
+      });
     }
 
-    stream->submit([&](sycl::handler& cgh) {
-      OneHotEncodingKernel<T, TI> task(
-          elem_cnts, outElems_in_single_batch, final_depth, indices_col,
-          indices_ptr, on_value_ptr, off_value_ptr, output_ptr, readInCol);
-      cgh.parallel_for<OneHotEncodingKernel<T, TI>>(
-          sycl::nd_range<1>(sycl::range<1>(num_wg * max_group_size),
-                            sycl::range<1>(max_group_size)),
-          task);
-    });
     return Status::OK();
   }
 };
