@@ -181,9 +181,18 @@ filegroup(
 )
 
 filegroup(
+    name = "shape_ops_hdrs",
+    srcs = [
+        "shape_ops.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "quantized_reshape_hdrs",
     srcs = [
         "quantized_reshape_op.h",
+        ":shape_ops_hdrs",
     ],
     visibility = ["//visibility:public"],
 )
