@@ -129,8 +129,10 @@ def write_action_env_to_bazelrc(var_name, var):
   write_to_bazelrc('build --action_env %s="%s"' % (var_name, str(var)))
 
 
-def run_shell(cmd, allow_non_zero=False):
+def run_shell(cmd, allow_non_zero=False, stderr=None):
   """Running shell command with check."""
+  if stderr is None:
+    stderr = sys.stdout
   def _checked_cmd(cmd):
     deny_list = [';', '&', '|', '`', '\r', '\n', '(', ')', '<', '>']
     if cmd is None:
@@ -148,11 +150,11 @@ def run_shell(cmd, allow_non_zero=False):
     sys.exit(-1)
   if allow_non_zero:
     try:
-      output = subprocess.check_output(cmd)
+      output = subprocess.check_output(cmd, stderr=stderr)
     except subprocess.CalledProcessError as e:
       output = e.output
   else:
-    output = subprocess.check_output(cmd)
+    output = subprocess.check_output(cmd, stderr=stderr)
   return output.decode('UTF-8').strip()
 
 def check_safe_python_bin_path(python_bin_path):
@@ -622,6 +624,7 @@ def prompt_loop_or_load_from_env(environ_cp,
                                  check_success,
                                  error_msg,
                                  suppress_default_error=False,
+                                 resolve_symlinks=False,
                                  n_ask_attempts=_DEFAULT_PROMPT_ASK_ATTEMPTS):
   """Loop over user prompts for an ENV param until receiving a valid response.
 
@@ -638,9 +641,11 @@ def prompt_loop_or_load_from_env(environ_cp,
       boolean. Should return True if the value provided is considered valid. May
       contain a complex error message if error_msg does not provide enough
       information. In that case, set suppress_default_error to True.
-    error_msg: (String) invalid response upon check_success(input) failure.
+    error_msg: (String) String with one and only one '%s'. Formatted with each
+      invalid response upon check_success(input) failure.
     suppress_default_error: (Bool) Suppress the above error message in favor of
       one from the check_success function.
+    resolve_symlinks: (Bool) Translate symbolic links into the real filepath.
     n_ask_attempts: (Integer) Number of times to query for valid input before
       raising an error and quitting.
 
@@ -665,13 +670,15 @@ def prompt_loop_or_load_from_env(environ_cp,
     if check_success(val):
       break
     if not suppress_default_error:
-      print(error_msg)
-    environ_cp[var_name] = None
+      print(error_msg % val)
+    environ_cp[var_name] = ''
   else:
     raise UserInputError('Invalid %s setting was provided %d times in a row. '
                          'Assuming to be a scripting mistake.' %
                          (var_name, n_ask_attempts))
 
+  if resolve_symlinks:
+    val = os.path.realpath(val)
   environ_cp[var_name] = val
   return val
 
@@ -859,6 +866,96 @@ def check_safe_workspace_path(workspace):
 
   raise Exception("Invalid workspace path!")
 
+def choose_compiler(environ_cp):
+  question = 'Do you want to use Clang to build ITEX host code?'
+  yes_reply = 'Clang will be used to compile ITEX host code.'
+  no_reply = 'GCC will be used to compile ITEX host code.'
+  var = int(
+      get_var(
+          environ_cp, 'ITEX_NEED_CLANG', None, True, question, yes_reply, no_reply
+      )
+  )
+  return var
+
+
+def set_clang_compiler_path(environ_cp):
+  """Set CLANG_COMPILER_PATH and environment variables.
+
+  Loop over user prompts for clang path until receiving a valid response.
+  Default is used if no input is given. Set CLANG_COMPILER_PATH and write
+  environment variables CC and BAZEL_COMPILER to .bazelrc.
+
+  Args:
+    environ_cp: (Dict) copy of the os.environ.
+
+  Returns:
+    string value for clang_compiler_path.
+  """
+  # Default path if clang-17 is installed by using apt-get install
+  default_clang_path = '/usr/lib/llvm-17/bin/clang'
+
+  clang_compiler_path = prompt_loop_or_load_from_env(
+      environ_cp,
+      var_name='CLANG_COMPILER_PATH',
+      var_default=default_clang_path,
+      ask_for_var='Please specify the path to clang executable.',
+      check_success=os.path.exists,
+      resolve_symlinks=True,
+      error_msg=(
+          'Invalid clang path. %s cannot be found. Note that ITEX now'
+          ' requires clang to compile. You may override this behavior by'
+          ' setting ITEX_NEED_CLANG=0'
+      ),
+  )
+
+  write_action_env_to_bazelrc('CLANG_COMPILER_PATH', clang_compiler_path)
+  if environ_cp.get('TF_NEED_DPCPP') == '0':
+      write_to_bazelrc('build --repo_env=CC=%s' % clang_compiler_path)
+      write_to_bazelrc('build --repo_env=BAZEL_COMPILER=%s' % clang_compiler_path)
+
+  return clang_compiler_path
+
+
+def retrieve_clang_version(clang_executable):
+  """Retrieve installed clang version.
+
+  Args:
+    clang_executable: (String) path to clang executable
+
+  Returns:
+    The clang version detected.
+  """
+  stderr = open(os.devnull, 'wb')
+  curr_version = run_shell([clang_executable, '--version'],
+                           allow_non_zero=True,
+                           stderr=stderr)
+
+  curr_version_split = curr_version.lower().split('clang version ')
+  if len(curr_version_split) > 1:
+    curr_version = curr_version_split[1].split()[0]
+
+  curr_version_int = convert_version_to_int(curr_version)
+  # Check if current clang version can be detected properly.
+  if not curr_version_int:
+    print('WARNING: current clang installation is not a release version.\n')
+    return None
+  if int(curr_version.split('.')[0]) == 17:
+    write_to_bazelrc('build --linkopt=-Wl,--undefined-version')
+    write_to_bazelrc('build --linkopt="-fuse-ld=lld"')
+  print('You have Clang %s installed.\n' % curr_version)
+  return curr_version
+
+
+# Disable clang extension that rejects type definitions within offsetof.
+# This was added in clang-16 by https://reviews.llvm.org/D133574.
+# Still required for clang-17.
+# Can be removed once upb is updated, since a type definition is used within
+# offset of in the current version of ubp. See
+# https://github.com/protocolbuffers/upb/blob/9effcbcb27f0a665f9f345030188c0b291e32482/upb/upb.c#L183.
+def disable_clang_offsetof_extension(clang_version):
+  if int(clang_version.split('.')[0]) in (16, 17):
+    write_to_bazelrc('build --copt=-Wno-gnu-offsetof-extensions')
+
 
 def main():
   global _ITEX_WORKSPACE_ROOT
@@ -894,6 +991,13 @@ def main():
   create_build_configuration(environ_cp)
 
   set_action_env_var(environ_cp, 'TF_NEED_DPCPP', 'GPU', True)
+  if environ_cp.get('TF_NEED_DPCPP') == '0':
+    environ_cp['ITEX_NEED_CLANG'] = str(choose_compiler(environ_cp))
+  if environ_cp.get('ITEX_NEED_CLANG') == '1':
+    clang_compiler_path = set_clang_compiler_path(environ_cp)
+    clang_version = retrieve_clang_version(clang_compiler_path)
+    disable_clang_offsetof_extension(clang_version)
+
   if environ_cp.get('TF_NEED_DPCPP') == '1':
     set_dpcpp_toolkit_path(environ_cp)
     set_aot_config(environ_cp)
