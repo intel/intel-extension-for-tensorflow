@@ -68,7 +68,8 @@ pip install --upgrade intel-extension-for-tensorflow[xpu]
 Environment check instructions for XPU:
 
 ```bash
-bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
+bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
 ```
 
 Refer to [XPU installation](docs/install/install_for_xpu.md) for details.
@@ -94,7 +95,8 @@ pip install --upgrade intel-extension-for-tensorflow-weekly[gpu] -f https://deve
 Environment check instructions for GPU weekly:
 
 ```bash
-bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
+bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
 ```
 
 ## Documentation 
