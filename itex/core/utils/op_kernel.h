@@ -418,8 +418,8 @@ class OpKernelContext {
         : status_(status),
           stream_(ctx,
 #ifndef USING_NEXTPLUGGABLE_DEVICE
-                  &(static_cast<SP_Stream_st*>(TF_GetStream(ctx, status_))
-                        ->stream_handle),
+                  (static_cast<SP_Stream_st*>(TF_GetStream(ctx, status_))
+                       ->stream_handle),
 #endif  // USING_NEXTPLUGGABLE_DEVICE
                   &tmp_tensors_),
           eigen_gpu_device_(&stream_) {
