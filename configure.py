@@ -306,6 +306,8 @@ def setup_python(environ_cp):
     if line.startswith("tensorflow  "):
         name, version = line.split()
         version = version.split("rc")[0]
+        # To support Post-release version scheme: X.Y.postN
+        version = version.split(".post")[0]
         current_tensorflow_version = convert_version_to_int(version)
         tf_major_version = version.split(".")[0]
         tf_minor_version = version.split(".")[1]
