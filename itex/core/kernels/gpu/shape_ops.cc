@@ -48,6 +48,8 @@ void AllocateOutputAndReshapePjrtBuffer(OpKernelContext* context,
                                DataTypeString(input.dtype()), dimensions,
                                layout, pjrt_c_client),
         "XPU", status);
+    Tensor output(input.dtype(), shape, out_tf_tensor);
+    context->move_tensor_to_output(0, output);
   } else {
     Tensor output(input.dtype());
     ITEX_CHECK(output.CopyFrom(input, shape));

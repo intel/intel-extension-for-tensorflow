@@ -416,6 +416,15 @@ void OpKernelContext::set_output(int index, const Tensor& tensor) {
   return;
 }
 
+void OpKernelContext::move_tensor_to_output(int index, const Tensor& tensor) {
+  ITEX_CHECK(index >= 0 && index < num_outputs())
+      << " Index out of range while setting output";
+  ITEX_CHECK_EQ(outputs_[index], nullptr);
+  std::shared_ptr<Tensor> ptr = std::make_shared<Tensor>(tensor);
+  outputs_[index] = std::move(ptr);
+  return;
+}
+
 /// all below CtxFailure will pass back the TF_Status created by plugin.
 /// so we need not to delete it, which will be controlled by TF.
 void OpKernelContext::CtxFailure(const Status& s) {
