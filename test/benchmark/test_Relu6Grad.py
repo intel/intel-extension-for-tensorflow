@@ -17,8 +17,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops import gradient_checker_v2
-from tensorflow.python.ops import nn_ops
+from tensorflow.python.ops import gen_nn_ops
 from tensorflow.python.framework import constant_op
 from utils import multi_run, add_profiling, flush_cache
 
@@ -35,9 +34,10 @@ class Relu6GradTest(test.TestCase):
     def _test_impl(self, size, dtype):
         x = np.random.normal(size=size)
         x = constant_op.constant(x, dtype=dtype)
+        grad = np.random.normal(size=size)
+        grad = constant_op.constant(grad, dtype=dtype)
         flush_cache()
-        err = gradient_checker_v2.max_error(
-            *gradient_checker_v2.compute_gradient(nn_ops.relu6, [x]))
+        gen_nn_ops.relu6_grad([grad], [x])
 
     @add_profiling
     @multi_run(ITERATION)
