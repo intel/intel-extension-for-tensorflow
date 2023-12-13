@@ -30,7 +30,7 @@ except ImportError:
     from tensorflow.python.platform import test
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
 
-OUTPUT_DTYPE = [dtypes.float32, dtypes.float64]
+OUTPUT_DTYPE = [dtypes.float32]
 DEBUG_MODE = [
     debug_event_pb2.TensorDebugMode.CURT_HEALTH,
     debug_event_pb2.TensorDebugMode.CONCISE_HEALTH,

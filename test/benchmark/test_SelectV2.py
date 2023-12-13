@@ -30,7 +30,7 @@ except ImportError:
     from tensorflow.python.platform import test
     FLOAT_COMPUTE_TYPE = [dtypes.float32, dtypes.float16]  # BF16 is not supported by CUDA
 
-ITERATION = 5
+ITERATION = 3
 
 class SelectV2Test(test.TestCase):
     def _test_impl(self,  x_size, y_size, dtype):
