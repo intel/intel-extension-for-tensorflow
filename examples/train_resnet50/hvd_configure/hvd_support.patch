@@ -291,7 +291,7 @@ index 760b3dce0..3939249b6 100644
  
  @dataclasses.dataclass
 diff --git a/official/vision/image_classification/dataset_factory.py b/official/vision/image_classification/dataset_factory.py
-index a0458eccc..275c6d5fb 100644
+index a0458eccc..8e457d377 100644
 --- a/official/vision/image_classification/dataset_factory.py
 +++ b/official/vision/image_classification/dataset_factory.py
 @@ -29,6 +29,7 @@ import tensorflow_datasets as tfds
@@ -334,7 +334,7 @@ index a0458eccc..275c6d5fb 100644
 -          'Sharding the dataset: input_pipeline_id=%d '
 -          'num_input_pipelines=%d', self.input_context.num_input_pipelines,
 -          self.input_context.input_pipeline_id)
-+          'Sharding the dataset: total size: %d ', hvd.size(), " local rank: %d ", hvd.rank())
++          'Sharding the dataset: total size: {}, local rank: {}.'.format(hvd.size(), hvd.rank()))
  
      if self.is_training and self.config.builder == 'records':
        # Shuffle the input files.
