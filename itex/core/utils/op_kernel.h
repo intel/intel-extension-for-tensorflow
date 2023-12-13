@@ -327,9 +327,6 @@ class OpKernelContext {
   //  Status set_output_ref(StringPiece name, mutex* mu, Tensor*
   //  tensor_for_ref);
   // Status mutable_output(StringPiece name, Tensor** tensor);
-
-  void move_tensor_to_output(int index, const Tensor& tensor);
-
   Tensor* mutable_output(int index);
 
   static const Eigen::ThreadPoolDevice& eigen_cpu_device_singleton() {

@@ -55,12 +55,6 @@ PJRT_Buffer* ITEXCreatePjRtBuffer(int device_id, std::string datatype,
                                   std::vector<int64_t> dimentions,
                                   std::vector<int64_t> layout, PJRT_Client*);
 
-PJRT_Buffer* ITEXCopyFromPjRtBuffer(PJRT_Buffer* src, int device_id,
-                                    std::string data_type,
-                                    std::vector<int64_t> dimentions,
-                                    std::vector<int64_t> layout,
-                                    PJRT_Client* pjrt_c_client);
-
 void* ITEXGetStreamFromPjRtDevice(int device_id, PJRT_Client*);
 
 PJRT_Buffer* ITEXSameDevicePjRtBufferCopy(PJRT_Buffer* src_buffer,

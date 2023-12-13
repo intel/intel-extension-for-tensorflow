@@ -866,23 +866,6 @@ cc_library(
 )
 
 itex_xpu_library(
-    name = "shape_ops",
-    srcs = [
-        "shape_ops.cc",
-    ],
-    hdrs = [
-        "//itex/core/kernels/common:shape_ops_hdrs",
-    ],
-    copts = tf_copts(),
-    linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        "//itex:core",
-    ],
-    alwayslink = True,
-)
-
-itex_xpu_library(
     name = "quantized_conv",
     srcs = ["quantized_conv_ops.cc"],
     hdrs = [
@@ -2364,7 +2347,6 @@ GPU_KERNELS = [
     ":quantized_conv",
     ":quantized_matmul",
     ":quantized_reshape_op",
-    ":shape_ops",
     ":random_op",
     ":reduction_ops",
     ":resize_nearest_neighbor_op",
