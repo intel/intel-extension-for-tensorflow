@@ -488,7 +488,7 @@ bool IsUnchangingVariable(const utils::MutableNodeView* node_view) {
 
   // Since _Arg Fanouts number > 1, attempt to read variable inside while loop
   //        _Arg
-  //        /   \
+  //        /   |
   //     Enter ReadVariable
   //       |
   //  ReadVariable
@@ -512,7 +512,7 @@ void CheckConstFilter(const utils::MutableNodeView* node_view,
   auto checklist = GetConstFilterCheckList(node_view->node()->op());
 
   bool is_filter_const = true;
-  for (int index = 0; index < checklist.size(); index++) {
+  for (int index = 0; index < static_cast<int>(checklist.size()); index++) {
     const auto* filter_node_view =
         node_view->GetRegularFanin(checklist[index]).node_view();
     const NodeDef* filter_node_def = filter_node_view->node();
