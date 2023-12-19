@@ -95,7 +95,14 @@ class Tensor {
 
   Tensor() : Tensor(DT_FLOAT) {}
 
-  explicit Tensor(DataType type) : shape_(type), buf_(nullptr) {}
+  explicit Tensor(DataType type)
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+      : shape_(type), buf_(nullptr), npdConfig_(ITEXNpdConfig::getNpdConfig()) {
+  }
+#else
+      : shape_(type), buf_(nullptr) {
+  }
+#endif
 
   // The Tensor buf_ will be allocated by `type` and `shape`.
   explicit Tensor(DataType type, const TensorShape& shape);
@@ -104,7 +111,16 @@ class Tensor {
 
   // TODO(itex): Combine Tensor(Tensor&) and Tensor(Tensor&&)
   // into a single function
-  Tensor(const Tensor& other) : shape_(other.shape_), buf_(nullptr) {
+  Tensor(const Tensor& other)
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+      : shape_(other.shape_),
+        buf_(nullptr),
+        npdConfig_(ITEXNpdConfig::getNpdConfig())
+#else
+      : shape_(other.shape_),
+        buf_(nullptr)
+#endif
+  {
     TF_Status* tf_status = TF_NewStatus();
     const int64_t dims[1] = {1};
     buf_ = TF_AllocateTensor(static_cast<TF_DataType>(other.dtype()), dims, 1,
@@ -116,7 +132,16 @@ class Tensor {
     TF_DeleteStatus(tf_status);
   }
 
-  Tensor(Tensor&& other) : shape_(std::move(other.shape_)), buf_(nullptr) {
+  Tensor(Tensor&& other)
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+      : shape_(std::move(other.shape_)),
+        buf_(nullptr),
+        npdConfig_(ITEXNpdConfig::getNpdConfig())
+#else
+      : shape_(std::move(other.shape_)),
+        buf_(nullptr)
+#endif
+  {
     const int64_t dims[1] = {1};
     buf_ = TF_AllocateTensor(static_cast<TF_DataType>(other.dtype()), dims, 1,
                              DataTypeSize(other.dtype()));
@@ -212,8 +237,12 @@ class Tensor {
 #ifndef USING_NEXTPLUGGABLE_DEVICE
     return buf_ != nullptr && TF_TensorData(buf_) != nullptr;
 #else
-    return buf_ != nullptr && TF_TensorData(buf_) != nullptr &&
-           tensor_get_raw_data(buf_) != nullptr;
+    if (npdConfig_.IfEnableNextPluggableDevice()) {
+      return buf_ != nullptr && TF_TensorData(buf_) != nullptr &&
+             tensor_get_raw_data(buf_) != nullptr;
+    } else {
+      return buf_ != nullptr && TF_TensorData(buf_) != nullptr;
+    }
 #endif
   }
 
@@ -224,6 +253,10 @@ class Tensor {
   bool IsAligned() const {
 #ifndef USING_NEXTPLUGGABLE_DEVICE
     if (buf_ != nullptr) {
+      return TF_TensorIsAligned(buf_);
+    }
+#else
+    if (!npdConfig_.IfEnableNextPluggableDevice() && buf_ != nullptr) {
       return TF_TensorIsAligned(buf_);
     }
 #endif
@@ -489,8 +522,13 @@ class Tensor {
 #ifndef USING_NEXTPLUGGABLE_DEVICE
     return NumElements() ? reinterpret_cast<T*>(TF_TensorData(buf_)) : nullptr;
 #else
-    return NumElements() ? reinterpret_cast<T*>(tensor_get_raw_data(buf_))
-                         : nullptr;
+    if (npdConfig_.IfEnableNextPluggableDevice()) {
+      return NumElements() ? reinterpret_cast<T*>(tensor_get_raw_data(buf_))
+                           : nullptr;
+    } else {
+      return NumElements() ? reinterpret_cast<T*>(TF_TensorData(buf_))
+                           : nullptr;
+    }
 #endif
   }
 
@@ -527,6 +565,9 @@ class Tensor {
  private:
   TensorShape shape_;
   TF_Tensor* buf_;
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  ITEXNpdConfig& npdConfig_;
+#endif
 };
 
 template <typename T, size_t NDIMS>

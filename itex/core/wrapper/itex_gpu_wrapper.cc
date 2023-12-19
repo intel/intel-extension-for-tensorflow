@@ -253,7 +253,6 @@ void gpu_destroy_profiler(TP_Profiler* profiler) {}
 
 void gpu_destroy_profiler_fns(TP_ProfilerFns* profiler_fns) {}
 
-#ifndef USING_NEXTPLUGGABLE_DEVICE
 void SE_InitPlugin(SE_PlatformRegistrationParams* const params,
                    TF_Status* const status) {
   typedef void (*se_initplugin_internal)(SE_PlatformRegistrationParams*,
@@ -287,7 +286,7 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* const params,
     params->destroy_platform_fns = xpu_destroy_platform_fns;
   }
 }
-#endif  // USING_NEXTPLUGGABLE_DEVICE
+
 void TF_InitGraph(TP_OptimizerRegistrationParams* params, TF_Status* status) {
   typedef void (*tf_initgraph_internal)(TP_OptimizerRegistrationParams*,
                                         TF_Status*);

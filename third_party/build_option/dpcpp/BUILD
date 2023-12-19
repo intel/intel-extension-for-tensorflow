@@ -16,6 +16,7 @@ itex_xpu_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/strings",
+        "@local_config_tf//:tf_header_lib",
     ],
 )
 

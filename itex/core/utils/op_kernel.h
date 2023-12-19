@@ -181,12 +181,22 @@ class OpOutputList {
 class OpKernelContext {
  public:
 #ifndef INTEL_CPU_ONLY
+#ifndef USING_NEXTPLUGGABLE_DEVICE
   explicit OpKernelContext(TF_OpKernelContext* ctx)
       : ctx_(ctx),
         outputs_(TF_NumOutputs(ctx_)),
         status_(TF_NewStatus()),
         device_(ctx_, status_),
         resource_mgr(nullptr) {}
+#else
+  explicit OpKernelContext(TF_OpKernelContext* ctx)
+      : ctx_(ctx),
+        outputs_(TF_NumOutputs(ctx_)),
+        status_(TF_NewStatus()),
+        device_(ctx_, status_),
+        resource_mgr(nullptr),
+        npdConfig_(ITEXNpdConfig::getNpdConfig()) {}
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 #else
   explicit OpKernelContext(TF_OpKernelContext* ctx)
       : ctx_(ctx),
@@ -385,10 +395,14 @@ class OpKernelContext {
     return TF_GetStream(ctx_, status_)->stream_handle;
   }
 #else
-    int device_id = TF_GetDeviceId(ctx_);
-    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
-    return static_cast<ITEX_GPUStream*>(
-        ITEXGetStreamFromPjRtDevice(device_id, pjrt_c_client));
+    if (npdConfig_.IfEnableNextPluggableDevice()) {
+      int device_id = TF_GetDeviceId(ctx_);
+      PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+      return static_cast<ITEX_GPUStream*>(
+          ITEXGetStreamFromPjRtDevice(device_id, pjrt_c_client));
+    } else {
+      return TF_GetStream(ctx_, status_)->stream_handle;
+    }
   }
 #endif  // USING_NEXTPLUGGABLE_DEVICE
 #else
@@ -420,6 +434,8 @@ class OpKernelContext {
 #ifndef USING_NEXTPLUGGABLE_DEVICE
                   (static_cast<SP_Stream_st*>(TF_GetStream(ctx, status_))
                        ->stream_handle),
+#else
+                  status_,
 #endif  // USING_NEXTPLUGGABLE_DEVICE
                   &tmp_tensors_),
           eigen_gpu_device_(&stream_) {
@@ -446,6 +462,9 @@ class OpKernelContext {
   InternalDevice device_;
 #ifndef INTEL_CPU_ONLY
   ResourceMgr* resource_mgr;
+#endif
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  ITEXNpdConfig& npdConfig_;
 #endif
 };
 

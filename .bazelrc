@@ -16,7 +16,7 @@ build:cpu --define=device=cpu
 
 # This config option is used for GPU backend.
 build:gpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
-build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true --define=using_nextpluggable=false
+build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true --define=using_nextpluggable=true
 build:gpu --define=build_with_onednn_graph=true
 build:gpu --define=device=gpu
 build:gpu --define=tensorflow_mkldnn_contraction_kernel=0

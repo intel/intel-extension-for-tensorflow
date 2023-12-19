@@ -164,7 +164,11 @@ size_t Tensor::TotalBytes() const {
 size_t Tensor::AllocatedBytes() const { return TotalBytes(); }
 
 Tensor::Tensor(DataType type, const TensorShape& shape, TF_Tensor* buf)
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+    : shape_(shape), buf_(buf), npdConfig_(ITEXNpdConfig::getNpdConfig()) {
+#else
     : shape_(shape), buf_(buf) {
+#endif
   shape_.set_data_type(type);
   if (!buf_) {
     ITEX_LOG(ERROR)
@@ -172,7 +176,12 @@ Tensor::Tensor(DataType type, const TensorShape& shape, TF_Tensor* buf)
   }
 }
 
-Tensor::Tensor(TF_Tensor* buf) {
+Tensor::Tensor(TF_Tensor* buf)
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+    : npdConfig_(ITEXNpdConfig::getNpdConfig()) {
+#else
+{
+#endif
   buf_ = buf;
   TensorShape shape;
   int num_dim = TF_NumDims(buf_);
@@ -184,7 +193,11 @@ Tensor::Tensor(TF_Tensor* buf) {
 }
 
 Tensor::Tensor(DataType type, const TensorShape& shape)
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+    : shape_(shape), buf_(nullptr), npdConfig_(ITEXNpdConfig::getNpdConfig()) {
+#else
     : shape_(shape), buf_(nullptr) {
+#endif
   shape_.set_data_type(type);
 
   gtl::InlinedVector<int64, 4> dims(shape_.dims(), 0);
@@ -363,8 +376,14 @@ void Tensor::AsProtoTensorContent(TensorProto* proto) const {
     tmp_buf_ =
         new itex::TensorBuffer(reinterpret_cast<void*>(TF_TensorData(buf_)));
 #else
-    tmp_buf_ = new itex::TensorBuffer(
-        reinterpret_cast<void*>(tensor_get_raw_data(buf_)));
+    ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+    if (npdConfig.IfEnableNextPluggableDevice()) {
+      tmp_buf_ = new itex::TensorBuffer(
+          reinterpret_cast<void*>(tensor_get_raw_data(buf_)));
+    } else {
+      tmp_buf_ =
+          new itex::TensorBuffer(reinterpret_cast<void*>(TF_TensorData(buf_)));
+    }
 #endif
     CASES(dtype(), Helper<T>::Encode(tmp_buf_, shape_.num_elements(),
                                      proto->mutable_tensor_content()));

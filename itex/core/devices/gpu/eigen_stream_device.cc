@@ -83,14 +83,18 @@ void* PluginStreamDevice::allocate(size_t num_bytes) const {
   void* ret = TF_TensorData(tmp_tensor);
 #else
   void* ret;
-  void* data_ptr = TF_TensorData(tmp_tensor);
-  uintptr_t value = reinterpret_cast<uintptr_t>(data_ptr);
-  if (value & kTag) {
-    TF_Status* tf_status = TF_NewStatus();
-    PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tmp_tensor, tf_status);
-    ret = ITEXOpaqueDataPointerFromPjRtBuffer(pjrt_c_buffer);
+  if (!npdConfig_.IfEnableNextPluggableDevice()) {
+    ret = TF_TensorData(tmp_tensor);
   } else {
-    ret = data_ptr;
+    void* data_ptr = TF_TensorData(tmp_tensor);
+    uintptr_t value = reinterpret_cast<uintptr_t>(data_ptr);
+    if (value & kTag) {
+      TF_Status* tf_status = TF_NewStatus();
+      PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tmp_tensor, tf_status);
+      ret = ITEXOpaqueDataPointerFromPjRtBuffer(pjrt_c_buffer);
+    } else {
+      ret = data_ptr;
+    }
   }
 #endif
 

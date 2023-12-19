@@ -27,6 +27,7 @@ limitations under the License.
 #include "itex/core/kernels/gpu/gpu_kernel_init.h"
 #ifdef USING_NEXTPLUGGABLE_DEVICE
 #include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 #endif
 #else
 #include "itex/core/kernels/cpu/cpu_kernel_init.h"
@@ -50,9 +51,12 @@ void TF_InitKernel() {
     {
       RegisterGPUKernels(itex::DEVICE_XPU);
 #ifdef USING_NEXTPLUGGABLE_DEVICE
-      TF_Status* tf_status = TF_NewStatus();
-      TF_CreateAndSetPjRtCApiClient(itex::DEVICE_XPU, tf_status, nullptr, 0);
-      TF_DeleteStatus(tf_status);
+      ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+      if (npdConfig.IfEnableNextPluggableDevice()) {
+        TF_Status* tf_status = TF_NewStatus();
+        TF_CreateAndSetPjRtCApiClient(itex::DEVICE_XPU, tf_status, nullptr, 0);
+        TF_DeleteStatus(tf_status);
+      }
 #endif
     }
 #endif  // INTEL_CPU_ONLY

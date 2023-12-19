@@ -18,9 +18,11 @@ limitations under the License.
 
 #include <iostream>
 
+#include "itex/core/devices/gpu/gpu_device_plugin.h"
 #include "itex/core/devices/gpu/gpu_info.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/logging.h"
+#include "itex/core/utils/status.h"
 #include "itex/core/utils/types.h"
 #include "tensorflow/c/kernels.h"
 #include "third_party/build_option/dpcpp/runtime/eigen_itex_gpu_runtime.h"
@@ -28,6 +30,7 @@ limitations under the License.
 
 #ifdef USING_NEXTPLUGGABLE_DEVICE
 #include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
+#include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 #include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 #endif
 
@@ -43,17 +46,34 @@ class PluginStreamDevice : public ::Eigen::StreamInterface {
     device_prop_ = device_info_->getGPUDeviceProperties();
   }
 #else
-  PluginStreamDevice(TF_OpKernelContext* ctx,
+  PluginStreamDevice(TF_OpKernelContext* ctx, gpuStream_t strm,
                      InlinedVector<TF_Tensor*, 4>* tmp_tensors)
-      : context_(ctx), tmp_tensors_(tmp_tensors) {
-    TF_Status* tf_status = TF_NewStatus();
-    int device_id = TF_GetDeviceId(ctx);
-    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", tf_status);
-    stream_ = static_cast<gpuStream_t>(
-        ITEXGetStreamFromPjRtDevice(device_id, pjrt_c_client));
-    TF_DeleteStatus(tf_status);
-    itex::DeviceInfo* device_info_ = itex::GetDeviceInfo(stream_);
+      : stream_(strm),
+        context_(ctx),
+        tmp_tensors_(tmp_tensors),
+        npdConfig_(ITEXNpdConfig::getNpdConfig()) {
+    itex::DeviceInfo* device_info_ = itex::GetDeviceInfo(strm);
     device_prop_ = device_info_->getGPUDeviceProperties();
+  }
+  PluginStreamDevice(TF_OpKernelContext* ctx, TF_Status* tf_status,
+                     InlinedVector<TF_Tensor*, 4>* tmp_tensors)
+      : context_(ctx),
+        tf_status_(tf_status),
+        tmp_tensors_(tmp_tensors),
+        npdConfig_(ITEXNpdConfig::getNpdConfig()) {
+    if (!npdConfig_.IfEnableNextPluggableDevice()) {
+      stream_ = static_cast<SP_Stream_st*>(TF_GetStream(ctx, tf_status_))
+                    ->stream_handle;
+    } else {
+      TF_Status* tf_status = TF_NewStatus();
+      int device_id = TF_GetDeviceId(ctx);
+      PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", tf_status);
+      stream_ = static_cast<gpuStream_t>(
+          ITEXGetStreamFromPjRtDevice(device_id, pjrt_c_client));
+      TF_DeleteStatus(tf_status);
+      itex::DeviceInfo* device_info_ = itex::GetDeviceInfo(stream_);
+      device_prop_ = device_info_->getGPUDeviceProperties();
+    }
   }
 #endif
   ~PluginStreamDevice() override {}
@@ -71,6 +91,10 @@ class PluginStreamDevice : public ::Eigen::StreamInterface {
   gpuDeviceProp_t device_prop_;
   TF_OpKernelContext* context_;
   InlinedVector<TF_Tensor*, 4>* tmp_tensors_;  // Not owned
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  TF_Status* tf_status_;
+  ITEXNpdConfig& npdConfig_;
+#endif
 };
 
 #endif  // ITEX_CORE_DEVICES_GPU_EIGEN_STREAM_DEVICE_H_

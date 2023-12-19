@@ -16,10 +16,12 @@ limitations under the License.
 #ifndef THIRD_PARTY_BUILD_OPTION_DPCPP_RUNTIME_ITEX_GPU_RUNTIME_H_
 #define THIRD_PARTY_BUILD_OPTION_DPCPP_RUNTIME_ITEX_GPU_RUNTIME_H_
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include "absl/strings/ascii.h"
+#include "tensorflow/c/c_api_experimental.h"
 
 #if __has_include(<sycl/sycl.hpp>)
 #include <sycl/sycl.hpp>
@@ -46,6 +48,7 @@ using ITEX_GPUStream = sycl::queue;
 using ITEX_GPUEvent = sycl::event;
 
 #ifdef USING_NEXTPLUGGABLE_DEVICE
+
 typedef struct PJRT_Buffer PJRT_Buffer;
 typedef struct PJRT_Client PJRT_Client;
 
@@ -62,6 +65,41 @@ PJRT_Buffer* ITEXSameDevicePjRtBufferCopy(PJRT_Buffer* src_buffer,
 
 void ITEXXlaShapeToDeviceShapeRepresentation(void* serialized_xla_shape,
                                              void* serialized_device_shape);
+
+class ITEXNpdConfig {
+ public:
+  static ITEXNpdConfig& getNpdConfig() {
+    static ITEXNpdConfig npdConfig;
+    return npdConfig;
+  }
+  bool isXlaAutoJitEnabled() const { return isXlaAutoJitEnabled_; }
+  bool ifUsingNextPluggableDevice() const {
+    return isNextPluggableDeviceEnabled_;
+  }
+  bool IfEnableNextPluggableDevice() {
+    if (isXlaAutoJitEnabled() || ifUsingNextPluggableDevice()) {
+      return true;
+    }
+    return false;
+  }
+
+ private:
+  ITEXNpdConfig() {
+    const char* npdEnv = std::getenv("ITEX_ENABLE_NEXTPLUGGABLE_DEVICE");
+    if (npdEnv != nullptr) {
+      std::string env_value = absl::AsciiStrToLower(npdEnv);
+      isNextPluggableDeviceEnabled_ =
+          (env_value == "1" || env_value == "true") ? true : false;
+    }
+    isXlaAutoJitEnabled_ = static_cast<bool>(TF_GetXlaAutoJitEnabled());
+  }
+  ITEXNpdConfig(ITEXNpdConfig const&) = delete;
+  void operator=(ITEXNpdConfig const&) = delete;
+
+  bool isNextPluggableDeviceEnabled_ = false;
+  bool isXlaAutoJitEnabled_ = false;
+};
+
 #endif  // USING_NEXTPLUGGABLE_DEVICE
 
 inline bool IsMultipleStreamEnabled() {

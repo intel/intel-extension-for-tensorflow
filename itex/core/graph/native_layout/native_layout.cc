@@ -26,6 +26,10 @@ limitations under the License.
 #include "itex/core/utils/attr_value_util.h"
 #include "itex/core/utils/types.h"
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#endif
+
 namespace itex {
 namespace graph {
 
@@ -291,6 +295,27 @@ std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
       {"TensorArrayWriteV3", "_ITEXTensorArrayWrite", CopyAttrsForTensorArray,
        AlwaysRewrite},
   };
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  static bool is_initialized = false;
+  if (!is_initialized) {
+    ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+    if (npdConfig.IfEnableNextPluggableDevice()) {
+      rinfo.push_back({"MaxPool", "_ITEXMaxPool", CopyAttrsAll, RewritePool});
+      rinfo.push_back(
+          {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool});
+      rinfo.push_back({"MaxPoolGrad", "_ITEXMaxPoolGrad", CopyAttrsAll,
+                       RewriteMaxPoolGrad});
+      rinfo.push_back({"MaxPool3DGrad", "_ITEXMaxPool3DGrad", CopyAttrsAll,
+                       RewriteMaxPoolGrad});
+      rinfo.push_back(
+          {"MaxPoolV2", "_ITEXMaxPoolV2", CopyAttrsAll, AlwaysRewrite});
+      rinfo.push_back({"MaxPoolGradV2", "_ITEXMaxPoolGradV2", CopyAttrsAll,
+                       RewriteMaxPoolGrad});
+    }
+    is_initialized = true;
+  }
+#endif
+
   return &rinfo;
 }
 

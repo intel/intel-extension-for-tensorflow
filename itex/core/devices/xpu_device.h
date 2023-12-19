@@ -13,7 +13,6 @@ limitations under the License.
 #ifndef ITEX_CORE_DEVICES_XPU_DEVICE_H_
 #define ITEX_CORE_DEVICES_XPU_DEVICE_H_
 
-#ifndef USING_NEXTPLUGGABLE_DEVICE
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 
 #ifdef __cplusplus
@@ -26,5 +25,4 @@ void SE_InitPlugin_Internal(SE_PlatformRegistrationParams* const params,
 #ifdef __cplusplus
 }
 #endif
-#endif  // USING_NEXTPLUGGABLE_DEVICE
 #endif  // ITEX_CORE_DEVICES_XPU_DEVICE_H_

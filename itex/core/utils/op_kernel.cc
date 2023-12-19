@@ -164,7 +164,11 @@ void* OpKernelContext::tensor_data(int index) {
   TF_Tensor* tensor = nullptr;
   TF_GetInput(ctx_, index, &tensor, status_);
 #ifdef USING_NEXTPLUGGABLE_DEVICE
-  void* data = tensor_get_raw_data(tensor);
+  void* data;
+  if (npdConfig_.IfEnableNextPluggableDevice())
+    data = tensor_get_raw_data(tensor);
+  else
+    data = TF_TensorData(tensor);
 #else
   void* data = TF_TensorData(tensor);
 #endif

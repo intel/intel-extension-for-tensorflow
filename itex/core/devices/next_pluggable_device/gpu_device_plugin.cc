@@ -39,12 +39,13 @@ const TFNPD_Api* TFNPD_InitPlugin_Internal(TFNPD_PluginParams* params,
 const TFNPD_Api* TFNPD_InitPlugin(TFNPD_PluginParams* params,
                                   TF_Status* tf_status) {
 #endif
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
   params->struct_size = TFNPD_PLUGIN_PARAMS_STRUCT_SIZE;
   params->device_type = "XPU";
   params->compilation_device_name = "XLA_GPU_JIT";
   params->is_pluggable_device = true;
   params->use_pjrt_on_demand_compile = false;
-  params->priority = 300;
+  params->priority = npdConfig.IfEnableNextPluggableDevice() ? 300 : 0;
   static TFNPD_Api tfnpd_api;
 
   tfnpd_api.TFNPD_GetDeviceCount = itex::TFNPD_GetDeviceCount;
@@ -54,5 +55,6 @@ const TFNPD_Api* TFNPD_InitPlugin(TFNPD_PluginParams* params,
       itex::TFNPD_XlaShapeToDeviceShapeRepresentation;
   tfnpd_api.TFNPD_SameDevicePjRtBufferCopy =
       itex::TFNPD_SameDevicePjRtBufferCopy;
+
   return &tfnpd_api;
 }

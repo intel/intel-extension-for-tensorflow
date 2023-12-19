@@ -577,4 +577,4 @@ const char* ITEX_GPUGetErrorName(ITEX_GPUError_t error) {
     default:
       return "DPC++ got invalid error code.";
   }
-}  // namespace
+}

@@ -16,6 +16,7 @@ cc_library(
         "//itex/core/graph/utils:grappler_item",
         "//itex/core/graph/utils:layout_utils",
         "//itex/core/graph/utils:node_type_attr_map",
+        "//third_party/build_option/dpcpp:itex_gpu_header",
     ] + tf_protobuf_deps(),
     alwayslink = True,
 )

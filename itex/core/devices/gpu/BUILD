@@ -78,7 +78,10 @@ cc_library(
 cc_library(
     name = "eigen_stream_device",
     srcs = ["eigen_stream_device.cc"],
-    hdrs = ["eigen_stream_device.h"],
+    hdrs = [
+        "eigen_stream_device.h",
+        "gpu_device_plugin.h",
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
