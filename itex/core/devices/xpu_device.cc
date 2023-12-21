@@ -33,6 +33,13 @@ namespace itex {
 
 void xpu_device_count(const SP_Platform* platform, int* device_count,
                       TF_Status* status) {
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+  if (npdConfig.IfEnableNextPluggableDevice()) {
+    *device_count = 0;
+    return;
+  }
+#endif
   ITEX_BACKEND backend = itex_get_backend();
   switch (backend) {
     case ITEX_BACKEND_GPU:
@@ -787,8 +794,19 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* const params,
                    TF_Status* const status) {
 #endif
   params->platform->struct_size = SP_PLATFORM_STRUCT_SIZE;
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+  if (npdConfig.IfEnableNextPluggableDevice()) {
+    params->platform->name = "XPU_DUMMY";
+    params->platform->type = "XPU_DUMMY";
+  } else {
+    params->platform->name = DEVICE_XPU_NAME;
+    params->platform->type = itex::DEVICE_XPU;
+  }
+#else
   params->platform->name = DEVICE_XPU_NAME;
   params->platform->type = itex::DEVICE_XPU;
+#endif
   // TODO(itex): check whether we need to turn on this setting
   // params->platform->supports_unified_memory = true;
   // params->platform->use_bfc_allocator = true;
