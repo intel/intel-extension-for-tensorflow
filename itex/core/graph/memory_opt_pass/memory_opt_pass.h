@@ -21,6 +21,7 @@ limitations under the License.
 #include <unordered_set>
 #include <vector>
 
+#include "itex/core/graph/memory_opt_pass/check_const_filter.h"
 #include "itex/core/graph/utils/graph_view.h"
 #include "itex/core/graph/utils/grappler_item.h"
 #include "itex/core/graph/utils/layout_utils.h"

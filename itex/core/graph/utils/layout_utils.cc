@@ -422,22 +422,6 @@ void CopyAttrsAll(const utils::MutableNodeView* orig_node_view,
   CopyAllAttrs(*(orig_node_view->node()), new_node);
 }
 
-static const std::vector<int> GetConstFilterCheckList(
-    const std::string& op_name) {
-  static std::unordered_map<std::string, std::vector<int>>
-      op_const_checklist_map = {{"GRUBlockCell", {2, 3, 4, 5}},
-                                {"_ITEXGRUCell", {2, 3, 4, 5}},
-                                {"_ITEXAUGRUCell", {3, 4, 5, 6}},
-                                {"_ITEXForwardGRU", {2, 3, 4, 5}},
-                                {"_ITEXForwardAUGRU", {3, 4, 5, 6}},
-                                {"_default", {1}}};
-
-  if (op_const_checklist_map.find(op_name) == op_const_checklist_map.end()) {
-    return op_const_checklist_map.at("_default");
-  }
-  return op_const_checklist_map.at(op_name);
-}
-
 void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
                              NodeDef* new_node) {
   CopyAttrsAll(orig_node_view, new_node);
@@ -461,79 +445,6 @@ void CopyAttrsForTensorArray(const utils::MutableNodeView* orig_node_view,
       SetAttrValue(dims, &(*new_attr)["dims_of_element_shape"]);
     }
   }
-}
-
-bool IsUnchangingVariable(const utils::MutableNodeView* node_view) {
-  const NodeDef* node_def = node_view->node();
-  if (IsCast(*node_def) &&
-      IsReadVariableOp(*(node_view->GetRegularFanin(0).node_view()->node())) &&
-      GetOptimizerConfigFlags().enable_optimize_aggressive)
-    return true;
-
-  if (!GetOptimizerConfigFlags().enable_optimize_aggressive ||
-      !IsReadVariableOp(*node_def))
-    return false;
-
-  auto* arg_node_view = node_view->GetRegularFanin(0).node_view();
-  auto* arg_node_def = arg_node_view->node();
-
-  if (IsEnter(*arg_node_def)) {
-    arg_node_view = arg_node_view->GetRegularFanin(0).node_view();
-    arg_node_def = arg_node_view->node();
-  }
-
-  if (!IsArg(*arg_node_def)) return false;
-
-  if (arg_node_view->NumRegularFanouts() == 1) return true;
-
-  // Since _Arg Fanouts number > 1, attempt to read variable inside while loop
-  //        _Arg
-  //        /   |
-  //     Enter ReadVariable
-  //       |
-  //  ReadVariable
-  for (const auto& fanout_i : arg_node_view->GetRegularFanouts()) {
-    for (const auto fanout : fanout_i) {
-      if (!IsEnter(*(fanout.node_view()->node())) &&
-          !IsReadVariableOp(*(fanout.node_view()->node())))
-        return false;
-    }
-  }
-
-  return true;
-}
-
-void CheckConstFilter(const utils::MutableNodeView* node_view,
-                      const std::unordered_set<string>& nodes_to_preserve) {
-  const NodeDef* node_def = node_view->node();
-
-  if (!HasNodeAttr(*node_def, "is_filter_const")) return;
-
-  auto checklist = GetConstFilterCheckList(node_view->node()->op());
-
-  bool is_filter_const = true;
-  for (int index = 0; index < static_cast<int>(checklist.size()); index++) {
-    const auto* filter_node_view =
-        node_view->GetRegularFanin(checklist[index]).node_view();
-    const NodeDef* filter_node_def = filter_node_view->node();
-
-    // Do not set const filter attr if filter is feed node.
-    if (nodes_to_preserve.count(filter_node_def->name()) > 0) {
-      is_filter_const = false;
-      break;
-    }
-
-    if (IsConstant(*filter_node_def)) continue;
-
-    // Find variables that will not change from ReadVariables & _Arg
-    if (!IsUnchangingVariable(filter_node_view)) {
-      is_filter_const = false;
-      break;
-    }
-  }
-
-  auto* new_attr = node_view->node()->mutable_attr();
-  SetAttrValue(is_filter_const, &(*new_attr)["is_filter_const"]);
 }
 
 // Function to copy attributes of OneDnnGraph

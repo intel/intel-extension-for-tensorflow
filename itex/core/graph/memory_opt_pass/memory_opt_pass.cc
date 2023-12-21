@@ -22,7 +22,6 @@ limitations under the License.
 
 #include "google/protobuf/text_format.h"
 #include "itex/core/graph/utils/graph_properties.h"
-#include "itex/core/graph/utils/layout_utils.h"
 #include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/attr_value_util.h"
@@ -369,10 +368,8 @@ void WeightCacheOpt(MemoryOptContext* ctx) {
 
     // Filter of Quantized ops must be constant and `is_filter_const` must be
     // defaulted as True.
-    if (node_view->node()->op().find("Quantized") != std::string::npos)
-      continue;
-
-    CheckConstFilter(node_view, ctx->nodes_to_preserve);
+    if (node_view->node()->op().find("Quantized") == std::string::npos)
+      CheckConstFilter(node_view, ctx->nodes_to_preserve);
   }
 }
 
