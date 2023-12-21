@@ -133,6 +133,7 @@ filegroup(
             "src/gpu/amd/*",
             "src/gpu/sycl/ref*",
             "src/graph/**",
+            "src/gpu/jit/v2/conv/planner/*",
         ],
     ) + [
         ":dnnl_config_h",
