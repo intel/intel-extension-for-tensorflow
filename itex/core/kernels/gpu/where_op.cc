@@ -132,12 +132,7 @@ struct Where<GPUDevice, NDIM, T, TIndex> {
 template <typename T>
 class WhereOp : public OpKernel {
  public:
-  explicit WhereOp(OpKernelConstruction* context)
-      : OpKernel(context), num_true_host_(nullptr), stream_(nullptr) {}
-
-  ~WhereOp() {
-    if (num_true_host_ && stream_) sycl::free(num_true_host_, *stream_);
-  }
+  explicit WhereOp(OpKernelConstruction* context) : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
     const Tensor& input = context->input(0);
@@ -178,20 +173,17 @@ class WhereOp : public OpKernel {
     OP_REQUIRES_OK(context, s);
 
     // Copy num_true to host;
+    Tindex num_true_host;
     const GPUDevice& d = context->eigen_device<GPUDevice>();
-    stream_ = d.stream();
-    if (!num_true_host_)
-      num_true_host_ = static_cast<int64_t*>(sycl::aligned_alloc_host(
-          /*alignment=*/64, sizeof(int64_t), *stream_));
-    stream_
-        ->memcpy(num_true_host_, input_cumsum_t.data() + input_size - 1,
+    d.stream()
+        ->memcpy(&num_true_host, input_cumsum_t.data() + input_size - 1,
                  sizeof(Tindex))
         .wait();
 
     Tensor* output;
     OP_REQUIRES_OK(context,
                    context->allocate_output(
-                       0, TensorShape({*num_true_host_, input_dims}), &output));
+                       0, TensorShape({num_true_host, input_dims}), &output));
 
 #define HANDLE_DIM(NDIM)                                            \
   case NDIM: {                                                      \
@@ -218,8 +210,6 @@ class WhereOp : public OpKernel {
 
  private:
   TF_DISALLOW_COPY_AND_ASSIGN(WhereOp);
-  int64_t* num_true_host_;
-  ITEX_GPUStream* stream_;
 };
 
 #define REGISTER_WHERE_OP(T) \
