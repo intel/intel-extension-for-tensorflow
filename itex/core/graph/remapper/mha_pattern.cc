@@ -19,6 +19,7 @@ limitations under the License.
 #include "itex/core/graph/remapper/fusion.h"
 #include "itex/core/graph/remapper/remapper.h"
 #include "itex/core/graph/utils/layout_utils.h"
+#include "itex/core/graph/utils/op_types.h"
 #include "itex/core/graph/utils/pattern_utils.h"
 #include "itex/core/graph/utils/symbolic_shapes.h"
 #include "itex/core/graph/utils/utils.h"
@@ -276,7 +277,9 @@ class MHAPatternWithMulAndAdd : public Fusion {
     MatchedProperties ret = FillProperties(
         &graph_view, graph_view.GetNode(node_index), pattern_, false);
 
-    if (!NodeIsOnGpu(graph_view.GetNode(node_index)->node())) {
+    bool is_omp = true;
+    ITEX_CHECK_OK(ReadBoolFromEnvVar("ITEX_OMP_THREADPOOL", true, &is_omp));
+    if (!is_omp) {
       return ret.ToEmpty();
     }
 
@@ -297,6 +300,15 @@ class MHAPatternWithMulAndAdd : public Fusion {
                             !config.enable_auto_mixed_precision))) {
       // GPU fmha kernel doesn't support fp32.
       return false;
+    }
+    int mask_index = properties.map.at("mask");
+    NodeDef* mask_node = ctx->graph_view.GetNode(mask_index)->node();
+    if (IsConstant(*mask_node)) {
+      Tensor mask_t;
+      mask_t.FromProto(mask_node->attr().at("value").tensor());
+      if (mask_t.NumElements() <= 1) {
+        return false;
+      }
     }
     int perm_index = properties.map.at("perm");
     NodeDef* perm_node = ctx->graph_view.GetNode(perm_index)->node();

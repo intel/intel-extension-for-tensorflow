@@ -15,21 +15,12 @@ limitations under the License.
 
 #include "itex/core/kernels/cpu/cpu_blas.h"
 
-#include "itex/core/utils/onednn/onednn_util.h"
+#include "dnnl.hpp"  // NOLINT(build/include_subdir)
+#include "itex/core/utils/plugin_tensor.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {
 namespace cpublas {
-
-extern "C" {
-dnnl_status_t dnnl_gemm_bf16bf16f32(char transa, char transb, dnnl_dim_t M,
-                                    dnnl_dim_t N, dnnl_dim_t K, float alpha,
-                                    const dnnl_port::bfloat16_t* A,
-                                    dnnl_dim_t lda,
-                                    const dnnl_port::bfloat16_t* B,
-                                    dnnl_dim_t ldb, float beta, float* C,
-                                    dnnl_dim_t ldc);
-}
 
 void gemm(char transa, char transb, int64_t m, int64_t n, int64_t k,
           float alpha, float* a, int64_t lda, float* b, int64_t ldb, float beta,
@@ -40,10 +31,34 @@ void gemm(char transa, char transb, int64_t m, int64_t n, int64_t k,
 void gemm(char transa, char transb, int64_t m, int64_t n, int64_t k,
           float alpha, Eigen::bfloat16* a, int64_t lda, Eigen::bfloat16* b,
           int64_t ldb, float beta, float* c, int64_t ldc) {
-  dnnl_port::bfloat16_t* dnnl_a = reinterpret_cast<dnnl_port::bfloat16_t*>(a);
-  dnnl_port::bfloat16_t* dnnl_b = reinterpret_cast<dnnl_port::bfloat16_t*>(b);
-  dnnl_gemm_bf16bf16f32(transa, transb, m, n, k, alpha, dnnl_a, lda, dnnl_b,
-                        ldb, beta, c, ldc);
+  int64_t dim_0 = m;
+  int64_t dim_1 = k;
+  int64_t dim_2 = k;
+  int64_t dim_3 = n;
+  if (transa == 'T') {
+    dim_0 = k;
+    dim_1 = m;
+  }
+  if (transb == 'T') {
+    dim_2 = n;
+    dim_3 = k;
+  }
+  Tensor a_float(DT_FLOAT, {dim_0, dim_1});
+  Tensor b_float(DT_FLOAT, {dim_2, dim_3});
+  float* a_float_data = a_float.flat<float>().data();
+  float* b_float_data = b_float.flat<float>().data();
+  for (int i = 0; i < dim_0; ++i) {
+    typename TTypes<float>::Flat a_float_flat(a_float_data + i * dim_1, dim_1);
+    typename TTypes<Eigen::bfloat16>::Flat a_flat(a + i * lda, dim_1);
+    a_float_flat = a_flat.cast<float>();
+  }
+  for (int j = 0; j < dim_2; ++j) {
+    typename TTypes<float>::Flat b_float_flat(b_float_data + j * dim_3, dim_3);
+    typename TTypes<Eigen::bfloat16>::Flat b_flat(b + j * ldb, dim_3);
+    b_float_flat = b_flat.cast<float>();
+  }
+  dnnl_sgemm(transa, transb, m, n, k, alpha, a_float_data, lda, b_float_data,
+             ldb, beta, c, ldc);
 }
 }  // namespace cpublas
 }  // namespace itex

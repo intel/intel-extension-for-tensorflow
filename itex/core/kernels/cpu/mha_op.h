@@ -91,7 +91,9 @@ class FmhaFunctor {
     int64_t q_split_size = qSplitSize > q_seq_len ? q_seq_len : qSplitSize;
     int64_t kv_split_size = kvSplitSize > k_seq_len ? k_seq_len : kvSplitSize;
     int64_t q_slice = (q_seq_len - 1) / q_split_size + 1;
-    int64_t num_thread = GetNumThreads();
+    // Increase num_thread by 1 to align with the increment by 1 of
+    // GetThreadNum() below.
+    int64_t num_thread = GetNumThreads() + 1;
 
     // Allocate per thread temp buf (float type).
     // Use float for intermediate computation to avoid overflow issues.
@@ -137,7 +139,9 @@ class FmhaFunctor {
           int64_t i = 0, j = 0, k = 0;
           DataIndexInit(begin, &i, batch_size, &j, num_heads, &k, q_slice);
 
-          int thread_idx = GetThreadNum();
+          // To deal with the case that Eigen thread pool may assign a -1
+          // thread_idx.
+          int thread_idx = GetThreadNum() + 1;
           float* buf_ptr = buf_data + thread_idx * size_per_thread;
           float* qk_data = buf_ptr;
           float* qk_max_data = qk_data + q_split_size * kv_split_size;

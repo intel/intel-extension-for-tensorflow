@@ -116,8 +116,6 @@ class MHAPatternWithMulAndAddTest(test_util.TensorFlowTestCase):
     def testMHAPatternWithMulAndAdd(self):
         if config.list_logical_devices('XPU') and not is_xehpc():
             self.skipTest("Only xehpc support xetla.")
-        if not config.list_logical_devices('XPU'):
-            self.skipTest("Only on GPU")
         tf.random.set_seed(0)
         datatypes = [tf.float32, tf.bfloat16]
         if config.list_logical_devices('XPU'):

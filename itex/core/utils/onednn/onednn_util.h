@@ -55,11 +55,6 @@ const int MAX_NDIMS = 6;
 const int MAX_NDIMS = DNNL_MAX_NDIMS;
 #endif
 
-namespace dnnl_port {
-// Link to the definition in onednn/src/common/bfloat16.hpp
-struct bfloat16_t;
-}  // namespace dnnl_port
-
 #ifndef INTEL_CPU_ONLY
 static dnnl::engine& FindOrCreateEngine(ITEX_GPUStream* stream) {
   static std::map<ITEX_GPUStream*, dnnl::engine> stream_engine_map;
