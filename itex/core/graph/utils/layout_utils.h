@@ -165,6 +165,8 @@ void CopyAllAttrs(const NodeDef& orig_node, NodeDef* new_node);
 
 OpDef GetOpDef(const NodeDef& node_def);
 
+bool HasOpDef(const NodeDef& node_def);
+
 // Check and set filter attribute
 void CheckConstFilter(const utils::MutableNodeView* node_view,
                       const std::unordered_set<string>& nodes_to_preserve);

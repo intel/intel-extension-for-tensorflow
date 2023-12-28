@@ -719,6 +719,17 @@ OpDef GetOpDef(const NodeDef& node_def) {
   return op_def;
 }
 
+bool HasOpDef(const NodeDef& node_def) {
+  static FunctionLibraryDefinition function_lib =
+      FunctionLibraryDefinition(GraphDef());
+  OpDef op_def;
+  Status status = function_lib.LookUpOpDef(node_def.op(), &op_def);
+  if (status.ok())
+    return true;
+  else
+    return false;
+}
+
 void CopyAllAttrs(const NodeDef& orig_node, NodeDef* new_node) {
   string name;
   AttrSlice attr_list(orig_node);

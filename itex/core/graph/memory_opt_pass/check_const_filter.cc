@@ -88,15 +88,19 @@ bool IsUnchangingVariable(const utils::MutableNodeView* node_view) {
 void CheckConstFilter(const utils::MutableNodeView* node_view,
                       const std::unordered_set<string>& nodes_to_preserve) {
   const NodeDef* node_def = node_view->node();
-  const OpDef op_def = GetOpDef(*node_def);
   bool is_filter_const = false;
 
   // Skip if has no attr `is_filter_const`.
   // Note: NodeDef may not have default attr, need to check OpDef either.
   if (!TryGetNodeAttr(AttrSlice(*node_def), "is_filter_const",
-                      &is_filter_const))
-    if (FindAttr("is_filter_const", op_def) == nullptr) return;
-
+                      &is_filter_const)) {
+    if (HasOpDef(*node_def)) {
+      const OpDef op_def = GetOpDef(*node_def);
+      if (FindAttr("is_filter_const", op_def) == nullptr) return;
+    } else {
+      return;
+    }
+  }
   // Skip if weight is already marked as const.
   if (is_filter_const == true) return;
 
