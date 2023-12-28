@@ -216,6 +216,12 @@ inline dnnl::engine& CreateDnnlEngine<GPUDevice>(const OpKernelContext& ctx) {
 }
 #endif  // INTEL_CPU_ONLY
 
+// Helper function to get global CPU oneDNN engine.
+inline dnnl::engine& GetCPUDnnlEngine() {
+  static dnnl::engine cpu_engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
+  return cpu_engine;
+}
+
 template <>
 inline dnnl::engine& CreateDnnlEngine<CPUDevice>(const OpKernelContext& ctx) {
   // Right now ITEX doesn't own proper TF CPU device and NUMA info is
@@ -223,8 +229,7 @@ inline dnnl::engine& CreateDnnlEngine<CPUDevice>(const OpKernelContext& ctx) {
   // TODO(itex): Check NUMA after integrating new CPU device.
   ITEX_CHECK(&(ctx.eigen_cpu_device()) == &(ctx.eigen_cpu_device_singleton()))
       << "Global oneDNN CPU engine mismatched with current context";
-  static dnnl::engine cpu_engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
-  return cpu_engine;
+  return GetCPUDnnlEngine();
 }
 
 inline dnnl::stream CreateDnnlStream(const OpKernelContext& ctx,
@@ -553,13 +558,18 @@ inline dnnl::memory::desc CreatePlainMemDescWithFormatTag(
                               dnnl::memory::format_tag::abcdefghijkl);
 }
 
+// Helper function to reorder oneDNN memory without `OpKernelContext`.
+void ReorderMemoryInternal(const dnnl::memory* src_memory,
+                           dnnl::memory* reorder_memory,
+                           dnnl::stream& onednn_stream);
+
 // Reorder src memory to expected memory
 void ReorderMemory(const OpKernelContext& context,
                    const dnnl::memory* src_memory, dnnl::memory* reorder_memory,
                    const dnnl::engine& onednn_engine);
 
-// Weight cache is used to avoid weight reorder repetitively when target weight
-// block md is different frome original weight plain md.
+// Weight cache is used to avoid weight reorder repetitively when target
+// weight block md is different frome original weight plain md.
 template <typename T>
 class WeightCacheManager {
  public:
@@ -587,7 +597,8 @@ class WeightCacheManager {
   PersistentTensor weight_cached_md_ TF_GUARDED_BY(mu_);
 };
 
-// Bias cache is used to avoid scale the bias tensor repetitively in INT8 kernel
+// Bias cache is used to avoid scale the bias tensor repetitively in INT8
+// kernel
 template <typename T>
 class BiasCacheManager {
  public:

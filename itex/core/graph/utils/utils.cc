@@ -581,5 +581,16 @@ int EraseNodeOutputAttributes(NodeDef* node) {
   return to_remove.size();
 }
 
+Status GetTensorFromConstant(const NodeDef* node_def, Tensor* dst,
+                             string attr_name) {
+  if (!dst->FromProto(node_def->attr().at(attr_name).tensor())) {
+    ITEX_CHECK_OK(errors::InvalidArgument(
+        "Could not construct Tensor from TensorProto in node: ",
+        node_def->name()));
+  }
+
+  return Status::OK();
+}
+
 }  // end namespace graph
 }  // end namespace itex

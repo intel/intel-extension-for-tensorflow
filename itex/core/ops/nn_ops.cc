@@ -366,6 +366,7 @@ void Register_ITEXFusedMatMulOp() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "leakyrelu_alpha: float = 0.2");
     TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "meta: tensor");
     // TODO(itex): Implement matmul_shape_fn in the future
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);
@@ -1056,6 +1057,7 @@ void Register_ITEXMatMul() {
     TF_OpDefinitionBuilderAddAttr(op_builder, "transpose_a: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "transpose_b: bool = false");
     TF_OpDefinitionBuilderAddAttr(op_builder, "is_filter_const: bool = false");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "meta: tensor");
     // TODO(itex): Implement matmul_shape_fn in the future
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
                                                     &unknown_shape_fn);

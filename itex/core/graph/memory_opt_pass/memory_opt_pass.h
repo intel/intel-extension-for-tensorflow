@@ -22,9 +22,9 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/graph/memory_opt_pass/check_const_filter.h"
+#include "itex/core/graph/memory_opt_pass/weight_prepack.h"
 #include "itex/core/graph/utils/graph_view.h"
 #include "itex/core/graph/utils/grappler_item.h"
-#include "itex/core/graph/utils/layout_utils.h"
 #include "itex/core/graph/utils/node_type_attr_map.h"
 #include "itex/core/graph/utils/utils.h"
 #include "itex/core/utils/node_def_util.h"

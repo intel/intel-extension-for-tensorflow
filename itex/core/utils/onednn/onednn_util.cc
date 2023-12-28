@@ -21,15 +21,21 @@ limitations under the License.
 #include "itex/core/utils/register_types.h"
 
 namespace itex {
+// Helper function to reorder oneDNN memory without `OpKernelContext`.
+void ReorderMemoryInternal(const dnnl::memory* src_memory,
+                           dnnl::memory* reorder_memory,
+                           dnnl::stream& onednn_stream) {
+  dnnl::reorder reorder_primitive = dnnl::reorder(*src_memory, *reorder_memory);
+  std::unordered_map<int, dnnl::memory> reorder_args = {
+      {DNNL_ARG_SRC, *src_memory}, {DNNL_ARG_DST, *reorder_memory}};
+  reorder_primitive.execute(onednn_stream, reorder_args);
+}
 
 void ReorderMemory(const OpKernelContext& context,
                    const dnnl::memory* src_memory, dnnl::memory* reorder_memory,
                    const dnnl::engine& onednn_engine) {
   dnnl::stream onednn_stream = CreateDnnlStream(context, onednn_engine);
-  dnnl::reorder reorder_primitive = dnnl::reorder(*src_memory, *reorder_memory);
-  std::unordered_map<int, dnnl::memory> reorder_args = {
-      {DNNL_ARG_SRC, *src_memory}, {DNNL_ARG_DST, *reorder_memory}};
-  reorder_primitive.execute(onednn_stream, reorder_args);
+  ReorderMemoryInternal(src_memory, reorder_memory, onednn_stream);
 }
 
 // TF datatype and shape is meaningless for some tensors, such as scratchpad

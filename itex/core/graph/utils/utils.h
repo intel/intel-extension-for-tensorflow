@@ -34,6 +34,7 @@ limitations under the License.
 #include "itex/core/utils/gtl/flatmap.h"
 #include "itex/core/utils/gtl/flatset.h"
 #include "itex/core/utils/gtl/inlined_vector.h"
+#include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/status.h"
 #include "itex/core/utils/stringpiece.h"
 #include "itex/core/utils/tensor_id.h"
@@ -443,6 +444,9 @@ int EraseRegularNodeAttributes(NodeDef* node);
 // Erase attribute "_xla_inferred_shapes" as well as all attributes starting in
 // "_output_".
 int EraseNodeOutputAttributes(NodeDef* node);
+
+Status GetTensorFromConstant(const NodeDef* node_def, Tensor* dst,
+                             string attr_name = "value");
 
 }  // end namespace graph
 }  // end namespace itex

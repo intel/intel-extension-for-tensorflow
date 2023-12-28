@@ -65,16 +65,6 @@ void RemoveAllRegularFanin(RemapperContext* ctx, int node_idx) {
   TF_ABORT_IF_ERROR(mutation->Apply());
 }
 
-Status GetTensorFromConstant(const NodeDef* node_def, Tensor* dst) {
-  if (!dst->FromProto(node_def->attr().at("value").tensor())) {
-    ITEX_CHECK_OK(errors::InvalidArgument(
-        "Could not construct Tensor from TensorProto in node: ",
-        node_def->name()));
-  }
-
-  return Status::OK();
-}
-
 TensorShape GetTensorShapeFromConstant(const NodeDef* node_def) {
   return TensorShape(node_def->attr().at("value").tensor().tensor_shape());
 }

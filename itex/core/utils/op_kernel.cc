@@ -649,6 +649,18 @@ Status OpKernelConstruction::GetAttr<TensorShape>(StringPiece attr_name,
   return StatusFromTF_Status(status_);
 }
 
+template <>
+Status OpKernelConstruction::GetAttr<Tensor>(StringPiece attr_name,
+                                             Tensor* value) const {
+  std::string name(attr_name.data(), attr_name.size());
+  TF_Tensor* buf = nullptr;
+
+  TF_OpKernelConstruction_GetAttrTensor(ctx_, name.c_str(), &buf, status_);
+  *value = Tensor(buf);
+
+  return StatusFromTF_Status(status_);
+}
+
 void OpKernelConstruction::CtxFailure(const Status& s) {
   ITEX_VLOG(1) << s;
   TF_OpKernelConstruction_Failure(ctx_, TF_StatusFromStatus(s, status_));

@@ -27,6 +27,7 @@ limitations under the License.
 #include "itex/core/kernels/common/host_data_cache.h"
 #include "itex/core/utils/bcast.h"
 #include "itex/core/utils/errors.h"
+#include "itex/core/utils/onednn/onednn_layout_util.h"
 #include "itex/core/utils/onednn/onednn_post_op_util.h"
 #include "itex/core/utils/onednn/onednn_util.h"
 #include "itex/core/utils/op_kernel.h"
@@ -258,6 +259,13 @@ class MatMulOp : public OpKernel {
       OP_REQUIRES_OK(context, context->GetAttr("inplace_sum", &inplace_sum_));
     }
 
+    if (context->HasAttr("meta")) {
+      Tensor meta;
+      OP_REQUIRES_OK(context, context->GetAttr("meta", &meta));
+      weights_onednn_shape_.DeSerializeOneDnnShape(
+          meta.flat<uint8>().data(), meta.flat<uint8>().size() * sizeof(uint8));
+    }
+
     fp32_math_mode_ = GetFP32MathMode<Device>();
     bool is_bf16_math_mode = false;
     if (context->HasAttr("is_bf16_math_mode")) {
@@ -351,16 +359,19 @@ class MatMulOp : public OpKernel {
   void Init(OpKernelContext* context) {
     const Tensor& src_tensor = context->input(0);
     const Tensor& weights_tensor = context->input(1);
+
     fwd_primitive_args_.clear();
     auto input_shape = src_tensor.shape();
     input_dims_.clear();
     for (int i = 0; i < input_shape.dims(); ++i) {
       input_dims_.push_back(input_shape.dim_size(i));
     }
-    auto weights_tensor_shape = weights_tensor.shape();
+    auto weights_tensor_shape = weights_onednn_shape_.IsOneDnnTensor()
+                                    ? weights_onednn_shape_.GetTfShape()
+                                    : weights_tensor.shape();
     weights_dims_.clear();
-    for (int i = 0; i < weights_tensor_shape.dims(); ++i) {
-      weights_dims_.push_back(weights_tensor_shape.dim_size(i));
+    for (int i = 0; i < weights_tensor.shape().dims(); ++i) {
+      weights_dims_.push_back(weights_tensor.shape().dim_size(i));
     }
 
     OP_REQUIRES(context, src_tensor.dims() >= 2,
@@ -389,13 +400,13 @@ class MatMulOp : public OpKernel {
       }
     }
 
-    MatMulBCast bcast(src_tensor.shape().dim_sizes(),
-                      weights_tensor.shape().dim_sizes());
+    MatMulBCast bcast(input_shape.dim_sizes(),
+                      weights_tensor_shape.dim_sizes());
     OP_REQUIRES(context, bcast.IsValid(),
                 errors::InvalidArgument(
                     "In[0] and In[1] must have compatible batch dimensions: ",
-                    src_tensor.shape().DebugString(), " vs. ",
-                    weights_tensor.shape().DebugString()));
+                    input_shape.DebugString(), " vs. ",
+                    weights_tensor_shape.DebugString()));
 
     // dst(bs, m,n) = \sigma{src(bs, m,k) * weights(bs, k, n)} + bias(bs, m,n)
     // Get the actual m & n to set dst_shape, and MatMulBCast will calculate the
@@ -405,11 +416,12 @@ class MatMulOp : public OpKernel {
                           : src_tensor.dim_size(kSrcDims - 2);
     const auto k = adj_x_ ? src_tensor.dim_size(kSrcDims - 2)
                           : src_tensor.dim_size(kSrcDims - 1);
-    const int kWeightsDims = weights_tensor.dims();
-    const auto k_weights = adj_y_ ? weights_tensor.dim_size(kWeightsDims - 1)
-                                  : weights_tensor.dim_size(kWeightsDims - 2);
-    const auto n = adj_y_ ? weights_tensor.dim_size(kWeightsDims - 2)
-                          : weights_tensor.dim_size(kWeightsDims - 1);
+    const int kWeightsDims = weights_tensor_shape.dims();
+    const auto k_weights =
+        adj_y_ ? weights_tensor_shape.dim_size(kWeightsDims - 1)
+               : weights_tensor_shape.dim_size(kWeightsDims - 2);
+    const auto n = adj_y_ ? weights_tensor_shape.dim_size(kWeightsDims - 2)
+                          : weights_tensor_shape.dim_size(kWeightsDims - 1);
     OP_REQUIRES(context, k == k_weights,
                 errors::InvalidArgument(
                     "Matrix size-incompatible: In[0]: ",
@@ -456,12 +468,13 @@ class MatMulOp : public OpKernel {
     try {
       // Compute parameters for DNNL matmul primitive.
       auto params = MatMulBaseUtil::CreateMatMulParams(
-          src_tensor.shape(), weights_tensor.shape(), dst_shape_, adj_x_,
-          adj_y_);
+          input_shape, weights_tensor_shape, dst_shape_, adj_x_, adj_y_);
       auto src_md =
           memory::desc(params->a_dims, OneDnnType<T>(), params->a_strides);
-      auto weights_md =
-          memory::desc(params->b_dims, OneDnnType<T>(), params->b_strides);
+      auto weights_md = weights_onednn_shape_.IsOneDnnTensor()
+                            ? weights_onednn_shape_.GetOneDnnLayout()
+                            : memory::desc(params->b_dims, OneDnnType<T>(),
+                                           params->b_strides);
       // Let oneDNN choose weight format if Weight is const and can be cached
       auto weights_md_prefer =
           is_filter_const_ ? memory::desc(params->b_dims, OneDnnType<T>(),
@@ -646,6 +659,7 @@ class MatMulOp : public OpKernel {
   bool is_input_zero_ = false;
   static const int kSrcIndex_ = 0, kDstIndex_ = 0, kWeightIndex_ = 1,
                    kBiasIndex_ = 2, kAddIndex_ = 3, kUnsuccess_ = -1;
+  OneDnnShape weights_onednn_shape_;
 
   // Fusion util.
   PostOpUtil post_op_util_;
