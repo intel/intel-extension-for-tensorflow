@@ -40,10 +40,10 @@ struct fused_dense_func {
   using tile_shape = group::tile_shape_t<wg_n, wg_m, sg_n, sg_m>;
   static constexpr uint32_t periodic_sync_interval = 8;
   static constexpr uint32_t prefetch_distance = 3;
-  using brgemm_t = typename group::brgemm_selector_t<
+  using brgemm_t = typename group::gemm_selector_t<
       dtype_a, dtype_b, layout_a, layout_b, mem_space::global,
       mem_space::global, 8, 8, dtype_acc, tile_shape, sg_k, mma_engine::xmx,
-      gpu_arch::Xe, prefetch_distance, periodic_sync_interval>::brgemm;
+      gpu_arch::Xe, prefetch_distance, periodic_sync_interval>::gemm;
 
   using bias_op_t = typename subgroup::bias_add_op_t<dtype_c, gpu_arch::Xe>;
   using gelu_op_t = typename std::conditional<
@@ -52,17 +52,17 @@ struct fused_dense_func {
   using post_op_t = subgroup::chained_tile_op_t<bias_op_t, gelu_op_t>;
 
   using epilogue_t = group::epilogue_t<
-      group::epilogue_policy_tile_op<post_op_t, result_overwrite, gpu_arch::Xe>,
-      tile_shape,
+      group::epilogue_policy_tile_op<post_op_t, gpu_arch::Xe>, tile_shape,
       mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
+  using group_swizzle = kernel::group_swizzle_default<gpu_arch::Xe>;
   using gemm_op_t =
-      kernel::gemm_t<kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_t,
-                     epilogue_t>;
+      kernel::gemm_universal_t<kernel::dispatch_policy_default<group_swizzle>,
+                               brgemm_t, epilogue_t>;
 
   static constexpr uint32_t barrier_count = gemm_op_t::get_barrier_count();
   static constexpr uint32_t slm_size = gemm_op_t::get_slm_size();
 
-  static inline void run(xetla_exec_item<3>* ei, dtype_a* A, dtype_b* B,
+  static inline void run(sycl::nd_item<3>* ei, dtype_a* A, dtype_b* B,
                          dtype_c* C, dtype_c* bias, uint32_t mat_m,
                          uint32_t mat_n, uint32_t mat_k, uint32_t lda,
                          uint32_t ldb, uint32_t ldc, dtype_c* gelu_w) {
@@ -102,7 +102,7 @@ class FusedDenseBiasAddGeluKernel {
         matrix_k(matrix_k) {}
 
   void operator()(sycl::nd_item<3> item) const SYCL_ESIMD_KERNEL {
-    xetla_exec_item<3> ei(item);
+    sycl::nd_item<3> ei(item);
     using fused_dense_functor =
         fused_dense_func<T, T, T, KernelAttr::data_type_acc,
                          KernelAttr::wg_tile_m, KernelAttr::wg_tile_n,

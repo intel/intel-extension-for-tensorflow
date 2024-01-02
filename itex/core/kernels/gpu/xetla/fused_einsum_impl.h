@@ -54,7 +54,7 @@ class FusedEinsumKernel {
     using namespace gpu::xetla::kernel;    // NOLINT
     using namespace gpu::xetla::subgroup;  // NOLINT
 
-    xetla_exec_item<3> ei(item);
+    sycl::nd_item<3> ei(item);
 
     static constexpr uint32_t periodic_sync_interval = 8;
     static constexpr uint32_t prefetch_distance = 3;
@@ -79,8 +79,8 @@ class FusedEinsumKernel {
         mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
 
     using tile_shape = tile_shape_t<wg_n, wg_m, sg_n, sg_m>;
-    using brgemm_t = brgemm_t<compute_policy, tile_shape, mem_desc_input_a,
-                              mem_desc_input_b>;
+    using brgemm_t =
+        gemm_t<compute_policy, tile_shape, mem_desc_input_a, mem_desc_input_b>;
     brgemm_t brgemm;
 
     static constexpr uint32_t barrier_count = brgemm_t::barrier_count;
@@ -172,8 +172,7 @@ class FusedEinsumKernel {
     static constexpr msg_type msg_type_c = msg_type::block_2d;
     using matC_t = subgroup::tile_t<dtype, matC_tile_desc_t>;
     using matC_payload_t =
-        subgroup::mem_payload_t<dtype, matC_tile_desc_t, msg_type_c,
-                                mem_layout::row_major, mem_space::global,
+        subgroup::mem_payload_t<mem_desc_output_c, matC_tile_desc_t, msg_type_c,
                                 gpu_arch::Xe>;
     mem_desc_output_c md_c;
     static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;

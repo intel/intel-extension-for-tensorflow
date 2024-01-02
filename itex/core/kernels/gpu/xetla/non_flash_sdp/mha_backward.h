@@ -162,7 +162,7 @@ class mha_backward0_t {
     inline context_t() = default;
 
     /// @brief Initialize variables used in the mha backward0
-    inline void init_context(const xetla_exec_item<3>& ei,
+    inline void init_context(const sycl::nd_item<3>& ei,
                              const arguments_t& args) {
       uint32_t sg_id = ei.get_local_linear_id();
       uint32_t gid = ei.get_group(0);
@@ -220,8 +220,8 @@ class mha_backward0_t {
 
   // ======================== // gemm_dP // ======================= //
   // define brgemm kernel
-  using brgemm_dP_t = group::brgemm_t<compute_policy, tile_shape_BrTm,
-                                      mem_desc_dO_t, mem_desc_V_T_t>;
+  using brgemm_dP_t = group::gemm_t<compute_policy, tile_shape_BrTm,
+                                    mem_desc_dO_t, mem_desc_V_T_t>;
   using matAcc_dP_t = typename brgemm_dP_t::matAcc_t;
 
   /// @brief gemm_dP is used to compute dP = dO x V.T
@@ -242,9 +242,9 @@ class mha_backward0_t {
   using mat_P_tile_desc_t = typename brgemm_dP_t::matAcc_tile_desc_t;
   using mat_P_t = subgroup::tile_t<scalar_t, mat_P_tile_desc_t>;
   using mat_P_payload_t = subgroup::mem_payload_t<
-      scalar_t, mat_P_tile_desc_t,
+      mem_desc_P_t, mat_P_tile_desc_t,
       subgroup::msg_type_v<mat_P_tile_desc_t, mem_desc_P_t::space>,
-      mem_desc_P_t::layout, mem_desc_P_t::space, gpu_arch::Xe>;
+      gpu_arch::Xe>;
   using wg_row_sum_t =
       group_row_reduce_t<matAcc_dP_t, wg_size_x, reduce_op::sum>;
 
@@ -288,8 +288,8 @@ class mha_backward0_t {
 
   // ======================== // gemm_dQ // ======================= //
   // define brgemm kernel
-  using brgemm_dQ_t = group::brgemm_t<compute_policy, tile_shape_BrHm,
-                                      mem_desc_dS_t, mem_desc_K_t>;
+  using brgemm_dQ_t = group::gemm_t<compute_policy, tile_shape_BrHm,
+                                    mem_desc_dS_t, mem_desc_K_t>;
   using matAcc_dQ_t = typename brgemm_dQ_t::matAcc_t;
 
   /// @brief gemm_dQ is used to compute dQ = dS x K
@@ -352,7 +352,7 @@ class mha_backward0_t {
 
   // ================= // Entry of the functor // ================= //
 
-  inline KERNEL_FUNC void operator()(const xetla_exec_item<3>& ei,
+  inline KERNEL_FUNC void operator()(const sycl::nd_item<3>& ei,
                                      const arguments_t& args) {
     // allocate slm and nbarrier resource
     xetla_local_init<get_slm_size()>();
@@ -473,7 +473,7 @@ class mha_backward1_t {
     inline context_t() = default;
 
     /// @brief Initialize invariant variables in the flash mha loop
-    inline void init_context(const xetla_exec_item<3>& ei,
+    inline void init_context(const sycl::nd_item<3>& ei,
                              const arguments_t& args) {
       uint32_t sg_id = ei.get_local_linear_id();
       uint32_t gid = ei.get_group(0);
@@ -525,8 +525,8 @@ class mha_backward1_t {
 
   // ======================== // gemm_dV // ======================= //
   // define brgemm kernel
-  using brgemm_dV_t = group::brgemm_t<compute_policy, tile_shape_BrHm,
-                                      mem_desc_Pdp_T_t, mem_desc_dO_t>;
+  using brgemm_dV_t = group::gemm_t<compute_policy, tile_shape_BrHm,
+                                    mem_desc_Pdp_T_t, mem_desc_dO_t>;
 
   /// @brief gemm_dV is used to compute dV = P_dp x dO
   /// # [T,F] x [F,H] = [T,H]
@@ -552,8 +552,8 @@ class mha_backward1_t {
 
   // ======================== // gemm_dK // ======================= //
   // define brgemm kernel
-  using brgemm_dK_t = group::brgemm_t<compute_policy, tile_shape_BrHm,
-                                      mem_desc_dS_T_t, mem_desc_Q_t>;
+  using brgemm_dK_t = group::gemm_t<compute_policy, tile_shape_BrHm,
+                                    mem_desc_dS_T_t, mem_desc_Q_t>;
 
   /// @brief gemm_dK is used to compute dK = dS.T x Q
   /// # [T,F] x [F,H] = [T,H]
@@ -610,7 +610,7 @@ class mha_backward1_t {
 
   // ================= // Entry of the functor // ================= //
 
-  inline KERNEL_FUNC void operator()(const xetla_exec_item<3>& ei,
+  inline KERNEL_FUNC void operator()(const sycl::nd_item<3>& ei,
                                      const arguments_t& args) {
     // allocate slm and nbarrier resource
     xetla_local_init<get_slm_size()>();
@@ -649,7 +649,7 @@ void mha_backward_impl(sycl::queue* q, T* query, T* key, T* value, T* attention,
     cgh.parallel_for<class MhaBackwardKernel0<mha_policy, T>>(
         NdRange0, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
       // exec item
-      xetla_exec_item<3> ei(item);
+      sycl::nd_item<3> ei(item);
 
       // init mha backward0 op and arguments
       mha_backward0_op_t mha_bwd0_op;
@@ -670,7 +670,7 @@ void mha_backward_impl(sycl::queue* q, T* query, T* key, T* value, T* attention,
     cgh.parallel_for<class MhaBackwardKernel1<mha_policy, T>>(
         NdRange1, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
       // exec item
-      xetla_exec_item<3> ei(item);
+      sycl::nd_item<3> ei(item);
 
       // init mha backward1 op and arguments
       mha_backward1_op_t mha_bwd1_op;

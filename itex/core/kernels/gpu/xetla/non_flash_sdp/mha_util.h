@@ -156,17 +156,20 @@ struct group_row_reduce_t {
   using store_tile_desc =
       subgroup::tile_desc_t<kNum, 1, kNum, 1, reg_layout::tiled>;
   using store_tile_t = subgroup::tile_t<T, store_tile_desc>;
+  using mem_desc_store_t =
+      mem_desc_t<T, mem_layout::row_major, mem_space::local>;
+  using mem_desc_load_t =
+      mem_desc_t<T, mem_layout::row_major, mem_space::local>;
   using store_payload_t =
-      subgroup::mem_payload_t<T, store_tile_desc, msg_type::block_1d,
-                              mem_layout::row_major, mem_space::local,
-                              gpu_arch::Xe>;
+      subgroup::mem_payload_t<mem_desc_store_t, store_tile_desc,
+                              msg_type::block_1d, gpu_arch::Xe>;
   // load all subgroup results together
   using load_tile_desc =
       subgroup::tile_desc_t<kTotal, 1, kTotal, 1, reg_layout::tiled>;
   using load_tile_t = subgroup::tile_t<T, load_tile_desc>;
   using load_payload_t = subgroup::mem_payload_t<
-      T, load_tile_desc, subgroup::msg_type_v<load_tile_desc, mem_space::local>,
-      mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
+      mem_desc_load_t, load_tile_desc,
+      subgroup::msg_type_v<load_tile_desc, mem_space::local>, gpu_arch::Xe>;
 
   xetla_nbarrier_t<kNumSg, kNumSg> nbarrier;
   uint32_t slm_base;
@@ -181,7 +184,7 @@ struct group_row_reduce_t {
 
   inline KERNEL_FUNC xetla_vector<T, kNum> operator()(mat_t* src) {
     xetla_vector<T, kNum> ret =
-        subgroup::tile_reduce<reduce_kind, mat_t, T, 1>(*src);
+        subgroup::tile_reduce<reduce_kind, T, T, 1>(*src);
     if constexpr (kNumSg == 1) return ret;
 
     store_tile_t sg_store;
@@ -229,9 +232,9 @@ struct dropout_t {
                             block_size_y, reg_layout::tiled>;
   using mask_in_tile_t = subgroup::tile_t<dtype_mask, mask_in_tile_desc_t>;
   using mask_in_payload_t = subgroup::mem_payload_t<
-      dtype_mask, mask_in_tile_desc_t,
+      mem_desc_mask_t, mask_in_tile_desc_t,
       subgroup::msg_type_v<mask_in_tile_desc_t, mem_desc_mask_t::space>,
-      mem_desc_mask_t::layout, mem_desc_mask_t::space, gpu_arch::Xe>;
+      gpu_arch::Xe>;
 
   inline KERNEL_FUNC void operator()(mat_t* src, mem_desc_mask_t* mem_desc_mask,
                                      float prob) {

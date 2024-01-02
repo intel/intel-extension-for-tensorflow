@@ -169,7 +169,7 @@ class mha_forward_t {
     inline context_t() = default;
 
     /// @brief Initialize variables used in the mha forward
-    inline void init_context(const xetla_exec_item<3>& ei,
+    inline void init_context(const sycl::nd_item<3>& ei,
                              const arguments_t& args) {
       uint32_t sg_id = ei.get_local_linear_id();
       uint32_t gid = ei.get_group(0);
@@ -245,8 +245,8 @@ class mha_forward_t {
 
   // ======================== // gemm_S // ======================== //
   // define brgemm kernel
-  using brgemm_S_t = group::brgemm_t<compute_policy, tile_shape_BrTm,
-                                     mem_desc_Q_t, mem_desc_K_T_t>;
+  using brgemm_S_t = group::gemm_t<compute_policy, tile_shape_BrTm,
+                                   mem_desc_Q_t, mem_desc_K_T_t>;
   using matAcc_S_t = typename brgemm_S_t::matAcc_t;
 
   /// @brief gemm_S is used to compute S = Q x K.T
@@ -359,7 +359,7 @@ class mha_forward_t {
   using P_t =
       std::conditional<kIsTraining, mem_desc_Pdp_t, mem_desc_P_L_t>::type;
   using brgemm_O_t =
-      group::brgemm_t<compute_policy, tile_shape_BrHm, P_t, mem_desc_V_t>;
+      group::gemm_t<compute_policy, tile_shape_BrHm, P_t, mem_desc_V_t>;
   using matAccO_t = typename brgemm_O_t::matAcc_t;
 
   /// @brief gemm_O is used to compute O = P x V
@@ -427,7 +427,7 @@ class mha_forward_t {
 
   // ================= // Entry of the functor // ================= //
 
-  inline KERNEL_FUNC void operator()(const xetla_exec_item<3>& ei,
+  inline KERNEL_FUNC void operator()(const sycl::nd_item<3>& ei,
                                      const arguments_t& args) {
     // allocate slm and nbarrier resource
     xetla_local_init<get_slm_size()>();
@@ -468,7 +468,7 @@ void mha_forward_impl(sycl::queue* q, T* query, T* key, T* value, T* bias,
         class MhaForwardKernel<mha_policy, T, kUseBias, kIsTraining>>(
         NdRange, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
       // exec item
-      xetla_exec_item<3> ei(item);
+      sycl::nd_item<3> ei(item);
 
       // init mha forward op and arguments
       mha_forward_op_t mha_fwd_op;
