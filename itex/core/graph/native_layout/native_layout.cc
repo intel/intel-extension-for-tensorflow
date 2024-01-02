@@ -299,7 +299,7 @@ std::vector<NativeFormatInfo>* GetGPUNativeFormatInfo() {
   static bool is_initialized = false;
   if (!is_initialized) {
     ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
-    if (npdConfig.IfEnableNextPluggableDevice()) {
+    if (!npdConfig.isXlaAutoJitEnabled()) {
       rinfo.push_back({"MaxPool", "_ITEXMaxPool", CopyAttrsAll, RewritePool});
       rinfo.push_back(
           {"MaxPool3D", "_ITEXMaxPool3D", CopyAttrsAll, RewritePool});
