@@ -20,6 +20,7 @@ from __future__ import print_function
 from intel_extension_for_tensorflow.python.test_func import test
 
 import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
@@ -461,6 +462,59 @@ class OneHotTest(test.TestCase):
       tensor_one_hot = array_ops.one_hot(tensor, depth=10, axis=0)
       self.assertEqual(sess.run(tensor_one_hot).shape, (10, 256))
 
+
+  def _testVectorize(self, np_dtype, tf_dtype):  # only when axis=-1
+    # default value
+    for indices_shape, depth in [([1000], 3727), ([10960], 110), ([20480], 255)]:
+      indices = np.random.randint(depth, size=indices_shape)
+      tf_indices = constant_op.constant(indices)
+      np_ans = np.eye(depth, dtype=np_dtype)[indices]
+      tf_ans = array_ops.one_hot(indices=tf_indices, depth=depth, dtype=tf_dtype)
+      tf_transpose_ans = tf.transpose(array_ops.one_hot(indices=tf_indices, depth=depth, axis=0, dtype=tf_dtype))
+      self.assertAllEqual(tf_ans, np_ans)
+      self.assertAllEqual(tf_ans, tf_transpose_ans)
+  
+  def _testBatchVectorize(self, np_dtype, tf_dtype):  # only when axis=-1
+    # default value
+    for indices_shape, depth in [([10, 204], 1000), ([2560, 17], 91), ([256, 16], 512), ([4, 512, 8], 91)]:
+      indices = np.random.randint(depth, size=indices_shape)
+      tf_indices = constant_op.constant(indices)
+      np_ans = np.eye(depth, dtype=np_dtype)[indices]
+      tf_ans = array_ops.one_hot(indices=tf_indices, depth=depth, dtype=tf_dtype)
+      self.assertAllEqual(tf_ans, np_ans)
+
+  def testHalfVectorize(self):
+    self._testVectorize(np.float16, dtypes.float16)
+    self._testBatchVectorize(np.float16, dtypes.float16)
+
+  def testFloatVectorize(self):
+    self._testVectorize(np.float32, dtypes.float32)
+    self._testBatchVectorize(np.float32, dtypes.float32)
+
+  def testDoubleVectorize(self):
+    self._testVectorize(np.float64, dtypes.float64)
+    self._testBatchVectorize(np.float64, dtypes.float64)
+
+  def testInt32Vectorize(self):
+    self._testVectorize(np.int32, dtypes.int32)
+    self._testBatchVectorize(np.int32, dtypes.int32)
+
+  def testInt64Vectorize(self):
+    self._testVectorize(np.int64, dtypes.int64)
+    self._testBatchVectorize(np.int64, dtypes.int64)
+
+  def testComplexVectorize(self):
+    self._testVectorize(np.complex64, dtypes.complex64)
+    self._testBatchVectorize(np.complex64, dtypes.complex64)
+
+  def testSpecialValueVectorize(self):
+    for tf_dtype in [dtypes.float16, dtypes.bfloat16, dtypes.float32, dtypes.int64]:
+      depth = 91
+      indices = tf.cast(tf.fill([2560, 17], -1), dtype=dtypes.int32)
+      tf_indices = constant_op.constant(indices)
+      true_ans = tf.cast(tf.fill([2560, 17, 91], -2), dtype=tf_dtype)
+      tf_ans = array_ops.one_hot(indices=tf_indices, depth=depth, off_value=-2, dtype=tf_dtype)
+      self.assertAllEqual(tf_ans, true_ans)
 
 if __name__ == "__main__":
   test.main()

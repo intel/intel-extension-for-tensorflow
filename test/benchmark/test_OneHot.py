@@ -39,21 +39,22 @@ ITERATION = 5
 
 
 class OneHotTest(test.TestCase):
-    def _test_impl(self, in_size, depth, dtype):
+    def _test_impl(self, in_size, depth, axis, dtype):
         indices = np.random.randint(depth, size=in_size)
         indices = constant_op.constant(indices)
         on_value = 1.0
         flush_cache()
         out_gpu = array_ops.one_hot(
-            indices=indices, depth=depth, on_value=on_value, dtype=dtype
+            indices=indices, depth=depth, on_value=on_value, axis=axis, dtype=dtype
         )
 
     @add_profiling
     @multi_run(ITERATION)
     def testOneHot(self):
         for dtype in FLOAT_COMPUTE_TYPE:
-            for in_size, depth in [([2048], 2), ([4, 512], 91), ([512], 1100)]:
-                self._test_impl(in_size, depth, dtype)
+            for in_size, depth in [([2048], 2), ([4, 512], 91), ([512], 1100), ([1024], 93184), ([2048], 186368)]:
+                for axis in [-1, 0]:
+                    self._test_impl(in_size, depth, axis, dtype)
 
 
 if __name__ == "__main__":
