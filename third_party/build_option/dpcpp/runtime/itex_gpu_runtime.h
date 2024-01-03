@@ -66,6 +66,11 @@ PJRT_Buffer* ITEXSameDevicePjRtBufferCopy(PJRT_Buffer* src_buffer,
 void ITEXXlaShapeToDeviceShapeRepresentation(void* serialized_xla_shape,
                                              void* serialized_device_shape);
 
+void* ITEXBFCAllocateOnSyclDevice(const sycl::device& device,
+                                  PJRT_Client* pjrt_c_client, size_t n);
+void ITEXBFCDeallocateOnSyclDevice(const sycl::device& device,
+                                   PJRT_Client* pjrt_c_client, void* addr);
+
 class ITEXNpdConfig {
  public:
   static ITEXNpdConfig& getNpdConfig() {

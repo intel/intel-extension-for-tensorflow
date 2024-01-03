@@ -46,6 +46,32 @@ dnnl::engine CreateDnnlEngine<CPUDevice>(OpKernelContext* ctx) {
 #ifndef INTEL_CPU_ONLY
 void* sycl_malloc_wrapper(size_t n, size_t alignment, const void* device,
                           const void* ctx) {
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+  if (npdConfig.IfEnableNextPluggableDevice()) {
+    auto& device_handle = *static_cast<const ITEX_GPUDevice*>(device);
+    TF_Status* tf_status = TF_NewStatus();
+    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient(DEVICE_XPU, tf_status);
+    void* data = ITEXBFCAllocateOnSyclDevice(device_handle, pjrt_c_client, n);
+    TF_DeleteStatus(tf_status);
+    ITEX_CHECK(data != nullptr)
+        << "Failed to get device memory, device handle: " << &device_handle;
+    return data;
+  } else {
+    // TODO(itex): Currently, we ignore the alignment argument. The default
+    // alignment in ITEX is 256.
+    auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+    ITEX_GPUDevice* device_handle;
+    DeviceOrdinal device_ordinal;
+    ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+    ITEX_GPUGetDevice(&device_handle, device_ordinal);
+    std::shared_ptr<BFCAllocator> alloc;
+    auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+    ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+        << "Failed to get device allocator, device handle: " << device_handle;
+    return alloc->AllocateRaw(n);
+  }
+#else
   // TODO(itex): Currently, we ignore the alignment argument. The default
   // alignment in ITEX is 256.
   auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
@@ -58,10 +84,32 @@ void* sycl_malloc_wrapper(size_t n, size_t alignment, const void* device,
   ITEX_CHECK(status == ITEX_GPU_SUCCESS)
       << "Failed to get device allocator, device handle: " << device_handle;
   return alloc->AllocateRaw(n);
+#endif
 }
 
 void sycl_free_wrapper(void* ptr, const void* device, const void* context,
                        void* e) {
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+  if (npdConfig.IfEnableNextPluggableDevice()) {
+    auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+    TF_Status* tf_status = TF_NewStatus();
+    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient(DEVICE_XPU, tf_status);
+    ITEXBFCDeallocateOnSyclDevice(device_ptr, pjrt_c_client, ptr);
+    TF_DeleteStatus(tf_status);
+  } else {
+    auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
+    ITEX_GPUDevice* device_handle;
+    DeviceOrdinal device_ordinal;
+    ITEX_GPUGetDeviceOrdinal(device_ptr, &device_ordinal);
+    ITEX_GPUGetDevice(&device_handle, device_ordinal);
+    std::shared_ptr<BFCAllocator> alloc;
+    auto status = ITEX_GPUGetAllocator(device_handle, &alloc);
+    ITEX_CHECK(status == ITEX_GPU_SUCCESS)
+        << "Failed to get device allocator, device handle: " << device_handle;
+    alloc->DeallocateRaw(ptr);
+  }
+#else
   auto& device_ptr = *static_cast<const ITEX_GPUDevice*>(device);
   ITEX_GPUDevice* device_handle;
   DeviceOrdinal device_ordinal;
@@ -72,6 +120,7 @@ void sycl_free_wrapper(void* ptr, const void* device, const void* context,
   ITEX_CHECK(status == ITEX_GPU_SUCCESS)
       << "Failed to get device allocator, device handle: " << device_handle;
   alloc->DeallocateRaw(ptr);
+#endif
 }
 
 // Spicialization for GPU

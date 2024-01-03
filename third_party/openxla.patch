@@ -1603,6 +1603,70 @@ index f8903f1c9..83f8e5701 100644
    }
  
    TF_RETURN_IF_ERROR(GetKernel(loader_spec, kernel_base.get()));
+diff --git a/xla/stream_executor/tf_allocator_adapter.cc b/xla/stream_executor/tf_allocator_adapter.cc
+index 3fcc6b663..926430c34 100644
+--- a/xla/stream_executor/tf_allocator_adapter.cc
++++ b/xla/stream_executor/tf_allocator_adapter.cc
+@@ -51,6 +51,24 @@ tsl::StatusOr<OwningDeviceMemory> TfAllocatorAdapter::Allocate(
+   return OwningDeviceMemory(DeviceMemoryBase(data, size), device_ordinal, this);
+ }
+ 
++void* TfAllocatorAdapter::AllocateRaw(
++    int device_ordinal, uint64_t size, bool retry_on_failure,
++    int64_t memory_space) {
++  CHECK_EQ(memory_space, 0);
++  tsl::AllocationAttributes attrs;
++  attrs.retry_on_failure = retry_on_failure;
++  void *data = nullptr;
++  if (size != 0) {
++    data =
++        wrapped_->AllocateRaw(tsl::Allocator::kAllocatorAlignment, size, attrs);
++   // if (data == nullptr) {
++   //   return tsl::errors::ResourceExhausted(
++   //       "Out of memory while trying to allocate ", size, " bytes.");
++   // }
++  }
++  return data;
++}
++
+ tsl::Status TfAllocatorAdapter::Deallocate(int device_ordinal,
+                                            DeviceMemoryBase mem) {
+   wrapped_->DeallocateRaw(mem.opaque());
+diff --git a/xla/stream_executor/tf_allocator_adapter.h b/xla/stream_executor/tf_allocator_adapter.h
+index 5293e4639..6810585d8 100644
+--- a/xla/stream_executor/tf_allocator_adapter.h
++++ b/xla/stream_executor/tf_allocator_adapter.h
+@@ -50,6 +50,10 @@ class TfAllocatorAdapter : public DeviceMemoryAllocator {
+                                              bool retry_on_failure,
+                                              int64_t memory_space) override;
+ 
++  void* AllocateRaw(int device_ordinal, uint64_t size,
++                                             bool retry_on_failure,
++                                             int64_t memory_space);
++
+   tsl::Status Deallocate(int device_ordinal, DeviceMemoryBase mem) override;
+ 
+   // The Tensorflow BFC allocator used on GPU allows host-side deallocation
+@@ -127,6 +131,19 @@ class MultiDeviceAdapter : public DeviceMemoryAllocator {
+                                                               mem);
+   }
+ 
++  void* AllocateRaw(int device_ordinal, uint64_t size,
++                    bool retry_on_failure,
++                    int64_t memory_space) {
++    CHECK_LT(device_ordinal, per_device_allocators_.size());
++    return per_device_allocators_[device_ordinal]->AllocateRaw(
++        device_ordinal, size, retry_on_failure, memory_space);
++  }
++  
++  tsl::Status DeallocateRaw(int device_ordinal, void* mem_opaque) {
++    DeviceMemoryBase device_mem(mem_opaque);
++    return this->Deallocate(device_ordinal, device_mem);
++  }
++
+   // The Tensorflow BFC allocator used on GPU allows host-side deallocation
+   // before GPU execution takes place. Tensorflow uses the ordering of the main
+   // compute stream to enforce a happens-before relationship between a memory
 diff --git a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc
 index c46135e02..485aaa975 100644
 --- a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc

@@ -7,8 +7,13 @@ namespace itex {
 
 int32_t TFNPD_GetDeviceCount(TF_Status* status) {
   int device_count;
-  ITEX_GPUGetDeviceCount(&device_count);
-  return device_count;
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+  if (npdConfig.IfEnableNextPluggableDevice()) {
+    ITEX_GPUGetDeviceCount(&device_count);
+    return device_count;
+  } else {
+    return 0;
+  }
 }
 
 void TFNPD_InitPluginInternalDeviceStates(TF_Status* status) {
@@ -41,7 +46,8 @@ const TFNPD_Api* TFNPD_InitPlugin(TFNPD_PluginParams* params,
 #endif
   ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
   params->struct_size = TFNPD_PLUGIN_PARAMS_STRUCT_SIZE;
-  params->device_type = "XPU";
+  params->device_type =
+      npdConfig.IfEnableNextPluggableDevice() ? "XPU" : "XPU_DUMMY";
   params->compilation_device_name = "XLA_GPU_JIT";
   params->is_pluggable_device = true;
   params->use_pjrt_on_demand_compile = false;

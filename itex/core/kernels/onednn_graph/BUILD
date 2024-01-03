@@ -1,4 +1,4 @@
-load("//itex:itex.bzl", "cc_library", "tf_copts")
+load("//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device", "tf_copts")
 
 cc_library(
     name = "onednn_graph_op",
@@ -9,6 +9,8 @@ cc_library(
     deps = [
         "//itex:core",
         "//itex/core/utils/onednn:onednn_graph_util",
-    ],
+    ] + if_using_nextpluggable_device([
+        "//itex/core/utils:libintel_xla",
+    ]),
     alwayslink = True,
 )
