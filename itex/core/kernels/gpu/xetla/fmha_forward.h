@@ -39,7 +39,7 @@ namespace gpu::xetla {
 namespace fmha {
 
 template <typename fmha_policy, typename scalar_t, bool kUseBias,
-          bool kIsCausal, bool kIsTraining>
+          bool kIsCausal, bool kIsDropout, bool kIsTraining>
 class fmha_forward_t {
  public:
   using accum_t = float;
@@ -57,7 +57,6 @@ class fmha_forward_t {
     accum_t dp_scale;
     // Output tensor
     scalar_t* O_ptr;  // raw: [B, N, F, H]; permute: [B, F, N, H] - output
-    accum_t* M_ptr;   // [B, N, F]
     accum_t* L_ptr;   // [B, N, F]
     // Dimension size
     uint32_t uB;
@@ -71,10 +70,10 @@ class fmha_forward_t {
     inline arguments_t() = default;
     inline arguments_t(scalar_t* query, scalar_t* key, scalar_t* value,
                        scalar_t* bias, uint8_t* dropout, accum_t dropout_prob,
-                       scalar_t* out, accum_t* m, accum_t* l,
-                       uint32_t num_batches, uint32_t num_heads,
-                       uint32_t head_size, uint32_t num_queries,
-                       uint32_t num_keys, accum_t sm_scale)
+                       scalar_t* out, accum_t* l, uint32_t num_batches,
+                       uint32_t num_heads, uint32_t head_size,
+                       uint32_t num_queries, uint32_t num_keys,
+                       accum_t sm_scale)
         : Q_ptr(query),
           K_ptr(key),
           V_ptr(value),
@@ -83,7 +82,6 @@ class fmha_forward_t {
           dp_prob(dropout_prob),
           dp_scale(1.f / (1.f - dropout_prob)),
           O_ptr(out),
-          M_ptr(m),
           L_ptr(l),
           uB(num_batches),
           uN(num_heads),
@@ -142,8 +140,6 @@ class fmha_forward_t {
       mem_desc_t<scalar_t, mem_layout::row_major, mem_space::global>;
   using mem_desc_Oi_t =
       mem_desc_t<scalar_t, mem_layout::row_major, mem_space::global>;
-  using mem_desc_Mi_t =
-      mem_desc_t<accum_t, mem_layout::row_major, mem_space::global>;
   using mem_desc_Li_t =
       mem_desc_t<accum_t, mem_layout::row_major, mem_space::global>;
   using mem_desc_Dp_Mask_t =
@@ -160,6 +156,10 @@ class fmha_forward_t {
   static constexpr uint32_t softmax_slm = Pij_slm + slm_size_Pij;
 
   static constexpr uint32_t nbarrier_cnt = (wg_size_x > 1) ? wg_size_y : 0;
+
+  using brgemm_Sij_t = group::gemm_t<compute_policy, tile_shape_BrBc,
+                                     mem_desc_Qi_L_t, mem_desc_Kj_T_t>;
+  using matAccSij_t = typename brgemm_Sij_t::matAcc_t;
 
   // ======================== // Context // ======================= //
 
@@ -182,7 +182,6 @@ class fmha_forward_t {
     mem_desc_Vj_t mem_desc_Vj;
     mem_desc_Bij_t mem_desc_Bij;
     mem_desc_Oi_t mem_desc_Oi;
-    mem_desc_Mi_t mem_desc_Mi;
     mem_desc_Li_t mem_desc_Li;
     mem_desc_Dp_Mask_t mem_desc_Dpij;
 
@@ -210,12 +209,13 @@ class fmha_forward_t {
       end_y = end_y > boundary_y ? boundary_y : end_y;
 
       mem_desc_Qi.init(args.Q_ptr, {args.uH, end_y, args.uH}, {0, start_y});
-      int32_t start_x_ml = ei.get_group(1) * kBr + sg_idy * kSgBr;
-      int32_t start_y_ml = gid;
-      mem_desc_Mi.init(args.M_ptr, {args.uF, args.uB * args.uN, args.uF},
-                       {start_x_ml, start_y_ml});
-      mem_desc_Li.init(args.L_ptr, {args.uF, args.uB * args.uN, args.uF},
-                       {start_x_ml, start_y_ml});
+      if constexpr (kIsTraining) {
+        int32_t start_x_ml = ei.get_group(1) * kBr + sg_idy * kSgBr;
+        int32_t start_y_ml = gid;
+        mem_desc_Li.init(args.L_ptr, {args.uF, args.uB * args.uN, args.uF},
+                         {start_x_ml, start_y_ml});
+      }
+
 #if _RAW_OUTPUT
       mem_desc_Oi.init(args.O_ptr, {args.uH, end_y, args.uH}, {0, start_y});
 #else
@@ -247,7 +247,7 @@ class fmha_forward_t {
       mem_desc_Kj_T.init(args.K_ptr, {end_x, args.uH, args.uH}, {start_x, 0});
       mem_desc_Vj.init(args.V_ptr, {args.uH, end_x, args.uH}, {0, start_x});
 
-      if constexpr (kIsTraining) {
+      if constexpr (kIsDropout) {
         start_x = startT;
         end_x = args.uT;
         int32_t start_y = gid * args.uF + ei.get_group(1) * kBr;
@@ -284,10 +284,6 @@ class fmha_forward_t {
 
   // ======================= // gemm_Sij // ======================= //
   // Define kernel to compute Sij = Qi x Kj.T
-  using brgemm_Sij_t = group::gemm_t<compute_policy, tile_shape_BrBc,
-                                     mem_desc_Qi_L_t, mem_desc_Kj_T_t>;
-  using matAccSij_t = typename brgemm_Sij_t::matAcc_t;
-
   /// @brief gemm_Sij is used to compute Sij = Qi x Kj.T
   /// # [Br,H] x [H,Bc] = [Br,Bc]
   inline void gemm_Sij(matAccSij_t* matAccSij, const arguments_t& args) {
@@ -407,10 +403,12 @@ class fmha_forward_t {
     ctx.softmax_m = m_new;
     ctx.softmax_l = l_new;
 
-    if constexpr (kIsTraining) {
-      using dropout_op_t = dropout_t<matAccSij_t, mem_desc_Dp_Mask_t>;
-      dropout_op_t dropout_op;
-      dropout_op(matAccSij, ctx.mem_desc_Dpij, args.dp_prob);
+    if constexpr (kIsDropout) {
+      using dp_mask_tile_t =
+          subgroup::tile_t<uint8_t, typename matAccSij_t::tile_desc>;
+      dp_mask_tile_t mask_in;
+      load_tile(&mask_in, ctx.mem_desc_Dpij);
+      matAccSij->reg = matAccSij->reg * mask_in.reg * args.dp_scale;
     }
 
     // save Pij to local memory
@@ -445,14 +443,11 @@ class fmha_forward_t {
     using store_payload_t =
         subgroup::mem_payload_t<mem_desc_Li_t, store_ml_desc,
                                 msg_type::block_2d, gpu_arch::Xe>;
-    store_tile_t m_store, l_store;
-    store_payload_t m_store_payload(ctx.mem_desc_Mi);
-    store_payload_t l_store_payload(ctx.mem_desc_Li);
-    m_store.reg = ctx.softmax_m;
-    l_store.reg = ctx.softmax_l;
+    store_tile_t ml_store;
+    store_payload_t ml_store_payload(ctx.mem_desc_Li);
+    ml_store.reg = ctx.softmax_m + sycl::ext::intel::esimd::log(ctx.softmax_l);
     if (ctx.sg_idx == 0) {
-      subgroup::tile_store(m_store, m_store_payload);
-      subgroup::tile_store(l_store, l_store_payload);
+      subgroup::tile_store(ml_store, ml_store_payload);
     }
   }
 
@@ -608,27 +603,27 @@ class fmha_forward_t {
 };  // fmha_forward_t
 
 template <typename fmha_policy, typename T, bool kUseBias, bool kIsCausal,
-          bool kIsTraining>
+          bool kIsDropout, bool kIsTraining>
 class FmhaForwardKernel;
 
 // The launcher of fmha forward kernel
 template <typename fmha_policy, typename T, bool kUseBias, bool kIsCausal,
-          bool kIsTraining>
+          bool kIsDropout, bool kIsTraining>
 void fmha_forward_impl(sycl::queue* q, T* query, T* key, T* value, T* bias,
-                       uint8_t* dropout, float dropout_prob, T* out, float* m,
-                       float* l, uint32_t num_batches, uint32_t num_heads,
+                       uint8_t* dropout, float dropout_prob, T* out, float* l,
+                       uint32_t num_batches, uint32_t num_heads,
                        uint32_t head_size, uint32_t num_queries,
                        uint32_t num_keys, float head_scale) {
   // fmha forward kernel
-  using fmha_forward_op_t =
-      fmha_forward_t<fmha_policy, T, kUseBias, kIsCausal, kIsTraining>;
+  using fmha_forward_op_t = fmha_forward_t<fmha_policy, T, kUseBias, kIsCausal,
+                                           kIsDropout, kIsTraining>;
 
   sycl::nd_range<3> NdRange =
       fmha_forward_op_t::get_nd_range(num_batches * num_heads, num_queries);
 
   q->submit([&](sycl::handler& cgh) {
-    cgh.parallel_for<class FmhaForwardKernel<fmha_policy, T, kUseBias,
-                                             kIsCausal, kIsTraining>>(
+    cgh.parallel_for<class FmhaForwardKernel<
+        fmha_policy, T, kUseBias, kIsCausal, kIsDropout, kIsTraining>>(
         NdRange, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
       // exec item
       sycl::nd_item<3> ei(item);
@@ -637,7 +632,7 @@ void fmha_forward_impl(sycl::queue* q, T* query, T* key, T* value, T* bias,
       fmha_forward_op_t fmha_fwd_op;
       typename fmha_forward_op_t::arguments_t args(query, key, value, bias,
                                                    dropout, dropout_prob, out,
-                                                   m, l, num_batches, num_heads,
+                                                   l, num_batches, num_heads,
                                                    head_size, num_queries,
                                                    num_keys, head_scale);
 

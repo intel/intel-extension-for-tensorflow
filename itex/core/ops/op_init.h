@@ -334,6 +334,8 @@ void Register_FusedDenseBiasAddGeluGradOp();
 void Register_SDPInfOp();
 void Register_SDPOp();
 void Register_SDPGradOp();
+void Register_FlashSDPOp();
+void Register_FlashSDPGradOp();
 
 // FP8 kernels
 void Register_Fp8QuantizeOp();

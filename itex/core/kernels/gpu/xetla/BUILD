@@ -45,6 +45,27 @@ itex_xetla_library(
 )
 
 itex_xetla_library(
+    name = "fmha_op",
+    srcs = ["fmha_op.cc"],
+    hdrs = [
+        "fmha_backward.h",
+        "fmha_forward.h",
+        "fmha_op.h",
+        "fmha_policy.h",
+        "fmha_utils.h",
+    ],
+    copts = tf_copts() + [],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//itex:core",
+        "//itex/core/kernels/common:fill_functor",
+        "@itex_xetla//:xetla_header",
+    ],
+    alwayslink = True,
+)
+
+itex_xetla_library(
     name = "fused_einsum_impl",
     srcs = ["fused_einsum_impl.cc"],
     hdrs = [

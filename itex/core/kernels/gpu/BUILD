@@ -16,6 +16,7 @@ itex_xetla_binary(
     set_target = "gpu_orig_backend",
     visibility = ["//visibility:public"],
     deps = [
+        "//itex/core/kernels/gpu/xetla:fmha_op",
         "//itex/core/kernels/gpu/xetla:fused_einsum_impl",
         "//itex/core/kernels/gpu/xetla:mha_op",
         "//itex/core/kernels/gpu/xetla:mlp_op",

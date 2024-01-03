@@ -17,7 +17,7 @@ from intel_extension_for_tensorflow.python.ops.multi_head_attention import (
 seed = (0, 1)
 
 
-def spd(q, k, v, mask, dropout_p, seed, dtype, use_fast_attention=False):
+def spd(q, k, v, mask, dropout_p, seed, dtype, use_fast_attention=False, use_legacy=False):
     q_tf = tf.Variable(q, dtype=dtype)
     k_tf = tf.Variable(k, dtype=dtype)
     v_tf = tf.Variable(v, dtype=dtype)
@@ -31,6 +31,7 @@ def spd(q, k, v, mask, dropout_p, seed, dtype, use_fast_attention=False):
             dropout_p,
             seed,
             use_fast_attention=use_fast_attention,
+            use_legacy_implementation=use_legacy
         )
         loss = tf.reduce_sum(outputs * outputs)
     doutputs = tape.gradient(loss, outputs)
@@ -55,7 +56,7 @@ def spd_inference(q, k, v, seed, dtype, use_fast_attention=False):
     )
     return outputs
 
-def test_func(
+def test_training(
     batch_size,
     from_seq_len,
     to_seq_len,
@@ -64,6 +65,7 @@ def test_func(
     dtype,
     use_mask=False,
     use_dropout=False,
+    use_legacy=False
 ):
     np.random.seed(0)
 
@@ -94,14 +96,14 @@ def test_func(
 
     dropout_prob = 0
     if use_dropout:
-        dropout_prob = 0.5
+        dropout_prob = 0.4
 
     ref_outputs, ref_dq, ref_dk, ref_dv = spd(
-        q, k, v, mask, dropout_prob, seed, dtype, use_fast_attention=False
+        q, k, v, mask, dropout_prob, seed, dtype, use_fast_attention=False, use_legacy=use_legacy
     )
 
     outputs, dq, dk, dv = spd(
-        q, k, v, mask, dropout_prob, seed, dtype, use_fast_attention=True
+        q, k, v, mask, dropout_prob, seed, dtype, use_fast_attention=True, use_legacy=use_legacy
     )
 
     if dtype == tf.float16 or dtype == tf.bfloat16:
@@ -125,6 +127,26 @@ def test_func(
     except AssertionError as err:
         print("dk accuracy verify failed")
         print(err)
+
+def test_inference(
+    batch_size,
+    from_seq_len,
+    to_seq_len,
+    num_heads,
+    head_size,
+    dtype
+):
+    np.random.seed(0)
+
+    q = np.random.normal(size=[batch_size, num_heads, from_seq_len, head_size]).astype(
+        np.float32
+    )
+    k = np.random.normal(size=[batch_size, num_heads, to_seq_len, head_size]).astype(
+        np.float32
+    )
+    v = np.random.normal(size=[batch_size, num_heads, to_seq_len, head_size]).astype(
+        np.float32
+    )
 
     ref_outputs = spd_inference(
         q, k, v, seed, dtype, use_fast_attention=False
@@ -189,5 +211,7 @@ if __name__ == "__main__":
         # test_func(1, 64, 64, 8, 160, dtype, False, False)
         # test_func(1, 256, 256, 8, 160, dtype, False, False)
         # test_func(1, 1024, 1024, 8, 80, dtype, False, False)
-        test_func(1, 512, 512, 2, 64, dtype, True, True)
+        test_training(1, 512, 512, 2, 64, dtype, True, True, False)
+        test_training(1, 512, 512, 2, 64, dtype, True, True, True)
+        test_inference(1, 512, 512, 2, 64, dtype)
         # test_func(1, 512, 512, 2, 64, dtype, True, True)

@@ -367,6 +367,8 @@ void RegisterOps() {
   Register_SDPOp();
   Register_SDPInfOp();
   Register_SDPGradOp();
+  Register_FlashSDPOp();
+  Register_FlashSDPGradOp();
 
   // FP8 kernels
   Register_Fp8QuantizeOp();

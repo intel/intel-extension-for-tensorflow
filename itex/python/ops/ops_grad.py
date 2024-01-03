@@ -108,7 +108,21 @@ def _scaled_dot_product_attention_grad(op, *grad):
       dropout_prob=op.get_attr("dropout_prob"))
   return (dq, dk, dv, None, None)
 
-      
+@ops.RegisterGradient("FlashScaledDotProductAttention")
+def _flash_scaled_dot_product_attention_grad(op, *grad):
+  dq, dk, dv = load_ops_library.flash_scaled_dot_product_attention_grad(
+      query=op.inputs[0],
+      key=op.inputs[1],
+      value=op.inputs[2],
+      out=op.outputs[0],
+      atten_mask=op.inputs[3],
+      output_backprop=grad[0],
+      dropout_mask=op.inputs[4],
+      l=op.outputs[1],
+      dropout_prob=op.get_attr("dropout_prob"),
+      use_mask=op.get_attr("use_mask"))
+  return (dq, dk, dv, None, None)
+
 @ops.RegisterGradient("FusedDenseBiasAddGelu")
 def _itex_fused_dense_bias_add_gelu_grad(op, *grad):
   feature = op.inputs[0]

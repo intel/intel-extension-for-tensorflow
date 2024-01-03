@@ -22,63 +22,6 @@
 namespace itex {
 typedef Eigen::GpuDevice GPUDevice;
 
-/// @brief Main execution function for flash mha forward.
-template <typename T, bool kUseBias = false, bool kIsCausal = false,
-          bool kIsTraining = false>
-void fmha_forward(OpKernelContext* context, const Tensor& query,
-                  const Tensor& key, const Tensor& value, const Tensor& bias,
-                  const Tensor& dropout, float dropout_prob, Tensor* output,
-                  float* m, float* l, uint32_t num_batches, uint32_t num_heads,
-                  uint32_t head_size, uint32_t num_queries, uint32_t num_keys,
-                  float head_scale) {
-  ITEX_GPUStream* sycl_queue = context->GetDeviceStream();
-  const T* query_ptr = query.template flat<T>().data();
-  const T* key_ptr = key.template flat<T>().data();
-  const T* value_ptr = value.template flat<T>().data();
-
-  const T* bias_ptr = nullptr;
-  const bool* dropout_mask_ptr = nullptr;
-  if constexpr (kUseBias) {
-    bias_ptr = bias.template flat<T>().data();
-  }
-  if constexpr (kIsTraining) {
-    dropout_mask_ptr = dropout.template flat<bool>().data();
-  }
-
-  T* output_ptr = output->template flat<T>().data();
-  using InT = typename std::conditional<std::is_same<T, Eigen::bfloat16>::value,
-                                        gpu::xetla::bf16, sycl::half>::type;
-
-#define CALL_IMPL_FUNC(P)                                                  \
-  gpu::xetla::fmha::fmha_forward_impl<P, InT, kUseBias, kIsCausal,         \
-                                      kIsTraining>(                        \
-      sycl_queue, reinterpret_cast<InT*>(const_cast<T*>(query_ptr)),       \
-      reinterpret_cast<InT*>(const_cast<T*>(key_ptr)),                     \
-      reinterpret_cast<InT*>(const_cast<T*>(value_ptr)),                   \
-      reinterpret_cast<InT*>(const_cast<T*>(bias_ptr)),                    \
-      reinterpret_cast<uint8_t*>(const_cast<bool*>(dropout_mask_ptr)),     \
-      dropout_prob, reinterpret_cast<InT*>(output_ptr), m, l, num_batches, \
-      num_heads, head_size, num_queries, num_keys, head_scale)
-
-  if (head_size <= 64) {
-    CALL_IMPL_FUNC(gpu::xetla::fmha_policy_64x128x64);
-  } else if (head_size <= 128) {
-    CALL_IMPL_FUNC(gpu::xetla::fmha_policy_64x128x128);
-  } else if (head_size <= 256) {
-    if (num_keys <= 256) {
-      CALL_IMPL_FUNC(gpu::xetla::fmha_policy_32x256x256);
-    } else {
-      CALL_IMPL_FUNC(gpu::xetla::fmha_policy_64x512x256);
-    }
-  } else {
-    std::cout << "No policy available for current head_size " << head_size
-              << "\n";
-    return;
-  }
-}
-
-#undef CALL_IMPL_FUNC
-
 template <typename T, bool kUseMask = false, bool kUseDropout = false>
 void mha_forward(OpKernelContext* context, const Tensor& query,
                  const Tensor& key, const Tensor& value,
@@ -189,24 +132,17 @@ class ScaledDotProductAttentionOp : public OpKernel {
  public:
   explicit ScaledDotProductAttentionOp(OpKernelConstruction* context)
       : OpKernel(context) {
-    OP_REQUIRES_OK(context, context->GetAttr("is_inference", &is_inference));
-    if (!is_inference) {
-      OP_REQUIRES_OK(context, context->GetAttr("use_dropout", &use_dropout));
-      OP_REQUIRES_OK(context, context->GetAttr("dropout_prob", &dropout_prob));
-    } else {
-      OP_REQUIRES_OK(context, context->GetAttr("use_causal", &use_causal));
-    }
     OP_REQUIRES_OK(context, context->GetAttr("use_mask", &use_mask));
+    OP_REQUIRES_OK(context, context->GetAttr("use_dropout", &use_dropout));
+    OP_REQUIRES_OK(context, context->GetAttr("dropout_prob", &dropout_prob));
   }
 
   void Compute(OpKernelContext* context) override {
     const Tensor& query = context->input(0);
     const Tensor& key = context->input(1);
     const Tensor& value = context->input(2);
-    Tensor atten_mask;
-    if (use_mask) atten_mask = context->input(3);
-    Tensor dropout_mask;
-    if (!is_inference) dropout_mask = context->input(4);
+    const Tensor& atten_mask = context->input(3);
+    const Tensor& dropout_mask = context->input(4);
 
     const TensorShape& query_shape = query.shape();
     const TensorShape& key_shape = key.shape();
@@ -229,74 +165,33 @@ class ScaledDotProductAttentionOp : public OpKernel {
       OP_REQUIRES_OK(context, context->allocate_output(
                                   2, TensorShape({b, n, f, t}), &attn_dp));
     }
-    if (is_inference) {
-      Tensor m, l;
-      OP_REQUIRES_OK(context,
-                     context->allocate_temp(DataTypeToEnum<float>::v(),
-                                            TensorShape({b, f, n}), &m));
-      OP_REQUIRES_OK(context,
-                     context->allocate_temp(DataTypeToEnum<float>::v(),
-                                            TensorShape({b, f, n}), &l));
-      if (use_causal) {
-        if (use_mask) {
-          fmha_forward<T, true, true, false>(
-              context, query, key, value, atten_mask, dropout_mask,
-              dropout_prob, output, m.template flat<float>().data(),
-              l.template flat<float>().data(), b, n, h, f, t, 1. / sqrt(h));
-        } else {
-          fmha_forward<T, false, true, false>(
-              context, query, key, value, atten_mask, dropout_mask,
-              dropout_prob, output, m.template flat<float>().data(),
-              l.template flat<float>().data(), b, n, h, f, t, 1. / sqrt(h));
-        }
+    if (use_dropout) {
+      if (use_mask) {
+        mha_forward<T, true, true>(context, query, key, value, atten_mask,
+                                   dropout_mask, dropout_prob, output, attn,
+                                   attn_dp, b, n, h, f, t);
       } else {
-        if (use_dropout) {
-          ITEX_CHECK(false) << " fmha inference don't support dropout";
-        } else {
-          if (use_mask) {
-            fmha_forward<T, true, false, false>(
-                context, query, key, value, atten_mask, dropout_mask,
-                dropout_prob, output, m.template flat<float>().data(),
-                l.template flat<float>().data(), b, n, h, f, t, 1. / sqrt(h));
-          } else {
-            fmha_forward<T, false, false, false>(
-                context, query, key, value, atten_mask, dropout_mask,
-                dropout_prob, output, m.template flat<float>().data(),
-                l.template flat<float>().data(), b, n, h, f, t, 1. / sqrt(h));
-          }
-        }
+        mha_forward<T, false, true>(context, query, key, value, atten_mask,
+                                    dropout_mask, dropout_prob, output, attn,
+                                    attn_dp, b, n, h, f, t);
       }
     } else {
-      if (use_dropout) {
-        if (use_mask) {
-          mha_forward<T, true, true>(context, query, key, value, atten_mask,
+      if (use_mask) {
+        mha_forward<T, true, false>(context, query, key, value, atten_mask,
+                                    dropout_mask, dropout_prob, output, attn,
+                                    attn_dp, b, n, h, f, t);
+      } else {
+        mha_forward<T, false, false>(context, query, key, value, atten_mask,
                                      dropout_mask, dropout_prob, output, attn,
                                      attn_dp, b, n, h, f, t);
-        } else {
-          mha_forward<T, false, true>(context, query, key, value, atten_mask,
-                                      dropout_mask, dropout_prob, output, attn,
-                                      attn_dp, b, n, h, f, t);
-        }
-      } else {
-        if (use_mask) {
-          mha_forward<T, true, false>(context, query, key, value, atten_mask,
-                                      dropout_mask, dropout_prob, output, attn,
-                                      attn_dp, b, n, h, f, t);
-        } else {
-          mha_forward<T, false, false>(context, query, key, value, atten_mask,
-                                       dropout_mask, dropout_prob, output, attn,
-                                       attn_dp, b, n, h, f, t);
-        }
       }
     }
   };
 
  private:
-  float dropout_prob = 0;
-  bool use_mask = false;
-  bool use_causal = false;
-  bool use_dropout = false;
-  bool is_inference = false;
+  float dropout_prob;
+  bool use_mask;
+  bool use_dropout;
 };
 
 template <typename Device, typename T>

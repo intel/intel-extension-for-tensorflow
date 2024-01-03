@@ -68,5 +68,16 @@ struct fmha_policy_64x512x256 : fmha_policy_base {
   static constexpr uint32_t thread_num = (kBr / kSgBr) * (kBc / kSgBc);
 };
 
+struct fmha_bwd_policy_512x512x64 : fmha_policy_base {
+  static constexpr uint32_t kBr = 128;
+  static constexpr uint32_t kSgBr = 16;
+  static constexpr uint32_t kBc = 128;
+  static constexpr uint32_t kSgBc = 32;
+  static constexpr uint32_t kSgBc_M = 16;
+  static constexpr uint32_t kHm = 64;
+  static constexpr uint32_t kSgHm = 16;
+  static constexpr uint32_t thread_num = (kBr / kSgBr) * (kBc / kSgBc);
+};
+
 }  // namespace gpu::xetla
 #endif  // ITEX_CORE_KERNELS_GPU_XETLA_FMHA_POLICY_H_

@@ -267,8 +267,121 @@ struct dropout_t {
     }
   }
 };
+
+template <typename scalar_t, typename tile_desc_t, typename mem_desc_t>
+void store_tile(subgroup::tile_t<scalar_t, tile_desc_t>* src, mem_desc_t dst) {
+  using store_t = subgroup::mem_payload_t<
+      mem_desc_t, tile_desc_t,
+      subgroup::msg_type_v<tile_desc_t, mem_desc_t::space>, gpu_arch::Xe>;
+  store_t store(dst);
+  subgroup::tile_store(*src, store);
+}
+
+template <typename scalar_t, typename tile_desc_t, typename mem_desc_t>
+void store_tile(subgroup::tile_t<scalar_t, tile_desc_t>* src, mem_desc_t dst,
+                int32_t tile_offset_x, int32_t tile_offset_y) {
+  using store_t = subgroup::mem_payload_t<
+      mem_desc_t, tile_desc_t,
+      subgroup::msg_type_v<tile_desc_t, mem_desc_t::space>, gpu_arch::Xe>;
+  dst.update_coord(tile_offset_x, tile_offset_y);
+  store_t store(dst);
+  subgroup::tile_store(*src, store);
+}
+
+template <typename scalar_t, typename tile_desc_t, typename mem_desc_t>
+void load_tile(subgroup::tile_t<scalar_t, tile_desc_t>* dst, mem_desc_t src) {
+  using load_t = subgroup::mem_payload_t<
+      mem_desc_t, tile_desc_t,
+      subgroup::msg_type_v<tile_desc_t, mem_desc_t::space>, gpu_arch::Xe>;
+  load_t load(src);
+  subgroup::tile_load(*dst, load);
+}
+
+template <typename scalar_t, typename tile_desc_t, typename mem_desc_t>
+void load_tile(subgroup::tile_t<scalar_t, tile_desc_t>* dst, mem_desc_t src,
+               int32_t tile_offset_x, int32_t tile_offset_y) {
+  using load_t = subgroup::mem_payload_t<
+      mem_desc_t, tile_desc_t,
+      subgroup::msg_type_v<tile_desc_t, mem_desc_t::space>, gpu_arch::Xe>;
+  src.update_coord(tile_offset_x, tile_offset_y);
+  load_t load(src);
+  subgroup::tile_load(*dst, load);
+}
+
 }  // namespace fmha
 
 }  // namespace gpu::xetla
+
+namespace gpu::xetla::group {
+
+template <typename epilogue_policy, typename tile_shape_,
+          typename mem_desc_c_t_>
+class epilogue_transp_t {};
+
+template <typename tile_op_t_, typename tile_shape_, typename mem_desc_c_t_>
+class epilogue_transp_t<epilogue_policy_tile_op<tile_op_t_, gpu_arch::Xe>,
+                        tile_shape_, mem_desc_c_t_> {
+ public:
+  using tile_shape = tile_shape_;
+  using mem_desc_c_t = mem_desc_c_t_;
+  static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+  static constexpr uint32_t barrier_count = 0;
+  static constexpr uint32_t slm_size = 0;
+
+  struct arguments_t {};
+
+ private:
+  using work_group_t = typename tile_shape::work_group_t;
+  static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
+  static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
+  static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
+  static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
+  static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
+  static constexpr uint32_t wg_size_y = tile_shape::wg_size_y;
+  using dtype_c = typename mem_desc_c_t::dtype;
+  static constexpr mem_layout mem_layout_c = mem_desc_c_t::layout;
+  static constexpr mem_space mem_space_c = mem_desc_c_t::space;
+  static constexpr msg_type msg_type_c =
+      (mem_space_c == mem_space::global ? msg_type::block_2d
+                                        : msg_type::scatter);
+  /// @brief Updates tile base descriptor based on the tid.
+  __XETLA_API static void update_sg_tile_tdesc(
+      work_group_t& g,             // NOLINT(runtime/references)
+      mem_desc_c_t& mem_desc_c) {  // NOLINT(runtime/references)
+    int32_t sg_idy = g.get_id() % wg_size_x;
+    int32_t sg_idx = g.get_id() / wg_size_x;
+    int32_t tile_offset_n = sg_idx * sg_tile_m;
+    int32_t tile_offset_m = sg_idy * sg_tile_n;
+    mem_desc_c.update_coord(tile_offset_n, tile_offset_m);
+  }
+
+ public:
+  template <typename matAcc_t>
+  __XETLA_API KERNEL_FUNC void operator()(
+      work_group_t& g, matAcc_t& matAcc,  // NOLINT(runtime/references)
+      mem_desc_c_t mem_desc_c, arguments_t args = {}, uint32_t slm_base = 0,
+      uint32_t nbarrier_base = 0) {
+    static_assert(mem_layout_c == mem_layout::row_major &&
+                      mem_space_c == mem_space::local,
+                  "layout should be row_major and space should be local");
+    using matC_tile_desc_t =
+        subgroup::tile_desc_t<matAcc_t::tile_size_x, matAcc_t::tile_size_y,
+                              matAcc_t::block_size_x, matAcc_t::block_size_y,
+                              reg_layout::vnni_tiled_col_major>;
+
+    using matC_t = subgroup::tile_t<dtype_c, matC_tile_desc_t>;
+    using matC_payload_t =
+        subgroup::mem_payload_t<mem_desc_c_t, matC_tile_desc_t, msg_type_c,
+                                arch_tag>;
+
+    update_sg_tile_tdesc(g, mem_desc_c);
+    matC_payload_t matC_payload(mem_desc_c);
+    matC_t matC;
+    subgroup::vnni_transform(matC, matAcc);
+    subgroup::tile_store(matC, matC_payload);
+  }
+};
+
+}  // namespace gpu::xetla::group
 
 #endif  // ITEX_CORE_KERNELS_GPU_XETLA_FMHA_UTILS_H_
