@@ -91,7 +91,11 @@ class ITEXNpdConfig {
       isNextPluggableDeviceEnabled_ =
           (env_value == "1" || env_value == "true") ? true : false;
     }
-    isXlaAutoJitEnabled_ = static_cast<bool>(TF_GetXlaAutoJitEnabled());
+    if (isXlaAutoJitEnabled_ = static_cast<bool>(TF_GetXlaAutoJitEnabled())) {
+      setenv("ITEX_REMAPPER", "0", 0);
+      setenv("ITEX_LAYOUT_OPT", "0", 0);
+      setenv("ITEX_ENABLE_MULTIPLE_STREAM", "1", 0);
+    }
   }
   ITEXNpdConfig(ITEXNpdConfig const&) = delete;
   void operator=(ITEXNpdConfig const&) = delete;
