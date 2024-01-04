@@ -72,7 +72,7 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
     has_fno_sycl_use_footer = True
 
 # common flags
-  common_flags = ['-fPIC']
+  common_flags = ['-fPIC', '-fexceptions']
   sycl_device_only_flags = ['-fsycl']
   sycl_device_only_flags.append('-fno-sycl-unnamed-lambda')
   sycl_device_only_flags.append('-fsycl-targets=spir64_gen,spir64')
