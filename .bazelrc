@@ -14,21 +14,29 @@ build:cpu --define=device=cpu
 # TODO(itex): Enable TBB by default once it's ready.
 # build:cpu --define=build_with_tbb=true
 
-# This config option is used for GPU backend.
+# This config option is used for GPU backend. (Deprecated)
 build:gpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
 build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true --define=using_nextpluggable=true
 build:gpu --define=build_with_onednn_graph=true
 build:gpu --define=device=gpu
 build:gpu --define=tensorflow_mkldnn_contraction_kernel=0
 
-# This config option is used for XPU backend.
+# This config option is used for GPU backend.
+# xpu will replace gpu as default config option for GPU only backend.
 build:xpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
-build:xpu --define=using_xetla=true
-build:xpu --define=build_as_xpu=true
+build:xpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true --define=using_nextpluggable=true
 build:xpu --define=build_with_onednn_graph=true
-build:xpu --define=build_with_graph_compiler=true
+build:xpu --define=device=gpu
 build:xpu --define=tensorflow_mkldnn_contraction_kernel=0
-build:xpu --define=using_nextpluggable=false
+
+# This config option is used for XPU backend (CPU + GPU). (Disabled)
+# build:xpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
+# build:xpu --define=using_xetla=true
+# build:xpu --define=build_as_xpu=true
+# build:xpu --define=build_with_onednn_graph=true
+# build:xpu --define=build_with_graph_compiler=true
+# build:xpu --define=tensorflow_mkldnn_contraction_kernel=0
+# build:xpu --define=using_nextpluggable=false
 
 # This config option is used for LLGA (OneDnnGraph) debugging
 build:llga-debug --define=build_with_llga_debug=true

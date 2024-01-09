@@ -58,8 +58,8 @@ class PluginStreamDevice : public ::Eigen::StreamInterface {
   PluginStreamDevice(TF_OpKernelContext* ctx, TF_Status* tf_status,
                      InlinedVector<TF_Tensor*, 4>* tmp_tensors)
       : context_(ctx),
-        tf_status_(tf_status),
         tmp_tensors_(tmp_tensors),
+        tf_status_(tf_status),
         npdConfig_(ITEXNpdConfig::getNpdConfig()) {
     if (!npdConfig_.IfEnableNextPluggableDevice()) {
       stream_ = static_cast<SP_Stream_st*>(TF_GetStream(ctx, tf_status_))

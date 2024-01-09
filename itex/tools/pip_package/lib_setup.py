@@ -69,8 +69,6 @@ for filename in filenames:
 if is_cpu and not is_gpu:
   _VERSION = _VERSION + ".0"
 elif not is_cpu and is_gpu:
-  _VERSION = _VERSION + ".1"
-elif is_cpu and is_gpu:
   _VERSION = _VERSION + ".2"
 else:
   raise Exception("There are no .so files in the folder of \

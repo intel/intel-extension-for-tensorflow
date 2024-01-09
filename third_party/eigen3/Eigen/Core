@@ -1,6 +1,11 @@
 #ifndef INTEL_GPU_ONLY
 #undef EIGEN_USE_GPU
 #undef EIGEN_USE_DPCPP
+#else
+#ifdef INTEL_COMMON
+#undef EIGEN_USE_GPU
+#undef EIGEN_USE_DPCPP
+#endif
 #endif
 
 #include "Eigen/Core"

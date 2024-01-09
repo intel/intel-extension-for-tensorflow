@@ -83,6 +83,11 @@ def find_dpcpp_root(repository_ctx):
         return sycl_name
     fail("Cannot find DPC++ compiler, please correct your path")
 
+def find_gcc_install_dir(repository_ctx):
+    gcc_path = repository_ctx.path("/usr/bin/gcc")
+    gcc_install_dir = repository_ctx.execute([gcc_path, "-print-libgcc-file-name"])
+    return str(repository_ctx.path(gcc_install_dir.stdout.strip()).dirname)
+
 def find_dpcpp_include_path(repository_ctx):
     """Find DPC++ compiler."""
     base_path = find_dpcpp_root(repository_ctx)
@@ -91,9 +96,7 @@ def find_dpcpp_include_path(repository_ctx):
         bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "clang")
         if not bin_path.exists:
             fail("Cannot find DPC++ compiler, please correct your path")
-    gcc_path = repository_ctx.path("/usr/bin/gcc")
-    gcc_install_dir = repository_ctx.execute([gcc_path, "-print-libgcc-file-name"])
-    gcc_install_dir_opt = "--gcc-install-dir=" + str(repository_ctx.path(gcc_install_dir.stdout.strip()).dirname)
+    gcc_install_dir_opt = "--gcc-install-dir=" + str(find_gcc_install_dir(repository_ctx))
     cmd_out = repository_ctx.execute([bin_path, gcc_install_dir_opt, "-fsycl", "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null"])
     outlist = cmd_out.stderr.split("\n")
     real_base_path = str(repository_ctx.path(base_path).realpath).strip()
@@ -389,6 +392,7 @@ def _sycl_autoconf_imp(repository_ctx):
         dpcpp_defines["%{unfiltered_compile_flags}"] = ""
         dpcpp_defines["%{host_compiler}"] = "gcc"
         dpcpp_defines["%{HOST_COMPILER_PATH}"] = "/usr/bin/gcc"
+        dpcpp_defines["%{host_compiler_install_dir}"] = str(find_gcc_install_dir(repository_ctx))
         dpcpp_defines["%{host_compiler_prefix}"] = "/usr/bin"
         dpcpp_defines["%{dpcpp_compiler_root}"] = str(find_dpcpp_root(repository_ctx))
         dpcpp_defines["%{linker_bin_path}"] = "/usr/bin"

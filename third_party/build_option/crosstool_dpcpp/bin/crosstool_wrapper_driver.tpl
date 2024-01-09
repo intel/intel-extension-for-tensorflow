@@ -43,6 +43,7 @@ if not os.path.exists(DPCPP_PATH):
 
 HOST_COMPILER_PATH = "%{HOST_COMPILER_PATH}"
 DPCPP_COMPILER_VERSION = "%{DPCPP_COMPILER_VERSION}"
+host_compiler_install_dir="%{host_compiler_install_dir}"
 
 def system(cmd):
   """Invokes cmd with os.system()"""
@@ -193,7 +194,8 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
       AVX_FLAG = ' -mfma -mavx -mavx2 '
     else:
       AVX_FLAG = ' -axCORE-AVX2 '
-    cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + DPCPP_PATH + AVX_FLAG + ' '.join(flags))
+    GCC_INSTALL_DIR = ' --gcc-install-dir=' + host_compiler_install_dir + ' '
+    cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + DPCPP_PATH + GCC_INSTALL_DIR + AVX_FLAG + ' '.join(flags))
   else:
     if cpu_only:
       flags.append('-DINTEL_CPU_ONLY')
@@ -230,10 +232,10 @@ def main():
   leftover = [pipes.quote(s) for s in leftover]
   if args.link_stage:
     # link for DPC++ object
-    return call_compiler(leftover, link=True, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=args.DINTEL_GPU_ONLY)
+    return call_compiler(leftover, link=True, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=True)
   else:
     # compile for DPC++ object
-    return call_compiler(leftover, link=False, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=args.DINTEL_GPU_ONLY)
+    return call_compiler(leftover, link=False, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=True)
 
 if __name__ == '__main__':
   sys.exit(main())

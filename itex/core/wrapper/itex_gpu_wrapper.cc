@@ -241,6 +241,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf,
                         const TF_GrapplerItem* tf_item,
                         TF_Buffer* optimized_graph_buf, TF_Status* tf_status) {
   const char* device_name = "XPU";
+  ITEX_VLOG(2) << "Optimizer_Optimize  device is " << device_name;
 }
 
 void gpu_start(const TP_Profiler* profiler, TF_Status* status) {}

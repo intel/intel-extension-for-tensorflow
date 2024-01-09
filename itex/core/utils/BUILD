@@ -259,6 +259,7 @@ cc_library(
         "platform_types.h",
         "strcat.h",
     ],
+    copts = ["-DINTEL_COMMON"],
     visibility = ["//visibility:public"],
     deps = [
         ":logging",
@@ -383,6 +384,7 @@ cc_library(
         "env_var.h",
         "errors.h",
     ],
+    copts = ["-DINTEL_COMMON"],
     visibility = ["//visibility:public"],
     deps = [
         ":logging",

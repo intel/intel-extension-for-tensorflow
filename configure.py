@@ -1019,10 +1019,10 @@ def main():
         'adding "--config=<>" to your build command. See .bazelrc for more '
         'details.')
   if environ_cp.get('TF_NEED_DPCPP') == '1':
-    config_info_line('gpu', ('Build Intel® Extension for TensorFlow* '
-                     'with GPU support.'))
     config_info_line('xpu', ('Build Intel® Extension for TensorFlow* '
-                     'with XPU support.'))
+                     'with GPU support.'))
+    print('NOTE: XPU mode which supports both CPU and GPU is disbaled.'
+          '"--config=xpu" only supports GPU, which is same as "--config=gpu"\n')
   else:
     config_info_line('cpu', 'Build Intel® Extension for TensorFlow* '
                      'with CPU support.')
