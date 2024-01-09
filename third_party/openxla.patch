@@ -227,18 +227,124 @@ index 30e3e13fd..131556f93 100644
              "//third_party/llvm:build.patch",
              "//third_party/llvm:mathextras.patch",
 diff --git a/third_party/tsl/tsl/framework/BUILD b/third_party/tsl/tsl/framework/BUILD
-index e055a619f..317b0f31f 100644
+index e055a619f..fa5e93af6 100644
 --- a/third_party/tsl/tsl/framework/BUILD
 +++ b/third_party/tsl/tsl/framework/BUILD
-@@ -117,7 +117,7 @@ cc_library(
+@@ -117,7 +117,8 @@ cc_library(
          "@com_google_absl//absl/types:optional",
      ] + if_static(
          extra_deps = [
 -            ":allocator_registry_impl",
-+            #":allocator_registry_impl",
++            # Remove this to avoid duplicating compile cpu allocator part.
++            # ":allocator_registry_impl",
              "//tsl/lib/gtl:inlined_vector",
              "//tsl/platform:strcat",
              "//tsl/platform:stringprintf",
+@@ -208,6 +209,7 @@ cc_library(
+         "//tsl/profiler/lib:scoped_memory_debug_annotation",
+         "//tsl/profiler/lib:traceme",
+         "//tsl/protobuf:bfc_memory_map_proto_cc",
++        "@tsl//tsl/util:env_var",
+         "@com_google_absl//absl/container:flat_hash_set",
+         "@com_google_absl//absl/strings",
+         "@com_google_absl//absl/types:optional",
+diff --git a/third_party/tsl/tsl/framework/bfc_allocator.cc b/third_party/tsl/tsl/framework/bfc_allocator.cc
+index 9e4447108..96c439641 100644
+--- a/third_party/tsl/tsl/framework/bfc_allocator.cc
++++ b/third_party/tsl/tsl/framework/bfc_allocator.cc
+@@ -48,7 +48,7 @@ BFCAllocator::BFCAllocator(std::unique_ptr<SubAllocator> sub_allocator,
+       name_(name),
+       free_chunks_list_(kInvalidChunkHandle),
+       next_allocation_id_(1) {
+-  if (opts.allow_growth) {
++  if (opts.allow_growth || AllocMode() == 2) {
+     // 2MiB smallest initial allocation, unless total memory available
+     // is less.
+     curr_region_allocation_bytes_ =
+@@ -111,6 +111,14 @@ const BFCAllocator::Chunk* BFCAllocator::ChunkFromHandle(ChunkHandle h) const {
+   return &(chunks_[h]);
+ }
+ 
++bool CheckIfUsingMachineWithLimitMem() {
++  const char* hardware_env = std::getenv("ITEX_USING_DATA_CENTER_GPU_MAX");
++  if (hardware_env) {
++    return false;
++  }
++  return true;
++}
++
+ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
+   size_t available_bytes = memory_limit_ - *stats_.pool_bytes;
+   // Rounds available_bytes down to the nearest multiple of kMinAllocationSize.
+@@ -133,6 +141,11 @@ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
+ 
+   // Try allocating.
+   size_t bytes = std::min(curr_region_allocation_bytes_, available_bytes);
++
++  if (CheckIfUsingMachineWithLimitMem()) {
++    bytes = std::min(bytes, GetLimitAlloc());
++  }
++
+   size_t bytes_received;
+   void* mem_addr = sub_allocator_->Alloc(alignment, bytes, &bytes_received);
+   if (mem_addr == nullptr && !started_backpedal_) {
+@@ -1248,4 +1261,33 @@ AllocatorMemoryType BFCAllocator::GetMemoryType() const {
+   return sub_allocator_->GetMemoryType();
+ }
+ 
++int64 AllocModeFromEnv() {
++  int64 alloc_mode_env = 1;
++  Status status = ReadInt64FromEnvVar("ITEX_ALLOC_MODE", 1, &alloc_mode_env);
++  if (!status.ok()) {
++    LOG(ERROR) << "Failed to read environment variable ITEX_ALLOC_MODE!"; 
++  }
++
++  return alloc_mode_env;
++}
++
++int64 BFCAllocator::AllocMode() {
++  static int64 alloc_mode = AllocModeFromEnv();
++  return alloc_mode;
++}
++
++// This function set the upper bound of memory allocation size, the
++// actual allocation size is the minimal value of this limit size
++// and the size want to get from system.
++size_t BFCAllocator::GetLimitAlloc() {
++  // set default limit to 4GB
++  int64 limit_size = 4 * 1024;
++  Status status = ReadInt64FromEnvVar("ITEX_LIMIT_MEMORY_SIZE_IN_MB",
++                                        limit_size, &limit_size);
++  if (!status.ok()) {
++    LOG(ERROR) << "Failed to read environment variable ITEX_LIMIT_MEMORY_SIZE_IN_MB!"; 
++  }
++
++  return limit_size * 1024 * 1024;
++}
+ }  // namespace tsl
+diff --git a/third_party/tsl/tsl/framework/bfc_allocator.h b/third_party/tsl/tsl/framework/bfc_allocator.h
+index 47619856a..f75fd46da 100644
+--- a/third_party/tsl/tsl/framework/bfc_allocator.h
++++ b/third_party/tsl/tsl/framework/bfc_allocator.h
+@@ -33,6 +33,7 @@ limitations under the License.
+ #include "tsl/platform/strcat.h"
+ #include "tsl/platform/thread_annotations.h"
+ #include "tsl/platform/types.h"
++#include "tsl/util/env_var.h"
+ 
+ namespace tensorflow {
+ class MemoryDump;
+@@ -152,6 +153,10 @@ class BFCAllocator : public Allocator {
+                   int64_t req_bytes, int64_t alloc_bytes)
+       TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+ 
++  int64 AllocMode();
++  size_t GetLimitAlloc();
++  
++  
+   // A ChunkHandle is an index into the chunks_ vector in BFCAllocator
+   // kInvalidChunkHandle means an invalid chunk
+   typedef size_t ChunkHandle;
 diff --git a/third_party/tsl/tsl/framework/contraction/BUILD b/third_party/tsl/tsl/framework/contraction/BUILD
 index 220b751f4..63f82cca5 100644
 --- a/third_party/tsl/tsl/framework/contraction/BUILD
@@ -635,7 +741,7 @@ index 36006855d..b7d3222f4 100644
    return 1;
  }
 diff --git a/xla/service/gpu/ir_emission_utils.cc b/xla/service/gpu/ir_emission_utils.cc
-index 12264198a..268ee3962 100644
+index 12264198a..1d6713b50 100644
 --- a/xla/service/gpu/ir_emission_utils.cc
 +++ b/xla/service/gpu/ir_emission_utils.cc
 @@ -80,11 +80,11 @@ bool IsMatrixMultiplication(const HloInstruction& dot) {
@@ -664,7 +770,7 @@ index 12264198a..268ee3962 100644
 +  CHECK_EQ(value->getType()->getPrimitiveSizeInBits(), 32);
 +  if (value->getType()->isFloatTy()) {
 +    return EmitDeviceFunctionCall(
-+        "__builtin_spirv_OpSubgroupShuffleDownINTEL_f32_f32_i32",
++        "_Z32__spirv_SubgroupShuffleDownINTELffj",
 +        {value, value, offset}, {F32, F32, U32}, F32,
 +        llvm::AttrBuilder(b->getContext())
 +            .addAttribute(llvm::Attribute::NoUnwind)
@@ -672,7 +778,7 @@ index 12264198a..268ee3962 100644
 +        b);
 +  } else {
 +    return EmitDeviceFunctionCall(
-+        "__builtin_spirv_OpSubgroupShuffleDownINTEL_i32_i32_i32",
++        "_Z32__spirv_SubgroupShuffleDownINTELjjj",
 +        {value, value, offset}, {U32, U32, U32}, U32,
 +        llvm::AttrBuilder(b->getContext())
 +            .addAttribute(llvm::Attribute::NoUnwind)
@@ -871,7 +977,7 @@ index 92f31a6c1..ff12c19d9 100644
  }  // namespace xla
  
 diff --git a/xla/service/gpu/target_util.cc b/xla/service/gpu/target_util.cc
-index 12b12b3f1..987db5bbd 100644
+index 12b12b3f1..951c8ac25 100644
 --- a/xla/service/gpu/target_util.cc
 +++ b/xla/service/gpu/target_util.cc
 @@ -23,12 +23,12 @@ limitations under the License.
@@ -983,7 +1089,7 @@ index 12b12b3f1..987db5bbd 100644
 +      return {llvm::Intrinsic::nvvm_barrier0, llvm::Intrinsic::amdgcn_s_barrier,
 +              [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
 +                return EmitDeviceFunctionCall(
-+                    "__builtin_spirv_OpControlBarrier_i32_i32_i32",
++                    "_Z22__spirv_ControlBarrierjjj",
 +                    {b_->getInt32(2), b_->getInt32(2), b_->getInt32(272)},
 +                    {U32, U32, U32}, VOID,
 +                    llvm::AttrBuilder(b_->getContext())
@@ -1035,7 +1141,7 @@ index 12b12b3f1..987db5bbd 100644
 +              [](llvm::IRBuilder<>* b_) -> llvm::CallInst* {
 +                // TODO: Fix it.
 +                return EmitDeviceFunctionCall(
-+                    "__builtin_spirv_OpControlBarrier_i32_i32_i32",
++                    "_Z22__spirv_ControlBarrierjjj",
 +                    {b_->getInt32(2), b_->getInt32(2), b_->getInt32(272)},
 +                    {U32, U32, U32}, VOID,
 +                    llvm::AttrBuilder(b_->getContext())
@@ -1058,96 +1164,92 @@ index 12b12b3f1..987db5bbd 100644
    switch (func_id) {
      case TargetDeviceFunctionID::kAtan2: {
 -      return {"__nv_atan2", "__ocml_atan2"};
-+      return {"__nv_atan2", "__ocml_atan2", "__builtin_spirv_OpenCL_atan2"};
++      return {"__nv_atan2", "__ocml_atan2", "_Z17__spirv_ocl_atan2"};
      }
      case TargetDeviceFunctionID::kCos: {
 -      return {"__nv_cos", "__ocml_cos"};
-+      return {"__nv_cos", "__ocml_cos", "__builtin_spirv_OpenCL_cos"};
++      return {"__nv_cos", "__ocml_cos", "_Z15__spirv_ocl_cos"};
      }
      case TargetDeviceFunctionID::kExp: {
 -      return {"__nv_exp", "__ocml_exp"};
-+      return {"__nv_exp", "__ocml_exp", "__builtin_spirv_OpenCL_exp"};
++      return {"__nv_exp", "__ocml_exp", "_Z15__spirv_ocl_exp"};
      }
      case TargetDeviceFunctionID::kExpm1: {
 -      return {"__nv_expm1", "__ocml_expm1"};
-+      return {"__nv_expm1", "__ocml_expm1", "__builtin_spirv_OpenCL_expm1"};
++      return {"__nv_expm1", "__ocml_expm1", "_Z17__spirv_ocl_expm1"};
      }
      case TargetDeviceFunctionID::kFmod: {
 -      return {"__nv_fmod", "__ocml_fmod"};
-+      return {"__nv_fmod", "__ocml_fmod", "__builtin_spirv_OpenCL_fmod"};
++      return {"__nv_fmod", "__ocml_fmod", "_Z16__spirv_ocl_fmod"};
      }
      case TargetDeviceFunctionID::kHypot: {
 -      return {"__nv_hypot", "__ocml_hypot"};
-+      return {"__nv_hypot", "__ocml_hypot", "__builtin_spirv_OpenCL_hypot"};
++      return {"__nv_hypot", "__ocml_hypot", "_Z17__spirv_ocl_hypot"};
      }
      case TargetDeviceFunctionID::kLog: {
 -      return {"__nv_log", "__ocml_log"};
-+      return {"__nv_log", "__ocml_log", "__builtin_spirv_OpenCL_log"};
++      return {"__nv_log", "__ocml_log", "_Z15__spirv_ocl_log"};
      }
      case TargetDeviceFunctionID::kLog1p: {
 -      return {"__nv_log1p", "__ocml_log1p"};
-+      return {"__nv_log1p", "__ocml_log1p", "__builtin_spirv_OpenCL_log1p"};
++      return {"__nv_log1p", "__ocml_log1p", "_Z17__spirv_ocl_log1p"};
      }
      case TargetDeviceFunctionID::kPow: {
 -      return {"__nv_pow", "__ocml_pow"};
-+      return {"__nv_pow", "__ocml_pow", "__builtin_spirv_OpenCL_pow"};
++      return {"__nv_pow", "__ocml_pow", "_Z15__spirv_ocl_pow"};
      }
      case TargetDeviceFunctionID::kRsqrt: {
 -      return {"__nv_rsqrt", "__ocml_rsqrt"};
-+      return {"__nv_rsqrt", "__ocml_rsqrt", "__builtin_spirv_OpenCL_rsqrt"};
++      return {"__nv_rsqrt", "__ocml_rsqrt", "_Z17__spirv_ocl_rsqrt"};
      }
      case TargetDeviceFunctionID::kSin: {
 -      return {"__nv_sin", "__ocml_sin"};
-+      return {"__nv_sin", "__ocml_sin", "__builtin_spirv_OpenCL_sin"};
++      return {"__nv_sin", "__ocml_sin", "_Z15__spirv_ocl_sin"};
      }
      case TargetDeviceFunctionID::kSqrt: {
 -      return {"__nv_sqrt", "__ocml_sqrt"};
-+      return {"__nv_sqrt", "__ocml_sqrt", "__builtin_spirv_OpenCL_sqrt"};
++      return {"__nv_sqrt", "__ocml_sqrt", "_Z16__spirv_ocl_sqrt"};
      }
      case TargetDeviceFunctionID::kTan: {
 -      return {"__nv_tan", "__ocml_tan"};
-+      return {"__nv_tan", "__ocml_tan", "__builtin_spirv_OpenCL_tan"};
++      return {"__nv_tan", "__ocml_tan", "_Z15__spirv_ocl_tan"};
      }
      case TargetDeviceFunctionID::kTanh: {
 -      return {"__nv_tanh", "__ocml_tanh"};
-+      return {"__nv_tanh", "__ocml_tanh", "__builtin_spirv_OpenCL_tanh"};
++      return {"__nv_tanh", "__ocml_tanh", "_Z16__spirv_ocl_tanh"};
      }
      case TargetDeviceFunctionID::kCbrt: {
 -      return {"__nv_cbrt", "__ocml_cbrt"};
-+      return {"__nv_cbrt", "__ocml_cbrt", "__builtin_spirv_OpenCL_cbrt"};
++      return {"__nv_cbrt", "__ocml_cbrt", "_Z16__spirv_ocl_cbrt"};
      }
    }
  }
-@@ -231,6 +308,28 @@ std::string ObtainDeviceFunctionName(TargetDeviceFunctionID func_id,
+@@ -231,6 +308,24 @@ std::string ObtainDeviceFunctionName(TargetDeviceFunctionID func_id,
      } else {
        LOG(FATAL) << "Unexpected type while getting device function name.";
      }
 +  } else if (target_triple.isSPIR()) {
 +    if (output_type == F32) {
-+      if (gpu_root_names.spir_root == "__builtin_spirv_OpenCL_hypot" ||
-+          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_pow" ||
-+          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_atan2" ||
-+          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_fmod")
-+        return StrCat(gpu_root_names.spir_root, "_f32_f32");
-+      if (gpu_root_names.spir_root == "__imf_erfcinv")
-+        return StrCat(gpu_root_names.spir_root, "f");
-+      return StrCat(gpu_root_names.spir_root, "_f32");
++      if (gpu_root_names.spir_root == "_Z17__spirv_ocl_hypot" ||
++          gpu_root_names.spir_root == "_Z15__spirv_ocl_pow" ||
++          gpu_root_names.spir_root == "_Z17__spirv_ocl_atan2" ||
++          gpu_root_names.spir_root == "_Z16__spirv_ocl_fmod")
++        return StrCat(gpu_root_names.spir_root, "ff");
++      return StrCat(gpu_root_names.spir_root, "f");
 +    } else if (output_type == F64) {
-+      if (gpu_root_names.spir_root == "__builtin_spirv_OpenCL_hypot" ||
-+          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_pow" ||
-+          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_atan2" ||
-+          gpu_root_names.spir_root == "__builtin_spirv_OpenCL_fmod")
-+        return StrCat(gpu_root_names.spir_root, "_f64_f64");
-+      if (gpu_root_names.spir_root == "__imf_erfcinv")
-+        return StrCat(gpu_root_names.spir_root, "d");
-+      return StrCat(gpu_root_names.spir_root, "_f64");
++      if (gpu_root_names.spir_root == "_Z17__spirv_ocl_hypot" ||
++          gpu_root_names.spir_root == "_Z15__spirv_ocl_pow" ||
++          gpu_root_names.spir_root == "_Z17__spirv_ocl_atan2" ||
++          gpu_root_names.spir_root == "_Z16__spirv_ocl_fmod")
++        return StrCat(gpu_root_names.spir_root, "dd");
++      return StrCat(gpu_root_names.spir_root, "d");
 +    } else {
 +      LOG(FATAL) << "Unexpected type while getting device function name.";
 +    }
    } else {
      LOG(FATAL) << "Invalid triple " << target_triple.str();
    }
-@@ -243,6 +342,7 @@ llvm::CallInst* EmitDeviceFunctionCall(
+@@ -243,6 +338,7 @@ llvm::CallInst* EmitDeviceFunctionCall(
      absl::string_view name) {
    std::vector<llvm::Type*> ir_input_types;
    llvm::Module* module = b->GetInsertBlock()->getModule();
@@ -1155,7 +1257,7 @@ index 12b12b3f1..987db5bbd 100644
    for (PrimitiveType input_type : input_types) {
      ir_input_types.push_back(
          llvm_ir::PrimitiveTypeToIrType(input_type, module));
-@@ -260,6 +360,9 @@ llvm::CallInst* EmitDeviceFunctionCall(
+@@ -260,6 +356,9 @@ llvm::CallInst* EmitDeviceFunctionCall(
            .getCallee());
  
    callee->addFnAttrs(attributes);
@@ -1165,7 +1267,7 @@ index 12b12b3f1..987db5bbd 100644
  
    return b->CreateCall(callee, llvm_ir::AsArrayRef(operands), name.data());
  }
-@@ -285,6 +388,18 @@ llvm::CallInst* EmitCallToTargetIntrinsic(
+@@ -285,6 +384,18 @@ llvm::CallInst* EmitCallToTargetIntrinsic(
                &gpu_intrinsic_id.amdgpu_intrinsic_or_function);
        return (*builder_func)(b);
      }
@@ -1184,7 +1286,7 @@ index 12b12b3f1..987db5bbd 100644
    } else {
      LOG(FATAL) << "Invalid triple " << target_triple.str();
    }
-@@ -312,6 +427,8 @@ void AnnotateFunctionAsGpuKernel(llvm::Module* module, llvm::Function* func,
+@@ -312,6 +423,8 @@ void AnnotateFunctionAsGpuKernel(llvm::Module* module, llvm::Function* func,
      // Attach information so AMDGPU can recognize function as a AMDGPU kernel.
      func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
      func->addFnAttr("amdgpu-flat-work-group-size", "1, 1024");

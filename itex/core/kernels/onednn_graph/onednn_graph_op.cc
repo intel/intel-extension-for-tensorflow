@@ -49,13 +49,16 @@ void* sycl_malloc_wrapper(size_t n, size_t alignment, const void* device,
 #ifdef USING_NEXTPLUGGABLE_DEVICE
   ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
   if (npdConfig.IfEnableNextPluggableDevice()) {
+    if (n == 0) {
+      ITEX_VLOG(1) << "tried to allocate 0 bytes";
+      return nullptr;
+    }
+
     auto& device_handle = *static_cast<const ITEX_GPUDevice*>(device);
     TF_Status* tf_status = TF_NewStatus();
     PJRT_Client* pjrt_c_client = TF_GetPjRtCClient(DEVICE_XPU, tf_status);
     void* data = ITEXBFCAllocateOnSyclDevice(device_handle, pjrt_c_client, n);
     TF_DeleteStatus(tf_status);
-    ITEX_CHECK(data != nullptr)
-        << "Failed to get device memory, device handle: " << &device_handle;
     return data;
   } else {
     // TODO(itex): Currently, we ignore the alignment argument. The default
