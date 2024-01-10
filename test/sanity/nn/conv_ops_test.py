@@ -75,12 +75,9 @@ class Conv2DTest(test.TestCase):
 
   def _DtypesToTest(self, use_gpu, forward=True):
     if forward:
-      # return [dtypes.float32, dtypes.float16]
-      # TODO(itex): Turn on fp16 forward test, once we upgrade the
-      # OneDnn which fix accuracy issue
-      return [dtypes.float32]
+      return [dtypes.float32, dtypes.float16]
     else:
-      return [dtypes.float32]
+      return [dtypes.float32, dtypes.float16]
 
   def _CreateNumpyTensor(self, shape):
     total_size = 1

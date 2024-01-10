@@ -95,9 +95,9 @@ class OneDnnConvBackpropFilterOp
         ITEX_CHECK_NOTNULL(diff_filter_tensor);
         // If output tensor has more than 0 elements, we need to 0 them out.
         if (diff_filter_shape.num_elements() > 0) {
-          DeviceFill<Device, T>(diff_filter_tensor->flat<T>().data(), T(0),
-                                diff_filter_shape.num_elements(),
-                                context->GetDeviceStream());
+          auto out = diff_filter_tensor->flat<T>();
+          auto d = context->eigen_device<Device>();
+          out.device(d) = out.constant(T(0));
         }
         return;
       }
@@ -400,6 +400,7 @@ class OneDnnConvBackpropFilterOp
           .HostMemory("output_meta"),                                       \
       OneDnnConvBackpropFilterOp<GPUDevice, T, false, true>);
 
+TF_CALL_half(REGISTER_KERNEL);
 TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_KERNEL);
 
 #define REGISTER_KERNEL_FILTER_WITH_BIAS(T)                                \

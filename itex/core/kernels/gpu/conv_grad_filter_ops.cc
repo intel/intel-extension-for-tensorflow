@@ -83,6 +83,7 @@ namespace itex {
           .HostMemory("paddings"),                                            \
       ConvBackpropFilterOp<GPUDevice, T, false, true, true>);
 
+TF_CALL_half(REGISTER_KERNEL);
 TF_CALL_GPU_BACKWARD_NUMBER_TYPES(REGISTER_KERNEL);
 
 #define REGISTER_BACKPROP_DOUBLE_KERNEL(T)                                    \
