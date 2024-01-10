@@ -63,7 +63,7 @@ python run_squad.py \
    --doc_stride=128 \
    --output_dir=$OUTPUT_DIR \
    --use_tpu=False \
-   --precision=bfloat16 \
+   --precision=bfloat16
 ```
 
 #### Accuracy
