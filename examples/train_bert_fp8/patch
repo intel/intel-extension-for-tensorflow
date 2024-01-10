@@ -676,7 +676,7 @@ index fed5259..0116e22 100644
          "For the tensor `%s` in scope `%s`, the actual rank "
          "`%d` (shape = %s) is not equal to the expected rank `%s`" %
 diff --git a/optimization.py b/optimization.py
-index d33dabd..d101ab4 100644
+index d33dabd..f390f7a 100644
 --- a/optimization.py
 +++ b/optimization.py
 @@ -20,16 +20,17 @@ from __future__ import print_function
@@ -709,7 +709,7 @@ index d33dabd..d101ab4 100644
    # is how the model was trained (note that the Adam m/v variables are NOT
    # loaded from init_checkpoint.)
 -  optimizer = AdamWeightDecayOptimizer(
-+  optimizer = itex.ops.AdamWithWeightDecayOptimizer(
++  optimizer = itex.ops.AdamWithWeightDecayLegacyOptimizer(
        learning_rate=learning_rate,
        weight_decay_rate=0.01,
        beta_1=0.9,
