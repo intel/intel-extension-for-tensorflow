@@ -51,6 +51,8 @@ message GraphOptions {
   ShardingConfig sharding_config = 7;
   // Get device isXeHPC()
   bool device_isxehpc = 8;
+  // Get device HasXMX()
+  bool device_hasxmx = 9;
 }
 
 message ConfigProto {

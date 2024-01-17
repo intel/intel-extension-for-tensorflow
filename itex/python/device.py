@@ -29,3 +29,9 @@ def is_xehpc():
   isxehpc_proto = config_pb2.ConfigProto()
   isxehpc_proto.ParseFromString(isxehpc)  
   return isxehpc_proto.graph_options.device_isxehpc
+
+def has_xmx():
+  hasxmx = ITEX_HasXMX()
+  hasxmx_proto = config_pb2.ConfigProto()
+  hasxmx_proto.ParseFromString(hasxmx)
+  return hasxmx_proto.graph_options.device_hasxmx

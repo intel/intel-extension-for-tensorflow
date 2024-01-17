@@ -129,8 +129,8 @@ bool MayFuseEinsum(OpKernelContext* ctx, string& equation,            // NOLINT
   const GPUDevice& d = ctx->eigen_device<GPUDevice>();
   auto* stream = d.stream();
   auto device = stream->get_device();
-  // Fused kernel support on HPC platform only.
-  if (!IsXeHPC(&device)) return false;
+  // Fused kernel support on HPC platform with XMX only.
+  if (!IsXeHPC(&device) || !HasXMX(&device)) return false;
 
   // The num of inputs should be 2.
   if (ctx->num_inputs() != 2) return false;

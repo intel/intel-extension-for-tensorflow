@@ -20,6 +20,7 @@ from intel_extension_for_tensorflow.python.config import set_config  # pylint: d
 from intel_extension_for_tensorflow.python.config import get_config  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python.device import get_backend  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python.device import is_xehpc  # pylint: disable=unused-import
+from intel_extension_for_tensorflow.python.device import has_xmx  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python import ops  # pylint: disable=unused-import,line-too-long
 from intel_extension_for_tensorflow.python import distribute # pylint: disable=unused-import,line-too-long
 from intel_extension_for_tensorflow.python.version import __version__  # pylint: disable=unused-import

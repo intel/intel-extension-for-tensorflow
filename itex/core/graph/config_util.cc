@@ -37,4 +37,12 @@ ConfigProto itex_get_isxehpc() {
   return isxehpc_proto;
 }
 
+bool hasxmx_value;
+ConfigProto itex_get_hasxmx() {
+  ConfigProto hasxmx_proto;
+  GraphOptions* hasxmx_graph = hasxmx_proto.mutable_graph_options();
+  hasxmx_graph->set_device_hasxmx(hasxmx_value);
+  return hasxmx_proto;
+}
+
 }  // namespace itex

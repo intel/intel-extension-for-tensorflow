@@ -36,6 +36,7 @@ limitations under the License.
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
 extern bool itex::isxehpc_value;
+extern bool itex::hasxmx_value;
 
 void InitGlobalSetting(const OptimizerConfigFlags& config) {
   using env_pair = std::pair<std::string, bool>;
@@ -80,6 +81,7 @@ void InitGlobalSetting(const OptimizerConfigFlags& config) {
 
 #ifndef INTEL_CPU_ONLY
   itex::isxehpc_value = IsXeHPC();
+  itex::hasxmx_value = HasXMX();
 #endif
 
 #ifdef INTEL_CPU_ONLY

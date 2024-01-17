@@ -21,7 +21,7 @@ import tensorflow as tf
 from tensorflow.python.framework import config
 
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
-from intel_extension_for_tensorflow.python.device import is_xehpc
+from intel_extension_for_tensorflow.python.device import is_xehpc, has_xmx
 from intel_extension_for_tensorflow.python.ops.activations import gelu
 from tensorflow.python import keras
 from keras import activations
@@ -129,7 +129,7 @@ class FusedDenseBiasAddGelu(Dense):
             activity_regularizer=activity_regularizer,
             **kwargs
         )
-        self._could_use_fused_matmul_biasadd_gelu = is_xehpc()
+        self._could_use_fused_matmul_biasadd_gelu = (is_xehpc() and has_xmx())
 
     def standard_dense(self, inputs):
         rank = inputs.shape.rank

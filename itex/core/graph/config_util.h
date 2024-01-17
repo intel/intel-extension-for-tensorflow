@@ -25,6 +25,8 @@ void itex_set_config(const ConfigProto& config);
 ConfigProto itex_get_config();
 extern bool isxehpc_value;
 ConfigProto itex_get_isxehpc();
+extern bool hasxmx_value;
+ConfigProto itex_get_hasxmx();
 }  // namespace itex
 
 #endif  // ITEX_CORE_GRAPH_CONFIG_UTIL_H_

@@ -21,7 +21,7 @@ from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.framework import config
-from intel_extension_for_tensorflow.python.device import is_xehpc
+from intel_extension_for_tensorflow.python.device import is_xehpc, has_xmx
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 
 _CHR_IDX = string.ascii_lowercase
@@ -99,7 +99,7 @@ def scaled_dot_product_attention(query,
     # If run on cpu, fast sdp kernel only support inference. If run on xpu, fmha can properly run in the forward kernel,
     # but in the backward kernel, it can be only available when the q_seq_len <= 512 and head_size <= 64.
     can_use_fast_sdp = (not use_xpu and not is_training) or \
-                        (use_xpu and is_xehpc() and \
+                        (use_xpu and is_xehpc() and has_xmx() and \
                         (query.dtype == tf.bfloat16 or query.dtype == tf.float16) and \
                         is_causal == False and \
                         (not is_training or (q_seq_len <= 512 and head_size <= 64)))

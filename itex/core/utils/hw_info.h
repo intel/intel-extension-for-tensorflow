@@ -20,12 +20,11 @@ limitations under the License.
 #include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 TF_EXPORT extern const int32_t XeHPC_id;
 TF_EXPORT extern const int32_t XeHPC_id_2;
-TF_EXPORT extern const char* const XeHPC_name;
-TF_EXPORT extern const char* const XeHPC_name_2;
-TF_EXPORT extern const char* const XeHPC_name_3;
+
+TF_EXPORT extern const int32_t XeHPC_no_xmx_id;
 
 bool IsXeHPC(sycl::device* device_ptr = nullptr);
-
+bool HasXMX(sycl::device* device_ptr = nullptr);
 #endif
 
 #endif  // ITEX_CORE_UTILS_HW_INFO_H_

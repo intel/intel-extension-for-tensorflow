@@ -46,6 +46,13 @@ static py::bytes ITEX_IsXeHPC() {
   return py::bytes(config_str);
 }
 
+static py::bytes ITEX_HasXMX() {
+  std::string config_str;
+  ConfigProto config_proto = itex_get_hasxmx();
+  config_proto.SerializeToString(&config_str);
+  return py::bytes(config_str);
+}
+
 PYBIND11_MODULE(_pywrap_itex, m) {
   m.doc() = "pybind11 front-end api for Intel ® Extension for TensorFlow*";
   m.def("ITEX_GetBackend", &itex::ITEX_GetBackend);
@@ -62,6 +69,7 @@ PYBIND11_MODULE(_pywrap_itex, m) {
   });
   m.def("ITEX_GetConfig", &itex::ITEX_GetConfig);
   m.def("ITEX_IsXeHPC", &itex::ITEX_IsXeHPC);
+  m.def("ITEX_HasXMX", &itex::ITEX_HasXMX);
 }
 
 }  // namespace itex
