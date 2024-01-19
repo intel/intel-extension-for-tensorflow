@@ -48,6 +48,10 @@ constexpr uintptr_t kTag = 0x1ULL;
 
 void* tensor_get_raw_data(TF_Tensor* tf_tensor);
 bool pointer_is_pjrt_tensor(TF_Tensor* tf_tensor);
+void create_pjrt_buffer_to_tensor(TF_OpKernelContext* tf_ctx,
+                                  TF_Tensor* tf_tensor,
+                                  const TensorShape& shape, DataType dtype);
+
 #endif  // USING_NEXTPLUGGABLE_DEVICE
 
 /// Interface to access the raw ref-counted data buffer.

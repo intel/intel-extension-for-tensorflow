@@ -19,6 +19,7 @@ limitations under the License.
 #include "itex/core/utils/plugin_tensor.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "itex/core/utils/gtl/inlined_vector.h"
 #include "itex/core/utils/numeric_types.h"
@@ -135,6 +136,35 @@ bool pointer_is_pjrt_tensor(TF_Tensor* tf_tensor) {
     return true;
   } else {
     return false;
+  }
+}
+
+void create_pjrt_buffer_to_tensor(TF_OpKernelContext* tf_ctx,
+                                  TF_Tensor* tf_tensor,
+                                  const TensorShape& shape, DataType dtype) {
+  if (pointer_is_pjrt_tensor(tf_tensor)) {
+    TF_Status* tf_status = TF_NewStatus();
+    PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tf_tensor, tf_status);
+    if (pjrt_c_buffer == nullptr) {
+      int device_id = TF_GetDeviceId(tf_ctx);
+      PJRT_Client* pjrt_c_client = TF_GetPjRtCClient(DEVICE_XPU, tf_status);
+
+      int rank = shape.dims();
+      std::vector<int64_t> dimensions(rank);
+      std::vector<int64_t> layout(rank);
+      for (int d = 0; d < rank; ++d) {
+        dimensions[d] = shape.dim_size(d);
+      }
+      std::iota(layout.rbegin(), layout.rend(), 0);
+
+      TF_CreatePjRtBuffer(
+          tf_tensor,
+          ITEXCreatePjRtBuffer(device_id, DataTypeString(dtype), dimensions,
+                               layout, pjrt_c_client),
+          "XPU", tf_status);
+
+      TF_DeleteStatus(tf_status);
+    }
   }
 }
 #endif  // USING_NEXTPLUGGABLE_DEVICE
