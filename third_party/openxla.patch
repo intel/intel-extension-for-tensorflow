@@ -249,7 +249,7 @@ index e055a619f..fa5e93af6 100644
          "@com_google_absl//absl/strings",
          "@com_google_absl//absl/types:optional",
 diff --git a/third_party/tsl/tsl/framework/bfc_allocator.cc b/third_party/tsl/tsl/framework/bfc_allocator.cc
-index 9e4447108..96c439641 100644
+index 9e4447108..4cba38b68 100644
 --- a/third_party/tsl/tsl/framework/bfc_allocator.cc
 +++ b/third_party/tsl/tsl/framework/bfc_allocator.cc
 @@ -48,7 +48,7 @@ BFCAllocator::BFCAllocator(std::unique_ptr<SubAllocator> sub_allocator,
@@ -276,19 +276,21 @@ index 9e4447108..96c439641 100644
  bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
    size_t available_bytes = memory_limit_ - *stats_.pool_bytes;
    // Rounds available_bytes down to the nearest multiple of kMinAllocationSize.
-@@ -133,6 +141,11 @@ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
+@@ -133,6 +141,13 @@ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
  
    // Try allocating.
    size_t bytes = std::min(curr_region_allocation_bytes_, available_bytes);
 +
 +  if (CheckIfUsingMachineWithLimitMem()) {
 +    bytes = std::min(bytes, GetLimitAlloc());
++  } else {
++    bytes = std::min(bytes, static_cast<size_t>(memory_limit_ * 0.75)); 
 +  }
 +
    size_t bytes_received;
    void* mem_addr = sub_allocator_->Alloc(alignment, bytes, &bytes_received);
    if (mem_addr == nullptr && !started_backpedal_) {
-@@ -1248,4 +1261,33 @@ AllocatorMemoryType BFCAllocator::GetMemoryType() const {
+@@ -1248,4 +1263,33 @@ AllocatorMemoryType BFCAllocator::GetMemoryType() const {
    return sub_allocator_->GetMemoryType();
  }
  
@@ -521,15 +523,25 @@ index b91269c3e..151ab678d 100644
    bool parameter_is_tupled_arguments() const {
      return parameter_is_tupled_arguments_;
 diff --git a/xla/service/algebraic_simplifier.h b/xla/service/algebraic_simplifier.h
-index 232074497..adf401fa3 100644
+index 232074497..8b304b6e2 100644
 --- a/xla/service/algebraic_simplifier.h
 +++ b/xla/service/algebraic_simplifier.h
-@@ -432,7 +432,7 @@ class AlgebraicSimplifierVisitor : public DfsHloRewriteVisitor {
+@@ -27,6 +27,7 @@ limitations under the License.
+ #include <vector>
+ 
+ #include "absl/container/inlined_vector.h"
++#include "tsl/util/env_var.h"
+ #include "xla/hlo/ir/dfs_hlo_visitor_with_default.h"
+ #include "xla/hlo/ir/hlo_instruction.h"
+ #include "xla/hlo/ir/hlo_module.h"
+@@ -432,7 +433,9 @@ class AlgebraicSimplifierVisitor : public DfsHloRewriteVisitor {
    virtual bool IsValidLayout(const Shape& shape) { return true; }
    // Allow backend targets to determine whether a layout is inefficient.
    virtual bool ShouldStrengthReduceDotToReduce(const HloInstruction* hlo) {
 -    return true;
-+    return false;
++    bool llm_flag = false;
++    tsl::ReadBoolFromEnvVar("LLM", false, &llm_flag);
++    return !llm_flag;
    }
  
   protected:

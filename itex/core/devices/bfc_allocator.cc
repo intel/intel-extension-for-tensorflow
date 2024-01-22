@@ -256,8 +256,10 @@ size_t BFCAllocator::GetLimitAlloc() {
   // set default limit to 4GB
   int64 limit_size = 4 * 1024;
   if (IsXeHPC(device_)) {
-    // Use a big value that means do not set limit.
-    limit_size = std::numeric_limits<int64_t>::max();
+    // If on XeHPC platform, set limit of 75% of system avalable
+    // memory, and remaining 25% for further extension or other
+    // third-party backend.
+    limit_size = memory_limit_ * 0.75;
   }
   TF_ABORT_IF_ERROR(ReadInt64FromEnvVar("ITEX_LIMIT_MEMORY_SIZE_IN_MB",
                                         limit_size, &limit_size));
