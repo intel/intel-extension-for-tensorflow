@@ -284,7 +284,7 @@ index 9e4447108..4cba38b68 100644
 +  if (CheckIfUsingMachineWithLimitMem()) {
 +    bytes = std::min(bytes, GetLimitAlloc());
 +  } else {
-+    bytes = std::min(bytes, static_cast<size_t>(memory_limit_ * 0.75)); 
++    bytes = std::min(bytes, static_cast<size_t>(memory_limit_ / 1024 / 1024 * 0.75)); 
 +  }
 +
    size_t bytes_received;

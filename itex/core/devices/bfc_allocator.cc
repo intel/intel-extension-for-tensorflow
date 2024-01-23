@@ -259,7 +259,7 @@ size_t BFCAllocator::GetLimitAlloc() {
     // If on XeHPC platform, set limit of 75% of system avalable
     // memory, and remaining 25% for further extension or other
     // third-party backend.
-    limit_size = memory_limit_ * 0.75;
+    limit_size = memory_limit_ / 1024 / 1024 * 0.75;
   }
   TF_ABORT_IF_ERROR(ReadInt64FromEnvVar("ITEX_LIMIT_MEMORY_SIZE_IN_MB",
                                         limit_size, &limit_size));
