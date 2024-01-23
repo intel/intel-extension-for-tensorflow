@@ -60,8 +60,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         system_build_file = clean_dep("//third_party/systemlibs:pybind11.BUILD"),
     )
 
-    # 202300809 master
-    _ONEDNN_CPU_COMMIT = "8f2a00d86546e44501c61c38817138619febbb10"
+    # v3.3
+    _ONEDNN_CPU_COMMIT = "08fea71aff4c273e34579e86396405f95d34aa74"
 
     new_git_repository(
         name = "onednn_cpu",
@@ -72,8 +72,6 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         patch_cmds = [
             "git log -1 --format=%H > COMMIT",
         ],
-        patches = ["//third_party/onednn:onednn.patch"],
-        patch_args = ["-p1"],
     )
 
     new_git_repository(
@@ -85,8 +83,6 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         patch_cmds = [
             "git log -1 --format=%H > COMMIT",
         ],
-        patches = ["//third_party/onednn:onednn.patch"],
-        patch_args = ["-p1"],
     )
 
     # OneDNN cpu backend with TBB runtime.
