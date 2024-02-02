@@ -84,7 +84,8 @@ def find_dpcpp_root(repository_ctx):
     fail("Cannot find DPC++ compiler, please correct your path")
 
 def find_gcc_install_dir(repository_ctx):
-    gcc_path = repository_ctx.path("/usr/bin/gcc")
+    gcc_path = repository_ctx.execute(["/usr/bin/which", "gcc"])
+    gcc_path = repository_ctx.path(gcc_path.stdout.strip())
     gcc_install_dir = repository_ctx.execute([gcc_path, "-print-libgcc-file-name"])
     return str(repository_ctx.path(gcc_install_dir.stdout.strip()).dirname)
 
