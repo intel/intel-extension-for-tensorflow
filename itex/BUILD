@@ -151,7 +151,9 @@ itex_xpu_binary(
     ) + [
         "//itex/core:protos_all_cc",
         "//itex/core/kernels:itex_common_cc",
-    ],
+    ] + if_using_nextpluggable_device([
+        "//itex/core/utils:libintel_xla",
+    ]),
 )
 
 cc_binary(

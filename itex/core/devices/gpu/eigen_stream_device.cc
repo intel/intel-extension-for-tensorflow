@@ -65,13 +65,20 @@ void* PluginStreamDevice::allocate(size_t num_bytes) const {
     PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status.get());
 
     std::vector<int64_t> dimensions(1);
-    std::vector<int64_t> layout(1);
     dimensions[0] = num_bytes;
-    std::iota(layout.rbegin(), layout.rend(), 0);
-    TF_CreatePjRtBuffer(tmp_tensor,
-                        ITEXCreatePjRtBuffer(device_id, "uint8", dimensions,
-                                             layout, pjrt_c_client),
-                        "XPU", status.get());
+    if (npdConfig_.isXlaAutoJitEnabled()) {
+      std::vector<int64_t> layout(1);
+      std::iota(layout.rbegin(), layout.rend(), 0);
+      TF_CreatePjRtBuffer(tmp_tensor,
+                          ITEXCreateSEPjRtBuffer(device_id, "uint8", dimensions,
+                                                 layout, pjrt_c_client),
+                          "XPU", status.get());
+    } else {
+      TF_CreatePjRtBuffer(tmp_tensor,
+                          ITEXCreatePjRtBuffer(device_id, "uint8", &dimensions,
+                                               num_bytes, pjrt_c_client),
+                          "XPU", status.get());
+    }
   }
 #endif
 

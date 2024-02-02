@@ -27,6 +27,9 @@ limitations under the License.
 #include "itex/core/utils/tensor_coding.h"
 #include "itex/core/utils/tensor_shape.h"
 #include "itex/core/utils/type_traits.h"
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#endif
 
 namespace itex {
 namespace {
@@ -151,18 +154,27 @@ void create_pjrt_buffer_to_tensor(TF_OpKernelContext* tf_ctx,
 
       int rank = shape.dims();
       std::vector<int64_t> dimensions(rank);
-      std::vector<int64_t> layout(rank);
       for (int d = 0; d < rank; ++d) {
         dimensions[d] = shape.dim_size(d);
       }
-      std::iota(layout.rbegin(), layout.rend(), 0);
+      size_t size = shape.num_elements() * DataTypeSize(dtype);
 
-      TF_CreatePjRtBuffer(
-          tf_tensor,
-          ITEXCreatePjRtBuffer(device_id, DataTypeString(dtype), dimensions,
-                               layout, pjrt_c_client),
-          "XPU", tf_status);
-
+      ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+      if (npdConfig.isXlaAutoJitEnabled()) {
+        std::vector<int64_t> layout(rank);
+        std::iota(layout.rbegin(), layout.rend(), 0);
+        TF_CreatePjRtBuffer(
+            tf_tensor,
+            ITEXCreateSEPjRtBuffer(device_id, DataTypeString(dtype), dimensions,
+                                   layout, pjrt_c_client),
+            "XPU", tf_status);
+      } else {
+        TF_CreatePjRtBuffer(
+            tf_tensor,
+            ITEXCreatePjRtBuffer(device_id, DataTypeString(dtype), &dimensions,
+                                 size, pjrt_c_client),
+            "XPU", tf_status);
+      }
       TF_DeleteStatus(tf_status);
     }
   }

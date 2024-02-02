@@ -1,5 +1,6 @@
 #include "itex/core/devices/next_pluggable_device/gpu_device_plugin.h"
 
+#include "itex/core/utils/logging.h"
 #include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
 #include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
 
@@ -63,4 +64,26 @@ const TFNPD_Api* TFNPD_InitPlugin(TFNPD_PluginParams* params,
       itex::TFNPD_SameDevicePjRtBufferCopy;
 
   return &tfnpd_api;
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+const PJRT_Api* GetPjrtApi();
+const PJRT_Api* GetITEXPjrtApi();
+#ifdef __cplusplus
+}
+#endif
+
+#ifndef CC_BUILD
+const PJRT_Api* GetPjrtApi_Internal() {
+#else
+const PJRT_Api* GetPjrtApi() {
+#endif
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+  if (npdConfig.isXlaAutoJitEnabled()) {
+    return GetPjrtApi();
+  } else {
+    return GetITEXPjrtApi();
+  }
 }

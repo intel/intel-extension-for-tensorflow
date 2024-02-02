@@ -54,9 +54,13 @@ typedef struct PJRT_Client PJRT_Client;
 
 void* ITEXOpaqueDataPointerFromPjRtBuffer(PJRT_Buffer*);
 
-PJRT_Buffer* ITEXCreatePjRtBuffer(int device_id, std::string datatype,
-                                  std::vector<int64_t> dimentions,
-                                  std::vector<int64_t> layout, PJRT_Client*);
+PJRT_Buffer* ITEXCreatePjRtBuffer(int device_id, std::string data_type,
+                                  std::vector<int64_t>* dimentions, size_t size,
+                                  PJRT_Client* pjrt_c_client);
+
+PJRT_Buffer* ITEXCreateSEPjRtBuffer(int device_id, std::string datatype,
+                                    std::vector<int64_t> dimentions,
+                                    std::vector<int64_t> layout, PJRT_Client*);
 
 void* ITEXGetStreamFromPjRtDevice(int device_id, PJRT_Client*);
 

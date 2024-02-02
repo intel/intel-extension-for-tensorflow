@@ -416,8 +416,8 @@ const PJRT_Api* GetPjrtApi();
 const PJRT_Api* GetPjrtApi() {
   typedef const PJRT_Api* (*get_pjrt_api_internal)();
   if (handle) {
-    auto get_pjrt_api =
-        reinterpret_cast<get_pjrt_api_internal>(dlsym(handle, "GetPjrtApi"));
+    auto get_pjrt_api = reinterpret_cast<get_pjrt_api_internal>(
+        dlsym(handle, "GetPjrtApi_Internal"));
     if (*get_pjrt_api != nullptr) {
       return get_pjrt_api();
     } else {

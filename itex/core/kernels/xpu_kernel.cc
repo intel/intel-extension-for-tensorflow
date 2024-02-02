@@ -55,6 +55,8 @@ void TF_InitKernel() {
       if (npdConfig.IfEnableNextPluggableDevice()) {
         TF_Status* tf_status = TF_NewStatus();
         TF_CreateAndSetPjRtCApiClient(itex::DEVICE_XPU, tf_status, nullptr, 0);
+        itex::Status s = itex::StatusFromTF_Status(tf_status);
+        ITEX_CHECK_EQ(itex::Status::OK(), s);
         TF_DeleteStatus(tf_status);
       }
 #endif
@@ -68,7 +70,6 @@ void TF_InitKernel() {
       ITEX_LOG(ERROR) << "backend not supported.";
       break;
   }
-
   // Register op definitions.
   CallOnce_RegisterOps();
 

@@ -244,18 +244,27 @@ Status OpKernelContext::forward_input_or_allocate_output(
       PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
       int rank = output_shape.dims();
       std::vector<int64_t> dimensions(rank);
-      std::vector<int64_t> layout(rank);
       for (int d = 0; d < rank; ++d) {
         dimensions[d] = output_shape.dim_size(d);
       }
-      std::iota(layout.rbegin(), layout.rend(), 0);
-      TF_CreatePjRtBuffer(
-          tensor,
-          ITEXCreatePjRtBuffer(device_id,
-                               DataTypeString(static_cast<DataType>(
-                                   expected_output_dtype(output_index))),
-                               dimensions, layout, pjrt_c_client),
-          "XPU", status_);
+      DataType out_type =
+          static_cast<DataType>(expected_output_dtype(output_index));
+      size_t size = output_shape.num_elements() * DataTypeSize(out_type);
+      if (npdConfig_.isXlaAutoJitEnabled()) {
+        std::vector<int64_t> layout(rank);
+        std::iota(layout.rbegin(), layout.rend(), 0);
+        TF_CreatePjRtBuffer(
+            tensor,
+            ITEXCreateSEPjRtBuffer(device_id, DataTypeString(out_type),
+                                   dimensions, layout, pjrt_c_client),
+            "XPU", status_);
+      } else {
+        TF_CreatePjRtBuffer(
+            tensor,
+            ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type),
+                                 &dimensions, size, pjrt_c_client),
+            "XPU", status_);
+      }
     }
   }
 #endif
@@ -324,26 +333,34 @@ Status OpKernelContext::output_list(StringPiece name, OpOutputList* list) {
 Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
                                         Tensor** tensor) {
   DataType out_type = static_cast<DataType>(expected_output_dtype(index));
-  TF_Tensor* output = TF_AllocateOutput(
-      ctx_, index, static_cast<TF_DataType>(out_type), shape.dim_sizes().data(),
-      shape.dims(), shape.num_elements() * DataTypeSize(out_type), status_);
+  size_t size = shape.num_elements() * DataTypeSize(out_type);
+  TF_Tensor* output =
+      TF_AllocateOutput(ctx_, index, static_cast<TF_DataType>(out_type),
+                        shape.dim_sizes().data(), shape.dims(), size, status_);
 #ifdef USING_NEXTPLUGGABLE_DEVICE
   if (pointer_is_pjrt_tensor(output)) {
     int device_id = TF_GetDeviceId(ctx_);
     PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
     int rank = shape.dims();
     std::vector<int64_t> dimensions(rank);
-    std::vector<int64_t> layout(rank);
     for (int d = 0; d < rank; ++d) {
       dimensions[d] = shape.dim_size(d);
     }
-    std::iota(layout.rbegin(), layout.rend(), 0);
-
-    TF_CreatePjRtBuffer(
-        output,
-        ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type), dimensions,
-                             layout, pjrt_c_client),
-        "XPU", status_);
+    if (npdConfig_.isXlaAutoJitEnabled()) {
+      std::vector<int64_t> layout(rank);
+      std::iota(layout.rbegin(), layout.rend(), 0);
+      TF_CreatePjRtBuffer(
+          output,
+          ITEXCreateSEPjRtBuffer(device_id, DataTypeString(out_type),
+                                 dimensions, layout, pjrt_c_client),
+          "XPU", status_);
+    } else {
+      TF_CreatePjRtBuffer(
+          output,
+          ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type), &dimensions,
+                               size, pjrt_c_client),
+          "XPU", status_);
+    }
   }
 #endif
 
@@ -371,16 +388,25 @@ Status OpKernelContext::allocate_temp(
 
     int rank = shape.dims();
     std::vector<int64_t> dimensions(rank);
-    std::vector<int64_t> layout(rank);
     for (int d = 0; d < rank; ++d) {
       dimensions[d] = shape.dim_size(d);
     }
-    std::iota(layout.rbegin(), layout.rend(), 0);
-
-    TF_CreatePjRtBuffer(tmp,
-                        ITEXCreatePjRtBuffer(device_id, DataTypeString(type),
-                                             dimensions, layout, pjrt_c_client),
-                        "XPU", status_);
+    size_t size = shape.num_elements() * DataTypeSize(type);
+    if (npdConfig_.isXlaAutoJitEnabled()) {
+      std::vector<int64_t> layout(rank);
+      std::iota(layout.rbegin(), layout.rend(), 0);
+      TF_CreatePjRtBuffer(
+          tmp,
+          ITEXCreateSEPjRtBuffer(device_id, DataTypeString(type), dimensions,
+                                 layout, pjrt_c_client),
+          "XPU", status_);
+    } else {
+      TF_CreatePjRtBuffer(
+          tmp,
+          ITEXCreatePjRtBuffer(device_id, DataTypeString(type), &dimensions,
+                               size, pjrt_c_client),
+          "XPU", status_);
+    }
   }
 #endif
 

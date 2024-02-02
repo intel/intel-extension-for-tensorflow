@@ -8,6 +8,7 @@ extern "C" {
 #endif
 const TFNPD_Api* TFNPD_InitPlugin_Internal(TFNPD_PluginParams* params,
                                            TF_Status* tf_status);
+const PJRT_Api* GetPjrtApi_Internal();
 #ifdef __cplusplus
 }
 #endif
