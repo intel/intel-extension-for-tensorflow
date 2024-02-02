@@ -24,6 +24,8 @@ RUN useradd -d /home/itex -m -s /bin/bash itex
 
 RUN ln -sf bash /bin/sh
 
+COPY ./horovod-vars.sh /opt/intel/
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --fix-missing \
     apt-utils \
