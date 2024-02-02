@@ -47,16 +47,12 @@ $ docker pull intel/intel-extension-for-tensorflow:xpu
 $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:xpu
 ```
 
-To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (`xpu`) to your local machine and set the required environment variables after creating the container by the following command.
+To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (`xpu`) to your local machine and use the script to set the required environment variables after creating the container by the following command. You can also get the script via [horovod-vars.sh](../../docker/horovod-vars.sh)
 
 ```
 $ docker pull intel/intel-extension-for-tensorflow:xpu
 $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:xpu
-$ export LD_LIBRARY_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib:$LD_LIBRARY_PATH
-$ export PATH=/opt/intel/oneapi/redist/bin:$PATH
-$ export I_MPI_ROOT=/opt/intel/oneapi/redist/lib
-$ export CCL_ROOT=/opt/intel/oneapi/redist
-$ export FI_PROVIDER_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib/prov
+$ source /opt/intel/horovod-vars.sh
 ```
 
 Then go to your browser on http://localhost:8888/
