@@ -5,8 +5,8 @@ This guide shows how to use an Intel® Extension for TensorFlow* XPU package, wh
 ## Hardware Requirements
 
 Verified Hardware Platforms:
- - Intel® Data Center GPU Max Series, Driver Version: [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html)
- - Intel® Data Center GPU Flex Series 170, Driver Version: [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html)
+ - Intel® Data Center GPU Max Series, Driver Version: [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html)
+ - Intel® Data Center GPU Flex Series 170, Driver Version: [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html)
  - *Experimental:* Intel® Arc™ A-Series
 
 For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [Intel® Arc™ A-Series GPU Software Installation](experimental/install_for_arc_gpu.md) for details.
@@ -26,8 +26,8 @@ For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [I
 
 |OS|Intel GPU|Install Intel GPU Driver|
 |-|-|-|
-|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.30.26918.50-736~22.04`|
-|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP4/SP5|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [736](https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.30.26918.50-736~22.04`|
+|Ubuntu 22.04, Red Hat 8.6|Intel® Data Center GPU Flex Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.43.27642.38-803~22.04`|
+|Ubuntu 22.04, Red Hat 8.6, SLES 15 SP4/SP5|Intel® Data Center GPU Max Series|  Refer to the [Installation Guides](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series) for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html), please append the specific version after components, such as `sudo apt-get install intel-opencl-icd==23.43.27642.38-803~22.04`|
 
 ## Install via Docker container
 
