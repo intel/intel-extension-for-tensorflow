@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intel CPU Software Installation &mdash; Intel® Extension for TensorFlow* v2.14.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Conda Environment Installation Instructions" href="experimental/install_for_gpu_conda.html" />
+    <link rel="prev" title="Intel XPU Software Installation" href="install_for_xpu.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.14.0.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="installation_guide.html">Installation Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="install_for_xpu.html">Intel XPU Software Installation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Intel CPU Software Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#hardware-requirements">Hardware Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#software-requirements">Software Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-via-docker-container">Install via Docker container</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#build-docker-container-from-dockerfile">Build Docker container from Dockerfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-docker-container-from-dockerhub">Get docker container from dockerhub</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#install-via-pypi-wheel-in-bare-metal">Install via PyPI wheel in bare metal</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#install-tensorflow">Install TensorFlow</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#virtual-environment-install">Virtual environment install</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#system-environment-install">System environment install</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#install-intel-extension-for-tensorflow">Install Intel® Extension for TensorFlow*</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#verify-the-installation">Verify the Installation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="experimental/install_for_gpu_conda.html">Conda Environment Installation Instructions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="how_to_build.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="how_to_build.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="how_to_build.html#build-intel-extension-for-tensorflow-pypi">Build Intel® Extension for TensorFlow* PyPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="how_to_build.html#additional">Additional</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="installation_guide.html">Installation Guide</a></li>
+      <li class="breadcrumb-item active">Intel CPU Software Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/install/install_for_cpu.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="intel-cpu-software-installation">
+<h1>Intel CPU Software Installation<a class="headerlink" href="#intel-cpu-software-installation" title="Permalink to this heading"></a></h1>
+<section id="hardware-requirements">
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<p>Verified Hardware Platforms:</p>
+<ul class="simple">
+<li><p>2nd Generation Intel® Xeon® Scalable Processors.</p></li>
+<li><p>3rd Generation Intel® Xeon® Scalable Processors.</p></li>
+<li><p>4th Generation Intel® Xeon® Scalable Processors.</p></li>
+</ul>
+</section>
+<section id="software-requirements">
+<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Ubuntu 20.04 (64-bit), Ubuntu 22.04 (64-bit) or CentOS Linux 8 (64-bit), and Sapphire Rapids requires Ubuntu 22.04 or CentOS Linux 8 with kernel version &gt;= 5.16</p></li>
+<li><p>Python 3.8-3.10</p></li>
+<li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
+</ul>
+</section>
+<section id="install-via-docker-container">
+<h2>Install via Docker container<a class="headerlink" href="#install-via-docker-container" title="Permalink to this heading"></a></h2>
+<section id="build-docker-container-from-dockerfile">
+<h3>Build Docker container from Dockerfile<a class="headerlink" href="#build-docker-container-from-dockerfile" title="Permalink to this heading"></a></h3>
+<p>Run the following <a class="reference external" href="./../../../docker/README.html">Dockerfile build procedure</a> to build the pip based deployment container.</p>
+</section>
+<section id="get-docker-container-from-dockerhub">
+<h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Permalink to this heading"></a></h3>
+<p>Pre-built docker images are available at <a class="reference external" href="https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags">DockerHub</a>.
+Run the following command to pull the CPU Docker container image to your local machine.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:cpu
+$ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:cpu
+</pre></div>
+</div>
+<p>Then go to your browser on http://localhost:8888/</p>
+</section>
+</section>
+<section id="install-via-pypi-wheel-in-bare-metal">
+<h2>Install via PyPI wheel in bare metal<a class="headerlink" href="#install-via-pypi-wheel-in-bare-metal" title="Permalink to this heading"></a></h2>
+<section id="install-tensorflow">
+<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h3>
+<p>The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.</p>
+<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.14.0.</p>
+<section id="virtual-environment-install">
+<h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this heading"></a></h4>
+<p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
+<p>On Linux, it is often necessary to first update pip to a version that supports manylinux2014 wheels.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+</pre></div>
+</div>
+<p>To install in virtual environment, you can run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.14.0
+</pre></div>
+</div>
+</section>
+<section id="system-environment-install">
+<h4>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this heading"></a></h4>
+<p>If you prefer install tensorflow in $HOME, append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip3<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.14.0
+</pre></div>
+</div>
+<p>And the following system environment install for Intel® Extension for TensorFlow* will also append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the command.</p>
+</section>
+</section>
+<section id="install-intel-extension-for-tensorflow">
+<h3>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h3>
+<p>To install a CPU-only version in virtual environment, you can run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>cpu<span class="o">]</span>
+</pre></div>
+</div>
+<section id="verify-the-installation">
+<h4>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="install_for_xpu.html" class="btn btn-neutral float-left" title="Intel XPU Software Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="experimental/install_for_gpu_conda.html" class="btn btn-neutral float-right" title="Conda Environment Installation Instructions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f919f4e4850> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

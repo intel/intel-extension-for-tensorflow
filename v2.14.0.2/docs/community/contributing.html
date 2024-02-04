@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing guidelines &mdash; Intel® Extension for TensorFlow* v2.14.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Security Policy" href="../../SECURITY.html" />
+    <link rel="prev" title="Releases" href="releases.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.14.0.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Releases</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing guidelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#contributing-to-intel-extension-for-tensorflow">Contributing to Intel® Extension for TensorFlow*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#developing-intel-extension-for-tensorflow">Developing Intel® Extension for TensorFlow*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tips-and-debugging">Tips and Debugging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-testing">Unit testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#python-unit-testing">Python Unit Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#code-style-guide">Code style guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#python-coding-style">Python coding style</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c-coding-style">C++ coding style</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bazel-style-guide">bazel style guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation-style-guide">Documentation style guide</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributing guidelines</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/community/contributing.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributing-guidelines">
+<h1>Contributing guidelines<a class="headerlink" href="#contributing-guidelines" title="Permalink to this heading"></a></h1>
+<section id="contributing-to-intel-extension-for-tensorflow">
+<h2>Contributing to Intel® Extension for TensorFlow*<a class="headerlink" href="#contributing-to-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h2>
+<p>We welcome community contributions to Intel® Extension for TensorFlow*. Before you begin writing code, it is important that you share your intention to contribute with the team, based on the type of contribution:</p>
+<ol class="simple">
+<li><p>You want to submit a bug or propose a new feature.</p>
+<ul class="simple">
+<li><p>Log a bug or feedback with an <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">issue</a>.</p></li>
+<li><p>Post about your intended feature in an <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">issue</a> for design and implementation approval.</p></li>
+</ul>
+</li>
+<li><p>You want to implement a bug-fix or feature for an issue.</p>
+<ul class="simple">
+<li><p>Search for your issue in the <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">issue list</a>.</p></li>
+<li><p>Pick an issue and comment that you’d like to work on the bug-fix or feature.</p></li>
+</ul>
+</li>
+</ol>
+<ul>
+<li><p>For bug-fix, please submit a Pull Request to project <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/pulls">github</a>.</p>
+<p>Ensure that you can build the product and run all the examples with your patch.
+Submit a <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/pulls">pull request</a>.</p>
+</li>
+<li><p>For feature or significant changes require approval from Intel® Extension for TensorFlow* maintainers before opening a pull request with such implementation. For that we use the <code class="docutils literal notranslate"><span class="pre">Request</span> <span class="pre">For</span> <span class="pre">Comments</span> <span class="pre">(RFC)</span> <span class="pre">process</span></code>, which consists of opening, discussing, and accepting (promoting) RFC pull requests.</p>
+<p>More information about the process can be found in the dedicated<a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/tree/rfcs"><code class="docutils literal notranslate"><span class="pre">rfcs</span></code></a> branch.</p>
+</li>
+</ul>
+<p><strong>See also:</strong> <a class="reference external" href="../../../CODE_OF_CONDUCT.html">Contributor Covenant</a> code of conduct.</p>
+</section>
+<section id="developing-intel-extension-for-tensorflow">
+<h2>Developing Intel® Extension for TensorFlow*<a class="headerlink" href="#developing-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h2>
+<p>Refer to a full set of <a class="reference external" href="../install/how_to_build.html">instructions</a> on installing Intel® Extension for TensorFlow* from source.</p>
+</section>
+<section id="tips-and-debugging">
+<h2>Tips and Debugging<a class="headerlink" href="#tips-and-debugging" title="Permalink to this heading"></a></h2>
+</section>
+<section id="unit-testing">
+<h2>Unit testing<a class="headerlink" href="#unit-testing" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* provides python unit tests.</p>
+<section id="python-unit-testing">
+<h3>Python Unit Testing<a class="headerlink" href="#python-unit-testing" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Python unit tests are located at <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow/test</span></code></p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>test/
+├── benchmark       # Benchmark unit tests
+├── examples        # Unit test examples
+├── llga            # LLGA unit tests
+├── python          # Python API unit tests
+├── sanity          # Sanity unit tests
+└── tensorflow      # TensorFlow migrated unit tests
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Running single unit test:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">&lt;</span><span class="n">path_to_python_unit_test</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Running all the unit tests:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd intel-extension-for-tensorflow
+for ut in $(find test -name &quot;*.py&quot;); do
+    python $ut
+done
+</pre></div>
+</div>
+</section>
+</section>
+<section id="code-style-guide">
+<h2>Code style guide<a class="headerlink" href="#code-style-guide" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* follows the same code style guide as  <a class="reference external" href="https://www.tensorflow.org/community/contribute/code_style">TensorFlow code style guide</a> for Python and C++ code.</p>
+<section id="python-coding-style">
+<h3>Python coding style<a class="headerlink" href="#python-coding-style" title="Permalink to this heading"></a></h3>
+<p>Ensure the Python code changes are consistent with the <a class="reference external" href="https://github.com/google/styleguide/blob/gh-pages/pyguide.html">Python coding standards</a>.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">pylint</span></code> to check your Python changes. To install <code class="docutils literal notranslate"><span class="pre">pylint</span></code> and check a file with <code class="docutils literal notranslate"><span class="pre">pylint</span></code> against custom style definition from the Intel® Extension for TensorFlow* source code root directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pylint
+
+pylint<span class="w"> </span>--rcfile<span class="o">=</span>intel-extension-for-tensorflow/.pylintrc<span class="w"> </span>myfile.py
+</pre></div>
+</div>
+</section>
+<section id="c-coding-style">
+<h3>C++ coding style<a class="headerlink" href="#c-coding-style" title="Permalink to this heading"></a></h3>
+<p>The C++ code should conform to the <a class="reference external" href="https://google.github.io/styleguide/cppguide.html">Google C++ Style Guide</a>. Intel® Extension for TensorFlow* use both <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> and <code class="docutils literal notranslate"><span class="pre">cpplint</span></code> to check C++ code style.</p>
+<p>To install <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> and check a file with <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> against custom style definition from the Intel® Extension for TensorFlow* source code root directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>apt-get<span class="w"> </span>install<span class="w"> </span>clang-format-12
+
+<span class="c1"># The -i option makes it inplace, by default formatted output is written to stdout</span>
+clang-format-12<span class="w"> </span>-i<span class="w"> </span>-style<span class="o">=</span>file<span class="w"> </span>&lt;file&gt;
+</pre></div>
+</div>
+<p>To install <code class="docutils literal notranslate"><span class="pre">cpplint</span></code> and check a file with <code class="docutils literal notranslate"><span class="pre">cpplint</span></code> from the Intel® Extension for TensorFlow* source code root directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>cpplint
+
+cpplint<span class="w"> </span>--filter<span class="o">=</span>-legal/copyright<span class="w"> </span>--exclude<span class="o">=</span>./third_party<span class="w"> </span>--recursive<span class="w"> </span>./
+</pre></div>
+</div>
+<p>Sometimes <code class="docutils literal notranslate"><span class="pre">cpplint</span></code> may report false positive errors. You can comment code with <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">NOLINT</span></code> or <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">NOLINTNEXTLINE</span></code> to skip the line for check:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;mkl.h&quot;</span><span class="c1"> // NOLINT(build/include_subdir)</span>
+
+<span class="c1">// NOLINTNEXTLINE</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;mkl.h&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="bazel-style-guide">
+<h3>bazel style guide<a class="headerlink" href="#bazel-style-guide" title="Permalink to this heading"></a></h3>
+<p><a class="reference external" href="https://github.com/bazelbuild/buildtools/tree/master/buildifier">buildifier</a> is a tool for formatting bazel <code class="docutils literal notranslate"><span class="pre">BUILD</span></code> and <code class="docutils literal notranslate"><span class="pre">.bzl</span></code> files with a standard convention (<code class="docutils literal notranslate"><span class="pre">xxx.tpl</span></code> files are not supported).</p>
+<p>To check bazel files manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install go</span>
+wget<span class="w"> </span>https://golang.org/dl/go1.15.3.linux-.html64.tar.gz
+sudo<span class="w"> </span>tar<span class="w"> </span>-C<span class="w"> </span>/usr/local<span class="w"> </span>-xzf<span class="w"> </span>go1.15.3.linux-.html64.tar.gz
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/usr/local/go/bin
+
+<span class="c1"># install buildifier</span>
+go<span class="w"> </span>get<span class="w"> </span>github.com/bazelbuild/buildtools/buildifier
+<span class="nb">cd</span><span class="w"> </span>~/go/src/github.com/bazelbuild/buildtools/buildifier
+go<span class="w"> </span>install
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/home/<span class="nv">$USER</span>/go/bin
+
+<span class="c1"># check style. DO NOT use buildifier -r dir/, it will skip files like xxx.BUILD</span>
+buildifier<span class="w"> </span>BUILD<span class="w"> </span><span class="c1"># or zzz.BUILD or xxx.bzl</span>
+</pre></div>
+</div>
+</section>
+<section id="documentation-style-guide">
+<h3>Documentation style guide<a class="headerlink" href="#documentation-style-guide" title="Permalink to this heading"></a></h3>
+<p>Intel® Extension for TensorFlow* follows the same documentation style guide as <a class="reference external" href="https://www.tensorflow.org/community/contribute/docs_style">TensorFlow documentation style guide</a>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="releases.html" class="btn btn-neutral float-left" title="Releases" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../SECURITY.html" class="btn btn-neutral float-right" title="Security Policy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f919f7197f0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
