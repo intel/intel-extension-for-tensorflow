@@ -65,7 +65,8 @@ PJRT_Buffer* ITEXCreateSEPjRtBuffer(int device_id, std::string datatype,
 void* ITEXGetStreamFromPjRtDevice(int device_id, PJRT_Client*);
 
 PJRT_Buffer* ITEXSameDevicePjRtBufferCopy(PJRT_Buffer* src_buffer,
-                                          PJRT_Client* c_client);
+                                          PJRT_Client* c_client,
+                                          bool xla_enabled);
 
 void ITEXXlaShapeToDeviceShapeRepresentation(void* serialized_xla_shape,
                                              void* serialized_device_shape);

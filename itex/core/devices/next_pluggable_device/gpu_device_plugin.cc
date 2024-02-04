@@ -33,7 +33,9 @@ void TFNPD_XlaShapeToDeviceShapeRepresentation(
 PJRT_Buffer* TFNPD_SameDevicePjRtBufferCopy(PJRT_Buffer* src_buffer,
                                             PJRT_Client* c_client,
                                             TF_Status* status) {
-  return ITEXSameDevicePjRtBufferCopy(src_buffer, c_client);
+  ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+  return ITEXSameDevicePjRtBufferCopy(src_buffer, c_client,
+                                      npdConfig.isXlaAutoJitEnabled());
 }
 
 }  // namespace itex
