@@ -19,6 +19,7 @@ ubuntu_version_list[1.1.0]="20.04 22.04"
 ubuntu_version_list[1.2.0]="20.04 22.04"
 ubuntu_version_list[2.13.0]="20.04 22.04"
 ubuntu_version_list[2.14.0]="22.04"
+ubuntu_version_list[2.14.0.2]="22.04"
 ubuntu_version_list[latest]="22.04"
 
 declare -A redhat_version_list
@@ -27,13 +28,15 @@ redhat_version_list[1.1.0]="8.6"
 redhat_version_list[1.2.0]="8.6"
 redhat_version_list[2.13.0]="8.7 8.8"
 redhat_version_list[2.14.0]="8.6 8.8 9.0 9.2"
-redhat_version_list[latest]="8.6 8.8 9.0 9.2"
+redhat_version_list[2.14.0.2]="8.6 8.8 9.0 9.2 9.3"
+redhat_version_list[latest]="8.6 8.8 9.0 9.2 9.3"
 
 declare -A sles_version_list
 sles_version_list[1.1.0]="15.3 15.4"
 sles_version_list[1.2.0]="15.3 15.4"
 sles_version_list[2.13.0]="15.3 15.4"
 sles_version_list[2.14.0]="15.4 15.5"
+sles_version_list[2.14.0.2]="15.4 15.5"
 sles_version_list[latest]="15.4 15.5"
 
 declare -A min_python_version
@@ -220,12 +223,41 @@ itex_1_4_driver_version_sles=(
   "22.3.10-i712"
 )
 
+# ITEX 2.14.0.2 GPU Drover Verson
+itex_2_14_0_2_driver_version_ubuntu=(
+  "1.3.27642.38-803~22.04"
+  "23.43.27642.38-803~22.04"
+  "1.14.0-744~22.04"
+  "1.0.15468.20-803~22.04"
+  "1.0.15468.20-803~22.04"
+  "22.3.15-803~22.04"
+)
+
+itex_2_14_0_2_driver_version_rhel=(
+  "1.0.15468.20-803"
+  "1.0.15468.20-803"
+  "22.3.15-i803"
+  "23.43.27642.38-803"
+  "1.14.0-791"
+  "1.14.0-791"
+)
+
+itex_2_14_0_2_driver_version_sles=(
+  "1.3.27642.38-803"
+  "23.43.27642.38-803"
+  "1.14.0-i744"
+  "1.0.15468.20-803"
+  "1.0.15468.20-803"
+  "22.3.15-i803"
+)
+
 declare -A driver_version_ubuntu
 driver_version_ubuntu[1.0.0]=${itex_1_0_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.1.0]=${itex_1_1_driver_version_ubuntu[@]}
 driver_version_ubuntu[1.2.0]=${itex_1_2_driver_version_ubuntu[@]}
 driver_version_ubuntu[2.13.0]=${itex_1_3_driver_version_ubuntu[@]}
 driver_version_ubuntu[2.14.0]=${itex_1_4_driver_version_ubuntu[@]}
+driver_version_ubuntu[2.14.0.2]=${itex_2_14_0_2_driver_version_ubuntu[@]}
 
 declare -A driver_version_rhel
 driver_version_rhel[1.0.0]=${itex_1_0_driver_version_rhel[@]}
@@ -233,12 +265,14 @@ driver_version_rhel[1.1.0]=${itex_1_1_driver_version_rhel[@]}
 driver_version_rhel[1.2.0]=${itex_1_2_driver_version_rhel[@]}
 driver_version_rhel[1.3.0]=${itex_1_3_driver_version_rhel[@]}
 driver_version_rhel[1.4.0]=${itex_1_4_driver_version_rhel[@]}
+driver_version_rhel[2.14.0.2]=${itex_1_4_driver_version_rhel[@]}
 
 declare -A driver_version_sles
 driver_version_sles[1.1.0]=${itex_1_1_driver_version_sles[@]}
 driver_version_sles[1.2.0]=${itex_1_2_driver_version_sles[@]}
 driver_version_sles[1.3.0]=${itex_1_3_driver_version_sles[@]}
 driver_version_sles[1.4.0]=${itex_1_4_driver_version_sles[@]}
+driver_version_sles[2.14.0.2]=${itex_2_14_0_2_driver_version_sles[@]}
 
 itex_1_0_oneapi_version=(
   "2022.2.0-8734"
@@ -275,6 +309,7 @@ oneapi_version[1.1.0]=${itex_1_1_oneapi_version[@]}
 oneapi_version[1.2.0]=${itex_1_2_oneapi_version[@]}
 oneapi_version[2.13.0]=${itex_1_3_oneapi_version[@]}
 oneapi_version[2.14.0]=${itex_1_4_oneapi_version[@]}
+oneapi_version[2.14.0.2]=${itex_1_4_oneapi_version[@]}
 
 
 tf_require_list=(

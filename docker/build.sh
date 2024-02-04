@@ -21,10 +21,10 @@ if [ $IMAGE_TYPE == "xpu" -o $IMAGE_TYPE == "gpu" ]
 then
         IMAGE_NAME=intel-extension-for-tensorflow:$IMAGE_TYPE
         docker build --no-cache --build-arg UBUNTU_VERSION=22.04 \
-                                --build-arg ICD_VER=23.30.26918.50-736~22.04 \
-                                --build-arg LEVEL_ZERO_GPU_VER=1.3.26918.50-736~22.04 \
-                                --build-arg LEVEL_ZERO_VER=1.13.1-719~22.04 \
-                                --build-arg LEVEL_ZERO_DEV_VER=1.13.1-719~22.04 \
+                                --build-arg ICD_VER=23.43.27642.38-803~22.04 \
+                                --build-arg LEVEL_ZERO_GPU_VER=1.3.27642.38-803~22.04 \
+                                --build-arg LEVEL_ZERO_VER=1.14.0-744~22.04 \
+                                --build-arg LEVEL_ZERO_DEV_VER=1.14.0-744~22.04 \
                                 --build-arg DPCPP_VER=2024.0.0-49819 \
                                 --build-arg MKL_VER=2024.0.0-49656 \
                                 --build-arg CCL_VER=2021.11.0-49156 \
