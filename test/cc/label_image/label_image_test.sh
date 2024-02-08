@@ -16,7 +16,8 @@
 
 function test_case_build {
     tf_dir=$1
-    test_target=$2
+    itex_cc_dir=$2
+    test_target=$3
 
     # Prepare depended Tensorflow* libraries
     if [ ! -d $(readlink -f $tf_dir) ]; then
@@ -46,11 +47,12 @@ function test_case_build {
     if [ "$test_target" == "CPU" ]; then
         build_target="ITEX_CPU_CC"
         make_file="Makefile.cpu"
+        sed -e "s#<TF_PATH>#$tf_dir#g" -e "s#<BUILD_TARGET>#$build_target#g" Makefile.tpl > $make_file
     else
         build_target="ITEX_GPU_CC"
         make_file="Makefile.gpu"
+        sed -e "s#<TF_PATH>#$tf_dir#g" -e "s#<ITEX_PATH>#$itex_cc_dir#g" -e "s#<BACKEND>#GPU#g" -e "s#<BUILD_TARGET>#$build_target#g" Makefile.tpl > $make_file
     fi
-    sed -e "s#<TF_PATH>#$tf_dir#g" -e "s#<BUILD_TARGET>#$build_target#g" Makefile.tpl > $make_file
 
     # Build
     [ -f label_image ] && rm -f label_image
@@ -121,7 +123,7 @@ function main {
     target=$3
 
     # Build
-    test_case_build $tf_cc_dir $target
+    test_case_build $tf_cc_dir $itex_cc_dir $target
 
     # Test
     run_test_case $itex_cc_dir $target
