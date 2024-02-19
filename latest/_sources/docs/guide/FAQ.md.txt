@@ -37,6 +37,11 @@
 
       - For Intel GPUs, Intel® Extension for TensorFlow* for XPU + stock TensorFlow\* provides the best performance of TensorFlow* on Intel GPUs. Install command: `pip install --upgrade intel-extension-for-tensorflow[xpu]`.
 
+4. **How can I install ARC GPU on my laptop?**
+
+   For driver installation, please refer to [install_for_xpu](https://github.com/intel/intel-extension-for-tensorflow/blob/main/docs/install/install_for_xpu.html) . Here is an example for [install ARC 730M on intel X15 laptop](https://github.com/intel/intel-extension-for-tensorflow/issues/54)
+
+
 ## Troubleshooting
 
 This section shows common problems and solutions for compilation and runtime issues you may encounter.
