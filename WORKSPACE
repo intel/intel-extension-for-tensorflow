@@ -32,7 +32,7 @@ load(
 #    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
 #    and update XLA_SHA256 with the result.
 
-XLA_COMMIT = "183c438d313a168193e2f41addc3defaa781c762"
+XLA_COMMIT = "9d1f771ac9f1c67d17ce466d2f9b366a95fe5019"
 
 new_git_repository(
     name = "intel_xla",
