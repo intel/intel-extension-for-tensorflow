@@ -397,6 +397,7 @@ struct SparseSplitFunctor<GPUDevice, T> {
                        device, input_nnz, rank, axis, slice_indexer,
                        sort_permutation_ptr, slice_ends_ptr, input_indices_ptr,
                        input_values_ptr, &output_indices, &output_values));
+    stream->wait();
   }
 };
 
