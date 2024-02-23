@@ -70,9 +70,9 @@ struct RnnModelConfig {
         "var_seq_length: %d, is_training: %d\n"
         "seq_length: %d, batch_size: %d, input_size: %d, output size: %d, "
         "cell_size: %d, num_gates: %d\n",
-        rnn_mode, dropout, recurrent_dropout, num_proj, var_seq_length,
-        is_training, max_seq_length, batch_size, input_size, output_size,
-        cell_size, num_gates);
+        static_cast<int>(rnn_mode), dropout, recurrent_dropout, num_proj,
+        var_seq_length, is_training, max_seq_length, batch_size, input_size,
+        output_size, cell_size, num_gates);
   }
 };
 
