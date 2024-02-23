@@ -100,7 +100,8 @@ class MHAFusionWithReshapeMatmul : public Fusion {
     int matmul_0_index = properties.map.at("batch_matmul_0");
     NodeDef* matmul_0 = ctx->graph_view.GetNode(matmul_0_index)->node();
     if (!NodeIsOnCpu(matmul_0) &&
-        (!isxehpc_value || matmul_0->attr().at("T").type() == DT_FLOAT)) {
+        (!isxehpc_value || !hasxmx_value ||
+         matmul_0->attr().at("T").type() == DT_FLOAT)) {
       // GPU fmha kernel doesn't support fp32.
       return false;
     }
@@ -296,8 +297,9 @@ class MHAPatternWithMulAndAdd : public Fusion {
     NodeDef* matmul_0 = ctx->graph_view.GetNode(matmul_0_index)->node();
     auto config = GetOptimizerConfigFlags();
     if (!NodeIsOnCpu(matmul_0) &&
-        (!isxehpc_value || (matmul_0->attr().at("T").type() == DT_FLOAT &&
-                            !config.enable_auto_mixed_precision))) {
+        (!isxehpc_value || !hasxmx_value ||
+         (matmul_0->attr().at("T").type() == DT_FLOAT &&
+          !config.enable_auto_mixed_precision))) {
       // GPU fmha kernel doesn't support fp32.
       return false;
     }

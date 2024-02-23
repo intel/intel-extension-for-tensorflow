@@ -24,7 +24,7 @@ from tensorflow.python.framework import test_util
 from tensorflow.python.framework import config
 from tensorflow.python.platform import test
 from tensorflow.core.protobuf import config_pb2
-from intel_extension_for_tensorflow.python.device import is_xehpc
+from intel_extension_for_tensorflow.python.device import is_xehpc, has_xmx
 
 tf.compat.v1.disable_eager_execution()
 
@@ -77,7 +77,7 @@ class AttentionInKerasStableDiffusionModel():
 class MHAFusionWithReshapeMatmulTest(test_util.TensorFlowTestCase):
 
     def testMHAFusionWithReshapeMatmul(self):
-        if config.list_logical_devices('XPU') and not is_xehpc():
+        if config.list_logical_devices('XPU') and (not is_xehpc() or not has_xmx()):
             self.skipTest("Only xehpc support xetla.")
         tf.random.set_seed(0)
         datatypes = [tf.float32, tf.bfloat16]
@@ -114,7 +114,7 @@ class MHAFusionWithReshapeMatmulTest(test_util.TensorFlowTestCase):
 class MHAPatternWithMulAndAddTest(test_util.TensorFlowTestCase):
 
     def testMHAPatternWithMulAndAdd(self):
-        if config.list_logical_devices('XPU') and not is_xehpc():
+        if config.list_logical_devices('XPU') and (not is_xehpc() or not has_xmx()):
             self.skipTest("Only xehpc support xetla.")
         tf.random.set_seed(0)
         datatypes = [tf.float32, tf.bfloat16]
