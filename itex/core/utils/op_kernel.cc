@@ -241,7 +241,7 @@ Status OpKernelContext::forward_input_or_allocate_output(
     PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tensor, status_);
     if (pjrt_c_buffer == nullptr) {
       int device_id = TF_GetDeviceId(ctx_);
-      PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+      static PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
       int rank = output_shape.dims();
       std::vector<int64_t> dimensions(rank);
       for (int d = 0; d < rank; ++d) {
@@ -340,7 +340,7 @@ Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
 #ifdef USING_NEXTPLUGGABLE_DEVICE
   if (pointer_is_pjrt_tensor(output)) {
     int device_id = TF_GetDeviceId(ctx_);
-    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+    static PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
     int rank = shape.dims();
     std::vector<int64_t> dimensions(rank);
     for (int d = 0; d < rank; ++d) {
@@ -384,7 +384,7 @@ Status OpKernelContext::allocate_temp(
 #ifdef USING_NEXTPLUGGABLE_DEVICE
   if (pointer_is_pjrt_tensor(tmp)) {
     int device_id = TF_GetDeviceId(ctx_);
-    PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
+    static PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
 
     int rank = shape.dims();
     std::vector<int64_t> dimensions(rank);
