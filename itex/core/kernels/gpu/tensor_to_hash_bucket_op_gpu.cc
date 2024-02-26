@@ -76,7 +76,8 @@ struct ComputeHashes {
     if (gid >= vals_size) return;
 
     auto lid = item.get_local_linear_id();
-    char* s = local_acc.get_pointer().get();
+    char* s =
+        local_acc.template get_multi_ptr<sycl::access::decorated::no>().get();
     int size =
         IntegerToString(vals[gid], s + lid * kSharedMemBufferSizePerThread);
     uint64_t a_hash = ::util_gpu::Fingerprint64(
