@@ -51,7 +51,9 @@ struct FillKernelTask {
   void operator()(sycl::nd_item<1> myItem) const {
     // Items in a group share `philox`. Item 0 is responsible for
     // initializing it.
-    char* philox_raw = local_philox_acc.get_pointer();
+    char* philox_raw =
+        local_philox_acc.template get_multi_ptr<sycl::access::decorated::no>()
+            .get();
     PhiloxRandom* philox = reinterpret_cast<PhiloxRandom*>(philox_raw);
     auto id = myItem.get_local_id()[0];
     if (id == 0) {
@@ -104,10 +106,12 @@ void FillKernel(const GPUDevice& d, const int total_count, Distribution dist,
   sycl::buffer<int, 1> item_count_buf{&item_count, 1};
 
   stream->submit([&](sycl::handler& cgh) {
-    auto item_count_ptr = item_count_buf
-                              .get_access<sycl::access::mode::read_write,
-                                          sycl::access::target::device>(cgh)
-                              .get_pointer();
+    auto item_count_ptr =
+        item_count_buf
+            .get_access<sycl::access::mode::read_write,
+                        sycl::access::target::device>(cgh)
+            .template get_multi_ptr<sycl::access::decorated::no>()
+            .get();
     sycl::local_accessor<char, 1> local_philox_acc(
         sycl::range<1>(sizeof(PhiloxRandom)), cgh);
     FillKernelTask<Distribution> task(local_philox_acc, state_data, output_data,
