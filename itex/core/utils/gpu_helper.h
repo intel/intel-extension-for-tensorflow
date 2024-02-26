@@ -353,12 +353,7 @@ void DispatchToVectorized(int64_t max_vec_size, Args&&... args) {
 template <typename T, int Dims = 1>
 inline T* ITEXGetLocalAccPointer(
     const sycl::local_accessor<T, Dims>& accessor) {
-  if constexpr (std::is_same_v<decltype(accessor.get_pointer()),
-                               sycl::local_ptr<T>>) {
-    return accessor.get_pointer().get();
-  } else {
-    return accessor.get_pointer();
-  }
+  return accessor.template get_multi_ptr<sycl::access::decorated::no>().get();
 }
 }  // namespace  itex
 
