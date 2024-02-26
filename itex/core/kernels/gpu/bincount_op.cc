@@ -387,7 +387,8 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, true> {
         local_acc(local_acc) {}
   void operator()(sycl::nd_item<1> item) const {
     const int out_size = num_rows * num_bins;
-    T* shared_col_bins = local_acc.get_pointer();
+    T* shared_col_bins =
+        local_acc.template get_multi_ptr<sycl::access::decorated::no>().get();
     for (unsigned int binIdx = item.get_local_id(0); binIdx < out_size;
          binIdx += item.get_local_range(0)) {
       shared_col_bins[binIdx] = T(0);
@@ -449,7 +450,8 @@ struct BincountColReduceSharedKernel<Tidx, T, binary_count, false> {
         local_acc(local_acc) {}
   void operator()(sycl::nd_item<1> item) const {
     const int out_size = num_rows * num_bins;
-    T* shared_col_bins = local_acc.get_pointer();
+    T* shared_col_bins =
+        local_acc.template get_multi_ptr<sycl::access::decorated::no>().get();
     for (unsigned int binIdx = item.get_local_id(0); binIdx < out_size;
          binIdx += item.get_local_range(0)) {
       shared_col_bins[binIdx] = T(0);
