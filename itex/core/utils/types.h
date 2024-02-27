@@ -235,11 +235,13 @@ inline bool IsRefType(DataType dtype) {
 }
 inline DataType MakeRefType(DataType dtype) {
   ITEX_DCHECK(!IsRefType(dtype));
-  return static_cast<DataType>(dtype + kDataTypeRefOffset);
+  return static_cast<DataType>(static_cast<int>(dtype) +
+                               static_cast<int>(kDataTypeRefOffset));
 }
 inline DataType RemoveRefType(DataType dtype) {
   ITEX_DCHECK(IsRefType(dtype));
-  return static_cast<DataType>(dtype - kDataTypeRefOffset);
+  return static_cast<DataType>(static_cast<int>(dtype) -
+                               static_cast<int>(kDataTypeRefOffset));
 }
 inline DataType BaseType(DataType dtype) {
   return IsRefType(dtype) ? RemoveRefType(dtype) : dtype;
