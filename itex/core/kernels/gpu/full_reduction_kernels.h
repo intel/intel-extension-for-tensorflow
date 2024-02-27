@@ -155,10 +155,9 @@ struct GroupReduceKernel<itex::int64, OutputT, InputFunctor, OutputFunctor,
     const int sg_num = sg.get_group_linear_range();
 
     // subgroup number is expected to <= 32
-    sycl::multi_ptr<InitValueT[32], sycl::access::address_space::local_space>
-        scratch = sycl::ext::oneapi::group_local_memory<InitValueT[32]>(
-            item.get_group());
-    auto* ref_scratch = scratch.get();
+    auto* ref_scratch =
+        sycl::ext::oneapi::group_local_memory<InitValueT[32]>(item.get_group())
+            .get();
 
     int cur_sg_num = sg_num;
     InitValueT result = SGReduce(sg, data);
