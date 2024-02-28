@@ -339,13 +339,21 @@ Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
                         shape.dim_sizes().data(), shape.dims(), size, status_);
 #ifdef USING_NEXTPLUGGABLE_DEVICE
   if (pointer_is_pjrt_tensor(output)) {
+    ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
+    bool is_pjrt_buffer_cached = npdConfig.isPJRTBufferCached();
+
     int device_id = TF_GetDeviceId(ctx_);
     static PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
     int rank = shape.dims();
     std::vector<int64_t> dimensions(rank);
+    std::vector<int64_t> layout(rank);
+
     for (int d = 0; d < rank; ++d) {
       dimensions[d] = shape.dim_size(d);
     }
+
+    std::iota(layout.rbegin(), layout.rend(), 0);
+
     if (npdConfig_.isXlaAutoJitEnabled()) {
       std::vector<int64_t> layout(rank);
       std::iota(layout.rbegin(), layout.rend(), 0);
@@ -354,6 +362,57 @@ Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
           ITEXCreateSEPjRtBuffer(device_id, DataTypeString(out_type),
                                  dimensions, layout, pjrt_c_client),
           "XPU", status_);
+    } else if (is_pjrt_buffer_cached) {
+      TensorShape& prev_output_shape = (*output_shape_in_first_step_)[index];
+      auto* itex_pjrt_buffer = (*itex_pjrt_buffer_ptr_)[index].get();
+
+      if (itex_pjrt_buffer && prev_output_shape == shape) {
+        auto* pjrt_buffer = itex_pjrt_buffer->get_pjrt_buffer();
+        ITEX_VLOG(1) << "Enter PJRT_Buffer cache process, try to recover "
+                        "cached PJRT_Buffer "
+                     << pjrt_buffer;
+        if (ITEXRecoverPjRtBuffer(pjrt_buffer)) {
+          ITEX_VLOG(1) << "Recover PJRT_Buffer " << pjrt_buffer
+                       << " successful.";
+          TF_CreatePjRtBuffer(output, pjrt_buffer, "XPU", status_);
+        } else {
+          // This path is used for operators with same op_type and sharing the
+          // same context in eager mode. Entering this path means another
+          // operator is still using device memory and would result in failure
+          // of PJRT Buffer's recovery, so just create a new one to avoid
+          // conflict.
+          ITEX_VLOG(1) << "Entered PJRT_Buffer cache procee but failed in "
+                          "recovering PJRT_Buffer "
+                       << pjrt_buffer;
+          TF_CreatePjRtBuffer(
+              output,
+              ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type),
+                                   &dimensions, size, pjrt_c_client),
+              "XPU", status_);
+        }
+      } else if (!itex_pjrt_buffer) {
+        (*itex_pjrt_buffer_ptr_)[index] = std::make_shared<ITEX_PJRT_Buffer>(
+            ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type),
+                                 &dimensions, size, pjrt_c_client));
+        auto* pjrt_buffer = (*itex_pjrt_buffer_ptr_)[index]->get_pjrt_buffer();
+        ITEXSetHoldPjRtBuffer(pjrt_buffer);
+        ITEX_VLOG(1)
+            << "Initialize PJRT_Buffer cache and create a new PJRT_Buffer "
+            << pjrt_buffer;
+        if (shape.num_elements()) (*output_shape_in_first_step_)[index] = shape;
+
+        TF_CreatePjRtBuffer(output, pjrt_buffer, "XPU", status_);
+      } else {
+        // Entering this path means PJRT_Buffer cache mechanism is not suitable
+        // for current case.
+        auto* pjrt_buffer =
+            ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type),
+                                 &dimensions, size, pjrt_c_client);
+        ITEX_VLOG(1) << "Can't enter PJRT_Buffer cache process and create a "
+                        "new PJRT_Buffer "
+                     << pjrt_buffer;
+        TF_CreatePjRtBuffer(output, pjrt_buffer, "XPU", status_);
+      }
     } else {
       TF_CreatePjRtBuffer(
           output,
@@ -718,7 +777,15 @@ const char* OpKernelConstruction::OpName() const {
 }
 
 OpKernel::OpKernel(OpKernelConstruction* context)
-    : op_name(context->OpName()) {}
+#ifndef USING_NEXTPLUGGABLE_DEVICE
+    : op_name(context->OpName()) {
+}
+#else
+    : op_name(context->OpName()),
+      output_shape_in_first_step_(OUTPUT_SIZE, TensorShape()),
+      itex_pjrt_buffer_(OUTPUT_SIZE, nullptr) {
+}
+#endif  // USING_NEXTPLUGGABLE_DEVICE
 
 OpKernel::~OpKernel() {}
 
