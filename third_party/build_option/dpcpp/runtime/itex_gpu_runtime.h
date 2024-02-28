@@ -140,7 +140,7 @@ class ITEXNpdConfig {
   ITEXNpdConfig(ITEXNpdConfig const&) = delete;
   void operator=(ITEXNpdConfig const&) = delete;
 
-  bool isNextPluggableDeviceEnabled_ = false;
+  bool isNextPluggableDeviceEnabled_ = true;
   bool isXlaAutoJitEnabled_ = false;
   bool isPJRTBufferCached_ = true;
 };
