@@ -1763,6 +1763,31 @@ index dcb6a3c8c..981a66a82 100644
  /* static */ tsl::Status GpuDriver::SynchronousMemsetUint8(GpuContext* context,
                                                             CUdeviceptr location,
                                                             uint8_t value,
+diff --git a/xla/stream_executor/device_memory.h b/xla/stream_executor/device_memory.h
+index f69fe8148..6df3b4dc5 100644
+--- a/xla/stream_executor/device_memory.h
++++ b/xla/stream_executor/device_memory.h
+@@ -85,9 +85,6 @@ class DeviceMemoryBase {
+     return opaque() == other.opaque() && size() == other.size();
+   }
+ 
+- protected:
+-  friend class StreamExecutor;
+-
+   // Resets the internal values of the opaque pointer and number of bytes in the
+   // memory region, just as in the constructor.
+   void Reset(void *opaque, uint64_t bytes) {
+@@ -95,6 +92,10 @@ class DeviceMemoryBase {
+     size_ = bytes;
+   }
+ 
++ protected:
++  friend class StreamExecutor;
++
++
+  private:
+   void *opaque_;  // Platform-dependent value representing allocated memory.
+   uint64_t size_;         // Size in bytes of this allocation.
 diff --git a/xla/stream_executor/gpu/BUILD b/xla/stream_executor/gpu/BUILD
 index c8cd4f558..9947a718a 100644
 --- a/xla/stream_executor/gpu/BUILD

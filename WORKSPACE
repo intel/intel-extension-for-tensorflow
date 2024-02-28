@@ -32,13 +32,13 @@ load(
 #    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
 #    and update XLA_SHA256 with the result.
 
-XLA_COMMIT = "e78e10c1797d017ffda749fb618df7404a00c6a1"
+XLA_COMMIT = "8a768ce1813c1f9dcc8091af28e47bfedac10440"
 
 new_git_repository(
     name = "intel_xla",
     build_file = clean_dep("//third_party/intel_xla:intel_xla.BUILD"),
     commit = XLA_COMMIT,
-    remote = "https://github.com/intel/intel-extension-for-openxla.git",
+    remote = "https://github.com/intel-innersource/frameworks.ai.intel-extension-for-openxla.intel-extension-for-openxla.git",
     verbose = True,
 )
 

@@ -53,6 +53,10 @@ limitations under the License.
 #include "itex/core/devices/gpu/gpu_device_plugin.h"
 #endif  // INTEL_CPU_ONLY
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+#define OUTPUT_SIZE 8
+#endif  // USING_NEXTPLUGGABLE_DEVICE
+
 namespace itex {
 
 class OpKernelContext;
@@ -306,6 +310,13 @@ class OpKernelContext {
   //                         Tensor** tensor,
   //                         AllocatorAttributes attr) TF_MUST_USE_RESULT;
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  Status allocate_output(int index, const TensorShape& shape,
+                         const TensorShape& prev_shape, Tensor** tensor,
+                         std::shared_ptr<ITEX_PJRT_Buffer> itex_pjrt_buffer)
+      TF_MUST_USE_RESULT;
+#endif
+
   Status allocate_temp(DataType type, const TensorShape& shape,
                        Tensor* out_temp, AllocatorAttributes allocator_attr,
                        const AllocationAttributes& allocation_attr);
@@ -414,6 +425,22 @@ class OpKernelContext {
 
   TF_OpKernelContext* Get() { return ctx_; }
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  void init_pjrt_buffer_cache(
+      gtl::InlinedVector<TensorShape, OUTPUT_SIZE>* prev_shape,
+      gtl::InlinedVector<std::shared_ptr<ITEX_PJRT_Buffer>, OUTPUT_SIZE>*
+          itex_pjrt_buffer) {
+    output_shape_in_first_step_ = prev_shape;
+    itex_pjrt_buffer_ptr_ = itex_pjrt_buffer;
+
+    int output_num = num_outputs();
+    if (output_num > OUTPUT_SIZE) {
+      output_shape_in_first_step_->resize(output_num);
+      itex_pjrt_buffer_ptr_->resize(output_num);
+    }
+  }
+#endif  // USING_NEXTPLUGGABLE_DEVICE
+
  private:
   OpKernelContext() = delete;
   OpKernelContext(const OpKernelContext&) = delete;
@@ -465,6 +492,9 @@ class OpKernelContext {
 #endif
 #ifdef USING_NEXTPLUGGABLE_DEVICE
   ITEXNpdConfig& npdConfig_;
+  gtl::InlinedVector<TensorShape, OUTPUT_SIZE>* output_shape_in_first_step_;
+  gtl::InlinedVector<std::shared_ptr<ITEX_PJRT_Buffer>, OUTPUT_SIZE>*
+      itex_pjrt_buffer_ptr_;
 #endif
 };
 
@@ -629,9 +659,25 @@ class OpKernel {
 
   std::string TraceString(const OpKernelContext& ctx) const;
 
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  gtl::InlinedVector<TensorShape, OUTPUT_SIZE>* get_prev_shape() {
+    return &output_shape_in_first_step_;
+  }
+
+  gtl::InlinedVector<std::shared_ptr<ITEX_PJRT_Buffer>, OUTPUT_SIZE>*
+  get_itex_pjrt_buffer() {
+    return &itex_pjrt_buffer_;
+  }
+#endif
+
  private:
   absl::string_view op_name;
   absl::string_view op_type;
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  gtl::InlinedVector<TensorShape, OUTPUT_SIZE> output_shape_in_first_step_;
+  gtl::InlinedVector<std::shared_ptr<ITEX_PJRT_Buffer>, OUTPUT_SIZE>
+      itex_pjrt_buffer_;
+#endif
 };
 
 class AsyncOpKernel : public OpKernel {
@@ -813,6 +859,14 @@ inline void RunWithSyncHandler(
 inline void RunOrWaitUntilFinish(
     OpKernelContext* context, OpKernel* op,
     AsyncOpKernel::DoneCallback* callback = nullptr) {
+#ifdef USING_NEXTPLUGGABLE_DEVICE
+  auto& npdConfig = ITEXNpdConfig::getNpdConfig();
+  if (npdConfig.ifUsingNextPluggableDevice()) {
+    context->init_pjrt_buffer_cache(op->get_prev_shape(),
+                                    op->get_itex_pjrt_buffer());
+  }
+#endif
+
 #ifndef INTEL_CPU_ONLY
   if (IsSyncExecEnabled()) {
     auto start = std::chrono::steady_clock::now();

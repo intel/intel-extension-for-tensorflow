@@ -62,6 +62,12 @@ PJRT_Buffer* ITEXCreateSEPjRtBuffer(int device_id, std::string datatype,
                                     std::vector<int64_t> dimentions,
                                     std::vector<int64_t> layout, PJRT_Client*);
 
+void ITEXDeletePjRtBuffer(PJRT_Buffer*);
+
+bool ITEXRecoverPjRtBuffer(PJRT_Buffer*);
+
+void ITEXSetHoldPjRtBuffer(PJRT_Buffer*);
+
 void* ITEXGetStreamFromPjRtDevice(int device_id, PJRT_Client*);
 
 PJRT_Buffer* ITEXSameDevicePjRtBufferCopy(PJRT_Buffer* src_buffer,
@@ -76,17 +82,34 @@ void* ITEXBFCAllocateOnSyclDevice(const sycl::device& device,
 void ITEXBFCDeallocateOnSyclDevice(const sycl::device& device,
                                    PJRT_Client* pjrt_c_client, void* addr);
 
+class ITEX_PJRT_Buffer {
+ public:
+  ITEX_PJRT_Buffer(ITEX_PJRT_Buffer& other)
+      : pjrt_buffer_(other.get_pjrt_buffer()) {}
+  ITEX_PJRT_Buffer& operator=(ITEX_PJRT_Buffer& other) {
+    pjrt_buffer_ = other.get_pjrt_buffer();
+    return *this;
+  }
+  ITEX_PJRT_Buffer(PJRT_Buffer* pjrt_buffer) : pjrt_buffer_(pjrt_buffer) {}
+  ~ITEX_PJRT_Buffer() { ITEXDeletePjRtBuffer(pjrt_buffer_); }
+  inline PJRT_Buffer* get_pjrt_buffer() { return pjrt_buffer_; }
+
+ private:
+  PJRT_Buffer* pjrt_buffer_;
+};
+
 class ITEXNpdConfig {
  public:
   static ITEXNpdConfig& getNpdConfig() {
     static ITEXNpdConfig npdConfig;
     return npdConfig;
   }
-  bool isXlaAutoJitEnabled() const { return isXlaAutoJitEnabled_; }
-  bool ifUsingNextPluggableDevice() const {
+  inline bool isXlaAutoJitEnabled() const { return isXlaAutoJitEnabled_; }
+  inline bool isPJRTBufferCached() const { return isPJRTBufferCached_; };
+  inline bool ifUsingNextPluggableDevice() const {
     return isNextPluggableDeviceEnabled_;
   }
-  bool IfEnableNextPluggableDevice() {
+  inline bool IfEnableNextPluggableDevice() {
     if (isXlaAutoJitEnabled() || ifUsingNextPluggableDevice()) {
       return true;
     }
@@ -96,7 +119,7 @@ class ITEXNpdConfig {
  private:
   ITEXNpdConfig() {
     const char* npdEnv = std::getenv("ITEX_ENABLE_NEXTPLUGGABLE_DEVICE");
-    if (npdEnv != nullptr) {
+    if (npdEnv) {
       std::string env_value = absl::AsciiStrToLower(npdEnv);
       isNextPluggableDeviceEnabled_ =
           (env_value == "1" || env_value == "true") ? true : false;
@@ -106,12 +129,20 @@ class ITEXNpdConfig {
       setenv("ITEX_LAYOUT_OPT", "0", 0);
       setenv("ITEX_ENABLE_MULTIPLE_STREAM", "1", 0);
     }
+
+    const char* npdCacheEnv = std::getenv("ITEX_CACHE_PJRT_BUFFER");
+    if (npdCacheEnv) {
+      std::string env_value = absl::AsciiStrToLower(npdCacheEnv);
+      isPJRTBufferCached_ =
+          (env_value == "1" || env_value == "true") ? true : false;
+    }
   }
   ITEXNpdConfig(ITEXNpdConfig const&) = delete;
   void operator=(ITEXNpdConfig const&) = delete;
 
   bool isNextPluggableDeviceEnabled_ = false;
   bool isXlaAutoJitEnabled_ = false;
+  bool isPJRTBufferCached_ = true;
 };
 
 #endif  // USING_NEXTPLUGGABLE_DEVICE
