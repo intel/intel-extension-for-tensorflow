@@ -36,7 +36,7 @@ parser.add_argument(
 parser.add_argument(
     "--precision", default="fp32", type=str, help="precision, only support(fp32, fp16)"
 )
-parser.add_argument("--iterations", type=int, default=2, help="number of iterations")
+parser.add_argument("--iterations", type=int, default=200, help="number of iterations")
 args = parser.parse_args()
 
 
