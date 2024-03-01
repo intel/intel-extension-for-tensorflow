@@ -254,7 +254,7 @@ void BFCAllocator::InsertFreeChunkIntoBin(BFCAllocator::ChunkHandle h) {
 // and the size want to get from system.
 size_t BFCAllocator::GetLimitAlloc() {
   // set default limit to 4GB
-  int64 limit_size = 4 * 1024;
+  int64 limit_size = 4 * 1024 - 1;
   if (IsXeHPC(device_)) {
     // If on XeHPC platform, set limit of 75% of system avalable
     // memory, and remaining 25% for further extension or other
