@@ -339,8 +339,7 @@ Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
                         shape.dim_sizes().data(), shape.dims(), size, status_);
 #ifdef USING_NEXTPLUGGABLE_DEVICE
   if (pointer_is_pjrt_tensor(output)) {
-    ITEXNpdConfig& npdConfig = ITEXNpdConfig::getNpdConfig();
-    bool is_pjrt_buffer_cached = npdConfig.isPJRTBufferCached();
+    static bool is_pjrt_buffer_cached = npdConfig_.isPJRTBufferCached();
 
     int device_id = TF_GetDeviceId(ctx_);
     static PJRT_Client* pjrt_c_client = TF_GetPjRtCClient("XPU", status_);
@@ -384,6 +383,7 @@ Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
           ITEX_VLOG(1) << "Entered PJRT_Buffer cache procee but failed in "
                           "recovering PJRT_Buffer "
                        << pjrt_buffer;
+          is_pjrt_buffer_cached = false;
           TF_CreatePjRtBuffer(
               output,
               ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type),
@@ -405,6 +405,7 @@ Status OpKernelContext::allocate_output(int index, const TensorShape& shape,
       } else {
         // Entering this path means PJRT_Buffer cache mechanism is not suitable
         // for current case.
+        is_pjrt_buffer_cached = false;
         auto* pjrt_buffer =
             ITEXCreatePjRtBuffer(device_id, DataTypeString(out_type),
                                  &dimensions, size, pjrt_c_client);
