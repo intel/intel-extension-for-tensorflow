@@ -43,7 +43,7 @@ EXPOSE 8501
 ARG TF_SERVING_BINARY=tensorflow_model_server
 ARG TF_PLUGIN_TAR=itex-bazel-bin.tar
 
-COPY models/binaries/${TF_SERVING_BINARY}  /usr/local/bin/tensorflow_model_server
+COPY models/binaries/${TF_SERVING_BINARY}  /usr/bin/tensorflow_model_server
 COPY models/binaries/${TF_PLUGIN_TAR} /tmp/itex-bazel-bin.tar
 
 RUN mkdir -p /itex && tar -xvf /tmp/itex-bazel-bin.tar -C /itex && \
@@ -64,7 +64,7 @@ if [ ${ITEX_OMP_THREADPOOL} == 1 ]; then \n\
 else \n\
     DIR=/itex/itex-bazel-bin/bin_threadpool/itex \n\
 fi \n\
-/usr/local/bin/tensorflow_model_server --port=8500 --rest_api_port=8501 \
+/usr/bin/tensorflow_model_server --port=8500 --rest_api_port=8501 \
 --model_name=${MODEL_NAME} --model_base_path=${MODEL_BASE_PATH}/${MODEL_NAME} \
 --tensorflow_plugins=${DIR} \
 "$@"' > /usr/bin/tf_serving_entrypoint.sh \
