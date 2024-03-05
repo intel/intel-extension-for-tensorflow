@@ -148,7 +148,7 @@ index 03467d6a..26dfdb99 100644
      bool enable_signature_method_name_check = false;
      bool enable_profiler = true;
 +#ifdef SUPPORT_TF_PLUGINS
-+    string tensorflow_plugins = "";
++    string tensorflow_plugins = "/itex/itex-bazel-bin/itex";
 +#endif
  
      Options();
