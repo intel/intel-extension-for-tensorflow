@@ -1,5 +1,5 @@
 name: Publish
-permissions: read-all
+permissions: {}
 
 on:
   push:
@@ -14,12 +14,16 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build Online Document
+      permissions:
+        contents: read
       run: |
         git config --local --get remote.origin.url
         cd docs/build_docs
         bash build.sh latest
         
     - name: Push to github
+      permissions:
+        contents: write
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
