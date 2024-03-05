@@ -128,6 +128,7 @@ class ITEXNpdConfig {
       setenv("ITEX_REMAPPER", "0", 0);
       setenv("ITEX_LAYOUT_OPT", "0", 0);
       setenv("ITEX_ENABLE_MULTIPLE_STREAM", "1", 0);
+      setenv("MHA", "0", 0);
     }
 
     const char* npdCacheEnv = std::getenv("ITEX_CACHE_PJRT_BUFFER");
