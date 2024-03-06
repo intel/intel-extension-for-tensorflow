@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g3e3adb2 documentation</title>
+  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g008c7f1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
@@ -198,14 +198,10 @@ Run the following command to pull Intel® Extension for TensorFlow* Docker conta
 $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path intel/intel-extension-for-tensorflow:xpu
 </pre></div>
 </div>
-<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">xpu</span></code>) to your local machine and set the required environment variables after creating the container by the following command.</p>
+<p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">xpu</span></code>) to your local machine and use the script to set the required environment variables after creating the container by the following command. You can also get the script via <a class="reference external" href="../../docker/horovod-vars.sh">horovod-vars.sh</a></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:xpu
 $ docker run -it -p 8888:8888 --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path --ipc=host intel/intel-extension-for-tensorflow:xpu
-$ export LD_LIBRARY_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib:$LD_LIBRARY_PATH
-$ export PATH=/opt/intel/oneapi/redist/bin:$PATH
-$ export I_MPI_ROOT=/opt/intel/oneapi/redist/lib
-$ export CCL_ROOT=/opt/intel/oneapi/redist
-$ export FI_PROVIDER_PATH=/opt/intel/oneapi/redist/opt/mpi/libfabric/lib/prov
+$ source /opt/intel/horovod-vars.sh
 </pre></div>
 </div>
 <p>Then go to your browser on http://localhost:8888/</p>
@@ -279,7 +275,8 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l
 </div>
 <section id="check-the-environment-for-xpu">
 <h4>Check the Environment for XPU<a class="headerlink" href="#check-the-environment-for-xpu" title="Permalink to this heading"></a></h4>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>bash<span class="w"> </span>/path<span class="w"> </span>to<span class="w"> </span>site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">path_to_site_packages</span><span class="o">=</span><span class="sb">`</span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import site; print(site.getsitepackages()[0])&quot;</span><span class="sb">`</span>
+<span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>bash<span class="w"> </span><span class="si">${</span><span class="nv">path_to_site_packages</span><span class="si">}</span>/intel_extension_for_tensorflow/tools/env_check.sh
 </pre></div>
 </div>
 </section>
@@ -324,13 +321,13 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022-2023 Intel Corporation.</p>
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fcecc050550> 
+   <jinja2.runtime.BlockReference object at 0x7fe01bbc2b30> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

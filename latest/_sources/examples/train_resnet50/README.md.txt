@@ -15,7 +15,7 @@ Verified Hardware Platforms:
 ### Model Code change
 We optimized bf16 in resnet50.patch, and enable horovod and LARS in hvd_support.patch, please apply patch
 ```
-git clone -b v2.8.0 https://github.com/tensorflow/models.git tensorflow-models
+git clone -b v2.14.0 https://github.com/tensorflow/models.git tensorflow-models
 ```
 
 ### Prepare for GPU (Skip this step for CPU)
@@ -55,7 +55,7 @@ Please see the following [example snippet](https://github.com/tensorflow/dataset
 Legacy TFRecords
 Download the ImageNet dataset and convert it to TFRecord format. The following [script](https://github.com/tensorflow/tpu/blob/master/tools/datasets/imagenet_to_gcs.py) and [README](https://github.com/tensorflow/tpu/tree/master/tools/datasets#imagenet_to_gcspy) provide a few options.
 
-Note that the legacy ResNet runners, e.g. [resnet/resnet_ctl_imagenet_main.py](https://github.com/tensorflow/models/blob/v2.8.0/official/vision/image_classification/resnet/resnet_ctl_imagenet_main.py) require TFRecords whereas `classifier_trainer.py` can use both by setting the builder to 'records' or 'tfds' in the configurations.
+Note that the legacy ResNet runners, e.g. [resnet/resnet_ctl_imagenet_main.py](https://github.com/tensorflow/models/blob/v2.14.0/official/legacy/image_classification/resnet/resnet_ctl_imagenet_main.py) require TFRecords whereas `classifier_trainer.py` can use both by setting the builder to 'records' or 'tfds' in the configurations.
 
 ## Execution
 ### Set Model Parameters
@@ -78,7 +78,7 @@ else
     rm -rf $MODEL_DIR && mkdir -p $MODEL_DIR                         
 fi
 
-python ${PYTHONPATH}/official/vision/image_classification/classifier_trainer.py \
+python ${PYTHONPATH}/official/legacy/image_classification/classifier_trainer.py \
 --mode=train_and_eval \
 --model_type=resnet \
 --dataset=imagenet \
@@ -101,7 +101,7 @@ NUMBER_OF_PROCESS=2
 PROCESS_PER_NODE=2
 
 mpirun -np $NUMBER_OF_PROCESS -ppn $PROCESS_PER_NODE --prepend-rank \
-python ${PYTHONPATH}/official/vision/image_classification/classifier_trainer.py \
+python ${PYTHONPATH}/official/legacy/image_classification/classifier_trainer.py \
 --mode=train_and_eval \
 --model_type=resnet \
 --dataset=imagenet \

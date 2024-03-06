@@ -68,7 +68,8 @@ pip install --upgrade intel-extension-for-tensorflow[xpu]
 Environment check instructions for XPU:
 
 ```bash
-bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
+bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
 ```
 
 Refer to [XPU installation](docs/install/install_for_xpu.html) for details.
@@ -85,16 +86,26 @@ python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__
 
 ### Install for weekly binaries
 
-GPU weekly binaries are available for testing, CPU weekly binaries will be coming soon.
-#### Install for GPU weekly
+#### Install for XPU weekly
 ```
-pip install --upgrade intel-extension-for-tensorflow-weekly[gpu] -f https://developer.intel.com/itex-whl-weekly
+pip install --upgrade intel-extension-for-tensorflow-weekly[xpu] -f https://developer.intel.com/itex-whl-weekly
 ```
 
 Environment check instructions for GPU weekly:
 
 ```bash
-bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
+bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
+```
+
+#### Install for CPU weekly
+```
+pip install --upgrade intel-extension-for-tensorflow-weekly[cpu] -f https://developer.intel.com/itex-whl-weekly
+```
+
+Sanity check instructions:
+```
+python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
 ```
 
 ## Documentation 
@@ -110,10 +121,11 @@ This project is intended to be a safe, welcoming space for collaboration, and co
 ## Resources
 - [TensorFlow GPU device plugins](https://www.tensorflow.org/install/gpu_plugins)
 - [Accelerating TensorFlow on Intel® Data Center GPU Flex Series](https://blog.tensorflow.org/2022/10/accelerating-tensorflow-on-intel-data-center-gpu-flex-series.html)
-- [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://cqpreview.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
+- [Meet the Innovation of Intel AI Software: Intel® Extension for TensorFlow*](https://www.intel.com/content/www/us/en/developer/articles/technical/innovation-of-ai-software-extension-tensorflow.html)
 - [Efficient TensorFlow Distributed Training on Intel Data Center GPU Max Series](https://medium.com/intel-analytics-software/efficient-tensorflow-distributed-training-on-intel-data-center-gpu-max-series-c01f3043a0cc)
 - [Accelerate JAX models on Intel GPUs via PJRT](https://opensource.googleblog.com/2023/06/accelerate-jax-models-on-intel-gpus-via-pjrt.html)
 - [Running TensorFlow Stable Diffusion on Intel Arc GPUs](https://medium.com/intel-analytics-software/running-tensorflow-stable-diffusion-on-intel-arc-gpus-e6ff0d2b7549)
+- [AI workload Acceleration with Intel® Extension for TensorFlow* | Intel Software](https://www.youtube.com/watch?v=Wivx0IYKzpk)
 
 ## Support
 Submit your questions, feature requests, and bug reports on the [GitHub issues](https://github.com/intel/intel-extension-for-tensorflow/issues) page.

@@ -49,7 +49,8 @@ source /path/to/intel/oneapi/mkl/latest/env/vars.sh
 
 Check the environment for GPU:
 ```bash
-bash /path to site-packages/intel_extension_for_tensorflow/tools/env_check.sh
+export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
+bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
 ```
 Verify install:
 ```

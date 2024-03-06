@@ -68,6 +68,12 @@ docker run -v <your-local-dir>:/workspace \
            $IMAGE_NAME bash
 ```
 
+>**Note**: Only for distributed training workloads with Intel® Optimization for Horovod*, the following script should be executed to set the required environment variables after entering the container:
+```
+source /opt/intel/horovod-vars.sh
+```
+
+
 ## Verify That Intel GPU is Accessible From TensorFlow
 You are inside the container now. Run this command to verify the Intel GPU is visible to TensorFlow:
 
