@@ -1,14 +1,17 @@
 import configparser
+import importlib.util
 import json
 import os
-import sys
 import platform
-import distro
 import pip
+import sys
 import subprocess
-import importlib
+import wget
 
-def getConfig(filename):
+def getConfig(url):
+  filename = './local_config.json'
+  if os.path.exists(filename) is False:
+    wget.download(url, filename)
   with open(filename, 'r') as f:
     config = json.load(f)
     return config
@@ -50,8 +53,12 @@ def check_os():
   if system_type != 'Linux':
     exit("We only Support Linux System\n")
 
-  os_id = distro.id()
-  os_version = distro.version()
+  with open('/etc/os-release', 'r') as f:
+    for line in f:
+      if line.startswith('NAME='):
+        os_id = line.strip().split('=')[1].lower().strip('"')
+      if line.startswith('VERSION_ID='):
+        os_version = line.strip().split('=')[1].strip('"')
   if os_id in config['os_list']:
     if os_version in config['os_version'][os_id][itex_version]:
       print("\tOS " + os_id + ":" + os_version + " is Supported")
@@ -124,9 +131,10 @@ def check_py_lib():
 
 if __name__ == '__main__':
   print("\nCheck Environment for Intel(R) Extension for TensorFlow*...\n")
+  url="https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/tools/python/env.json"
   configfile="./config.json"
   os_id=""
-  config = getConfig(configfile)
+  config = getConfig(url)
   itex_version = check_python()
   os_id, os_version = check_os()
   check_tensorflow()
