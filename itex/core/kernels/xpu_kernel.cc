@@ -58,7 +58,7 @@ void TF_InitKernel() {
         itex::Status s = itex::StatusFromTF_Status(tf_status);
         if (s != itex::Status::OK()) {
           ITEX_LOG(ERROR) << s << " To check runtime environment on your host, "
-                          << "please run itex/tools/env_check.sh.";
+                          << "please run itex/tools/python/env_check.py.";
         }
         TF_DeleteStatus(tf_status);
       }
