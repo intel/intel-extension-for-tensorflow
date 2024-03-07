@@ -1,10 +1,12 @@
-From c28ee2b61ce57c4f3578394582cb3a8acc0d44bc Mon Sep 17 00:00:00 2001
-From: "Wang, Yiting" <yiting.wang@intel.com>
-Date: Wed, 11 Oct 2023 21:51:14 -0700
-Subject: [PATCH] 1012 modify for itex bf16 & HVD
+From 068b6c90d221efd516722e9ebab8d9cd112b6f8d Mon Sep 17 00:00:00 2001
+From: yitingw1 <yiting.wang@intel.com>
+Date: Thu, 7 Mar 2024 03:08:43 -0800
+Subject: [PATCH] 0307 modify for itex bf16 & HVD
 
 ---
  .../LanguageModeling/BERT/common_flags.py     |  5 +
+ .../LanguageModeling/BERT/data/bertPrep.py    |  4 +-
+ .../BERT/data/create_datasets_from_start.sh   |  2 +-
  .../official/modeling/model_training_utils.py |  5 +-
  .../modeling/model_training_utils_test.py     |  4 +-
  .../BERT/official/nlp/bert_modeling.py        |  9 +-
@@ -23,7 +25,7 @@ Subject: [PATCH] 1012 modify for itex bf16 & HVD
  .../scripts/run_pretraining_lamb_phase1.sh    | 20 ++--
  .../scripts/run_pretraining_lamb_phase2.sh    | 20 ++--
  .../BERT/scripts/run_squad.sh                 | 22 ++++-
- 19 files changed, 297 insertions(+), 121 deletions(-)
+ 21 files changed, 300 insertions(+), 124 deletions(-)
 
 diff --git a/TensorFlow2/LanguageModeling/BERT/common_flags.py b/TensorFlow2/LanguageModeling/BERT/common_flags.py
 index 0c471089..b7c4780e 100644
@@ -48,6 +50,41 @@ index 0c471089..b7c4780e 100644
  
  def get_loss_scale():
    return flags_core.get_loss_scale(flags.FLAGS, default_for_fp16='dynamic')
+diff --git a/TensorFlow2/LanguageModeling/BERT/data/bertPrep.py b/TensorFlow2/LanguageModeling/BERT/data/bertPrep.py
+index 656d909e..3e29e9c7 100644
+--- a/TensorFlow2/LanguageModeling/BERT/data/bertPrep.py
++++ b/TensorFlow2/LanguageModeling/BERT/data/bertPrep.py
+@@ -166,7 +166,7 @@ def main(args):
+         last_process = None
+ 
+         def create_record_worker(filename_prefix, shard_id, output_format='tfrecord', split='training'):
+-            bert_preprocessing_command = 'python /workspace/bert_tf2/create_pretraining_data.py'
++            bert_preprocessing_command = 'python create_pretraining_data.py'
+             bert_preprocessing_command += ' --input_file=' + directory_structure['sharded'] + '/' + args.dataset + '/' + split + '/' + filename_prefix + '_' + str(shard_id) + '.txt'
+             bert_preprocessing_command += ' --output_file=' + directory_structure['tfrecord'] + '/' + args.dataset + '/' + split + '/' + filename_prefix + '_' + str(shard_id) + '.' + output_format
+             bert_preprocessing_command += ' --vocab_file=' + args.vocab_file
+@@ -208,7 +208,7 @@ def main(args):
+         last_process = None
+ 
+         def create_record_worker(filename_prefix, shard_id, output_format='hdf5'):
+-            bert_preprocessing_command = 'python /workspace/bert_tf2/create_pretraining_data.py'
++            bert_preprocessing_command = 'python create_pretraining_data.py'
+             bert_preprocessing_command += ' --input_file=' + directory_structure['sharded'] + '/' + args.dataset + '/' + filename_prefix + '_' + str(shard_id) + '.txt'
+             bert_preprocessing_command += ' --output_file=' + directory_structure['hdf5'] + '/' + args.dataset + '/' + filename_prefix + '_' + str(shard_id) + '.' + output_format
+             bert_preprocessing_command += ' --vocab_file=' + args.vocab_file
+diff --git a/TensorFlow2/LanguageModeling/BERT/data/create_datasets_from_start.sh b/TensorFlow2/LanguageModeling/BERT/data/create_datasets_from_start.sh
+index f09b0d0f..43e60aa6 100755
+--- a/TensorFlow2/LanguageModeling/BERT/data/create_datasets_from_start.sh
++++ b/TensorFlow2/LanguageModeling/BERT/data/create_datasets_from_start.sh
+@@ -13,7 +13,7 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
+-export BERT_PREP_WORKING_DIR=/workspace/bert_tf2/data
++export BERT_PREP_WORKING_DIR=data
+ 
+ to_download=${1:-"all"}
+ pretrained_to_download=${2:-"wiki_only"} # By default, we don't download BooksCorpus dataset due to recent issues with the host server
 diff --git a/TensorFlow2/LanguageModeling/BERT/official/modeling/model_training_utils.py b/TensorFlow2/LanguageModeling/BERT/official/modeling/model_training_utils.py
 index f5d080fa..0d568f76 100644
 --- a/TensorFlow2/LanguageModeling/BERT/official/modeling/model_training_utils.py
