@@ -131,7 +131,7 @@ def check_py_lib():
 
 if __name__ == '__main__':
   print("\nCheck Environment for Intel(R) Extension for TensorFlow*...\n")
-  url="https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/tools/python/env.json"
+  url="https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/tools/python/config.json"
   configfile="./config.json"
   os_id=""
   config = getConfig(url)
