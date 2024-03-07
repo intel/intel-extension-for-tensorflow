@@ -124,7 +124,7 @@ def check_py_lib():
 
 if __name__ == '__main__':
   print("\nCheck Environment for Intel(R) Extension for TensorFlow*...\n")
-  configfile="./env.json"
+  configfile="./config.json"
   os_id=""
   config = getConfig(configfile)
   itex_version = check_python()
