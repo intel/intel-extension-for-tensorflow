@@ -56,7 +56,10 @@ void TF_InitKernel() {
         TF_Status* tf_status = TF_NewStatus();
         TF_CreateAndSetPjRtCApiClient(itex::DEVICE_XPU, tf_status, nullptr, 0);
         itex::Status s = itex::StatusFromTF_Status(tf_status);
-        ITEX_CHECK_EQ(itex::Status::OK(), s);
+        if (s != itex::Status::OK()) {
+          ITEX_LOG(ERROR) << s << " To check runtime environment on your host, "
+                          << "please run itex/tools/env_check.sh.";
+        }
         TF_DeleteStatus(tf_status);
       }
 #endif
