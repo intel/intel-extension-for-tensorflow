@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gdb8cafb documentation</title>
+  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd5b2aa5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
@@ -112,7 +112,8 @@ This example shows BERT-Large Pretraining.</p>
 <p>To get better performance, instead of installing official nvidia-bert, you can clone nvidia-bert, apply the patch, then install it as shown here:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
 <span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow2</span><span class="o">/</span><span class="n">LanguageModeling</span><span class="o">/</span><span class="n">BERT</span>
-<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># When applying this patch, please move it to the above BERT dir first.</span>
+<span class="n">cp</span> <span class="o">../../../../</span><span class="n">patch</span> <span class="o">.</span> <span class="c1"># When applying this patch, please move it to the above BERT dir first.</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># It&#39;s ok when meeting warning about whitespace errors.</span>
 </pre></div>
 </div>
 </section>
@@ -128,6 +129,7 @@ This example shows BERT-Large Pretraining.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./pip_set_env.sh
 </pre></div>
 </div>
+<p>If you use conda env, you can install packages in <code class="docutils literal notranslate"><span class="pre">./pip_set_env.sh</span></code> manually.</p>
 </section>
 <section id="enable-running-environment">
 <h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
@@ -139,7 +141,7 @@ This example shows BERT-Large Pretraining.</p>
 <section id="prepare-dataset">
 <h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
 <p>Nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training.</p>
-<p>You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. And you should modify the environment varible <code class="docutils literal notranslate"><span class="pre">BERT_PREP_WORKING_DIR</span></code> in <code class="docutils literal notranslate"><span class="pre">data/create_datasets_from_start.sh</span></code> to your real data dir.</p>
+<p>You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. And you should modify the environment varible <code class="docutils literal notranslate"><span class="pre">BERT_PREP_WORKING_DIR</span></code> in <code class="docutils literal notranslate"><span class="pre">data/create_datasets_from_start.sh</span></code> to the absolute/relative path of <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT/data</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">data</span><span class="o">/</span><span class="n">create_datasets_from_start</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span>
 </pre></div>
 </div>
@@ -158,7 +160,7 @@ This example shows BERT-Large Pretraining.</p>
 <p>Bert pretraining is very time-consuming, as nvidia-bert repository says, training BERT-Large from scratch on 16 V100 using FP16 datatype takes around 4.5 days. So Here we only provide single-tile pretraining scripts within a day to show performance.</p>
 <section id="pretraining-command">
 <h3>Pretraining Command<a class="headerlink" href="#pretraining-command" title="Permalink to this heading"></a></h3>
-<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code></p>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. Please set DATA_DIR to your real data dir.</p>
 <ul class="simple">
 <li><p>BFloat16 DataType</p></li>
 </ul>
@@ -181,6 +183,7 @@ This example shows BERT-Large Pretraining.</p>
 <p><strong>Final Scripts</strong></p>
 <ul class="simple">
 <li><p>We use <a class="reference external" href="https://arxiv.org/pdf/1904.00962.pdf">LAMB</a> as the optimizer and pretraining has two phases. The maximum sequence length of phase1 and phase2 is 128 and 512, respectively. For the whole process of pretraining, you can use scripts in <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#training-process">nvidia-bert</a>.</p></li>
+<li><p>BFloat16 DataType</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=312
 TRAIN_BATCH_SIZE_PHASE2=40
@@ -223,6 +226,18 @@ bash scripts/run_pretraining_lamb.sh \
     $DATA_DIR \
     $PRETRAIN_RESULT_DIR \
     |&amp; tee pretrain_lamb.log
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Float32/TF32 DataType
+To avoid Out-Of-Memory, please use below hyperparameters instead of above bf16 ones.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TRAIN_BATCH_SIZE_PHASE1</span><span class="o">=</span><span class="mi">60</span>
+<span class="n">TRAIN_BATCH_SIZE_PHASE2</span><span class="o">=</span><span class="mi">10</span>
+<span class="n">LEARNING_RATE_PHASE1</span><span class="o">=</span><span class="mf">7.5e-4</span>
+<span class="n">LEARNING_RATE_PHASE2</span><span class="o">=</span><span class="mf">5e-4</span>
+<span class="n">NUM_ACCUMULATION_STEPS_PHASE1</span><span class="o">=</span><span class="mi">64</span>
+<span class="n">NUM_ACCUMULATION_STEPS_PHASE2</span><span class="o">=</span><span class="mi">192</span>
 </pre></div>
 </div>
 </section>
@@ -287,6 +302,17 @@ bash scripts/run_squad.sh \
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tensorflow</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">framework</span><span class="o">.</span><span class="n">errors_impl</span><span class="o">.</span><span class="n">NotFoundError</span><span class="p">:</span> <span class="n">libmkl_sycl</span><span class="o">.</span><span class="n">so</span><span class="mf">.2</span><span class="p">:</span> <span class="n">cannot</span> <span class="nb">open</span> <span class="n">shared</span> <span class="nb">object</span> <span class="n">file</span><span class="p">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span>
 </pre></div>
 </div>
+<ol class="simple">
+<li><p>If you get the following error log, please uninstall current horovod using <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">uninstall</span> <span class="pre">horovod</span></code>. And reinstall horovod using <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--no-cache-dir</span> <span class="pre">horovod</span></code>.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>horovod.common.exceptions.HorovodVersionMismatchError: Framework tensorflow installed with version 2.15.0 but found version 2.14.1.
+             This can result in unexpected behavior including runtime errors.
+             Reinstall Horovod using `pip install --no-cache-dir` to build with the new version.
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>If you get Out-Of-Memory error log using above pretraining scripts, you can reduce batch_size to avoid it.</p></li>
+</ol>
 </section>
 </section>
 
@@ -304,7 +330,7 @@ bash scripts/run_squad.sh \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f815bfb4760> 
+   <jinja2.runtime.BlockReference object at 0x7f487abd8160> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

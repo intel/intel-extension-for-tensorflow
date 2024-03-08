@@ -24,7 +24,8 @@ To get better performance, instead of installing official nvidia-bert, you can c
 ```
 git clone https://github.com/NVIDIA/DeepLearningExamples.git
 cd DeepLearningExamples/TensorFlow2/LanguageModeling/BERT
-git apply patch  # When applying this patch, please move it to the above BERT dir first.
+cp ../../../../patch . # When applying this patch, please move it to the above BERT dir first.
+git apply patch  # It's ok when meeting warning about whitespace errors.
 ```
 
 ### Prepare for GPU
@@ -39,6 +40,7 @@ Refer to [Prepare](../common_guide_running.html#prepare).
 ```bash
 ./pip_set_env.sh
 ```
+If you use conda env, you can install packages in `./pip_set_env.sh` manually.
 
 ### Enable Running Environment
 
@@ -50,7 +52,7 @@ Enable oneAPI running environment (only for GPU) and virtual running environment
 
 Nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training. 
 
-You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is `examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT`. And you should modify the environment varible `BERT_PREP_WORKING_DIR` in `data/create_datasets_from_start.sh` to your real data dir. 
+You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is `examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT`. And you should modify the environment varible `BERT_PREP_WORKING_DIR` in `data/create_datasets_from_start.sh` to the absolute/relative path of `examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT/data`.
 
 ```
 bash data/create_datasets_from_start.sh all
@@ -70,7 +72,7 @@ Bert pretraining is very time-consuming, as nvidia-bert repository says, trainin
 
 #### Pretraining Command
 
-Assume current_dir is `examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT`
+Assume current_dir is `examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT`. Please set DATA_DIR to your real data dir.
 
 + BFloat16 DataType
 
@@ -94,6 +96,8 @@ DATATYPE=fp32
 **Final Scripts**
 
 + We use [LAMB](https://arxiv.org/pdf/1904.00962.pdf) as the optimizer and pretraining has two phases. The maximum sequence length of phase1 and phase2 is 128 and 512, respectively. For the whole process of pretraining, you can use scripts in [nvidia-bert](https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#training-process).
+
++ BFloat16 DataType
 
 ```
 TRAIN_BATCH_SIZE_PHASE1=312
@@ -137,6 +141,18 @@ bash scripts/run_pretraining_lamb.sh \
     $DATA_DIR \
     $PRETRAIN_RESULT_DIR \
     |& tee pretrain_lamb.log
+```
+
++ Float32/TF32 DataType
+To avoid Out-Of-Memory, please use below hyperparameters instead of above bf16 ones.
+
+```
+TRAIN_BATCH_SIZE_PHASE1=60
+TRAIN_BATCH_SIZE_PHASE2=10
+LEARNING_RATE_PHASE1=7.5e-4
+LEARNING_RATE_PHASE2=5e-4
+NUM_ACCUMULATION_STEPS_PHASE1=64
+NUM_ACCUMULATION_STEPS_PHASE2=192
 ```
 
 #### Finetune Command
@@ -200,3 +216,12 @@ bash scripts/run_squad.sh \
 ``` 
 tensorflow.python.framework.errors_impl.NotFoundError: libmkl_sycl.so.2: cannot open shared object file: No such file or directory
 ```
+2. If you get the following error log, please uninstall current horovod using `pip uninstall horovod`. And reinstall horovod using `pip install --no-cache-dir horovod`.
+
+```
+horovod.common.exceptions.HorovodVersionMismatchError: Framework tensorflow installed with version 2.15.0 but found version 2.14.1.
+             This can result in unexpected behavior including runtime errors.
+             Reinstall Horovod using `pip install --no-cache-dir` to build with the new version.
+```
+
+3. If you get Out-Of-Memory error log using above pretraining scripts, you can reduce batch_size to avoid it.
