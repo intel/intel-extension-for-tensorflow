@@ -83,13 +83,13 @@ Note, we support Python versions 3.8 through 3.11.
 
 #### Install TensorFlow
 
-Install TensorFlow 2.14.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
+Install TensorFlow 2.15.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
 
 ```bash
-$ pip install tensorflow==2.14.0
+$ pip install tensorflow==2.15.0
 ```
 
-Check TensorFlow was installed successfully and is version 2.14.0:
+Check TensorFlow was installed successfully and is version 2.15.0:
 
 ```bash
 $ python -c "import tensorflow as tf;print(tf.__version__)"
