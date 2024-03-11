@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conda Environment Installation Instructions &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g365efc8 documentation</title>
+  <title>Conda Environment Installation Instructions &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g8d96a6d documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
@@ -108,7 +108,7 @@
              
   <section id="conda-environment-installation-instructions">
 <h1>Conda Environment Installation Instructions<a class="headerlink" href="#conda-environment-installation-instructions" title="Permalink to this heading"></a></h1>
-<p>This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v2.14.0.0 and Intel® Optimization for Horovod* v0.28.1.0 deployment for distributed training on Conda environment.</p>
+<p>This document provides a recommended installation instruction for Intel® Extension for TensorFlow* v2.15.0.0 and Intel® Optimization for Horovod* v0.28.1.4 deployment for distributed training on Conda environment.</p>
 <section id="preconditions">
 <h2>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this heading"></a></h2>
 <p>We assume you have installed the Intel GPU driver and the required components of oneAPI Base Toolkit Packages as per <a class="reference external" href="../install_for_xpu.html#install_oneapi_base_toolkit_packages">instructions</a> successfully.</p>
@@ -136,9 +136,9 @@ You can use the following command to install Miniconda. During installation, you
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">itex</span>
 </pre></div>
 </div>
-<p>Install stock Tensorflow 2.14.0 and Intel® Extension for TensorFlow* XPU wheels.</p>
+<p>Install stock Tensorflow 2.15.0 and Intel® Extension for TensorFlow* XPU wheels.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.14.0</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">==</span><span class="mf">2.15.0</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">xpu</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -158,10 +158,10 @@ bash<span class="w"> </span><span class="si">${</span><span class="nv">path_to_s
 </pre></div>
 </div>
 <p>Expected result:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v2</span><span class="mf">.14.0.0</span><span class="o">-</span><span class="mi">1</span><span class="n">ccb4fee</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v2</span><span class="mf">.15.0.0</span><span class="o">-</span><span class="mi">1</span><span class="n">ccb4fee</span>
 </pre></div>
 </div>
-<p>In order to install Intel® Optimization for Horovod* v0.28.1.0 for distributed training, you should install oneCCL after you install oneAPI Basekit.</p>
+<p>In order to install Intel® Optimization for Horovod* v0.28.1.4 for distributed training, you should install oneCCL after you install oneAPI Basekit.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">mpi</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
 <span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">ccl</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
 
@@ -192,7 +192,7 @@ bash<span class="w"> </span><span class="si">${</span><span class="nv">path_to_s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f83ec689990> 
+   <jinja2.runtime.BlockReference object at 0x7fa790aa3460> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

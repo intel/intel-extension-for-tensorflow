@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g365efc8 documentation</title>
+  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g8d96a6d documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
@@ -135,8 +135,8 @@
 <h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
-<li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a></p></li>
-<li><p>Intel® Data Center GPU Flex Series 170, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a></p></li>
+<li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a></p></li>
+<li><p>Intel® Data Center GPU Flex Series 170, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a></p></li>
 <li><p><em>Experimental:</em> Intel® Arc™ A-Series</p></li>
 </ul>
 <p>For experimental support of the Intel® Arc™ A-Series GPUs, please refer to <a class="reference external" href="experimental/install_for_arc_gpu.html">Intel® Arc™ A-Series GPU Software Installation</a> for details.</p>
@@ -155,7 +155,7 @@
 </ul>
 </li>
 <li><p>Intel® oneAPI Base Toolkit 2024.0</p></li>
-<li><p>TensorFlow 2.14.0</p></li>
+<li><p>TensorFlow 2.15.0</p></li>
 <li><p>Python 3.9-3.11</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
 </ul>
@@ -174,12 +174,12 @@
 <tr>
 <td>Ubuntu 22.04, Red Hat 8.6</td>
 <td>Intel® Data Center GPU Flex Series</td>
-<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.30.26918.50-736~22.04</code></td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.43.27642.40-803~22.04</code></td>
 </tr>
 <tr>
 <td>Ubuntu 22.04, Red Hat 8.6, SLES 15 SP4/SP5</td>
 <td>Intel® Data Center GPU Max Series</td>
-<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.30.26918.50-736~22.04</code></td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.43.27642.40-803~22.04</code></td>
 </tr>
 </tbody>
 </table></section>
@@ -245,7 +245,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l
 <section id="install-tensorflow">
 <h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h3>
 <p>The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.</p>
-<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.14.0.</p>
+<p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.15.0.</p>
 <section id="virtual-environment-install">
 <h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this heading"></a></h4>
 <p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
@@ -254,14 +254,14 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l
 </pre></div>
 </div>
 <p>To install in virtual environment, you can run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.14.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.15.0
 </pre></div>
 </div>
 </section>
 <section id="system-environment-install">
 <h4>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this heading"></a></h4>
 <p>If you prefer install tensorflow in $HOME, please append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.14.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.15.0
 </pre></div>
 </div>
 <p>And the following system environment install for Intel® Extension for TensorFlow* will also append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the command.</p>
@@ -327,7 +327,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f83ec144ca0> 
+   <jinja2.runtime.BlockReference object at 0x7fa790c70280> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -53,13 +53,13 @@ Note, we support Python versions 3.8 through 3.11.
 
 #### Install TensorFlow
 
-Install TensorFlow 2.14.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
+Install TensorFlow 2.15.0, and refer to [Install TensorFlow](https://www.tensorflow.org/install) for details.
 
 ```bash
-$ pip install tensorflow==2.14.0
+$ pip install tensorflow==2.15.0
 ```
 
-Check TensorFlow was installed successfully and is version 2.14.0:
+Check TensorFlow was installed successfully and is version 2.15.0:
 
 ```bash
 $ python -c "import tensorflow as tf;print(tf.__version__)"
@@ -199,16 +199,16 @@ $ cp bazel-out/k8-opt-ST-*/bin/external/llvm_openmp/libiomp5.so bazel-bin/itex/
 
 ### Option 1: Extract from Tensorflow* python package (**Recommended**)
 
-a. Download Tensorflow* 2.14.0 python package
+a. Download Tensorflow* 2.15.0 python package
 
 ```bash
-$ wget https://files.pythonhosted.org/packages/09/63/25e76075081ea98ec48f23929cefee58be0b42212e38074a9ec5c19e838c/tensorflow-2.14.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+$ wget https://files.pythonhosted.org/packages/ed/1a/b4ab4b8f8b3a41fade4899fd00b5b2d2dad0981f3e1bb10df4c522975fd7/tensorflow-2.15.0.post1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 ```
 
 b. Unzip Tensorflow* python package
 
 ```bash
-$ unzip tensorflow-2.14.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -d tensorflow_src
+$ unzip tensorflow-2.15.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -d tensorflow_src
 ```
 
 c. Create symbolic link
