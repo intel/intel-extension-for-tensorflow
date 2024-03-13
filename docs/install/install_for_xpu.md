@@ -141,25 +141,10 @@ To install a XPU version in virtual environment, which depends on Intel GPU driv
 python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
 ```
 
-Then, you can get the information that both CPU and GPU backends are loaded successfully  from the console log.
+Then, you can get the information that GPU backend is loaded successfully  from the console log.
 ```
-2023-07-28 12:00:00.374832: I itex/core/wrapper/itex_cpu_wrapper.cc:42] Intel Extension for Tensorflow* AVX512 CPU backend is loaded.
 2023-07-28 12:00:00.217981: I itex/core/wrapper/itex_gpu_wrapper.cc:35] Intel Extension for Tensorflow* GPU backend is loaded.
 ```
-**NOTE**: If Intel® Extension for TensorFlow* XPU package is installed on GPU support platform, both CPU and GPU backends will be loaded as pluggable device via TensorFlow. GPU backend will be activated as default backend.
 
-## XPU for CPU only platform
-If Intel® Extension for TensorFlow* XPU package is installed on CPU only platform, only CPU backend will be loaded. Please refer to **Intel CPU Software Installation** [Hardware Requirements](./experimental/install_for_cpu.md#hardware-requirements) and [Software Requirements](./experimental/install_for_cpu.md#software-requirements) for the platform requirements.
-
-Verify the Installation
-```
-python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
-```
-
-Then, you can get the information that only CPU backend is loaded successfully from the console log.
-
-```
-2023-07-28 12:00:00.205706: I itex/core/wrapper/itex_cpu_wrapper.cc:42] Intel Extension for Tensorflow* AVX512 CPU backend is loaded.
-2023-07-28 12:00:00.313231: E itex/core/wrapper/itex_gpu_wrapper.cc:49] Could not load Intel Extension for Tensorflow* GPU backend, GPU will not be used.
-If you need help, create an issue at https://github.com/intel/intel-extension-for-tensorflow/issues
-```
+## XPU for CPU only platform (Deprecated)
+Intel® Extension for TensorFlow* XPU package only support GPU platform, which will not work on CPU only platform since v2.15.0.0.
