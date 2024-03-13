@@ -7,18 +7,18 @@
     - [Download Source Code](#download-source-code)
     - [Create a Conda Environment](#create-a-conda-environment)
     - [Install Tensorflow](#install-tensorflow)
-  - [Extra Requirements for XPU/GPU Build Only](#extra-requirements-for-xpugpu-build-only)
+  - [Extra Requirements for XPU Build Only](#extra-requirements-for-xpugpu-build-only)
     - [Install Intel GPU Driver](#install-intel-gpu-driver)
     - [Install OneAPI Base Toolkit](#install-oneapi-base-toolkit)
   
 - [Build Intel® Extension for TensorFlow* PyPI](#build-intel®-extension-for-tensorflow-pypi)
   - [Configure](#configure)
     - [Configure For CPU](#configure-for-cpu)
-    - [Configure For GPU/XPU](#configure-for-gpuxpu)
+    - [Configure For XPU](#configure-for-gpuxpu)
   - [Build Source Code](#build-source-code)
 - [Additional](#additional)
   - [Configure Example For CPU](#configure-example-for-gpu-or-xpu)
-  - [Configure Example For GPU or XPU](#configure-example-for-gpu-or-xpu)
+  - [Configure Example For XPU](#configure-example-for-gpu-or-xpu)
 
 
 ## Overview
@@ -79,7 +79,7 @@ $ conda create -n itex_build python=3.10
 $ conda activate itex_build
 ```
 
-Note, we support Python versions 3.8 through 3.11.
+Note, we support Python versions 3.9 through 3.11.
 
 #### Install TensorFlow
 
@@ -95,7 +95,7 @@ Check TensorFlow was installed successfully and is version 2.15.0:
 $ python -c "import tensorflow as tf;print(tf.__version__)"
 ```
 
-### Extra Requirements for XPU/GPU Build Only
+### Extra Requirements for XPU Build Only
 
 #### Install Intel GPU Driver
 Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT ([Ahead-of-time compilation](https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html)).
@@ -145,7 +145,7 @@ $ ./configure
 
 Choose `n` to build for CPU only. Refer to [Configure Example](#configure-example).
 
-#### Configure For GPU/XPU
+#### Configure For XPU
 
 Configure the system build by running the `./configure` command at the root of your cloned Intel® Extension for TensorFlow* source tree. This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).
 
@@ -195,12 +195,6 @@ For CPU:
 $ bazel build -c opt --config=cpu  //itex/tools/pip_package:build_pip_package
 ```
 
-For GPU:
-
-```bash
-$ bazel build -c opt --config=gpu  //itex/tools/pip_package:build_pip_package
-```
-
 For XPU:
 
 ```bash
@@ -217,16 +211,16 @@ It will generate two wheels under `WHL` directory:
 - intel_extension_for_tensorflow-*.whl
 - intel_extension_for_tensorflow_lib-*.whl
 
-The Intel_extension_for_tensorflow_lib will differentiate between the CPU version or the GPU version
+The Intel_extension_for_tensorflow_lib will differentiate between the CPU version or the xpu version
 - CPU version identifier is {ITEX_VERSION}**.0**
-- GPU version identifier is {ITEX_VERSION}**.1**
+- GPU version identifier is {ITEX_VERSION}**.1** (**Deprecated, duplicates of XPU version**)
 - XPU version identifier is {ITEX_VERSION}**.2**
 
 For example
 
-|ITEX version|ITEX-lib CPU version|ITEX-lib GPU version|
+|ITEX version|ITEX-lib CPU version|ITEX-lib XPU version|
 |------------|--------------------|--------------------|
-|1.x.0       |1.x.0.0             |1.x.0.1             |
+|1.x.0       |1.x.0.0             |1.x.0.2             |
 
 Install the Package
 
@@ -251,8 +245,8 @@ Located at `path/to/site-packages/`
 ├── intel_extension_for_tensorflow_lib
 ├── tensorflow
 ├── tensorflow-plugins
-|   ├── libitex_cpu.so # for CPU or XPU build
-│   └── libitex_gpu.so # for GPU or XPU build
+|   ├── libitex_cpu.so # for CPU build
+│   └── libitex_gpu.so # for XPU build
 
 ```
 
@@ -278,7 +272,7 @@ Preconfigured Bazel build configs. You can use any of the below by adding "--con
 Configuration finished
 ```
 
-### Configure Example For GPU or XPU
+### Configure Example For XPU
 
 Here is example output and interaction you'd see while running the `./configure` script:
 
@@ -305,6 +299,8 @@ Please specify the MKL toolkit folder. [Default is /opt/intel/oneapi/mkl/latest]
 
 
 Preconfigured Bazel build configs. You can use any of the below by adding "--config=<>" to your build command. See .bazelrc for more details.
-        --config=gpu            # Build Intel® Extension for TensorFlow* with GPU support.
+        --config=xpu            # Build Intel® Extension for TensorFlow* with GPU support.
+NOTE: XPU mode which supports both CPU and GPU is disbaled."--config=xpu" only supports GPU, which is same as "--config=gpu"
+
 Configuration finished
 ```
