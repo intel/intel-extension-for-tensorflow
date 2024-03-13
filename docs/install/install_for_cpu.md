@@ -10,7 +10,7 @@ Verified Hardware Platforms:
 ## Software Requirements
 
 - Ubuntu 20.04 (64-bit), Ubuntu 22.04 (64-bit) or CentOS Linux 8 (64-bit), and Sapphire Rapids requires Ubuntu 22.04 or CentOS Linux 8 with kernel version >= 5.16
-- Python 3.8-3.10
+- Python 3.9-3.10
 - pip 19.0 or later (requires manylinux2014 support)
 
 ## Install via Docker container
