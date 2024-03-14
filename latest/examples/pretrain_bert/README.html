@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g79944f2 documentation</title>
+  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g51b07d6 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
@@ -113,7 +113,7 @@ This example shows BERT-Large Pretraining.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
 <span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow2</span><span class="o">/</span><span class="n">LanguageModeling</span><span class="o">/</span><span class="n">BERT</span>
 <span class="n">cp</span> <span class="o">../../../../</span><span class="n">patch</span> <span class="o">.</span> <span class="c1"># When applying this patch, please move it to the above BERT dir first.</span>
-<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># It&#39;s ok when meeting warning about whitespace errors.</span>
+<span class="n">git</span> <span class="n">am</span> <span class="o">--</span><span class="n">signoff</span> <span class="o">&lt;</span> <span class="n">patch</span>  <span class="c1"># It&#39;s ok when meeting warning about whitespace errors.</span>
 </pre></div>
 </div>
 </section>
@@ -142,7 +142,7 @@ This example shows BERT-Large Pretraining.</p>
 <h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
 <p>Nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training.</p>
 <p>You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. And you should modify the environment varible <code class="docutils literal notranslate"><span class="pre">BERT_PREP_WORKING_DIR</span></code> in <code class="docutils literal notranslate"><span class="pre">data/create_datasets_from_start.sh</span></code> to the absolute/relative path of <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT/data</span></code>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">data</span><span class="o">/</span><span class="n">create_datasets_from_start</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">data</span><span class="o">/</span><span class="n">create_datasets_from_start</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span> <span class="n">wiki_only</span>
 </pre></div>
 </div>
 <p>For more details about downloading and processing the dataset, you can reference <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#quick-start-guide">downloading</a> and <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#getting-the-data">processing</a> part. After downloading and processing, the datasets are supposed in the following locations by default</p>
@@ -151,13 +151,21 @@ This example shows BERT-Large Pretraining.</p>
 <li><p>SQuAD v2.0 - <code class="docutils literal notranslate"><span class="pre">data/download/squad/v2.0</span></code></p></li>
 <li><p>BERT-Large - <code class="docutils literal notranslate"><span class="pre">data/download/google_pretrained_weights/uncased_L-24_H-1024_A-16</span></code></p></li>
 <li><p>BERT-Base - <code class="docutils literal notranslate"><span class="pre">data/download/google_pretrained_weights/uncased_L-12_H-768_A-12</span></code></p></li>
-<li><p>Wikipedia + BookCorpus TFRecords - <code class="docutils literal notranslate"><span class="pre">data/tfrecords/books_wiki_en_corpus</span></code></p></li>
+<li><p>Wikipedia TFRecords - <code class="docutils literal notranslate"><span class="pre">data/tfrecords/wikicorpus_en</span></code></p></li>
 </ul>
 </section>
 </section>
 <section id="execute-the-example">
 <h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
 <p>Bert pretraining is very time-consuming, as nvidia-bert repository says, training BERT-Large from scratch on 16 V100 using FP16 datatype takes around 4.5 days. So Here we only provide single-tile pretraining scripts within a day to show performance.</p>
+<section id="id1">
+<h3>Prerequisites<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<p>We use <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code> to implement efficient multi-GPU training with OneCCL. If you want to use multi-GPU, please replace <code class="docutils literal notranslate"><span class="pre">horovod</span></code> with <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">horovod</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
+</pre></div>
+</div>
+</section>
 <section id="pretraining-command">
 <h3>Pretraining Command<a class="headerlink" href="#pretraining-command" title="Permalink to this heading"></a></h3>
 <p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. Please set DATA_DIR to your real data dir.</p>
@@ -240,10 +248,11 @@ To avoid Out-Of-Memory, please use below hyperparameters instead of above bf16 o
 <span class="n">NUM_ACCUMULATION_STEPS_PHASE2</span><span class="o">=</span><span class="mi">192</span>
 </pre></div>
 </div>
+<p><strong>Note</strong>: If you want to run on more cards and even multi-node, you could adjust the parameter <code class="docutils literal notranslate"><span class="pre">NUM_GPUS</span></code>.</p>
 </section>
 <section id="finetune-command">
 <h3>Finetune Command<a class="headerlink" href="#finetune-command" title="Permalink to this heading"></a></h3>
-<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. After getting the pretraining checkpoint, you can use it for finetuning.</p>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. <code class="docutils literal notranslate"><span class="pre">$PRETRAIN_RESULT_DIR</span></code> is from previous pretraining. It will finetune using this pretraining checkpoint.</p>
 <ul class="simple">
 <li><p>BFloat16 DataType</p></li>
 </ul>
@@ -265,8 +274,8 @@ To avoid Out-Of-Memory, please use below hyperparameters instead of above bf16 o
 </div>
 <p><strong>Final Scripts</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>NUM_GPUS=1
-BATCH_SIZE_PER_GPU=12
-LEARNING_RATE_PER_GPU=5e-6
+BATCH_SIZE_PER_GPU=76
+LEARNING_RATE_PER_GPU=3e-5
 DATATYPE=$DATATYPE
 USE_XLA=false
 SQUAD_VERSION=1.1
@@ -290,6 +299,185 @@ bash scripts/run_squad.sh \
     $DATA_DIR \
     $RESULT_DIR \
     |&amp; tee finetune.log
+</pre></div>
+</div>
+<p><strong>Note</strong>: If you want to run on more cards and even multi-node, you could adjust the parameter <code class="docutils literal notranslate"><span class="pre">NUM_GPUS</span></code>.</p>
+<ul class="simple">
+<li><p>If you meet Out-Of-Memory error, you can reduce batch_size and use below hyperparameters.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BATCH_SIZE_PER_GPU</span><span class="o">=</span><span class="mi">12</span>
+<span class="n">LEARNING_RATE_PER_GPU</span><span class="o">=</span><span class="mf">5e-6</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="convergence">
+<h2>Convergence<a class="headerlink" href="#convergence" title="Permalink to this heading"></a></h2>
+<p>If you want to run Bert-Large pretraining to convergence, we provide a set of bfloat16 distributed training hyperparameters verified on 4 cards(8 tiles) and 12 cards(24 tiles) PVC.</p>
+<section id="id2">
+<h3>Prerequisites<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<p>We use <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code> to implement efficient multi-GPU training with OneCCL. If you want to use multi-GPU, please replace <code class="docutils literal notranslate"><span class="pre">horovod</span></code> with <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">horovod</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
+</pre></div>
+</div>
+</section>
+<section id="commands">
+<h3>Commands<a class="headerlink" href="#commands" title="Permalink to this heading"></a></h3>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code></p>
+<ul class="simple">
+<li><p>Pretraining</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=312
+TRAIN_BATCH_SIZE_PHASE2=40
+EVAL_BATCH_SIZE=8
+LEARNING_RATE_PHASE1=0.004888
+LEARNING_RATE_PHASE2=0.004
+DATATYPE=bf16
+USE_XLA=false
+NUM_GPUS=8
+WARMUP_STEPS_PHASE1=2000
+WARMUP_STEPS_PHASE2=200
+TRAIN_STEPS=6416
+SAVE_CHECKPOINT_STEPS=100
+NUM_ACCUMULATION_STEPS_PHASE1=256
+NUM_ACCUMULATION_STEPS_PHASE2=768
+BERT_MODEL=large
+
+LEARNING_RATE_PHASE1=$(echo $LEARNING_RATE_PHASE1 $NUM_GPUS | awk &#39;{printf (&quot;%0.7f&quot;, $1/$2)}&#39;)
+LEARNING_RATE_PHASE2=$(echo $LEARNING_RATE_PHASE2 $NUM_GPUS | awk &#39;{printf (&quot;%0.7f&quot;, $1/$2)}&#39;)
+NUM_ACCUMULATION_STEPS_PHASE1=$(echo $NUM_ACCUMULATION_STEPS_PHASE1 $NUM_GPUS | awk &#39;{print int($1/$2)}&#39;)
+NUM_ACCUMULATION_STEPS_PHASE2=$(echo $NUM_ACCUMULATION_STEPS_PHASE2 $NUM_GPUS | awk &#39;{print int($1/$2)}&#39;)
+GBS1=$(expr $TRAIN_BATCH_SIZE_PHASE1 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE1)
+GBS2=$(expr $TRAIN_BATCH_SIZE_PHASE2 \* $NUM_GPUS \* $NUM_ACCUMULATION_STEPS_PHASE2)
+
+PRETRAIN_RESULT_DIR=./results/tf_bert_pretraining_lamb_${BERT_MODEL}_${DATATYPE}_gbs1_${GBS1}_gbs2_${GBS2}
+DATA_DIR=$DATA_DIR
+
+bash scripts/run_pretraining_lamb.sh \
+    $TRAIN_BATCH_SIZE_PHASE1 \
+    $TRAIN_BATCH_SIZE_PHASE2 \
+    $EVAL_BATCH_SIZE \
+    $LEARNING_RATE_PHASE1 \
+    $LEARNING_RATE_PHASE2 \
+    $DATATYPE \
+    $USE_XLA \
+    $NUM_GPUS \
+    $WARMUP_STEPS_PHASE1 \
+    $WARMUP_STEPS_PHASE2 \
+    $TRAIN_STEPS \
+    $SAVE_CHECKPOINT_STEPS \
+    $NUM_ACCUMULATION_STEPS_PHASE1 \
+    $NUM_ACCUMULATION_STEPS_PHASE2 \
+    $BERT_MODEL \
+    $DATA_DIR \
+    $PRETRAIN_RESULT_DIR \
+    |&amp; tee pretrain_lamb.log
+</pre></div>
+</div>
+<p><strong>Note</strong>: If you want to run on more cards and even multi-node, you could adjust the parameter <code class="docutils literal notranslate"><span class="pre">NUM_GPUS</span></code>.</p>
+<ul class="simple">
+<li><p>Finetune</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>NUM_GPUS=8
+BATCH_SIZE_PER_GPU=12
+LEARNING_RATE_PER_GPU=5e-6
+DATATYPE=bf16
+USE_XLA=false
+SQUAD_VERSION=1.1
+EPOCHS=2
+USE_MYTRAIN=true
+BERT_MODEL=large
+
+PRETRAIN_PATH=$PRETRAIN_RESULT_DIR/phase_2/pretrained/bert_model.ckpt-1
+DATA_DIR=$DATA_DIR
+RESULT_DIR=./results/tf_bert_finetune_${BERT_MODEL}_${DATATYPE}
+
+bash scripts/run_squad.sh \
+    $NUM_GPUS \
+    $BATCH_SIZE_PER_GPU \
+    $LEARNING_RATE_PER_GPU \
+    $DATATYPE \
+    $USE_XLA \
+    $BERT_MODEL \
+    $SQUAD_VERSION \
+    $EPOCHS \
+    $USE_MYTRAIN \
+    $PRETRAIN_PATH \
+    $DATA_DIR \
+    $RESULT_DIR \
+    |&amp; tee finetune.log
+</pre></div>
+</div>
+<p><strong>Note</strong>: If you want to run on more cards and even multi-node, you could adjust the parameter <code class="docutils literal notranslate"><span class="pre">NUM_GPUS</span></code>.</p>
+</section>
+<section id="results">
+<h3>Results<a class="headerlink" href="#results" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Pretraining Phase1</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.105446</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">83</span><span class="p">]</span> <span class="n">Training</span> <span class="n">Summary</span><span class="p">:</span> 
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">{</span><span class="s1">&#39;total_training_steps&#39;</span><span class="p">:</span> <span class="mi">5774</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="n">xxxxx</span><span class="p">}</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190052</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">595</span><span class="p">]</span> <span class="o">-----------------------------</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190136</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">596</span><span class="p">]</span>   <span class="n">Batch</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">312</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190169</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">597</span><span class="p">]</span>   <span class="n">Num</span> <span class="n">steps</span> <span class="o">=</span> <span class="mi">5774</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190193</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">598</span><span class="p">]</span>   <span class="n">LR</span> <span class="o">=</span> <span class="mf">0.000611</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190217</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">600</span><span class="p">]</span> <span class="n">Multi</span><span class="o">-</span><span class="n">GPU</span> <span class="n">training</span> <span class="k">with</span> <span class="n">TF</span> <span class="n">Horovod</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190249</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">601</span><span class="p">]</span> <span class="n">hvd</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190273</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">602</span><span class="p">]</span> <span class="n">Total</span> <span class="n">Training</span> <span class="n">Time</span> <span class="o">=</span> <span class="n">xxxxx</span> <span class="k">for</span> <span class="n">Sequences</span> <span class="o">=</span> <span class="mi">461180928</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190343</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">604</span><span class="p">]</span> <span class="n">Throughput</span> <span class="n">Average</span> <span class="p">(</span><span class="n">sequences</span><span class="o">/</span><span class="n">sec</span><span class="p">)</span> <span class="k">with</span> <span class="n">overhead</span> <span class="o">=</span> <span class="n">xxxxx</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190536</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">606</span><span class="p">]</span> <span class="n">Throughput</span> <span class="n">Average</span> <span class="p">(</span><span class="n">sequences</span><span class="o">/</span><span class="n">sec</span><span class="p">)</span> <span class="o">=</span> <span class="n">xxxxx</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1015</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190559</span> <span class="mi">22471978829632</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">607</span><span class="p">]</span> <span class="o">-----------------------------</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">decayed_learning_rate_at_crossover_point</span> <span class="o">=</span> <span class="mf">4.888000e-03</span><span class="p">,</span> <span class="n">adjusted_init_lr</span> <span class="o">=</span> <span class="mf">4.888000e-03</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">15</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190587</span> <span class="o">-</span>  <span class="n">throughput_train</span> <span class="p">:</span> <span class="n">xxxxx</span> <span class="n">sequences</span><span class="o">/</span><span class="n">s</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">15</span> <span class="mi">21</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">32.190668</span> <span class="o">-</span>  <span class="n">total_loss</span> <span class="p">:</span> <span class="n">xxxxx</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Pretraining Phase2</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.227250</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">83</span><span class="p">]</span> <span class="n">Training</span> <span class="n">Summary</span><span class="p">:</span> 
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">{</span><span class="s1">&#39;total_training_steps&#39;</span><span class="p">:</span> <span class="mi">1666</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="n">xxxxx</span><span class="p">}</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314010</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">595</span><span class="p">]</span> <span class="o">-----------------------------</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314064</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">596</span><span class="p">]</span>   <span class="n">Batch</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">40</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314090</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">597</span><span class="p">]</span>   <span class="n">Num</span> <span class="n">steps</span> <span class="o">=</span> <span class="mi">1666</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314113</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">598</span><span class="p">]</span>   <span class="n">LR</span> <span class="o">=</span> <span class="mf">0.0005</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314135</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">600</span><span class="p">]</span> <span class="n">Multi</span><span class="o">-</span><span class="n">GPU</span> <span class="n">training</span> <span class="k">with</span> <span class="n">TF</span> <span class="n">Horovod</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314165</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">601</span><span class="p">]</span> <span class="n">hvd</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314197</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">602</span><span class="p">]</span> <span class="n">Total</span> <span class="n">Training</span> <span class="n">Time</span> <span class="o">=</span> <span class="n">xxxxx</span> <span class="k">for</span> <span class="n">Sequences</span> <span class="o">=</span> <span class="mi">51179520</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314260</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">604</span><span class="p">]</span> <span class="n">Throughput</span> <span class="n">Average</span> <span class="p">(</span><span class="n">sequences</span><span class="o">/</span><span class="n">sec</span><span class="p">)</span> <span class="k">with</span> <span class="n">overhead</span> <span class="o">=</span> <span class="n">xxxxx</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314455</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">606</span><span class="p">]</span> <span class="n">Throughput</span> <span class="n">Average</span> <span class="p">(</span><span class="n">sequences</span><span class="o">/</span><span class="n">sec</span><span class="p">)</span> <span class="o">=</span> <span class="n">xxxxx</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1021</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314478</span> <span class="mi">23092487755584</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">607</span><span class="p">]</span> <span class="o">-----------------------------</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">decayed_learning_rate_at_crossover_point</span> <span class="o">=</span> <span class="mf">4.000000e-03</span><span class="p">,</span> <span class="n">adjusted_init_lr</span> <span class="o">=</span> <span class="mf">4.000000e-03</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">21</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314505</span> <span class="o">-</span>  <span class="n">throughput_train</span> <span class="p">:</span> <span class="n">xxxxx</span> <span class="n">sequences</span><span class="o">/</span><span class="n">s</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">21</span> <span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="p">:</span><span class="mf">52.314589</span> <span class="o">-</span>  <span class="n">total_loss</span> <span class="p">:</span> <span class="n">xxxxx</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Finetune</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.037595</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">83</span><span class="p">]</span> <span class="n">Training</span> <span class="n">Summary</span><span class="p">:</span> 
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">{</span><span class="s1">&#39;total_training_steps&#39;</span><span class="p">:</span> <span class="mi">1846</span><span class="p">,</span> <span class="s1">&#39;train_loss&#39;</span><span class="p">:</span> <span class="n">xxxxx</span><span class="p">}</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072701</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">595</span><span class="p">]</span> <span class="o">-----------------------------</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072752</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">596</span><span class="p">]</span>   <span class="n">Batch</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072779</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">597</span><span class="p">]</span>   <span class="n">Num</span> <span class="n">steps</span> <span class="o">=</span> <span class="mi">1846</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072805</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">598</span><span class="p">]</span>   <span class="n">LR</span> <span class="o">=</span> <span class="mf">5e-06</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072829</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">600</span><span class="p">]</span> <span class="n">Multi</span><span class="o">-</span><span class="n">GPU</span> <span class="n">training</span> <span class="k">with</span> <span class="n">TF</span> <span class="n">Horovod</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072861</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">601</span><span class="p">]</span> <span class="n">hvd</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072884</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">602</span><span class="p">]</span> <span class="n">Total</span> <span class="n">Training</span> <span class="n">Time</span> <span class="o">=</span> <span class="n">xxxxx</span> <span class="k">for</span> <span class="n">Sequences</span> <span class="o">=</span> <span class="mi">177216</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.072928</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">604</span><span class="p">]</span> <span class="n">Throughput</span> <span class="n">Average</span> <span class="p">(</span><span class="n">sequences</span><span class="o">/</span><span class="n">sec</span><span class="p">)</span> <span class="k">with</span> <span class="n">overhead</span> <span class="o">=</span> <span class="n">xxxxx</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.073072</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">606</span><span class="p">]</span> <span class="n">Throughput</span> <span class="n">Average</span> <span class="p">(</span><span class="n">sequences</span><span class="o">/</span><span class="n">sec</span><span class="p">)</span> <span class="o">=</span> <span class="n">xxxxx</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">I1022</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.073094</span> <span class="mi">23450678511424</span> <span class="n">model_training_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">607</span><span class="p">]</span> <span class="o">-----------------------------</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Inference after finetune</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.073121</span> <span class="o">-</span>  <span class="n">throughput_train</span> <span class="p">:</span> <span class="n">xxxxx</span> <span class="n">sequences</span><span class="o">/</span><span class="n">s</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">18</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mf">51.073183</span> <span class="o">-</span>  <span class="n">total_loss</span> <span class="p">:</span> <span class="n">xxxxx</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">18</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="mf">21.122414</span> <span class="o">-</span>  <span class="n">f1</span> <span class="p">:</span> <span class="n">xxxxx</span> <span class="kc">None</span>
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">DLL</span> <span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">18</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="mf">21.122509</span> <span class="o">-</span>  <span class="n">exact_match</span> <span class="p">:</span> <span class="n">xxxxx</span> 
+<span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="sa">b</span><span class="s1">&#39;{&quot;exact_match&quot;: xxxxx, &quot;f1&quot;: xxxxx}</span><span class="se">\n</span><span class="s1">&#39;</span>
 </pre></div>
 </div>
 </section>
@@ -330,7 +518,7 @@ bash scripts/run_squad.sh \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x71f77ebb08b0> 
+   <jinja2.runtime.BlockReference object at 0x74a41f305960> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
