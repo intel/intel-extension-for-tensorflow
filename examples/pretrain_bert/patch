@@ -1,31 +1,32 @@
-From 068b6c90d221efd516722e9ebab8d9cd112b6f8d Mon Sep 17 00:00:00 2001
+From 01e3540197163d508969d8eb80bef5bfd50f771c Mon Sep 17 00:00:00 2001
 From: yitingw1 <yiting.wang@intel.com>
-Date: Thu, 7 Mar 2024 03:08:43 -0800
-Subject: [PATCH] 0307 modify for itex bf16 & HVD
+Date: Thu, 14 Mar 2024 01:45:15 -0700
+Subject: [PATCH] 0314 modify for itex bf16 & HVD
 
 ---
  .../LanguageModeling/BERT/common_flags.py     |  5 +
  .../LanguageModeling/BERT/data/bertPrep.py    |  4 +-
  .../BERT/data/create_datasets_from_start.sh   |  2 +-
+ .../LanguageModeling/BERT/input_pipeline.py   | 14 +--
  .../official/modeling/model_training_utils.py |  5 +-
  .../modeling/model_training_utils_test.py     |  4 +-
- .../BERT/official/nlp/bert_modeling.py        |  9 +-
- .../BERT/official/nlp/bert_models.py          |  5 +
- .../official/nlp/modeling/layers/attention.py | 86 ++++++++++++-----
+ .../BERT/official/nlp/bert_modeling.py        | 12 ++-
+ .../BERT/official/nlp/bert_models.py          |  8 ++
+ .../official/nlp/modeling/layers/attention.py | 75 ++++++++++-----
  .../nlp/modeling/layers/transformer.py        | 94 +++++++++++++------
  .../networks/albert_transformer_encoder.py    |  4 +-
  .../nlp/modeling/networks/masked_lm.py        | 14 ++-
- .../modeling/networks/transformer_encoder.py  | 26 +++--
+ .../modeling/networks/transformer_encoder.py  | 24 +++--
  .../BERT/official/utils/flags/flags_test.py   |  3 +
- .../LanguageModeling/BERT/optimization.py     |  2 +-
- .../LanguageModeling/BERT/run_pretraining.py  | 31 ++++--
- .../LanguageModeling/BERT/run_squad.py        | 60 +++++++++---
- .../BERT/scripts/run_pretraining_adam.sh      |  2 +
+ .../LanguageModeling/BERT/optimization.py     | 27 ++++--
+ .../LanguageModeling/BERT/run_pretraining.py  | 37 +++++---
+ .../LanguageModeling/BERT/run_squad.py        | 66 +++++++++----
+ .../BERT/scripts/run_pretraining_adam.sh      |  6 +-
  .../BERT/scripts/run_pretraining_lamb.sh      |  6 +-
  .../scripts/run_pretraining_lamb_phase1.sh    | 20 ++--
  .../scripts/run_pretraining_lamb_phase2.sh    | 20 ++--
- .../BERT/scripts/run_squad.sh                 | 22 ++++-
- 21 files changed, 300 insertions(+), 124 deletions(-)
+ .../BERT/scripts/run_squad.sh                 | 28 ++++--
+ 22 files changed, 339 insertions(+), 139 deletions(-)
 
 diff --git a/TensorFlow2/LanguageModeling/BERT/common_flags.py b/TensorFlow2/LanguageModeling/BERT/common_flags.py
 index 0c471089..b7c4780e 100644
@@ -85,6 +86,66 @@ index f09b0d0f..43e60aa6 100755
  
  to_download=${1:-"all"}
  pretrained_to_download=${2:-"wiki_only"} # By default, we don't download BooksCorpus dataset due to recent issues with the host server
+diff --git a/TensorFlow2/LanguageModeling/BERT/input_pipeline.py b/TensorFlow2/LanguageModeling/BERT/input_pipeline.py
+index 86225f60..4518d84e 100644
+--- a/TensorFlow2/LanguageModeling/BERT/input_pipeline.py
++++ b/TensorFlow2/LanguageModeling/BERT/input_pipeline.py
+@@ -63,7 +63,8 @@ def create_pretrain_dataset(input_patterns,
+                             batch_size,
+                             is_training=True,
+                             input_pipeline_context=None,
+-                            use_horovod=False):
++                            use_horovod=False,
++                            seed=None):
+   """Creates input dataset from (tf)records files for pretraining."""
+   name_to_features = {
+       'input_ids':
+@@ -82,7 +83,7 @@ def create_pretrain_dataset(input_patterns,
+           tf.io.FixedLenFeature([1], tf.int64),
+   }
+ 
+-  dataset = tf.data.Dataset.list_files(input_patterns, shuffle=is_training)
++  dataset = tf.data.Dataset.list_files(input_patterns, shuffle=is_training, seed=seed)
+   if use_horovod:
+     dataset = dataset.shard(hvd.size(), hvd.rank())
+ 
+@@ -97,7 +98,7 @@ def create_pretrain_dataset(input_patterns,
+   input_files = []
+   for input_pattern in input_patterns:
+     input_files.extend(tf.io.gfile.glob(input_pattern))
+-  dataset = dataset.shuffle(len(input_files))
++  dataset = dataset.shuffle(len(input_files), seed=seed)
+ 
+   # In parallel, create tf record dataset for each train files.
+   # cycle_length = 8 means that up to 8 files will be read and deserialized in
+@@ -132,7 +133,7 @@ def create_pretrain_dataset(input_patterns,
+       num_parallel_calls=tf.data.experimental.AUTOTUNE)
+ 
+   if is_training:
+-    dataset = dataset.shuffle(100)
++    dataset = dataset.shuffle(100, seed=seed)
+ 
+   dataset = dataset.batch(batch_size, drop_remainder=True)
+   dataset = dataset.prefetch(1024)
+@@ -186,7 +187,8 @@ def create_squad_dataset(file_path,
+                          batch_size,
+                          is_training=True,
+                          input_pipeline_context=None,
+-                         use_horovod=False):
++                         use_horovod=False,
++                         seed=None):
+   """Creates input dataset from (tf)records files for train/eval."""
+   name_to_features = {
+       'input_ids': tf.io.FixedLenFeature([seq_length], tf.int64),
+@@ -224,7 +226,7 @@ def create_squad_dataset(file_path,
+   dataset = dataset.map(_select_data_from_record)
+ 
+   if is_training:
+-    dataset = dataset.shuffle(100)
++    dataset = dataset.shuffle(100, seed=seed)
+     dataset = dataset.repeat()
+ 
+   dataset = dataset.batch(batch_size, drop_remainder=True)
 diff --git a/TensorFlow2/LanguageModeling/BERT/official/modeling/model_training_utils.py b/TensorFlow2/LanguageModeling/BERT/official/modeling/model_training_utils.py
 index f5d080fa..0d568f76 100644
 --- a/TensorFlow2/LanguageModeling/BERT/official/modeling/model_training_utils.py
@@ -124,10 +185,22 @@ index b473aa9e..86e8267b 100644
          input_shape=[128], num_classes=3, use_float16=True)
      self.run_training(
 diff --git a/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_modeling.py b/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_modeling.py
-index 6e4afa5e..3b976666 100644
+index 6e4afa5e..181afb8c 100644
 --- a/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_modeling.py
 +++ b/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_modeling.py
-@@ -27,6 +27,11 @@ import tensorflow as tf
+@@ -18,15 +18,23 @@ from __future__ import absolute_import
+ from __future__ import division
+ from __future__ import print_function
+ 
++import os
+ import copy
+ import json
+ import math
+ import six
+ import tensorflow as tf
++tf.random.set_seed(1234)
++os.environ['TF_DETERMINISTIC_OPS'] = '1'
+ 
  from tensorflow.python.util import deprecation
  from official.modeling import tf_utils
  
@@ -139,7 +212,7 @@ index 6e4afa5e..3b976666 100644
  
  class BertConfig(object):
    """Configuration for `BertModel`."""
-@@ -258,7 +263,9 @@ class BertModel(tf.keras.layers.Layer):
+@@ -258,7 +266,9 @@ class BertModel(tf.keras.layers.Layer):
      word_embeddings = self.embedding_lookup(input_word_ids)
      embedding_tensor = self.embedding_postprocessor(
          word_embeddings=word_embeddings, token_type_ids=input_type_ids)
@@ -151,10 +224,22 @@ index 6e4afa5e..3b976666 100644
      attention_mask = None
      if input_mask is not None:
 diff --git a/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_models.py b/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_models.py
-index 4f1f8801..bd9e7f67 100644
+index 4f1f8801..af89001a 100644
 --- a/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_models.py
 +++ b/TensorFlow2/LanguageModeling/BERT/official/nlp/bert_models.py
-@@ -29,6 +29,11 @@ from official.nlp.modeling.networks import bert_classifier
+@@ -18,8 +18,11 @@ from __future__ import absolute_import
+ from __future__ import division
+ from __future__ import print_function
+ 
++import os
+ import tensorflow as tf
+ import tensorflow_hub as hub
++tf.random.set_seed(1234)
++os.environ['TF_DETERMINISTIC_OPS'] = '1'
+ 
+ from official.modeling import tf_utils
+ from official.nlp import bert_modeling
+@@ -29,6 +32,11 @@ from official.nlp.modeling.networks import bert_classifier
  from official.nlp.modeling.networks import bert_pretrainer
  from official.nlp.modeling.networks import bert_span_labeler
  
@@ -167,7 +252,7 @@ index 4f1f8801..bd9e7f67 100644
  def gather_indexes(sequence_tensor, positions):
    """Gathers the vectors at the specific positions.
 diff --git a/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/layers/attention.py b/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/layers/attention.py
-index bf7ca5ac..d2a2b80c 100644
+index bf7ca5ac..eaf0de64 100644
 --- a/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/layers/attention.py
 +++ b/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/layers/attention.py
 @@ -24,7 +24,14 @@ import tensorflow as tf
@@ -256,46 +341,39 @@ index bf7ca5ac..d2a2b80c 100644
  
      # Take the dot product between "query" and "key" to get the raw
      # attention scores.
-@@ -174,22 +187,43 @@ class Attention(tf.keras.layers.Layer):
+@@ -174,22 +187,40 @@ class Attention(tf.keras.layers.Layer):
      query_tensor = tf.transpose(query_tensor, [0, 2, 1, 3])
      # `key_tensor` = [B, N, T, H]
      key_tensor = tf.transpose(key_tensor, [0, 2, 1, 3])
 -    # `attention_scores` = [B, N, F, T]
 -    attention_scores = tf.matmul(query_tensor, key_tensor, transpose_b=True)
--
--    attention_scores = tf.multiply(attention_scores,
--                                   1.0 / math.sqrt(float(self._head_size)))
--
--    # Normalize the attention scores to probabilities.
--    # `attention_probs` = [B, N, F, T]
--    attention_probs = self._masked_softmax([attention_scores, attention_mask])
--
--    # This is actually dropping out entire tokens to attend to, which might
--    # seem a bit unusual, but is taken from the original Transformer paper.
--    attention_probs = self._dropout(attention_probs)
--
--    # `context_layer` = [B, F, N, H]
--    return tf.einsum("BNFT,BTNH->BFNH", attention_probs, value_tensor)
 +    # `key_tensor` = [B, N, T, H]
 +    value_tensor = tf.transpose(value_tensor, [0, 2, 1, 3])
-+
+ 
+-    attention_scores = tf.multiply(attention_scores,
+-                                   1.0 / math.sqrt(float(self._head_size)))
 +    if(IS_ITEX):
 +      if attention_mask is not None:
 +        attention_mask = tf.expand_dims(attention_mask, axis=[1])
-+
+ 
+-    # Normalize the attention scores to probabilities.
+-    # `attention_probs` = [B, N, F, T]
+-    attention_probs = self._masked_softmax([attention_scores, attention_mask])
 +        # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
 +        # masked positions, this operation will create a tensor which is 0.0 for
 +        # positions we want to attend and -10000.0 for masked positions.
 +        adder = (1.0 - tf.cast(attention_mask, query_tensor.dtype)) * -10000.0
-+
-+      context_layer = scaled_dot_product_attention(query_tensor, key_tensor, value_tensor, adder, 
-+                                                   self._dropout_rate, use_fast_attention=True, 
-+                                                   use_stateless_randomuniform=False)
-+      
+ 
+-    # This is actually dropping out entire tokens to attend to, which might
+-    # seem a bit unusual, but is taken from the original Transformer paper.
+-    attention_probs = self._dropout(attention_probs)
++      context_layer = scaled_dot_product_attention(query_tensor, key_tensor, value_tensor, adder, self._dropout_rate, use_fast_attention=True, use_stateless_randomuniform=False)
 +    else:  # default attention
 +      # `attention_scores` = [B, N, F, T]
 +      attention_scores = tf.matmul(query_tensor, key_tensor, transpose_b=True)
-+
+ 
+-    # `context_layer` = [B, F, N, H]
+-    return tf.einsum("BNFT,BTNH->BFNH", attention_probs, value_tensor)
 +      attention_scores = tf.multiply(attention_scores,
 +                                    1.0 / math.sqrt(float(self._head_size)))
 +
@@ -518,7 +596,7 @@ index 15ec13a3..4af29cb5 100644
              lm_data)
      lm_data = tf.keras.layers.Lambda(
 diff --git a/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/networks/transformer_encoder.py b/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/networks/transformer_encoder.py
-index 6b8d3f77..d4b8d967 100644
+index 6b8d3f77..b10ee381 100644
 --- a/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/networks/transformer_encoder.py
 +++ b/TensorFlow2/LanguageModeling/BERT/official/nlp/modeling/networks/transformer_encoder.py
 @@ -24,6 +24,11 @@ import tensorflow as tf
@@ -544,16 +622,15 @@ index 6b8d3f77..d4b8d967 100644
              name='embeddings/layer_norm',
              axis=-1,
              epsilon=1e-12,
--            dtype=tf.float32)(embeddings))
+             dtype=tf.float32)(embeddings))
 -    embeddings = (
 -        tf.keras.layers.Dropout(rate=dropout_rate,
 -                                dtype=tf.float32)(embeddings))
 -
 -    if float_dtype == 'float16':
-+            dtype=tf.float32)(tf.reshape(embeddings,(-1, hidden_size))))
 +      embeddings = (
 +          tf.keras.layers.Dropout(rate=dropout_rate,
-+                                  dtype=tf.float32)(tf.reshape(embeddings, (-1 , sequence_length, hidden_size))))
++                                  dtype=tf.float32)(embeddings))
        embeddings = tf.cast(embeddings, tf.float16)
 +    else:
 +      embeddings = (
@@ -581,10 +658,49 @@ index e11a1642..0ecb5921 100644
          [__file__, "--dtype", "fp16", "--loss_scale", "5"])
      self.assertEqual(flags_core.get_loss_scale(flags.FLAGS,
 diff --git a/TensorFlow2/LanguageModeling/BERT/optimization.py b/TensorFlow2/LanguageModeling/BERT/optimization.py
-index e2b75b08..e90ac768 100644
+index e2b75b08..b74d871b 100644
 --- a/TensorFlow2/LanguageModeling/BERT/optimization.py
 +++ b/TensorFlow2/LanguageModeling/BERT/optimization.py
-@@ -108,7 +108,7 @@ def create_optimizer(init_lr, num_train_steps, num_warmup_steps, optimizer_type=
+@@ -22,6 +22,12 @@ import re
+ 
+ import tensorflow as tf
+ import tensorflow_addons.optimizers as tfa_optimizers
++Has_ITEXLAMB=False
++try:
++  from intel_extension_for_tensorflow.python.ops import LAMBOptimizer as itex_LAMB
++  Has_ITEXLAMB=True
++except:
++  Has_ITEXLAMB=False
+ 
+ class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
+   """Applys a warmup schedule on a given learning rate decay schedule."""
+@@ -96,19 +102,28 @@ def create_optimizer(init_lr, num_train_steps, num_warmup_steps, optimizer_type=
+         epsilon=1e-6,
+         exclude_from_weight_decay=['LayerNorm', 'layer_norm', 'bias'])
+   else:
+-    skip_list = ['None'] # to avoid exclude_from_layer_adaptation set to exclude_from_weight_decay if the arg is None
+-    optimizer = tfa_optimizers.LAMB(
++    if(Has_ITEXLAMB):
++      optimizer = itex_LAMB(
+         learning_rate=learning_rate_fn,
+         weight_decay_rate=0.01,
+         beta_1=0.9,
+         beta_2=0.999,
+-        epsilon=1e-6,
+-        exclude_from_weight_decay=['LayerNorm', 'layer_norm', 'bias'],
+-        exclude_from_layer_adaptation=skip_list)
++        epsilon=1e-6)
++    else:
++      skip_list = ['None'] # to avoid exclude_from_layer_adaptation set to exclude_from_weight_decay if the arg is None
++      optimizer = tfa_optimizers.LAMB(
++          learning_rate=learning_rate_fn,
++          weight_decay_rate=0.01,
++          beta_1=0.9,
++          beta_2=0.999,
++          epsilon=1e-6,
++          exclude_from_weight_decay=['LayerNorm', 'layer_norm', 'bias'],
++          exclude_from_layer_adaptation=skip_list)
++      
    return optimizer
  
  
@@ -594,7 +710,7 @@ index e2b75b08..e90ac768 100644
    Just adding the square of the weights to the loss function is *not* the
    correct way of using L2 regularization/weight decay with Adam, since that will
 diff --git a/TensorFlow2/LanguageModeling/BERT/run_pretraining.py b/TensorFlow2/LanguageModeling/BERT/run_pretraining.py
-index a55757b9..15ba78b5 100644
+index a55757b9..de4f6acb 100644
 --- a/TensorFlow2/LanguageModeling/BERT/run_pretraining.py
 +++ b/TensorFlow2/LanguageModeling/BERT/run_pretraining.py
 @@ -32,7 +32,7 @@ import model_saving_utils
@@ -606,7 +722,34 @@ index a55757b9..15ba78b5 100644
  import dllogger_class
  from official.utils.misc import distribution_utils
  from official.utils.misc import keras_utils
-@@ -109,8 +109,15 @@ def run_customized_training(strategy,
+@@ -53,6 +53,8 @@ flags.DEFINE_integer('num_steps_per_epoch', 1000,
+                      'Total number of training steps to run per epoch.')
+ flags.DEFINE_float('warmup_steps', 10000,
+                    'Warmup steps for Adam weight decay optimizer.')
++flags.DEFINE_integer('seed', 1234,
++                     'Set pretraining seed to get deterministic results.')
+ 
+ common_flags.define_common_bert_flags()
+ 
+@@ -67,6 +69,7 @@ def get_pretrain_dataset_fn(input_file_pattern, seq_length,
+     input_patterns = input_file_pattern.split(',')
+     batch_size = ctx.get_per_replica_batch_size(
+         global_batch_size) if ctx else global_batch_size
++    print("***run_pretraining***FLAGS.seed:", FLAGS.seed)
+     train_dataset = input_pipeline.create_pretrain_dataset(
+         input_patterns,
+         seq_length,
+@@ -74,7 +77,8 @@ def get_pretrain_dataset_fn(input_file_pattern, seq_length,
+         batch_size,
+         is_training=True,
+         input_pipeline_context=ctx,
+-        use_horovod=FLAGS.use_horovod)
++        use_horovod=FLAGS.use_horovod,
++        seed=FLAGS.seed)
+     return train_dataset
+ 
+   return _dataset_fn
+@@ -109,8 +113,15 @@ def run_customized_training(strategy,
  
    def _get_pretrain_model():
      """Gets a pretraining model."""
@@ -624,7 +767,7 @@ index a55757b9..15ba78b5 100644
      pretrain_model.optimizer = optimization.create_optimizer(
          initial_lr, steps_per_epoch * epochs, warmup_steps, FLAGS.optimizer_type)
      if FLAGS.use_fp16:
-@@ -176,7 +183,7 @@ def main(_):
+@@ -176,7 +187,7 @@ def main(_):
    if not FLAGS.model_dir:
      FLAGS.model_dir = '/tmp/bert20/'
  
@@ -633,7 +776,7 @@ index a55757b9..15ba78b5 100644
    for gpu in gpus:
      tf.config.experimental.set_memory_growth(gpu, True)
  
-@@ -193,12 +200,16 @@ def main(_):
+@@ -193,12 +204,16 @@ def main(_):
  
      hvd.init()
      if gpus:
@@ -657,7 +800,7 @@ index a55757b9..15ba78b5 100644
    run_bert_pretrain(strategy)
  
 diff --git a/TensorFlow2/LanguageModeling/BERT/run_squad.py b/TensorFlow2/LanguageModeling/BERT/run_squad.py
-index 87f5f019..a78d130b 100644
+index 87f5f019..34a39be6 100644
 --- a/TensorFlow2/LanguageModeling/BERT/run_squad.py
 +++ b/TensorFlow2/LanguageModeling/BERT/run_squad.py
 @@ -46,7 +46,7 @@ import squad_lib as squad_lib_wp
@@ -669,7 +812,34 @@ index 87f5f019..a78d130b 100644
  import tf_trt
  from official.utils.misc import distribution_utils
  from official.utils.misc import keras_utils
-@@ -208,8 +208,15 @@ def predict_squad_customized(strategy, input_meta_data, bert_config,
+@@ -107,6 +107,8 @@ flags.DEFINE_string(
+ flags.DEFINE_string(
+     'savedmodel_dir', None,
+     'The path of SavedModel for Savedmodel and TF-TRT prediction.')
++flags.DEFINE_integer('seed', 1234,
++                     'Set finetuning seed to get deterministic results.')
+ 
+ common_flags.define_common_bert_flags()
+ 
+@@ -171,6 +173,7 @@ def get_dataset_fn(input_file_pattern, max_seq_length, global_batch_size,
+ 
+   def _dataset_fn(ctx=None):
+     """Returns tf.data.Dataset for distributed BERT pretraining."""
++    print("***run_squad***FLAGS.seed:", FLAGS.seed)
+     batch_size = ctx.get_per_replica_batch_size(
+         global_batch_size) if ctx else global_batch_size
+     dataset = input_pipeline.create_squad_dataset(
+@@ -179,7 +182,8 @@ def get_dataset_fn(input_file_pattern, max_seq_length, global_batch_size,
+         batch_size,
+         is_training=is_training,
+         input_pipeline_context=ctx,
+-        use_horovod=use_horovod)
++        use_horovod=use_horovod,
++        seed=FLAGS.seed)
+     return dataset
+ 
+   return _dataset_fn
+@@ -208,8 +212,15 @@ def predict_squad_customized(strategy, input_meta_data, bert_config,
  
    else:
      with distribution_utils.get_strategy_scope(strategy):
@@ -687,7 +857,7 @@ index 87f5f019..a78d130b 100644
  
      if FLAGS.init_checkpoint:
        checkpoint = tf.train.Checkpoint(model=squad_model)
-@@ -278,7 +285,10 @@ def predict_squad_customized(strategy, input_meta_data, bert_config,
+@@ -278,7 +289,10 @@ def predict_squad_customized(strategy, input_meta_data, bert_config,
    logging.info("Summary Inference Statistics")
    logging.info("Batch size = %d", FLAGS.predict_batch_size)
    logging.info("Sequence Length = %d", input_meta_data['max_seq_length'])
@@ -699,7 +869,7 @@ index 87f5f019..a78d130b 100644
    logging.info("Total Inference Time = %0.2f for Sentences = %d", eval_time_elapsed,
      num_steps * FLAGS.predict_batch_size)
  
-@@ -326,7 +336,11 @@ def train_squad(strategy,
+@@ -326,7 +340,11 @@ def train_squad(strategy,
  
    use_float16 = common_flags.use_float16()
    if use_float16:
@@ -712,7 +882,7 @@ index 87f5f019..a78d130b 100644
  
    bert_config = MODEL_CLASSES[FLAGS.model_type][0].from_json_file(
        FLAGS.bert_config_file)
-@@ -351,10 +365,23 @@ def train_squad(strategy,
+@@ -351,10 +369,23 @@ def train_squad(strategy,
  
    def _get_squad_model():
      """Get Squad model and optimizer."""
@@ -738,7 +908,7 @@ index 87f5f019..a78d130b 100644
          hub_module_url=FLAGS.hub_module_url)
      learning_rate = FLAGS.learning_rate * hvd.size() if FLAGS.use_horovod else FLAGS.learning_rate
      squad_model.optimizer = optimization.create_optimizer(
-@@ -591,7 +618,7 @@ dynamic_batching {{
+@@ -591,7 +622,7 @@ dynamic_batching {{
      "max_batch_size": max_batch_size,
      "seq_length": input_meta_data['max_seq_length'],
      "dynamic_batching": batching_str,
@@ -747,7 +917,7 @@ index 87f5f019..a78d130b 100644
      "engine_count": FLAGS.triton_engine_count
    }
  
-@@ -612,7 +639,7 @@ def main(_):
+@@ -612,7 +643,7 @@ def main(_):
      export_squad(FLAGS.model_export_path, input_meta_data)
      return
  
@@ -756,7 +926,7 @@ index 87f5f019..a78d130b 100644
    for gpu in gpus:
      tf.config.experimental.set_memory_growth(gpu, True)
  
-@@ -627,12 +654,15 @@ def main(_):
+@@ -627,12 +658,15 @@ def main(_):
  
      hvd.init()
      if gpus:
@@ -779,9 +949,18 @@ index 87f5f019..a78d130b 100644
    os.makedirs(FLAGS.model_dir, exist_ok=True)
    dllogging = dllogger_class.dllogger_class(FLAGS.dllog_path)
 diff --git a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_adam.sh b/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_adam.sh
-index df886b92..9dee9ddf 100755
+index df886b92..fc5d57ab 100755
 --- a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_adam.sh
 +++ b/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_adam.sh
+@@ -29,7 +29,7 @@ num_accumulation_steps=${9:-1}
+ seq_len=${10:-512}
+ max_pred_per_seq=${11:-80}
+ 
+-DATA_DIR=data/tfrecord/lower_case_1_seq_len_${seq_len}_max_pred_${max_pred_per_seq}_masked_lm_prob_0.15_random_seed_12345_dupe_factor_5_shard_1472_test_split_10/books_wiki_en_corpus
++DATA_DIR=data/tfrecord/lower_case_1_seq_len_${seq_len}_max_pred_${max_pred_per_seq}_masked_lm_prob_0.15_random_seed_12345_dupe_factor_5_shard_1472_test_split_10/wikicorpus_en
+ 
+ if [ "$bert_model" = "large" ] ; then
+     export BERT_CONFIG=data/download/google_pretrained_weights/uncased_L-24_H-1024_A-16/bert_config.json
 @@ -40,6 +40,8 @@ fi
  PREC=""
  if [ "$precision" = "fp16" ] ; then
@@ -791,6 +970,15 @@ index df886b92..9dee9ddf 100755
  elif [ "$precision" = "fp32" ] || [ "$precision" = "tf32" ] ; then
     PREC=""
  else
+@@ -57,7 +59,7 @@ printf -v TAG "tf_bert_pretraining_adam_%s_%s_gbs%d" "$bert_model" "$precision"
+ DATESTAMP=`date +'%y%m%d%H%M%S'`
+ 
+ #Edit to save logs & checkpoints in a different directory
+-RESULTS_DIR=${RESULTS_DIR:-/results/${TAG}_${DATESTAMP}}
++RESULTS_DIR=${RESULTS_DIR:-./results/${TAG}_${DATESTAMP}}
+ LOGFILE=$RESULTS_DIR/$TAG.$DATESTAMP.log
+ mkdir -m 777 -p $RESULTS_DIR
+ printf "Saving checkpoints to %s\n" "$RESULTS_DIR"
 diff --git a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb.sh b/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb.sh
 index 29b0b264..a0072342 100755
 --- a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb.sh
@@ -823,7 +1011,7 @@ index 29b0b264..a0072342 100755
  mkdir -m 777 -p $RESULTS_DIR
  printf "Saving checkpoints to %s\n" "$RESULTS_DIR"
 diff --git a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase1.sh b/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase1.sh
-index 2fcd54e5..1bb5d5a8 100755
+index 2fcd54e5..4439bcd7 100755
 --- a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase1.sh
 +++ b/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase1.sh
 @@ -33,19 +33,21 @@ num_accumulation_steps_phase1=${13:-128}
@@ -857,7 +1045,7 @@ index 2fcd54e5..1bb5d5a8 100755
  mpi=""
  if [ $num_gpus -gt 1 ] ; then
 -   mpi="mpiexec --allow-run-as-root -np $num_gpus"
-+   mpi="mpiexec -np $num_gpus -l"
++   mpi="mpiexec -np $num_gpus"
     horovod="--use_horovod"
  fi
  
@@ -888,7 +1076,7 @@ index 2fcd54e5..1bb5d5a8 100755
       --model_dir=$RESULTS_DIR_PHASE1 \
       --bert_config_file=$BERT_CONFIG \
 diff --git a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase2.sh b/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase2.sh
-index db279129..5a8565d4 100755
+index db279129..6250b861 100755
 --- a/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase2.sh
 +++ b/TensorFlow2/LanguageModeling/BERT/scripts/run_pretraining_lamb_phase2.sh
 @@ -33,14 +33,14 @@ num_accumulation_steps_phase1=${13:-128}
@@ -924,7 +1112,7 @@ index db279129..5a8565d4 100755
  mpi=""
  if [ $num_gpus -gt 1 ] ; then
 -   mpi="mpiexec --allow-run-as-root -np $num_gpus"
-+   mpi="mpiexec -np $num_gpus -l"
++   mpi="mpiexec -np $num_gpus"
     horovod="--use_horovod"
  fi
  
@@ -950,10 +1138,10 @@ index db279129..5a8565d4 100755
      --init_checkpoint=$PHASE1_CKPT \
      --model_dir=$RESULTS_DIR_PHASE2 \
 diff --git a/TensorFlow2/LanguageModeling/BERT/scripts/run_squad.sh b/TensorFlow2/LanguageModeling/BERT/scripts/run_squad.sh
-index 47cce05a..6e20b81f 100755
+index 47cce05a..9ebd1219 100755
 --- a/TensorFlow2/LanguageModeling/BERT/scripts/run_squad.sh
 +++ b/TensorFlow2/LanguageModeling/BERT/scripts/run_squad.sh
-@@ -25,6 +25,9 @@ use_xla=${5:-"true"}
+@@ -25,13 +25,12 @@ use_xla=${5:-"true"}
  bert_model=${6:-"large"}
  squad_version=${7:-"1.1"}
  epochs=${8:-"2"}
@@ -962,8 +1150,16 @@ index 47cce05a..6e20b81f 100755
 +DATA_DIR=${11:-data}
  
  if [ $num_gpu -gt 1 ] ; then
-     mpi_command="mpirun -np $num_gpu \
-@@ -41,6 +44,9 @@ fi
+-    mpi_command="mpirun -np $num_gpu \
+-    --allow-run-as-root -bind-to none -map-by slot \
+-    -x NCCL_DEBUG=INFO \
+-    -x LD_LIBRARY_PATH \
+-    -x PATH -mca pml ob1 -mca btl ^openib"
++    mpi_command="mpirun -np $num_gpu"
+     use_hvd="--use_horovod"
+ else
+     mpi_command=""
+@@ -41,6 +40,9 @@ fi
  if [ "$precision" = "fp16" ] ; then
      echo "fp16 activated!"
      use_fp16="--use_fp16"
@@ -973,7 +1169,7 @@ index 47cce05a..6e20b81f 100755
  else
      use_fp16=""
  fi
-@@ -53,20 +59,26 @@ else
+@@ -53,20 +55,26 @@ else
  fi
  
  if [ "$bert_model" = "large" ] ; then
@@ -1004,7 +1200,7 @@ index 47cce05a..6e20b81f 100755
  LOGFILE=$RESULTS_DIR/$TAG.$DATESTAMP.log
  mkdir -m 777 -p $RESULTS_DIR
  printf "Saving checkpoints to %s\n" "$RESULTS_DIR"
-@@ -80,7 +92,7 @@ $mpi_command python run_squad.py \
+@@ -80,7 +88,7 @@ $mpi_command python run_squad.py \
    --predict_file=${SQUAD_DIR}/dev-${SQUAD_VERSION}.json \
    --vocab_file=${BERT_BASE_DIR}/vocab.txt \
    --bert_config_file=$BERT_BASE_DIR/bert_config.json \
