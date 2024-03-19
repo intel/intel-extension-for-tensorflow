@@ -249,7 +249,7 @@ index e055a619f..fa5e93af6 100644
          "@com_google_absl//absl/strings",
          "@com_google_absl//absl/types:optional",
 diff --git a/third_party/tsl/tsl/framework/bfc_allocator.cc b/third_party/tsl/tsl/framework/bfc_allocator.cc
-index 9e4447108..9c9fbb35a 100644
+index 9e4447108..e3e083b10 100644
 --- a/third_party/tsl/tsl/framework/bfc_allocator.cc
 +++ b/third_party/tsl/tsl/framework/bfc_allocator.cc
 @@ -48,7 +48,7 @@ BFCAllocator::BFCAllocator(std::unique_ptr<SubAllocator> sub_allocator,
@@ -314,7 +314,7 @@ index 9e4447108..9c9fbb35a 100644
 +// and the size want to get from system.
 +size_t BFCAllocator::GetLimitAlloc() {
 +  // set default limit to 4GB
-+  int64 limit_size = 4 * 1024;
++  int64 limit_size = 4 * 1024 - 1;
 +  Status status = ReadInt64FromEnvVar("ITEX_LIMIT_MEMORY_SIZE_IN_MB",
 +                                        limit_size, &limit_size);
 +  if (!status.ok()) {
