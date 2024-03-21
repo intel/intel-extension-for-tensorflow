@@ -27,7 +27,11 @@ def check_python():
   sys.path.append(location)
   try:
     from version import __version__
-    itex_version = __version__
+    if __version__ > config['latest_release']:
+      itex_version = "latest"
+    else:
+      itex_version = __version__
+
   except Exception:
     print("Intel(R) Extension for TensorFlow* Version is Unknown.\n")
   python_major_version = sys.version_info.major
