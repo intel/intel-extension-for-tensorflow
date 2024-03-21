@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023 Intel Corporation
+# Copyright (c) 2022-2024 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ RUN apt-get update && \
 
 RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
     gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy unified" | \
+RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy/lts/2350 unified" | \
     tee /etc/apt/sources.list.d/intel-gpu-jammy.list
 
 ARG ICD_VER
@@ -87,16 +87,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     apt-get clean && \
     rm -rf  /var/lib/apt/lists/*
 
-RUN pip --no-cache-dir install --upgrade \
-    pip \
-    setuptools
-
 RUN ln -sf $(which ${PYTHON}) /usr/local/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/local/bin/python3 && \
     ln -sf $(which ${PYTHON}) /usr/bin/python && \
     ln -sf $(which ${PYTHON}) /usr/bin/python3
 
-ARG TF_VER="2.14"
+RUN pip --no-cache-dir install --upgrade \
+    pip \
+    setuptools
+
+ARG TF_VER="2.15"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 

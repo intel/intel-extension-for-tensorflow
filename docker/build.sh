@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2021-2022 Intel Corporation
+# Copyright (c) 2021-2024 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,15 +21,15 @@ if [ $IMAGE_TYPE == "xpu" -o $IMAGE_TYPE == "gpu" ]
 then
         IMAGE_NAME=intel-extension-for-tensorflow:$IMAGE_TYPE
         docker build --no-cache --build-arg UBUNTU_VERSION=22.04 \
-                                --build-arg ICD_VER=23.30.26918.50-736~22.04 \
-                                --build-arg LEVEL_ZERO_GPU_VER=1.3.26918.50-736~22.04 \
-                                --build-arg LEVEL_ZERO_VER=1.13.1-719~22.04 \
-                                --build-arg LEVEL_ZERO_DEV_VER=1.13.1-719~22.04 \
-                                --build-arg DPCPP_VER=2024.0.0-49819 \
-                                --build-arg MKL_VER=2024.0.0-49656 \
-                                --build-arg CCL_VER=2021.11.0-49156 \
+                                --build-arg ICD_VER=23.43.27642.40-803~22.04 \
+                                --build-arg LEVEL_ZERO_GPU_VER=1.3.27642.40-803~22.04 \
+                                --build-arg LEVEL_ZERO_VER=1.14.0-744~22.04 \
+                                --build-arg LEVEL_ZERO_DEV_VER=1.14.0-744~22.04 \
+                                --build-arg DPCPP_VER=2024.1.0-958 \
+                                --build-arg MKL_VER=2024.1.0-688 \
+                                --build-arg CCL_VER=2021.12.0-307 \
                                 --build-arg PYTHON=python3.10 \
-                                --build-arg TF_VER=2.14 \
+                                --build-arg TF_VER=2.15 \
                                 --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
 				-f itex-xpu.Dockerfile .
@@ -37,7 +37,7 @@ else
         IMAGE_NAME=intel-extension-for-tensorflow:$IMAGE_TYPE
         docker build --no-cache --build-arg UBUNTU_VERSION=22.04 \
                                 --build-arg PYTHON=python3.10 \
-                                --build-arg TF_VER=2.14 \
+                                --build-arg TF_VER=2.15 \
                                 --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
                                 -f itex-cpu.Dockerfile .
