@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Performance Data &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g95b835b documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Installation Guide" href="../install/installation_guide.html" />
+    <link rel="prev" title="Install TensorFlow Serving with Intel® Extension for TensorFlow*" href="tf_serving_install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Performance Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#models">Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#training-workloads">Training Workloads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inference-workloads">Inference Workloads</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#training-accuracy-results">Training Accuracy Results</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#training-accuracy-on-1-node-of-4x-intel-data-center-gpu-max-1550">Training Accuracy on 1-node of 4x Intel Data Center GPU Max 1550</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#training-performance-results">Training Performance Results</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#training-performance-on-1-node-of-4x-intel-data-center-gpu-max-1550">Training Performance on 1-node of 4x Intel Data Center GPU Max 1550</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#resnet50v1-5-training-performance-results">ResNet50v1-5 Training Performance Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bert-large-phase2-training-performance-results">BERT-Large Phase2 Training Performance Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mask-rcnn-training-performance-results">Mask-RCNN Training Performance Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#medical-image-3d-u-net-training-performance-results">Medical Image 3D U-Net Training Performance Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#inference-performance-results">Inference Performance Results</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#inference-performance-on-1x-intel-data-center-gpu-flex-170">Inference Performance on 1x Intel Data Center GPU Flex 170</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#resnet50v1-5-inference-performance-results">ResNet50v1-5 Inference Performance Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#efficientnet-b0-inference-performance-results">EfficientNet-B0 Inference Performance Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#efficientnet-b3-inference-performance-results">EfficientNet-B3 Inference Performance Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mask-rcnn-inference-performance-results">Mask-RCNN Inference Performance Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stable-diffusion-v1-4-inference-performance-results">Stable Diffusion v1-4 Inference Performance Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#software-configuration">Software Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#software-configuration-for-intel-max-1550-gpu">Software Configuration for Intel Max 1550 GPU</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#software-configuration-for-intel-flex-170-gpu">Software Configuration for Intel Flex 170 GPU</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#hardware-configuration">Hardware Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hardware-configuration-for-intel-max-1550-gpu">Hardware Configuration for Intel Max 1550 GPU</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hardware-configuration-for-intel-flex-170-gpu">Hardware Configuration for Intel Flex 170 GPU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-performance-data-for-intel-ai-data-center-products">Additional Performance Data for Intel AI Data Center Products</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Performance Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/performance.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="performance-data">
+<h1>Performance Data<a class="headerlink" href="#performance-data" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#overview">Overview</a></p></li>
+<li><p><a class="reference external" href="#models">Models</a></p>
+<ul>
+<li><p><a class="reference external" href="#training-workloads">Training Workloads</a></p></li>
+<li><p><a class="reference external" href="#inference-workloads">Inference Workloads</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#training-accuracy-results">Training Accuracy Results</a></p>
+<ul>
+<li><p><a class="reference external" href="#training-accuracy-on-1-node-of-4x-intel-data-center-gpu-max-1550">Training Accuracy on 1-node of 4x Intel Data Center GPU Max 1550</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#training-performance-results">Training Performance Results</a></p>
+<ul>
+<li><p><a class="reference external" href="#training-performance-on-1-node-of-4x-intel-data-center-gpu-max-1550">Training Performance on 1-node of 4x Intel Data Center GPU Max 1550</a></p>
+<ul>
+<li><p><a class="reference external" href="#resnet50v1-5-training-performance-results">ResNet50v1-5 Training Performance Results</a></p></li>
+<li><p><a class="reference external" href="#bert-large-phase2-training-performance-results">BERT-Large Phase2 Training Performance Results</a></p></li>
+<li><p><a class="reference external" href="#mask-rcnn-training-performance-results">Mask-RCNN Training Performance Results</a></p></li>
+<li><p><a class="reference external" href="#medical-image-3d-u-net-training-performance-results">Medical Image 3D U-Net Training Performance Results</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#inference-performance-results">Inference Performance Results</a></p>
+<ul>
+<li><p><a class="reference external" href="#inference-performance-on-1x-intel-data-center-gpu-flex-170">Inference Performance on 1x Intel Data Center GPU Flex 170</a></p>
+<ul>
+<li><p><a class="reference external" href="#resnet50v1-5-inference-performance-results">ResNet50v1-5 Inference Performance Results</a></p></li>
+<li><p><a class="reference external" href="#efficientnet-b0-inference-performance-results">EfficientNet-B0 Inference Performance Results</a></p></li>
+<li><p><a class="reference external" href="#efficientnet-b3-inference-performance-results">EfficientNet-B3 Inference Performance Results</a></p></li>
+<li><p><a class="reference external" href="#mask-rcnn-inference-performance-results">Mask-RCNN Inference Performance Results</a></p></li>
+<li><p><a class="reference external" href="#stable-diffusion-v1-4-inference-performance-results">Stable Diffusion v1-4 Inference Performance Results</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#configuration">Configuration</a></p>
+<ul>
+<li><p><a class="reference external" href="#software-configuration">Software Configuration</a></p>
+<ul>
+<li><p><a class="reference external" href="#software-configuration-for-intel-max-1550-gpu">Software Configuration for Intel Max 1550 GPU</a></p></li>
+<li><p><a class="reference external" href="#software-configuration-for-intel-flex-170-gpu">Software Configuration for Intel Flex 170 GPU</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#hardware-configuration">Hardware Configuration</a></p>
+<ul>
+<li><p><a class="reference external" href="#hardware-configuration-for-intel-max-1550-gpu">Hardware Configuration for Intel Max 1550 GPU</a></p></li>
+<li><p><a class="reference external" href="#hardware-configuration-for-intel-flex-170-gpu">Hardware Configuration for Intel Flex 170 GPU</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#additional-performance-data-for-intel-ai-data-center-products">Additional Performance Data for Intel AI Data Center Products</a></p></li>
+</ul>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p>This document demonstrates the training and inference performance as well as accuracy results on several popular AI workloads with Intel® Extension for TensorFlow* benchmarked on Intel GPUs. You can easily reproduce these results following the guidlines in <a class="reference external" href="../../examples/README.html">examples</a>.</p>
+</section>
+<section id="models">
+<h2>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h2>
+<p>The following tables provide the links where you can get the original code repository and step-by-step guide running on Intel GPUs for each model.</p>
+<section id="training-workloads">
+<h3>Training Workloads<a class="headerlink" href="#training-workloads" title="Permalink to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Model</th>
+<th>Original Model Repo</th>
+<th>ITEX Step-by-Step Guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ResNet50v1.5</td>
+<td><a href="https://github.com/tensorflow/models/tree/v2.14.0/official/legacy/image_classification/">TensorFlow-Models/ResNet50v1.5</a></td>
+<td><a href="../../examples/train_resnet50/README.html">Resnet50 train on Intel GPU</a></td>
+</tr>
+<tr>
+<td>BERT-Large</td>
+<td><a href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT/">DeepLearningExamples/BERT</a></td>
+<td><a href="../../examples/pretrain_bert/README.html">Accelerate BERT-Large Pretraining on Intel GPU</a></td>
+</tr>
+<tr>
+<td>Mask-RCNN</td>
+<td><a href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/Segmentation/MaskRCNN/">DeepLearningExamples/Mask-RCNN</a></td>
+<td><a href="../../examples/train_maskrcnn/README.html">Accelerate Mask R-CNN Training on Intel GPU</a></td>
+</tr>
+<tr>
+<td>3D-UNet</td>
+<td><a href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow/Segmentation/UNet_3D_Medical/">DeepLearningExamples/3D-UNet</a></td>
+<td><a href="../../examples/train_3d_unet/README.html">Accelerate 3D-UNet Training for medical image segmentation on Intel GPU</a></td>
+</tr>
+</tbody>
+</table></section>
+<section id="inference-workloads">
+<h3>Inference Workloads<a class="headerlink" href="#inference-workloads" title="Permalink to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Model</th>
+<th>Original Model Repo</th>
+<th>ITEX Step-by-Step Guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ResNet50v1.5</td>
+<td><a href="https://github.com/IntelAI/models/tree/v3.1.0/models_v2/tensorflow/resnet50v1_5/inference/gpu/">Intel-Reference-Models/ResNet50v1.5</a></td>
+<td><a href="https://github.com/IntelAI/models/tree/v3.1.0/models_v2/tensorflow/resnet50v1_5/inference/gpu/">ResNet50v1.5 Model Inference with Intel® Extention for TensorFlow*</a></td>
+</tr>
+<tr>
+<td>EfficientNet-B0</td>
+<td><a href="https://keras.io/api/applications/efficientnet/">Keras-Applications/EfficientNet</a></td>
+<td>Use the exact same codes and instructions as in the orignal model repo</td>
+</tr>
+<tr>
+<td>EfficientNet-B3</td>
+<td><a href="https://keras.io/api/applications/efficientnet/">Keras-Applications/EfficientNet</a></td>
+<td>Use the exact same codes and instructions as in the orignal model repo</td>
+</tr>
+<tr>
+<td>Mask-RCNN</td>
+<td><a href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/Segmentation/MaskRCNN/">DeepLearningExamples/Mask-RCNN</a></td>
+<td>Use the exact same codes and instructions as in the orignal model repo</td>
+</tr>
+<tr>
+<td>Stable Diffusion v1-4</td>
+<td><a href="https://github.com/keras-team/keras-cv/tree/master/keras_cv/models/stable_diffusion">KerasCV/Stable-Diffusion</a></td>
+<td><a href="../../examples/stable_diffussion_inference/README.html">Stable Diffusion Inference for Text2Image on Intel GPU</a></td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="training-accuracy-results">
+<h2>Training Accuracy Results<a class="headerlink" href="#training-accuracy-results" title="Permalink to this heading"></a></h2>
+<section id="training-accuracy-on-1-node-of-4x-intel-data-center-gpu-max-1550">
+<h3>Training Accuracy on 1-node of 4x Intel Data Center GPU Max 1550<a class="headerlink" href="#training-accuracy-on-1-node-of-4x-intel-data-center-gpu-max-1550" title="Permalink to this heading"></a></h3>
+<p>The following table shows the BERT-Large performance, training loss and time-to-train (TTT) results for both the pre-training and fine-tuning phases on 1-node of 4x Intel® Data Center GPU Max 1550 (600W OAM, 2-stack for each GPU).</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th></th>
+<th>Pre-training Phase1</th>
+<th>Pre-training Phase2</th>
+<th>Fine-Tuning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dataset</strong></td>
+<td><a href="https://dumps.wikimedia.org/">Wikipedia</a> and <a href="https://yknzhu.wixsite.com/mbweb/">BookCorpus</a></td>
+<td><a href="https://dumps.wikimedia.org/">Wikipedia</a> and <a href="https://yknzhu.wixsite.com/mbweb/">BookCorpus</a></td>
+<td><a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD</a> 1.1</td>
+</tr>
+<tr>
+<td><strong>Maximum Sequence Length</strong></td>
+<td>128</td>
+<td>512</td>
+<td>384</td>
+</tr>
+<tr>
+<td><strong>Data Type</strong></td>
+<td>BF16</td>
+<td>BF16</td>
+<td>BF16</td>
+</tr>
+<tr>
+<td><strong>Throughput (sequences/sec)</strong></td>
+<td>3265.35</td>
+<td>699.25</td>
+<td>523.55</td>
+</tr>
+<tr>
+<td><strong>Time to Train (hours)</strong></td>
+<td>39.32</td>
+<td>20.40</td>
+<td>0.67</td>
+</tr>
+<tr>
+<td><strong>Loss</strong></td>
+<td>1.6047</td>
+<td>1.3870</td>
+<td>0.6867</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="training-performance-results">
+<h2>Training Performance Results<a class="headerlink" href="#training-performance-results" title="Permalink to this heading"></a></h2>
+<section id="training-performance-on-1-node-of-4x-intel-data-center-gpu-max-1550">
+<h3>Training Performance on 1-node of 4x Intel Data Center GPU Max 1550<a class="headerlink" href="#training-performance-on-1-node-of-4x-intel-data-center-gpu-max-1550" title="Permalink to this heading"></a></h3>
+<p>The following tables show the performance numbers for several popular training workloads on 1-node of 4x Intel® Data Center GPU Max 1550 (600W OAM, 2-stack for each GPU). For these workloads, we enable and benchmark both FP32 training and BF16 automatic mixed precision (AMP) training with 1-Stack of 1x Max 1550, 2-Stack of 1x Max 1550 as well as 4x Max 1550 (with 8 Stacks in total), to showcase the performance boost and scalability with Intel® Extension for TensorFlow* and Intel® Optimization for Horovod*.</p>
+<blockquote>
+<div><p><strong>Note</strong>: The training performance result on each workload below for <code class="docutils literal notranslate"><span class="pre">1x</span> <span class="pre">Max</span> <span class="pre">1550</span> <span class="pre">w/</span> <span class="pre">1-Stack</span></code> represents the minimum value of the performance results on 2 stacks of single GPU, with 2 instances initiated simultaneously, while each stack of the GPU executing the workload separately, without distributed training.</p>
+</div></blockquote>
+<section id="resnet50v1-5-training-performance-results">
+<h4>ResNet50v1-5 Training Performance Results<a class="headerlink" href="#resnet50v1-5-training-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Ranks</th>
+<th>Local Batch Size: <br>FP32, BF16</th>
+<th>Training <br>Steps</th>
+<th>Throughput w/ <br>TF32 (images/sec)</th>
+<th>Throughput w/ <br>BF16 (images/sec)</th>
+<th>Throughput Speedup <br>w/ AMP</th>
+<th>Weak Scaling <br>w/ TF32</th>
+<th>Weak Scaling <br>w/ BF16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Max 1550 w/ 1-Stack</td>
+<td>1</td>
+<td>256, 512</td>
+<td>5000</td>
+<td>918.96</td>
+<td>1766.53</td>
+<td>1.92x</td>
+<td>1.00</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>1x Max 1550 w/ 2-Stack</td>
+<td>2</td>
+<td>256, 512</td>
+<td>5000</td>
+<td>1762.76</td>
+<td>3461.86</td>
+<td>1.96x</td>
+<td>1.92</td>
+<td>1.96</td>
+</tr>
+<tr>
+<td>4x Max 1550</td>
+<td>8</td>
+<td>256, 256</td>
+<td>5000</td>
+<td>NA</td>
+<td>12278.32</td>
+<td>NA</td>
+<td>NA</td>
+<td>6.95</td>
+</tr>
+</tbody>
+</table></section>
+<section id="bert-large-phase2-training-performance-results">
+<h4>BERT-Large Phase2 Training Performance Results<a class="headerlink" href="#bert-large-phase2-training-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Ranks</th>
+<th>Local <br>Batch Size <br>x Accumulation Steps</th>
+<th>Training <br>Steps</th>
+<th>Throughput <br> w/ TF32 <br>(sequences/sec)</th>
+<th>Throughput <br>w/ BF16 <br>(sequences/sec)</th>
+<th>Throughput Speedup <br>w/ AMP</th>
+<th>Weak Scaling <br>w/ TF32</th>
+<th>Weak Scaling <br>w/ BF16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Max 1550 w/ 1-Stack</td>
+<td>1</td>
+<td>32 x 30</td>
+<td>20</td>
+<td>36.22</td>
+<td>93.22</td>
+<td>2.57x</td>
+<td>1.00</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>1x Max 1550 w/ 2-Stack</td>
+<td>2</td>
+<td>32 x 30</td>
+<td>20</td>
+<td>74.40</td>
+<td>182.57</td>
+<td>2.45x</td>
+<td>2.05</td>
+<td>1.96</td>
+</tr>
+<tr>
+<td>4x Max 1550</td>
+<td>8</td>
+<td>32 x 30</td>
+<td>20</td>
+<td>NA</td>
+<td>692.11</td>
+<td>NA</td>
+<td>NA</td>
+<td>7.42</td>
+</tr>
+</tbody>
+</table></section>
+<section id="mask-rcnn-training-performance-results">
+<h4>Mask-RCNN Training Performance Results<a class="headerlink" href="#mask-rcnn-training-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Ranks</th>
+<th>Local Batch Size</th>
+<th>Training Steps</th>
+<th>Throughput w/ BF16 (images/sec)</th>
+<th>Weak Scaling w/ BF16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Max 1550 w/ 1-Stack</td>
+<td>1</td>
+<td>4</td>
+<td>20</td>
+<td>29.03</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>1x Max 1550 w/ 2-Stack</td>
+<td>2</td>
+<td>4</td>
+<td>20</td>
+<td>55.51</td>
+<td>1.91</td>
+</tr>
+</tbody>
+</table></section>
+<section id="medical-image-3d-u-net-training-performance-results">
+<h4>Medical Image 3D U-Net Training Performance Results<a class="headerlink" href="#medical-image-3d-u-net-training-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Ranks</th>
+<th>Local Batch Size</th>
+<th>Training Steps</th>
+<th>Throughput w/ BF16 (samples/sec)</th>
+<th>Weak Scaling w/ BF16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Max 1550 w/ 1-Stack</td>
+<td>1</td>
+<td>1</td>
+<td>1000</td>
+<td>12.81</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>1x Max 1550 w/ 2-Stack</td>
+<td>2</td>
+<td>1</td>
+<td>1000</td>
+<td>23.56</td>
+<td>1.84</td>
+</tr>
+<tr>
+<td>4x Max 1550</td>
+<td>8</td>
+<td>1</td>
+<td>1000</td>
+<td>87.07</td>
+<td>6.80</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+</section>
+<section id="inference-performance-results">
+<h2>Inference Performance Results<a class="headerlink" href="#inference-performance-results" title="Permalink to this heading"></a></h2>
+<section id="inference-performance-on-1x-intel-data-center-gpu-flex-170">
+<h3>Inference Performance on 1x Intel Data Center GPU Flex 170<a class="headerlink" href="#inference-performance-on-1x-intel-data-center-gpu-flex-170" title="Permalink to this heading"></a></h3>
+<p>The following tables show the performance numbers for several popular inference workloads on 1x Intel® Data Center GPU Flex 170 (150W PCIe, 1-stack for each GPU).</p>
+<blockquote>
+<div><p><strong>Note</strong>: Inference with online mode refers to running the workloads using 1 as the batch size, while inference with batch mode utilizes larger batch size.</p>
+</div></blockquote>
+<section id="resnet50v1-5-inference-performance-results">
+<h4>ResNet50v1-5 Inference Performance Results<a class="headerlink" href="#resnet50v1-5-inference-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Dataset</th>
+<th>Image Size</th>
+<th>Mode</th>
+<th>Batch Size</th>
+<th>Data Type</th>
+<th>Inference Steps</th>
+<th>Throughput (images/sec)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Flex 170</td>
+<td>Dummy</td>
+<td>224x224</td>
+<td>Online</td>
+<td>1</td>
+<td>INT8</td>
+<td>5000</td>
+<td>435.01</td>
+</tr>
+<tr>
+<td>1x Flex 170</td>
+<td>Dummy</td>
+<td>224x224</td>
+<td>Batch</td>
+<td>1024</td>
+<td>INT8</td>
+<td>5000</td>
+<td>9842.75</td>
+</tr>
+</tbody>
+</table></section>
+<section id="efficientnet-b0-inference-performance-results">
+<h4>EfficientNet-B0 Inference Performance Results<a class="headerlink" href="#efficientnet-b0-inference-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Dataset</th>
+<th>Image Size</th>
+<th>Mode</th>
+<th>Batch Size</th>
+<th>Data Type</th>
+<th>Inference Steps</th>
+<th>Throughput (images/sec)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Flex 170</td>
+<td>Dummy</td>
+<td>224x224</td>
+<td>Batch</td>
+<td>64</td>
+<td>FP16 (AMP)</td>
+<td>50</td>
+<td>3007.60</td>
+</tr>
+<tr>
+<td>1x Flex 170</td>
+<td>Dummy</td>
+<td>224x224</td>
+<td>Batch</td>
+<td>128</td>
+<td>FP16 (AMP)</td>
+<td>50</td>
+<td>3587.29</td>
+</tr>
+</tbody>
+</table></section>
+<section id="efficientnet-b3-inference-performance-results">
+<h4>EfficientNet-B3 Inference Performance Results<a class="headerlink" href="#efficientnet-b3-inference-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Dataset</th>
+<th>Image Size</th>
+<th>Mode</th>
+<th>Batch Size</th>
+<th>Data Type</th>
+<th>Inference Steps</th>
+<th>Throughput (images/sec)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Flex 170</td>
+<td>Dummy</td>
+<td>300x300</td>
+<td>Batch</td>
+<td>64</td>
+<td>FP16 (AMP)</td>
+<td>50</td>
+<td>928.56</td>
+</tr>
+<tr>
+<td>1x Flex 170</td>
+<td>Dummy</td>
+<td>300x300</td>
+<td>Batch</td>
+<td>128</td>
+<td>FP16 (AMP)</td>
+<td>50</td>
+<td>968.83</td>
+</tr>
+</tbody>
+</table></section>
+<section id="mask-rcnn-inference-performance-results">
+<h4>Mask-RCNN Inference Performance Results<a class="headerlink" href="#mask-rcnn-inference-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Dataset</th>
+<th>Mode</th>
+<th>Batch Size</th>
+<th>Data Type</th>
+<th>Inference Steps</th>
+<th>Throughput (images/sec)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Flex 170</td>
+<td>COCO 2017</td>
+<td>Online</td>
+<td>1</td>
+<td>FP16 (AMP)</td>
+<td>5000</td>
+<td>19.38</td>
+</tr>
+<tr>
+<td>1x Flex 170</td>
+<td>COCO 2017</td>
+<td>Batch</td>
+<td>16</td>
+<td>FP16 (AMP)</td>
+<td>312</td>
+<td>43.02</td>
+</tr>
+</tbody>
+</table></section>
+<section id="stable-diffusion-v1-4-inference-performance-results">
+<h4>Stable Diffusion v1-4 Inference Performance Results<a class="headerlink" href="#stable-diffusion-v1-4-inference-performance-results" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPUs</th>
+<th>Dataset</th>
+<th>Output <br>Image Size</th>
+<th>Mode</th>
+<th>Batch Size</th>
+<th>Data Type</th>
+<th>Diffusion Steps</th>
+<th>Throughput <br>(iterations/sec)</th>
+<th>Throughput Speedup <br>w/ FP16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1x Flex 170</td>
+<td>Text Prompt</td>
+<td>512x512</td>
+<td>Online</td>
+<td>1</td>
+<td>FP32</td>
+<td>50</td>
+<td>2.91</td>
+<td>1.00x</td>
+</tr>
+<tr>
+<td>1x Flex 170</td>
+<td>Text Prompt</td>
+<td>512x512</td>
+<td>Online</td>
+<td>1</td>
+<td>FP16 (pure)</td>
+<td>50</td>
+<td>6.53</td>
+<td>2.24x</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h2>
+<section id="software-configuration">
+<h3>Software Configuration<a class="headerlink" href="#software-configuration" title="Permalink to this heading"></a></h3>
+<section id="software-configuration-for-intel-max-1550-gpu">
+<h4>Software Configuration for Intel Max 1550 GPU<a class="headerlink" href="#software-configuration-for-intel-max-1550-gpu" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Software Component</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU Driver</td>
+<td><a href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736.25</a></td>
+</tr>
+<tr>
+<td>Intel® oneAPI Base Toolkit</td>
+<td>2024.0</td>
+</tr>
+<tr>
+<td>TensorFlow</td>
+<td>v2.14.0</td>
+</tr>
+<tr>
+<td>Intel® Extension for TensorFlow*</td>
+<td>v2.14.0.1</td>
+</tr>
+<tr>
+<td>Intel® Optimization for Horovod*</td>
+<td>v0.28.1.2</td>
+</tr>
+</tbody>
+</table></section>
+<section id="software-configuration-for-intel-flex-170-gpu">
+<h4>Software Configuration for Intel Flex 170 GPU<a class="headerlink" href="#software-configuration-for-intel-flex-170-gpu" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Software Component</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU Driver</td>
+<td><a href="https://dgpu-docs.intel.com/releases/stable_736_25_20231031.html">736.25</a></td>
+</tr>
+<tr>
+<td>Intel® oneAPI Base Toolkit</td>
+<td>2024.0</td>
+</tr>
+<tr>
+<td>TensorFlow</td>
+<td>v2.14.0</td>
+</tr>
+<tr>
+<td>Intel® Extension for TensorFlow*</td>
+<td>v2.14.0.1</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="hardware-configuration">
+<h3>Hardware Configuration<a class="headerlink" href="#hardware-configuration" title="Permalink to this heading"></a></h3>
+<section id="hardware-configuration-for-intel-max-1550-gpu">
+<h4>Hardware Configuration for Intel Max 1550 GPU<a class="headerlink" href="#hardware-configuration-for-intel-max-1550-gpu" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPU System</th>
+<th>4x Intel® Data Center GPU Max 1550</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Number of Nodes</strong></td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Xe®-Cores per GPU</strong></td>
+<td>128 in total 2-Stack</td>
+</tr>
+<tr>
+<td><strong>Memory Size per GPU</strong></td>
+<td>128 GB HBM2e in total 2-Stack</td>
+</tr>
+<tr>
+<td><strong>TDP per GPU</strong></td>
+<td>600W</td>
+</tr>
+<tr>
+<td><strong>GPU ECC Setting</strong></td>
+<td>OFF</td>
+</tr>
+<tr>
+<td><strong>Server Board</strong></td>
+<td>Intel® Denali Pass D50DNP1SBB</td>
+</tr>
+<tr>
+<td><strong>OS</strong></td>
+<td>SUSE Linux Enterprise Server 15 SP4</td>
+</tr>
+<tr>
+<td><strong>Kernel</strong></td>
+<td>5.14.21-150400.24.69-default</td>
+</tr>
+<tr>
+<td><strong>CPU Model</strong></td>
+<td>Intel® Xeon® Platinum 8480+ @ 2.00 GHz</td>
+</tr>
+<tr>
+<td><strong>Number of Sockets</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>CPU Cores per Socket</strong></td>
+<td>56</td>
+</tr>
+<tr>
+<td><strong>Hyper Threading</strong></td>
+<td>ON</td>
+</tr>
+<tr>
+<td><strong>Turbo Boost</strong></td>
+<td>ON</td>
+</tr>
+<tr>
+<td><strong>Automatic NUMA Balancing</strong></td>
+<td>Enabled</td>
+</tr>
+<tr>
+<td><strong>CPU Frequency Governor</strong></td>
+<td>Performance</td>
+</tr>
+<tr>
+<td><strong>TDP per CPU</strong></td>
+<td>350W</td>
+</tr>
+<tr>
+<td><strong>Installed Memory</strong></td>
+<td>1024GB (16x64GB 4800 MT/s DDR5)</td>
+</tr>
+<tr>
+<td><strong>NIC</strong></td>
+<td>1x Intel® Ethernet Controller X710 for 10GBASE-T</td>
+</tr>
+<tr>
+<td><strong>Storage</strong></td>
+<td>1x WD® WD_BLACK SN850X 2TB NVMe SSD</td>
+</tr>
+</tbody>
+</table></section>
+<section id="hardware-configuration-for-intel-flex-170-gpu">
+<h4>Hardware Configuration for Intel Flex 170 GPU<a class="headerlink" href="#hardware-configuration-for-intel-flex-170-gpu" title="Permalink to this heading"></a></h4>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>GPU System</th>
+<th>1x Intel® Data Center GPU Flex 170</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Number of Nodes</strong></td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Xe®-Cores per GPU</strong></td>
+<td>32</td>
+</tr>
+<tr>
+<td><strong>Memory Size per GPU</strong></td>
+<td>16 GB GDDR6</td>
+</tr>
+<tr>
+<td><strong>TDP per GPU</strong></td>
+<td>150W</td>
+</tr>
+<tr>
+<td><strong>GPU ECC Setting</strong></td>
+<td>ON</td>
+</tr>
+<tr>
+<td><strong>Server Board</strong></td>
+<td>Intel® Whitley</td>
+</tr>
+<tr>
+<td><strong>OS</strong></td>
+<td>Ubuntu 22.04.3 LTS</td>
+</tr>
+<tr>
+<td><strong>Kernel</strong></td>
+<td>5.15.0-57-generic</td>
+</tr>
+<tr>
+<td><strong>CPU Model</strong></td>
+<td>Intel® Xeon® Gold 6336Y CPU @ 2.40GHz</td>
+</tr>
+<tr>
+<td><strong>Number of Sockets</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>CPU Cores per Socket</strong></td>
+<td>24</td>
+</tr>
+<tr>
+<td><strong>Hyper Threading</strong></td>
+<td>ON</td>
+</tr>
+<tr>
+<td><strong>Turbo Boost</strong></td>
+<td>ON</td>
+</tr>
+<tr>
+<td><strong>Automatic NUMA Balancing</strong></td>
+<td>Enabled</td>
+</tr>
+<tr>
+<td><strong>CPU Frequency Governor</strong></td>
+<td>Performance</td>
+</tr>
+<tr>
+<td><strong>TDP per CPU</strong></td>
+<td>185W</td>
+</tr>
+<tr>
+<td><strong>Installed Memory</strong></td>
+<td>128GB (8x16GB 3200 MT/s DDR4)</td>
+</tr>
+<tr>
+<td><strong>NIC</strong></td>
+<td>2x Intel® Ethernet Controller X710 for 10GBASE-T, <br>1x Intel® 82574L Gigabit Ethernet Controller</td>
+</tr>
+<tr>
+<td><strong>Storage</strong></td>
+<td>1x Intel® SSDSC2KG960G8, <br>1x Samsung® 870 EVO 1TB SSD</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+</section>
+<section id="additional-performance-data-for-intel-ai-data-center-products">
+<h2>Additional Performance Data for Intel AI Data Center Products<a class="headerlink" href="#additional-performance-data-for-intel-ai-data-center-products" title="Permalink to this heading"></a></h2>
+<p>You can find the latest performance data on other Intel® AI Data Center Products such as 3rd, 4th, and 5th Gen Intel® Xeon® Scalable processors via <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/topic-technology/artificial-intelligence/performance.html/">Performance Data for Intel® AI Data Center Products</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tf_serving_install.html" class="btn btn-neutral float-left" title="Install TensorFlow Serving with Intel® Extension for TensorFlow*" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../install/installation_guide.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f09cb8a5420> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

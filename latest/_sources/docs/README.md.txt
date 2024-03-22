@@ -17,8 +17,9 @@
       <td colspan="3" align="center"><a href="community/releases.html">Releases</a></td>
     </tr>
     <tr>
+      <td colspan="3" align="center"><a href="guide/performance.html">Performance data</a></td>
       <td colspan="6" align="center"><a href="guide/FAQ.html">Frequently asked questions</a></td>
-      <td colspan="6" align="center"><a href="community/contributing.html">Contributing guidelines</a></td>
+      <td colspan="3" align="center"><a href="community/contributing.html">Contributing guidelines</a></td>
     </tr>
   </tbody>
   <thead>
