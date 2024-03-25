@@ -71,7 +71,7 @@
         <td colspan="3" align="center"><a href="guide/practice_guide.md#cpu-practice-guide">CPU practice guide</a></td>
         <td colspan="3" align="center"><a href="guide/practice_guide.md#gpu-practice-guide">GPU practice guide</a></td>
         <td colspan="3" align="center"><a href="install/install_for_cpp.md">C++ API support</a></td>
-        <td colspan="3" align="center"><a href="guide/OpenXLA_Support_on_GPU.md">OpenXLA Support on GPU</a></td>
+        <td colspan="3" align="center"><a href="guide/OpenXLA.md">OpenXLA</a></td>
       </tr>
   </tbody>
     <thead>
@@ -129,6 +129,6 @@
 
   Intel® Extension for TensorFlow\* provides XPUAutoShard feature to automatically shard the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage.
 
-* OpenXLA Support on GPU [Experimental]
+* OpenXLA
 
-  Intel® Extension for TensorFlow\* adopts a uniform Device API PJRT as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA experimental support.
+  Intel® Extension for TensorFlow\* adopts a uniform Device API PJRT as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA support on TensorFlow frontend.
