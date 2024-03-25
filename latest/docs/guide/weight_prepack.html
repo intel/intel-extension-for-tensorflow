@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Weight Prepack &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gb2bad43 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Online Weight Prepack</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/weight_prepack.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="online-weight-prepack">
+<h1>Online Weight Prepack<a class="headerlink" href="#online-weight-prepack" title="Permalink to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p>In modern deep learning framework, <strong>Weight Reorder</strong> is widely used in inference models which converts weight from <a class="reference external" href="https://oneapi-src.github.io/oneDNN/dev_guide_understanding_memory_formats.html#plain-data-formats">plain layout</a> to <a class="reference external" href="https://oneapi-src.github.io/oneDNN/dev_guide_understanding_memory_formats.html#blocked-layout">blocked layout</a> for better performance. It performs operations faster but will use extra memory to store the original memory in plain layout. Here the stored original plain layout weight is called <strong>master weight</strong>.</p>
+<p>To reduce the memory footprint, <strong>Weight Prepack</strong> graph optimization is introduced. It directly replaces the master weight with the reordered weight in runtime, instead of creating a new blocked layout weight:</p>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="images/weight_reorder.png" /></br>
+        Fig. 1 Weight reorder & weight prepack
+      </td>
+    </tr>
+  </table>
+</div><p>There are 2 ways to prepack weight:</p>
+<ul class="simple">
+<li><p><strong>Offline,</strong> prepack weight in the original model before execution by a third-party tool. It will change the original model stored in the disk.</p></li>
+<li><p><strong>Online,</strong> prepack weight by framework online optimization pass in runtime. It won’t change the original model stored in the disk, maintaining good portability of the model.</p></li>
+</ul>
+<p>Intel® Extension for TensorFlow* has provided <strong>Online Weight Prepack</strong>.</p>
+</section>
+<section id="usage-effect">
+<h2>Usage &amp; Effect<a class="headerlink" href="#usage-effect" title="Permalink to this heading"></a></h2>
+<p>This feature is <strong>always enabled</strong>; no additional actions are required.</p>
+<p>The optimization effect depends on the ratio of reordered weights in the model. In regular <a class="reference external" href="https://github.com/google-research/bert">BERT-large</a> inference, it can reduce memory footprint by ~10%.</p>
+</section>
+<section id="workflow">
+<h2>Workflow<a class="headerlink" href="#workflow" title="Permalink to this heading"></a></h2>
+<p><strong>Weight Prepack</strong> is a graph optimization, which means it only happens once in the compilation phase. The graph optimizer will traverse the graph and find out the weights that need to be prepacked. A corresponding <a class="reference external" href="https://oneapi-src.github.io/oneDNN/dev_guide_basic_concepts.html#primitives">oneDNN primitive</a> with proxy shape will be created to estimate the possible blocked layout when weight is found. After that, the estimated blocked layout info will be recorded to that weight node in the graph and used to do the real operation in the execution phase.</p>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="images/prepack_workflow.png" width="70%" /></br>
+        Fig. 2 Weight prepack workflow
+      </td>
+    </tr>
+  </table>
+</div><ol class="simple">
+<li><p>Replacing master weights with the reordered weights is the key step to reduce the memory footprint.</p></li>
+<li><p>The step for reordering master weights will be eliminated if weight prepack succeeds. It also reduces the number of operators during executing and improves performance.</p></li>
+</ol>
+<p><strong>NOTE:</strong> This estimation of blocked layout may not always be accurate (see <a class="reference external" href="#Limitation">Limitation</a> for more details). Once the estimation fails, the prepacked weight will be reordered to another blocked layout required by the execution phase after it becomes the new master weight.</p>
+</section>
+<section id="limitation">
+<h2>Limitation<a class="headerlink" href="#limitation" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Proxy shape is used to estimate blocked layout because the real shape is not available in the compilation phase. This will make the optimization not work if the estimated info doesn’t match the real info in the execution phase, and make the application perform the same behavior as unoptimized.</p></li>
+<li><p>Only available for matrix multiplication (<a class="reference external" href="https://www.tensorflow.org/api_docs/cc/class/tensorflow/ops/mat-mul">MatMul</a>) and related operators on CPU.</p></li>
+<li><p>May not work with <a class="reference external" href="https://chromium.googlesource.com/external/github.com/tensorflow/tensorflow/+/r0.10/tensorflow/g3doc/resources/faq.html#tensor-shapes">dynamic shapes</a> since the required blocked layout will be changed in different iterations.</p></li>
+</ul>
+</section>
+<section id="reference">
+<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://oneapi-src.github.io/oneDNN/dev_guide_understanding_memory_formats.html#understanding-memory-formats">OneDNN Documentation - Understanding Memory Formats</a></p></li>
+<li><p><a class="reference external" href="https://chromium.googlesource.com/external/github.com/tensorflow/tensorflow/+/r0.10/tensorflow/g3doc/resources/faq.html#frequently-asked-questions">TensorFlow - Frequently Asked Questions</a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f239a0338b0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

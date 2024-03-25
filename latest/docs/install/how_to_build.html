@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g95b835b documentation</title>
+  <title>Overview &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gb2bad43 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
@@ -70,6 +70,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#download-source-code">Download Source Code</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#create-a-conda-environment">Create a Conda Environment</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#install-tensorflow">Install TensorFlow</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#optional-requirements-for-cpu-build-only">Optional Requirements for CPU Build Only</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#install-clang-17-compiler">Install Clang-17 compiler</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#extra-requirements-for-xpu-build-only">Extra Requirements for XPU Build Only</a><ul>
@@ -237,6 +241,37 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 </div>
 </section>
 </section>
+<section id="optional-requirements-for-cpu-build-only">
+<h2>Optional Requirements for CPU Build Only<a class="headerlink" href="#optional-requirements-for-cpu-build-only" title="Permalink to this heading"></a></h2>
+<section id="install-clang-17-compiler">
+<h3>Install Clang-17 compiler<a class="headerlink" href="#install-clang-17-compiler" title="Permalink to this heading"></a></h3>
+<p>ITEX CPU uses clang-17 as default compiler instead of gcc. Users can switch back to gcc in <a class="reference external" href="####configure-for-cpu">configure</a>. Clang-17 can be installed through apt on Ubuntu or source build on other systems. Check https://apt.llvm.org/ for more details.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ubuntu 22.04</span>
+<span class="c1"># Add in /etc/apt/sources.list</span>
+deb<span class="w"> </span>http://apt.llvm.org/jammy/<span class="w"> </span>llvm-toolchain-jammy<span class="w"> </span>main
+deb-src<span class="w"> </span>http://apt.llvm.org/jammy/<span class="w"> </span>llvm-toolchain-jammy<span class="w"> </span>main
+<span class="c1"># 17</span>
+deb<span class="w"> </span>http://apt.llvm.org/jammy/<span class="w"> </span>llvm-toolchain-jammy-17<span class="w"> </span>main
+deb-src<span class="w"> </span>http://apt.llvm.org/jammy/<span class="w"> </span>llvm-toolchain-jammy-17<span class="w"> </span>main
+
+$<span class="w"> </span>wget<span class="w"> </span>-O<span class="w"> </span>-<span class="w"> </span>https://apt.llvm.org/llvm-snapshot.gpg.key<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>apt-key<span class="w"> </span>add<span class="w"> </span>-
+
+$<span class="w"> </span>apt<span class="w"> </span>update
+$<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>clang-17<span class="w"> </span>lldb-17<span class="w"> </span>lld-17
+$<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>libomp-17-dev
+</pre></div>
+</div>
+<p>To source build clang-17, use the following command from https://llvm.org/docs/CMake.html:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cmake minimum version 3.20.0</span>
+$<span class="w"> </span>mkdir<span class="w"> </span>mybuilddir
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>mybuilddir
+$<span class="w"> </span>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DLLVM_ENABLE_PROJECTS<span class="o">=</span><span class="s2">&quot;clang;lldb;lld;openmp&quot;</span><span class="w"> </span>path/to/llvm-17/
+$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>--parallel<span class="w"> </span><span class="m">100</span><span class="w"> </span>
+$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>install
+</pre></div>
+</div>
+</section>
+</section>
 <section id="extra-requirements-for-xpu-build-only">
 <h2>Extra Requirements for XPU Build Only<a class="headerlink" href="#extra-requirements-for-xpu-build-only" title="Permalink to this heading"></a></h2>
 <section id="install-intel-gpu-driver">
@@ -277,7 +312,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./configure
 </pre></div>
 </div>
-<p>Choose <code class="docutils literal notranslate"><span class="pre">n</span></code> to build for CPU only. Refer to <a class="reference external" href="#configure-example">Configure Example</a>.</p>
+<p>First to choose <code class="docutils literal notranslate"><span class="pre">n</span></code> to build for CPU only, next to choose compiler: <code class="docutils literal notranslate"><span class="pre">Y'</span> <span class="pre">for</span> <span class="pre">clang</span> <span class="pre">and</span> </code>n` for gcc. Refer to <a class="reference external" href="#configure-example-for-cpu">Configure Example</a>.</p>
 </section>
 <section id="configure-for-xpu">
 <h3>Configure For XPU<a class="headerlink" href="#configure-for-xpu" title="Permalink to this heading"></a></h3>
@@ -286,7 +321,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 </pre></div>
 </div>
 <ul>
-<li><p>Choose <code class="docutils literal notranslate"><span class="pre">Y</span></code> for Intel GPU support. Refer to <a class="reference external" href="#configure-example">Configure Example</a>.</p></li>
+<li><p>Choose <code class="docutils literal notranslate"><span class="pre">Y</span></code> for Intel GPU support. Refer to <a class="reference external" href="#configure-example-for-gpu-or-xpu">Configure Example</a>.</p></li>
 <li><p>Specify the Location of Compiler (DPC++).</p>
 <p>Default is <code class="docutils literal notranslate"><span class="pre">/opt/intel/oneapi/compiler/latest/linux/</span></code>, which is the default installed path. Click <code class="docutils literal notranslate"><span class="pre">Enter</span></code> to confirm default location.</p>
 <p>If it’s differenct, confirm the compiler (DPC++) installed path and fill the correct path.</p>
@@ -414,6 +449,14 @@ Found<span class="w"> </span>possible<span class="w"> </span>Python<span class="
 Do<span class="w"> </span>you<span class="w"> </span>wish<span class="w"> </span>to<span class="w"> </span>build<span class="w"> </span>Intel®<span class="w"> </span>Extension<span class="w"> </span><span class="k">for</span><span class="w"> </span>TensorFlow*<span class="w"> </span>with<span class="w"> </span>GPU<span class="w"> </span>support?<span class="w"> </span><span class="o">[</span>Y/n<span class="o">]</span>:<span class="w"> </span>n
 No<span class="w"> </span>GPU<span class="w"> </span>support<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>Intel®<span class="w"> </span>Extension<span class="w"> </span><span class="k">for</span><span class="w"> </span>TensorFlow*.
 
+Do<span class="w"> </span>you<span class="w"> </span>want<span class="w"> </span>to<span class="w"> </span>use<span class="w"> </span>Clang<span class="w"> </span>to<span class="w"> </span>build<span class="w"> </span>ITEX<span class="w"> </span>host<span class="w"> </span>code?<span class="w"> </span><span class="o">[</span>Y/n<span class="o">]</span>:
+Clang<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>used<span class="w"> </span>to<span class="w"> </span>compile<span class="w"> </span>ITEX<span class="w"> </span>host<span class="w"> </span>code.
+
+Please<span class="w"> </span>specify<span class="w"> </span>the<span class="w"> </span>path<span class="w"> </span>to<span class="w"> </span>clang<span class="w"> </span>executable.<span class="w"> </span><span class="o">[</span>Default<span class="w"> </span>is<span class="w"> </span>/usr/lib/llvm-17/bin/clang<span class="o">]</span>:
+
+
+You<span class="w"> </span>have<span class="w"> </span>Clang<span class="w"> </span><span class="m">17</span>.0.5<span class="w"> </span>installed.
+
 Only<span class="w"> </span>CPU<span class="w"> </span>support<span class="w"> </span>is<span class="w"> </span>available<span class="w"> </span><span class="k">for</span><span class="w"> </span>Intel®<span class="w"> </span>Extension<span class="w"> </span><span class="k">for</span><span class="w"> </span>TensorFlow*.
 Preconfigured<span class="w"> </span>Bazel<span class="w"> </span>build<span class="w"> </span>configs.<span class="w"> </span>You<span class="w"> </span>can<span class="w"> </span>use<span class="w"> </span>any<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>below<span class="w"> </span>by<span class="w"> </span>adding<span class="w"> </span><span class="s2">&quot;--config=&lt;&gt;&quot;</span><span class="w"> </span>to<span class="w"> </span>your<span class="w"> </span>build<span class="w"> </span>command.<span class="w"> </span>See<span class="w"> </span>.bazelrc<span class="w"> </span><span class="k">for</span><span class="w"> </span>more<span class="w"> </span>details.
 <span class="w">        </span>--config<span class="o">=</span>cpu<span class="w">            </span><span class="c1"># Build Intel® Extension for TensorFlow* with CPU support.</span>
@@ -472,7 +515,7 @@ Configuration<span class="w"> </span>finished
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f09cb2b9630> 
+   <jinja2.runtime.BlockReference object at 0x7f239a0324d0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

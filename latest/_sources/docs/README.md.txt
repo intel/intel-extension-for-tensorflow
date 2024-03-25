@@ -43,15 +43,16 @@
   <tbody>
     <tr>
         <td colspan="2" align="center"><a href="guide/environment_variables.html">Environment variables</a></td>
-		<td colspan="2" align="center"><a href="guide/python_api.html">Python API</a></td>
-        <td colspan="4" align="center"><a href="guide/advanced_auto_mixed_precision.html">Advanced auto mixed precision</a></td>
+	<td colspan="2" align="center"><a href="guide/python_api.html">Python API</a></td>
+        <td colspan="2" align="center"><a href="guide/advanced_auto_mixed_precision.html">Advanced auto mixed precision</a></td>
         <td colspan="2" align="center"><a href="guide/itex_fusion.html">Graph optimization</a></td>
         <td colspan="2" align="center"><a href="guide/threadpool.html">CPU Thread Pool</a></td>
+	<td colspan="2" align="center"><a href="guide/weight_prepack.html">Weight prepack</a></td>
     </tr>
     <tr>
     	<td colspan="2" align="center"><a href="guide/itex_ops.html">Custom operator</a></td>
 	<td colspan="2" align="center"><a href="guide/itex_ops_override.html">Operator override</a></td>
-	<td colspan="3" align="center"><a href="guide/INT8_quantization.html">INT8 quantization</a></td>
+	<td colspan="2" align="center"><a href="guide/INT8_quantization.html">INT8 quantization</a></td>
 	<td colspan="2" align="center"><a href="guide/XPUAutoShard.html">XPUAutoShard</a></td>
         <td colspan="2" align="center"><a href="guide/how_to_enable_profiler.html">GPU profiler</a></td>
 	<td colspan="2" align="center"><a href="guide/launch.html">CPU launcher</a></td>
