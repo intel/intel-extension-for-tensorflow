@@ -95,6 +95,36 @@ Check TensorFlow was installed successfully and is version 2.15.0:
 $ python -c "import tensorflow as tf;print(tf.__version__)"
 ```
 
+### Optional Requirements for CPU Build Only
+
+#### Install Clang-17 compiler
+ITEX CPU uses clang-17 as default compiler instead of gcc. Users can switch back to gcc in [configure](####configure-for-cpu). Clang-17 can be installed through apt on Ubuntu or source build on other systems. Check https://apt.llvm.org/ for more details.
+```bash
+# Ubuntu 22.04
+# Add in /etc/apt/sources.list
+deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main
+deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy main
+# 17
+deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
+deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
+
+$ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+
+$ apt update
+$ apt-get install clang-17 lldb-17 lld-17
+$ apt-get install libomp-17-dev
+```
+
+To source build clang-17, use the following command from https://llvm.org/docs/CMake.html:
+```bash
+# Cmake minimum version 3.20.0
+$ mkdir mybuilddir
+$ cd mybuilddir
+$ cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;lldb;lld;openmp" path/to/llvm-17/
+$ cmake --build . --parallel 100 
+$ cmake --build . --target install
+```
+
 ### Extra Requirements for XPU Build Only
 
 #### Install Intel GPU Driver
@@ -143,7 +173,7 @@ Configure the system build by running the `./configure` command at the root of y
 $ ./configure
 ```
 
-Choose `n` to build for CPU only. Refer to [Configure Example](#configure-example).
+First to choose `n` to build for CPU only, next to choose compiler: `Y' for clang and `n` for gcc. Refer to [Configure Example](#configure-example-for-cpu).
 
 #### Configure For XPU
 
@@ -153,7 +183,7 @@ Configure the system build by running the `./configure` command at the root of y
 $ ./configure
 ```
 
-- Choose `Y` for Intel GPU support. Refer to [Configure Example](#configure-example).
+- Choose `Y` for Intel GPU support. Refer to [Configure Example](#configure-example-for-gpu-or-xpu).
 
 - Specify the Location of Compiler (DPC++).
 
@@ -265,6 +295,14 @@ Found possible Python library paths:
 
 Do you wish to build Intel® Extension for TensorFlow* with GPU support? [Y/n]: n
 No GPU support will be enabled for Intel® Extension for TensorFlow*.
+
+Do you want to use Clang to build ITEX host code? [Y/n]:
+Clang will be used to compile ITEX host code.
+
+Please specify the path to clang executable. [Default is /usr/lib/llvm-17/bin/clang]:
+
+
+You have Clang 17.0.5 installed.
 
 Only CPU support is available for Intel® Extension for TensorFlow*.
 Preconfigured Bazel build configs. You can use any of the below by adding "--config=<>" to your build command. See .bazelrc for more details.
