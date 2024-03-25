@@ -43,19 +43,22 @@
   <tbody>
     <tr>
         <td colspan="2" align="center"><a href="guide/environment_variables.html">Environment variables</a></td>
-	<td colspan="2" align="center"><a href="guide/python_api.html">Python API</a></td>
-        <td colspan="2" align="center"><a href="guide/advanced_auto_mixed_precision.html">Advanced auto mixed precision</a></td>
-        <td colspan="2" align="center"><a href="guide/itex_fusion.html">Graph optimization</a></td>
+	    	<td colspan="2" align="center"><a href="guide/python_api.html">Python API</a></td>
+        <td colspan="4" align="center"><a href="guide/next_pluggable_device.html">Next Pluggable Device</a></td>
         <td colspan="2" align="center"><a href="guide/threadpool.html">CPU Thread Pool</a></td>
-	<td colspan="2" align="center"><a href="guide/weight_prepack.html">Weight prepack</a></td>
     </tr>
     <tr>
-    	<td colspan="2" align="center"><a href="guide/itex_ops.html">Custom operator</a></td>
-	<td colspan="2" align="center"><a href="guide/itex_ops_override.html">Operator override</a></td>
-	<td colspan="2" align="center"><a href="guide/INT8_quantization.html">INT8 quantization</a></td>
-	<td colspan="2" align="center"><a href="guide/XPUAutoShard.html">XPUAutoShard</a></td>
+        <td colspan="2" align="center"><a href="guide/itex_fusion.html">Graph optimization</a></td>
+        <td colspan="2" align="center"><a href="guide/itex_ops.html">Custom operator</a></td>
+        <td colspan="4" align="center"><a href="guide/advanced_auto_mixed_precision.html">Advanced auto mixed precision</a></td>
+	      <td colspan="2" align="center"><a href="guide/itex_ops_override.html">Operator override</a></td>
+    </tr>
+    <tr>    
+	      <td colspan="3" align="center"><a href="guide/INT8_quantization.html">INT8 quantization</a></td>
+	      <td colspan="2" align="center"><a href="guide/XPUAutoShard.html">XPUAutoShard</a></td>
         <td colspan="2" align="center"><a href="guide/how_to_enable_profiler.html">GPU profiler</a></td>
-	<td colspan="2" align="center"><a href="guide/launch.html">CPU launcher</a></td>
+	      <td colspan="2" align="center"><a href="guide/launch.html">CPU launcher</a></td>
+      	<td colspan="2" align="center"><a href="guide/weight_prepack.html">Weight prepack</a></td>
     </tr>
   </tbody>
   <thead>
@@ -94,9 +97,13 @@
   Generally, the default configuration of Intel® Extension for TensorFlow\* provides good performance without any code changes. 
   Intel® Extension for TensorFlow\* also provides simple frontend Python APIs and utilities for advanced users to get more optimized performance with only minor code changes for different kinds of application scenarios. Typically, you only need to add two or three clauses to the original code.
 
+* Next Pluggable Device (NPD)
+  
+  The Next Pluggable Device (NPD) represents an advanced generation of TensorFlow plugin mechanisms. It not only facilitates a seamless integration of new accelerator plugins for registering devices with TensorFlow without requiring modifications to the TensorFlow codebase, but it also serves as a conduit to OpenXLA via its PJRT plugin. This innovative approach significantly streamlines the process of extending TensorFlow's capabilities with new hardware accelerators, enhancing both efficiency and flexibility.
+  
 * Advanced auto mixed precision (AMP)
 
-  Low precision data types `bfloat16` and` float16` are natively supported from the `3rd Generation Xeon® Scalable Processors`, code name [Cooper Lake](https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html),  with `AVX512` instruction set and the Intel® Data Center GPU, which further boosts performance and uses less memory. The lower-precision data types supported by Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.
+  Low precision data types `bfloat16` and` float16` are natively supported by the `3rd Generation Xeon® Scalable Processors`, codenamed [Cooper Lake](https://ark.intel.com/content/www/us/en/ark/products/series/204098/3rd-generation-intel-xeon-scalable-processors.html),  with `AVX512` instruction set and the Intel® Data Center GPU, which further boosts performance and uses less memory. The lower-precision data types supported by Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.
 
 * Graph optimization
 
