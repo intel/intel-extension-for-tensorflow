@@ -25,9 +25,9 @@ then
                                 --build-arg LEVEL_ZERO_GPU_VER=1.3.27642.40-803~22.04 \
                                 --build-arg LEVEL_ZERO_VER=1.14.0-744~22.04 \
                                 --build-arg LEVEL_ZERO_DEV_VER=1.14.0-744~22.04 \
-                                --build-arg DPCPP_VER=2024.1.0-958 \
-                                --build-arg MKL_VER=2024.1.0-688 \
-                                --build-arg CCL_VER=2021.12.0-307 \
+                                --build-arg DPCPP_VER=2024.1.0-963 \
+                                --build-arg MKL_VER=2024.1.0-691 \
+                                --build-arg CCL_VER=2021.12.0-309 \
                                 --build-arg PYTHON=python3.10 \
                                 --build-arg TF_VER=2.15 \
                                 --build-arg WHEELS=*.whl \
