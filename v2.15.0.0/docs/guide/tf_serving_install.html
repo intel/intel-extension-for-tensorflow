@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Install TensorFlow Serving with Intel® Extension for TensorFlow* &mdash; Intel® Extension for TensorFlow* v2.15.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Performance Data" href="performance.html" />
+    <link rel="prev" title="XPUAutoShard on GPU [Experimental]" href="XPUAutoShard.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="features.html">Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="features.html#operator-optimization">Operator Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#graph-optimization">Graph Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#advanced-auto-mixed-precision-amp">Advanced Auto Mixed Precision (AMP)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#ease-of-use-python-api">Ease-of-use Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gpu-profiler">GPU Profiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#cpu-launcher-experimental">CPU Launcher [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#int8-quantization">INT8 Quantization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#xpuautoshard-on-gpu-experimental">XPUAutoShard on GPU [Experimental]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#openxla-support-on-gpu-experimental">OpenXLA Support on GPU [Experimental]</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="features.html#tensorflow-serving">TensorFlow Serving</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Install TensorFlow Serving with Intel® Extension for TensorFlow*</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#install-model-server">Install Model Server</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#install-using-docker">Install using Docker</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#build-from-source">Build from source</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#build-intel-extension-for-tensorflow-c-library">1. Build Intel® Extension for TensorFlow* C++ library</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#build-tensorflow-serving">2. Build TensorFlow Serving</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#build-docker-image-from-dockerfile">Build Docker image from Dockerfile</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#run-sample">Run sample</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="features.html">Features</a></li>
+      <li class="breadcrumb-item active">Install TensorFlow Serving with Intel® Extension for TensorFlow*</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/tf_serving_install.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="install-tensorflow-serving-with-intel-extension-for-tensorflow">
+<h1>Install TensorFlow Serving with Intel® Extension for TensorFlow*<a class="headerlink" href="#install-tensorflow-serving-with-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h1>
+<p><a class="reference external" href="https://www.tensorflow.org/tfx/guide/serving">TensorFlow Serving</a> is an open-source system designed by Google that acts as a bridge between trained machine learning models and the applications that need to use them, streamlining the process of deploying and serving models in a production environment while maintaining efficiency and scalability.</p>
+<section id="install-model-server">
+<h2>Install Model Server<a class="headerlink" href="#install-model-server" title="Permalink to this heading"></a></h2>
+<section id="install-using-docker">
+<h3>Install using Docker<a class="headerlink" href="#install-using-docker" title="Permalink to this heading"></a></h3>
+<p>A good way to get started using TensorFlow Serving with Intel® Extension for TensorFlow* is with <a class="reference external" href="https://www.docker.com/">Docker</a> containers.</p>
+<ul>
+<li><p>Install Docker on Ubuntu 22.04</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="n">docker</span>
+<span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="n">docker</span><span class="o">.</span><span class="n">io</span>
+</pre></div>
+</div>
+</li>
+<li><p>Pull docker image</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># For CPU</span>
+<span class="n">docker</span> <span class="n">pull</span> <span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">:</span><span class="n">serving</span><span class="o">-</span><span class="n">cpu</span>
+
+<span class="c1"># For GPU</span>
+<span class="n">docker</span> <span class="n">pull</span> <span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">:</span><span class="n">serving</span><span class="o">-</span><span class="n">gpu</span> 
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="build-from-source">
+<h3>Build from source<a class="headerlink" href="#build-from-source" title="Permalink to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Tips</strong>:</p>
+<ul class="simple">
+<li><p>We recommend you put the source code of Intel® Extension for TensorFlow*, TensorFlow, and TensorFlow Serving in the same folder.</p></li>
+<li><p>Replace related paths with those on your machine.</p></li>
+</ul>
+</div></blockquote>
+<section id="build-intel-extension-for-tensorflow-c-library">
+<h4>1. Build Intel® Extension for TensorFlow* C++ library<a class="headerlink" href="#build-intel-extension-for-tensorflow-c-library" title="Permalink to this heading"></a></h4>
+<p>Refer to <a class="reference external" href="https://intel.github.io/intel-extension-for-tensorflow/latest/docs/install/experimental/install_for_cpp.html">Intel® Extension for TensorFlow* for C++</a> to build Intel® Extension for TensorFlow* C++ library</p>
+<blockquote>
+<div><p><strong>Note:</strong> When following this installation guide, you only need to build the Intel® Extension for TensorFlow* C++ library. You can ignore the other steps.</p>
+</div></blockquote>
+<p>The generated <code class="docutils literal notranslate"><span class="pre">libitex_cpu_cc.so</span></code> or <code class="docutils literal notranslate"><span class="pre">libitex_gpu_cc.so</span></code> binary are found in the <code class="docutils literal notranslate"><span class="pre">intel_extension_for_tensorflow/bazel-bin/itex/</span></code> directory.</p>
+</section>
+<section id="build-tensorflow-serving">
+<h4>2. Build TensorFlow Serving<a class="headerlink" href="#build-tensorflow-serving" title="Permalink to this heading"></a></h4>
+<ul>
+<li><p>Patch TensorFlow</p>
+<ul>
+<li><p>Get TensorFlow with commit id specified by TensorFlow Serving: https://github.com/tensorflow/serving/blob/master/WORKSPACE#L28</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Exit intel-extension-for-tensorflow source code folder</span>
+<span class="n">cd</span> <span class="o">..</span>
+
+<span class="c1"># clone TensorFlow</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">tensorflow</span>
+
+<span class="c1"># checkout specific commit id</span>
+<span class="n">cd</span> <span class="n">tensorflow</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">xxxxx</span>
+</pre></div>
+</div>
+</li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">alwayslink=1</span></code> for <code class="docutils literal notranslate"><span class="pre">kernels_experimental</span></code> library in local <code class="docutils literal notranslate"><span class="pre">tensorflow/tensorflow/c/BUILD</span></code> file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tf_cuda_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;kernels_experimental&quot;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kernels_experimental.cc&quot;</span><span class="p">],</span>
+    <span class="n">hdrs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kernels_experimental.h&quot;</span><span class="p">],</span>
+    <span class="n">copts</span> <span class="o">=</span> <span class="n">tf_copts</span><span class="p">(),</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;//visibility:public&quot;</span><span class="p">],</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="o">...</span>
+    <span class="p">]</span> <span class="o">+</span> <span class="n">if_not_mobile</span><span class="p">([</span>
+        <span class="o">...</span>
+    <span class="p">]),</span>
+    <span class="n">alwayslink</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="c1"># add this line</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>Patch TensorFlow Serving</p>
+<ul>
+<li><p>Get TensorFlow Serving source code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Exit tensorflow source code folder</span>
+<span class="n">cd</span> <span class="o">..</span>
+
+<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">serving</span>
+</pre></div>
+</div>
+</li>
+<li><p>Patch TensorFlow Serving</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">serving</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">r2</span><span class="mf">.14</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="o">../</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">third_party</span><span class="o">/</span><span class="n">tf_serving</span><span class="o">/</span><span class="n">serving_plugin</span><span class="o">.</span><span class="n">patch</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>Build TensorFlow Serving</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bazel</span> <span class="n">build</span> <span class="o">--</span><span class="n">copt</span><span class="o">=</span><span class="s2">&quot;-Wno-error=stringop-truncation&quot;</span> <span class="o">--</span><span class="n">config</span><span class="o">=</span><span class="n">release</span> <span class="o">//</span><span class="n">tensorflow_serving</span><span class="o">/</span><span class="n">model_servers</span><span class="p">:</span><span class="n">tensorflow_model_server</span>
+</pre></div>
+</div>
+<p>The generated <code class="docutils literal notranslate"><span class="pre">tensorflow_model_server</span></code> will be found in the <code class="docutils literal notranslate"><span class="pre">serving/bazel-bin/tensorflow_serving/model_servers/</span></code> directory.</p>
+</li>
+</ul>
+</section>
+</section>
+<section id="build-docker-image-from-dockerfile">
+<h3>Build Docker image from Dockerfile<a class="headerlink" href="#build-docker-image-from-dockerfile" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="../../docker/tensorflow-serving/README.html">Intel® Extension for TensorFlow* Serving Docker Container Guide</a> to build docker image from dockerfile.</p>
+</section>
+</section>
+<section id="run-sample">
+<h2>Run sample<a class="headerlink" href="#run-sample" title="Permalink to this heading"></a></h2>
+<ul>
+<li><p>Train and export TensorFlow model</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">serving</span>
+<span class="n">rm</span> <span class="o">-</span><span class="n">rf</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span>
+<span class="n">python</span> <span class="n">tensorflow_serving</span><span class="o">/</span><span class="n">example</span><span class="o">/</span><span class="n">mnist_saved_model</span><span class="o">.</span><span class="n">py</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span>
+</pre></div>
+</div>
+<p>Now let’s take a look at the export directory. You should find a directory named <code class="docutils literal notranslate"><span class="pre">1</span></code> that contains <code class="docutils literal notranslate"><span class="pre">saved_models.pb</span></code> file and <code class="docutils literal notranslate"><span class="pre">variables</span></code> folder.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span>
+<span class="mi">1</span>
+
+<span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span><span class="o">/</span><span class="mi">1</span>
+<span class="n">saved_model</span><span class="o">.</span><span class="n">pb</span> <span class="n">variables</span>
+</pre></div>
+</div>
+</li>
+<li><p>Load exported model with TensorFlow ModelServer plugged with Intel® Extension for TensorFlow*</p>
+<ul>
+<li><p>Use Docker from Docker Hub</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># For CPU</span>
+<span class="n">docker</span> <span class="n">run</span> \
+  <span class="o">-</span><span class="n">it</span> \
+  <span class="o">--</span><span class="n">rm</span> \
+  <span class="o">-</span><span class="n">p</span> <span class="mi">8500</span><span class="p">:</span><span class="mi">8500</span> \
+  <span class="o">-</span><span class="n">e</span> <span class="n">MODEL_NAME</span><span class="o">=</span><span class="n">mnist</span> \
+  <span class="o">-</span><span class="n">v</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span><span class="p">:</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">mnist</span> \
+  <span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">:</span><span class="n">serving</span><span class="o">-</span><span class="n">cpu</span>
+
+<span class="c1"># For GPU</span>
+<span class="n">docker</span> <span class="n">run</span> \
+  <span class="o">-</span><span class="n">it</span> \
+  <span class="o">--</span><span class="n">rm</span> \
+  <span class="o">-</span><span class="n">p</span> <span class="mi">8500</span><span class="p">:</span><span class="mi">8500</span> \
+  <span class="o">-</span><span class="n">e</span> <span class="n">MODEL_NAME</span><span class="o">=</span><span class="n">mnist</span> \
+  <span class="o">-</span><span class="n">v</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span><span class="p">:</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">mnist</span> \
+  <span class="o">--</span><span class="n">device</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">dri</span><span class="o">/</span> \
+  <span class="o">-</span><span class="n">v</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">dri</span><span class="o">/</span><span class="n">by</span><span class="o">-</span><span class="n">path</span><span class="o">/</span><span class="p">:</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">dri</span><span class="o">/</span><span class="n">by</span><span class="o">-</span><span class="n">path</span><span class="o">/</span> \
+  <span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">:</span><span class="n">serving</span><span class="o">-</span><span class="n">gpu</span>
+</pre></div>
+</div>
+<p>You will see:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>plugin library &quot;/itex/bazel-bin/itex/libitex_cpu_cc.so&quot; load successfully!
+
+plugin library &quot;/itex/bazel-bin/itex/libitex_gpu_cc.so&quot; load successfully!
+</pre></div>
+</div>
+</li>
+<li><p>Use tensorflow_model_server built from source</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># cd tensorflow_model_server binary folder</span>
+
+ <span class="c1"># For CPU</span>
+<span class="o">./</span><span class="n">tensorflow_model_server</span> \
+  <span class="o">--</span><span class="n">port</span><span class="o">=</span><span class="mi">8500</span> \
+  <span class="o">--</span><span class="n">rest_api_port</span><span class="o">=</span><span class="mi">8501</span> \
+  <span class="o">--</span><span class="n">model_name</span><span class="o">=</span><span class="n">mnist</span> \
+  <span class="o">--</span><span class="n">model_base_path</span><span class="o">=/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span> \
+  <span class="o">--</span><span class="n">tensorflow_plugins</span><span class="o">=</span><span class="n">path_to_libitex_cpu_cc</span><span class="o">.</span><span class="n">so</span>
+
+<span class="c1"># For GPU</span>
+<span class="c1"># source oneapi environment</span>
+<span class="n">source</span> <span class="n">oneapi_install_path</span><span class="o">/</span><span class="n">compiler</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">source</span> <span class="n">oneapi_install_path</span><span class="o">/</span><span class="n">mkl</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="nb">vars</span><span class="o">.</span><span class="n">sh</span>
+
+<span class="o">./</span><span class="n">tensorflow_model_server</span> \
+  <span class="o">--</span><span class="n">port</span><span class="o">=</span><span class="mi">8500</span> \
+  <span class="o">--</span><span class="n">rest_api_port</span><span class="o">=</span><span class="mi">8501</span> \
+  <span class="o">--</span><span class="n">model_name</span><span class="o">=</span><span class="n">mnist</span> \
+  <span class="o">--</span><span class="n">model_base_path</span><span class="o">=/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span> \
+  <span class="o">--</span><span class="n">tensorflow_plugins</span><span class="o">=</span><span class="n">path_to_libitex_gpu_cc</span><span class="o">.</span><span class="n">so</span>
+</pre></div>
+</div>
+<p>You will see:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>plugin library &quot;path_to_libitex_cpu_cc.so/libitex_cpu_cc.so&quot; load successfully!
+
+plugin library &quot;path_to_libitex_gpu_cc.so/libitex_gpu_cc.so&quot; load successfully!
+</pre></div>
+</div>
+</li>
+<li><p>Use Docker built from dockerfile</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span> <span class="n">source</span> <span class="n">code</span> <span class="n">folder</span>
+
+<span class="n">cd</span> <span class="n">docker</span><span class="o">/</span><span class="n">tensorflow</span><span class="o">-</span><span class="n">serving</span>
+
+<span class="n">export</span> <span class="n">MODEL_NAME</span><span class="o">=</span><span class="n">mnist</span>
+<span class="n">export</span> <span class="n">MODEL_DIR</span><span class="o">=/</span><span class="n">tmp</span><span class="o">/</span><span class="n">mnist</span>
+
+<span class="o">./</span><span class="n">run</span><span class="o">.</span><span class="n">sh</span> <span class="p">[</span><span class="n">cpu</span><span class="o">/</span><span class="n">gpu</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>You will see:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>plugin library &quot;/itex/itex-bazel-bin/bin/itex/libitex_cpu_cc.so&quot; load successfully!
+
+plugin library &quot;/itex/itex-bazel-bin/bin/itex/libitex_gpu_cc.so&quot; load successfully!
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>Test the server</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span><span class="o">-</span><span class="n">serving</span><span class="o">-</span><span class="n">api</span>
+
+<span class="n">cd</span> <span class="n">serving</span>
+<span class="n">python</span> <span class="n">tensorflow_serving</span><span class="o">/</span><span class="n">example</span><span class="o">/</span><span class="n">mnist_client</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">num_tests</span><span class="o">=</span><span class="mi">1000</span> <span class="o">--</span><span class="n">server</span><span class="o">=</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">8500</span>
+</pre></div>
+</div>
+<p>You will see:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+
+<span class="n">Inference</span> <span class="n">error</span> <span class="n">rate</span><span class="p">:</span> <span class="n">xx</span><span class="o">.</span><span class="n">xx</span><span class="o">%</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Refer to <a class="reference external" href="https://www.tensorflow.org/tfx/serving/serving_basic">TensorFlow Serving Guides</a> to learn more about how to use TensorFlow Serving.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="XPUAutoShard.html" class="btn btn-neutral float-left" title="XPUAutoShard on GPU [Experimental]" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="performance.html" class="btn btn-neutral float-right" title="Performance Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f31e0186d00> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

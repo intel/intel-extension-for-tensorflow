@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Documentation Build Guide &mdash; Intel® Extension for TensorFlow* v2.15.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Online Documentation Build Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/build_docs/docs_build_tips.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="online-documentation-build-guide">
+<h1>Online Documentation Build Guide<a class="headerlink" href="#online-documentation-build-guide" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>This document shows how scripts are used to build the project documentation.</p>
+<p>The scripts and related files are saved in the <code class="docutils literal notranslate"><span class="pre">docs/build_docs</span></code> directory.</p>
+</section>
+<section id="update-latest-version">
+<h2>Update <code class="docutils literal notranslate"><span class="pre">latest</span></code> Version<a class="headerlink" href="#update-latest-version" title="Permalink to this heading"></a></h2>
+<p>Generating and publishing the <code class="docutils literal notranslate"><span class="pre">latest</span></code> documentation is triggered by merging a PR to the public GitHub repo’s main branch. A GitHub <code class="docutils literal notranslate"><span class="pre">Action</span></code> executes the document-building scripts using content from the main branch and updates the <code class="docutils literal notranslate"><span class="pre">latest</span></code> <a class="reference external" href="https://intel.github.io/intel-extension-for-tensorflow/latest/get_started.html">published version</a>.</p>
+<p>If the PR doesn’t impact documentation (for example, it only contains code changes), the online documents won’t be updated.</p>
+</section>
+<section id="create-release-version">
+<h2>Create Release Version<a class="headerlink" href="#create-release-version" title="Permalink to this heading"></a></h2>
+<p>When releasing a new product version, a git tag must be added to main branch. The release version will be the same as the <code class="docutils literal notranslate"><span class="pre">tag</span></code> name.</p>
+<p>Generating and publishing the documentation for a release must be triggered manually, and the resulting HTML content is committed manually to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch. (The github.io site will be updated automatically when this <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch is updated.)</p>
+<p>Note: Only GitHub users with write permission to the repo are able to update the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch content.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">git</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">&lt;</span><span class="n">release</span> <span class="n">tag</span> <span class="n">name</span><span class="o">&gt;</span>
+<span class="n">cd</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">build_docs</span>
+<span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="n">version</span>
+
+<span class="n">cd</span> <span class="o">../../</span><span class="n">build_tmp</span><span class="o">/</span><span class="n">gh</span><span class="o">-</span><span class="n">pages</span>
+<span class="n">git</span> <span class="n">add</span> <span class="o">.</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;add version &lt;release tag name&gt;&quot;</span>
+<span class="n">git</span> <span class="n">push</span>
+</pre></div>
+</div>
+</section>
+<section id="build-to-local-test">
+<h2>Build to Local Test<a class="headerlink" href="#build-to-local-test" title="Permalink to this heading"></a></h2>
+<p>Before submitting a PR that modifies documentation, you should test
+your changes by building the documentation locally.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">git</span>
+<span class="c1"># make your documentation changes</span>
+<span class="n">cd</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">build_docs</span>
+
+<span class="o">./</span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="n">local</span>
+<span class="n">cd</span> <span class="o">../../</span><span class="n">build_tmp</span><span class="o">/</span><span class="n">draft</span><span class="o">/</span><span class="n">latest</span>
+<span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">http</span><span class="o">.</span><span class="n">server</span> <span class="mi">9000</span>
+</pre></div>
+</div>
+<p>Use your web browser (e.g., Chrome) to open <code class="docutils literal notranslate"><span class="pre">127.0.0.1:9000</span></code> or <code class="docutils literal notranslate"><span class="pre">localhost:9000</span></code> to check your locally generated HTML content.</p>
+<p>Note, the <code class="docutils literal notranslate"><span class="pre">version.html</span></code> version picker is not functional for locally generated documentation.</p>
+<p>If you want to test version switching functionality using <code class="docutils literal notranslate"><span class="pre">version.html</span></code>, build for <code class="docutils literal notranslate"><span class="pre">version</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/intel/intel-extension-for-tensorflow.git
+# make your documentation changes
+cd intel-extension-for-tensorflow/docs/build_docs
+
+./build.sh version
+cd ../../build_tmp/gh-pages/tag??
+python3 -m http.server 9000
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f31e022f370> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

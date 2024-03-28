@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oneDNN object cache optimization &mdash; Intel® Extension for TensorFlow* v2.15.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">v2.15.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">oneDNN object cache optimization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/docs/design/optimization/oneDNN_object_cache.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="onednn-object-cache-optimization">
+<h1>oneDNN object cache optimization<a class="headerlink" href="#onednn-object-cache-optimization" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>The oneDNN object (primitive/primitive description/memory) creation overhead becomes noticeable, especially in small model latency scenarios.</p>
+<p>OneDNN object cache optimization is an experimental feature for optimizing model latency by binding a oneDNN object to a TensorFlow graph node. You can enable this environment by setting the environment variable ‘ITEX_CACHE_ONEDNN_OBJECT’ to on. By default, it is set to off.</p>
+<p>TensorFlow supports optimizations to support different scenarios:</p>
+<ul class="simple">
+<li><p><strong>Dynamic Shape</strong> - TensorFlow supports dynamic shape, which means a node can get different shape input. This optimization will invalidate the cache by checking the input dims/shape with the oneDNN meta input (used in layout propagation).</p></li>
+<li><p><strong>Operator Parallel Execution</strong> - TensorFlow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/config/threading">operator parallel execution</a>, which means a node may execute in different schedule threads. The oneDNN requires thread safe in this scenario only: <strong>user scratchpad</strong> and <strong>oneDNN stream creation on demand</strong>. This optimization is aligning to satisfy a oneDNN requirement.</p></li>
+<li><p><strong>Concurrent Execution</strong> - TensorFlow supports <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session#as_default">concurrent execution</a>, which means a node may be executed in different thread concurrently. The optimization handles this case by adding a mutex lock.</p></li>
+</ul>
+</section>
+<section id="optimization-in-convolution">
+<h2>Optimization in convolution<a class="headerlink" href="#optimization-in-convolution" title="Permalink to this heading"></a></h2>
+<p>Convolution optimization will cache oneDNN object <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_memory-2.html">dnnl::memory</a>, <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_primitive-2.html">dnnl::primitive</a>, <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_primitive_desc-2.html">dnnl::primitive_desc</a> and <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_exec_arg_t.html">dnnl_exec_arg_t</a></p>
+<ul class="simple">
+<li><p><strong>dnnl::memory</strong> - input/weight/bias/output/scratchpad memory and two temporary memory areas for input and weight reorder if needed.</p></li>
+<li><p><strong>dnnl::primitive</strong> - convolution primitive and input/weight reorder primitive if needed.</p></li>
+<li><p><strong>dnnl::primitive_desc</strong> - convolution primitive description.</p></li>
+<li><p><strong>dnnl_exec_arg_t</strong> - convolution primitive arguments and input/weight reorder primitive arguments if needed.</p></li>
+</ul>
+<p>Temporary device memory includes scratchpad memory and input/weight reorder output device memory if needed.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f31e0146fd0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow* &mdash; Intel® Extension for TensorFlow* v2.15.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow*</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/accelerate_alexnet_by_quantization/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="accelerate-alexnet-by-quantization-with-intel-extension-for-tensorflow">
+<h1>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow*<a class="headerlink" href="#accelerate-alexnet-by-quantization-with-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h1>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading"></a></h2>
+<p>Low-precision inference can speed up inference, by converting the FP32 model to INT8 or BF16 model. Intel provides hardware technology to accelerate the low precision model on Intel GPUs that supports INT8.</p>
+<p>Intel® Neural Compressor helps you simplify converting the FP32 model to INT8.</p>
+<p>At the same time, Intel® Neural Compressor will tune the quantization method to reduce the accuracy loss, which is a big blocker for low-precision inference.</p>
+<p>Intel® Neural Compressor is released in Intel® AI Analytics Toolkit and works with Intel® Optimization of TensorFlow*.</p>
+<p>Refer to the official website for detailed info and news: <a class="reference external" href="https://github.com/intel/neural-compressor">https://github.com/intel/neural-compressor</a></p>
+</section>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>With Intel® Extension for Tensorflow*, it’s easy to quantize FP32 model to INT8 model and be accelerated on Intel CPUs and GPUs.</p>
+<p>This example reuses the existing End-To-End example: <a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/notebook/tensorflow/alexnet_mnist">Intel® Neural Compressor Sample for TensorFlow</a> provided by Intel® Neural Compressor, to show a pipeline to build up a CNN model to recognize handwriting number and speed up AI model with quantization by Intel® Neural Compressor.</p>
+<p>The original example is designed to run on Intel CPU with Stock Tensorflow* or Intel® Optimization for Tensorflow*. After installing Intel® Extension for Tensorflow*, it could run on Intel GPU.</p>
+<p>All steps follow this existed example. <strong>There is no any code to be changed.</strong></p>
+<p>Read the example guide for detailed information.</p>
+<p>We will learn the acceleration of AI inference by Intel AI technology:</p>
+<ol class="simple">
+<li><p>Intel GPU that supports INT8</p></li>
+<li><p>Intel® Neural Compressor</p></li>
+<li><p>Intel® Extension for Tensorflow*</p></li>
+</ol>
+</section>
+<section id="hardware-environment">
+<h2>Hardware Environment<a class="headerlink" href="#hardware-environment" title="Permalink to this heading"></a></h2>
+<p>The example can run on Intel GPU by Intel® Extension for Tensorflow*.</p>
+<section id="gpu">
+<h3>GPU<a class="headerlink" href="#gpu" title="Permalink to this heading"></a></h3>
+<p>Support: Intel® Data Center Flex Series GPU.</p>
+<section id="local-server">
+<h4>Local Server<a class="headerlink" href="#local-server" title="Permalink to this heading"></a></h4>
+<p>Install the GPU driver and oneAPI packages by referring to <a class="reference external" href="/docs/install/install_for_xpu.html">Intel GPU Software Installation</a>.</p>
+</section>
+<section id="intel-devcloud">
+<h4>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Permalink to this heading"></a></h4>
+<p>If you have no such Intel GPU support INT8, you could register to Intel® DevCloud for oneAPI applications and try this example on the compute node with Intel GPU. To learn more about working with Intel® DevCloud, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a>.</p>
+<p>In Intel® DevCloud, the GPU driver and oneAPI packages are already installed.</p>
+</section>
+</section>
+</section>
+<section id="running-environment">
+<h2>Running Environment<a class="headerlink" href="#running-environment" title="Permalink to this heading"></a></h2>
+<section id="set-up-base-running-environment">
+<h3>Set up Base Running Environment<a class="headerlink" href="#set-up-base-running-environment" title="Permalink to this heading"></a></h3>
+<p>Please refer to the example: <a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/notebook/tensorflow/alexnet_mnist">Intel® Neural Compressor Sample for TensorFlow</a> to setup running environment.</p>
+<p>There are new requirements:</p>
+<ol class="simple">
+<li><p>Python should be 3.9 or newer version.</p></li>
+<li><p>TensorFlow should be 2.15.0</p></li>
+</ol>
+</section>
+<section id="set-up-intel-extension-for-tensorflow-for-gpu">
+<h3>Set up Intel® Extension for Tensorflow* for GPU<a class="headerlink" href="#set-up-intel-extension-for-tensorflow-for-gpu" title="Permalink to this heading"></a></h3>
+<p>Install Intel® Extension for Tensorflow* in the running environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">xpu</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="execute">
+<h2>Execute<a class="headerlink" href="#execute" title="Permalink to this heading"></a></h2>
+<p>Please refer to the example: <a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/notebook/tensorflow/alexnet_mnist">Intel® Neural Compressor Sample for TensorFlow</a> to execute the sample code and check the result.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f31e01a5f70> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

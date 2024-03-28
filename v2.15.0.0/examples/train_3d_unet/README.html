@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accelerate 3D-Unet Training w/o horovod for medical image segmentation on Intel GPU &mdash; Intel® Extension for TensorFlow* v2.15.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Accelerate 3D-Unet Training w/o horovod for medical image segmentation on Intel GPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/train_3d_unet/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="accelerate-3d-unet-training-w-o-horovod-for-medical-image-segmentation-on-intel-gpu">
+<h1>Accelerate 3D-Unet Training w/o horovod for medical image segmentation on Intel GPU<a class="headerlink" href="#accelerate-3d-unet-training-w-o-horovod-for-medical-image-segmentation-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
+This example shows 3D-UNet Training for medical image segmentation. It contains single-tile training scripts and multi-tile training scripts with horovod.</p>
+<p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Training on Intel GPU.</p>
+</section>
+<section id="hardware-requirements">
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<p>Verified Hardware Platforms:</p>
+<ul class="simple">
+<li><p>Intel® Data Center GPU Max Series</p></li>
+</ul>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<section id="model-code-change">
+<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
+<p>To get better performance, instead of installing the official repository, you can apply the patch and install it as shown here. You can choose one patch from single-tile patch <code class="docutils literal notranslate"><span class="pre">3dunet_itex.patch</span></code> and multi-tile patch <code class="docutils literal notranslate"><span class="pre">3dunet_itex_with_horovod.patch</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow</span><span class="o">/</span><span class="n">Segmentation</span><span class="o">/</span><span class="n">UNet_3D_Medical</span><span class="o">/</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="mi">88</span><span class="n">eb3cff2f03dad85035621d041e23a14345999e</span>
+<span class="n">git</span> <span class="n">apply</span> <span class="n">patch</span>  <span class="c1"># When applying this patch, please move it to the above 3D-UNet dir first.</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-for-gpu">
+<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a>.</p>
+</section>
+<section id="setup-running-environment">
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">./pip_set_env.sh</span></code> to setup for GPU. It contains the following two steps: creating virtual environment and installing python packages.</p>
+<ul class="simple">
+<li><p>Create Virtual Environment</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">env_itex</span>
+<span class="n">source</span> <span class="n">env_itex</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Install</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">xpu</span><span class="p">]</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">tfa</span><span class="o">-</span><span class="n">nightly</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">dllogger</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+</section>
+<section id="enable-running-environment">
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
+<ul class="simple">
+<li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html#running">Running</a></p></li>
+</ul>
+</section>
+<section id="prepare-dataset">
+<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
+<p>We use <a class="reference external" href="https://www.med.upenn.edu/cbica/brats-2019/">Brain Tumor Segmentation 2019 dataset</a> for 3D-UNet training. Upon registration, the challenge’s data is made available through the <code class="docutils literal notranslate"><span class="pre">https//ipp.cbica.upenn.edu</span></code> service.</p>
+<p>The training and test datasets are given as 3D <code class="docutils literal notranslate"><span class="pre">nifti</span></code> volumes that can be read using the Nibabel library and NumPy. It can be converted from <code class="docutils literal notranslate"><span class="pre">nifti</span></code> to <code class="docutils literal notranslate"><span class="pre">tfrecord</span></code> using <code class="docutils literal notranslate"><span class="pre">./dataset/preprocess_data.py</span></code> script.</p>
+</section>
+</section>
+<section id="execute-the-example">
+<h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
+<p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/train_maskrcnn/DeepLearningExamples/TensorFlow/Segmentation/UNet_3D_Medical/</span></code>.</p>
+<p>Here we provide single-tile training scripts and multi-tile training scripts with horovod. The datatype can be float32 or bfloat16.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATASET_DIR</span><span class="o">=/</span><span class="n">the</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">dataset</span>
+<span class="n">OUTPUT_DIR</span><span class="o">=/</span><span class="n">the</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">output_dir</span>
+</pre></div>
+</div>
+<section id="single-tile">
+<h3>Single Tile<a class="headerlink" href="#single-tile" title="Permalink to this heading"></a></h3>
+<p>First apply patch.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">apply</span> <span class="mi">3</span><span class="n">dunet_itex</span><span class="o">.</span><span class="n">patch</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>float32</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python main.py --benchmark --data_dir $DATASET_DIR --model_dir $OUTPUT_DIR --exec_mode train --batch_size $BATCH_SIZE --warmup_steps 150 --max_steps 1000 --log_every 1 
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>bfloat16</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python main.py --benchmark --data_dir $DATASET_DIR --model_dir $OUTPUT_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE --log_every 1 --amp
+</pre></div>
+</div>
+</section>
+<section id="multi-tile-with-horovod">
+<h3>Multi-tile with horovod<a class="headerlink" href="#multi-tile-with-horovod" title="Permalink to this heading"></a></h3>
+<p>First apply patch.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">apply</span> <span class="mi">3</span><span class="n">dunet_itex_with_horovod</span><span class="o">.</span><span class="n">patch</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>float32</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpirun -np 2 -prepend-rank -ppn 2 \
+  python main.py --data_dir=$DATASET_DIR --benchmark --model_dir=$MODEL_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>bf16</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpirun -np 2 -prepend-rank -ppn 2 \
+  python main.py --data_dir=$DATASET_DIR --benchmark --model_dir=$MODEL_DIR --exec_mode train --warmup_steps 150 --max_steps 1000 --batch_size=$BATCH_SIZE --amp
+</pre></div>
+</div>
+</section>
+</section>
+<section id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
+<ol class="simple">
+<li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tensorflow</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">framework</span><span class="o">.</span><span class="n">errors_impl</span><span class="o">.</span><span class="n">NotFoundError</span><span class="p">:</span> <span class="n">libmkl_sycl</span><span class="o">.</span><span class="n">so</span><span class="mf">.2</span><span class="p">:</span> <span class="n">cannot</span> <span class="nb">open</span> <span class="n">shared</span> <span class="nb">object</span> <span class="n">file</span><span class="p">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f31e09399d0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

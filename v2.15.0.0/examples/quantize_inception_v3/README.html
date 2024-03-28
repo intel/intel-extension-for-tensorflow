@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quantize Inception V3 by Intel® Extension for Tensorflow* on Intel® Xeon® &mdash; Intel® Extension for TensorFlow* v2.15.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.0▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quantize Inception V3 by Intel® Extension for Tensorflow* on Intel® Xeon®</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/quantize_inception_v3/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quantize-inception-v3-by-intel-extension-for-tensorflow-on-intel-xeon">
+<h1>Quantize Inception V3 by Intel® Extension for Tensorflow* on Intel® Xeon®<a class="headerlink" href="#quantize-inception-v3-by-intel-extension-for-tensorflow-on-intel-xeon" title="Permalink to this heading"></a></h1>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* provides quantization feature by cooperating with Intel® Neural Compressor and oneDNN Graph. It will provide better quantization: better performance and accuracy loss under control.</p>
+<p>Intel® Neural Compressor executes the calibration process to output the QDQ quantization model, which inserts Quantize and Dequantize layers to includes help information for quantization.</p>
+<p>When you use Intel® Extension for Tensorflow* to execute the inference of this model, oneDNN Graph will be called to quantize and optimize the model. Then the quantized model will be executed by Intel® Extension for Tensorflow* and accelerated by Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions on Intel® Xeon® processors.</p>
+</section>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>The example shows an end-to-end pipeline:</p>
+<ol class="simple">
+<li><p>Train an Inception V3 model with a flower photo dataset by transfer learning.</p></li>
+<li><p>Execute the calibration by Intel® Neural Compressor.</p></li>
+<li><p>Quantize and accelerate the inference by Intel® Extension for Tensorflow* for GPU and CPU.</p></li>
+</ol>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h2>
+<section id="intel-extension-for-tensorflow-version">
+<h3>Intel® Extension for Tensorflow* Version<a class="headerlink" href="#intel-extension-for-tensorflow-version" title="Permalink to this heading"></a></h3>
+<p>Install Intel® Extension for Tensorflow* &gt;= 2.13.0.0 for this feature.</p>
+</section>
+<section id="enable-onednn-graph">
+<h3>Enable oneDNN Graph<a class="headerlink" href="#enable-onednn-graph" title="Permalink to this heading"></a></h3>
+<p>By default, oneDNN Graph is enabled in Intel® Extension for Tensorflow* for INT8 models.</p>
+<p>Enable it explicitly by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="kn">import</span> <span class="nn">os</span>
+  <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;ITEX_ONEDNN_GRAPH&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="disable-constant-folding-function">
+<h3>Disable Constant Folding Function<a class="headerlink" href="#disable-constant-folding-function" title="Permalink to this heading"></a></h3>
+<p>We need to disable Constant Folding function in 2 stages:</p>
+<ol class="simple">
+<li><p>Intel® Neural Compressor creates QDQ quantization model.</p></li>
+<li><p>Intel® Extension for Tensorflow* executes the oneDNN Graph quantization path.</p></li>
+</ol>
+<p>There are 2 methods to configure:</p>
+<p>a. Environment Variable</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">ITEX_TF_CONSTANT_FOLDING</span><span class="o">=</span><span class="mi">0</span>
+</pre></div>
+</div>
+<p>b. Python API</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">tensorflow.core.protobuf</span> <span class="kn">import</span> <span class="n">rewriter_config_pb2</span>
+
+<span class="n">infer_config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">()</span>
+<span class="n">infer_config</span><span class="o">.</span><span class="n">graph_options</span><span class="o">.</span><span class="n">rewrite_options</span><span class="o">.</span><span class="n">constant_folding</span> <span class="o">=</span> <span class="n">rewriter_config_pb2</span><span class="o">.</span><span class="n">RewriterConfig</span><span class="o">.</span><span class="n">OFF</span>
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">infer_config</span><span class="p">)</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="hardware-environment">
+<h2>Hardware Environment<a class="headerlink" href="#hardware-environment" title="Permalink to this heading"></a></h2>
+<p>Support: Intel® Xeon® CPU &amp; Intel® Data Center Flex Series GPU.</p>
+<section id="cpu">
+<h3>CPU<a class="headerlink" href="#cpu" title="Permalink to this heading"></a></h3>
+<p>It’s recommended to run the example on the Intel® Xeon® processors, which supports Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions.</p>
+<p>Without the hardware features above for AI workloads, the performance speedup with FP32 will not be increased much.</p>
+<section id="check-intel-deep-learning-boost">
+<h4>Check Intel® Deep Learning Boost<a class="headerlink" href="#check-intel-deep-learning-boost" title="Permalink to this heading"></a></h4>
+<p>In Linux, run command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lscpu</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">vnni</span>
+</pre></div>
+</div>
+<p>You are expected to see <code class="docutils literal notranslate"><span class="pre">avx_vnni</span></code> and <code class="docutils literal notranslate"><span class="pre">avx512-vnni</span></code>, otherwise your processors do not support Intel® Deep Learning Boost.</p>
+</section>
+<section id="check-intel-advanced-matrix-extensions">
+<h4>Check Intel® Advanced Matrix Extensions<a class="headerlink" href="#check-intel-advanced-matrix-extensions" title="Permalink to this heading"></a></h4>
+<p>In Linux, run command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lscpu</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">amx</span>
+</pre></div>
+</div>
+<p>You are expected to see <code class="docutils literal notranslate"><span class="pre">amx_bf16</span></code> and <code class="docutils literal notranslate"><span class="pre">amx_int8</span></code>, otherwise your processors do not support Intel® Advanced Matrix Extensions.</p>
+</section>
+</section>
+<section id="gpu">
+<h3>GPU<a class="headerlink" href="#gpu" title="Permalink to this heading"></a></h3>
+<p>Support: Intel® Data Center Flex Series GPU.</p>
+<section id="local-server">
+<h4>Local Server<a class="headerlink" href="#local-server" title="Permalink to this heading"></a></h4>
+<p>Install the GPU driver and oneAPI packages by referring to <a class="reference external" href="/docs/install/install_for_gpu.html">Intel GPU Software Installation</a>.</p>
+</section>
+</section>
+<section id="intel-devcloud">
+<h3>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Permalink to this heading"></a></h3>
+<p>If you have no CPU support Intel® Deep Learning Boost or Intel® Advanced Matrix Extensions or no Intel GPU support INT8, you could register on Intel® DevCloud and try this example on an second generation Intel® Xeon based processors or newer. To learn more about working with Intel® DevCloud, refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a></p>
+</section>
+</section>
+<section id="running-environment">
+<h2>Running Environment<a class="headerlink" href="#running-environment" title="Permalink to this heading"></a></h2>
+<ol class="simple">
+<li><p>Install Python versions &gt;=3.8 and versions &lt;=3.10 supported by Intel® Extension for Tensorflow*.</p></li>
+<li><p>Create the running Python Virtual environment <strong>env_itex</strong>.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">pip_set_env</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>Activate</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">env_itex</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+</pre></div>
+</div>
+</section>
+<section id="startup-jupyter-notebook">
+<h2>Startup Jupyter Notebook<a class="headerlink" href="#startup-jupyter-notebook" title="Permalink to this heading"></a></h2>
+<ol class="simple">
+<li><p>Startup</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">run_jupyter</span><span class="o">.</span><span class="n">sh</span>
+
+<span class="o">...</span>
+<span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">xxx</span><span class="o">.</span><span class="n">yyy</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="mi">8888</span><span class="o">/</span><span class="n">xxxxxxxx</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>Open the link outputted by Jupyter Notebook in your browser.</p></li>
+<li><p>Choose and open the <strong>quantize_inception_v3.ipynb</strong> in Jupyter Notebook.</p></li>
+</ol>
+<p>Set the kernel to “env_itex”.</p>
+<p>Execute the code as the guide.</p>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this heading"></a></h2>
+<p>Code samples are licensed under the MIT license.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f31e09398b0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
