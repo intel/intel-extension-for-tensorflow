@@ -16,7 +16,7 @@ For experimental support of the Intel® Arc™ A-Series GPUs, please refer to [I
   - Intel® Data Center GPU Flex Series
 - Ubuntu 22.04, Red Hat 8.6 (64-bit), SUSE Linux Enterprise Server(SLES) 15 SP4/SP5
   - Intel® Data Center GPU Max Series
-- Intel® oneAPI Base Toolkit 2024.0
+- Intel® oneAPI Base Toolkit 2024.1
 - TensorFlow 2.15.0
 - Python 3.9-3.11
 - pip 19.0 or later (requires manylinux2014 support)
@@ -69,10 +69,10 @@ Need to install components of Intel® oneAPI Base Toolkit:
 
 
 ```bash
-$ wget https://registrationcenter-download.intel.com/akdlm//IRC_NAS/20f4e6a1-6b0b-4752-b8c1-e5eacba10e01/l_BaseKit_p_2024.0.0.49564.sh
+$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/fdc7a2bc-b7a8-47eb-8876-de6201297144/l_BaseKit_p_2024.1.0.596.sh
 # 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL
 # if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too(Intel® oneAPI MPI Library will be installed automatically as its dependency)
-$ sudo sh l_BaseKit_p_2024.0.0.49564.sh
+$ sudo sh ./l_BaseKit_p_2024.1.0.596.sh
 ```
 
 For any more details, follow the procedure in https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html.
