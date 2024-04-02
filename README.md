@@ -1,9 +1,17 @@
-# Intel® Extension for TensorFlow*
+<div align="center">
+
+Intel® Extension for TensorFlow*
+===============================
 
 [![Python](https://img.shields.io/pypi/pyversions/intel_extension_for_tensorflow)](https://badge.fury.io/py/intel-extension-for-tensorflow)
 [![PyPI version](https://badge.fury.io/py/intel-extension-for-tensorflow.svg)](https://badge.fury.io/py/intel-extension-for-tensorflow)
 [![version](https://img.shields.io/github/v/release/intel/intel-extension-for-tensorflow?color=brightgreen)](https://github.com/intel/intel-extension-for-tensorflow/releases)
 [![license](https://img.shields.io/badge/license-Apache%202-blue)](LICENSE.txt)
+
+[🏭Infrastructure](./docs/guide/infrastructure.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Documentations](./docs/README.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[🌱Features](https://intel.github.io/intel-extension-for-tensorflow/latest/docs/guide/features.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Performance Data](https://intel.github.io/intel-extension-for-tensorflow/latest/docs/guide/performance.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[🏃Installation Guide](https://intel.github.io/intel-extension-for-tensorflow/latest/docs/install/installation_guide.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./examples/README.md)
+</div>
+
+
 
 Intel® Extension for TensorFlow* is a heterogeneous, high performance deep learning extension plugin based on TensorFlow [PluggableDevice](https://github.com/tensorflow/community/blob/master/rfcs/20200624-pluggable-device-for-tensorflow.md) interface, aiming to bring Intel CPU or GPU devices into [TensorFlow](https://github.com/tensorflow/tensorflow) open source community for AI workload acceleration. It allows users to flexibly plug an XPU into TensorFlow on-demand, exposing the computing power inside Intel's hardware.
 
