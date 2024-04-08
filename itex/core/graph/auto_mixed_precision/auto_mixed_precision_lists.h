@@ -172,6 +172,8 @@ class AutoMixedPrecisionLists {
       // Should be remove in future.
       "MklAUGRU",
       "MklGRU",
+      // from Intel-TF bert-large, should be remove in future.
+      "_FusedMatMul",
       // Below ops are fusion ops.
       "_ITEXConv2DBackpropFilterWithBias",
       "_ITEXConv2DBackpropInputWithSlice",
