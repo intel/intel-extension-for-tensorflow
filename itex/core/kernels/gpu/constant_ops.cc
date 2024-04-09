@@ -123,11 +123,6 @@ class ZerosLikeOp<Device, Variant> : public OpKernel {
   explicit ZerosLikeOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
 
   void Compute(OpKernelContext* ctx) override {
-    const Tensor& input = ctx->input(0);
-
-    OP_REQUIRES(ctx, input.dims() == 0,
-                errors::InvalidArgument("ZerosLike non-scalar Tensor with "
-                                        "dtype=DT_VARIANT is not supported."));
     auto zeros_like_func = [](TF_OpKernelContext* tf_ctx, TF_Tensor* tf_input,
                               TF_Tensor* tf_out) {
       OpKernelContext ctx(tf_ctx);
@@ -147,6 +142,8 @@ class ZerosLikeOp<Device, Variant> : public OpKernel {
           break;
 #undef DTYPE_CASE
       }
+      TF_DeleteTensor(tf_input);
+      tf_input = nullptr;
     };
     TF_OpKernelContext* tf_ctx = ctx->Get();
     TF_Status* tf_status = TF_NewStatus();
