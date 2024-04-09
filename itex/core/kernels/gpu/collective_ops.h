@@ -23,6 +23,7 @@ limitations under the License.
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "itex/core/utils/gpu_helper.h"
 #include "itex/core/utils/mutex.h"
 #include "itex/core/utils/op_kernel.h"
 #include "itex/core/utils/strcat.h"
@@ -31,6 +32,8 @@ limitations under the License.
 namespace itex {
 
 constexpr int MAX_RANK_SIZE = 16;
+// After tuned, we found 8 has best performance and XeLink bandwidth.
+constexpr size_t VecBytes = 8;
 
 enum class ReductionOp { SUM = 0, MIN = 1, MAX = 2, PROD = 3 };
 
@@ -237,32 +240,6 @@ ITEX_GPUStream* CollectiveManager::GetCommStream(Participant* participant) {
   return comm_stream;
 }
 
-ITEX_GPUStream* CollectiveManager::GetCommStream(Collective* collective) {
-  std::sort(collective->participants.begin(), collective->participants.end(),
-            [](const std::unique_ptr<Participant>& a,
-               const std::unique_ptr<Participant>& b) -> bool {
-              return a->gpu_device_id < b->gpu_device_id;
-            });
-  return GetCommStream(collective->participants[0].get());
-}
-
-void StreamWaitStreamlist(ITEX_GPUStream* stream,
-                          CollectiveManager::Collective* collective) {
-  std::vector<sycl::event> event_list;
-  for (auto& participant : collective->participants) {
-    event_list.push_back(participant->comm_stream->ext_oneapi_submit_barrier());
-  }
-  stream->ext_oneapi_submit_barrier(event_list);
-}
-
-void StreamlistWaitStream(ITEX_GPUStream* stream,
-                          CollectiveManager::Collective* collective) {
-  sycl::event event = stream->ext_oneapi_submit_barrier();
-  for (auto& participant : collective->participants) {
-    participant->comm_stream->ext_oneapi_submit_barrier({event});
-  }
-}
-
 void CollectiveManager::AddToAllReduce(std::unique_ptr<Participant> participant,
                                        const Context& context,
                                        ReductionOp reduction_op) {
@@ -357,41 +334,153 @@ void CollectiveManager::AddParticipant(std::unique_ptr<Participant> participant,
   if (to_run != nullptr) RunCollective(to_run);
 }
 
-template <typename T, typename Func>
+template <typename T, typename Func, bool PartialStore>
 struct AllReduceKernel;
 template <typename T, typename Func, typename AccT = T>
-void LaunchAllReduceKernel(ITEX_GPUStream* stream,
+void LaunchAllReduceKernel(ITEX_GPUStream* stream, size_t element_count,
                            const std::vector<const void*>& inputs,
-                           const std::vector<void*>& outputs,
-                           size_t num_elements) {
-  auto group_size =
-      (*stream)
-          .get_device()
-          .template get_info<sycl::info::device::max_work_group_size>();
-  auto num_workgroup = (num_elements + group_size - 1) / group_size;
-  int reduction_size = inputs.size();
-  if (reduction_size < MAX_RANK_SIZE) {
+                           const std::vector<void*>& outputs, int rank,
+                           int reduction_size) {
+  constexpr size_t VecSize = VecBytes / sizeof(T);
+  size_t vec_count = element_count / VecSize;
+  size_t vec_tail_element_count = element_count % VecSize;
+  size_t total_vec_count = vec_count + (vec_tail_element_count > 0 ? 1 : 0);
+
+  // Each rank allreduces a sub slice of the tensors. Last rank
+  // also allreduce the tail vectors of the tensor.
+  size_t slice_vec_count = total_vec_count / reduction_size;
+  size_t tail_vec_count = total_vec_count % reduction_size;
+  size_t local_vec_count =
+      slice_vec_count + ((rank == (reduction_size - 1)) ? tail_vec_count : 0);
+
+  if (local_vec_count == 0) return;
+
+  auto device = stream->get_device();
+  size_t group_size =
+      device.template get_info<sycl::info::device::max_work_group_size>();
+
+  // set max_workitems = HW_workgroup_num * max_workgroup_size
+  int num_max_concurrent_workitem =
+      device.template get_info<sycl::ext::intel::info::device::gpu_slices>() *
+      device.template get_info<
+          sycl::ext::intel::info::device::gpu_subslices_per_slice>() *
+      group_size;
+  int num_workitem = local_vec_count <= num_max_concurrent_workitem
+                         ? local_vec_count
+                         : num_max_concurrent_workitem;
+  size_t num_vec_per_workitem = local_vec_count / num_workitem;
+  size_t num_tail_vec = local_vec_count % num_workitem;
+
+  int num_workgroup = (num_workitem + group_size - 1) / group_size;
+
+  if (reduction_size <= MAX_RANK_SIZE) {
     stream->submit([&](sycl::handler& cgh) {
-      const T* in_ptr[MAX_RANK_SIZE];
+      T* in_ptr[MAX_RANK_SIZE];
       T* out_ptr[MAX_RANK_SIZE];
 
       for (int i = 0; i < reduction_size; ++i) {
-        in_ptr[i] = static_cast<const T*>(inputs[i]);
-        out_ptr[i] = static_cast<T*>(outputs[i]);
+        in_ptr[i] = static_cast<T*>(const_cast<void*>(inputs[i])) +
+                    rank * slice_vec_count * VecSize;
+        out_ptr[i] =
+            static_cast<T*>(outputs[i]) + rank * slice_vec_count * VecSize;
       }
 
-      cgh.parallel_for<AllReduceKernel<T, Func>>(
-          sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
-                            sycl::range<1>(group_size)),
-          [=](sycl::nd_item<1> item) {
-            const int index = item.get_global_linear_id();
-            if (index >= num_elements) return;
+      // Last rank may need to process the tail elements which can't form a
+      // full vector and need partial block store.
+      if (rank != (reduction_size - 1) || vec_tail_element_count == 0) {
+        cgh.parallel_for<AllReduceKernel<T, Func, false>>(
+            sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                              sycl::range<1>(group_size)),
+            [=](sycl::nd_item<1> item) {
+              const int index = item.get_global_linear_id();
+              if (index >= num_workitem) return;
 
-            AccT acc = AccT(in_ptr[0][index]);
-            for (int i = 1; i < reduction_size; ++i)
-              acc = Func()(acc, AccT(in_ptr[i][index]));
-            for (int i = 0; i < reduction_size; ++i) out_ptr[i][index] = T(acc);
-          });
+              for (size_t n = 0; n < num_vec_per_workitem; ++n) {
+                size_t offset = (num_workitem * n + index) * VecSize;
+                AlignedVector<AccT, VecSize, Func> result;
+                result.Load(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                    &(in_ptr[0][offset])));
+                for (int i = 1; i < reduction_size; ++i)
+                  result.Accumulate(
+                      *reinterpret_cast<AlignedVector<T, VecSize>*>(
+                          &(in_ptr[i][offset])));
+                for (int i = 0; i < reduction_size; ++i)
+                  result.Store(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                      &(out_ptr[i][offset])));
+              }
+
+              if (index < num_tail_vec) {
+                size_t offset =
+                    (num_workitem * num_vec_per_workitem + index) * VecSize;
+                AlignedVector<AccT, VecSize, Func> result;
+                result.Load(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                    &(in_ptr[0][offset])));
+                for (int i = 1; i < reduction_size; ++i)
+                  result.Accumulate(
+                      *reinterpret_cast<AlignedVector<T, VecSize>*>(
+                          &(in_ptr[i][offset])));
+                for (int i = 0; i < reduction_size; ++i)
+                  result.Store(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                      &(out_ptr[i][offset])));
+              }
+            });
+      } else {
+        cgh.parallel_for<AllReduceKernel<T, Func, true>>(
+            sycl::nd_range<1>(sycl::range<1>(group_size * num_workgroup),
+                              sycl::range<1>(group_size)),
+            [=](sycl::nd_item<1> item) {
+              const int index = item.get_global_linear_id();
+              if (index >= num_workitem) return;
+
+              for (size_t n = 0; n < num_vec_per_workitem; ++n) {
+                size_t offset = (num_workitem * n + index) * VecSize;
+                AlignedVector<AccT, VecSize, Func> result;
+                result.Load(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                    &(in_ptr[0][offset])));
+                for (int i = 1; i < reduction_size; ++i)
+                  result.Accumulate(
+                      *reinterpret_cast<AlignedVector<T, VecSize>*>(
+                          &(in_ptr[i][offset])));
+
+                if (local_vec_count > num_workitem ||
+                    index != (num_workitem - 1)) {
+                  for (int i = 0; i < reduction_size; ++i)
+                    result.Store(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                        &(out_ptr[i][offset])));
+                } else {  // the last workitem may process a partial vector
+                  for (int i = 0; i < reduction_size; ++i)
+                    result.PartialStore(
+                        *reinterpret_cast<AlignedVector<T, VecSize>*>(
+                            &(out_ptr[i][offset])),
+                        vec_tail_element_count);
+                }
+              }
+
+              if (index < num_tail_vec) {
+                size_t offset =
+                    (num_workitem * num_vec_per_workitem + index) * VecSize;
+                AlignedVector<AccT, VecSize, Func> result;
+                result.Load(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                    &(in_ptr[0][offset])));
+                for (int i = 1; i < reduction_size; ++i)
+                  result.Accumulate(
+                      *reinterpret_cast<AlignedVector<T, VecSize>*>(
+                          &(in_ptr[i][offset])));
+
+                if (index != num_tail_vec - 1) {
+                  for (int i = 0; i < reduction_size; ++i)
+                    result.Store(*reinterpret_cast<AlignedVector<T, VecSize>*>(
+                        &(out_ptr[i][offset])));
+                } else {  // the last workitem may process a partial vector
+                  for (int i = 0; i < reduction_size; ++i)
+                    result.PartialStore(
+                        *reinterpret_cast<AlignedVector<T, VecSize>*>(
+                            &(out_ptr[i][offset])),
+                        vec_tail_element_count);
+                }
+              }
+            });
+      }
     });
   } else {
     ITEX_LOG(FATAL) << "Reduction size " << reduction_size
@@ -400,8 +489,6 @@ void LaunchAllReduceKernel(ITEX_GPUStream* stream,
 }
 
 Status CollectiveManager::RunAllReduce(Collective* collective) {
-  ITEX_GPUStream* comm_stream = GetCommStream(collective);
-  StreamWaitStreamlist(comm_stream, collective);
   DataType data_type = collective->data_type;
   ReductionOp reduction_op = collective->reduction_op;
   auto num_elements = collective->participants[0]->input->NumElements();
@@ -422,103 +509,130 @@ Status CollectiveManager::RunAllReduce(Collective* collective) {
     outputs.push_back(participant->output->data());
   }
 
-  if (reduction_op == ReductionOp::SUM) {
-    switch (data_type) {
-      case DT_BFLOAT16:
-        LaunchAllReduceKernel<Eigen::bfloat16, sycl::plus<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_HALF:
-        LaunchAllReduceKernel<Eigen::half, sycl::plus<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_FLOAT:
-        LaunchAllReduceKernel<float, sycl::plus<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_INT32:
-        LaunchAllReduceKernel<int, sycl::plus<int>, int>(comm_stream, inputs,
-                                                         outputs, num_elements);
-        break;
-      default:
-        return errors::InvalidArgument(
-            "Collective Allreduce unsupports datatype ",
-            DataTypeString(data_type));
-    }
-  } else if (reduction_op == ReductionOp::MIN) {
-    switch (data_type) {
-      case DT_BFLOAT16:
-        LaunchAllReduceKernel<Eigen::bfloat16, sycl::minimum<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_HALF:
-        LaunchAllReduceKernel<Eigen::half, sycl::minimum<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_FLOAT:
-        LaunchAllReduceKernel<float, sycl::minimum<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_INT32:
-        LaunchAllReduceKernel<int, sycl::minimum<int>, int>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      default:
-        return errors::InvalidArgument(
-            "Collective Allreduce unsupports datatype ",
-            DataTypeString(data_type));
-    }
-  } else if (reduction_op == ReductionOp::MAX) {
-    switch (data_type) {
-      case DT_BFLOAT16:
-        LaunchAllReduceKernel<Eigen::bfloat16, sycl::maximum<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_HALF:
-        LaunchAllReduceKernel<Eigen::half, sycl::maximum<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_FLOAT:
-        LaunchAllReduceKernel<float, sycl::maximum<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_INT32:
-        LaunchAllReduceKernel<int, sycl::maximum<int>, int>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      default:
-        return errors::InvalidArgument(
-            "Collective Allreduce unsupports datatype ",
-            DataTypeString(data_type));
-    }
-  } else if (reduction_op == ReductionOp::PROD) {
-    switch (data_type) {
-      case DT_BFLOAT16:
-        LaunchAllReduceKernel<Eigen::bfloat16, sycl::multiplies<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_HALF:
-        LaunchAllReduceKernel<Eigen::half, sycl::multiplies<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_FLOAT:
-        LaunchAllReduceKernel<float, sycl::multiplies<float>, float>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      case DT_INT32:
-        LaunchAllReduceKernel<int, sycl::multiplies<int>, int>(
-            comm_stream, inputs, outputs, num_elements);
-        break;
-      default:
-        return errors::InvalidArgument(
-            "Collective Allreduce unsupports datatype ",
-            DataTypeString(data_type));
-    }
-  } else {
-    return errors::InvalidArgument(
-        "Collective Allreduce unsupports ReductionOp yet!");
+  std::vector<ITEX_GPUStream*> comm_streams;
+  std::vector<sycl::event> begin_events;
+  std::vector<sycl::event> end_events;
+  int reduction_size = collective->participants.size();
+  for (int i = 0; i < reduction_size; ++i) {
+    auto comm_stream = GetCommStream(collective->participants[i].get());
+    comm_streams.push_back(comm_stream);
+
+    // TODO(intel): use barrier instead of wait once barrier bug is fixed.
+    comm_stream->wait();
+    // auto begin_event = comm_stream->ext_oneapi_submit_barrier();
+    // begin_events.push_back(begin_event);
   }
-  StreamlistWaitStream(comm_stream, collective);
+
+  for (int i = 0; i < reduction_size; ++i) {
+    auto comm_stream = comm_streams[i];
+    // comm_stream->ext_oneapi_submit_barrier(begin_events);
+
+    if (reduction_op == ReductionOp::SUM) {
+      switch (data_type) {
+        case DT_BFLOAT16:
+          LaunchAllReduceKernel<Eigen::bfloat16, sycl::plus<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_HALF:
+          LaunchAllReduceKernel<Eigen::half, sycl::plus<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_FLOAT:
+          LaunchAllReduceKernel<float, sycl::plus<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_INT32:
+          LaunchAllReduceKernel<int, sycl::plus<int>, int>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        default:
+          return errors::InvalidArgument(
+              "Collective Allreduce unsupports datatype ",
+              DataTypeString(data_type));
+      }
+    } else if (reduction_op == ReductionOp::MIN) {
+      switch (data_type) {
+        case DT_BFLOAT16:
+          LaunchAllReduceKernel<Eigen::bfloat16, sycl::minimum<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_HALF:
+          LaunchAllReduceKernel<Eigen::half, sycl::minimum<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_FLOAT:
+          LaunchAllReduceKernel<float, sycl::minimum<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_INT32:
+          LaunchAllReduceKernel<int, sycl::minimum<int>, int>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        default:
+          return errors::InvalidArgument(
+              "Collective Allreduce unsupports datatype ",
+              DataTypeString(data_type));
+      }
+    } else if (reduction_op == ReductionOp::MAX) {
+      switch (data_type) {
+        case DT_BFLOAT16:
+          LaunchAllReduceKernel<Eigen::bfloat16, sycl::maximum<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_HALF:
+          LaunchAllReduceKernel<Eigen::half, sycl::maximum<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_FLOAT:
+          LaunchAllReduceKernel<float, sycl::maximum<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_INT32:
+          LaunchAllReduceKernel<int, sycl::maximum<int>, int>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        default:
+          return errors::InvalidArgument(
+              "Collective Allreduce unsupports datatype ",
+              DataTypeString(data_type));
+      }
+    } else if (reduction_op == ReductionOp::PROD) {
+      switch (data_type) {
+        case DT_BFLOAT16:
+          LaunchAllReduceKernel<Eigen::bfloat16, sycl::multiplies<float>,
+                                float>(comm_stream, num_elements, inputs,
+                                       outputs, i, reduction_size);
+          break;
+        case DT_HALF:
+          LaunchAllReduceKernel<Eigen::half, sycl::multiplies<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_FLOAT:
+          LaunchAllReduceKernel<float, sycl::multiplies<float>, float>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        case DT_INT32:
+          LaunchAllReduceKernel<int, sycl::multiplies<int>, int>(
+              comm_stream, num_elements, inputs, outputs, i, reduction_size);
+          break;
+        default:
+          return errors::InvalidArgument(
+              "Collective Allreduce unsupports datatype ",
+              DataTypeString(data_type));
+      }
+    } else {
+      return errors::InvalidArgument(
+          "Collective Allreduce unsupports ReductionOp yet!");
+    }
+    // auto event = comm_stream->ext_oneapi_submit_barrier();
+    // end_events.push_back(event);
+  }
+
+  for (int i = 0; i < reduction_size; ++i) {
+    // TODO(intel): use barrier instead of wait once barrier bug is fixed.
+    comm_streams[i]->wait();
+    // comm_streams[i]->ext_oneapi_submit_barrier(end_events);
+  }
   return Status::OK();
 }
 

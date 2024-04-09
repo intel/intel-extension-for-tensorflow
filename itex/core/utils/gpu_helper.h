@@ -203,17 +203,19 @@ constexpr int NumBits(const unsigned int n) {
 
 // Represents an aligned array of N elements of T. Data pointers can be
 // reinterpreted as this type to generate vectorized loads/stores in a kernel.
-template <typename T, int N>
+template <typename T, uint32_t N, typename Func = sycl::plus<T>>
 class alignas(alignof(T) * N) AlignedVector {
  public:
   typedef T value_type;
-  static constexpr const int kSize = N;
+  static constexpr const uint32_t kSize = N;
 
   AlignedVector() = default;
 
   // Uniform initialization.
   explicit AlignedVector(value_type uniform) {
-    UNROLL_ON_DEVICE for (int i = 0; i < kSize; ++i) { values_[i] = uniform; }
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < kSize; ++i) {
+      values_[i] = uniform;
+    }
   }
   // Uniform initialization with explicit conversion.
   // Note: This is required for T=Eigen::half because it only supports explicit
@@ -223,13 +225,17 @@ class alignas(alignof(T) * N) AlignedVector {
                                                 int>::type = 0>
   explicit AlignedVector(U uniform_u) {
     value_type uniform(uniform_u);
-    UNROLL_ON_DEVICE for (int i = 0; i < kSize; ++i) { values_[i] = uniform; }
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < kSize; ++i) {
+      values_[i] = uniform;
+    }
   }
   // Implicit conversion.
   template <typename U, typename std::enable_if<
                             std::is_convertible<U, T>::value, int>::type = 0>
   AlignedVector(const AlignedVector<U, N>& other) {
-    UNROLL_ON_DEVICE for (int i = 0; i < kSize; ++i) { values_[i] = other[i]; }
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < kSize; ++i) {
+      values_[i] = other[i];
+    }
   }
   // Explicit conversion.
   template <typename U,
@@ -237,18 +243,49 @@ class alignas(alignof(T) * N) AlignedVector {
                                         std::is_constructible<T, U>::value,
                                     int>::type = 0>
   explicit AlignedVector(const AlignedVector<U, N>& other) {
-    UNROLL_ON_DEVICE for (int i = 0; i < kSize; ++i) {
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < kSize; ++i) {
       values_[i] = T(other[i]);
     }
   }
 
-  value_type& operator[](int i) { return values_[i]; }
-  const value_type& operator[](int i) const { return values_[i]; }
+  template <typename U>
+  void Load(const AlignedVector<U, N>& other) {
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < N; ++i) {
+      values_[i] = static_cast<T>(other[i]);
+    }
+  }
 
-#define DEFINE_BINARY_UPDATE_OPERATOR(op)                                      \
-  AlignedVector& operator op(const AlignedVector& rhs) {                       \
-    UNROLL_ON_DEVICE for (int i = 0; i < kSize; ++i) { values_[i] op rhs[i]; } \
-    return *this;                                                              \
+  template <typename U>
+  void Accumulate(const AlignedVector<U, N>& other) {
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < N; ++i) {
+      values_[i] = Func()(values_[i], static_cast<T>(other[i]));
+    }
+  }
+
+  template <typename U>
+  void Store(AlignedVector<U, N>& other) {
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < N; ++i) {
+      other[i] = static_cast<U>(values_[i]);
+    }
+  }
+
+  template <typename U>
+  void PartialStore(AlignedVector<U, N>& other, uint32_t num,
+                    uint32_t offset = 0) {
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < N && i < num; ++i) {
+      other[i] = static_cast<U>(values_[i + offset]);
+    }
+  }
+
+  value_type& operator[](uint32_t i) { return values_[i]; }
+  const value_type& operator[](uint32_t i) const { return values_[i]; }
+
+#define DEFINE_BINARY_UPDATE_OPERATOR(op)                   \
+  AlignedVector& operator op(const AlignedVector& rhs) {    \
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < kSize; ++i) { \
+      values_[i] op rhs[i];                                 \
+    }                                                       \
+    return *this;                                           \
   }
   DEFINE_BINARY_UPDATE_OPERATOR(+=)
   DEFINE_BINARY_UPDATE_OPERATOR(-=)
@@ -260,7 +297,7 @@ class alignas(alignof(T) * N) AlignedVector {
   friend AlignedVector operator op(const AlignedVector& lhs,   \
                                    const AlignedVector& rhs) { \
     AlignedVector ret;                                         \
-    UNROLL_ON_DEVICE for (int i = 0; i < kSize; ++i) {         \
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < kSize; ++i) {    \
       ret[i] = lhs[i] op rhs[i];                               \
     }                                                          \
     return ret;                                                \
@@ -271,14 +308,14 @@ class alignas(alignof(T) * N) AlignedVector {
   DEFINE_BINARY_OPERATOR(/)
 #undef DEFINE_BINARY_OPERATOR
 
-#define DEFINE_BINARY_FUNCTION(func)                    \
-  friend AlignedVector func(const AlignedVector& lhs,   \
-                            const AlignedVector& rhs) { \
-    AlignedVector ret;                                  \
-    UNROLL_ON_DEVICE for (int i = 0; i < kSize; ++i) {  \
-      ret[i] = func(lhs[i], rhs[i]);                    \
-    }                                                   \
-    return ret;                                         \
+#define DEFINE_BINARY_FUNCTION(func)                        \
+  friend AlignedVector func(const AlignedVector& lhs,       \
+                            const AlignedVector& rhs) {     \
+    AlignedVector ret;                                      \
+    UNROLL_ON_DEVICE for (uint32_t i = 0; i < kSize; ++i) { \
+      ret[i] = func(lhs[i], rhs[i]);                        \
+    }                                                       \
+    return ret;                                             \
   }
   DEFINE_BINARY_FUNCTION(min)
   DEFINE_BINARY_FUNCTION(max)
