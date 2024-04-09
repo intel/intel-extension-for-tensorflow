@@ -87,7 +87,7 @@ struct arguments_t {
         uH(head_size),
         uF(num_queries),
         uT(num_keys),
-        sm_scale(xetla_rsqrt<accum_t>(accum_t(head_size))) {}
+        sm_scale(1. / sqrt(head_size)) {}
 };
 
 template <typename mha_policy, typename scalar_t>
