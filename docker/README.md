@@ -20,7 +20,7 @@ Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries
 To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well. You can get the intel-optimization-for-horovod wheel link from https://pypi.org/project/intel-optimization-for-horovod/#files.
 
 ```
-mkdir ./models/binaries
+mkdir -p ./models/binaries
 cd ./models/binaries
 wget <download link from https://pypi.org/project/intel-extension-for-tensorflow/#files>
 wget <download link from https://pypi.org/project/intel-extension-for-tensorflow-lib/#files>
@@ -31,13 +31,13 @@ wget <download link from https://pypi.org/project/intel-optimization-for-horovod
 ### I. Customize Build Script
 We provide [build.sh](./build.sh) as the Docker container build script. The OS version and some software versions (such as Python and TensorFlow) are hard coded inside the script. If you're using a different version, you can edit this script.
 
-For example, to build a Docker container with Python 3.10 and TensorFlow 2.14 on an Ubuntu 22.04 layer, update [build.sh](./build.sh) as shown below.
+For example, to build a Docker container with Python 3.10 and TensorFlow 2.15 on an Ubuntu 22.04 layer, update [build.sh](./build.sh) as shown below.
 
 ```bash
 IMAGE_NAME=intel-extension-for-tensorflow:cpu-ubuntu
         docker build --build-arg UBUNTU_VERSION=22.04 \
                                 --build-arg PYTHON=python3.10 \
-                                --build-arg TF_VER=2.14 \
+                                --build-arg TF_VER=2.15 \
                                 --build-arg WHEELS=*.whl \
                                 -t $IMAGE_NAME \
                                 -f itex-cpu.Dockerfile .

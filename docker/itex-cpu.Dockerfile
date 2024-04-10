@@ -1,4 +1,4 @@
-#copyright (c) 2022-2023 Intel Corporation
+#copyright (c) 2022-2024 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ RUN pip --no-cache-dir install --upgrade \
     pip \
     setuptools
 
-ARG TF_VER="2.14"
+ARG TF_VER="2.15"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 
