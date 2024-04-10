@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g43584f8 documentation</title>
+  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g28c3536 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
@@ -108,7 +108,7 @@
 <h2>Binaries Preparation<a class="headerlink" href="#binaries-preparation" title="Permalink to this heading"></a></h2>
 <p>Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory. You can get the intel-extension-for-tensorflow wheel link from https://pypi.org/project/intel-extension-for-tensorflow/#files, and intel-extension-for-tensorflow-lib wheel link from https://pypi.org/project/intel-extension-for-tensorflow-lib/#files.</p>
 <p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well. You can get the intel-optimization-for-horovod wheel link from https://pypi.org/project/intel-optimization-for-horovod/#files.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
 <span class="n">cd</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
 <span class="n">wget</span> <span class="o">&lt;</span><span class="n">download</span> <span class="n">link</span> <span class="kn">from</span> <span class="nn">https</span><span class="p">:</span><span class="o">//</span><span class="n">pypi</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">project</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="c1">#files&gt;</span>
 <span class="n">wget</span> <span class="o">&lt;</span><span class="n">download</span> <span class="n">link</span> <span class="kn">from</span> <span class="nn">https</span><span class="p">:</span><span class="o">//</span><span class="n">pypi</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">project</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">-</span><span class="n">lib</span><span class="o">/</span><span class="c1">#files&gt;</span>
@@ -121,11 +121,11 @@
 <section id="i-customize-build-script">
 <h3>I. Customize Build Script<a class="headerlink" href="#i-customize-build-script" title="Permalink to this heading"></a></h3>
 <p>We provide <a class="reference external" href="./build.sh">build.sh</a> as the Docker container build script. The OS version and some software versions (such as Python and TensorFlow) are hard coded inside the script. If you’re using a different version, you can edit this script.</p>
-<p>For example, to build a Docker container with Python 3.10 and TensorFlow 2.14 on an Ubuntu 22.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as shown below.</p>
+<p>For example, to build a Docker container with Python 3.10 and TensorFlow 2.15 on an Ubuntu 22.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as shown below.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">IMAGE_NAME</span><span class="o">=</span>intel-extension-for-tensorflow:cpu-ubuntu
 <span class="w">        </span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VERSION</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">PYTHON</span><span class="o">=</span>python3.10<span class="w"> </span><span class="se">\</span>
-<span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">TF_VER</span><span class="o">=</span><span class="m">2</span>.14<span class="w"> </span><span class="se">\</span>
+<span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">TF_VER</span><span class="o">=</span><span class="m">2</span>.15<span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">WHEELS</span><span class="o">=</span>*.whl<span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>-t<span class="w"> </span><span class="nv">$IMAGE_NAME</span><span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>-f<span class="w"> </span>itex-cpu.Dockerfile<span class="w"> </span>.
@@ -213,7 +213,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </sp
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7efdddc2a4a0> 
+   <jinja2.runtime.BlockReference object at 0x7fabc0638b80> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
