@@ -98,6 +98,7 @@ void* PluginStreamDevice::allocate(size_t num_bytes) const {
     if (value & kTag) {
       TF_Status* tf_status = TF_NewStatus();
       PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tmp_tensor, tf_status);
+      TF_DeleteStatus(tf_status);
       ret = ITEXOpaqueDataPointerFromPjRtBuffer(pjrt_c_buffer);
     } else {
       ret = data_ptr;
