@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g28c3536 documentation</title>
+  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gbe1397f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
@@ -155,7 +155,7 @@
 <ul class="simple">
 <li><p>Intel® CPU (Xeon, Core)</p></li>
 <li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/docs/discrete-gpus/data-center-gpu/flex-series/overview.html">Intel® Data Center GPU Flex Series</a></p></li>
-<li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/docs/processors/max-series/overview.html">Intel® Data Center GPU Max Series</a></p></li>
+<li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/details/discrete-gpus/data-center-gpu/max-series.html">Intel® Data Center GPU Max Series</a></p></li>
 <li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/products/details/discrete-gpus/arc.html">Intel® Arc™ Graphics</a> (experimental)</p></li>
 </ul>
 </section>
@@ -209,15 +209,15 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 <h3>Extra Requirements for XPU/GPU Build Only<a class="headerlink" href="#extra-requirements-for-xpu-gpu-build-only" title="Permalink to this heading"></a></h3>
 <section id="install-intel-gpu-driver">
 <h4>Install Intel GPU Driver<a class="headerlink" href="#install-intel-gpu-driver" title="Permalink to this heading"></a></h4>
-<p>Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>).</p>
+<p>Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT (<a class="reference external" href="https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html">Ahead-of-time compilation</a>).</p>
 <p>Refer to <a class="reference external" href="install_for_xpu.html/#install-gpu-drivers">Install Intel GPU driver</a> for details.</p>
 <p>Note:</p>
 <ol>
 <li><p>Make sure to <a class="reference external" href="https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages">install developer runtime packages</a> before building Intel® Extension for TensorFlow*.</p></li>
-<li><p><strong>AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong></p>
+<li><p><strong>AOT (<a class="reference external" href="https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html">Ahead-of-time compilation</a>)</strong></p>
 <p>AOT is a compiling option that reduces the initialization time of GPU kernels at startup time by creating the binary code for a specified hardware platform during compiling. AOT will make the installation package larger but improve performance time.</p>
 <p>Without AOT, Intel® Extension for TensorFlow* will be translated to binary code for local hardware platform during startup. That will prolong startup time when using a GPU to several minutes or more.</p>
-<p>For more information, refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Use AOT for Integrated Graphics (Intel GPU)</a>.</p>
+<p>For more information, refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html">Use AOT for Integrated Graphics (Intel GPU)</a>.</p>
 </li>
 </ol>
 </section>
@@ -294,7 +294,11 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 <td>acm-g11</td>
 </tr>
 </tbody>
-</table><p>To learn how to get the device type, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Use AOT for Integrated Graphics (Intel GPU)</a> or create an <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">issue</a> to ask support.</p>
+</table><p>Please refer to the <code class="docutils literal notranslate"><span class="pre">Available</span> <span class="pre">GPU</span> <span class="pre">Platforms</span></code> section in the end of the <a class="reference external" href="https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html">Ahead of Time Compilation</a> document for more device types or create an <a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow/issues">issue</a> to ask support.</p>
+<p>To get the full list of supported device types, use the OpenCL™ Offline Compiler (OCLOC) tool (which is installed as part of the GPU driver), and run the following command, please look for <code class="docutils literal notranslate"><span class="pre">-device</span> <span class="pre">&lt;device_type&gt;</span></code> field of the output:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ocloc<span class="w"> </span>compile<span class="w"> </span>--help
+</pre></div>
+</div>
 <ul>
 <li><p>Choose to Build with oneMKL Support.</p>
 <p>We recommend choosing <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
@@ -533,7 +537,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fabc0bd8b50> 
+   <jinja2.runtime.BlockReference object at 0x7fdcce8524d0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
