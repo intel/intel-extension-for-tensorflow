@@ -127,6 +127,7 @@ void* tensor_get_raw_data(TF_Tensor* tf_tensor) {
   if (value & kTag) {
     TF_Status* tf_status = TF_NewStatus();
     PJRT_Buffer* pjrt_c_buffer = TF_GetPjRtCBuffer(tf_tensor, tf_status);
+    TF_DeleteStatus(tf_status);
     return ITEXOpaqueDataPointerFromPjRtBuffer(pjrt_c_buffer);
   } else {
     return data_ptr;
