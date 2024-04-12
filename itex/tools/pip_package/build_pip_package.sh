@@ -148,6 +148,7 @@ function prepare_src() {
   if [ -d ${ITEX_TMPDIR}/itex ] ; then
     mv -f ${ITEX_TMPDIR}/itex/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow
     cp -rf itex/python/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python
+    cp -rf tools/* ${ITEX_TMPDIR}/intel_extension_for_tensorflow/tools
     mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/base_init.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__init__.py
     mv -f ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/__main__.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/__main__.py
     emit_version_info ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/version.py ${ITEX_TMPDIR}/intel_extension_for_tensorflow/python/gen_itex_version.py "$WEEKLY_BUILD_FLAG"

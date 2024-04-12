@@ -1,22 +1,18 @@
-import importlib.util
-import json
-import os
-import pip
-import platform
-import sys
-import subprocess
-import wget
 
-def get_config(url):
-  filename = './local_config.json'
+def getConfig(url, filename):
+  import json
+  import os
+  import wget
   if os.path.exists(filename) is False:
     wget.download(url, filename)
   with open(filename, 'r') as f:
     config = json.load(f)
     return config
 
-def check_python():
+def check_python(config):
   print("Check Python")
+  import importlib.util
+  import sys
 
   itex_found = importlib.util.find_spec("intel_extension_for_tensorflow")
   if itex_found is None:
@@ -35,7 +31,6 @@ def check_python():
   python_major_version = sys.version_info.major
   python_minor_version = sys.version_info.minor
   python_micro_version = sys.version_info.micro
-
   if python_major_version < 2 :
     exit("\033[31mPython2 is not supported, please install Python3!\033[0m")
   elif python_minor_version < config['python_version']['min_python_version'][itex_version]:
@@ -49,8 +44,9 @@ def check_python():
   print("\033[32mCheck Python Passed\033[0m\n")
   return itex_version
 
-def check_os():
+def check_os(config, itex_version):
   print("Check OS")
+  import platform
   system_type = platform.system()
   if system_type != 'Linux':
     exit("\033[31mWe only Support Linux System!\033[0m\n")
@@ -69,25 +65,32 @@ def check_os():
   print("\033[32mCheck OS Passed\033[0m\n")
   return os_id, os_version
 
-def check_tensorflow():
+def check_tensorflow(config, itex_version):
   print("Check Tensorflow")
+  import subprocess
+  import importlib
+  import os
 
   tf_found = importlib.util.find_spec("tensorflow")
   if tf_found is None:
     exit("\033[31mPlease Install TensorFlow first.\033[0m\n")
   
-  file = ''.join(tf_found.submodule_search_locations) + "/tools/pip_package/setup.py"
-  cmd = "cat " + file + '|grep "_VERSION ="'
-  res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  tf_version = str(res.stdout)[14:20]
-  if tf_version < config['tensorflow_version']['min_tensorflow_version'][itex_version]:
-    exit("\033[31mYour Tensorflow version is too low, please upgrade to \033[0m" + 
-         str(config['tensorflow_version']['min_tensorflow_version'][itex_version]) + "\033[31m!\033[0m")
+  #file = ''.join(tf_found.submodule_search_locations) + "/tools/pip_package/setup.py"
+  #cmd = "cat " + file + '|grep "_VERSION ="'
+  #res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  #tf_version = str(res.stdout)[14:20]
+  import tensorflow as tf
+  tf_version = tf.__version__
   print("\tTensorflow " + tf_version + " is installed.")
-  print("\033[32mCheck Tensorflow Passed\033[0m\n")
+  if tf_version < config['tensorflow_version']['min_tensorflow_version'][itex_version]:
+    exit("Your Tensorflow version is too low, please upgrade to " + 
+         str(config['tensorflow_version']['min_tensorflow_version'][itex_version]) + "!")
+  print("Check Tensorflow Passed\n")
 
-def check_driver():
+def check_driver(config, os_id):
   print("Check Intel GPU Driver")
+  import os
+  # tf_version = str(res.stdout)[14:20]
   if os_id == "ubuntu":
     cmd = "dpkg -s "
   elif os_id == "rhel":
@@ -104,8 +107,10 @@ def check_driver():
 
   print("Check Intel GPU Driver Passsed\n")
 
-def check_oneapi():
+def check_oneapi(config, itex_version):
   print("Check OneAPI")
+  import subprocess
+  import os
   cmd = 'LD_DEBUG=libs python -c "import intel_extension_for_tensorflow" 2>&1 |tee /tmp/log' 
   subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -119,8 +124,9 @@ def check_oneapi():
     print("Recommended " + oneapi + " version is " + config['oneapi_version'][itex_version][oneapi])
   print("\033[32mCheck OneAPI Passed\033[0m\n")
 
-def check_py_lib():
+def check_py_lib(config):
   print("Check Tensorflow Requirements\n")
+  import importlib
   for lib in config['tf_requirements']:
     lib_found = importlib.util.find_spec(lib)
     if lib_found is None:
@@ -132,15 +138,26 @@ def check_py_lib():
       print("\t" + lib + "\033[31m should be installed.\033[0m")
   print("\n")
 
-if __name__ == '__main__':
+def check():
   print("\nCheck Environment for Intel(R) Extension for TensorFlow*...\n")
+  print('__file__:    ', __file__)
+  import configparser
+  import os
+
+  # the latest version
   url="https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/master/tools/python/config.json"
-  configfile="./config.json"
+
+  # the local version
+  configfile="config.json"
+  configfile_path=os.path.dirname(__file__) + os.sep + configfile
   os_id=""
-  config = get_config(url)
-  itex_version = check_python()
-  os_id, os_version = check_os()
-  check_tensorflow()
-  check_driver()
-  check_oneapi()
-  check_py_lib()
+  config = getConfig(url, configfile_path)
+  itex_version = check_python(config)
+  os_id, os_version = check_os(config, itex_version)
+  check_tensorflow(config, itex_version)
+  check_driver(config, os_id)
+  check_oneapi(config, itex_version)
+  check_py_lib(config)
+
+if __name__ == '__main__':
+  check()

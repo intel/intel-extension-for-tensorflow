@@ -132,11 +132,12 @@ setup(
             'python/distribute/*.py',
             'core/utils/protobuf/*.py',
             "third-party-programs/*",
+            "tools/python/*",
         ],
     },
-    exclude_package_data={
-        'intel_extension_for_tensorflow': ['tools']
-    },
+    #exclude_package_data={
+    #    'intel_extension_for_tensorflow': ['tools']
+    #},
     python_requires='>=3.9',
     zip_safe=False,
     distclass=BinaryDistribution,

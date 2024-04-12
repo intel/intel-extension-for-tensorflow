@@ -26,6 +26,7 @@ from intel_extension_for_tensorflow.python import distribute # pylint: disable=u
 from intel_extension_for_tensorflow.python.version import __version__  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python import version  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python import test_func  # pylint: disable=unused-import
+from intel_extension_for_tensorflow.tools.python import env_check  # pylint: disable=unused-import
 
 from intel_extension_for_tensorflow.core.utils.protobuf.config_pb2 import *  # pylint: disable=unused-import,wildcard-import,unused-wildcard-import
 from intel_extension_for_tensorflow.python.experimental_ops_override import experimental_ops_override
