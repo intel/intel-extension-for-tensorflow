@@ -531,7 +531,8 @@ inline Status SoftmaxWorkgroupSMemImpl(const GPUDevice& device,
   const int num_packs = cols / pack_size;
 
   stream->submit([&](sycl::handler& h) {
-    __shared__<unsigned char> scratch(sycl::range<1>(workgroup_size), h);
+    __shared__<unsigned char> scratch(
+        sycl::range<1>(cols * sizeof(ComputeType)), h);
     SoftmaxWorkgroupSMemImplKernel<LOAD, STORE, ComputeType, pack_size,
                                    algorithm>
         task(scratch, rows, cols, workgroup_size, num_packs, device_load,
@@ -552,7 +553,10 @@ inline Status LaunchSoftmaxWorkGroupSMemImpl(const GPUDevice& device,
                                              STORE device_store,
                                              const int32 rows,
                                              const int32 cols) {
-  int workgroup_size = 128;
+  int workgroup_size =
+      device.stream()
+          ->get_device()
+          .template get_info<sycl::info::device::max_work_group_size>();
   sycl::range<1> local_range(workgroup_size);
   int num_wg;
   GetNumWorkGroups(device.stream()->get_device(), workgroup_size, rows, 32,
