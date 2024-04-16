@@ -131,8 +131,12 @@ class SoftmaxTest(test.TestCase):
         atol=1.e-5)
 
   def testFloat(self):
-    self._testAll(
-        np.array([[1., 1., 1., 1.], [1., 2., 3., 4.]]).astype(np.float32))
+    features = [np.random.randn(256, 10480).astype(np.float32),
+                np.random.randn(16, 16).astype(np.float32),
+                np.random.randn(32*512, 32*512).astype(np.float32)]
+    for feature in features:
+      self._testAll(feature)
+
 
   @unittest.skipUnless(test.is_built_with_gpu_support(),
                        "Test only applicable when running on GPUs")
@@ -146,8 +150,11 @@ class SoftmaxTest(test.TestCase):
         self._testAll(data.astype(np.float32))
 
   def testHalf(self):
-    self._testAll(
-        np.array([[1., 1., 1., 1.], [1., 2., 3., 4.]]).astype(np.float16))
+    features = [np.random.randn(256, 10480).astype(np.float16),
+                np.random.randn(16, 16).astype(np.float16),
+                np.random.randn(32*512, 32*512).astype(np.float16)]
+    for feature in features:
+      self._testAll(feature)
 
   @unittest.skipUnless(test.is_built_with_gpu_support(),
                        "Test only applicable when running on GPUs")
@@ -177,9 +184,11 @@ class SoftmaxTest(test.TestCase):
         self._testAll(data.astype(np.float64))
 
   def testBfloat16(self):
-    self._testAll(
-        np.array([[1., 1., 1., 1.], [1., 2., 3., 4.]]).astype(np.float32),
-        dtype=dtypes.bfloat16)
+    features = [np.random.randn(256, 10480).astype(np.float32),
+                np.random.randn(16, 16).astype(np.float32),
+                np.random.randn(32*512, 32*512).astype(np.float32)]
+    for feature in features:
+      self._testAll(feature, dtype=dtypes.bfloat16)
 
   @unittest.skipUnless(test.is_built_with_gpu_support(),
                        "Test only applicable when running on GPUs")
