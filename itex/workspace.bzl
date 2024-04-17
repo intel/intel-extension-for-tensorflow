@@ -232,17 +232,4 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         ],
     )
 
-    new_git_repository(
-        name = "itex_xetla",
-        commit =
-            "28c18c4c1ff5aa247b9750413ff61b60edc2c1cb",
-        remote =
-            "https://github.com/intel/xetla.git",
-        verbose = True,
-        build_file = "//third_party/xetla:BUILD",
-        patch_cmds = [
-            "git log -1 --format=%H > COMMIT",
-        ],
-    )
-
     _itex_bind()
