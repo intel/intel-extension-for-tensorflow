@@ -1,6 +1,6 @@
 diff --git a/third_party/tsl/third_party/eigen3/eigen.patch b/third_party/tsl/third_party/eigen3/eigen.patch
 new file mode 100644
-index 000000000..8954b1d2e
+index 0000000000..8954b1d2e3
 --- /dev/null
 +++ b/third_party/tsl/third_party/eigen3/eigen.patch
 @@ -0,0 +1,13 @@
@@ -18,7 +18,7 @@ index 000000000..8954b1d2e
 +   #define EIGEN_COMP_CXXVER 17
 + #elif EIGEN_CPLUSPLUS >= 201402L
 diff --git a/third_party/tsl/third_party/eigen3/workspace.bzl b/third_party/tsl/third_party/eigen3/workspace.bzl
-index d1d8d4ac4..be6848888 100644
+index d1d8d4ac48..be6848888f 100644
 --- a/third_party/tsl/third_party/eigen3/workspace.bzl
 +++ b/third_party/tsl/third_party/eigen3/workspace.bzl
 @@ -14,6 +14,7 @@ def repo():
@@ -30,7 +30,7 @@ index d1d8d4ac4..be6848888 100644
          strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
          urls = tf_mirror_urls("https://gitlab.com/libeigen/eigen/-/archive/{commit}/eigen-{commit}.tar.gz".format(commit = EIGEN_COMMIT)),
 diff --git a/third_party/tsl/third_party/grpc/upb_platform_fix.patch b/third_party/tsl/third_party/grpc/upb_platform_fix.patch
-index 6edd66067..022c9d155 100644
+index 6edd66067e..022c9d1557 100644
 --- a/third_party/tsl/third_party/grpc/upb_platform_fix.patch
 +++ b/third_party/tsl/third_party/grpc/upb_platform_fix.patch
 @@ -11,3 +11,12 @@ index ad85b202..2311b2e4 100644
@@ -47,7 +47,7 @@ index 6edd66067..022c9d155 100644
 +     # copybara:strip_end
 + ]
 diff --git a/third_party/tsl/third_party/llvm/build.patch b/third_party/tsl/third_party/llvm/build.patch
-index bbf8f587a..ab0df933f 100644
+index bbf8f587ac..ab0df933f5 100644
 --- a/third_party/tsl/third_party/llvm/build.patch
 +++ b/third_party/tsl/third_party/llvm/build.patch
 @@ -2,6 +2,14 @@ diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llv
@@ -92,7 +92,7 @@ index bbf8f587a..ab0df933f 100644
 +   if (failed(reader.parseVarInt(version)))
 diff --git a/third_party/tsl/third_party/llvm/opt.patch b/third_party/tsl/third_party/llvm/opt.patch
 new file mode 100644
-index 000000000..49e5b3b7f
+index 0000000000..49e5b3b7fc
 --- /dev/null
 +++ b/third_party/tsl/third_party/llvm/opt.patch
 @@ -0,0 +1,18 @@
@@ -116,7 +116,7 @@ index 000000000..49e5b3b7f
 +   PA.preserveSet<CFGAnalyses>();
 diff --git a/third_party/tsl/third_party/llvm/spirv.patch b/third_party/tsl/third_party/llvm/spirv.patch
 new file mode 100644
-index 000000000..dd2ebb8e1
+index 0000000000..dd2ebb8e1e
 --- /dev/null
 +++ b/third_party/tsl/third_party/llvm/spirv.patch
 @@ -0,0 +1,93 @@
@@ -214,7 +214,7 @@ index 000000000..dd2ebb8e1
 +   // canonicalization pass that enables other optimizations. As a result,
 +   // LoopSink pass needs to be a very late IR pass to avoid undoing LICM
 diff --git a/third_party/tsl/third_party/llvm/workspace.bzl b/third_party/tsl/third_party/llvm/workspace.bzl
-index 30e3e13fd..131556f93 100644
+index 30e3e13fdf..131556f93d 100644
 --- a/third_party/tsl/third_party/llvm/workspace.bzl
 +++ b/third_party/tsl/third_party/llvm/workspace.bzl
 @@ -17,6 +17,8 @@ def repo(name):
@@ -227,7 +227,7 @@ index 30e3e13fd..131556f93 100644
              "//third_party/llvm:build.patch",
              "//third_party/llvm:mathextras.patch",
 diff --git a/third_party/tsl/tsl/framework/BUILD b/third_party/tsl/tsl/framework/BUILD
-index e055a619f..fa5e93af6 100644
+index e055a619f5..fa5e93af61 100644
 --- a/third_party/tsl/tsl/framework/BUILD
 +++ b/third_party/tsl/tsl/framework/BUILD
 @@ -117,7 +117,8 @@ cc_library(
@@ -249,26 +249,35 @@ index e055a619f..fa5e93af6 100644
          "@com_google_absl//absl/strings",
          "@com_google_absl//absl/types:optional",
 diff --git a/third_party/tsl/tsl/framework/bfc_allocator.cc b/third_party/tsl/tsl/framework/bfc_allocator.cc
-index 9e4447108..e3e083b10 100644
+index 9e4447108a..18e5356be4 100644
 --- a/third_party/tsl/tsl/framework/bfc_allocator.cc
 +++ b/third_party/tsl/tsl/framework/bfc_allocator.cc
-@@ -48,7 +48,7 @@ BFCAllocator::BFCAllocator(std::unique_ptr<SubAllocator> sub_allocator,
+@@ -47,12 +47,13 @@ BFCAllocator::BFCAllocator(std::unique_ptr<SubAllocator> sub_allocator,
+       sub_allocator_(std::move(sub_allocator)),
        name_(name),
        free_chunks_list_(kInvalidChunkHandle),
-       next_allocation_id_(1) {
+-      next_allocation_id_(1) {
 -  if (opts.allow_growth) {
-+  if (opts.allow_growth || AllocMode() == 2) {
++      next_allocation_id_(1),
++      alloc_mode(AllocMode()) {
++  if (opts.allow_growth || alloc_mode == BFC_EXTEND_SMALL) {
      // 2MiB smallest initial allocation, unless total memory available
      // is less.
      curr_region_allocation_bytes_ =
-@@ -111,6 +111,14 @@ const BFCAllocator::Chunk* BFCAllocator::ChunkFromHandle(ChunkHandle h) const {
+-        RoundedBytes(std::min(total_memory, size_t{2 << 20}));
++        RoundedBytes(std::min(total_memory, kSmallSize));
+   } else {
+     curr_region_allocation_bytes_ = RoundedBytes(total_memory);
+   }
+@@ -111,6 +112,15 @@ const BFCAllocator::Chunk* BFCAllocator::ChunkFromHandle(ChunkHandle h) const {
    return &(chunks_[h]);
  }
  
 +bool CheckIfUsingMachineWithLimitMem() {
 +  const char* hardware_env = std::getenv("ITEX_USING_DATA_CENTER_GPU_MAX");
 +  if (hardware_env) {
-+    return false;
++    std::string env_value = absl::AsciiStrToLower(hardware_env);
++    return !(env_value == "1" || env_value == "true");
 +  }
 +  return true;
 +}
@@ -276,21 +285,56 @@ index 9e4447108..e3e083b10 100644
  bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
    size_t available_bytes = memory_limit_ - *stats_.pool_bytes;
    // Rounds available_bytes down to the nearest multiple of kMinAllocationSize.
-@@ -133,6 +141,13 @@ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
+@@ -122,17 +132,32 @@ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
+     return false;
+   }
  
+-  // If curr_region_allocation_bytes_ is not enough to satisfy the
+-  // allocation, keep multiplying by a power of two until that is
+-  // sufficient.
+   bool increased_allocation = false;
+-  while (rounded_bytes > curr_region_allocation_bytes_) {
+-    curr_region_allocation_bytes_ *= 2;
+-    increased_allocation = true;
++  if (alloc_mode == BFC_EXTEND_LARGE) {
++    // If curr_region_allocation_bytes_ is not enough to satisfy the
++    // allocation, keep multiplying by a power of two until that is
++    // sufficient.
++    while (rounded_bytes > curr_region_allocation_bytes_) {
++      curr_region_allocation_bytes_ *= 2;
++      increased_allocation = true;
++    }
++  } else {
++      // Requested bytes              --- Allocated bytes
++      // (0, kSmallSize]              --- kSmallBuffer
++      // (kSmallSize, kMinLargeAlloc) --- kLargeBuffer
++      // [kMinLargeAlloc, max]        --- round up to multiple of kRoundLarge
++      curr_region_allocation_bytes_ =
++          (rounded_bytes <= kSmallSize)
++              ? kSmallBuffer
++              : ((rounded_bytes < kMinLargeAlloc)
++                     ? kLargeBuffer
++                     : (kRoundLarge *
++                        ((rounded_bytes + kRoundLarge - 1) / kRoundLarge)));
+   }
+-
    // Try allocating.
    size_t bytes = std::min(curr_region_allocation_bytes_, available_bytes);
-+
-+  if (CheckIfUsingMachineWithLimitMem()) {
-+    bytes = std::min(bytes, GetLimitAlloc());
-+  } else {
-+    bytes = std::min(bytes, static_cast<size_t>(memory_limit_ * 0.75)); 
-+  }
++  bytes = std::min(bytes, GetLimitAlloc());
 +
    size_t bytes_received;
    void* mem_addr = sub_allocator_->Alloc(alignment, bytes, &bytes_received);
    if (mem_addr == nullptr && !started_backpedal_) {
-@@ -1248,4 +1263,33 @@ AllocatorMemoryType BFCAllocator::GetMemoryType() const {
+@@ -153,7 +178,7 @@ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
+     return false;
+   }
+ 
+-  if (!increased_allocation) {
++  if ((alloc_mode == BFC_EXTEND_LARGE) && !increased_allocation) {
+     // Increase the region size of the next required allocation.
+     curr_region_allocation_bytes_ *= 2;
+   }
+@@ -1248,4 +1273,36 @@ AllocatorMemoryType BFCAllocator::GetMemoryType() const {
    return sub_allocator_->GetMemoryType();
  }
  
@@ -315,40 +359,51 @@ index 9e4447108..e3e083b10 100644
 +size_t BFCAllocator::GetLimitAlloc() {
 +  // set default limit to 4GB
 +  int64 limit_size = 4 * 1024 - 1;
++  if (!CheckIfUsingMachineWithLimitMem()) {
++    limit_size = memory_limit_ / 1024 / 1024 * 0.75;
++  }
 +  Status status = ReadInt64FromEnvVar("ITEX_LIMIT_MEMORY_SIZE_IN_MB",
 +                                        limit_size, &limit_size);
 +  if (!status.ok()) {
 +    LOG(ERROR) << "Failed to read environment variable ITEX_LIMIT_MEMORY_SIZE_IN_MB!"; 
 +  }
-+
++  
 +  return limit_size * 1024 * 1024;
 +}
  }  // namespace tsl
 diff --git a/third_party/tsl/tsl/framework/bfc_allocator.h b/third_party/tsl/tsl/framework/bfc_allocator.h
-index 47619856a..f75fd46da 100644
+index 47619856ab..bd31fa55ab 100644
 --- a/third_party/tsl/tsl/framework/bfc_allocator.h
 +++ b/third_party/tsl/tsl/framework/bfc_allocator.h
-@@ -33,6 +33,7 @@ limitations under the License.
+@@ -33,7 +33,10 @@ limitations under the License.
  #include "tsl/platform/strcat.h"
  #include "tsl/platform/thread_annotations.h"
  #include "tsl/platform/types.h"
 +#include "tsl/util/env_var.h"
  
++#define BFC_EXTEND_LARGE 1
++#define BFC_EXTEND_SMALL 2
  namespace tensorflow {
  class MemoryDump;
-@@ -152,6 +153,10 @@ class BFCAllocator : public Allocator {
+ }
+@@ -152,6 +155,15 @@ class BFCAllocator : public Allocator {
                    int64_t req_bytes, int64_t alloc_bytes)
        TF_EXCLUSIVE_LOCKS_REQUIRED(lock_);
  
 +  int64 AllocMode();
++  int64 alloc_mode;
 +  size_t GetLimitAlloc();
-+  
++  static constexpr size_t kSmallSize = 1048576;
++  static constexpr size_t kSmallBuffer = 2097152;
++  static constexpr size_t kLargeBuffer = 20971520;
++  static constexpr size_t kMinLargeAlloc = 10485760;
++  static constexpr size_t kRoundLarge = 2097152;
 +  
    // A ChunkHandle is an index into the chunks_ vector in BFCAllocator
    // kInvalidChunkHandle means an invalid chunk
    typedef size_t ChunkHandle;
 diff --git a/third_party/tsl/tsl/framework/contraction/BUILD b/third_party/tsl/tsl/framework/contraction/BUILD
-index 220b751f4..63f82cca5 100644
+index 220b751f4c..63f82cca50 100644
 --- a/third_party/tsl/tsl/framework/contraction/BUILD
 +++ b/third_party/tsl/tsl/framework/contraction/BUILD
 @@ -121,7 +121,7 @@ cc_library(
@@ -361,7 +416,7 @@ index 220b751f4..63f82cca5 100644
  )
  
 diff --git a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td
-index 3f4c95ed0..a070f3c22 100644
+index 3f4c95ed02..a070f3c222 100644
 --- a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td
 +++ b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops.td
 @@ -322,6 +322,19 @@ def LHLOGPU_AllToAllDoneOp: LHLOGPU_Op<"all_to_all_done"> {
@@ -385,7 +440,7 @@ index 3f4c95ed0..a070f3c22 100644
    let arguments = (ins
      Arg<LHLO_Buffer, "", [MemRead]>:$lhs_bmm1,
 diff --git a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
-index d1c7c7ac5..601bcd631 100644
+index d1c7c7ac54..601bcd6313 100644
 --- a/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
 +++ b/xla/mlir_hlo/lhlo_gpu/IR/lhlo_gpu_ops_enums.td
 @@ -137,6 +137,7 @@ def FusedMhaDagSoftmaxDropout : I32EnumAttrCase<"SoftmaxDropout", 5>;
@@ -407,7 +462,7 @@ index d1c7c7ac5..601bcd631 100644
    let cppNamespace = "::mlir::lmhlo_gpu";
  }
 diff --git a/xla/pjrt/event_pool.cc b/xla/pjrt/event_pool.cc
-index 4a07a6ee7..b7f264c01 100644
+index 4a07a6ee75..b7f264c01b 100644
 --- a/xla/pjrt/event_pool.cc
 +++ b/xla/pjrt/event_pool.cc
 @@ -53,8 +53,11 @@ StatusOr<EventPool::Handle> EventPool::AllocateEvent(
@@ -424,7 +479,7 @@ index 4a07a6ee7..b7f264c01 100644
  }
  
 diff --git a/xla/pjrt/gpu/BUILD b/xla/pjrt/gpu/BUILD
-index fd18d73bf..93a5b61c4 100644
+index fd18d73bf5..93a5b61c4b 100644
 --- a/xla/pjrt/gpu/BUILD
 +++ b/xla/pjrt/gpu/BUILD
 @@ -89,7 +89,7 @@ cc_library(
@@ -456,7 +511,7 @@ index fd18d73bf..93a5b61c4 100644
      ]),
      alwayslink = True,
 diff --git a/xla/pjrt/gpu/gpu_helpers.cc b/xla/pjrt/gpu/gpu_helpers.cc
-index b7064ac25..dcb1efbd8 100644
+index b7064ac25e..dcb1efbd8b 100644
 --- a/xla/pjrt/gpu/gpu_helpers.cc
 +++ b/xla/pjrt/gpu/gpu_helpers.cc
 @@ -37,11 +37,12 @@ namespace xla {
@@ -495,7 +550,7 @@ index b7064ac25..dcb1efbd8 100644
  
  }  // namespace xla
 diff --git a/xla/pjrt/local_device_state.cc b/xla/pjrt/local_device_state.cc
-index 69443f326..6161ec8c7 100644
+index 69443f3263..6161ec8c74 100644
 --- a/xla/pjrt/local_device_state.cc
 +++ b/xla/pjrt/local_device_state.cc
 @@ -146,6 +146,7 @@ Status LocalDeviceState::ThenMemcpyDeviceToDevice(
@@ -525,7 +580,7 @@ index 69443f326..6161ec8c7 100644
    });
  }
 diff --git a/xla/pjrt/pjrt_stream_executor_client.h b/xla/pjrt/pjrt_stream_executor_client.h
-index b91269c3e..151ab678d 100644
+index b91269c3e3..151ab678d7 100644
 --- a/xla/pjrt/pjrt_stream_executor_client.h
 +++ b/xla/pjrt/pjrt_stream_executor_client.h
 @@ -874,6 +874,10 @@ class PjRtStreamExecutorLoadedExecutable : public PjRtLoadedExecutable {
@@ -540,7 +595,7 @@ index b91269c3e..151ab678d 100644
    bool parameter_is_tupled_arguments() const {
      return parameter_is_tupled_arguments_;
 diff --git a/xla/service/algebraic_simplifier.h b/xla/service/algebraic_simplifier.h
-index 232074497..8b304b6e2 100644
+index 2320744973..8b304b6e2d 100644
 --- a/xla/service/algebraic_simplifier.h
 +++ b/xla/service/algebraic_simplifier.h
 @@ -27,6 +27,7 @@ limitations under the License.
@@ -563,7 +618,7 @@ index 232074497..8b304b6e2 100644
  
   protected:
 diff --git a/xla/service/dump.cc b/xla/service/dump.cc
-index 65a09e9fc..d3d90d242 100644
+index 65a09e9fcb..d3d90d242a 100644
 --- a/xla/service/dump.cc
 +++ b/xla/service/dump.cc
 @@ -620,6 +620,8 @@ void DumpToFileInDirOrStdout(const HloModule& module, string_view file_prefix,
@@ -576,7 +631,7 @@ index 65a09e9fc..d3d90d242 100644
    if (file_prefix == "lmhlo") {
      print_flags.enableDebugInfo(/*enable=*/true,
 diff --git a/xla/service/float_normalization.cc b/xla/service/float_normalization.cc
-index 267a92383..dd966b883 100644
+index 267a92383a..dd966b883c 100644
 --- a/xla/service/float_normalization.cc
 +++ b/xla/service/float_normalization.cc
 @@ -206,17 +206,21 @@ Status FloatNormalizationVisitor::ChangeOutputTypeThenInsertConvertBack(
@@ -603,7 +658,7 @@ index 267a92383..dd966b883 100644
      computation->set_root_instruction(new_hlo, /*accept_different_shape=*/true);
    }
 diff --git a/xla/service/float_normalization_test.cc b/xla/service/float_normalization_test.cc
-index 3a41960ba..eab7cdcbc 100644
+index 3a41960bad..eab7cdcbc4 100644
 --- a/xla/service/float_normalization_test.cc
 +++ b/xla/service/float_normalization_test.cc
 @@ -485,4 +485,33 @@ TEST_F(FloatNormalizationTest, ResolveIfUnsupportedF8e5m2) {
@@ -641,7 +696,7 @@ index 3a41960ba..eab7cdcbc 100644
 +
  }  // namespace xla
 diff --git a/xla/service/gpu/cublas_cudnn.cc b/xla/service/gpu/cublas_cudnn.cc
-index 2c6340c6c..7b1fa7a64 100644
+index 2c6340c6c2..7b1fa7a64b 100644
 --- a/xla/service/gpu/cublas_cudnn.cc
 +++ b/xla/service/gpu/cublas_cudnn.cc
 @@ -41,6 +41,7 @@ bool IsCublasLtMatmulF8(const HloInstruction& hlo) {
@@ -700,7 +755,7 @@ index 2c6340c6c..7b1fa7a64 100644
      case CudnnfMHAKind::kBackwardBmmBmm:
        return "fused_batched_matmuls_backward";
 diff --git a/xla/service/gpu/cublas_cudnn.h b/xla/service/gpu/cublas_cudnn.h
-index 4feaf28bb..1b532b74a 100644
+index 4feaf28bb1..1b532b74ad 100644
 --- a/xla/service/gpu/cublas_cudnn.h
 +++ b/xla/service/gpu/cublas_cudnn.h
 @@ -56,6 +56,7 @@ enum class CudnnfMHAKind {
@@ -737,7 +792,7 @@ index 4feaf28bb..1b532b74a 100644
  StatusOr<CudnnfMHAKind> GetCudnnfMHAKind(const HloCustomCallInstruction* instr);
  
 diff --git a/xla/service/gpu/gpu_conv_rewriter.cc b/xla/service/gpu/gpu_conv_rewriter.cc
-index 838de8067..0bed9501c 100644
+index 838de80674..0bed9501c7 100644
 --- a/xla/service/gpu/gpu_conv_rewriter.cc
 +++ b/xla/service/gpu/gpu_conv_rewriter.cc
 @@ -1,4 +1,4 @@
@@ -869,7 +924,7 @@ index 838de8067..0bed9501c 100644
      const absl::flat_hash_set<absl::string_view>& execution_threads) {
    XLA_VLOG_LINES(2, "GpuConvRewriter::Run(), before:\n" + module->ToString());
 diff --git a/xla/service/gpu/gpu_conv_rewriter_test.cc b/xla/service/gpu/gpu_conv_rewriter_test.cc
-index 4f7a59b8c..f161a3012 100644
+index 4f7a59b8c5..f161a3012d 100644
 --- a/xla/service/gpu/gpu_conv_rewriter_test.cc
 +++ b/xla/service/gpu/gpu_conv_rewriter_test.cc
 @@ -1,4 +1,4 @@
@@ -965,7 +1020,7 @@ index 4f7a59b8c..f161a3012 100644
  }  // namespace gpu
  }  // namespace xla
 diff --git a/xla/service/gpu/gpu_layout_assignment.cc b/xla/service/gpu/gpu_layout_assignment.cc
-index ad2d7ffa6..8b176910a 100644
+index ad2d7ffa62..8b176910af 100644
 --- a/xla/service/gpu/gpu_layout_assignment.cc
 +++ b/xla/service/gpu/gpu_layout_assignment.cc
 @@ -69,7 +69,7 @@ HeuristicLayoutAssignment(const HloInstruction* instr,
@@ -988,7 +1043,7 @@ index ad2d7ffa6..8b176910a 100644
             .IsAtLeast(se::CudaComputeCapability::VOLTA) ||
        instr->shape().tuple_shapes(0).dimensions_size() != 4) {
 diff --git a/xla/service/gpu/hlo_fusion_analysis.cc b/xla/service/gpu/hlo_fusion_analysis.cc
-index 36006855d..b7d3222f4 100644
+index 36006855dd..b7d3222f48 100644
 --- a/xla/service/gpu/hlo_fusion_analysis.cc
 +++ b/xla/service/gpu/hlo_fusion_analysis.cc
 @@ -761,13 +761,8 @@ int HloFusionAnalysis::CalculateVirtualThreadScalingFactorForReduction(
@@ -1008,7 +1063,7 @@ index 36006855d..b7d3222f4 100644
    return 1;
  }
 diff --git a/xla/service/gpu/ir_emission_utils.cc b/xla/service/gpu/ir_emission_utils.cc
-index 12264198a..1d6713b50 100644
+index 12264198a0..1d6713b500 100644
 --- a/xla/service/gpu/ir_emission_utils.cc
 +++ b/xla/service/gpu/ir_emission_utils.cc
 @@ -80,11 +80,11 @@ bool IsMatrixMultiplication(const HloInstruction& dot) {
@@ -1077,7 +1132,7 @@ index 12264198a..1d6713b50 100644
        LOG(FATAL) << "Invalid triple " << target_triple.str();
      }
 diff --git a/xla/service/gpu/matmul_utils.h b/xla/service/gpu/matmul_utils.h
-index 78c11c5bc..44a30e52d 100644
+index 78c11c5bcc..44a30e52d0 100644
 --- a/xla/service/gpu/matmul_utils.h
 +++ b/xla/service/gpu/matmul_utils.h
 @@ -44,6 +44,23 @@ limitations under the License.
@@ -1113,7 +1168,7 @@ index 78c11c5bc..44a30e52d 100644
  
  StatusOr<se::blas::ComputationType> GetBlasComputationType(
 diff --git a/xla/service/gpu/parallel_loop_emitter.cc b/xla/service/gpu/parallel_loop_emitter.cc
-index 7577f166f..857f3cf4e 100644
+index 7577f166f6..857f3cf4ef 100644
 --- a/xla/service/gpu/parallel_loop_emitter.cc
 +++ b/xla/service/gpu/parallel_loop_emitter.cc
 @@ -178,9 +178,7 @@ ParallelLoopEmitter::EmitIndexAndSetExitBasicBlock(absl::string_view loop_name,
@@ -1152,7 +1207,7 @@ index 7577f166f..857f3cf4e 100644
    }
  
 diff --git a/xla/service/gpu/stream_executor_util.cc b/xla/service/gpu/stream_executor_util.cc
-index 7904e6d5e..1d8305c04 100644
+index 7904e6d5e8..1d8305c044 100644
 --- a/xla/service/gpu/stream_executor_util.cc
 +++ b/xla/service/gpu/stream_executor_util.cc
 @@ -139,6 +139,13 @@ StreamExecutorConvLayoutsToXlaLayouts(const ConvolutionDimensionNumbers& dnums,
@@ -1198,7 +1253,7 @@ index 7904e6d5e..1d8305c04 100644
  
    auto kernel_base = std::make_unique<se::KernelBase>(stream_exec);
 diff --git a/xla/service/gpu/stream_executor_util.h b/xla/service/gpu/stream_executor_util.h
-index 4e291b5e9..89455d18f 100644
+index 4e291b5e9a..89455d18f1 100644
 --- a/xla/service/gpu/stream_executor_util.h
 +++ b/xla/service/gpu/stream_executor_util.h
 @@ -106,6 +106,8 @@ StatusOr<se::dnn::FusedMHAKind> GetDNNFusedMHAKindFromCudnnfMHAKind(
@@ -1211,7 +1266,7 @@ index 4e291b5e9..89455d18f 100644
  // Returns result with the smallest time which has not failed.
  // If deterministic output is requested, returns first (not failing) result.
 diff --git a/xla/service/gpu/target_constants.h b/xla/service/gpu/target_constants.h
-index 92f31a6c1..ff12c19d9 100644
+index 92f31a6c13..ff12c19d90 100644
 --- a/xla/service/gpu/target_constants.h
 +++ b/xla/service/gpu/target_constants.h
 @@ -54,6 +54,28 @@ inline const char* DataLayout() {
@@ -1244,7 +1299,7 @@ index 92f31a6c1..ff12c19d9 100644
  }  // namespace xla
  
 diff --git a/xla/service/gpu/target_util.cc b/xla/service/gpu/target_util.cc
-index 12b12b3f1..951c8ac25 100644
+index 12b12b3f19..951c8ac259 100644
 --- a/xla/service/gpu/target_util.cc
 +++ b/xla/service/gpu/target_util.cc
 @@ -23,12 +23,12 @@ limitations under the License.
@@ -1563,7 +1618,7 @@ index 12b12b3f1..951c8ac25 100644
      LOG(FATAL) << "Invalid triple " << target_triple.str();
    }
 diff --git a/xla/service/gpu/thunk.cc b/xla/service/gpu/thunk.cc
-index 0613debc4..421dcd121 100644
+index 0613debc4f..421dcd1211 100644
 --- a/xla/service/gpu/thunk.cc
 +++ b/xla/service/gpu/thunk.cc
 @@ -78,6 +78,7 @@ Thunk::ExecuteParams::ExecuteParams(
@@ -1575,7 +1630,7 @@ index 0613debc4..421dcd121 100644
  }
  
 diff --git a/xla/service/gpu/thunk.h b/xla/service/gpu/thunk.h
-index 2bea9efc0..19b0f5a94 100644
+index 2bea9efc00..19b0f5a943 100644
 --- a/xla/service/gpu/thunk.h
 +++ b/xla/service/gpu/thunk.h
 @@ -96,7 +96,8 @@ class Thunk {
@@ -1589,7 +1644,7 @@ index 2bea9efc0..19b0f5a94 100644
  
    struct ThunkInfo {
 diff --git a/xla/service/layout_normalization_test.cc b/xla/service/layout_normalization_test.cc
-index 7c972ebef..b5c34de31 100644
+index 7c972ebef4..b5c34de315 100644
 --- a/xla/service/layout_normalization_test.cc
 +++ b/xla/service/layout_normalization_test.cc
 @@ -580,6 +580,31 @@ ENTRY main {
@@ -1625,7 +1680,7 @@ index 7c972ebef..b5c34de31 100644
    const char* hlo = R"(
  HloModule module
 diff --git a/xla/service/llvm_ir/fused_ir_emitter.cc b/xla/service/llvm_ir/fused_ir_emitter.cc
-index 006020e41..0add8fbe3 100644
+index 006020e41c..0add8fbe3d 100644
 --- a/xla/service/llvm_ir/fused_ir_emitter.cc
 +++ b/xla/service/llvm_ir/fused_ir_emitter.cc
 @@ -104,7 +104,7 @@ FusedIrEmitter::IndexedGenerator FusedIrEmitter::HandleConstant(
@@ -1638,7 +1693,7 @@ index 006020e41..0add8fbe3 100644
    global->setUnnamedAddr(llvm::GlobalVariable::UnnamedAddr::Global);
  
 diff --git a/xla/service/llvm_ir/ir_array.cc b/xla/service/llvm_ir/ir_array.cc
-index 36794b4b7..4c255f762 100644
+index 36794b4b75..4c255f7627 100644
 --- a/xla/service/llvm_ir/ir_array.cc
 +++ b/xla/service/llvm_ir/ir_array.cc
 @@ -24,6 +24,7 @@ limitations under the License.
@@ -1686,7 +1741,7 @@ index 36794b4b7..4c255f762 100644
  
    std::vector<llvm::Value*> actual_index;
 diff --git a/xla/service/llvm_ir/llvm_util.cc b/xla/service/llvm_ir/llvm_util.cc
-index 676c9c379..5e07bee28 100644
+index 676c9c3790..5e07bee28e 100644
 --- a/xla/service/llvm_ir/llvm_util.cc
 +++ b/xla/service/llvm_ir/llvm_util.cc
 @@ -263,6 +263,8 @@ llvm::Type* PrimitiveTypeToIrType(PrimitiveType element_type,
@@ -1726,7 +1781,7 @@ index 676c9c379..5e07bee28 100644
  }
  
 diff --git a/xla/stream_executor/build_defs.bzl b/xla/stream_executor/build_defs.bzl
-index 8e75a5532..38e2f5b7a 100644
+index 8e75a55324..38e2f5b7a1 100644
 --- a/xla/stream_executor/build_defs.bzl
 +++ b/xla/stream_executor/build_defs.bzl
 @@ -19,10 +19,12 @@ def tf_additional_cudnn_plugin_copts():
@@ -1745,7 +1800,7 @@ index 8e75a5532..38e2f5b7a 100644
  # nvlink is not available via the pip wheels, disable it since it will create
  # unnecessary dependency
 diff --git a/xla/stream_executor/cuda/cuda_driver.cc b/xla/stream_executor/cuda/cuda_driver.cc
-index dcb6a3c8c..981a66a82 100644
+index dcb6a3c8c4..981a66a82c 100644
 --- a/xla/stream_executor/cuda/cuda_driver.cc
 +++ b/xla/stream_executor/cuda/cuda_driver.cc
 @@ -892,6 +892,14 @@ GpuDriver::GraphNodeGetType(CUgraphNode node) {
@@ -1764,7 +1819,7 @@ index dcb6a3c8c..981a66a82 100644
                                                             CUdeviceptr location,
                                                             uint8_t value,
 diff --git a/xla/stream_executor/device_memory.h b/xla/stream_executor/device_memory.h
-index f69fe8148..6df3b4dc5 100644
+index f69fe8148c..6df3b4dc52 100644
 --- a/xla/stream_executor/device_memory.h
 +++ b/xla/stream_executor/device_memory.h
 @@ -85,9 +85,6 @@ class DeviceMemoryBase {
@@ -1789,7 +1844,7 @@ index f69fe8148..6df3b4dc5 100644
    void *opaque_;  // Platform-dependent value representing allocated memory.
    uint64_t size_;         // Size in bytes of this allocation.
 diff --git a/xla/stream_executor/gpu/BUILD b/xla/stream_executor/gpu/BUILD
-index c8cd4f558..9947a718a 100644
+index c8cd4f5587..9947a718ad 100644
 --- a/xla/stream_executor/gpu/BUILD
 +++ b/xla/stream_executor/gpu/BUILD
 @@ -344,7 +344,7 @@ cc_library(
@@ -1802,7 +1857,7 @@ index c8cd4f558..9947a718a 100644
      visibility = set_external_visibility([
          "//third_party/py/jax:__subpackages__",
 diff --git a/xla/stream_executor/gpu/gpu_driver.h b/xla/stream_executor/gpu/gpu_driver.h
-index 292e9081a..42a75948c 100644
+index 292e9081a0..42a75948c6 100644
 --- a/xla/stream_executor/gpu/gpu_driver.h
 +++ b/xla/stream_executor/gpu/gpu_driver.h
 @@ -457,6 +457,9 @@ class GpuDriver {
@@ -1816,7 +1871,7 @@ index 292e9081a..42a75948c 100644
    // Retrieves a named kernel from a loaded module, and places the resulting
    // handle into function (outparam) on success. Neither kernel_name nor
 diff --git a/xla/stream_executor/gpu/gpu_executor.h b/xla/stream_executor/gpu/gpu_executor.h
-index c93073ffd..cd33a406e 100644
+index c93073ffd9..cd33a406e5 100644
 --- a/xla/stream_executor/gpu/gpu_executor.h
 +++ b/xla/stream_executor/gpu/gpu_executor.h
 @@ -317,6 +317,11 @@ class GpuExecutor : public internal::StreamExecutorInterface {
@@ -1832,7 +1887,7 @@ index c93073ffd..cd33a406e 100644
        TF_EXCLUSIVE_LOCKS_REQUIRED(in_memory_modules_mu_);
  
 diff --git a/xla/stream_executor/gpu/gpu_types.h b/xla/stream_executor/gpu/gpu_types.h
-index dea81d66a..f73bef66f 100644
+index dea81d66a1..f73bef66f9 100644
 --- a/xla/stream_executor/gpu/gpu_types.h
 +++ b/xla/stream_executor/gpu/gpu_types.h
 @@ -18,7 +18,20 @@ limitations under the License.
@@ -1890,7 +1945,7 @@ index dea81d66a..f73bef66f 100644
  using GpuContextHandle = hipCtx_t;
  using GpuStreamHandle = hipStream_t;
 diff --git a/xla/stream_executor/kernel_spec.cc b/xla/stream_executor/kernel_spec.cc
-index f0fabf44d..e98b5c0bd 100644
+index f0fabf44d5..e98b5c0bdc 100644
 --- a/xla/stream_executor/kernel_spec.cc
 +++ b/xla/stream_executor/kernel_spec.cc
 @@ -43,9 +43,9 @@ CudaCubinOnDisk::CudaCubinOnDisk(absl::string_view filename,
@@ -1918,7 +1973,7 @@ index f0fabf44d..e98b5c0bd 100644
  }
  
 diff --git a/xla/stream_executor/kernel_spec.h b/xla/stream_executor/kernel_spec.h
-index 68f45a0ee..bc585d06b 100644
+index 68f45a0ee0..bc585d06bf 100644
 --- a/xla/stream_executor/kernel_spec.h
 +++ b/xla/stream_executor/kernel_spec.h
 @@ -224,13 +224,15 @@ class CudaPtxInMemory : public KernelLoaderSpec {
@@ -1949,7 +2004,7 @@ index 68f45a0ee..bc585d06b 100644
    MultiKernelLoaderSpec *AddCudaPtxInMemory(absl::string_view ptx,
                                              absl::string_view kernel_name);
 diff --git a/xla/stream_executor/rocm/rocm_driver.cc b/xla/stream_executor/rocm/rocm_driver.cc
-index d48ed7e38..68d147e87 100644
+index d48ed7e381..68d147e87a 100644
 --- a/xla/stream_executor/rocm/rocm_driver.cc
 +++ b/xla/stream_executor/rocm/rocm_driver.cc
 @@ -771,6 +771,14 @@ GpuDriver::GraphNodeGetType(hipGraphNode_t node) {
@@ -1968,7 +2023,7 @@ index d48ed7e38..68d147e87 100644
      GpuContext* context, hipDeviceptr_t location, uint8 value, size_t size) {
    ScopedActivateContext activation{context};
 diff --git a/xla/stream_executor/rocm/rocm_gpu_executor.cc b/xla/stream_executor/rocm/rocm_gpu_executor.cc
-index 51a3a7916..9696e777a 100644
+index 51a3a79166..9696e777a2 100644
 --- a/xla/stream_executor/rocm/rocm_gpu_executor.cc
 +++ b/xla/stream_executor/rocm/rocm_gpu_executor.cc
 @@ -389,6 +389,11 @@ tsl::Status GpuExecutor::LoadModuleFromHsaco(const char* hsaco,
@@ -1984,7 +2039,7 @@ index 51a3a7916..9696e777a 100644
  // logging an error. It's nearly certain that in case of failures, we'd never
  // get here in the first place; these are very low-impact routines.
 diff --git a/xla/stream_executor/stream_executor_pimpl.h b/xla/stream_executor/stream_executor_pimpl.h
-index f8903f1c9..83f8e5701 100644
+index f8903f1c94..83f8e5701f 100644
 --- a/xla/stream_executor/stream_executor_pimpl.h
 +++ b/xla/stream_executor/stream_executor_pimpl.h
 @@ -694,7 +694,8 @@ StreamExecutor::CreateTypedKernel(absl::string_view kernel_name,
@@ -1998,7 +2053,7 @@ index f8903f1c9..83f8e5701 100644
  
    TF_RETURN_IF_ERROR(GetKernel(loader_spec, kernel_base.get()));
 diff --git a/xla/stream_executor/tf_allocator_adapter.cc b/xla/stream_executor/tf_allocator_adapter.cc
-index 3fcc6b663..926430c34 100644
+index 3fcc6b6635..926430c347 100644
 --- a/xla/stream_executor/tf_allocator_adapter.cc
 +++ b/xla/stream_executor/tf_allocator_adapter.cc
 @@ -51,6 +51,24 @@ tsl::StatusOr<OwningDeviceMemory> TfAllocatorAdapter::Allocate(
@@ -2027,7 +2082,7 @@ index 3fcc6b663..926430c34 100644
                                             DeviceMemoryBase mem) {
    wrapped_->DeallocateRaw(mem.opaque());
 diff --git a/xla/stream_executor/tf_allocator_adapter.h b/xla/stream_executor/tf_allocator_adapter.h
-index 5293e4639..6810585d8 100644
+index 5293e4639d..6810585d8a 100644
 --- a/xla/stream_executor/tf_allocator_adapter.h
 +++ b/xla/stream_executor/tf_allocator_adapter.h
 @@ -50,6 +50,10 @@ class TfAllocatorAdapter : public DeviceMemoryAllocator {
@@ -2062,7 +2117,7 @@ index 5293e4639..6810585d8 100644
    // before GPU execution takes place. Tensorflow uses the ordering of the main
    // compute stream to enforce a happens-before relationship between a memory
 diff --git a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc
-index c46135e02..485aaa975 100644
+index c46135e023..485aaa9753 100644
 --- a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc
 +++ b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.cc
 @@ -565,6 +565,10 @@ tsl::StatusOr<mlir::Operation*> LhloDialectEmitter::EmitCustomCallOp(
@@ -2151,7 +2206,7 @@ index c46135e02..485aaa975 100644
      const HloCustomCallInstruction* custom_call) {
    TF_ASSIGN_OR_RETURN(
 diff --git a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h
-index c355cb132..aacee29c8 100644
+index c355cb132f..aacee29c87 100644
 --- a/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h
 +++ b/xla/translate/mhlo_to_lhlo_with_xla/mhlo_to_lhlo_with_xla.h
 @@ -90,6 +90,8 @@ class LhloDialectEmitter : public xla::ConstDfsHloVisitorWithDefault {
@@ -2164,7 +2219,7 @@ index c355cb132..aacee29c8 100644
        const xla::HloCustomCallInstruction* custom_call);
    tsl::StatusOr<memref::GetGlobalOp> EmitConstant(
 diff --git a/xla/xla_data.proto b/xla/xla_data.proto
-index ba43906c9..498a41d0b 100644
+index ba43906c94..498a41d0b4 100644
 --- a/xla/xla_data.proto
 +++ b/xla/xla_data.proto
 @@ -28,6 +28,7 @@ enum PrimitiveType {
