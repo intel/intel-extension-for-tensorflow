@@ -16,14 +16,16 @@ limitations under the License.
 #include "itex/core/devices/gpu/gpu_info.h"
 
 #include <map>
+#include <memory>
 
 namespace itex {
 
 #ifndef INTEL_CPU_ONLY
 DeviceInfo* GetDeviceInfo(ITEX_GPUStream* stream) {
-  static thread_local std::map<ITEX_GPUStream*, DeviceInfo*> stream_device_map;
+  static thread_local std::map<ITEX_GPUStream*, std::unique_ptr<DeviceInfo>>
+      stream_device_map;
   auto iter = stream_device_map.find(stream);
-  if (iter != stream_device_map.end()) return iter->second;
+  if (iter != stream_device_map.end()) return iter->second.get();
   auto device_ = stream->get_device();
   auto context_ = stream->get_context();
   auto max_work_group_size_ =
@@ -43,9 +45,9 @@ DeviceInfo* GetDeviceInfo(ITEX_GPUStream* stream) {
   device_prop_.local_mem_type =
       device_.template get_info<sycl::info::device::local_mem_type>();
 
-  stream_device_map[stream] =
-      new DeviceInfo(device_prop_, device_, context_, max_work_group_size_);
-  return stream_device_map[stream];
+  stream_device_map[stream] = std::make_unique<DeviceInfo>(
+      device_prop_, device_, context_, max_work_group_size_);
+  return stream_device_map[stream].get();
 }
 #endif
 
