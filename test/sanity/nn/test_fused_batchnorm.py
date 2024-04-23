@@ -19,7 +19,7 @@ from tensorflow.python.ops import nn_grad
 from tensorflow.python.ops import nn_impl
 from tensorflow.python.ops import nn_ops
 
-os.environ['ITEX_ENABLE_ONEDNN_LAYOUT_OPT']="0"
+os.environ['ITEX_LAYOUT_OPT']="0"
 
 class BatchNormalizationTest(test.TestCase):
   def _test_training_bwd(self,

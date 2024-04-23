@@ -31,7 +31,7 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.ops.gen_nn_ops import quantized_max_pool
 
-os.environ["ITEX_ENABLE_ONEDNN_LAYOUT_OPT"] = "1"
+os.environ["ITEX_LAYOUT_OPT"] = "1"
 
 # TODO(itex): Test Quantize op in eager mode (non-block-layout pass),
 # when we support it

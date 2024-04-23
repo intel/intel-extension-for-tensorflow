@@ -40,7 +40,7 @@ from tensorflow.python.util.compat import collections_abc
 from tensorflow.python.eager import context
 
 # Test plain format
-os.environ['ITEX_ENABLE_ONEDNN_LAYOUT_OPT']="0"
+os.environ['ITEX_LAYOUT_OPT']="0"
 
 def GetTestConfigs():
   """Get all the valid tests configs to run.
