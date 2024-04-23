@@ -21,7 +21,7 @@ from tensorflow.python.ops import nn_ops
 
 import tensorflow as tf
 
-os.environ["ITEX_ENABLE_ONEDNN_LAYOUT_OPT"] = "0"
+os.environ["ITEX_LAYOUT_OPT"] = "0"
 os.environ["ITEX_NATIVE_FORMAT"] = "1"
 
 class QuantizedPoolingTest(test.TestCase):
