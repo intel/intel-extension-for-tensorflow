@@ -20,7 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 import sys
-import imp
+import types
 import hashlib
 
 from tensorflow.python.framework import _pywrap_python_op_gen
@@ -61,7 +61,7 @@ def _load_ops_library():
   module_name = hashlib.sha512(wrappers).hexdigest()
   if module_name in sys.modules:
     return sys.modules[module_name]
-  module = imp.new_module(module_name)
+  module = types.ModuleType(module_name)
   # pylint: disable=exec-used
   exec(wrappers, module.__dict__)
   # Allow this to be recognized by AutoGraph.
