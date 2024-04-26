@@ -15,10 +15,10 @@
 
 
 """Tests for adam optimizer with weight decay."""
-
+import os
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import numpy as np
-import keras
-import tensorflow as tf
+import tensorflow as tf, tf_keras
 from intel_extension_for_tensorflow.python.ops import AdamWithWeightDecayOptimizer as itex_AdamW
 from intel_extension_for_tensorflow.python.test_func import test
 from intel_extension_for_tensorflow.python.test_func import test_util
@@ -174,8 +174,8 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
         if not test.is_gpu_available():
             self.skipTest("No GPU available")
         """Check if calling model.fit works."""
-        model = tf.keras.models.Sequential([tf.keras.layers.Dense(2)])
-        loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        model = tf_keras.models.Sequential([tf_keras.layers.Dense(2)])
+        loss = tf_keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         adamw_opt = itex_AdamW(weight_decay=1e-4, learning_rate=1e-4)
         model.compile(optimizer=adamw_opt, loss=loss, metrics=["accuracy"])
         x, y = np.random.uniform(size=(2, 4, 1))

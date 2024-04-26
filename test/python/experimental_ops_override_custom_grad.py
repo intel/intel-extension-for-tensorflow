@@ -13,7 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
-
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
+import tf_keras
 import numpy as np
 import intel_extension_for_tensorflow as itex
 import tensorflow as tf
@@ -28,11 +30,11 @@ class CustomGradTest(test_util.TensorFlowTestCase):
     """test fused matmul"""
     def testMatMulReshapeBiasAddRelu(self):
         itex.experimental_ops_override()
-        policy=tf.keras.mixed_precision.Policy('mixed_bfloat16')
-        tf.keras.mixed_precision.set_global_policy(policy)
-        inputs = tf.keras.Input(shape=(1,3,))
-        x = tf.keras.layers.Dense(4, activation=tf.nn.relu)(inputs)
-        model = tf.keras.Model(inputs=inputs, outputs=array_ops.identity(x))
+        policy=tf_keras.mixed_precision.Policy('mixed_bfloat16')
+        tf_keras.mixed_precision.set_global_policy(policy)
+        inputs = tf_keras.Input(shape=(1,3,))
+        x = tf_keras.layers.Dense(4, activation=tf.nn.relu)(inputs)
+        model = tf_keras.Model(inputs=inputs, outputs=array_ops.identity(x))
         itex_result = model(np.array([[[1.,2.,3.]],[[4.,5.,6.]]]).astype(np.float32))
 
 if __name__ == '__main__':

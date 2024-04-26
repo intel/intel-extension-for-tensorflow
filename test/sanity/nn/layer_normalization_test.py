@@ -15,6 +15,10 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for normalization layers."""
+import os
+os.environ["TF_USE_LEGACY_KERAS"] = "True"
+
+import tensorflow as tf, tf_keras
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from intel_extension_for_tensorflow.python.test_func import test
 from intel_extension_for_tensorflow.python.test_func import test_util
@@ -24,16 +28,13 @@ from intel_extension_for_tensorflow.python.test_func import keras_parameterized
 
 import intel_extension_for_tensorflow.python.ops.layer_norm as layer_normalization
 try:
-  from keras.layers.normalization import layer_normalization as tf_layer_normalization
+  from tf_keras.layers.normalization import layer_normalization as tf_layer_normalization
 except ImportError:
-  from keras.src.layers.normalization import layer_normalization as tf_layer_normalization
+  from tf_keras.src.layers.normalization import layer_normalization as tf_layer_normalization
 
 import numpy as np
 
-import keras
-import tensorflow as tf
 from tensorflow.python.keras import combinations
-import os
 
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.framework import constant_op
@@ -47,8 +48,8 @@ from tensorflow.python.training import gradient_descent
 
 
 def _run_layernorm_correctness_test(layer, dtype='float32'):
-  model = keras.models.Sequential()
-  model.add(keras.layers.Lambda(lambda x: math_ops.cast(x, dtype='bfloat16')))
+  model = tf_keras.models.Sequential()
+  model.add(tf_keras.layers.Lambda(lambda x: math_ops.cast(x, dtype='bfloat16')))
   norm = layer(input_shape=(2, 2, 2), dtype=dtype)
   model.add(norm)
   model.compile(
@@ -61,8 +62,8 @@ def _run_layernorm_correctness_test(layer, dtype='float32'):
        .astype(dtype))
   model.fit(x, x, epochs=4, verbose=0)
   out = model.predict(x)
-  out -= keras.backend.eval(norm.beta)
-  out /= keras.backend.eval(norm.gamma)
+  out -= tf_keras.backend.eval(norm.beta)
+  out /= tf_keras.backend.eval(norm.gamma)
 
   np.testing.assert_allclose(out.mean(), 0.0, atol=1e-1)
   np.testing.assert_allclose(out.std(), 1.0, atol=1e-1)
@@ -75,8 +76,8 @@ class LayerNormalizationTest(keras_parameterized.TestCase):
     testing_utils.layer_test(
         layer_normalization.LayerNormalization,
         kwargs={
-            'gamma_regularizer': keras.regularizers.l2(0.01),
-            'beta_regularizer': keras.regularizers.l2(0.01)
+            'gamma_regularizer': tf_keras.regularizers.l2(0.01),
+            'beta_regularizer': tf_keras.regularizers.l2(0.01)
         },
         input_shape=(3, 4, 2))
     testing_utils.layer_test(
@@ -129,7 +130,7 @@ class LayerNormalizationTest(keras_parameterized.TestCase):
         gamma_regularizer='l1', beta_regularizer='l1')
     layer.build((None, 3, 4))
     self.assertEqual(len(layer.losses), 2)
-    max_norm = keras.constraints.max_norm
+    max_norm = tf_keras.constraints.max_norm
     layer = layer_normalization.LayerNormalization(
         gamma_constraint=max_norm, beta_constraint=max_norm)
     layer.build((None, 3, 4))
@@ -138,7 +139,7 @@ class LayerNormalizationTest(keras_parameterized.TestCase):
 
   @keras_parameterized.run_all_keras_modes
   def test_layernorm_convnet_channel_last(self):
-    model = keras.models.Sequential()
+    model = tf_keras.models.Sequential()
     norm = layer_normalization.LayerNormalization(input_shape=(4, 4, 3))
     model.add(norm)
     model.compile(
@@ -150,8 +151,8 @@ class LayerNormalizationTest(keras_parameterized.TestCase):
     x = np.random.normal(loc=5.0, scale=10.0, size=(1000, 4, 4, 3))
     model.fit(x, x, epochs=4, verbose=0)
     out = model.predict(x)
-    out -= np.reshape(keras.backend.eval(norm.beta), (1, 1, 1, 3))
-    out /= np.reshape(keras.backend.eval(norm.gamma), (1, 1, 1, 3))
+    out -= np.reshape(tf_keras.backend.eval(norm.beta), (1, 1, 1, 3))
+    out /= np.reshape(tf_keras.backend.eval(norm.gamma), (1, 1, 1, 3))
 
     np.testing.assert_allclose(np.mean(out, axis=(0, 1, 2)), 0.0, atol=1e-1)
     np.testing.assert_allclose(np.std(out, axis=(0, 1, 2)), 1.0, atol=1e-1)
@@ -286,10 +287,10 @@ class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
             self.skipTest("Skip on CPU due to the pattern not supported")
         norm = layer_normalization.LayerNormalization(
             axis=axis, dtype=dtype, batch_input_shape=batch_input_shape,
-            epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
-            gamma_initializer=keras.initializers.constant(gamma))
-        y = norm(keras.backend.cast(x, dtype))
-        actual = keras.backend.eval(y)
+            epsilon=epsilon, beta_initializer=tf_keras.initializers.constant(beta),
+            gamma_initializer=tf_keras.initializers.constant(gamma))
+        y = norm(tf_keras.backend.cast(x, dtype))
+        actual = tf_keras.backend.eval(y)
 
         if dtype == 'float32':
           tol = fp32_tol
@@ -316,8 +317,8 @@ class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
     self._test_forward_pass((2, 3, 4, 5), (3,))
 
   def _build_backward_pass_model(self, layer):
-    model = keras.models.Sequential()
-    model.add(keras.layers.Lambda(lambda x: x))
+    model = tf_keras.models.Sequential()
+    model.add(tf_keras.layers.Lambda(lambda x: x))
     model.add(layer)
     return model
 
@@ -342,13 +343,13 @@ class LayerNormalizationNumericsTest(keras_parameterized.TestCase):
 
         norm = layer_normalization.LayerNormalization(
             axis=axis, dtype=policy_dtype, batch_input_shape=batch_input_shape,
-            epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
-            gamma_initializer=keras.initializers.constant(gamma))
+            epsilon=epsilon, beta_initializer=tf_keras.initializers.constant(beta),
+            gamma_initializer=tf_keras.initializers.constant(gamma))
 
         tf_norm = tf_layer_normalization.LayerNormalization(
             axis=axis, dtype=policy_dtype, batch_input_shape=batch_input_shape,
-            epsilon=epsilon, beta_initializer=keras.initializers.constant(beta),
-            gamma_initializer=keras.initializers.constant(gamma))
+            epsilon=epsilon, beta_initializer=tf_keras.initializers.constant(beta),
+            gamma_initializer=tf_keras.initializers.constant(gamma))
 
         model = self._build_backward_pass_model(norm)
         tf_model = self._build_backward_pass_model(tf_norm)

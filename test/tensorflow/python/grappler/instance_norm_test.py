@@ -99,7 +99,7 @@ class InstanceNormTest(test.TestCase, parameterized.TestCase):
   @test_util.disable_xla('This test does not pass with XLA')
   def test_instance_norm_2d_nhwc(self):
     """Test InstanceNorm NHWC format fusion."""
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -164,7 +164,7 @@ class InstanceNormTest(test.TestCase, parameterized.TestCase):
   @test_util.disable_xla('This test does not pass with XLA')
   def test_instance_norm_3d_ndhwc(self):
     """Test InstanceNorm NDHWC format fusion."""
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -233,7 +233,7 @@ class InstanceNormTest(test.TestCase, parameterized.TestCase):
   @test_util.disable_xla('This test does not pass with XLA')
   def test_fused_instance_norm_2d_nhwc(self):
     """Test InstanceNorm NHWC fusion."""
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -308,7 +308,7 @@ class InstanceNormTest(test.TestCase, parameterized.TestCase):
   @test_util.disable_xla('This test does not pass with XLA')
   def test_fused_instance_norm_3d_ndhwc(self):
     """Test InstanceNorm fusion."""
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -386,7 +386,7 @@ class InstanceNormTest(test.TestCase, parameterized.TestCase):
   @test_util.disable_xla('This test does not pass with XLA')
   def test_fused_instance_norm_2d_nchw(self):
     """Test InstanceNorm fusion."""
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -461,7 +461,7 @@ class InstanceNormTest(test.TestCase, parameterized.TestCase):
   @test_util.disable_xla('This test does not pass with XLA')
   def test_fused_instance_norm_3d_ncdhw(self):
     """Test InstanceNorm fusion."""
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 

@@ -14,6 +14,7 @@
 # ==============================================================================
 '''Init file for graph optimizer config, custom ops'''
 
+import os
 import tensorflow  # pylint: disable=unused-import
 import intel_extension_for_tensorflow_lib  # pylint: disable=unused-import
 from intel_extension_for_tensorflow.python.config import set_config  # pylint: disable=unused-import
@@ -29,4 +30,6 @@ from intel_extension_for_tensorflow.python import test_func  # pylint: disable=u
 from intel_extension_for_tensorflow.tools.python import env_check  # pylint: disable=unused-import
 
 from intel_extension_for_tensorflow.core.utils.protobuf.config_pb2 import *  # pylint: disable=unused-import,wildcard-import,unused-wildcard-import
-from intel_extension_for_tensorflow.python.experimental_ops_override import experimental_ops_override
+
+if os.environ.get("TF_USE_LEGACY_KERAS", None) in ("true", "True", "1"):
+    from intel_extension_for_tensorflow.python.experimental_ops_override import experimental_ops_override

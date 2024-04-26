@@ -22,7 +22,7 @@ from tensorflow.python.framework import constant_op
 from tensorflow.python.ops import gen_state_ops
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.ops import array_ops
-from tensorflow.python.training import training_ops
+from tensorflow.python.ops import gen_training_ops as training_ops
 from utils import multi_run, add_profiling, flush_cache
 
 try:

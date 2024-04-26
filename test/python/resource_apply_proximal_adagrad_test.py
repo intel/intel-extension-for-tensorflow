@@ -20,7 +20,7 @@ from intel_extension_for_tensorflow.python.test_func import test
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.training import training_ops
+from tensorflow.python.ops import gen_training_ops as training_ops
 
 def resource_apply_proximal_adagrad_numpy(var, accum, lr, l1, l2, grad):
     accum += grad * grad 

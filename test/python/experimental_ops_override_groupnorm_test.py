@@ -13,14 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-
-import keras
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 import numpy as np
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 
 from intel_extension_for_tensorflow.python.test_func import test as test_lib
-from tensorflow import keras
+import tf_keras as keras
 from tensorflow.python.framework import dtypes
 
 

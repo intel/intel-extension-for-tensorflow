@@ -34,7 +34,7 @@ try:
 except ImportError:
   from tensorflow.python.ops.variable_v1 import VariableV1
 from tensorflow.python.platform import googletest
-from tensorflow.python.training import training_ops
+from tensorflow.python.ops import gen_training_ops as training_ops
 
 class ApplyAdadeltaTest(TensorFlowTestCase):
 

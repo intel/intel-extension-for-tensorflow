@@ -15,12 +15,13 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for miscellaneous functionality in tensorflow.ops.nn."""
-
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 import numpy as np
 
 from intel_extension_for_tensorflow.python.test_func import test as test_lib
 
-from tensorflow import keras
+import tf_keras as keras
 from tensorflow.python.tpu import bfloat16
 from tensorflow.python.framework import test_util
 from tensorflow.python.framework import dtypes

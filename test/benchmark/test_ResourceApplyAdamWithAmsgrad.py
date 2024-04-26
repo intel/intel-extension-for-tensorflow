@@ -17,7 +17,7 @@
 import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.training import training_ops
+from tensorflow.python.ops import gen_training_ops as training_ops
 from utils import multi_run, add_profiling, flush_cache
 from tensorflow.python.framework import constant_op
 from utils import tailed_no_tailed_size

@@ -16,20 +16,24 @@
 # ==============================================================================
 
 # pylint: disable=missing-module-docstring
-import numpy as np
+import os
+if os.environ.get("TF_USE_LEGACY_KERAS", None) in ("true", "True", "1"):
+    from tf_keras.utils import register_keras_serializable
+else:
+    from keras.src.saving.object_registration import register_keras_serializable
 import tensorflow as tf
-from tensorflow.python import keras
+
 from tensorflow.python.framework import ops
-from typing import List, Optional, Union
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from tensorflow.python.framework import config
 
-@keras.utils.generic_utils.register_keras_serializable(package="Itex")
+
+@register_keras_serializable(package="Itex")
 def beam_select_kv_cache(cache, indices, input_length=0, name=None):
-  if config.list_logical_devices('XPU'):
-    with ops.name_scope(name, "beam_select_kv_cache", [cache, indices, input_length]):
-      cache = ops.convert_to_tensor(cache, name="cache")
-      indices = ops.convert_to_tensor(indices, name="indices")
-      return load_ops_library.beam_select_kv_cache(cache,indices,input_length=input_length)
-  else:
-    return tf.gather(params=cache, indices=indices, axis=1, batch_dims=1)
+    if config.list_logical_devices('XPU'):
+        with ops.name_scope(name, "beam_select_kv_cache", [cache, indices, input_length]):
+            cache = ops.convert_to_tensor(cache, name="cache")
+            indices = ops.convert_to_tensor(indices, name="indices")
+            return load_ops_library.beam_select_kv_cache(cache, indices, input_length=input_length)
+    else:
+        return tf.gather(params=cache, indices=indices, axis=1, batch_dims=1)

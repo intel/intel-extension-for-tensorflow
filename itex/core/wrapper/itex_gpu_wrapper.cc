@@ -12,6 +12,7 @@ limitations under the License.
 
 #include <cpuid.h>
 #include <dlfcn.h>
+#include <stdlib.h>
 
 #include "itex/core/devices/device_backend_util.h"
 #include "itex/core/utils/logging.h"
@@ -28,6 +29,7 @@ static void* LoadGpuLibrary() __attribute__((constructor));
 static void UnloadGpuLibrary() __attribute__((destructor));
 
 void* LoadGpuLibrary() {
+  setenv("ENABLE_PJRT_COMPATIBILITY", "1", 0);
   handle = dlopen("libitex_gpu_internal.so", RTLD_NOW | RTLD_LOCAL);
   if (!handle) {
     itex_freeze_backend(ITEX_BACKEND_CPU);

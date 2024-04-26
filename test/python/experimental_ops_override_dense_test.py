@@ -13,14 +13,18 @@
 # limitations under the License.
 # ==============================================================================
 
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 
 import numpy as np
 import intel_extension_for_tensorflow as itex
 import tensorflow as tf
+import tf_keras
 from tensorflow.python.framework import test_util
 from tensorflow.python.platform import test
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.ops import array_ops
+from tf_keras.src.backend import set_session
 import time
 
 
@@ -35,10 +39,10 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         tf_result = [[[0.,1.0434492,1.3701142,0.24190968]], [[0.,4.2524147,1.6927314,0.32540703]]]
         itex.experimental_ops_override()
         with self.session(use_gpu=True) as sess:
-            tf.compat.v1.keras.backend.set_session(sess)
-            inputs = tf.keras.Input(shape=(1,3,))
-            x = tf.keras.layers.Dense(4, activation=tf.nn.relu)(inputs)
-            model = tf.keras.Model(inputs=inputs, outputs=array_ops.identity(x))
+            set_session(sess)
+            inputs = tf_keras.Input(shape=(1,3,))
+            x = tf_keras.layers.Dense(4, activation=tf.nn.relu)(inputs)
+            model = tf_keras.Model(inputs=inputs, outputs=array_ops.identity(x))
             itex_result = model.predict(np.array([[[1.,2.,3.]],[[4.,5.,6.]]]).astype(np.float32))
             start_time = time.time()
             ret_gpu = sess.run("Identity", feed_dict={"input_1:0": np.array([[[1.,2.,3.]],[[1.,2.,3.]]]).astype(np.float32)},options=run_options, run_metadata=metadata)

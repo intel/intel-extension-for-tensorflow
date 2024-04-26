@@ -15,6 +15,8 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for normalization layers."""
+import os
+os.environ["TF_USE_LEGACY_KERAS"] = "True"
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from intel_extension_for_tensorflow.python.test_func import test
 from intel_extension_for_tensorflow.python.test_func import test_util
@@ -24,13 +26,13 @@ from intel_extension_for_tensorflow.python.test_func import keras_parameterized
 
 import intel_extension_for_tensorflow.python.ops.layer_norm as layer_normalization
 try:
-  from keras.src.layers.normalization import layer_normalization as tf_layer_normalization
+  from tf_keras.src.layers.normalization import layer_normalization as tf_layer_normalization
 except ImportError:
-  from keras.layers.normalization import layer_normalization as tf_layer_normalization
+  from tf_keras.layers.normalization import layer_normalization as tf_layer_normalization
 
 import numpy as np
 
-import keras
+import tf_keras as keras
 from tensorflow.python.keras import combinations
 
 from tensorflow.python.framework import constant_op

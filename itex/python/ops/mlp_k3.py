@@ -22,16 +22,16 @@ import tensorflow as tf
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from intel_extension_for_tensorflow.python.device import is_xehpc, has_xmx
 from intel_extension_for_tensorflow.python.ops.activations import gelu
-import tf_keras as keras
-from tf_keras import activations
-from tf_keras import constraints
-from tf_keras import initializers
-from tf_keras import regularizers
-from tf_keras.layers import Dense
+import keras
+from keras import activations
+from keras import constraints
+from keras import initializers
+from keras import regularizers
+from keras import ops
 
 
-@keras.utils.register_keras_serializable(package="Itex")
-class FusedDenseBiasAddGelu(Dense):
+@keras.src.saving.object_registration.register_keras_serializable(package="Itex")
+class Dense(keras.layers.Dense):
     """Just your regular densely-connected NN layer.
 
     `Dense` implements the operation:
@@ -109,9 +109,10 @@ class FusedDenseBiasAddGelu(Dense):
         activity_regularizer=None,
         kernel_constraint=None,
         bias_constraint=None,
+        lora_rank=None,
         **kwargs,
     ):
-        super(FusedDenseBiasAddGelu, self).__init__(
+        super(Dense, self).__init__(
             units,
             activation=tf.keras.layers.Lambda(
                 lambda x: gelu(x, approximate=True)),
@@ -123,137 +124,43 @@ class FusedDenseBiasAddGelu(Dense):
             kernel_constraint=kernel_constraint,
             bias_constraint=bias_constraint,
             activity_regularizer=activity_regularizer,
+            lora_rank=lora_rank,
             **kwargs
         )
         self._could_use_fused_matmul_biasadd_gelu = (is_xehpc() and has_xmx())
 
     def standard_dense(self, inputs):
-        rank = inputs.shape.rank
-        if rank == 2 or rank is None:
-            # We use embedding_lookup_sparse as a more efficient matmul
-            # operation for large sparse input tensors. The op will result in a
-            # sparse gradient, as opposed to
-            # sparse_ops.sparse_tensor_dense_matmul which results in dense
-            # gradients. This can lead to sigfinicant speedups, see b/171762937.
-            if isinstance(inputs, tf.SparseTensor):
-                # We need to fill empty rows, as the op assumes at least one id
-                # per row.
-                inputs, _ = tf.sparse.fill_empty_rows(inputs, 0)
-                # We need to do some munging of our input to use the embedding
-                # lookup as a matrix multiply. We split our input matrix into
-                # separate ids and weights tensors. The values of the ids tensor
-                # should be the column indices of our input matrix and the
-                # values of the weights tensor can continue to the actual matrix
-                # weights.  The column arrangement of ids and weights will be
-                # summed over and does not matter. See the documentation for
-                # sparse_ops.sparse_tensor_dense_matmul a more detailed
-                # explanation of the inputs to both ops.
-                ids = tf.SparseTensor(
-                    indices=inputs.indices,
-                    values=inputs.indices[:, 1],
-                    dense_shape=inputs.dense_shape,
-                )
-                weights = inputs
-                outputs = tf.nn.embedding_lookup_sparse(
-                    self.kernel, ids, weights, combiner="sum"
-                )
-            else:
-                outputs = tf.matmul(a=inputs, b=self.kernel)
-        # Broadcast kernel to inputs.
-        else:
-            outputs = tf.tensordot(inputs, self.kernel, [[rank - 1], [0]])
-            # Reshape the output back to the original ndim of the input.
-            if not tf.executing_eagerly():
-                shape = inputs.shape.as_list()
-                output_shape = shape[:-1] + [self.kernel.shape[-1]]
-                outputs.set_shape(output_shape)
-
-        if self.use_bias:
-            outputs = tf.nn.bias_add(outputs, self.bias)
-
+        x = ops.matmul(inputs, self.kernel)
+        if self.bias is not None:
+            x = ops.add(x, self.bias)
         if self.activation is not None:
-            outputs = self.activation(outputs)
-        return outputs
+            x = self.activation(x)
+        return x
 
     def call(self, inputs, training=None):
-        if inputs.dtype.base_dtype != self._compute_dtype_object.base_dtype:
-            inputs = tf.cast(inputs, dtype=self._compute_dtype_object)
-
-        is_ragged = isinstance(inputs, tf.RaggedTensor)
-        if is_ragged:
-            # In case we encounter a RaggedTensor with a fixed last dimension
-            # (last dimension not ragged), we can flatten the input and restore
-            # the ragged dimensions at the end.
-            if tf.compat.dimension_value(inputs.shape[-1]) is None:
-                raise ValueError(
-                    "Dense layer only supports RaggedTensors when the "
-                    "innermost dimension is non-ragged. Received: "
-                    f"inputs.shape={inputs.shape}."
-                )
-            original_inputs = inputs
-            if inputs.flat_values.shape.rank > 1:
-                inputs = inputs.flat_values
-            else:
-                # Innermost partition is encoded using uniform_row_length.
-                # (This is unusual, but we can handle it.)
-                if inputs.shape.rank == 2:
-                    inputs = inputs.to_tensor()
-                    is_ragged = False
-                else:
-                    for _ in range(original_inputs.ragged_rank - 1):
-                        inputs = inputs.values
-                    inputs = inputs.to_tensor()
-                    original_inputs = tf.RaggedTensor.from_nested_row_splits(
-                        inputs, original_inputs.nested_row_splits[:-1]
-                    )
-
-        rank = inputs.shape.rank
+        inputs = ops.cast(inputs, dtype=self.compute_dtype)
+        output_shape = self.compute_output_shape(inputs.shape)
         self._could_use_fused_matmul_biasadd_gelu = (
             self._could_use_fused_matmul_biasadd_gelu
             and (not isinstance(inputs, tf.SparseTensor))
             and (
-                self._compute_dtype_object == tf.bfloat16
-                or self._compute_dtype_object == tf.float16
+                self.compute_dtype == "bfloat16"
+                or self.compute_dtype == "float16"
             )
         )
         if self._could_use_fused_matmul_biasadd_gelu:
             k = inputs.shape[-1]
-            inputs = tf.reshape(inputs, [-1, k])
+            inputs = ops.reshape(inputs, [-1, k])
             outputs, _ = load_ops_library.fused_dense_bias_add_gelu(
                 input=inputs, weights=self.kernel, bias=self.bias, is_training=training
             )
+            outputs = ops.reshape(outputs, output_shape)
         else:
             outputs = self.standard_dense(inputs)
-
-        if is_ragged:
-            outputs = original_inputs.with_flat_values(outputs)
 
         return outputs
 
     def compute_output_shape(self, input_shape):
-        input_shape = tf.TensorShape(input_shape)
-        input_shape = input_shape.with_rank_at_least(2)
-        if tf.compat.dimension_value(input_shape[-1]) is None:
-            raise ValueError(
-                "The last dimension of the input shape of a Dense layer "
-                "should be defined. Found None. "
-                f"Received: input_shape={input_shape}"
-            )
-        return input_shape[:-1].concatenate(self.units)
-
-    def get_config(self):
-        base_config = super(Dense, self).get_config()
-        derive_config = {
-            "units": self.units,
-            "activation": activations.serialize(self.activation),
-            "use_bias": self.use_bias,
-            "kernel_initializer": initializers.serialize(self.kernel_initializer),
-            "bias_initializer": initializers.serialize(self.bias_initializer),
-            "kernel_regularizer": regularizers.serialize(self.kernel_regularizer),
-            "bias_regularizer": regularizers.serialize(self.bias_regularizer),
-            "activity_regularizer": regularizers.serialize(self.activity_regularizer),
-            "kernel_constraint": constraints.serialize(self.kernel_constraint),
-            "bias_constraint": constraints.serialize(self.bias_constraint),
-        }
-
-        return dict(list(base_config.items()) + list(derive_config.items()))
+        output_shape= list(input_shape[:-1])
+        output_shape.append(self.units)
+        return output_shape

@@ -21,27 +21,9 @@ void EnterOp::Compute(OpKernelContext* context) {
   context->set_output(0, context->input(0));
 }
 
-#define REGISTER_CPU_KERNEL(type) \
-  REGISTER_KERNEL_BUILDER(        \
-      Name("Enter").Device(DEVICE_CPU).TypeConstraint<type>("T"), EnterOp)
-
-TF_CALL_REAL_NUMBER_TYPES(REGISTER_CPU_KERNEL);
-TF_CALL_QUANTIZED_TYPES(REGISTER_CPU_KERNEL);
-
-#undef REGISTER_CPU_KERNEL
-
 void ExitOp::Compute(OpKernelContext* context) {
   context->set_output(0, context->input(0));
 }
-
-#define REGISTER_CPU_KERNEL(type) \
-  REGISTER_KERNEL_BUILDER(        \
-      Name("Exit").Device(DEVICE_CPU).TypeConstraint<type>("T"), EnterOp)
-
-TF_CALL_REAL_NUMBER_TYPES(REGISTER_CPU_KERNEL);
-TF_CALL_QUANTIZED_TYPES(REGISTER_CPU_KERNEL);
-
-#undef REGISTER_CPU_KERNEL
 
 void NextIterationOp::Compute(OpKernelContext* context) {
   context->set_output(0, context->input(0));
@@ -52,7 +34,6 @@ void NextIterationOp::Compute(OpKernelContext* context) {
       Name("NextIteration").Device(DEVICE_CPU).TypeConstraint<type>("T"), \
       EnterOp)
 
-TF_CALL_REAL_NUMBER_TYPES(REGISTER_CPU_KERNEL);
 TF_CALL_QUANTIZED_TYPES(REGISTER_CPU_KERNEL);
 
 #undef REGISTER_CPU_KERNEL

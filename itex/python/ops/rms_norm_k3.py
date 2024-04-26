@@ -25,19 +25,21 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-import tf_keras as keras
+import keras
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 
-from tf_keras import backend as K
-from tf_keras import constraints
-from tf_keras import initializers
-from tf_keras import regularizers
-from tf_keras.layers import Layer
+from keras import constraints
+from keras import initializers
+from keras import ops
+from keras import regularizers
+from keras.layers import Layer
+from keras.src.saving import object_registration
 
-@keras.utils.register_keras_serializable(package="Itex")
+
+@object_registration.register_keras_serializable(package="Itex")
 class RMSNormalization(Layer):
   """Root Mean Square Layer Normalization (B.Zhang et al., 2019).
 
@@ -217,12 +219,11 @@ class RMSNormalization(Layer):
           initializer=self.gamma_initializer,
           regularizer=self.gamma_regularizer,
           constraint=self.gamma_constraint,
-          trainable=True,
-          experimental_autocast=False)
+          trainable=True)
     else:
       self.gamma = None
-      self._gamma_const = K.constant(
-          1.0, dtype=self._param_dtype, shape=param_shape)
+      self._gamma_const = ops.ones(
+          dtype=self._param_dtype, shape=param_shape)
 
     if self.center:
       self.beta = self.add_weight(
@@ -232,15 +233,14 @@ class RMSNormalization(Layer):
           initializer=self.beta_initializer,
           regularizer=self.beta_regularizer,
           constraint=self.beta_constraint,
-          trainable=True,
-          experimental_autocast=False)
+          trainable=True)
     else:
       self.beta = None
-      self._beta_const = K.constant(
-          0.0, dtype=self._param_dtype, shape=param_shape)
+      self._beta_const = ops.zeros(
+          dtype=self._param_dtype, shape=param_shape)
 
     # fused_rms_norm only support XPU backend currently
-    self.use_fused_rms_norm = tf.config.list_logical_devices('XPU')
+    self.use_fused_rms_norm = len(tf.config.list_physical_devices("XPU")) > 0
     self.built = True
 
   def call(self, inputs, training=False): # pylint: disable=arguments-differ
@@ -252,7 +252,7 @@ class RMSNormalization(Layer):
     # Collapse dims before self.axis, and dims in self.axis
     pre_dim, in_dim = (1, 1)
     axis = sorted(self.axis)
-    tensor_shape = array_ops.shape(inputs)
+    tensor_shape = inputs.shape
     for dim in range(0, ndims):
         dim_tensor = tensor_shape[dim]
         if dim < axis[0]:
@@ -262,7 +262,7 @@ class RMSNormalization(Layer):
             in_dim = in_dim * dim_tensor
 
     squeezed_shape = [pre_dim, in_dim]
-    inputs = array_ops.reshape(inputs, squeezed_shape)
+    inputs = ops.reshape(inputs, squeezed_shape)
     # Compute RMS normalization.
     if self.use_fused_rms_norm and not training:
         # fused kernel only support inference on xpu.
@@ -275,15 +275,15 @@ class RMSNormalization(Layer):
                                     use_center=self.center)
     else:
         # use several math kernels to emulate RMSNorm
-        ms = math_ops.reduce_mean(inputs ** 2, -1, keepdims=True)
-        rms = math_ops.rsqrt(ms + self.epsilon)
+        ms = ops.mean(inputs ** 2, axis=-1, keepdims=True)
+        rms = ops.rsqrt(ms + self.epsilon)
         outputs = inputs * rms
         if self.scale:
           outputs = outputs * gamma
         if self.center:
           outputs = outputs + beta
   
-    outputs = array_ops.reshape(outputs, tensor_shape)
+    outputs = ops.reshape(outputs, tensor_shape)
     return outputs
 
   def compute_output_shape(self, input_shape):

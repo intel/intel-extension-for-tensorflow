@@ -19,6 +19,9 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import os
+os.environ['TF_USE_LEGACY_KERAS']='1'
+
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 
@@ -29,14 +32,7 @@ from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from tensorflow.python.keras import combinations
-try:
-  from keras.optimizers.optimizer_v2 import adadelta
-except ImportError:
-  try:
-    from keras.optimizers.legacy import adadelta
-  except ImportError:
-    from keras.src.optimizers.legacy import adadelta
+from tf_keras.src.optimizers.legacy import adadelta
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import resource_variable_ops

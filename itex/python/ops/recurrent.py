@@ -32,21 +32,21 @@ from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variables
 from tensorflow.python.platform import tf_logging as logging
 
-from tensorflow.python import keras
-from keras import activations
+import tf_keras as keras
+from tf_keras import activations
 try:
-  from keras.src import backend
+  from tf_keras.src import backend
 except ImportError:
-  from keras import backend
-from keras import constraints
-from keras import initializers
-from keras import regularizers
+  from tf_keras import backend
+from tf_keras import constraints
+from tf_keras import initializers
+from tf_keras import regularizers
 try:
-  from keras.engine.input_spec import InputSpec
-  from keras.layers import LSTMV1
+  from tf_keras.engine.input_spec import InputSpec
+  from tf_keras.layers import LSTMV1
 except ImportError:
-  from keras.src.engine.input_spec import InputSpec
-  from keras.src.layers import LSTMV1
+  from tf_keras.src.engine.input_spec import InputSpec
+  from tf_keras.src.layers import LSTMV1
 
 _ITEX_AVAILABLE_MSG = 'Layer %s will use ITEX kernels when running on GPU.'
 _ITEX_NOT_AVAILABLE_MSG = ('Layer %s will not use ITEX kernels since it '
@@ -146,7 +146,7 @@ def has_fully_masked_sequence(mask):
           axis=1))
 
 # add Itex prefix to avoid name conflicting with keras LSTM
-@keras.utils.generic_utils.register_keras_serializable(package="Itex")
+@keras.utils.register_keras_serializable(package="Itex")
 class ItexLSTM(LSTMV1):
   """Long Short-Term Memory layer - Hochreiter 1997.
 

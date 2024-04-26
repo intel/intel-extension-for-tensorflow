@@ -18,20 +18,25 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import re
 import warnings
 import tensorflow as tf
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
-from keras.src.optimizers import optimizer as kerasoptimizer
-from keras.src.optimizers import utils as optimizer_utils
 from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_ops
+from tensorflow.python.ops import gen_training_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.training import optimizer
-from tensorflow.python.training import training_ops
+if os.environ.get("TF_USE_LEGACY_KERAS", None) in ("true", "True", "1"):
+  from tf_keras.src.optimizers import optimizer as kerasoptimizer
+  from tf_keras.src.optimizers import utils as optimizer_utils
+else:
+  from keras.src.optimizers import optimizer as kerasoptimizer
+  from keras.src import utils as optimizer_utils
 
 class AdamWithWeightDecayLegacyOptimizer(optimizer.Optimizer): # pylint: disable=missing-class-docstring
   def __init__(self, # pylint: disable=dangerous-default-value
@@ -89,8 +94,6 @@ class AdamWithWeightDecayLegacyOptimizer(optimizer.Optimizer): # pylint: disable
       self._zeros_slot(v, "m", self._name)
       self._zeros_slot(v, "v", self._name)
 
-  def _prepare(self):
-    lr = self._call_if_callable(self._lr)
     beta_1 = self._call_if_callable(self._beta_1)
     beta_2 = self._call_if_callable(self._beta_2)
     epsilon = self._call_if_callable(self._epsilon)
@@ -140,7 +143,7 @@ class AdamWithWeightDecayLegacyOptimizer(optimizer.Optimizer): # pylint: disable
           use_locking=self._use_locking,
           use_amsgrad=False).op
     else:
-      return training_ops.apply_adam(
+      return gen_training_ops.apply_adam(
           var,
           m,
           v,
@@ -176,7 +179,7 @@ class AdamWithWeightDecayLegacyOptimizer(optimizer.Optimizer): # pylint: disable
           use_locking=self._use_locking,
           use_amsgrad=False)
     else:
-      return training_ops.resource_apply_adam(
+      return gen_training_ops.resource_apply_adam(
           var.handle,
           m.handle,
           v.handle,
@@ -839,3 +842,5 @@ class LAMBOptimizer(kerasoptimizer.Optimizer):
         )
         return config
 
+# Copyright (c) 2021 Intel Corporation
+#

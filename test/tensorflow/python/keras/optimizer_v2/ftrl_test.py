@@ -15,6 +15,8 @@
 # limitations under the License.
 # ==============================================================================
 """Functional tests for Ftrl operations."""
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 from intel_extension_for_tensorflow.python.test_func import test
 
 import numpy as np
@@ -24,12 +26,12 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import indexed_slices
 try:
-  from keras.optimizers.optimizer_v2 import ftrl
+  from tf_keras.optimizers.optimizer_v2 import ftrl
 except ImportError:
   try:
-    from keras.optimizers.legacy import ftrl
+    from tf_keras.optimizers.legacy import ftrl
   except ImportError:
-    from keras.src.optimizers.legacy import ftrl
+    from tf_keras.src.optimizers.legacy import ftrl
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import variables

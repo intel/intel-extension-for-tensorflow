@@ -36,9 +36,15 @@ from tensorflow.python.keras.optimizer_v2 import nadam as nadam_v2
 from tensorflow.python.keras.optimizer_v2 import rmsprop as rmsprop_v2
 from tensorflow.python.keras.utils import tf_contextlib
 from tensorflow.python.keras.utils import tf_inspect
-from keras import backend
-from keras import layers
-from keras import models
+import os
+if os.environ.get("TF_USE_LEGACY_KERAS", None) in ("true", "True", "1"):
+  from tf_keras import backend
+  from tf_keras import layers
+  from tf_keras import models
+else:
+  from keras import backend
+  from keras import layers
+  from keras import models
 
 
 def string_test(actual, expected):

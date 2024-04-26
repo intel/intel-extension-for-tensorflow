@@ -170,7 +170,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.disable_xla('This test does not pass with XLA')
   def test_matmul_biasadd_gelu_fusion(self):
     """Test MatMul+BiasAdd+Gelu fusion."""
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -230,7 +230,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def test_conv2d_biassemantic_fusion(self):
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -292,7 +292,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def test_depth_conv2d_biassemantic_fusion(self):
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -354,7 +354,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def test_depth_conv2d_bias_and_add_activation_fusion(self):
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
 
     for precision in ('float32', 'bfloat16', 'float16'):
       if precision == 'bfloat16':
@@ -396,7 +396,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def test_matmul_biassemantic_fusion(self):
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -458,7 +458,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def test_mul_maximum_fusion(self):
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
     for precision in ('float32', 'bfloat16', 'float16'):
@@ -514,7 +514,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def test_randomuniform_greaterequalwithcast_fusion(self):
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -557,7 +557,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
   @test_util.run_deprecated_v1
   @test_util.disable_xla('This test does not pass with XLA')
   def testSpaceToBatchNDConv2dBatchToSpaceND(self):
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
     run_options = config_pb2.RunOptions(output_partition_graphs=True)
     metadata = config_pb2.RunMetadata()
 
@@ -621,7 +621,7 @@ class RemapperTest(test.TestCase, parameterized.TestCase):
                                               activation=None,
                                               has_add=False):
     os.environ['ITEX_LAYOUT_OPT'] = '0'
-    is_bf16_supported = _pywrap_utils.IsBF16SupportedByOneDNNOnThisCPU()
+    is_bf16_supported = _pywrap_utils.IsDataTypeSupportedByOneDNNOnThisCPU(tf.bfloat16)
 
     if test.is_gpu_available():
       self.skipTest("Skip on GPU due to the pattern not supported")

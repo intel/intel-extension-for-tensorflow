@@ -6,8 +6,8 @@ from numpy import iscomplexobj
 from numpy import asarray
 from numpy.random import randint
 from scipy.linalg import sqrtm
-from keras.applications.inception_v3 import InceptionV3
-from keras.applications.inception_v3 import preprocess_input
+from tf_keras.applications.inception_v3 import InceptionV3
+from tf_keras.applications.inception_v3 import preprocess_input
 from skimage.transform import resize
 
 

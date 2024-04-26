@@ -1,3 +1,224 @@
+diff --git a/benchmarks/vectorized_random_translation.py b/benchmarks/vectorized_random_translation.py
+index 2146d7c..cffad02 100644
+--- a/benchmarks/vectorized_random_translation.py
++++ b/benchmarks/vectorized_random_translation.py
+@@ -17,7 +17,7 @@ import time
+ import matplotlib.pyplot as plt
+ import numpy as np
+ import tensorflow as tf
+-from keras import backend
++from tf_keras import backend
+ from tensorflow import keras
+ 
+ from keras_cv.layers import RandomTranslation
+diff --git a/benchmarks/vectorized_random_zoom.py b/benchmarks/vectorized_random_zoom.py
+index b44919e..d7456cc 100644
+--- a/benchmarks/vectorized_random_zoom.py
++++ b/benchmarks/vectorized_random_zoom.py
+@@ -17,7 +17,7 @@ import time
+ import matplotlib.pyplot as plt
+ import numpy as np
+ import tensorflow as tf
+-from keras import backend
++from tf_keras import backend
+ from tensorflow import keras
+ 
+ from keras_cv.layers import RandomZoom
+diff --git a/keras_cv/callbacks/pycoco_callback.py b/keras_cv/callbacks/pycoco_callback.py
+index 6a9a688..3a7e77f 100644
+--- a/keras_cv/callbacks/pycoco_callback.py
++++ b/keras_cv/callbacks/pycoco_callback.py
+@@ -12,7 +12,7 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ import tensorflow as tf
+-from keras.callbacks import Callback
++from tf_keras.callbacks import Callback
+ 
+ from keras_cv import bounding_box
+ from keras_cv.metrics.coco import compute_pycoco_metrics
+diff --git a/keras_cv/callbacks/waymo_evaluation_callback.py b/keras_cv/callbacks/waymo_evaluation_callback.py
+index 6c13ca7..2dff3ea 100644
+--- a/keras_cv/callbacks/waymo_evaluation_callback.py
++++ b/keras_cv/callbacks/waymo_evaluation_callback.py
+@@ -12,7 +12,7 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ import tensorflow as tf
+-from keras.callbacks import Callback
++from tf_keras.callbacks import Callback
+ 
+ from keras_cv.utils import assert_waymo_open_dataset_installed
+ 
+diff --git a/keras_cv/layers/fusedmbconv.py b/keras_cv/layers/fusedmbconv.py
+index b03543f..64240d9 100644
+--- a/keras_cv/layers/fusedmbconv.py
++++ b/keras_cv/layers/fusedmbconv.py
+@@ -13,7 +13,7 @@
+ # limitations under the License.
+ 
+ 
+-from keras import backend
++from tf_keras import backend
+ from tensorflow import keras
+ from tensorflow.keras import layers
+ 
+diff --git a/keras_cv/layers/mbconv.py b/keras_cv/layers/mbconv.py
+index c4991a1..7f10b4c 100644
+--- a/keras_cv/layers/mbconv.py
++++ b/keras_cv/layers/mbconv.py
+@@ -13,7 +13,7 @@
+ # limitations under the License.
+ 
+ 
+-from keras import backend
++from tf_keras import backend
+ from tensorflow import keras
+ from tensorflow.keras import layers
+ 
+diff --git a/keras_cv/layers/preprocessing/random_zoom.py b/keras_cv/layers/preprocessing/random_zoom.py
+index f3dfced..b158369 100644
+--- a/keras_cv/layers/preprocessing/random_zoom.py
++++ b/keras_cv/layers/preprocessing/random_zoom.py
+@@ -14,7 +14,7 @@
+ 
+ 
+ import tensorflow as tf
+-from keras import backend
++from tf_keras import backend
+ from tensorflow import keras
+ 
+ from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+diff --git a/keras_cv/models/classification/image_classifier.py b/keras_cv/models/classification/image_classifier.py
+index 6d34f50..5b84bfa 100644
+--- a/keras_cv/models/classification/image_classifier.py
++++ b/keras_cv/models/classification/image_classifier.py
+@@ -15,7 +15,7 @@
+ 
+ import copy
+ 
+-from keras import layers
++from tf_keras import layers
+ from tensorflow import keras
+ 
+ from keras_cv.models.backbones.backbone_presets import backbone_presets
+diff --git a/keras_cv/models/legacy/efficientnet_lite.py b/keras_cv/models/legacy/efficientnet_lite.py
+index a2ae8d3..826a7e6 100644
+--- a/keras_cv/models/legacy/efficientnet_lite.py
++++ b/keras_cv/models/legacy/efficientnet_lite.py
+@@ -25,8 +25,8 @@ import copy
+ import math
+ 
+ import tensorflow as tf
+-from keras import backend
+-from keras import layers
++from tf_keras import backend
++from tf_keras import layers
+ from tensorflow import keras
+ 
+ from keras_cv.models.legacy import utils
+diff --git a/keras_cv/models/legacy/utils.py b/keras_cv/models/legacy/utils.py
+index ba3e852..cd74f4b 100644
+--- a/keras_cv/models/legacy/utils.py
++++ b/keras_cv/models/legacy/utils.py
+@@ -14,7 +14,7 @@
+ # ==============================================================================
+ """Utility functions for models"""
+ 
+-from keras import layers
++from tf_keras import layers
+ from tensorflow import keras
+ 
+ 
+diff --git a/keras_cv/models/legacy/utils_test.py b/keras_cv/models/legacy/utils_test.py
+index cbd1bbc..e0aa448 100644
+--- a/keras_cv/models/legacy/utils_test.py
++++ b/keras_cv/models/legacy/utils_test.py
+@@ -14,7 +14,7 @@
+ """Tests for KerasCV model utils."""
+ 
+ import tensorflow as tf
+-from keras import layers
++from tf_keras import layers
+ from tensorflow import keras
+ 
+ from keras_cv.models.legacy import utils
+diff --git a/keras_cv/models/legacy/weights.py b/keras_cv/models/legacy/weights.py
+index fc99606..d21a6b9 100644
+--- a/keras_cv/models/legacy/weights.py
++++ b/keras_cv/models/legacy/weights.py
+@@ -11,7 +11,7 @@
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ # See the License for the specific language governing permissions and
+ import tensorflow as tf
+-from keras import utils
++from tf_keras import utils
+ 
+ 
+ def parse_weights(weights, include_top, model_type):
+diff --git a/keras_cv/models/object_detection/predict_utils.py b/keras_cv/models/object_detection/predict_utils.py
+index 8eb6e10..48fb78d 100644
+--- a/keras_cv/models/object_detection/predict_utils.py
++++ b/keras_cv/models/object_detection/predict_utils.py
+@@ -15,13 +15,13 @@
+ import tensorflow as tf
+ 
+ try:
+-    from keras.src.engine.training import _minimum_control_deps
+-    from keras.src.engine.training import reduce_per_replica
+-    from keras.src.utils import tf_utils
++    from tf_keras.src.engine.training import _minimum_control_deps
++    from tf_keras.src.engine.training import reduce_per_replica
++    from tf_keras.src.utils import tf_utils
+ except ImportError:
+-    from keras.engine.training import _minimum_control_deps
+-    from keras.engine.training import reduce_per_replica
+-    from keras.utils import tf_utils
++    from tf_keras.engine.training import _minimum_control_deps
++    from tf_keras.engine.training import reduce_per_replica
++    from tf_keras.utils import tf_utils
+ 
+ 
+ def make_predict_function(model, force=False):
+diff --git a/keras_cv/models/object_detection/yolo_v8/yolo_v8_backbone.py b/keras_cv/models/object_detection/yolo_v8/yolo_v8_backbone.py
+index 89e2763..9910ac9 100644
+--- a/keras_cv/models/object_detection/yolo_v8/yolo_v8_backbone.py
++++ b/keras_cv/models/object_detection/yolo_v8/yolo_v8_backbone.py
+@@ -14,7 +14,7 @@
+ import copy
+ 
+ import tensorflow as tf
+-from keras import layers
++from tf_keras import layers
+ from tensorflow import keras
+ 
+ from keras_cv.models import utils
+diff --git a/keras_cv/models/object_detection/yolo_v8/yolo_v8_detector.py b/keras_cv/models/object_detection/yolo_v8/yolo_v8_detector.py
+index 360d01c..7db9974 100644
+--- a/keras_cv/models/object_detection/yolo_v8/yolo_v8_detector.py
++++ b/keras_cv/models/object_detection/yolo_v8/yolo_v8_detector.py
+@@ -15,7 +15,7 @@ import copy
+ import warnings
+ 
+ import tensorflow as tf
+-from keras import layers
++from tf_keras import layers
+ from tensorflow import keras
+ 
+ import keras_cv
+diff --git a/keras_cv/models/object_detection/yolo_v8/yolo_v8_layers.py b/keras_cv/models/object_detection/yolo_v8/yolo_v8_layers.py
+index ba9c095..effae68 100644
+--- a/keras_cv/models/object_detection/yolo_v8/yolo_v8_layers.py
++++ b/keras_cv/models/object_detection/yolo_v8/yolo_v8_layers.py
+@@ -12,7 +12,7 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ import tensorflow as tf
+-from keras import layers
++from tf_keras import layers
+ 
+ BATCH_NORM_EPSILON = 1e-3
+ BATCH_NORM_MOMENTUM = 0.97
 diff --git a/keras_cv/models/stable_diffusion/__internal__/layers/attention_block.py b/keras_cv/models/stable_diffusion/__internal__/layers/attention_block.py
 index e7e1896..21fba0c 100644
 --- a/keras_cv/models/stable_diffusion/__internal__/layers/attention_block.py
@@ -51,7 +272,7 @@ index fe619d3..ccc4b5b 100644
  from keras_cv.models.stable_diffusion.__internal__.layers.attention_block import (  # noqa: E501
      AttentionBlock,
 diff --git a/keras_cv/models/stable_diffusion/diffusion_model.py b/keras_cv/models/stable_diffusion/diffusion_model.py
-index 25b5241..dafdcbc 100644
+index 25b5241..db75e97 100644
 --- a/keras_cv/models/stable_diffusion/diffusion_model.py
 +++ b/keras_cv/models/stable_diffusion/diffusion_model.py
 @@ -14,7 +14,14 @@
@@ -151,7 +372,7 @@ index 614b11d..8212389 100644
  from keras_cv.models.stable_diffusion.__internal__.layers.attention_block import (  # noqa: E501
      AttentionBlock,
 diff --git a/keras_cv/models/stable_diffusion/stable_diffusion.py b/keras_cv/models/stable_diffusion/stable_diffusion.py
-index 5ef7471..93d619d 100644
+index 5ef7471..38f9ee6 100644
 --- a/keras_cv/models/stable_diffusion/stable_diffusion.py
 +++ b/keras_cv/models/stable_diffusion/stable_diffusion.py
 @@ -29,7 +29,8 @@ import math
@@ -159,7 +380,7 @@ index 5ef7471..93d619d 100644
  import tensorflow as tf
  from tensorflow import keras
 -
-+from keras import backend as K
++from tf_keras import backend as K
 +import os
  from keras_cv.models.stable_diffusion.clip_tokenizer import SimpleTokenizer
  from keras_cv.models.stable_diffusion.constants import _ALPHAS_CUMPROD
@@ -307,3 +528,44 @@ index 5ef7471..93d619d 100644
          print(
              "By using this model checkpoint, you acknowledge that its usage is "
              "subject to the terms of the CreativeML Open RAIL++-M license at "
+diff --git a/keras_cv/models/utils.py b/keras_cv/models/utils.py
+index 44776a2..c163beb 100644
+--- a/keras_cv/models/utils.py
++++ b/keras_cv/models/utils.py
+@@ -14,8 +14,8 @@
+ # ==============================================================================
+ """Utility functions for models"""
+ 
+-from keras import backend
+-from keras import layers
++from tf_keras import backend
++from tf_keras import layers
+ from tensorflow import keras
+ 
+ 
+diff --git a/keras_cv/models/utils_test.py b/keras_cv/models/utils_test.py
+index 5f5efba..a41a4bf 100644
+--- a/keras_cv/models/utils_test.py
++++ b/keras_cv/models/utils_test.py
+@@ -14,7 +14,7 @@
+ """Tests for KerasCV model utils."""
+ 
+ import tensorflow as tf
+-from keras import layers
++from tf_keras import layers
+ 
+ from keras_cv.models import utils
+ 
+diff --git a/shell/count_preset_params.py b/shell/count_preset_params.py
+index ffe05b3..e22fe9d 100644
+--- a/shell/count_preset_params.py
++++ b/shell/count_preset_params.py
+@@ -24,7 +24,7 @@ import inspect
+ 
+ from absl import app
+ from absl import flags
+-from keras.utils.layer_utils import count_params
++from tf_keras.utils.layer_utils import count_params
+ 
+ import keras_cv
+ 

@@ -363,7 +363,7 @@ index 000000000..029ae654e
 +from tensorflow.python.ops import array_ops
 +from tensorflow.python.ops import linalg_ops
 +from tensorflow.python.ops import math_ops
-+from tensorflow.python.training import training_ops
++from tensorflow.python.ops import gen_training_ops as training_ops
 +from tensorflow.python.ops import state_ops
 +
 +# from tensorflow.python.keras import backend_config

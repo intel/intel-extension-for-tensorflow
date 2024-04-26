@@ -23,7 +23,7 @@ from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
-from tensorflow.python.training import training_ops
+from tensorflow.python.ops import gen_training_ops as training_ops
 import numpy as np
 """Tests for ResourceApplyKerasMomentum."""
 def keras_momentum_update_numpy(var, accum, g, lr, momentum):

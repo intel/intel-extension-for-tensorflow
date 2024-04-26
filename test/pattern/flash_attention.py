@@ -15,7 +15,7 @@
 
 
 import os
-
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 import numpy as np
 import tensorflow as tf
 
@@ -25,6 +25,7 @@ from tensorflow.python.framework import config
 from tensorflow.python.platform import test
 from tensorflow.core.protobuf import config_pb2
 from intel_extension_for_tensorflow.python.device import is_xehpc, has_xmx
+from tf_keras.src.backend import set_session
 
 tf.compat.v1.disable_eager_execution()
 
@@ -95,14 +96,14 @@ class MHAFusionWithReshapeMatmulTest(test_util.TensorFlowTestCase):
 
             os.environ['ITEX_REMAPPER'] = '0'
             with self.session(use_gpu=True) as sess:
-                tf.compat.v1.keras.backend.set_session(sess)
+                set_session(sess)
                 model = AttentionInKerasStableDiffusionModel(q.shape[2], q.shape[3])
                 real = model.call([q,k,v])
                 real = sess.run(real)
 
             os.environ['ITEX_REMAPPER'] = '1'
             with self.session(use_gpu=True) as sess:
-                tf.compat.v1.keras.backend.set_session(sess)
+                set_session(sess)
                 model = AttentionInKerasStableDiffusionModel(q.shape[2], q.shape[3])
                 predict = model.call([q,k,v])
                 predict = sess.run(predict)

@@ -14,12 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 import numpy as np
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 from tensorflow.python.framework import config
 from tensorflow.python.framework import test_util
 from tensorflow.python.platform import test
+from tf_keras.src.backend import set_session
 
 itex.experimental_ops_override()
 
@@ -30,7 +34,7 @@ class LSTMTest(test_util.TensorFlowTestCase):
             self.skipTest("Test requires XPU")
         from tensorflow.keras.layers import LSTM
         with self.session(use_gpu=True) as sess:
-            tf.compat.v1.keras.backend.set_session(sess)
+            set_session(sess)
             batch_input_shape = (2, 2, 2)
             x_input = tf.keras.Input(shape=(2,2,))
             x_out = LSTM(20)(x_input, training=False)

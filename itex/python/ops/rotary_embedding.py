@@ -16,9 +16,13 @@
 # ==============================================================================
 
 # pylint: disable=missing-module-docstring
+import os
+if os.environ.get("TF_USE_LEGACY_KERAS", None) in ("true", "True", "1"):
+  from tf_keras.utils import register_keras_serializable
+else:
+  from keras.src.saving.object_registration import register_keras_serializable
 import numpy as np
 import tensorflow as tf
-from tensorflow.python import keras
 from tensorflow.python.framework import ops
 from typing import List, Optional, Union
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
@@ -55,7 +59,7 @@ def rotate_every_two(x: tf.Tensor) -> tf.Tensor:
 def apply_rotary_pos_emb(tensor,sin,cos):
     return (tensor * cos) + (rotate_every_two(tensor) * sin)
 
-@keras.utils.generic_utils.register_keras_serializable(package="Itex")
+@register_keras_serializable(package="Itex")
 def qk_rotary_positional_embedding(q,k,sin,cos, rotary_dim=64,num_attention_heads=16,head_dim=256, name=None):
   if config.list_logical_devices('XPU'):
     with ops.name_scope(name, "qk_rotary_positional_embedding", [q,k,sin,cos]):

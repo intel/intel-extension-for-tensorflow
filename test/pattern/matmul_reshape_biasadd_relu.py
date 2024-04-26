@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 
 import numpy as np
 import tensorflow as tf
@@ -22,6 +24,7 @@ from tensorflow.python.platform import test
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn_ops
+from tf_keras.src.backend import set_session
 import time
 import os
 import subprocess
@@ -45,13 +48,14 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         metadata = config_pb2.RunMetadata()
 
         with self.session(use_gpu=True) as sess:
-            tf.compat.v1.keras.backend.set_session(sess)
+            set_session(sess)
             inputs = tf.keras.Input(shape=(1,3,))
             x = tf.keras.layers.Dense(4, activation=None)(inputs)
             model = tf.keras.Model(inputs=inputs, outputs=array_ops.identity(x))
             model.predict(np.array([[[1.,2.,3.]],[[4.,5.,6.]]]).astype(np.float32))
             start_time = time.time()
             ret_gpu = sess.run("Identity", feed_dict={"input_1:0": np.array([[[1.,2.,3.]],[[1.,2.,3.]]]).astype(np.float32)},options=run_options, run_metadata=metadata)
+
             duration = time.time() - start_time
             print("end to end duration is : {}".format(duration))
             # Graph should contain fused op.
@@ -70,7 +74,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         metadata = config_pb2.RunMetadata()
 
         with self.session(use_gpu=True) as sess:
-            tf.compat.v1.keras.backend.set_session(sess)
+            set_session(sess)
             inputs = tf.keras.Input(shape=(1,3,))
             x = tf.keras.layers.Dense(4, activation=tf.nn.relu)(inputs)
             model = tf.keras.Model(inputs=inputs, outputs=array_ops.identity(x))
@@ -95,7 +99,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
         metadata = config_pb2.RunMetadata()
 
         with self.session(use_gpu=True) as sess:
-            tf.compat.v1.keras.backend.set_session(sess)
+            set_session(sess)
             model = kerasmodel()
             model.predict(np.array([[[[1.,2.,3.],[4.,5.,6.]]]]).astype(np.float32))
             start_time = time.time()
@@ -114,7 +118,7 @@ class FusedMatMulTest(test_util.TensorFlowTestCase):
     def testTrain(self):
         tf.random.set_seed(0)
         with self.session(use_gpu=True) as sess:
-            tf.compat.v1.keras.backend.set_session(sess)
+            set_session(sess)
             model = kerasmodel()
             model.compile(loss='mse', metrics=['accuracy'])
             model.fit(np.array([[[[1.,2.,3.],[4.,5.,6.]]]]).astype(np.float32),

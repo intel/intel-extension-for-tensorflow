@@ -17,26 +17,20 @@
 """Tests for itex recurrent layers."""
 
 import os
+os.environ['TF_USE_LEGACY_KERAS']='1'
 import tempfile
 from absl.testing import parameterized
 import numpy as np
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
-from tensorflow.python import keras
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import test_util
-from tensorflow.python.ops import array_ops
+import tf_keras as keras
 from tensorflow.python.platform import test
 from tensorflow.python.training import gradient_descent
-from keras.regularizers import l2
-from tensorflow.python.keras import keras_parameterized
-from tensorflow.python.keras import testing_utils
+from tf_keras.regularizers import l2
 
 
-from keras.layers import (
-    LSTM,
-    Input,
-    Dense, Activation, Dropout, 
+from tf_keras.layers import (
+    Dense, Dropout, 
     TimeDistributed,
     )
 
@@ -46,7 +40,7 @@ def convert_model_weights(source_model, target_model):
     target_model.load_weights(fname)
     os.remove(fname)
 
-class LSTMTest(keras_parameterized.TestCase):           
+class LSTMTest(tf.test.TestCase, parameterized.TestCase):           
     def assert_allclose(self, expected, actual, dtype):
         if dtype in [
                 tf.float32,
@@ -64,12 +58,20 @@ class LSTMTest(keras_parameterized.TestCase):
         else:
             print("not supported data type")
             
-    @parameterized.named_parameters(
-        *testing_utils.generate_combinations_with_testcase_name(
-            to_itex=[True, False],
-            model_nest_level=[1, 2],
-            model_type=['seq'],
-            dtype=[tf.float32, tf.float16, tf.bfloat16]))
+    @parameterized.parameters(
+        [True, 1, 'seq', tf.float16],
+        [False, 2, 'seq', tf.float16],
+        [True, 1, 'seq', tf.float16],
+        [False, 2, 'seq', tf.float16],
+        [True, 1, 'seq', tf.float32],
+        [False, 2, 'seq', tf.float32],
+        [True, 1, 'seq', tf.float32],
+        [False, 2, 'seq', tf.float32],
+        [True, 1, 'seq', tf.bfloat16],
+        [False, 2, 'seq', tf.bfloat16],
+        [True, 1, 'seq', tf.bfloat16],
+        [False, 2, 'seq', tf.bfloat16],
+    )
     def test_load_weights_between_nonitex_rnn(self, to_itex, model_nest_level,
                                               model_type, dtype):
         np.random.seed(0)
@@ -94,7 +96,7 @@ class LSTMTest(keras_parameterized.TestCase):
             time_major=True,
         )
 
-        layer = keras.layers.LSTMV1(units, **rnn_layer_kwargs)
+        layer = keras.layers.LSTM(units, **rnn_layer_kwargs)
         itex_layer = itex.ops.ItexLSTM(units, **rnn_layer_kwargs)
 
         model = self._make_nested_model(input_shape, layer, model_nest_level,

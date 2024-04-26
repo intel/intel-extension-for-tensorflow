@@ -13,19 +13,15 @@
 # limitations under the License.
 # =============================================================================
 import os
-os.environ["TF_USE_LEGACY_KERAS"]="1"
-import tensorflow.compat.v2 as tf
+os.environ['TF_USE_LEGACY_KERAS']='0'
+
+import tensorflow as tf
 import numpy as np
-import tf_keras as keras
-from tf_keras.initializers import Constant
-try:
-  from tf_keras.testing_infra import test_combinations
-  from tf_keras.testing_infra import test_utils
-except ImportError:
-  from tf_keras.src.testing_infra import test_combinations
-  from tf_keras.src.testing_infra import test_utils
+import keras
+
 import intel_extension_for_tensorflow as itex
 from intel_extension_for_tensorflow.python.ops import RMSNormalization
+from intel_extension_for_tensorflow.python.test_func import test
 
 def _build_rms_normalization_model(norm):
     model = keras.models.Sequential()
@@ -33,14 +29,12 @@ def _build_rms_normalization_model(norm):
     model.compile(
         loss="mse",
         optimizer="rmsprop",
-        run_eagerly=test_utils.should_run_eagerly(),
     )
 
     return model
 
 
-@test_utils.run_v2_only
-class RMSNormalizationTest(test_combinations.TestCase):
+class RMSNormalizationTest(test.TestCase):
 
     def test_trainable_weights(self):
         rows = 100
@@ -61,7 +55,6 @@ class RMSNormalizationTest(test_combinations.TestCase):
         self.assertEqual(layer.weights[0].shape[0], cols)
         self.assertEqual(layer.weights[1].shape[0], cols)
 
-    @test_combinations.run_all_keras_modes
     def test_correctness_1d(self):
         layer = RMSNormalization(scale=False, center=False)
         input = tf.constant(
@@ -78,12 +71,11 @@ class RMSNormalizationTest(test_combinations.TestCase):
             atol=1e-3,
         )
 
-    @test_combinations.run_all_keras_modes
     def test_correctness_with_scaling(self):
         normalization_layer = RMSNormalization(
             scale=True,
             center=False,
-            gamma_initializer=Constant(2),
+            gamma_initializer=keras.initializers.Constant(value=2),
         )
         inputs = tf.constant(
             [1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0], shape=(1, 8)
@@ -97,12 +89,11 @@ class RMSNormalizationTest(test_combinations.TestCase):
             atol=1e-3,
         )
 
-    @test_combinations.run_all_keras_modes
     def test_correctness_with_centering(self):
         normalization_layer = RMSNormalization(
             scale=False,
             center=True,
-            beta_initializer=Constant(10),
+            beta_initializer=keras.initializers.Constant(value=10),
         )
         inputs = tf.constant(
             [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], shape=(1, 8)

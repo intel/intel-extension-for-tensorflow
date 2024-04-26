@@ -17,20 +17,20 @@
 """Tests for itex recurrent layers."""
 
 import os
-os.environ["TF_USE_LEGACY_KERAS"]="1"
+os.environ["TF_USE_LEGACY_KERAS"]="0"
 import tempfile
 from absl.testing import parameterized
 import numpy as np
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
 from intel_extension_for_tensorflow.python.test_func import test as test_lib
-import tf_keras as keras
+import keras
 from tensorflow.python.platform import test
 
 
 
 def convert_model_weights(source_model, target_model):
-    _, fname = tempfile.mkstemp(".h5")
+    _, fname = tempfile.mkstemp(".weights.h5")
     source_model.save_weights(fname)
     target_model.load_weights(fname)
     os.remove(fname)  
@@ -61,7 +61,7 @@ class FusedDenseBiasAddGeluTest(tf.test.TestCase, parameterized.TestCase):
     @parameterized.parameters(
         [True, 1, tf.float16],
         [False, 1, tf.float16],
-        [True, 1, tf.float16],
+        [True, 2, tf.float16],
         [False, 2, tf.float16],
     )
     def test_load_weights_between_nonitex_mlp(self, to_itex, model_nest_level, dtype):
@@ -72,7 +72,7 @@ class FusedDenseBiasAddGeluTest(tf.test.TestCase, parameterized.TestCase):
         activation = self.gelu
         m = 128
         k = 128
-        input_shape = (m, k)
+        input_shape = (k,)
         inputs = np.random.random((m, k))
 
         layer = keras.layers.Dense(units, activation=activation, dtype=dtype)

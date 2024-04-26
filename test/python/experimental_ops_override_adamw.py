@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
+import os
+os.environ['TF_USE_LEGACY_KERAS']='1'
 
 import intel_extension_for_tensorflow as itex
 import numpy as np

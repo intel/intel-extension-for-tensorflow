@@ -204,16 +204,17 @@ def experimental_ops_override():
     if version(tf.__version__).release >= version("2.13").release:
         # New versions of Keras require importing from `keras.src` when
         # importing internal symbols.
-        from keras.src import backend # pylint: disable=import-outside-toplevel
-        from keras.src.utils import tf_utils # pylint: disable=import-outside-toplevel
+        from tf_keras.src import backend # pylint: disable=import-outside-toplevel
+        from tf_keras.src.utils import tf_utils # pylint: disable=import-outside-toplevel
     else:
-        from keras import backend # pylint: disable=import-outside-toplevel
-        from keras.utils import tf_utils # pylint: disable=import-outside-toplevel
-    tf_ln_call = copy_func(tf.keras.layers.LayerNormalization.call)
-    tf_lstm_call = copy_func(tf.keras.layers.LSTM.call)
-    tf_lstm_build = copy_func(tf.keras.layers.LSTM.build)
-    tf_adamw_apply_gradients = copy_func(tf.keras.optimizers.AdamW.apply_gradients)
-    tf_adamw_update_step = copy_func(tf.keras.optimizers.AdamW.update_step)
+        from tf_keras import backend # pylint: disable=import-outside-toplevel
+        from tf_keras.utils import tf_utils # pylint: disable=import-outside-toplevel
+    import tf_keras
+    tf_ln_call = copy_func(tf_keras.layers.LayerNormalization.call)
+    tf_lstm_call = copy_func(tf_keras.layers.LSTM.call)
+    tf_lstm_build = copy_func(tf_keras.layers.LSTM.build)
+    tf_adamw_apply_gradients = copy_func(tf_keras.optimizers.AdamW.apply_gradients)
+    tf_adamw_update_step = copy_func(tf_keras.optimizers.AdamW.update_step)
 
   except BaseException: # pylint: disable=broad-except
     return
@@ -393,8 +394,8 @@ def experimental_ops_override():
   def itex_lstm_build(self, input_shape):
     tf_lstm_build(self, input_shape)
     self._could_use_itex_kernel = (
-        self.activation in (tf.keras.activations.tanh, tf.nn.tanh) and
-        self.recurrent_activation in (tf.keras.activations.sigmoid, tf.nn.sigmoid) and
+        self.activation in (tf_keras.activations.tanh, tf.nn.tanh) and
+        self.recurrent_activation in (tf_keras.activations.sigmoid, tf.nn.sigmoid) and
         self.use_bias) and (config.list_logical_devices('XPU'))
     # TODO: use ITEX get_backend to check GPU.
     if config.list_logical_devices('XPU'):
@@ -479,39 +480,39 @@ def experimental_ops_override():
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: tensorflow_addons is not installed.") # pylint: disable=line-too-long
   try:
-    tf.keras.layers.Dense.call = itex_dense_layer_call
-    tf.keras.layers.LayerNormalization.call = itex_layer_norm_call
-    tf.keras.layers.LayerNormalization.build = itex_layer_norm_build
+    tf_keras.layers.Dense.call = itex_dense_layer_call
+    tf_keras.layers.LayerNormalization.call = itex_layer_norm_call
+    tf_keras.layers.LayerNormalization.build = itex_layer_norm_build
 
     from tensorflow.nn import gelu # pylint: disable=import-outside-toplevel
     gelu = itex_gelu
     tf.nn.gelu = itex_gelu
-    tf.keras.activations.gelu = itex_gelu
-    tf.keras.layers.LSTM.call = itex_lstm_call
-    tf.keras.layers.LSTM.build = itex_lstm_build
-    tf.keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
-    tf.keras.optimizers.AdamW.update_step = itex_adamw_update_step
+    tf_keras.activations.gelu = itex_gelu
+    tf_keras.layers.LSTM.call = itex_lstm_call
+    tf_keras.layers.LSTM.build = itex_lstm_build
+    tf_keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
+    tf_keras.optimizers.AdamW.update_step = itex_adamw_update_step
     logger.info("itex experimental ops override is enabled.")
   except BaseException: # pylint: disable=broad-except
     logger.error("Cannot override itex ops.")
   try:
-    import keras # pylint: disable=import-outside-toplevel
+    import tf_keras # pylint: disable=import-outside-toplevel
     if version(tf.__version__).release >= version("2.13").release:
-      keras.src.layers.core.dense.Dense.call = itex_dense_layer_call
-      keras.src.layers.normalization.layer_normalization.LayerNormalization.call = itex_layer_norm_call
-      keras.src.layers.normalization.layer_normalization.LayerNormalization.build = itex_layer_norm_build
-      keras.src.layers.rnn.lstm.LSTM.call = itex_lstm_call
-      keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
-      keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
-      keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
-      keras.optimizers.AdamW.update_step = itex_adamw_update_step
+      tf_keras.src.layers.core.dense.Dense.call = itex_dense_layer_call
+      tf_keras.src.layers.normalization.layer_normalization.LayerNormalization.call = itex_layer_norm_call
+      tf_keras.src.layers.normalization.layer_normalization.LayerNormalization.build = itex_layer_norm_build
+      tf_keras.src.layers.rnn.lstm.LSTM.call = itex_lstm_call
+      tf_keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
+      tf_keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
+      tf_keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
+      tf_keras.optimizers.AdamW.update_step = itex_adamw_update_step
     else:
-      keras.layers.core.dense.Dense.call = itex_dense_layer_call
-      keras.layers.LayerNormalization.call = itex_layer_norm_call
-      keras.layers.LayerNormalization.build = itex_layer_norm_build
-      keras.layers.LSTM.call = itex_lstm_call
-      keras.layers.LSTM.build = itex_lstm_build
-      keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
+      tf_keras.layers.core.dense.Dense.call = itex_dense_layer_call
+      tf_keras.layers.LayerNormalization.call = itex_layer_norm_call
+      tf_keras.layers.LayerNormalization.build = itex_layer_norm_build
+      tf_keras.layers.LSTM.call = itex_lstm_call
+      tf_keras.layers.LSTM.build = itex_lstm_build
+      tf_keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
   
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long

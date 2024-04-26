@@ -13,13 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-
-
+import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"
 import numpy as np
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
+import tf_keras as keras
 
 SHAPE = (5,2)
 np.random.seed(1)
@@ -53,7 +54,7 @@ class LayerNormalizationTest(test_util.TensorFlowTestCase):
                 '''
                 if not test.is_gpu_available() and dtype == 'float16':
                     continue
-                tf_layer = tf.keras.layers.LayerNormalization(
+                tf_layer = keras.layers.LayerNormalization(
                     axis=axis, dtype=dtype, batch_input_shape=batch_input_shape,
                     epsilon=epsilon, beta_initializer=tf.constant_initializer(beta),
                     gamma_initializer=tf.constant_initializer(gamma))

@@ -13,23 +13,24 @@
 # limitations under the License.
 # ==============================================================================
 import os
+os.environ['TF_USE_LEGACY_KERAS']='1'
+os.environ['ITEX_ENABLE_NEXTPLUGGABLE_DEVICE']='0'
 import tempfile
 from absl.testing import parameterized
 import numpy as np
 import tensorflow as tf
 import intel_extension_for_tensorflow as itex
-from tensorflow.python import keras
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import test_util
 from tensorflow.python.ops import array_ops
 from tensorflow.python.platform import test
 from tensorflow.python.training import gradient_descent
-from keras.regularizers import l2
+from tensorflow.keras.regularizers import l2
 from tensorflow.python.keras import keras_parameterized
 from tensorflow.python.keras import testing_utils
 
 
-from keras.layers import (
+from tensorflow.keras.layers import (
     LSTM,
     Input,
     Dense, Activation, Dropout, 
