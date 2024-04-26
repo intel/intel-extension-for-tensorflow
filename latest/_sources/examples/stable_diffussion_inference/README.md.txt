@@ -15,6 +15,9 @@ Verified Hardware Platforms:
  
 ## Prerequisites
 
+### Environment Vasriable
+`export TF_USE_LEGACY_KERAS=1`
+
 ### Model Code change
 We optimized official keras-cv Stable Diffusion, for example, concatenate two forward passes, combine computation in loops to reduce op number, and add fp16 mode for model. However, this optimization hasn't been up streamed. To get better performance, instead of installing official keras-cv, you may want to clone keras-cv, apply patch, then install it as shown here:
 ```
