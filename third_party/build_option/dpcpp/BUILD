@@ -15,6 +15,7 @@ itex_xpu_library(
     srcs = ["runtime/itex_gpu_runtime.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//itex/core/ops/utils:logging",
         "@com_google_absl//absl/strings",
         "@local_config_tf//:tf_header_lib",
     ],

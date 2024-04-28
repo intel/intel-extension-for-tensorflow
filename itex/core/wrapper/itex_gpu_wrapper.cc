@@ -30,6 +30,16 @@ static void UnloadGpuLibrary() __attribute__((destructor));
 
 void* LoadGpuLibrary() {
   setenv("ENABLE_PJRT_COMPATIBILITY", "1", 0);
+
+  const char* xlaFlags = std::getenv("TF_XLA_FLAGS");
+  if (xlaFlags) {
+    std::string newXlaFlags =
+        std::string(xlaFlags) + " --tf_xla_use_device_api=true";
+    setenv("TF_XLA_FLAGS", newXlaFlags.c_str(), 1);
+  } else {
+    setenv("TF_XLA_FLAGS", "--tf_xla_use_device_api=true", 0);
+  }
+
   handle = dlopen("libitex_gpu_internal.so", RTLD_NOW | RTLD_LOCAL);
   if (!handle) {
     itex_freeze_backend(ITEX_BACKEND_CPU);

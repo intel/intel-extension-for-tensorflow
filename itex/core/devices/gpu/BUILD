@@ -67,6 +67,7 @@ cc_library(
     hdrs = ["gpu_info.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//itex/core/utils:logging",
         "//third_party/build_option/dpcpp:itex_gpu_header",
         "//third_party/eigen3",
         "@itex_eigen_archive//:eigen",

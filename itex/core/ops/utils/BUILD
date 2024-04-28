@@ -13,7 +13,7 @@ cc_library(
         "macros.h",
     ],
     copts = tf_copts(),
-    visibility = ["//itex/core/ops:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/strings",

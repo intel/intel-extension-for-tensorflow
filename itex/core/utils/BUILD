@@ -416,6 +416,7 @@ cc_library(
     hdrs = ["macros.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":logging",
         "//third_party/build_option/dpcpp:itex_gpu_header",
     ],
 )

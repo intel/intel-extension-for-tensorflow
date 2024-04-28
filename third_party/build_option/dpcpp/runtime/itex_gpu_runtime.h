@@ -21,6 +21,7 @@ limitations under the License.
 #include <vector>
 
 #include "absl/strings/ascii.h"
+#include "itex/core/utils/logging.h"
 #include "tensorflow/c/c_api_experimental.h"
 
 #if __has_include(<sycl/sycl.hpp>)
@@ -105,7 +106,7 @@ class ITEXNpdConfig {
     return npdConfig;
   }
   inline bool isXlaAutoJitEnabled() const { return isXlaAutoJitEnabled_; }
-  inline bool isPJRTBufferCached() const { return isPJRTBufferCached_; };
+  inline bool isPJRTBufferCached() const { return isPJRTBufferCached_; }
   inline bool ifUsingNextPluggableDevice() const {
     return isNextPluggableDeviceEnabled_;
   }
@@ -116,32 +117,61 @@ class ITEXNpdConfig {
     return false;
   }
 
+  inline void ReadVariableFromEnv(const char* envName, bool* var) {
+    const char* env = std::getenv(envName);
+    if (env) {
+      std::string env_value = absl::AsciiStrToLower(env);
+      bool value = (env_value == "1" || env_value == "true") ? true : false;
+      ITEX_VLOG(1) << "Read " << envName << " from env and the value is "
+                   << value;
+      *var = value;
+    }
+  }
+
+  inline void CheckNPDConfig() {
+    if (!isNextPluggableDeviceEnabled_) {
+      if (isXlaAutoJitEnabled_) {
+        ITEX_LOG(FATAL) << "PluggableDevice cannot enable XLA! Please export "
+                           "ITEX_ENABLE_NEXTPLUGGABLE_DEVICE=1 to enable XLA.";
+      }
+      if (!isLegacyKeras_) {
+        ITEX_LOG(FATAL)
+            << "PluggableDevice cannot work with latest Keras. Please export "
+               "TF_USE_LEGACY_KERAS=1 to use legacy keras.";
+      }
+    }
+  }
+
  private:
   ITEXNpdConfig() {
-    const char* npdEnv = std::getenv("ITEX_ENABLE_NEXTPLUGGABLE_DEVICE");
-    if (npdEnv) {
-      std::string env_value = absl::AsciiStrToLower(npdEnv);
-      isNextPluggableDeviceEnabled_ =
-          (env_value == "1" || env_value == "true") ? true : false;
-    }
-    if ((isXlaAutoJitEnabled_ = static_cast<bool>(TF_GetXlaAutoJitEnabled()))) {
+    // Check NextPluggableDevice configuration
+    ReadVariableFromEnv("ITEX_ENABLE_NEXTPLUGGABLE_DEVICE",
+                        &isNextPluggableDeviceEnabled_);
+    // Check Keras mode
+    ReadVariableFromEnv("TF_USE_LEGACY_KERAS", &isLegacyKeras_);
+    // Check whether to use PJRT Buffer cache mechanism.
+    ReadVariableFromEnv("ITEX_CACHE_PJRT_BUFFER", &isPJRTBufferCached_);
+
+    // Determine whether enable XLA auto JIT
+    isXlaAutoJitEnabled_ = static_cast<bool>(TF_GetXlaAutoJitEnabled());
+    isXlaAutoJitEnabled_ |= isLegacyKeras_ ? 0 : 1;
+    CheckNPDConfig();
+
+    // Preparations for enabling XLA auto JIT
+    if (isXlaAutoJitEnabled_) {
+      ITEX_VLOG(1) << "ITEX XLA auto_jit is enabled!";
       setenv("ITEX_REMAPPER", "0", 0);
       setenv("ITEX_LAYOUT_OPT", "0", 0);
       setenv("ITEX_ENABLE_MULTIPLE_STREAM", "1", 0);
       setenv("MHA", "0", 0);
     }
-
-    const char* npdCacheEnv = std::getenv("ITEX_CACHE_PJRT_BUFFER");
-    if (npdCacheEnv) {
-      std::string env_value = absl::AsciiStrToLower(npdCacheEnv);
-      isPJRTBufferCached_ =
-          (env_value == "1" || env_value == "true") ? true : false;
-    }
   }
+
   ITEXNpdConfig(ITEXNpdConfig const&) = delete;
   void operator=(ITEXNpdConfig const&) = delete;
 
   bool isNextPluggableDeviceEnabled_ = true;
+  bool isLegacyKeras_ = false;
   bool isXlaAutoJitEnabled_ = false;
   bool isPJRTBufferCached_ = true;
 };
