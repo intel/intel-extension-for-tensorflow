@@ -553,10 +553,12 @@ inline Status LaunchSoftmaxWorkGroupSMemImpl(const GPUDevice& device,
                                              STORE device_store,
                                              const int32 rows,
                                              const int32 cols) {
-  int workgroup_size =
+  uint64 workgroup_size = RoundUp((cols / pack_size), 32);
+  workgroup_size = std::min(
       device.stream()
           ->get_device()
-          .template get_info<sycl::info::device::max_work_group_size>();
+          .template get_info<sycl::info::device::max_work_group_size>(),
+      workgroup_size);
   sycl::range<1> local_range(workgroup_size);
   int num_wg;
   GetNumWorkGroups(device.stream()->get_device(), workgroup_size, rows, 32,
