@@ -38,12 +38,6 @@ void ReorderMemory(const OpKernelContext& context,
   ReorderMemoryInternal(src_memory, reorder_memory, onednn_stream);
 }
 
-// TF datatype and shape is meaningless for some tensors, such as scratchpad
-// tensor and memory desc tensor in weight cache. These tensors are only used
-// in OneDnn primitive, not related to Tensorflow. We only need to choose a
-// short length datatype, ensure the it is divisible by allocated buffer.
-using ShortDT = uint8;
-
 template <typename T>
 bool WeightCacheManager<T>::IsEmpty() TF_LOCKS_EXCLUDED(mu_) {
   tf_shared_lock lock(&mu_);
@@ -86,20 +80,23 @@ void WeightCacheManager<T>::SetCache(
   ReorderMemory(*context, &weight_mem, &weight_reorder_mem, onednn_engine);
 
   // Cache the memory descriptor
+  size_t blob_size;
+  dnnl_memory_desc_get_blob(nullptr, &blob_size, weight_expected_md.get());
+  std::vector<uint8_t> weight_expected_md_blob(blob_size);
+  dnnl_memory_desc_get_blob(weight_expected_md_blob.data(), &blob_size,
+                            weight_expected_md.get());
   Tensor* weight_md_cached_tensor = nullptr;
   TensorShape weight_md_tf_shape;
-  weight_md_tf_shape.AddDim(sizeof(weight_expected_md) / sizeof(ShortDT));
+  weight_md_tf_shape.AddDim(blob_size);
 
   AllocatorAttributes alloc_attr;
   alloc_attr.set_on_host(true);
   OP_REQUIRES_OK(context,
                  context->allocate_persistent(
-                     DataTypeToEnum<ShortDT>::value, weight_md_tf_shape,
+                     DataTypeToEnum<uint8_t>::value, weight_md_tf_shape,
                      &weight_cached_md_, &weight_md_cached_tensor, alloc_attr));
-  dnnl_memory_desc_t c_weight_expected_md;
-  dnnl_memory_desc_clone(&c_weight_expected_md, weight_expected_md.get());
-  *reinterpret_cast<dnnl_memory_desc_t*>(
-      weight_md_cached_tensor->flat<ShortDT>().data()) = c_weight_expected_md;
+  std::memcpy(weight_md_cached_tensor->flat<uint8_t>().data(),
+              weight_expected_md_blob.data(), weight_expected_md_blob.size());
 }
 
 template <typename T>
@@ -112,10 +109,13 @@ T* WeightCacheManager<T>::GetCache(OpKernelContext* context,
 
   // Check if the memory descriptor of the cached weight is same as
   // expected_md. if so use the cached memory, else return nullptr
-  if (weight_cached_md->flat<ShortDT>().size()) {
-    dnnl::memory::desc* cached_md = reinterpret_cast<dnnl::memory::desc*>(
-        const_cast<ShortDT*>(weight_cached_md->flat<ShortDT>().data()));
-    if (*cached_md == expected_md) {
+  if (weight_cached_md->flat<uint8_t>().size()) {
+    std::vector<uint8_t> weight_cached_md_blob(
+        weight_cached_md->flat<uint8_t>().data(),
+        weight_cached_md->flat<uint8_t>().data() +
+            weight_cached_md->flat<uint8_t>().size());
+    dnnl::memory::desc cached_md = dnnl::memory::desc(weight_cached_md_blob);
+    if (cached_md == expected_md) {
       return reinterpret_cast<T*>(
           const_cast<T*>(weight_cached_data->flat<T>().data()));
     } else {

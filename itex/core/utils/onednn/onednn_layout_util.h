@@ -51,8 +51,6 @@ class OneDnnShape {
     // Flag to indicate if the tensor is an OneDnn tensor or not
     bool is_onednn_tensor_ = false;
     OneDnnTensorFormat tf_data_format_ = OneDnnTensorFormat::FORMAT_INVALID;
-    // OneDnn layout
-    dnnl_memory_desc_t md_;
     // TF dimension corresponding to this OneDnn dimension
     dnnl_dims_t map_;
     // TODO(itex): For Tensorflow, oneDNN Graph shape and stride are actually
@@ -64,8 +62,10 @@ class OneDnnShape {
     dnnl_dims_t stride_;
     // layout_id for OneDnn Graph logical tensor
     int64_t layout_id_ = INVALID_LLGA_ID;
+    size_t md_size_ = 0;
   } OneDnnShapeData;
   OneDnnShapeData data_;
+  std::vector<uint8_t> md_;
 
  public:
   OneDnnShape() {
@@ -96,32 +96,35 @@ class OneDnnShape {
   // OneDnnShape object.
   inline dnnl::memory::dims GetSizesAsOneDnnDims() const {
     ITEX_CHECK_EQ(data_.is_onednn_tensor_, true);
-    dnnl_dims_t* dims_c;
-    int ndims = 0;
-    dnnl_memory_desc_query(data_.md_, dnnl_query_ndims_s32, &ndims);
-    if (ndims == 0) return dnnl::memory::dims();
-    dnnl_memory_desc_query(data_.md_, dnnl_query_dims, &dims_c);
-    return dnnl::memory::dims(*dims_c, *dims_c + ndims);
+    dnnl_memory_desc_t tmp;
+    dnnl_memory_desc_create_with_blob(&tmp, md_.data());
+    return dnnl::memory::desc(tmp).get_dims();
   }
 
   // Get DataType
   inline dnnl::memory::data_type GetElemType() const {
-    dnnl_data_type_t dt;
-    dnnl_memory_desc_query(data_.md_, dnnl_query_data_type, &dt);
-    return static_cast<dnnl::memory::data_type>(dt);
+    dnnl_memory_desc_t tmp;
+    dnnl_memory_desc_create_with_blob(&tmp, md_.data());
+    return dnnl::memory::desc(tmp).get_data_type();
   }
 
   // Return TensorShape that describes the Tensorflow shape of the tensor
   // represented by this OneDnnShape.
   TensorShape GetTfShape() const;
   inline void SetOneDnnLayout(const dnnl::memory::desc& md) {
-    dnnl_memory_desc_clone(&data_.md_, md.get());
+    dnnl_memory_desc_get_blob(nullptr, &data_.md_size_, md.get());
+    md_.resize(data_.md_size_);
+    dnnl_memory_desc_get_blob(md_.data(), &data_.md_size_, md.get());
   }
 
   // Get memory desc for OneDnn layout
   inline const dnnl::memory::desc GetOneDnnLayout() const {
     dnnl_memory_desc_t tmp;
-    dnnl_memory_desc_clone(&tmp, data_.md_);
+    dnnl_memory_desc_create_with_blob(&tmp, md_.data());
+    // According to oneDNN, this will not cause memory leak if we
+    // construct a memory descriptor from a C API ::dnnl_memory_desc_t
+    // handle. The resulting handle is not weak and the C handle will be
+    // destroyed during the destruction of the C++ object.
     return dnnl::memory::desc(tmp);
   }
   // Get memory desc for TF layout, only used in onednntotf op
@@ -159,7 +162,7 @@ class OneDnnShape {
 
   // Get Size of OneDnnShapeData, it is used to allocate buffer for meta tensor
   inline size_t GetSerializeBufferSize() const {
-    return sizeof(OneDnnShapeData);
+    return sizeof(OneDnnShapeData) + data_.md_size_;
   }
 
   // Set shape of logical tensor.
