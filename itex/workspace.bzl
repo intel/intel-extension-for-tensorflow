@@ -60,8 +60,8 @@ def itex_workspace(path_prefix = "", tf_repo_name = ""):
         system_build_file = clean_dep("//third_party/systemlibs:pybind11.BUILD"),
     )
 
-    # v3.3
-    _ONEDNN_CPU_COMMIT = "08fea71aff4c273e34579e86396405f95d34aa74"
+    # main 20240329
+    _ONEDNN_CPU_COMMIT = "242d4d9"
 
     new_git_repository(
         name = "onednn_cpu",

@@ -124,6 +124,7 @@ void OneDnnShape::SerializeOneDnnShape(unsigned char* buf,
   ITEX_CHECK(buf_size >= GetSerializeBufferSize())
       << "Buffer size is too small to SerializeOneDnnShape";
   *reinterpret_cast<OneDnnShapeData*>(buf) = data_;
+  std::memcpy(buf + sizeof(OneDnnShapeData), md_.data(), data_.md_size_);
 }
 
 void OneDnnShape::DeSerializeOneDnnShape(const unsigned char* buf,
@@ -137,8 +138,12 @@ void OneDnnShape::DeSerializeOneDnnShape(const unsigned char* buf,
     ITEX_CHECK(buf_size >= GetSerializeBufferSize())
         << "Buffer size is too small in DeSerializeOneDnnShape";
     data_ = *reinterpret_cast<const OneDnnShapeData*>(buf);
+    md_.resize(data_.md_size_);
+    std::memcpy(md_.data(), buf + sizeof(OneDnnShapeData), data_.md_size_);
   } else {
     data_.is_onednn_tensor_ = false;
+    data_.md_size_ = 0;
+    md_.clear();
   }
 }
 

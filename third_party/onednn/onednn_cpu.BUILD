@@ -58,6 +58,7 @@ _DNNL_CPU_COMMON = {
     "#cmakedefine01 BUILD_GEMM_SSE41": "#define BUILD_GEMM_SSE41 0",
     "#cmakedefine01 BUILD_GEMM_AVX2": "#define BUILD_GEMM_AVX2 0",
     "#cmakedefine01 BUILD_GEMM_AVX512": "#define BUILD_GEMM_AVX512 0",
+    "#cmakedefine01 BUILD_XE2": "#define BUILD_XE2 0",
 }
 
 _DNNL_RUNTIME_TBB = {
