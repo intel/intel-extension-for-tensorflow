@@ -127,6 +127,7 @@ class Dense(keras.layers.Dense):
             lora_rank=lora_rank,
             **kwargs
         )
+        self.supports_jit = False
         self._could_use_fused_matmul_biasadd_gelu = (is_xehpc() and has_xmx())
 
     def standard_dense(self, inputs):

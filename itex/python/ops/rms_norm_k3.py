@@ -171,6 +171,7 @@ class RMSNormalization(Layer):
     # Indicates whether a faster fused implementation can be used. This will be
     # set to True or False in build()"        
     self.use_fused_rms_norm = False
+    self.supports_jit = False
     
   @property
   def _param_dtype(self):

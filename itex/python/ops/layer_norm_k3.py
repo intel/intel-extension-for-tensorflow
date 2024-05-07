@@ -175,6 +175,7 @@ class LayerNormalization(Layer):
         **kwargs
     ):
         super().__init__(**kwargs)
+        self.supports_jit = False
         if isinstance(axis, (list, tuple)):
             self.axis = list(axis)
         elif isinstance(axis, int):
@@ -362,6 +363,7 @@ class LayerNormalization(Layer):
                 if self._is_one_axis_len:
                     outputs = self._layer_norm_inference_or_training(inputs, gamma, beta,
                                                                      is_training)
+                    return outputs
                 else:
                     # Collapse dims before self.axis, and dims in self.axis
                     pre_dim, in_dim = (1, 1)

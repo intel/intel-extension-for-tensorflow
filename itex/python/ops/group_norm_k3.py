@@ -99,6 +99,7 @@ class GroupNormalization(Layer):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        self.supports_jit = False
         self.supports_masking = True
         self.groups = groups
         self.axis = axis
@@ -118,6 +119,7 @@ class GroupNormalization(Layer):
         self.use_gpu = None
 
     def build(self, input_shape):
+        self.use_gpu = len(tf.config.list_physical_devices("XPU")) > 0
         dim = input_shape[self.axis]
 
         rank = len(input_shape)
@@ -176,7 +178,6 @@ class GroupNormalization(Layer):
             self.beta = None
 
         super().build(input_shape)
-        self.use_gpu = len(tf.config.list_physical_devices("XPU")) > 0
 
     def call(self, inputs, training=False):
         if self.use_fused_group_norm and training == False:
