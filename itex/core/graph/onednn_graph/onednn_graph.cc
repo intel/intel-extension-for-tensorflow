@@ -3295,12 +3295,10 @@ Status RunOneDnnGraph(const GrapplerItem& item, const GraphDef& graph_def,
   }
 
   // Enable oneDNN Graph constant cache
-#ifdef INTEL_CPU_ONLY
-  setenv("_ONEDNN_CONSTANT_CACHE", "1", 0);
-#else
+  dnnl::graph::set_constant_tensor_cache_capacity(
+      dnnl::engine::kind::cpu, std::numeric_limits<size_t>::max());
   dnnl::graph::set_constant_tensor_cache_capacity(
       dnnl::engine::kind::gpu, std::numeric_limits<size_t>::max());
-#endif
 
   Status status;
   GraphDef multable_graph_def = graph_def;
