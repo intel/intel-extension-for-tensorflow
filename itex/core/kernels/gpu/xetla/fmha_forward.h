@@ -25,6 +25,7 @@ This is an implementation of the Flash Attention algorithm
 #define ITEX_CORE_KERNELS_GPU_XETLA_FMHA_FORWARD_H_
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <xetla.hpp>
 

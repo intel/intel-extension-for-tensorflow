@@ -18,6 +18,7 @@
 #define ITEX_CORE_KERNELS_GPU_XETLA_FMHA_UTILS_H_
 
 #include <algorithm>
+#include <cmath>
 #include <xetla.hpp>
 
 namespace gpu::xetla {

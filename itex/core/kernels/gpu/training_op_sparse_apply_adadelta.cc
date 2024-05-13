@@ -38,12 +38,12 @@ struct SparseApplyAdadeltaKernel {
         updates_size_(updates_size),
         indices_size_(indices_size) {}
 
-  void operator()(sycl::item<1> item) const {
+  void operator()(sycl::nd_item<1> item) const {
     const T lr_t = *lr_;
     const T rho_t = *rho_;
     const T epsilon_t = *epsilon_;
 
-    int32_t grad_index = item.get_linear_id();
+    int32_t grad_index = item.get_global_linear_id();
     Tindex col_size = updates_size_ / indices_size_;
     Tindex indices_row = grad_index / col_size;
     Tindex param_row = indices_[indices_row];
