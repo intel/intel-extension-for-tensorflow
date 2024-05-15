@@ -54,7 +54,7 @@ export ZE_ENABLE_TRACING_LAYER=1
 export UseCyclesPerSecondTimer=1
 export ENABLE_TF_PROFILER=1
 2022-06-14 02:52:41.061306: W itex/core/profiler/gpu_profiler.cc:118] ******************************************************************************************************
-2022-06-14 02:52:41.063685: I itex/core/devices/gpu/dpcpp_runtime.cc:100] Selected platform: Intel(R) Level-Zero.
+2022-06-14 02:52:41.063685: I itex/core/devices/gpu/sycl_runtime.cc:100] Selected platform: Intel(R) Level-Zero.
 2022-06-14 02:52:41.063851: W tensorflow/stream_executor/cuda/cuda_driver.cc:269] failed call to cuInit: UNKNOWN ERROR (303)
 2022-06-14 02:52:41.063865: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:156] kernel driver does not appear to be running on this host (DUT3046-ATSP): /proc/driver/nvidia/version does not exist
 ```
