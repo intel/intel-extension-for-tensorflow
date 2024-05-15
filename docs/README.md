@@ -70,8 +70,9 @@
       <tr>
         <td colspan="3" align="center"><a href="guide/practice_guide.md#cpu-practice-guide">CPU practice guide</a></td>
         <td colspan="3" align="center"><a href="guide/practice_guide.md#gpu-practice-guide">GPU practice guide</a></td>
-        <td colspan="3" align="center"><a href="install/install_for_cpp.md">C++ API support</a></td>
-        <td colspan="3" align="center"><a href="guide/OpenXLA.md">OpenXLA</a></td>
+        <td colspan="2" align="center"><a href="install/install_for_cpp.md">C++ API support</a></td>
+        <td colspan="2" align="center"><a href="guide/OpenXLA.md">OpenXLA</a></td>
+        <td colspan="2" align="center"><a href="guide/Keras3_support.md">Keras 3</a></td>
       </tr>
   </tbody>
     <thead>
@@ -132,3 +133,6 @@
 * OpenXLA
 
   Intel® Extension for TensorFlow\* adopts a uniform Device API PJRT as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA support on TensorFlow frontend.
+
+* Keras 3
+  Keras 3 with TensorFlow comes with a significant enhancement - the Just-In-Time (JIT) compilation is enabled by default. This feature leverages the XLA (Accelerated Linear Algebra) compiler to optimize TensorFlow computations. See <a href="guide/Keras3_support.md">Keras 3</a> to avoid possible performance issues and error.

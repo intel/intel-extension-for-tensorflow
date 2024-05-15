@@ -33,3 +33,7 @@ from intel_extension_for_tensorflow.core.utils.protobuf.config_pb2 import *  # p
 
 if os.environ.get("TF_USE_LEGACY_KERAS", None) in ("true", "True", "1"):
     from intel_extension_for_tensorflow.python.experimental_ops_override import experimental_ops_override
+else:
+    from intel_extension_for_tensorflow.python.experimental_ops_override_k3 import experimental_ops_override
+
+from intel_extension_for_tensorflow.python.override_keras3 import override_keras3

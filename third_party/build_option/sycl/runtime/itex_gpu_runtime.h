@@ -134,10 +134,11 @@ class ITEXNpdConfig {
         ITEX_LOG(FATAL) << "PluggableDevice cannot enable XLA! Please export "
                            "ITEX_ENABLE_NEXTPLUGGABLE_DEVICE=1 to enable XLA.";
       }
-      if (!isLegacyKeras_) {
+      if (!isLegacyKeras_ && !isXLADisabled_) {
         ITEX_LOG(FATAL)
             << "PluggableDevice cannot work with latest Keras. Please export "
-               "TF_USE_LEGACY_KERAS=1 to use legacy keras.";
+               "TF_USE_LEGACY_KERAS=1 to use legacy keras or "
+               "ITEX_DISABLE_XLA=1 with keras jit compile disabled.";
       }
     }
   }
@@ -151,15 +152,30 @@ class ITEXNpdConfig {
     ReadVariableFromEnv("TF_USE_LEGACY_KERAS", &isLegacyKeras_);
     // Check whether to use PJRT Buffer cache mechanism.
     ReadVariableFromEnv("ITEX_CACHE_PJRT_BUFFER", &isPJRTBufferCached_);
+    // For jit_compile=False in keras
+    ReadVariableFromEnv("ITEX_DISABLE_XLA", &isXLADisabled_);
 
     // Determine whether enable XLA auto JIT
     isXlaAutoJitEnabled_ = static_cast<bool>(TF_GetXlaAutoJitEnabled());
-    isXlaAutoJitEnabled_ |= isLegacyKeras_ ? 0 : 1;
+    if (!isXlaAutoJitEnabled_ && (!isLegacyKeras_ || !isXLADisabled_)) {
+      ITEX_LOG(WARNING) << "Set TF_USE_LEGACY_KERAS=0 or ITEX_DISABLE_XLA=1 if "
+                           "your script does not use keras";
+    }
+    // Keras 3.0.
+    if (!isLegacyKeras_) {
+      // XLA auto_jit is off and XLA is disabled in ITEX.
+      if (isXLADisabled_ && !isXlaAutoJitEnabled_) {
+        isXlaAutoJitEnabled_ = false;
+      } else {
+        isXlaAutoJitEnabled_ = true;
+      }
+    }
     CheckNPDConfig();
 
     // Preparations for enabling XLA auto JIT
     if (isXlaAutoJitEnabled_) {
-      ITEX_VLOG(1) << "ITEX XLA auto_jit is enabled!";
+      ITEX_LOG(WARNING) << "ITEX XLA auto_jit is enabled! There will be "
+                           "performance drop if you are not using XLA.";
       setenv("ITEX_REMAPPER", "0", 0);
       setenv("ITEX_LAYOUT_OPT", "0", 0);
       setenv("ITEX_ENABLE_MULTIPLE_STREAM", "1", 0);
@@ -172,6 +188,7 @@ class ITEXNpdConfig {
 
   bool isNextPluggableDeviceEnabled_ = true;
   bool isLegacyKeras_ = false;
+  bool isXLADisabled_ = false;
   bool isXlaAutoJitEnabled_ = false;
   bool isPJRTBufferCached_ = true;
 };

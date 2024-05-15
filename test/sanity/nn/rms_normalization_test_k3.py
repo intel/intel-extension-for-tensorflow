@@ -14,6 +14,7 @@
 # =============================================================================
 import os
 os.environ['TF_USE_LEGACY_KERAS']='0'
+os.environ['ITEX_DISABLE_XLA']='1'
 
 import tensorflow as tf
 import numpy as np

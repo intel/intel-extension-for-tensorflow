@@ -355,7 +355,7 @@ class LayerNormalization(Layer):
             variance = ops.var(inputs, axis=self.axis, keepdims=True)
             inv = ops.rsqrt(variance + self.epsilon)
 
-            outputs = inputs * inv * ops.cast(self.gamma, inputs.dtype)
+            outputs = inputs * inv * ops.cast(_broadcast(self.gamma), inputs.dtype)
         else:
             if self._use_layernorm:
                 beta = self.beta if self.beta is not None else self._beta_const

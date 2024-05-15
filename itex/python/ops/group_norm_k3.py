@@ -238,7 +238,7 @@ class GroupNormalization(Layer):
             if dim > 1:
                 in_dim = in_dim * dim_tensor
 
-        squeezed_shape = [tensor_shape[0], tensor_shape[1], in_dim]
+        squeezed_shape = [-1, tensor_shape[1], in_dim]
         inputs = ops.reshape(reshaped_inputs, squeezed_shape)
 
         # self.gamma and self.beta have the wrong shape for layer_norm, so
@@ -247,19 +247,21 @@ class GroupNormalization(Layer):
         # later construct a separate calculation on the scale and offset.
         scale = ops.ones([in_dim], dtype="float32")
         offset = ops.zeros([in_dim], dtype="float32")
-
         outputs, _, _ = _layer_norm(inputs,
                                     scale=scale,
                                     offset=offset,
                                     epsilon=self.epsilon,
                                     is_training=True)
-        outputs = ops.reshape(outputs, tensor_shape)
+        out_tensor_shape = list(tensor_shape)
+        out_tensor_shape[0] = -1 if out_tensor_shape[0] is None else out_tensor_shape[0]
+        outputs = ops.reshape(outputs, out_tensor_shape)
         if axis != 1:
             perm_back_shape = list(range(0, group_ndims))
             perm_back_shape.pop(1)
             perm_back_shape.insert(axis, 1)
             outputs = ops.transpose(outputs, perm_back_shape)
-
+        input_shape = list(input_shape)
+        input_shape[0] = -1 if input_shape[0] is None else input_shape[0]
         outputs = ops.reshape(outputs, input_shape)
 
         if self.scale:

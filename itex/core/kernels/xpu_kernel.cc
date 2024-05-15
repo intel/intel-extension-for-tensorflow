@@ -85,9 +85,30 @@ void TF_InitKernel() {
   bool ops_override = false;
   ITEX_CHECK_OK(
       itex::ReadBoolFromEnvVar("ITEX_OPS_OVERRIDE", false, &ops_override));
+  // clang-format off
   if (ops_override) {
-    PyRun_SimpleString("import intel_extension_for_tensorflow as itex;\n");
-    PyRun_SimpleString("itex.experimental_ops_override();\n");
+    PyRun_SimpleString(
+        "try:\n"
+        "  import os;\n"
+        "  if os.environ.get('TF_USE_LEGACY_KERAS', None) in ('true', 'True', '1'):\n"  // NOLINT(whitespace/line_length)
+        "    from intel_extension_for_tensorflow.python.experimental_ops_override import experimental_ops_override;\n"  // NOLINT(whitespace/line_length)
+        "  else:\n"
+        "    from intel_extension_for_tensorflow.python.experimental_ops_override_k3 import experimental_ops_override;\n"  // NOLINT(whitespace/line_length)
+        "  from intel_extension_for_tensorflow.python.override_keras3 import override_keras3;\n"  // NOLINT(whitespace/line_length)
+        "  experimental_ops_override();\n"
+        "  override_keras3();\n"
+        "except BaseException:\n"
+        "  print('please import ITEX or tensorflow berfore keras')\n"
+        "  quit()\n");
+  } else {
+    PyRun_SimpleString(
+        "try:\n"
+        "  from intel_extension_for_tensorflow.python.override_keras3 import override_keras3;\n"  // NOLINT(whitespace/line_length)
+        "  override_keras3();\n"
+        "except BaseException:\n"
+        "  print('please import ITEX or tensorflow berfore keras')\n"
+        "  quit()\n");
   }
+  // clang-format on
 #endif  // CC_BUILD
 }
