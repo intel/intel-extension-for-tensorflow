@@ -1,5 +1,5 @@
-# This file is expanded from a template by dpcpp_configure.bzl
-# Update dpcpp_configure.bzl#verify_build_defines when adding new variables.
+# This file is expanded from a template by sycl_configure.bzl
+# Update sycl_configure.bzl#verify_build_defines when adding new variables.
 
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 
@@ -50,7 +50,7 @@ cc_toolchain_config(
     builtin_include_directories = %{cxx_builtin_include_directories},
     additional_include_directories = [%{additional_include_directories}],
     host_compiler_path = "%{host_compiler_path}",
-    dpcpp_compiler_root = "%{dpcpp_compiler_root}",
+    sycl_compiler_root = "%{sycl_compiler_root}",
     host_compiler_prefix = "%{host_compiler_prefix}",
     host_unfiltered_compile_flags = ["%{unfiltered_compile_flags}"],
     linker_bin_path = "%{linker_bin_path}",

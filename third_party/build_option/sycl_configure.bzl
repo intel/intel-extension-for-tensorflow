@@ -1,6 +1,6 @@
 # -*- Python -*-
-"""DPCPP autoconfiguration.
-`dpcpp_configure` depends on the following environment variables:
+"""SYCL autoconfiguration.
+`sycl_configure` depends on the following environment variables:
 
   * HOST_CXX_COMPILER:  The host C++ compiler
   * HOST_C_COMPILER:    The host C compiler
@@ -14,9 +14,9 @@ _HOST_C_COMPILER = "HOST_C_COMPILER"
 
 _GCC_HOST_COMPILER = "GCC_HOST_COMPILER"
 
-_DPCPP_TOOLKIT_PATH = "DPCPP_TOOLKIT_PATH"
+_SYCL_TOOLKIT_PATH = "SYCL_TOOLKIT_PATH"
 
-_DPCPP_COMPILER_VERSION = "DPCPP_COMPILER_VERSION"
+_SYCL_COMPILER_VERSION = "SYCL_COMPILER_VERSION"
 
 _ONEAPI_MKL_PATH = "ONEAPI_MKL_PATH"
 
@@ -32,10 +32,10 @@ _PYTHON_LIB_DIR = "PYTHON_LIB_DIR"
 
 _PYTHON_BIN_PATH = "PYTHON_BIN_PATH"
 
-def _enable_dpcpp(repository_ctx):
-    if "TF_NEED_DPCPP" in repository_ctx.os.environ:
-        enable_dpcpp = repository_ctx.os.environ["TF_NEED_DPCPP"].strip()
-        return enable_dpcpp == "1"
+def _enable_sycl(repository_ctx):
+    if "TF_NEED_SYCL" in repository_ctx.os.environ:
+        enable_sycl = repository_ctx.os.environ["TF_NEED_SYCL"].strip()
+        return enable_sycl == "1"
     return False
 
 def _enable_mkl(repository_ctx):
@@ -44,8 +44,8 @@ def _enable_mkl(repository_ctx):
         return enable_mkl == "1"
     return False
 
-def _enable_dpcpp_build(repository_ctx):
-    return _DPCPP_TOOLKIT_PATH in repository_ctx.os.environ
+def _enable_sycl_build(repository_ctx):
+    return _SYCL_TOOLKIT_PATH in repository_ctx.os.environ
 
 def auto_configure_fail(msg):
     """Output failure message when auto configuration fails."""
@@ -97,28 +97,28 @@ def find_cc(repository_ctx):
         fail("Cannot find C++ compiler, please correct your path.")
     return cc
 
-def find_dpcpp_root(repository_ctx):
-    """Find DPC++ compiler."""
+def find_sycl_root(repository_ctx):
+    """Find SYCL compiler."""
     sycl_name = ""
-    if _DPCPP_TOOLKIT_PATH in repository_ctx.os.environ:
-        sycl_name = str(repository_ctx.path(repository_ctx.os.environ[_DPCPP_TOOLKIT_PATH].strip()).realpath)
+    if _SYCL_TOOLKIT_PATH in repository_ctx.os.environ:
+        sycl_name = str(repository_ctx.path(repository_ctx.os.environ[_SYCL_TOOLKIT_PATH].strip()).realpath)
     if sycl_name.startswith("/"):
         return sycl_name
-    fail("Cannot find DPC++ compiler, please correct your path")
+    fail("Cannot find SYCL compiler, please correct your path")
 
 def find_gcc_install_dir(repository_ctx):
     _, gcc_path, _ = find_gcc(repository_ctx)
     gcc_install_dir = repository_ctx.execute([gcc_path, "-print-libgcc-file-name"])
     return str(repository_ctx.path(gcc_install_dir.stdout.strip()).dirname)
 
-def find_dpcpp_include_path(repository_ctx):
-    """Find DPC++ compiler."""
-    base_path = find_dpcpp_root(repository_ctx)
+def find_sycl_include_path(repository_ctx):
+    """Find SYCL compiler."""
+    base_path = find_sycl_root(repository_ctx)
     bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "icpx")
     if not bin_path.exists:
         bin_path = repository_ctx.path(base_path + "/" + "bin" + "/" + "clang")
         if not bin_path.exists:
-            fail("Cannot find DPC++ compiler, please correct your path")
+            fail("Cannot find SYCL compiler, please correct your path")
     gcc_install_dir_opt = "--gcc-install-dir=" + str(find_gcc_install_dir(repository_ctx))
     cmd_out = repository_ctx.execute([bin_path, gcc_install_dir_opt, "-fsycl", "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null"])
     outlist = cmd_out.stderr.split("\n")
@@ -129,12 +129,12 @@ def find_dpcpp_include_path(repository_ctx):
             include_dirs.append(str(repository_ctx.path(l.strip()).realpath))
     return include_dirs
 
-def get_dpcpp_version(repository_ctx):
-    """Get DPC++ compiler version yyyymmdd"""
+def get_sycl_version(repository_ctx):
+    """Get SYCL compiler version yyyymmdd"""
     default_version = "00000000"
     macro = "__INTEL_LLVM_COMPILER"
     version_file = "include/sycl/CL/sycl/version.hpp"
-    base_path = find_dpcpp_root(repository_ctx)
+    base_path = find_sycl_root(repository_ctx)
     intel_llvm_macro = "00000000"
     compiler_bin_path = base_path + "/bin/icpx"
     compiler_macros = repository_ctx.execute([compiler_bin_path, "-dM", "-E", "-xc++", "/dev/null"])
@@ -314,9 +314,9 @@ def get_cxx_inc_directories(repository_ctx, cc):
 
 _DUMMY_CROSSTOOL_BZL_FILE = """
 def error_sycl_disabled():
-  fail("ERROR: Building with --config=dpcpp but TensorFlow is not configured " +
-       "to build with DPCPP support. Please re-run ./configure and enter 'Y' " +
-       "at the prompt to build with DPCPP support.")
+  fail("ERROR: Building with --config=sycl but TensorFlow is not configured " +
+       "to build with SYCL support. Please re-run ./configure and enter 'Y' " +
+       "at the prompt to build with SYCL support.")
 
   native.genrule(
       name = "error_gen_crosstool",
@@ -339,11 +339,11 @@ error_sycl_disabled()
 
 def _create_dummy_repository(repository_ctx):
     # Set up BUILD file for sycl/.
-    _tpl(repository_ctx, "dpcpp:build_defs.bzl")
-    _tpl(repository_ctx, "dpcpp:BUILD")
-    _tpl(repository_ctx, "dpcpp:platform.bzl")
+    _tpl(repository_ctx, "sycl:build_defs.bzl")
+    _tpl(repository_ctx, "sycl:BUILD")
+    _tpl(repository_ctx, "sycl:platform.bzl")
 
-    # If sycl_configure is not configured to build with SYCL support, and the user
+    # If sycl is not configured to build with SYCL support, and the user
     # attempts to build with --config=sycl, add a dummy build rule to intercept
     # this and fail with an actionable error message.
     repository_ctx.file(
@@ -354,10 +354,10 @@ def _create_dummy_repository(repository_ctx):
 
     _tpl(
         repository_ctx,
-        "dpcpp:build_defs.bzl",
+        "sycl:build_defs.bzl",
         {
-            "%{dpcpp_is_configured}": "False",
-            "%{dpcpp_build_is_configured}": "False",
+            "%{sycl_is_configured}": "False",
+            "%{sycl_build_is_configured}": "False",
             "%{mkl_is_configured}": "False",
         },
     )
@@ -368,23 +368,23 @@ def _sycl_autoconf_imp(repository_ctx):
     unfiltered_cxx_flags = ""
     linker_flags = ""
 
-    dpcpp_defines = {}
+    sycl_defines = {}
 
-    if not _enable_dpcpp(repository_ctx):
+    if not _enable_sycl(repository_ctx):
         _create_dummy_repository(repository_ctx)
     else:
         # copy template files
-        _tpl(repository_ctx, "dpcpp:build_defs.bzl")
-        _tpl(repository_ctx, "dpcpp:BUILD")
-        _tpl(repository_ctx, "dpcpp:platform.bzl")
+        _tpl(repository_ctx, "sycl:build_defs.bzl")
+        _tpl(repository_ctx, "sycl:BUILD")
+        _tpl(repository_ctx, "sycl:platform.bzl")
 
         additional_cxxflags = []
         additional_linker_flags = []
         builtin_includes = []
 
-        builtin_includes += [find_dpcpp_root(repository_ctx) + "/include"]
-        builtin_includes += [find_dpcpp_root(repository_ctx) + "/lib/clang/12.0.0/include"]
-        builtin_includes += [find_dpcpp_root(repository_ctx) + "/lib/clang/13.0.0/include"]
+        builtin_includes += [find_sycl_root(repository_ctx) + "/include"]
+        builtin_includes += [find_sycl_root(repository_ctx) + "/lib/clang/12.0.0/include"]
+        builtin_includes += [find_sycl_root(repository_ctx) + "/lib/clang/13.0.0/include"]
 
         pwd = repository_ctx.os.environ["PWD"]
         additional_inc = []
@@ -398,80 +398,80 @@ def _sycl_autoconf_imp(repository_ctx):
             additional_inc = "\"\""
 
         if _enable_mkl(repository_ctx) and repository_ctx.os.environ.get("ONEAPI_MKL_PATH") != None:
-            dpcpp_defines["%{ONEAPI_MKL_PATH}"] = str(find_mkl_path(repository_ctx))
+            sycl_defines["%{ONEAPI_MKL_PATH}"] = str(find_mkl_path(repository_ctx))
             builtin_includes += [find_mkl_path(repository_ctx) + "/include"]
         else:
-            dpcpp_defines["%{ONEAPI_MKL_PATH}"] = ""
+            sycl_defines["%{ONEAPI_MKL_PATH}"] = ""
         if repository_ctx.os.environ.get("TMPDIR") != None:
-            dpcpp_defines["%{TMP_DIRECTORY}"] = repository_ctx.os.environ.get("TMPDIR")
+            sycl_defines["%{TMP_DIRECTORY}"] = repository_ctx.os.environ.get("TMPDIR")
         else:
             tmp_suffix = repository_ctx.execute(["cat", "/proc/sys/kernel/random/uuid"]).stdout.rstrip()
             tmp_dir = "/tmp/" + tmp_suffix
-            dpcpp_defines["%{TMP_DIRECTORY}"] = tmp_dir
+            sycl_defines["%{TMP_DIRECTORY}"] = tmp_dir
 
         # Get GCC compiler info
         gcc_name, gcc_path, gcc_path_prefix = find_gcc(repository_ctx)
 
-        dpcpp_defines["%{cxx_builtin_include_directories}"] = str(builtin_includes)
-        dpcpp_defines["%{dpcpp_builtin_include_directories}"] = str(builtin_includes)
-        dpcpp_defines["%{extra_no_canonical_prefixes_flags}"] = "\"-fno-canonical-system-headers\""
-        dpcpp_defines["%{unfiltered_compile_flags}"] = ""
-        dpcpp_defines["%{host_compiler}"] = gcc_name
-        dpcpp_defines["%{HOST_COMPILER_PATH}"] = str(gcc_path)
-        dpcpp_defines["%{host_compiler_install_dir}"] = str(find_gcc_install_dir(repository_ctx))
-        dpcpp_defines["%{host_compiler_prefix}"] = str(gcc_path_prefix)
-        dpcpp_defines["%{dpcpp_compiler_root}"] = str(find_dpcpp_root(repository_ctx))
-        dpcpp_defines["%{linker_bin_path}"] = "/usr/bin"
-        dpcpp_defines["%{DPCPP_ROOT_DIR}"] = str(find_dpcpp_root(repository_ctx))
-        dpcpp_defines["%{AOT_DEVICES}"] = str(find_aot_config(repository_ctx))
-        dpcpp_defines["%{TF_NEED_MKL}"] = repository_ctx.os.environ[_TF_NEED_MKL].strip()
-        dpcpp_defines["%{DPCPP_RUNTIME_INC}"] = pwd + "/third_party/build_option/dpcpp/runtime/"
-        dpcpp_defines["%{additional_include_directories}"] = additional_inc
-        dpcpp_defines["%{TF_SHARED_LIBRARY_DIR}"] = repository_ctx.os.environ[_TF_SHARED_LIBRARY_DIR]
-        dpcpp_defines["%{DPCPP_COMPILER_VERSION}"] = str(get_dpcpp_version(repository_ctx))
-        dpcpp_defines["%{PYTHON_LIB_PATH}"] = repository_ctx.os.environ[_PYTHON_LIB_PATH]
+        sycl_defines["%{cxx_builtin_include_directories}"] = str(builtin_includes)
+        sycl_defines["%{sycl_builtin_include_directories}"] = str(builtin_includes)
+        sycl_defines["%{extra_no_canonical_prefixes_flags}"] = "\"-fno-canonical-system-headers\""
+        sycl_defines["%{unfiltered_compile_flags}"] = ""
+        sycl_defines["%{host_compiler}"] = gcc_name
+        sycl_defines["%{HOST_COMPILER_PATH}"] = str(gcc_path)
+        sycl_defines["%{host_compiler_install_dir}"] = str(find_gcc_install_dir(repository_ctx))
+        sycl_defines["%{host_compiler_prefix}"] = str(gcc_path_prefix)
+        sycl_defines["%{sycl_compiler_root}"] = str(find_sycl_root(repository_ctx))
+        sycl_defines["%{linker_bin_path}"] = "/usr/bin"
+        sycl_defines["%{SYCL_ROOT_DIR}"] = str(find_sycl_root(repository_ctx))
+        sycl_defines["%{AOT_DEVICES}"] = str(find_aot_config(repository_ctx))
+        sycl_defines["%{TF_NEED_MKL}"] = repository_ctx.os.environ[_TF_NEED_MKL].strip()
+        sycl_defines["%{SYCL_RUNTIME_INC}"] = pwd + "/third_party/build_option/sycl/runtime/"
+        sycl_defines["%{additional_include_directories}"] = additional_inc
+        sycl_defines["%{TF_SHARED_LIBRARY_DIR}"] = repository_ctx.os.environ[_TF_SHARED_LIBRARY_DIR]
+        sycl_defines["%{SYCL_COMPILER_VERSION}"] = str(get_sycl_version(repository_ctx))
+        sycl_defines["%{PYTHON_LIB_PATH}"] = repository_ctx.os.environ[_PYTHON_LIB_PATH]
 
-        dpcpp_internal_inc_dirs = find_dpcpp_include_path(repository_ctx)
-        dpcpp_internal_inc = "\", \"".join(dpcpp_internal_inc_dirs)
-        dpcpp_internal_isystem_inc = []
-        for d in dpcpp_internal_inc_dirs:
-            dpcpp_internal_isystem_inc.append("-isystem\", \"" + d)
+        sycl_internal_inc_dirs = find_sycl_include_path(repository_ctx)
+        sycl_internal_inc = "\", \"".join(sycl_internal_inc_dirs)
+        sycl_internal_isystem_inc = []
+        for d in sycl_internal_inc_dirs:
+            sycl_internal_isystem_inc.append("-isystem\", \"" + d)
 
-        if len(dpcpp_internal_inc_dirs) > 0:
-            dpcpp_defines["%{DPCPP_ISYSTEM_INC}"] = "\"]), \n\tflag_group(flags=[ \"".join(dpcpp_internal_isystem_inc)
-            dpcpp_defines["%{DPCPP_INTERNAL_INC}"] = dpcpp_internal_inc
+        if len(sycl_internal_inc_dirs) > 0:
+            sycl_defines["%{SYCL_ISYSTEM_INC}"] = "\"]), \n\tflag_group(flags=[ \"".join(sycl_internal_isystem_inc)
+            sycl_defines["%{SYCL_INTERNAL_INC}"] = sycl_internal_inc
         else:
-            dpcpp_defines["%{DPCPP_ISYSTEM_INC}"] = ""
-            dpcpp_defines["%{DPCPP_INTERNAL_INC}"] = ""
+            sycl_defines["%{SYCL_ISYSTEM_INC}"] = ""
+            sycl_defines["%{SYCL_INTERNAL_INC}"] = ""
 
         unfiltered_cxx_flags = "" if additional_cxxflags == [] else "unfiltered_cxx_flag: "
         unfiltered_cxx_flags += "\n  unfiltered_cxx_flag: ".join(additional_cxxflags)
 
-        dpcpp_defines["%{unfiltered_compile_flags}"] = unfiltered_cxx_flags
+        sycl_defines["%{unfiltered_compile_flags}"] = unfiltered_cxx_flags
 
         linker_flags = "" if additional_linker_flags == [] else "linker_flag: "
         linker_flags += "\n  linker_flag: ".join(additional_linker_flags)
 
-        _tpl(repository_ctx, "crosstool_dpcpp:BUILD", dpcpp_defines)
-        _tpl(repository_ctx, "crosstool_dpcpp/bin:crosstool_wrapper_driver", dpcpp_defines)
-        _tpl(repository_ctx, "crosstool_dpcpp:cc_toolchain_config.bzl", dpcpp_defines)
+        _tpl(repository_ctx, "crosstool_sycl:BUILD", sycl_defines)
+        _tpl(repository_ctx, "crosstool_sycl/bin:crosstool_wrapper_driver", sycl_defines)
+        _tpl(repository_ctx, "crosstool_sycl:cc_toolchain_config.bzl", sycl_defines)
 
-        if _enable_dpcpp_build(repository_ctx):
-            dpcpp_build_defines = {}
-            dpcpp_build_defines["%{dpcpp_is_configured}"] = "True"
-            dpcpp_build_defines["%{dpcpp_build_is_configured}"] = "True"
+        if _enable_sycl_build(repository_ctx):
+            sycl_build_defines = {}
+            sycl_build_defines["%{sycl_is_configured}"] = "True"
+            sycl_build_defines["%{sycl_build_is_configured}"] = "True"
             if _enable_mkl(repository_ctx):
-                dpcpp_build_defines["%{mkl_is_configured}"] = "True"
-            dpcpp_root = find_dpcpp_root(repository_ctx)
-            _check_dir(repository_ctx, dpcpp_root)
+                sycl_build_defines["%{mkl_is_configured}"] = "True"
+            sycl_root = find_sycl_root(repository_ctx)
+            _check_dir(repository_ctx, sycl_root)
 
             _tpl(
                 repository_ctx,
-                "dpcpp:build_defs.bzl",
-                dpcpp_build_defines,
+                "sycl:build_defs.bzl",
+                sycl_build_defines,
             )
 
-dpcpp_configure = repository_rule(
+sycl_configure = repository_rule(
     local = True,
     implementation = _sycl_autoconf_imp,
 )

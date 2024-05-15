@@ -41,7 +41,7 @@ index 9d26822ac163..9b43352e9eac 100644
 +    "if_cpu_avx512_build",
 +    "if_gpu_build"
 +)
-+load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
++load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
  
  TdInfo = provider(
      "Holds TableGen files and the dependencies and include paths necessary to" +

@@ -79,7 +79,7 @@ void DoParallelConcat(const Device& d, const Tensor& value, int32 loc,
 
   if (nelem == 0) {
     // When params_size is 0, the data pointer of params tensor maybe a host
-    // pointer. If we use a host pointer in dpcpp kernel even if the code is
+    // pointer. If we use a host pointer in sycl kernel even if the code is
     // in impossible condition branch, we will get an error -50
     // (CL_INVALID_ARG_VALUE). Here we workaround this case. All indices will
     // be out of range in this condition, so the output value will be zero

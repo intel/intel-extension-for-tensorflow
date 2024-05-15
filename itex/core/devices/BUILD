@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device")
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 cc_library(
     name = "xpu_device_util",
@@ -25,7 +25,7 @@ cc_library(
     deps = [
         ":device_backend_util_hdr",
         "@local_config_tf//:tf_header_lib",
-    ] + if_dpcpp(
+    ] + if_sycl(
         ["//itex/core/devices/gpu:gpu_device_impl"],
     ) + if_using_nextpluggable_device(
         ["//itex/core/devices/next_pluggable_device:next_pluggable_device"],
@@ -71,7 +71,7 @@ cc_library(
         "//itex/core/utils:hw_info",
         "//itex/core/utils:logging",
         "//itex/core/utils:mutex",
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+        "//third_party/build_option/sycl:itex_gpu_header",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
     alwayslink = True,

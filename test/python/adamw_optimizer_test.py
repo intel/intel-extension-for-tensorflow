@@ -108,7 +108,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
                 self.assertAllCloseAccordingToType(itex_var1.numpy(), var1_np)
 
     def testBasicAdamW(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():
@@ -116,7 +116,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
         self.doTestBasic()
 
     def testCallableParamsAdamW(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():
@@ -124,7 +124,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
         self.doTestBasic(use_callable_params=True)
 
     def testAmsgradAdamW(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():
@@ -132,7 +132,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
         self.doTestBasic(do_amsgrad=True)
 
     def testSparseAdamW(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():
@@ -141,7 +141,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
         self.doTestBasic(do_sparse=True, do_amsgrad=False)
 
     def testExcludeWeightDecayAdamW(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():
@@ -168,7 +168,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
         self.assertAllCloseAccordingToType(var3.numpy(), 2.0)
 
     def testKerasFit(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():
@@ -182,7 +182,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
         model.fit(x, y, epochs=1)
 
     def test_clip_norm(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():
@@ -194,7 +194,7 @@ class AdamWeightDecayOptimizerTest(test_util.TensorFlowTestCase):
             self.assertAllClose(clipped_grad[0], [2**0.5 / 2, 2**0.5 / 2])
 
     def test_clip_value(self):
-        '''ResourceApplyAdamWithWeightDecay is a DPCPP op, don't have cpu registration 
+        '''ResourceApplyAdamWithWeightDecay is a SYCL op, don't have cpu registration 
             TODO: waiting for CPU registration of ResourceApplyAdamWithWeightDecay then enable
             this test case on CPU'''
         if not test.is_gpu_available():

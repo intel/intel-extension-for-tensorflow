@@ -31,7 +31,7 @@ limitations under the License.
 #include "itex/core/utils/strcat.h"
 #include "protos/xplane.pb.h"
 #include "tensorflow/c/experimental/pluggable_profiler/pluggable_profiler.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 inline std::string GpuPlaneName(int32_t device_ordinal) {
   return itex::strings::StrCat("/device:GPU:", device_ordinal);

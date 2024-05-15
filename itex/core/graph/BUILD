@@ -1,5 +1,5 @@
 load("//itex:itex.bzl", "cc_library")
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 cc_library(
     name = "xpu_optimizer",
@@ -22,7 +22,7 @@ cc_library(
     ] + select({
         "//third_party/onednn:build_with_onednn_graph": ["//itex/core/graph/onednn_graph"],
         "//conditions:default": [],
-    }) + if_dpcpp(
+    }) + if_sycl(
         # TFG should be disabled when building with CPU, otherwise it will introduce llvm symbol conflict.
         # TFG depends on llvm-15, while CPU graph compiler needs llvm-13.
         [

@@ -1,4 +1,4 @@
-"""cc_toolchain_config rule for configuring DPC++ toolchains on Linux."""
+"""cc_toolchain_config rule for configuring SYCL toolchains on Linux."""
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
@@ -39,7 +39,7 @@ load(
     "PREPROCESS_ASSEMBLE_ACTION_NAME",
     "STRIP_ACTION_NAME",
 )
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 ACTION_NAMES = struct(
     c_compile = C_COMPILE_ACTION_NAME,
@@ -566,8 +566,8 @@ def _impl(ctx):
         ],
     )
 
-    dpcpp_compiler_inc_feature = feature(
-        name = "dpcpp_inc",
+    sycl_compiler_inc_feature = feature(
+        name = "sycl_inc",
         flag_sets = [
             flag_set(
                 actions = [
@@ -579,15 +579,15 @@ def _impl(ctx):
                 ],
                 flag_groups = [
                     flag_group(flags = ["-iquote"]),
-                    flag_group(flags = ["%{DPCPP_RUNTIME_INC}"]),
-                    flag_group(flags = ["%{DPCPP_ISYSTEM_INC}"]),
+                    flag_group(flags = ["%{SYCL_RUNTIME_INC}"]),
+                    flag_group(flags = ["%{SYCL_ISYSTEM_INC}"]),
                 ],
             ),
         ],
     )
 
-    dpcpp_compiler_feature = feature(
-        name = "dpcpp_feature",
+    sycl_compiler_feature = feature(
+        name = "sycl_feature",
         flag_sets = [
             flag_set(
                 actions = [
@@ -601,7 +601,6 @@ def _impl(ctx):
                         "-DEIGEN_USE_DPCPP=1",
                         "-DEIGEN_USE_DPCPP_BUILD=1",
                         "-DEIGEN_USE_DPCPP_USM=1",
-                        "-DDNNL_USE_DPCPP_USM=1",
                         "-DDNNL_WITH_LEVEL_ZERO=1",
                         "-DNGEN_NO_OP_NAMES=1",
                         "-DNGEN_CPP11=1",
@@ -623,8 +622,8 @@ def _impl(ctx):
             name = "common",
             implies = [
                 "stdlib",
-                "dpcpp_inc",
-                "dpcpp_feature",
+                "sycl_inc",
+                "sycl_feature",
                 "c++17",
                 "determinism",
                 "alwayslink",
@@ -639,8 +638,8 @@ def _impl(ctx):
     if (ctx.attr.cpu == "local"):
         features = [
             cpp17_feature,
-            dpcpp_compiler_inc_feature,
-            dpcpp_compiler_feature,
+            sycl_compiler_inc_feature,
+            sycl_compiler_feature,
             stdlib_feature,
             determinism_feature,
             alwayslink_feature,
@@ -663,8 +662,8 @@ def _impl(ctx):
         "/usr/lib",
         "/usr/lib64",
         %{additional_include_directories},
-        "%{DPCPP_INTERNAL_INC}",
-        "%{DPCPP_RUNTIME_INC}",
+        "%{SYCL_INTERNAL_INC}",
+        "%{SYCL_RUNTIME_INC}",
         # for GPU kernel's header file
         "%{TMP_DIRECTORY}",
     ]
@@ -718,7 +717,7 @@ cc_toolchain_config = rule(
         "builtin_include_directories": attr.string_list(),
         "additional_include_directories": attr.string_list(),
         "extra_no_canonical_prefixes_flags": attr.string_list(),
-        "dpcpp_compiler_root": attr.string(),
+        "sycl_compiler_root": attr.string(),
         "compiler_driver": attr.string(),
         "host_compiler_path": attr.string(),
         "host_compiler_prefix": attr.string(),

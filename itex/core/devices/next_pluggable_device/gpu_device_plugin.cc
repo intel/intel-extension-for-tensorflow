@@ -2,7 +2,7 @@
 
 #include "itex/core/utils/logging.h"
 #include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 

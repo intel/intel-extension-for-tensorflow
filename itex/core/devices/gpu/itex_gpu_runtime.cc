@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 #include <cassert>
 #include <iostream>
@@ -231,7 +231,7 @@ static sycl::async_handler ITEX_GPUAsyncHandler = [](sycl::exception_list eL) {
     try {
       std::rethrow_exception(e);
     } catch (sycl::exception& e) {
-      ITEX_LOG(ERROR) << "DPC++ Exception: " << e.what()
+      ITEX_LOG(ERROR) << "SYCL Exception: " << e.what()
                       << ", file = " << __FILE__ << ", line = " << __LINE__
                       << ".";
     }
@@ -563,18 +563,18 @@ void ITEX_GPUFree(ITEX_GPUDevice* device, void* ptr) {
 const char* ITEX_GPUGetErrorName(ITEX_GPUError_t error) {
   switch (error) {
     case ITEX_GPU_SUCCESS:
-      return "DPC++ succeed.";
+      return "SYCL succeed.";
     case ITEX_GPU_ERROR_NO_DEVICE:
-      return "DPC++ did not find the device.";
+      return "SYCL did not find the device.";
     case ITEX_GPU_ERROR_INVALID_DEVICE:
-      return "DPC++ got invalid device id.";
+      return "SYCL got invalid device id.";
     case ITEX_GPU_ERROR_INVALID_POINTER:
-      return "DPC++ got invalid pointer.";
+      return "SYCL got invalid pointer.";
     case ITEX_GPU_ERROR_INVALID_STREAM:
-      return "DPC++ got invalid stream.";
+      return "SYCL got invalid stream.";
     case ITEX_GPU_ERROR_DESTROY_DEFAULT_STREAM:
-      return "DPC++ cannot destroy default stream.";
+      return "SYCL cannot destroy default stream.";
     default:
-      return "DPC++ got invalid error code.";
+      return "SYCL got invalid error code.";
   }
 }

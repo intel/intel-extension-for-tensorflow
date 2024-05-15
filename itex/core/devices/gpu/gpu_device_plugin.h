@@ -18,7 +18,7 @@ limitations under the License.
 
 #include "itex/core/utils/logging.h"
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 struct SP_Stream_st {
   explicit SP_Stream_st(ITEX_GPUStream* stream_h) : stream_handle(stream_h) {}

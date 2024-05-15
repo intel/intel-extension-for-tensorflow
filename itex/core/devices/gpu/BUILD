@@ -10,7 +10,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/utils:logging",
-        "//third_party/build_option/dpcpp:eigen_itex_gpu_header",
+        "//third_party/build_option/sycl:eigen_itex_gpu_header",
         "@com_google_absl//absl/synchronization",
         "@itex_eigen_archive//:eigen",
     ],
@@ -25,7 +25,7 @@ cc_library(
         ":eigen_runtime_impl",
         "//itex/core/devices:xpu_device_util",
         "//itex/core/utils:logging",
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+        "//third_party/build_option/sycl:itex_gpu_header",
         "@com_google_absl//absl/synchronization",
         "@itex_eigen_archive//:eigen",
     ],
@@ -57,7 +57,7 @@ cc_library(
         ":itex_gpu_runtime_imp",
         "//itex/core/devices:bfc_allocator",
         "//itex/core/utils:logging",
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+        "//third_party/build_option/sycl:itex_gpu_header",
     ],
 )
 
@@ -68,7 +68,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/utils:logging",
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+        "//third_party/build_option/sycl:itex_gpu_header",
         "//third_party/eigen3",
         "@itex_eigen_archive//:eigen",
         "@local_config_tf//:tf_header_lib",
@@ -97,7 +97,7 @@ cc_library(
         "@itex_eigen_archive//:eigen",
         "@local_config_tf//:tf_header_lib",
     ] + if_using_nextpluggable_device(
-        ["//third_party/build_option/dpcpp:itex_gpu_header"],
+        ["//third_party/build_option/sycl:itex_gpu_header"],
     ),
     alwayslink = True,
 )

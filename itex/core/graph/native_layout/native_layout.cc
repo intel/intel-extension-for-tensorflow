@@ -27,7 +27,7 @@ limitations under the License.
 #include "itex/core/utils/types.h"
 
 #ifdef USING_NEXTPLUGGABLE_DEVICE
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 #endif
 
 namespace itex {

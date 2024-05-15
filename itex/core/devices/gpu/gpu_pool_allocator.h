@@ -20,7 +20,7 @@ limitations under the License.
 #include <memory>
 
 #include "itex/core/devices/bfc_allocator.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 

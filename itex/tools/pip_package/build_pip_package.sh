@@ -38,7 +38,7 @@ function get_git_desc() {
 }
 
 function get_compiler_version() {
-  compiler_path=`cat .itex_configure.bazelrc | grep -Eo 'DPCPP_TOOLKIT_PATH=.*$' | cut -d '=' -f 2 | cut -d '"' -f 2`
+  compiler_path=`cat .itex_configure.bazelrc | grep -Eo 'SYCL_TOOLKIT_PATH=.*$' | cut -d '=' -f 2 | cut -d '"' -f 2`
   version=`${compiler_path}/bin/icx --version | grep -Eo '\([a-zA-Z0-9.]{10,}\)' | grep -Eo '[a-zA-Z0-9.]{10,}'`
   echo "dpcpp-${version}"
 }

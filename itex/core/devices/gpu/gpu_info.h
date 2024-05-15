@@ -16,7 +16,7 @@ limitations under the License.
 #ifndef ITEX_CORE_DEVICES_GPU_GPU_INFO_H_
 #define ITEX_CORE_DEVICES_GPU_GPU_INFO_H_
 
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {

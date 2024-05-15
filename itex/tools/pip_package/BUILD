@@ -15,8 +15,8 @@ load(
     "omp_deps",
 )
 load(
-    "@local_config_dpcpp//dpcpp:build_defs.bzl",
-    "if_dpcpp",
+    "@local_config_sycl//sycl:build_defs.bzl",
+    "if_sycl",
 )
 load(
     "@local_config_syslibs//:build_defs.bzl",
@@ -40,8 +40,8 @@ transitive_hdrs(
     name = "included_headers",
     deps = [
         "//itex/core:protos_all_cc",
-    ] + if_dpcpp([
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+    ] + if_sycl([
+        "//third_party/build_option/sycl:itex_gpu_header",
     ]),
 )
 

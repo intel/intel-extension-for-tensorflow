@@ -28,7 +28,7 @@ template struct Tile<GpuDevice, float, int64>;
 }  // namespace itex
 
 // Put bfloat16 here for we can't add tile_functor_gpu_bfloat16.cu.cc
-// to core/kernel/BUILD file. Because if_dpcpp() is not iterable
+// to core/kernel/BUILD file. Because if_sycl() is not iterable
 // for gpu_src. And if we add it to gpu_src directly. It may affect
 // other gpu compiles.
 namespace itex {

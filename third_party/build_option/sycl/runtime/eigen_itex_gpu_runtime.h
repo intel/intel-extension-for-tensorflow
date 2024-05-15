@@ -1,7 +1,7 @@
 #ifndef THIRD_PARTY_BUILD_OPTION_ITEX_GPU_RUNTIME_EIGEN_ITEX_GPU_RUNTIME_H_
 #define THIRD_PARTY_BUILD_OPTION_ITEX_GPU_RUNTIME_EIGEN_ITEX_GPU_RUNTIME_H_
 
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 // for usage in eigen
 using dpruntimeStream_t = ITEX_GPUStream*;

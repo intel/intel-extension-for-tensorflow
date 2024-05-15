@@ -15,22 +15,24 @@ build:cpu --define=device=cpu
 # build:cpu --define=build_with_tbb=true
 
 # This config option is used for GPU backend. (Deprecated)
-build:gpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
-build:gpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true --define=using_nextpluggable=true
+build:gpu --crosstool_top=@local_config_sycl//crosstool_sycl:toolchain
+build:gpu --define=using_sycl=true --define=build_with_sycl=true --define=using_xetla=true --define=using_nextpluggable=true
 build:gpu --define=build_with_onednn_graph=true
 build:gpu --define=device=gpu
 build:gpu --define=tensorflow_mkldnn_contraction_kernel=0
+build:gpu --repo_env TF_NEED_SYCL=1
 
 # This config option is used for GPU backend.
 # xpu will replace gpu as default config option for GPU only backend.
-build:xpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
-build:xpu --define=using_dpcpp=true --define=build_with_dpcpp=true --define=using_xetla=true --define=using_nextpluggable=true
+build:xpu --crosstool_top=@local_config_sycl//crosstool_sycl:toolchain
+build:xpu --define=using_sycl=true --define=build_with_sycl=true --define=using_xetla=true --define=using_nextpluggable=true
 build:xpu --define=build_with_onednn_graph=true
 build:xpu --define=device=gpu
 build:xpu --define=tensorflow_mkldnn_contraction_kernel=0
+build:gpu --repo_env TF_NEED_SYCL=1
 
 # This config option is used for XPU backend (CPU + GPU). (Disabled)
-# build:xpu --crosstool_top=@local_config_dpcpp//crosstool_dpcpp:toolchain
+# build:xpu --crosstool_top=@local_config_sycl//crosstool_sycl:toolchain
 # build:xpu --define=using_xetla=true
 # build:xpu --define=build_as_xpu=true
 # build:xpu --define=build_with_onednn_graph=true

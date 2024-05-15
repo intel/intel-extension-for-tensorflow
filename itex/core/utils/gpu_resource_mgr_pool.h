@@ -21,7 +21,7 @@ limitations under the License.
 #include <vector>
 
 #include "itex/core/utils/resource_mgr.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 

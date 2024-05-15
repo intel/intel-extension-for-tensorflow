@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "third_party/build_option/dpcpp/runtime/eigen_itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/eigen_itex_gpu_runtime.h"
 
 #include <cassert>
 #include <iostream>

@@ -29,7 +29,7 @@ limitations under the License.
 #include "itex/core/utils/hw_info.h"
 #include "itex/core/utils/logging.h"
 #include "itex/core/utils/mutex.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 

@@ -19,7 +19,7 @@ limitations under the License.
 #include <string>
 
 #include "itex/core/devices/gpu/gpu_pool_allocator.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 
 namespace itex {
 
@@ -142,7 +142,7 @@ void gpu_create_stream_dependency(const SP_Device* device, SP_Stream dependent,
 void gpu_get_stream_status(const SP_Device* device, SP_Stream stream,
                            TF_Status* status) {
   // TF_SetStatus(status, TF_OK, "");
-  ITEX_LOG(ERROR) << "DPC++: gpu_get_stream_status not implemented.";
+  ITEX_LOG(ERROR) << "SYCL: gpu_get_stream_status not implemented.";
 }
 
 void gpu_create_event(const SP_Device* device, SP_Event* event,
@@ -209,24 +209,24 @@ void gpu_wait_for_event(const SP_Device* const device, SP_Stream stream,
 // values in `timer_fns` struct.
 void gpu_create_timer(const SP_Device* device, SP_Timer* timer,
                       TF_Status* status) {
-  ITEX_LOG(ERROR) << "DPC++: create_timer not implemented.";
+  ITEX_LOG(ERROR) << "SYCL: create_timer not implemented.";
 }
 
 // Destroy timer and deallocates timer resources on the underlying platform.
 void gpu_destroy_timer(const SP_Device* device, SP_Timer timer) {
-  ITEX_LOG(ERROR) << "DPC++: destroy_timer not implemented.";
+  ITEX_LOG(ERROR) << "SYCL: destroy_timer not implemented.";
 }
 
 // Records a start event for an interval timer.
 void gpu_start_timer(const SP_Device* device, SP_Stream stream, SP_Timer timer,
                      TF_Status* status) {
-  ITEX_LOG(ERROR) << "DPC++: start_timer not implemented.";
+  ITEX_LOG(ERROR) << "SYCL: start_timer not implemented.";
 }
 
 // Records a stop event for an interval timer.
 void gpu_stop_timer(const SP_Device* device, SP_Stream stream, SP_Timer timer,
                     TF_Status* status) {
-  ITEX_LOG(ERROR) << "DPC++: stop_timer not implemented.";
+  ITEX_LOG(ERROR) << "SYCL: stop_timer not implemented.";
 }
 
 /*** MEMCPY CALLBACKS ***/
@@ -350,7 +350,7 @@ TF_Bool gpu_host_callback(const SP_Device* device, SP_Stream stream,
       TF_Status* tf_status = TF_NewStatus();
       callback_fn(callback_arg, tf_status);
       if (TF_GetCode(tf_status) != TF_OK) {
-        ITEX_LOG(WARNING) << "DPC++: Host callback failed: "
+        ITEX_LOG(WARNING) << "SYCL: Host callback failed: "
                           << std::string(TF_Message(tf_status));
       }
       TF_DeleteStatus(tf_status);

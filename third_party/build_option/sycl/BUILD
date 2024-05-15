@@ -3,9 +3,9 @@ licenses(["notice"])
 load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library", "itex_xpu_library")
 
 config_setting(
-    name = "build_with_dpcpp",
+    name = "build_with_sycl",
     define_values = {
-        "build_with_dpcpp": "true",
+        "build_with_sycl": "true",
     },
     visibility = ["//visibility:public"],
 )

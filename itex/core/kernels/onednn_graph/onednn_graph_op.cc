@@ -16,7 +16,7 @@ limitations under the License.
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/devices/bfc_allocator.h"
 #include "itex/core/devices/gpu/gpu_pool_allocator.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 #endif  // INTEL_CPU_ONLY
 #include "itex/core/utils/errors.h"
 #include "itex/core/utils/onednn/onednn_graph_util.h"

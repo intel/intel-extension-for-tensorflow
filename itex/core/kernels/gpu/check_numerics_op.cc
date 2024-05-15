@@ -89,7 +89,7 @@ class CheckNumericsOp<GPUDevice, T> : public OpKernel {
 
     stream->fill<int>(abnormal_detected_ptr, 0,
                       abnormal_detected.flat<int>().size());
-    // Call the DPC++ kernels for the numerical checks
+    // Call the SYCL kernels for the numerical checks
     CheckNumericsLaunch<T>().Run(d, input.data(), input.size(),
                                  abnormal_detected.flat<int>().data());
     // Copy the results from device to host
@@ -182,7 +182,7 @@ class CheckNumericsV2Op<GPUDevice, T> : public OpKernel {
 
     stream->fill<int>(abnormal_detected_ptr, 0,
                       abnormal_detected.flat<int>().size());
-    // Call the DPC++ kernels for the numerical checks
+    // Call the SYCL kernels for the numerical checks
     CheckNumericsV2Launch<T>().Run(d, input.data(), input.size(),
                                    abnormal_detected.flat<int>().data());
     // Copy the results from device to host

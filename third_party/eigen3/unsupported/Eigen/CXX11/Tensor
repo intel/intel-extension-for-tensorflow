@@ -1,6 +1,6 @@
 #ifdef INTEL_GPU_ONLY
 #ifndef INTEL_COMMON
-#include "third_party/build_option/dpcpp/runtime/eigen_itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/eigen_itex_gpu_runtime.h"
 #else
 #undef EIGEN_USE_GPU
 #undef EIGEN_USE_DPCPP

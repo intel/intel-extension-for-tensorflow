@@ -40,7 +40,7 @@ cc_library(
     deps = [
         "@itex_eigen_archive//:eigen",
     ] + if_gpu_backend([
-        "//third_party/build_option/dpcpp:eigen_itex_gpu_header",
+        "//third_party/build_option/sycl:eigen_itex_gpu_header",
     ]),
 )
 

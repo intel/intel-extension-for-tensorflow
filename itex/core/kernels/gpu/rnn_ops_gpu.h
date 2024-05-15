@@ -172,8 +172,8 @@ struct ApplyMaskThenReduceKernel {
   const int extend_z;
 };
 
-// if DPCPP supports bf16 cast instructions on this platform,
-// use DPCPP's bf16 cast instead of Eigen's bf16 cast for performance.
+// if SYCL supports bf16 cast instructions on this platform,
+// use SYCL's bf16 cast instead of Eigen's bf16 cast for performance.
 #ifdef SYCL_EXT_ONEAPI_BFLOAT16_MATH_FUNCTIONS
 template <bool UseMask>
 struct ApplyMaskThenReduceKernel<Eigen::bfloat16, UseMask> {

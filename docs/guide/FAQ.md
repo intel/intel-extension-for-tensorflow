@@ -9,7 +9,7 @@
     ```
     $ python
     >>> import tensorflow as tf
-    2021-07-01 06:40:55.510076: I itex/core/devices/gpu/dpcpp_runtime.cc:116] Selected platform: Intel(R) Level-Zero.
+    2021-07-01 06:40:55.510076: I itex/core/devices/gpu/sycl_runtime.cc:116] Selected platform: Intel(R) Level-Zero.
     >>> tf.config.experimental.list_physical_devices()
     [PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU'), PhysicalDevice(name='/physical_device:XPU:0', device_type='XPU')]
     ```

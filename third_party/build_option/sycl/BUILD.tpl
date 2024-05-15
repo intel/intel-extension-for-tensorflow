@@ -1,13 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
-load(":platform.bzl", "dpcpp_library_path")
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load(":platform.bzl", "sycl_library_path")
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device")
 
 config_setting(
-    name = "using_dpcpp",
+    name = "using_sycl",
     values = {
-        "define": "using_dpcpp=true",
+        "define": "using_sycl=true",
     },
 )
 

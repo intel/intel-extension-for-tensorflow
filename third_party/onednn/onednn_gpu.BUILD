@@ -10,7 +10,7 @@ load(
     "convert_header_to_cpp",
     "gen_onednn_version",
 )
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp_build_is_configured")
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl_build_is_configured")
 load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 config_setting(
@@ -23,15 +23,15 @@ config_setting(
 
 # TODO(itex): try better bazel usage in configuring strings with different options
 _CMAKE_COMMON_LIST = {
-    "#cmakedefine DNNL_CPU_RUNTIME DNNL_RUNTIME_${DNNL_CPU_RUNTIME}": if_dpcpp_build_is_configured("#define DNNL_CPU_RUNTIME DNNL_RUNTIME_DPCPP", "#define DNNL_CPU_RUNTIME DNNL_RUNTIME_SYCL"),
+    "#cmakedefine DNNL_CPU_RUNTIME DNNL_RUNTIME_${DNNL_CPU_RUNTIME}": if_sycl_build_is_configured("#define DNNL_CPU_RUNTIME DNNL_RUNTIME_DPCPP", "#define DNNL_CPU_RUNTIME DNNL_RUNTIME_SYCL"),
     "#cmakedefine DNNL_CPU_THREADING_RUNTIME DNNL_RUNTIME_${DNNL_CPU_THREADING_RUNTIME}": "#define DNNL_CPU_THREADING_RUNTIME DNNL_RUNTIME_SEQ",
-    "#cmakedefine DNNL_GPU_RUNTIME DNNL_RUNTIME_${DNNL_GPU_RUNTIME}": if_dpcpp_build_is_configured("#define DNNL_GPU_RUNTIME DNNL_RUNTIME_DPCPP", "#define DNNL_GPU_RUNTIME DNNL_RUNTIME_SYCL"),
-    "#cmakedefine DNNL_SYCL_DPCPP": if_dpcpp_build_is_configured("#define DNNL_SYCL_DPCPP", "/* #undef DNNL_SYCL_DPCPP */"),
-    "#cmakedefine DNNL_SYCL_COMPUTECPP": if_dpcpp_build_is_configured("/*#undef DNNL_SYCL_COMPUTECPP*/", "#define DNNL_SYCL_COMPUTECPP"),
-    "#cmakedefine DNNL_WITH_LEVEL_ZERO": if_dpcpp_build_is_configured("/*#undef DNNL_WITH_LEVEL_ZERO*/", "/*#undef DNNL_WITH_LEVEL_ZERO*/"),
+    "#cmakedefine DNNL_GPU_RUNTIME DNNL_RUNTIME_${DNNL_GPU_RUNTIME}": if_sycl_build_is_configured("#define DNNL_GPU_RUNTIME DNNL_RUNTIME_DPCPP", "#define DNNL_GPU_RUNTIME DNNL_RUNTIME_SYCL"),
+    "#cmakedefine DNNL_SYCL_DPCPP": if_sycl_build_is_configured("#define DNNL_SYCL_DPCPP", "/* #undef DNNL_SYCL_DPCPP */"),
+    "#cmakedefine DNNL_SYCL_COMPUTECPP": if_sycl_build_is_configured("/*#undef DNNL_SYCL_COMPUTECPP*/", "#define DNNL_SYCL_COMPUTECPP"),
+    "#cmakedefine DNNL_WITH_LEVEL_ZERO": if_sycl_build_is_configured("/*#undef DNNL_WITH_LEVEL_ZERO*/", "/*#undef DNNL_WITH_LEVEL_ZERO*/"),
     "#cmakedefine DNNL_SYCL_CUDA": "/* #undef DNNL_SYCL_CUDA */",
     "#cmakedefine DNNL_SYCL_HIP": "/* #undef DNNL_SYCL_HIP */",
-    "#cmakedefine DNNL_WITH_SYCL": if_dpcpp_build_is_configured("#define DNNL_WITH_SYCL", "/* #undef DNNL_WITH_SYCL */"),
+    "#cmakedefine DNNL_WITH_SYCL": if_sycl_build_is_configured("#define DNNL_WITH_SYCL", "/* #undef DNNL_WITH_SYCL */"),
     "#cmakedefine DNNL_USE_RT_OBJECTS_IN_PRIMITIVE_CACHE": "#define DNNL_USE_RT_OBJECTS_IN_PRIMITIVE_CACHE",
     "#cmakedefine DNNL_ENABLE_STACK_CHECKER": "#undef DNNL_ENABLE_STACK_CHECKER",
     "#cmakedefine DNNL_EXPERIMENTAL": "#define DNNL_EXPERIMENTAL",
@@ -174,7 +174,7 @@ cc_library(
     ],
     #nocopts = "-fno-exceptions",
     visibility = ["//visibility:public"],
-    deps = ["@local_config_dpcpp//dpcpp:itex_gpu_headers"],
+    deps = ["@local_config_sycl//sycl:itex_gpu_headers"],
 )
 
 load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_graph_compiler", "if_llga_debug")
@@ -191,7 +191,7 @@ _GRAPH_COPTS_GPU_LIST = [
     "-Wno-tautological-compare",
     "-fPIC",
     "-fvisibility=hidden",
-    "-dpcpp_compile",
+    "-sycl_compile",
     "-DDNNL_ENABLE_GRAPH_DUMP",
 ] + if_llga_debug([
     "-DDNNL_GRAPH_LAYOUT_DEBUG",

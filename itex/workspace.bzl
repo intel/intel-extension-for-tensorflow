@@ -1,5 +1,5 @@
 load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
-load("//third_party/build_option:dpcpp_configure.bzl", "dpcpp_configure")
+load("//third_party/build_option:sycl_configure.bzl", "sycl_configure")
 load("//third_party/systemlibs:syslibs_configure.bzl", "syslibs_configure")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
@@ -32,7 +32,7 @@ def _itex_bind():
 
 def itex_workspace(path_prefix = "", tf_repo_name = ""):
     """All external dependencies for TF builds"""
-    dpcpp_configure(name = "local_config_dpcpp")
+    sycl_configure(name = "local_config_sycl")
     syslibs_configure(name = "local_config_syslibs")
 
     farmhash()

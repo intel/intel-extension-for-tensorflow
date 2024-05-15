@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-"""Crosstool wrapper for compiling DPC++ program
+"""Crosstool wrapper for compiling SYCL program
 SYNOPSIS:
   crosstool_wrapper_driver [options passed in by cc_library()
                             or cc_binary() rule]
 
 DESCRIPTION:
-  call DPC++ compiler for device-side code, and host
+  call SYCL compiler for device-side code, and host
   compiler for other code.
 """
 
@@ -34,15 +34,15 @@ def check_is_intel_llvm(path):
     return True
   return False
 
-DPCPP_PATH = os.path.join("%{dpcpp_compiler_root}", "bin/icx")
+SYCL_PATH = os.path.join("%{sycl_compiler_root}", "bin/icx")
 
-if not os.path.exists(DPCPP_PATH):
-  DPCPP_PATH = os.path.join('%{dpcpp_compiler_root}', 'bin/clang')
-  if not os.path.exists(DPCPP_PATH) or check_is_intel_llvm(DPCPP_PATH):
+if not os.path.exists(SYCL_PATH):
+  SYCL_PATH = os.path.join('%{sycl_compiler_root}', 'bin/clang')
+  if not os.path.exists(SYCL_PATH) or check_is_intel_llvm(SYCL_PATH):
     raise RuntimeError("compiler not found or invalid")
 
 HOST_COMPILER_PATH = "%{HOST_COMPILER_PATH}"
-DPCPP_COMPILER_VERSION = "%{DPCPP_COMPILER_VERSION}"
+SYCL_COMPILER_VERSION = "%{SYCL_COMPILER_VERSION}"
 host_compiler_install_dir="%{host_compiler_install_dir}"
 
 def system(cmd):
@@ -54,12 +54,12 @@ def system(cmd):
   else:
     return -os.WTERMSIG(ret)
 
-def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = False, gpu_only = False):
+def call_compiler(argv, link = False, sycl = True, xetla = False, cpu_only = False, gpu_only = False):
   flags = argv
 
   if cpu_only:
     link = False
-    dpcpp = False
+    sycl = False
     gpu_only = False
 
   # TODO(itex): check dose this compiler has
@@ -67,7 +67,7 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
   # totally move to new compiler, we should
   # remove this part of code.
   has_fno_sycl_use_footer = False
-  check_cmd = DPCPP_PATH + ' --help | grep fno-sycl-use-footer'
+  check_cmd = SYCL_PATH + ' --help | grep fno-sycl-use-footer'
   check_result = subprocess.getoutput(check_cmd)
   if len(check_result) > 0 and check_result.find('fno-sycl-use-footer') > -1:
     has_fno_sycl_use_footer = True
@@ -85,7 +85,7 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
   AOT_DEVICE = ["%{AOT_DEVICES}"]
   AOT_DEVICE = AOT_DEVICE if AOT_DEVICE[0] != "" else []
 
-  if has_fno_sycl_use_footer and dpcpp:
+  if has_fno_sycl_use_footer and sycl:
     sycl_device_only_flags.append('-fno-sycl-use-footer')
 
   sycl_device_only_flags.append('-Xclang -fdenormal-fp-math=preserve-sign')
@@ -93,7 +93,7 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
   sycl_device_only_flags.append('-cl-fp32-correctly-rounded-divide-sqrt')
   sycl_device_only_flags.append('-fsycl-device-code-split=per_source')
   compile_flags = []
-  compile_flags.append(' -isystem ' + ' -isystem '.join(%{dpcpp_builtin_include_directories}))
+  compile_flags.append(' -isystem ' + ' -isystem '.join(%{sycl_builtin_include_directories}))
   compile_flags.append('-DDNNL_GRAPH_WITH_SYCL=1')
   
   if xetla:
@@ -120,8 +120,8 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
     link_flags.append("-fsycl")
     # TODO use bazel --jobs number here.
     link_flags.append('-fsycl-max-parallel-link-jobs=8')
-    link_flags.append("-Wl,-rpath=%{DPCPP_ROOT_DIR}/lib/")
-    link_flags.append("-Wl,-rpath=%{DPCPP_ROOT_DIR}/compiler/lib/intel64_lin/")
+    link_flags.append("-Wl,-rpath=%{SYCL_ROOT_DIR}/lib/")
+    link_flags.append("-Wl,-rpath=%{SYCL_ROOT_DIR}/compiler/lib/intel64_lin/")
     link_flags.append("-lze_loader")
     link_flags.append("-lOpenCL")
 
@@ -144,17 +144,17 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
   flags += common_flags
   if link:
     flags += link_flags
-  if dpcpp:
+  if sycl:
     flags += compile_flags
 
   def is_valid_flag(f, pure_host=False, gpu_build=True):
     if not gpu_build:
-      _INVALID_FLAG = ['linux_prod', r'%{dpcpp_compiler_root}/lib/clang', r'%{dpcpp_compiler_root}/compiler/include', r'%{dpcpp_compiler_root}/opt/compiler/include', 'ITEX_USE_MKL', 'EIGEN_USE_DPCPP_BUILD', 'EIGEN_USE_DPCPP', 'EIGEN_USE_GPU']
+      _INVALID_FLAG = ['linux_prod', r'%{sycl_compiler_root}/lib/clang', r'%{sycl_compiler_root}/compiler/include', r'%{sycl_compiler_root}/opt/compiler/include', 'ITEX_USE_MKL', 'EIGEN_USE_DPCPP_BUILD', 'EIGEN_USE_DPCPP', 'EIGEN_USE_GPU']
     elif not pure_host:
-      # filter out 'linux_prod' 'lib/clang' for host can't use std include files of DPC++ compiler
-      _INVALID_FLAG = ['linux_prod', 'fsycl', 'fhonor', r'.cpp', r'.cc', r'.hpp', r'.h', '-o', 'EIGEN_USE_DPCPP_BUILD', 'ffp', r'%{dpcpp_compiler_root}/lib/clang']
+      # filter out 'linux_prod' 'lib/clang' for host can't use std include files of SYCL compiler
+      _INVALID_FLAG = ['linux_prod', 'fsycl', 'fhonor', r'.cpp', r'.cc', r'.hpp', r'.h', '-o', 'EIGEN_USE_DPCPP_BUILD', 'ffp', r'%{sycl_compiler_root}/lib/clang']
     else:
-      _INVALID_FLAG = [r'%{dpcpp_compiler_root}/lib/clang', r'%{dpcpp_compiler_root}/compiler/include', r'%{dpcpp_compiler_root}/opt/compiler/include', 'EIGEN_USE_DPCPP_BUILD']
+      _INVALID_FLAG = [r'%{sycl_compiler_root}/lib/clang', r'%{sycl_compiler_root}/compiler/include', r'%{sycl_compiler_root}/opt/compiler/include', 'EIGEN_USE_DPCPP_BUILD']
     flag = True
     for i in _INVALID_FLAG:
       if i[0] == '-':
@@ -176,28 +176,28 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
   # TODO(itex): disable for SUSE regression
   #host_flags = '-fsycl-host-compiler-options=\"%s"' % (' '.join(sycl_host_compile_flags))
 
-  if dpcpp:
+  if sycl:
     flags += sycl_device_only_flags
   # TODO(itex): disable for SUSE regression
-  #if dpcpp:
+  #if sycl:
   #  flags.append(host_flags)
 
   for i, f in enumerate(flags):
     if isinstance(f, list):
       flags[i] = ''.join(f)
 
-  if dpcpp or link or gpu_only:
+  if sycl or link or gpu_only:
     # ref: https://github.com/intel/llvm/blob/sycl/clang/docs/UsersManual.rst#controlling-floating-point-behavior
     flags.append('-fno-finite-math-only')
     flags.append('-fno-approx-func')
     if gpu_only:
       flags.append('-DINTEL_GPU_ONLY')
-    if os.path.basename(DPCPP_PATH) == "clang":
+    if os.path.basename(SYCL_PATH) == "clang":
       AVX_FLAG = ' -mfma -mavx -mavx2 '
     else:
       AVX_FLAG = ' -axCORE-AVX2 '
     GCC_INSTALL_DIR = ' --gcc-install-dir=' + host_compiler_install_dir + ' '
-    cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + DPCPP_PATH + GCC_INSTALL_DIR + AVX_FLAG + ' '.join(flags))
+    cmd = ('env ' + 'TMPDIR=' + TMPDIR  + ' ' + 'TEMP=' + TMPDIR + ' ' + 'TMP=' + TMPDIR + ' ' + SYCL_PATH + GCC_INSTALL_DIR + AVX_FLAG + ' '.join(flags))
   else:
     if cpu_only:
       flags.append('-DINTEL_CPU_ONLY')
@@ -219,7 +219,7 @@ def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = Fa
 def main():
   parser = ArgumentParser()
   parser.add_argument('--xetla', action='store_true')
-  parser.add_argument('-dpcpp_compile', action='store_true')
+  parser.add_argument('-sycl_compile', action='store_true')
   parser.add_argument('-link_stage', action='store_true')  
   parser.add_argument('-DINTEL_CPU_ONLY', action='store_true')
   parser.add_argument('-DINTEL_GPU_ONLY', action='store_true')
@@ -233,11 +233,11 @@ def main():
 
   leftover = [pipes.quote(s) for s in leftover]
   if args.link_stage:
-    # link for DPC++ object
-    return call_compiler(leftover, link=True, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=True)
+    # link for SYCL object
+    return call_compiler(leftover, link=True, sycl=args.sycl_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=True)
   else:
-    # compile for DPC++ object
-    return call_compiler(leftover, link=False, dpcpp=args.dpcpp_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=True)
+    # compile for SYCL object
+    return call_compiler(leftover, link=False, sycl=args.sycl_compile, cpu_only=args.DINTEL_CPU_ONLY, xetla=args.xetla, gpu_only=True)
 
 if __name__ == '__main__':
   sys.exit(main())

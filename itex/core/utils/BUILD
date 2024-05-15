@@ -3,7 +3,7 @@ load(
     "//itex/core/utils:build_config.bzl",
     "tf_protobuf_deps",
 )
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 package(
     default_visibility = [
@@ -101,14 +101,14 @@ cc_library(
         "@local_config_tf//:tf_header_lib",
         "@nsync//:nsync_cpp",
     ] + if_using_nextpluggable_device([
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+        "//third_party/build_option/sycl:itex_gpu_header",
         ":libintel_xla",
     ]),
 )
 
 cc_library(
     name = "device_gpu_impl",
-    deps = if_dpcpp([
+    deps = if_sycl([
         "//itex/core/devices/gpu:eigen_stream_device",
         "//itex/core/devices/gpu:gpu_device_impl",
     ]) + if_using_nextpluggable_device(
@@ -417,7 +417,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":logging",
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+        "//third_party/build_option/sycl:itex_gpu_header",
     ],
 )
 

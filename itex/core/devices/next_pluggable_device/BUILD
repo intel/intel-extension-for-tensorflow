@@ -11,7 +11,7 @@ cc_library(
     deps = [
         "//itex/core/devices/gpu:itex_gpu_runtime_imp",
         "//itex/core/utils:libintel_xla",
-        "//third_party/build_option/dpcpp:itex_gpu_header",
+        "//third_party/build_option/sycl:itex_gpu_header",
     ],
     alwayslink = True,
 )

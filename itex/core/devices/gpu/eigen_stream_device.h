@@ -25,13 +25,13 @@ limitations under the License.
 #include "itex/core/utils/status.h"
 #include "itex/core/utils/types.h"
 #include "tensorflow/c/kernels.h"
-#include "third_party/build_option/dpcpp/runtime/eigen_itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/eigen_itex_gpu_runtime.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 #ifdef USING_NEXTPLUGGABLE_DEVICE
 #include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 #endif
 
 using itex::gtl::InlinedVector;

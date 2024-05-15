@@ -386,7 +386,7 @@ void DispatchToVectorized(int64_t max_vec_size, Args&&... args) {
   }
 }
 
-// This funciton is to back compatible with old DPCPP compiler
+// This funciton is to back compatible with old SYCL compiler
 template <typename T, int Dims = 1>
 inline T* ITEXGetLocalAccPointer(
     const sycl::local_accessor<T, Dims>& accessor) {

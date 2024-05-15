@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("//itex:itex.bzl", "cc_binary", "if_using_nextpluggable_device", "itex_xpu_binary", "itex_xpu_library", "tf_copts")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
-load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp")
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
 string_flag(
@@ -67,9 +67,9 @@ selects.config_setting_group(
 )
 
 selects.config_setting_group(
-    name = "if_using_dpcpp",
+    name = "if_using_sycl",
     match_any = [
-        "@local_config_dpcpp//dpcpp:using_dpcpp",
+        "@local_config_sycl//sycl:using_sycl",
         ":gpu_build",
     ],
 )
@@ -78,7 +78,7 @@ selects.config_setting_group(
     name = "gpu_with_nextpluggable_device_build",
     match_all = [
         "@intel_extension_for_tensorflow//itex:gpu_build",
-        "@local_config_dpcpp//dpcpp:using_nextpluggable",
+        "@local_config_sycl//sycl:using_nextpluggable",
     ],
 )
 
@@ -94,7 +94,7 @@ cc_binary(
         "//itex/core/wrapper:itex_gpu_wrapper",
     ],
     copts = select({
-        "@local_config_dpcpp//dpcpp:using_nextpluggable": ["-DUSING_NEXTPLUGGABLE_DEVICE"],
+        "@local_config_sycl//sycl:using_nextpluggable": ["-DUSING_NEXTPLUGGABLE_DEVICE"],
         "//conditions:default": [],
     }),
     linkopts = ["-Wl,-rpath,$$ORIGIN/../intel_extension_for_tensorflow"],
@@ -118,7 +118,7 @@ itex_xpu_binary(
     linkshared = True,
     set_target = "gpu_orig_backend",
     visibility = ["//visibility:public"],
-    deps = if_dpcpp(
+    deps = if_sycl(
         [
             "//itex/core/devices:xpu_device",
             "//itex/core/graph:xpu_graph",
@@ -140,7 +140,7 @@ itex_xpu_binary(
     linkshared = True,
     set_target = "gpu_cc_backend",
     visibility = ["//visibility:public"],
-    deps = if_dpcpp(
+    deps = if_sycl(
         [
             "//itex/core/devices:xpu_device",
             "//itex/core/graph:xpu_graph",
@@ -183,7 +183,7 @@ cc_binary(
     linkshared = True,
     set_target = "cpu_avx512_backend",
     visibility = ["//visibility:public"],
-    deps = if_dpcpp(
+    deps = if_sycl(
         [],
         [
             "//itex/core/graph:xpu_graph",
@@ -204,7 +204,7 @@ cc_binary(
     linkshared = True,
     set_target = "cpu_avx2_backend",
     visibility = ["//visibility:public"],
-    deps = if_dpcpp(
+    deps = if_sycl(
         [],
         [
             "//itex/core/graph:xpu_graph",
@@ -225,7 +225,7 @@ cc_binary(
     linkshared = True,
     set_target = "cpu_cc_backend",
     visibility = ["//visibility:public"],
-    deps = if_dpcpp(
+    deps = if_sycl(
         [],
         [
             "//itex/core/graph:xpu_graph",
@@ -258,7 +258,7 @@ itex_xpu_library(
         "//itex/core/utils/onednn:onednn_layout_util",
         "//third_party/eigen3",
         "@local_config_tf//:tf_header_lib",
-    ] + if_dpcpp(
+    ] + if_sycl(
         [
             "//itex/core/devices/gpu:eigen_stream_device",
         ],

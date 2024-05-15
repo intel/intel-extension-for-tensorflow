@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef THIRD_PARTY_BUILD_OPTION_DPCPP_RUNTIME_ITEX_GPU_RUNTIME_H_
-#define THIRD_PARTY_BUILD_OPTION_DPCPP_RUNTIME_ITEX_GPU_RUNTIME_H_
+#ifndef THIRD_PARTY_BUILD_OPTION_SYCL_RUNTIME_ITEX_GPU_RUNTIME_H_
+#define THIRD_PARTY_BUILD_OPTION_SYCL_RUNTIME_ITEX_GPU_RUNTIME_H_
 
 #include <cstdlib>
 #include <string>
@@ -273,4 +273,4 @@ void* ITEX_GPUMalloc(ITEX_GPUDevice* device, size_t ByteCount);
 void* ITEX_GPUMallocHost(size_t ByteCount);
 
 void ITEX_GPUFree(ITEX_GPUDevice* device, void* ptr);
-#endif  // THIRD_PARTY_BUILD_OPTION_DPCPP_RUNTIME_ITEX_GPU_RUNTIME_H_
+#endif  // THIRD_PARTY_BUILD_OPTION_SYCL_RUNTIME_ITEX_GPU_RUNTIME_H_

@@ -17,7 +17,7 @@ limitations under the License.
 #define ITEX_CORE_UTILS_HW_INFO_H_
 #include "itex/core/utils/macros.h"
 #ifndef INTEL_CPU_ONLY
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 TF_EXPORT extern const int32_t XeHPC_id;
 TF_EXPORT extern const int32_t XeHPC_id_2;
 

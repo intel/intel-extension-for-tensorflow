@@ -33,7 +33,7 @@ except ImportError:
 # pylint: enable=g-import-not-at-top
 
 
-_DEFAULT_DPCPP_TOOLKIT_PATH = '/opt/intel/oneapi/compiler/latest'
+_DEFAULT_SYCL_TOOLKIT_PATH = '/opt/intel/oneapi/compiler/latest'
 _DEFAULT_MKL_PATH='/opt/intel/oneapi/mkl/latest'
 _DEFAULT_AOT_CONFIG = ''
 _DEFAULT_GCC_TOOLCHAIN_PATH = ''
@@ -659,8 +659,10 @@ def prompt_loop_or_load_from_env(environ_cp,
       success, assume that the user has made a scripting error, and will
       continue to provide invalid input. Raise the error to avoid infinitely
       looping.
-  """
+  """  
   default = environ_cp.get(var_name) or var_default
+  if var_name == 'SYCL_TOOLKIT_PATH' and default == var_default:
+    default = environ_cp.get('DPCPP_TOOLKIT_PATH') or var_default
   full_query = '%s [Default is %s]: ' % (
       ask_for_var,
       default,
@@ -708,35 +710,35 @@ def reformat_version_sequence(version_str, sequence_count):
   return '.'.join(v[:sequence_count])
 
 
-def set_dpcpp_toolkit_path(environ_cp):
-  """Set DPCPP_TOOLKIT_PATH."""
+def set_sycl_toolkit_path(environ_cp):
+  """Set SYCL_TOOLKIT_PATH."""
 
   def toolkit_exists(toolkit_path):
-    """Check if a dpc++ toolkit path is valid."""
+    """Check if a sycl toolkit path is valid."""
     sycl_rt_lib_path = 'lib/libsycl.so'
 
     sycl_rt_lib_path_full = os.path.join(toolkit_path, sycl_rt_lib_path)
     exists = os.path.exists(sycl_rt_lib_path_full)
     if not exists:
-      print('Invalid DPC++ library path. %s cannot be found' %
-            (sycl_rt_lib_path_full))
+      print('Invalid SYCL library path. %s cannot be found' %
+          (sycl_rt_lib_path_full))
     return exists
 
-  dpcpp_toolkit_path = prompt_loop_or_load_from_env(
+  sycl_toolkit_path = prompt_loop_or_load_from_env(
       environ_cp,
-      var_name='DPCPP_TOOLKIT_PATH',
-      var_default=_DEFAULT_DPCPP_TOOLKIT_PATH,
+      var_name='SYCL_TOOLKIT_PATH',
+      var_default=_DEFAULT_SYCL_TOOLKIT_PATH,
       ask_for_var=(
-          'Please specify the location where DPC++ is installed.'),
+          'Please specify the location where SYCL is installed.'),
       check_success=toolkit_exists,
-      error_msg='Invalid DPC++ compiler path. libsycl.so cannot be found.',
+      error_msg='Invalid SYCL compiler path. libsycl.so cannot be found.',
       suppress_default_error=True)
 
-  write_action_env_to_bazelrc('DPCPP_TOOLKIT_PATH',
-                              dpcpp_toolkit_path)
+  write_action_env_to_bazelrc('SYCL_TOOLKIT_PATH',
+                              sycl_toolkit_path)
   lib_path = '%s/lib:%s/compiler/lib/intel64_lin' %(
-      dpcpp_toolkit_path,
-      dpcpp_toolkit_path,
+      sycl_toolkit_path,
+      sycl_toolkit_path,
   )
 
   ld_lib_path = lib_path
@@ -816,7 +818,7 @@ def system_specific_test_config(env):
   write_to_bazelrc(
       'test --test_tag_filters=-benchmark-test,-no_oss,-oss_serial')
   write_to_bazelrc('test --build_tag_filters=-benchmark-test,-no_oss')
-  if env.get('TF_NEED_DPCPP', None) == '1':
+  if env.get('TF_NEED_SYCL', None) == '1':
     write_to_bazelrc('test --test_tag_filters=-no_gpu')
     write_to_bazelrc('test --build_tag_filters=-no_gpu')
     write_to_bazelrc('test --test_env=LD_LIBRARY_PATH')
@@ -911,7 +913,7 @@ def set_clang_compiler_path(environ_cp):
   )
 
   write_action_env_to_bazelrc('CLANG_COMPILER_PATH', clang_compiler_path)
-  if environ_cp.get('TF_NEED_DPCPP') == '0':
+  if environ_cp.get('TF_NEED_SYCL') == '0':
       write_to_bazelrc('build --repo_env=CC=%s' % clang_compiler_path)
       write_to_bazelrc('build --repo_env=BAZEL_COMPILER=%s' % clang_compiler_path)
 
@@ -992,16 +994,16 @@ def main():
   setup_python(environ_cp)
   create_build_configuration(environ_cp)
 
-  set_action_env_var(environ_cp, 'TF_NEED_DPCPP', 'GPU', True)
-  if environ_cp.get('TF_NEED_DPCPP') == '0':
+  set_action_env_var(environ_cp, 'TF_NEED_SYCL', 'GPU', True)
+  if environ_cp.get('TF_NEED_SYCL') == '0':
     environ_cp['ITEX_NEED_CLANG'] = str(choose_compiler(environ_cp))
   if environ_cp.get('ITEX_NEED_CLANG') == '1':
     clang_compiler_path = set_clang_compiler_path(environ_cp)
     clang_version = retrieve_clang_version(clang_compiler_path)
     disable_clang_offsetof_extension(clang_version)
 
-  if environ_cp.get('TF_NEED_DPCPP') == '1':
-    set_dpcpp_toolkit_path(environ_cp)
+  if environ_cp.get('TF_NEED_SYCL') == '1':
+    set_sycl_toolkit_path(environ_cp)
     set_aot_config(environ_cp)
     set_action_env_var(environ_cp, 'TF_NEED_MKL', 'MKL', False)
     if environ_cp.get('TF_NEED_MKL') == '1':
@@ -1018,7 +1020,7 @@ def main():
   print('Preconfigured Bazel build configs. You can use any of the below by '
         'adding "--config=<>" to your build command. See .bazelrc for more '
         'details.')
-  if environ_cp.get('TF_NEED_DPCPP') == '1':
+  if environ_cp.get('TF_NEED_SYCL') == '1':
     config_info_line('xpu', ('Build Intel® Extension for TensorFlow* '
                      'with GPU support.'))
     print('NOTE: XPU mode which supports both CPU and GPU is disbaled.'

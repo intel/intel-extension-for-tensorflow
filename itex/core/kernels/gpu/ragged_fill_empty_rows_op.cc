@@ -30,7 +30,7 @@ limitations under the License.
 #include "itex/core/utils/plugin_tensor.h"
 #include "itex/core/utils/register_types.h"
 #include "itex/core/utils/tensor_types.h"
-#include "third_party/build_option/dpcpp/runtime/eigen_itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/eigen_itex_gpu_runtime.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace itex {

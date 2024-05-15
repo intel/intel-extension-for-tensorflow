@@ -27,7 +27,7 @@ limitations under the License.
 #include "itex/core/kernels/gpu/gpu_kernel_init.h"
 #ifdef USING_NEXTPLUGGABLE_DEVICE
 #include "tensorflow/c/experimental/next_pluggable_device/c_api.h"
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 #endif
 #else
 #include "itex/core/kernels/cpu/cpu_kernel_init.h"

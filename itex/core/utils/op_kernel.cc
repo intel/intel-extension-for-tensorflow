@@ -25,7 +25,7 @@ limitations under the License.
 #ifndef INTEL_CPU_ONLY
 #include "itex/core/utils/gpu_resource_mgr_pool.h"
 #ifdef USING_NEXTPLUGGABLE_DEVICE
-#include "third_party/build_option/dpcpp/runtime/itex_gpu_runtime.h"
+#include "third_party/build_option/sycl/runtime/itex_gpu_runtime.h"
 #endif
 #endif
 #include "itex/core/utils/kernel_def_util.h"
