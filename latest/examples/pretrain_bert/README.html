@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g55a4394 documentation</title>
+  <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gfbf3e0e documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
@@ -194,7 +194,9 @@ This example shows BERT-Large Pretraining.</p>
 <li><p>We use <a class="reference external" href="https://arxiv.org/pdf/1904.00962.pdf">LAMB</a> as the optimizer and pretraining has two phases. The maximum sequence length of phase1 and phase2 is 128 and 512, respectively. For the whole process of pretraining, you can use scripts in <a class="reference external" href="https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/LanguageModeling/BERT#training-process">nvidia-bert</a>.</p></li>
 <li><p>BFloat16 DataType</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=312
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
+TRAIN_BATCH_SIZE_PHASE1=312
 TRAIN_BATCH_SIZE_PHASE2=40
 EVAL_BATCH_SIZE=8
 LEARNING_RATE_PHASE1=8.12e-4
@@ -274,7 +276,9 @@ To avoid Out-Of-Memory, please use below hyperparameters instead of above bf16 o
 </pre></div>
 </div>
 <p><strong>Final Scripts</strong></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>NUM_GPUS=1
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
+NUM_GPUS=1
 BATCH_SIZE_PER_GPU=76
 LEARNING_RATE_PER_GPU=3e-5
 DATATYPE=$DATATYPE
@@ -329,7 +333,9 @@ bash scripts/run_squad.sh \
 <ul class="simple">
 <li><p>Pretraining</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TRAIN_BATCH_SIZE_PHASE1=312
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
+TRAIN_BATCH_SIZE_PHASE1=312
 TRAIN_BATCH_SIZE_PHASE2=40
 EVAL_BATCH_SIZE=8
 LEARNING_RATE_PHASE1=0.004888
@@ -380,7 +386,9 @@ bash scripts/run_pretraining_lamb.sh \
 <ul class="simple">
 <li><p>Finetune</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>NUM_GPUS=8
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
+NUM_GPUS=8
 BATCH_SIZE_PER_GPU=12
 LEARNING_RATE_PER_GPU=5e-6
 DATATYPE=bf16
@@ -519,7 +527,7 @@ bash scripts/run_squad.sh \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ff0fdd4fc40> 
+   <jinja2.runtime.BlockReference object at 0x7fbfcbf9c280> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
