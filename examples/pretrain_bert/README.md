@@ -107,6 +107,8 @@ DATATYPE=fp32
 + BFloat16 DataType
 
 ```
+export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
 TRAIN_BATCH_SIZE_PHASE1=312
 TRAIN_BATCH_SIZE_PHASE2=40
 EVAL_BATCH_SIZE=8
@@ -190,6 +192,8 @@ DATATYPE=fp32
 **Final Scripts**
 
 ```
+export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
 NUM_GPUS=1
 BATCH_SIZE_PER_GPU=76
 LEARNING_RATE_PER_GPU=3e-5
@@ -241,6 +245,8 @@ Assume current_dir is `examples/pretrain_bert/DeepLearningExamples/TensorFlow2/L
 
 - Pretraining
 ```
+export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
 TRAIN_BATCH_SIZE_PHASE1=312
 TRAIN_BATCH_SIZE_PHASE2=40
 EVAL_BATCH_SIZE=8
@@ -292,6 +298,8 @@ bash scripts/run_pretraining_lamb.sh \
 
 - Finetune
 ```
+export TF_USE_LEGACY_KERAS=1  # use Keras 2 for tf2.16
+
 NUM_GPUS=8
 BATCH_SIZE_PER_GPU=12
 LEARNING_RATE_PER_GPU=5e-6

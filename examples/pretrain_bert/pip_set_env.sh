@@ -24,5 +24,5 @@ source $ENV_NAME/bin/activate
 pip install --upgrade pip
 pip install --upgrade intel-extension-for-tensorflow[xpu]
 pip install git+https://github.com/NVIDIA/dllogger
-pip install requests tqdm horovod sentencepiece tensorflow_hub wget progressbar nltk pubmed_parser
+pip install requests tqdm horovod sentencepiece tensorflow_hub wget progressbar nltk pubmed_parser tf-keras
 pip install tensorflow-addons  # Version details in https://github.com/tensorflow/addons
