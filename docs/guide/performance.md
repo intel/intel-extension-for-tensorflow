@@ -54,7 +54,7 @@ The following tables provide the links where you can get the original code repos
 |EfficientNet-B0|[Keras-Applications/EfficientNet](https://keras.io/api/applications/efficientnet/)|Use the exact same codes and instructions as in the orignal model repo|
 |EfficientNet-B3|[Keras-Applications/EfficientNet](https://keras.io/api/applications/efficientnet/)|Use the exact same codes and instructions as in the orignal model repo|
 |Mask-RCNN|[DeepLearningExamples/Mask-RCNN](https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow2/Segmentation/MaskRCNN/)|Use the exact same codes and instructions as in the orignal model repo|
-|Stable Diffusion v1-4|[KerasCV/Stable-Diffusion](https://github.com/keras-team/keras-cv/tree/master/keras_cv/models/stable_diffusion)|[Stable Diffusion Inference for Text2Image on Intel GPU](../../examples/stable_diffussion_inference/README.md)|
+|Stable Diffusion v1-4|[KerasCV/Stable-Diffusion](https://github.com/keras-team/keras-cv/tree/master/keras_cv/src/models/stable_diffusion)|[Stable Diffusion Inference for Text2Image on Intel GPU](../../examples/stable_diffussion_inference/README.md)|
 
 
 ## Training Accuracy Results
@@ -232,4 +232,4 @@ The following tables show the performance numbers for several popular inference 
 
 ## Additional Performance Data for Intel AI Data Center Products
 
-You can find the latest performance data on other Intel® AI Data Center Products such as 3rd, 4th, and 5th Gen Intel® Xeon® Scalable processors via [Performance Data for Intel® AI Data Center Products](https://www.intel.com/content/www/us/en/developer/topic-technology/artificial-intelligence/performance.html/).
+You can find the latest performance data on other Intel® AI Data Center Products such as 3rd, 4th, and 5th Gen Intel® Xeon® Scalable processors via [Performance Data for Intel® AI Data Center Products](https://www.intel.com/content/www/us/en/developer/topic-technology/artificial-intelligence/performance.html).
