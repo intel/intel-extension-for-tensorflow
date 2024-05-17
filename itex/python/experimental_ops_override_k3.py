@@ -85,13 +85,15 @@ def experimental_ops_override():
         if version(tf.__version__) < version("2.16.1"):
             return
 
-        from keras.src import backend  # pylint: disable=import-outside-toplevel
-        from keras.src.utils import tf_utils  # pylint: disable=import-outside-toplevel
+        from keras.src.backend.tensorflow.core import convert_to_tensor
+        from keras.src.backend import standardize_dtype
+        from keras.src.backend.common import dtypes
 
         import keras
         tf_ln_call = copy_func(keras.layers.LayerNormalization.call)
-        tf_gn_call = copy_func(keras.layers.GroupNormalization.call)
-        tf_gn_build = copy_func(keras.layers.GroupNormalization.build)
+        tf_bn_call = copy_func(keras.layers.BatchNormalization.call)
+        tf_bn_build = copy_func(keras.layers.BatchNormalization.build)
+        tf_mean = copy_func(keras.src.backend.numpy.mean)
 
     except BaseException:  # pylint: disable=broad-except
         return
@@ -175,11 +177,14 @@ def experimental_ops_override():
         if not self._use_layernorm:  # pylint: disable=protected-access
             return tf_ln_call(self, inputs)  # pylint: disable=not-callable
         if self.rms_scaling:  # pylint: disable=protected-access
-            return tf_ln_call(self, inputs)  # pylint: disable=not-callable
+            return tf_ln_call(self, inputs)  # pylint: disable=not-callable 
+        is_training = True
         if training is None:
             is_training = True
         if isinstance(training, int):
             is_training = bool(training)
+        elif isinstance(training, bool):
+            is_training = training
         if not self.trainable:
             # When the layer is not trainable, it overrides the value passed from
             # model.
@@ -253,16 +258,128 @@ def experimental_ops_override():
                 outputs = outputs + ops.cast(offset, outputs.dtype)
             return outputs
 
+    def itex_batch_norm_build(self, input_shape):
+        tf_bn_build(self, input_shape)
+        rank = len(input_shape)
+        if self.axis in (1, -3) and rank == 4:
+            self.fused = True
+            self._data_format = "NCHW"
+        elif self.axis in (1, -4) and rank == 5:
+            self.fused = True
+            self._data_format = "NCDHW"
+        elif self.axis in (-1, 3) and rank == 4:
+            self.fused = True
+            self._data_format = "NHWC"
+        elif self.axis in (-1, 4) and rank == 5:
+            self.fused = True
+            self._data_format = "NDHWC"
+        else:
+            self.fused = False
+        
+        self.supports_jit = False
+        self._param_shape = (input_shape[self.axis],)
+        if self.compute_dtype == "float16" or self.compute_dtype == "bfloat16":  # pylint: disable=no-else-return
+            self._param_dtype = "float32"
+        else:
+            self._param_dtype = self.dtype or dtypes.float32
+
+    def itex_batch_norm_call(self, inputs, training=None, mask = None):
+        if (not self.fused) or mask is not None:
+            return tf_bn_call(self, inputs)
+
+        inputs = tf.cast(inputs, self.compute_dtype)
+        if self.center:
+            beta = self.beta
+        else:
+            beta = ops.zeros(
+                dtype=self._param_dtype, shape=self._param_shape
+        )
+        if self.scale:
+            gamma = self.gamma
+        else:
+            gamma = ops.ones(
+                dtype=self._param_dtype, shape=self._param_shape
+        )
+        def _fused_batch_norm_training():
+            return tf.compat.v1.nn.fused_batch_norm(
+                inputs,
+                gamma,
+                beta,
+                mean=self.moving_mean,
+                variance=self.moving_variance,
+                epsilon=self.epsilon,
+                is_training=True,
+                data_format=self._data_format,
+                exponential_avg_factor=1-self.momentum,
+                )
+
+        def _fused_batch_norm_inference():
+            return tf.compat.v1.nn.fused_batch_norm(
+                inputs,
+                gamma,
+                beta,
+                mean=self.moving_mean,
+                variance=self.moving_variance,
+                epsilon=self.epsilon,
+                is_training=False,
+                data_format=self._data_format,)
+
+
+        output, mean, variance = tf.__internal__.smart_cond.smart_cond(
+            bool(training) and self.trainable, _fused_batch_norm_training, _fused_batch_norm_inference
+        )
+        if bool(training) and self.trainable:
+            self.moving_mean.assign(mean)
+            self.moving_variance.assign(variance)
+        return output
+
+    def itex_mean(x, axis=None, keepdims=False):
+        if isinstance(x, tf.IndexedSlices):
+            return tf_mean(x, axis, keepdims)
+        x = convert_to_tensor(x)
+        ori_dtype = standardize_dtype(x.dtype)
+        compute_dtype = dtypes.result_type(x.dtype, "float32")
+        if ori_dtype == "float16" or ori_dtype == "bfloat16":
+            compute_dtype = ori_dtype
+        if "int" in ori_dtype or ori_dtype == "bool":
+            result_dtype = compute_dtype
+        else:
+            result_dtype = ori_dtype
+        output = tf.reduce_mean(
+            tf.cast(x, compute_dtype), axis=axis, keepdims=keepdims
+        )
+        return tf.cast(output, result_dtype)
+
+    def itex_var(x, axis=None, keepdims=False):
+        x = convert_to_tensor(x)
+        ori_dtype = standardize_dtype(x.dtype)
+        compute_dtype = dtypes.result_type(x.dtype, "float32")
+        if ori_dtype == "float16" or ori_dtype == "bfloat16":
+            compute_dtype = ori_dtype
+        result_dtype = dtypes.result_type(x.dtype, float)
+        x = tf.cast(x, compute_dtype)
+        return tf.cast(
+            tf.math.reduce_variance(x, axis=axis, keepdims=keepdims),
+            result_dtype,
+        )
+
     try:
         keras.layers.LayerNormalization.call = itex_layer_norm_call
         keras.layers.LayerNormalization.build = itex_layer_norm_build
-        logger.info("itex experimental ops override is enabled.")
+        keras.layers.BatchNormalization.call = itex_batch_norm_call
+        keras.layers.BatchNormalization.build = itex_batch_norm_build
+        
     except BaseException:  # pylint: disable=broad-except
         logger.error("Cannot override itex ops.")
     try:
         import keras  # pylint: disable=import-outside-toplevel
         keras.src.layers.normalization.layer_normalization.LayerNormalization.call = itex_layer_norm_call
         keras.src.layers.normalization.layer_normalization.LayerNormalization.build = itex_layer_norm_build
+        keras.src.layers.normalization.batch_normalization.BatchNormalization.call = itex_batch_norm_call
+        keras.src.layers.normalization.batch_normalization.BatchNormalization.build = itex_batch_norm_build
+        keras.src.backend.numpy.mean = itex_mean
+        keras.src.backend.numpy.var = itex_var
+        logger.info("itex experimental ops override is enabled.")
     except BaseException:  # pylint: disable=broad-except
         logger.warning(
-            "itex experimental ops override: Keras is not installed.")  # pylint: disable=line-too-long
+            "Cannot override itex ops.")  # pylint: disable=line-too-long

@@ -38,7 +38,7 @@ std::vector<SearchInfo> sinfo;
 // Forwarding from input:0 to output:0
 const auto regular_inplace_rule = gtl::FlatSet<string>{
     "_ITEXSoftmax",          "_ITEXInstanceNorm",     "_ITEXFusedInstanceNorm",
-    "_ITEXMklLayerNorm",     "_ITEXLayerNorm",        "_ITEXFusedBatchNorm",
+    "_ITEXMklLayerNorm",     "ITEXLayerNorm",         "_ITEXFusedBatchNorm",
     "_ITEXFusedBatchNormV2", "_ITEXFusedBatchNormV3", "_ITEXFusedBatchNormEx"};
 
 const auto add_inplace_rule = gtl::FlatSet<string>{

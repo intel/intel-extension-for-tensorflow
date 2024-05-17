@@ -49,7 +49,7 @@ REGISTER_LAYERNORM_GPU(Eigen::half, float);
 REGISTER_LAYERNORM_GRAD_GPU(float, float);
 REGISTER_LAYERNORM_GRAD_GPU(Eigen::bfloat16, float);
 REGISTER_LAYERNORM_GRAD_GPU(Eigen::half, float);
-#undef REGISTER_LAYERNORM_GRAD_CPU
+#undef REGISTER_LAYERNORM_GRAD_GPU
 
 #define REGISTER_MKLLAYERNORM_GPU(T, U)                                \
   REGISTER_KERNEL_BUILDER(                                             \
