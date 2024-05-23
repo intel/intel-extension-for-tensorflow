@@ -42,7 +42,8 @@ extensions = [
         'sphinx.ext.coverage',
         'sphinx.ext.autosummary',
         'sphinx_md',
-        #'autoapi.extension',
+        'sphinx_rtd_theme',
+        'sphinxcontrib.jquery',
         'sphinx.ext.napoleon',
         'sphinx.ext.githubpages'
         ]
