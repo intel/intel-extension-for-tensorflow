@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stable Diffusion Inference for Text2Image on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Stable Diffusion Inference for Text2Image on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,15 +91,15 @@
            <div itemprop="articleBody">
              
   <section id="stable-diffusion-inference-for-text2image-on-intel-gpu">
-<h1>Stable Diffusion Inference for Text2Image on Intel GPU<a class="headerlink" href="#stable-diffusion-inference-for-text2image-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<h1>Stable Diffusion Inference for Text2Image on Intel GPU<a class="headerlink" href="#stable-diffusion-inference-for-text2image-on-intel-gpu" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
 This example shows Stable Diffusion Inference for Text2Image.</p>
 <p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Inference on Intel GPU.</p>
 </section>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series</p></li>
@@ -107,13 +107,13 @@ This example shows Stable Diffusion Inference for Text2Image.</p>
 </ul>
 </section>
 <section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
 <section id="environment-vasriable">
-<h3>Environment Vasriable<a class="headerlink" href="#environment-vasriable" title="Permalink to this heading"></a></h3>
+<h3>Environment Vasriable<a class="headerlink" href="#environment-vasriable" title="Link to this heading"></a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">TF_USE_LEGACY_KERAS=1</span></code></p>
 </section>
 <section id="model-code-change">
-<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
+<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Link to this heading"></a></h3>
 <p>We optimized official keras-cv Stable Diffusion, for example, concatenate two forward passes, combine computation in loops to reduce op number, and add fp16 mode for model. However, this optimization hasn’t been up streamed. To get better performance, instead of installing official keras-cv, you may want to clone keras-cv, apply patch, then install it as shown here:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">keras</span><span class="o">-</span><span class="n">team</span><span class="o">/</span><span class="n">keras</span><span class="o">-</span><span class="n">cv</span><span class="o">.</span><span class="n">git</span>
 <span class="n">cd</span> <span class="n">keras</span><span class="o">-</span><span class="n">cv</span>
@@ -124,11 +124,11 @@ This example shows Stable Diffusion Inference for Text2Image.</p>
 </div>
 </section>
 <section id="prepare-for-gpu-skip-this-step-for-cpu">
-<h3>Prepare for GPU (Skip this step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this heading"></a></h3>
+<h3>Prepare for GPU (Skip this step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Link to this heading"></a></h3>
 <p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a></p>
 </section>
 <section id="setup-running-environment">
-<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Setup for GPU</p></li>
 </ul>
@@ -137,14 +137,14 @@ This example shows Stable Diffusion Inference for Text2Image.</p>
 </div>
 </section>
 <section id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Link to this heading"></a></h3>
 <p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
 <ul class="simple">
 <li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html#running">Running</a></p></li>
 </ul>
 </section>
 <section id="running-the-jupyter-notebook">
-<h3>Running the Jupyter Notebook<a class="headerlink" href="#running-the-jupyter-notebook" title="Permalink to this heading"></a></h3>
+<h3>Running the Jupyter Notebook<a class="headerlink" href="#running-the-jupyter-notebook" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Add kernel for env_itex environment:</p></li>
 </ul>
@@ -170,21 +170,21 @@ This example shows Stable Diffusion Inference for Text2Image.</p>
 </ul>
 </section>
 <section id="executes-the-example-with-python-api">
-<h3>Executes the Example with Python API<a class="headerlink" href="#executes-the-example-with-python-api" title="Permalink to this heading"></a></h3>
+<h3>Executes the Example with Python API<a class="headerlink" href="#executes-the-example-with-python-api" title="Link to this heading"></a></h3>
 <section id="fp32-inference">
-<h4>FP32 Inference<a class="headerlink" href="#fp32-inference" title="Permalink to this heading"></a></h4>
+<h4>FP32 Inference<a class="headerlink" href="#fp32-inference" title="Link to this heading"></a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">stable_diffusion_inference</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">precision</span> <span class="n">fp32</span>
 </pre></div>
 </div>
 </section>
 <section id="fp16-inference">
-<h4>FP16 Inference<a class="headerlink" href="#fp16-inference" title="Permalink to this heading"></a></h4>
+<h4>FP16 Inference<a class="headerlink" href="#fp16-inference" title="Link to this heading"></a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">stable_diffusion_inference</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">precision</span> <span class="n">fp16</span>
 </pre></div>
 </div>
 </section>
 <section id="accuracy">
-<h4>Accuracy<a class="headerlink" href="#accuracy" title="Permalink to this heading"></a></h4>
+<h4>Accuracy<a class="headerlink" href="#accuracy" title="Link to this heading"></a></h4>
 <p>Note: At present, we evaluate accuracy by calculating the Fréchet inception distance (FID) between FP16 outcomes of 7 images on XPU and FP16 outcomes on NVIDIA A100. This may change with subsequent releases.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>stable_diffusion_accuracy.py<span class="w"> </span>--precision<span class="w"> </span>fp16<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--load_ref_result<span class="w"> </span>--ref_result_dir<span class="w"> </span><span class="s2">&quot;./nv_results/img_arrays_for_acc.txt&quot;</span>
@@ -194,14 +194,14 @@ This example shows Stable Diffusion Inference for Text2Image.</p>
 </section>
 </section>
 <section id="example-output">
-<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
+<h2>Example Output<a class="headerlink" href="#example-output" title="Link to this heading"></a></h2>
 <p>With successful execution, it will print out the following results:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">latency</span> <span class="mf">81.1146879196167</span> <span class="n">ms</span><span class="p">,</span> <span class="n">throughput</span> <span class="mf">12.328223477737884</span> <span class="n">it</span><span class="o">/</span><span class="n">s</span>
 </pre></div>
 </div>
 </section>
 <section id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
+<h2>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h2>
 <ol class="simple">
 <li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
 </ol>
@@ -225,7 +225,7 @@ This example shows Stable Diffusion Inference for Text2Image.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384c2b5690> 
+   <jinja2.runtime.BlockReference object at 0x7efef105e4a0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

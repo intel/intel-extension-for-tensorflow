@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow* &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow* &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,9 +91,9 @@
            <div itemprop="articleBody">
              
   <section id="accelerate-alexnet-by-quantization-with-intel-extension-for-tensorflow">
-<h1>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow*<a class="headerlink" href="#accelerate-alexnet-by-quantization-with-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h1>
+<h1>Accelerate AlexNet by Quantization with Intel® Extension for Tensorflow*<a class="headerlink" href="#accelerate-alexnet-by-quantization-with-intel-extension-for-tensorflow" title="Link to this heading"></a></h1>
 <section id="background">
-<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading"></a></h2>
+<h2>Background<a class="headerlink" href="#background" title="Link to this heading"></a></h2>
 <p>Low-precision inference can speed up inference, by converting the FP32 model to INT8 or BF16 model. Intel provides hardware technology to accelerate the low precision model on Intel GPUs that supports INT8.</p>
 <p>Intel® Neural Compressor helps you simplify converting the FP32 model to INT8.</p>
 <p>At the same time, Intel® Neural Compressor will tune the quantization method to reduce the accuracy loss, which is a big blocker for low-precision inference.</p>
@@ -101,7 +101,7 @@
 <p>Refer to the official website for detailed info and news: <a class="reference external" href="https://github.com/intel/neural-compressor">https://github.com/intel/neural-compressor</a></p>
 </section>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>With Intel® Extension for Tensorflow*, it’s easy to quantize FP32 model to INT8 model and be accelerated on Intel CPUs and GPUs.</p>
 <p>This example reuses the existing End-To-End example: <a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/notebook/tensorflow/alexnet_mnist">Intel® Neural Compressor Sample for TensorFlow</a> provided by Intel® Neural Compressor, to show a pipeline to build up a CNN model to recognize handwriting number and speed up AI model with quantization by Intel® Neural Compressor.</p>
 <p>The original example is designed to run on Intel CPU with Stock Tensorflow* or Intel® Optimization for Tensorflow*. After installing Intel® Extension for Tensorflow*, it could run on Intel GPU.</p>
@@ -115,26 +115,26 @@
 </ol>
 </section>
 <section id="hardware-environment">
-<h2>Hardware Environment<a class="headerlink" href="#hardware-environment" title="Permalink to this heading"></a></h2>
+<h2>Hardware Environment<a class="headerlink" href="#hardware-environment" title="Link to this heading"></a></h2>
 <p>The example can run on Intel GPU by Intel® Extension for Tensorflow*.</p>
 <section id="gpu">
-<h3>GPU<a class="headerlink" href="#gpu" title="Permalink to this heading"></a></h3>
+<h3>GPU<a class="headerlink" href="#gpu" title="Link to this heading"></a></h3>
 <p>Support: Intel® Data Center Flex Series GPU.</p>
 <section id="local-server">
-<h4>Local Server<a class="headerlink" href="#local-server" title="Permalink to this heading"></a></h4>
+<h4>Local Server<a class="headerlink" href="#local-server" title="Link to this heading"></a></h4>
 <p>Install the GPU driver and oneAPI packages by referring to <a class="reference external" href="/docs/install/install_for_xpu.html">Intel GPU Software Installation</a>.</p>
 </section>
 <section id="intel-devcloud">
-<h4>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Permalink to this heading"></a></h4>
+<h4>Intel® DevCloud<a class="headerlink" href="#intel-devcloud" title="Link to this heading"></a></h4>
 <p>If you have no such Intel GPU support INT8, you could register to Intel® DevCloud for oneAPI applications and try this example on the compute node with Intel GPU. To learn more about working with Intel® DevCloud, please refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/devcloud/overview.html">Intel® DevCloud</a>.</p>
 <p>In Intel® DevCloud, the GPU driver and oneAPI packages are already installed.</p>
 </section>
 </section>
 </section>
 <section id="running-environment">
-<h2>Running Environment<a class="headerlink" href="#running-environment" title="Permalink to this heading"></a></h2>
+<h2>Running Environment<a class="headerlink" href="#running-environment" title="Link to this heading"></a></h2>
 <section id="set-up-base-running-environment">
-<h3>Set up Base Running Environment<a class="headerlink" href="#set-up-base-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Set up Base Running Environment<a class="headerlink" href="#set-up-base-running-environment" title="Link to this heading"></a></h3>
 <p>Please refer to the example: <a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/notebook/tensorflow/alexnet_mnist">Intel® Neural Compressor Sample for TensorFlow</a> to setup running environment.</p>
 <p>There are new requirements:</p>
 <ol class="simple">
@@ -143,7 +143,7 @@
 </ol>
 </section>
 <section id="set-up-intel-extension-for-tensorflow-for-gpu">
-<h3>Set up Intel® Extension for Tensorflow* for GPU<a class="headerlink" href="#set-up-intel-extension-for-tensorflow-for-gpu" title="Permalink to this heading"></a></h3>
+<h3>Set up Intel® Extension for Tensorflow* for GPU<a class="headerlink" href="#set-up-intel-extension-for-tensorflow-for-gpu" title="Link to this heading"></a></h3>
 <p>Install Intel® Extension for Tensorflow* in the running environment:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="p">[</span><span class="n">xpu</span><span class="p">]</span>
 </pre></div>
@@ -151,7 +151,7 @@
 </section>
 </section>
 <section id="execute">
-<h2>Execute<a class="headerlink" href="#execute" title="Permalink to this heading"></a></h2>
+<h2>Execute<a class="headerlink" href="#execute" title="Link to this heading"></a></h2>
 <p>Please refer to the example: <a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/notebook/tensorflow/alexnet_mnist">Intel® Neural Compressor Sample for TensorFlow</a> to execute the sample code and check the result.</p>
 </section>
 </section>
@@ -170,7 +170,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384c03e7d0> 
+   <jinja2.runtime.BlockReference object at 0x7efef105eec0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

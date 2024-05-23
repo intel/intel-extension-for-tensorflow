@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Features &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Features &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -135,44 +135,44 @@
            <div itemprop="articleBody">
              
   <section id="features">
-<h1>Features<a class="headerlink" href="#features" title="Permalink to this heading"></a></h1>
+<h1>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h1>
 <section id="operator-optimization">
-<h2>Operator Optimization<a class="headerlink" href="#operator-optimization" title="Permalink to this heading"></a></h2>
+<h2>Operator Optimization<a class="headerlink" href="#operator-optimization" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* optimizes operators in CPU and implements all GPU operators with Intel® oneAPI DPC++ Compiler. Users can get these operator optimization benefits by default without any additional setting.</p>
 <p>Besides, several customized operators for performance boost with <cite>itex.ops</cite> namespace are developed to extend TensorFlow public APIs implementation for better performance. Please refer to <a class="reference external" href="itex_ops.html">Customized OPs</a> for details.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="graph-optimization">
-<h2>Graph Optimization<a class="headerlink" href="#graph-optimization" title="Permalink to this heading"></a></h2>
+<h2>Graph Optimization<a class="headerlink" href="#graph-optimization" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* provides graph optimization to fuse specified op pattern to new single op for better performance, such as Conv2D+ReLU, Linear+ReLU, etc.  The benefit of the fusions are delivered to users in a transparant fashion.</p>
 <p>Users can get the graph optimization benefits by default without any additional setting. Please refer to <a class="reference external" href="itex_fusion.html">Graph Optimization</a> for details.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="advanced-auto-mixed-precision-amp">
-<h2>Advanced Auto Mixed Precision (AMP)<a class="headerlink" href="#advanced-auto-mixed-precision-amp" title="Permalink to this heading"></a></h2>
+<h2>Advanced Auto Mixed Precision (AMP)<a class="headerlink" href="#advanced-auto-mixed-precision-amp" title="Link to this heading"></a></h2>
 <p>Low precision data type bfloat16 and float16 are natively supported from the 3rd Generation Xeon® Scalable Processors (aka Cooper Lake) with AVX512 instruction set and Intel® Data Center GPU with further boosted performance and with less memory consumption. The lower-precision data types support of Advanced Auto Mixed Precision (AMP) are fully enabled in Intel® Extension for TensorFlow*.</p>
 <p>Please refer to  <a class="reference external" href="advanced_auto_mixed_precision.html">Advanced Auto Mixed Precision</a> for details.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="ease-of-use-python-api">
-<h2>Ease-of-use Python API<a class="headerlink" href="#ease-of-use-python-api" title="Permalink to this heading"></a></h2>
+<h2>Ease-of-use Python API<a class="headerlink" href="#ease-of-use-python-api" title="Link to this heading"></a></h2>
 <p>Generally, the default configuration of Intel® Extension for TensorFlow* can get the good performance without any code changes. At the same time, Intel® Extension for TensorFlow* also provides simple frontend Python APIs and utilities for advanced users to get more performance optimizations with minor code changes for different kinds of application scenarios. Typically, only two to three clauses are required to be added to the original code.</p>
 <p>Please check <a class="reference external" href="python_api.html">Python APIs</a> page for details of API functions and <a class="reference external" href="environment_variables.html">Environment Variables</a> page for environment setting.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="gpu-profiler">
-<h2>GPU Profiler<a class="headerlink" href="#gpu-profiler" title="Permalink to this heading"></a></h2>
+<h2>GPU Profiler<a class="headerlink" href="#gpu-profiler" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* provides support for TensorFlow* profiler with almost same with TensorFlow Profiler(<a class="reference external" href="https://www.tensorflow.org/guide/profiler">https://www.tensorflow.org/guide/profiler</a>), one more thing to enable the profiler is exposing three environment variables (<cite>export ZE_ENABLE_TRACING_LAYER=1</cite>, <cite>export UseCyclesPerSecondTimer=1</cite>, <cite>export ENABLE_TF_PROFILER=1</cite>).</p>
 <p>Please refer to <a class="reference external" href="how_to_enable_profiler.html">GPU Profiler</a> for details.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="cpu-launcher-experimental">
-<h2>CPU Launcher [Experimental]<a class="headerlink" href="#cpu-launcher-experimental" title="Permalink to this heading"></a></h2>
+<h2>CPU Launcher [Experimental]<a class="headerlink" href="#cpu-launcher-experimental" title="Link to this heading"></a></h2>
 <p>There are several factors that influence performance. Setting configuration options properly contributes to a performance boost. However, there is no unified configuration that is optimal to all topologies. Users need to try different combinations.</p>
 <p>Intel® Extension for TensorFlow* provides a CPU launcher to automate these configuration settings to free users from the complicated work. This guide helps you to learn the <em>launch</em> script common usage and provides examples that cover many optimized configuration cases as well.</p>
 <p>Please refer to <a class="reference external" href="launch.html">CPU Launcher</a> for details.</p>
@@ -180,28 +180,28 @@
 </div>
 </section>
 <section id="int8-quantization">
-<h2>INT8 Quantization<a class="headerlink" href="#int8-quantization" title="Permalink to this heading"></a></h2>
+<h2>INT8 Quantization<a class="headerlink" href="#int8-quantization" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* co-works with Intel® Neural Compressor(<a class="reference external" href="https://github.com/intel/neural-compressor">https://github.com/intel/neural-compressor</a>) to provide compatible TensorFlow INT8 quantization solution support with same user experience.</p>
 <p>Please refer to <a class="reference external" href="INT8_quantization.html">INT8 Quantization</a> for details.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="xpuautoshard-on-gpu-experimental">
-<h2>XPUAutoShard on GPU [Experimental]<a class="headerlink" href="#xpuautoshard-on-gpu-experimental" title="Permalink to this heading"></a></h2>
+<h2>XPUAutoShard on GPU [Experimental]<a class="headerlink" href="#xpuautoshard-on-gpu-experimental" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* provides XPUAutoShard feature to automatically shard the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage.</p>
 <p>Please refer to <a class="reference external" href="XPUAutoShard.html">XPUAutoShard</a> for details.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="openxla-support-on-gpu-experimental">
-<h2>OpenXLA Support on GPU [Experimental]<a class="headerlink" href="#openxla-support-on-gpu-experimental" title="Permalink to this heading"></a></h2>
+<h2>OpenXLA Support on GPU [Experimental]<a class="headerlink" href="#openxla-support-on-gpu-experimental" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* adopts a uniform Device API PJRT(<a class="reference external" href="https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md">https://github.com/openxla/community/blob/main/rfcs/20230123-pjrt-plugin.md</a>) as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA experimental support.</p>
 <p>Please refer to <a class="reference external" href="OpenXLA_Support_on_GPU.html">OpenXLA_Support_on_GPU</a> for details.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
 <section id="tensorflow-serving">
-<h2>TensorFlow Serving<a class="headerlink" href="#tensorflow-serving" title="Permalink to this heading"></a></h2>
+<h2>TensorFlow Serving<a class="headerlink" href="#tensorflow-serving" title="Link to this heading"></a></h2>
 <p>[TensorFlow Serving](<a class="reference external" href="https://www.tensorflow.org/tfx/guide/serving">https://www.tensorflow.org/tfx/guide/serving</a>) is an open-source system designed by Google that acts as a bridge between trained machine learning models and the applications that need to use them, streamlining the process of deploying and serving models in a production environment while maintaining efficiency and scalability.</p>
 <p>It’s easy to get started using TensorFlow Serving with Intel® Extension for TensorFlow*.</p>
 <p>Please refer to <a class="reference external" href="tf_serving_install.html">Install TensorFlow Serving with Intel® Extension for TensorFlow*</a> for details.</p>
@@ -227,7 +227,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b5248e0> 
+   <jinja2.runtime.BlockReference object at 0x7efef1671930> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

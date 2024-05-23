@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Experimental: Intel® Arc™ A-Series GPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+  <title>Experimental: Intel® Arc™ A-Series GPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,23 +91,23 @@
            <div itemprop="articleBody">
              
   <section id="experimental-intel-arc-a-series-gpu-software-installation">
-<h1><em>Experimental:</em> Intel® Arc™ A-Series GPU Software Installation<a class="headerlink" href="#experimental-intel-arc-a-series-gpu-software-installation" title="Permalink to this heading"></a></h1>
+<h1><em>Experimental:</em> Intel® Arc™ A-Series GPU Software Installation<a class="headerlink" href="#experimental-intel-arc-a-series-gpu-software-installation" title="Link to this heading"></a></h1>
 <section id="experimental-release">
-<h2><em>Experimental Release</em><a class="headerlink" href="#experimental-release" title="Permalink to this heading"></a></h2>
+<h2><em>Experimental Release</em><a class="headerlink" href="#experimental-release" title="Link to this heading"></a></h2>
 <p>The Intel® Extension for TensorFlow* has early <em>experimental only support</em> for Intel® Arc™ A-Series GPUs on Windows Subsystem for Linux 2 with Ubuntu Linux installed and native Ubuntu Linux.</p>
 <p>Issues opened for the Intel® Extension for TensorFlow* on Intel® Arc™ A-Series GPUs will be addressed on a best-effort basis, but no guarantee is provided as to when these issues will be fixed.</p>
 </section>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Hardware Platforms with Experimental Only Support:</p>
 <ul class="simple">
 <li><p>Intel® Arc™ A-Series GPUs</p></li>
 </ul>
 </section>
 <section id="software-requirements">
-<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Permalink to this heading"></a></h2>
+<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Link to this heading"></a></h2>
 <section id="windows-subsystem-for-linux-2-wsl2">
-<h3>Windows Subsystem for Linux 2 (WSL2)<a class="headerlink" href="#windows-subsystem-for-linux-2-wsl2" title="Permalink to this heading"></a></h3>
+<h3>Windows Subsystem for Linux 2 (WSL2)<a class="headerlink" href="#windows-subsystem-for-linux-2-wsl2" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>For <a class="reference external" href="https://www.microsoft.com/en-us/windows/get-windows-10">Windows 10</a> or <a class="reference external" href="https://www.microsoft.com/en-us/windows/windows-11">Windows 11</a>:</p>
 <ul>
@@ -127,7 +127,7 @@
 </ul>
 </section>
 <section id="native-linux-running-directly-on-hardware">
-<h3>Native Linux Running Directly on Hardware<a class="headerlink" href="#native-linux-running-directly-on-hardware" title="Permalink to this heading"></a></h3>
+<h3>Native Linux Running Directly on Hardware<a class="headerlink" href="#native-linux-running-directly-on-hardware" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Ubuntu 22.04 (64-bit)</p></li>
 <li><p>Intel® GPU Drivers for Linux (installation instructions below)</p></li>
@@ -140,14 +140,14 @@
 </section>
 </section>
 <section id="step-by-step-instructions">
-<h2>Step-By-Step Instructions<a class="headerlink" href="#step-by-step-instructions" title="Permalink to this heading"></a></h2>
+<h2>Step-By-Step Instructions<a class="headerlink" href="#step-by-step-instructions" title="Link to this heading"></a></h2>
 <section id="install-gpu-drivers">
-<h3>1. Install GPU Drivers<a class="headerlink" href="#install-gpu-drivers" title="Permalink to this heading"></a></h3>
+<h3>1. Install GPU Drivers<a class="headerlink" href="#install-gpu-drivers" title="Link to this heading"></a></h3>
 <section id="id1">
-<h4>Windows Subsystem for Linux 2 (WSL2)<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h4>
+<h4>Windows Subsystem for Linux 2 (WSL2)<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
 <p>When using WSL2, the GPU drivers are installed in the Windows OS and runtime components such as <a class="reference external" href="https://github.com/oneapi-src/level-zero">Level-Zero</a> are installed within Linux (in WSL2).</p>
 <section id="windows-gpu-drivers">
-<h5>Windows GPU Drivers<a class="headerlink" href="#windows-gpu-drivers" title="Permalink to this heading"></a></h5>
+<h5>Windows GPU Drivers<a class="headerlink" href="#windows-gpu-drivers" title="Link to this heading"></a></h5>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -166,7 +166,7 @@
 </table><p>Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.</p>
 </section>
 <section id="ubuntu-linux-installed-in-wsl2">
-<h5>Ubuntu Linux Installed in WSL2<a class="headerlink" href="#ubuntu-linux-installed-in-wsl2" title="Permalink to this heading"></a></h5>
+<h5>Ubuntu Linux Installed in WSL2<a class="headerlink" href="#ubuntu-linux-installed-in-wsl2" title="Link to this heading"></a></h5>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -222,7 +222,7 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 </section>
 </section>
 <section id="id2">
-<h4>Native Linux Running Directly on Hardware<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h4>
+<h4>Native Linux Running Directly on Hardware<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -277,17 +277,17 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 </section>
 </section>
 <section id="install-tensorflow-via-pypi-wheel-in-linux">
-<h3>2. Install TensorFlow* via PyPI Wheel in Linux<a class="headerlink" href="#install-tensorflow-via-pypi-wheel-in-linux" title="Permalink to this heading"></a></h3>
+<h3>2. Install TensorFlow* via PyPI Wheel in Linux<a class="headerlink" href="#install-tensorflow-via-pypi-wheel-in-linux" title="Link to this heading"></a></h3>
 <p>The following steps can be used to install the TensorFlow framework and other necessary software in Ubuntu Linux running native (installed directly on hardware) or running within Windows Subsystem for Linux 2.</p>
 <section id="install-tensorflow">
-<h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h4>
+<h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Link to this heading"></a></h4>
 <p>The Python development and virtual environment setup recommendation by TensorFlow is to isolate package installation from the system.</p>
 <p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.15.0.</p>
 <ul class="simple">
 <li></li>
 </ul>
 <section id="virtual-environment-install">
-<h5>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this heading"></a></h5>
+<h5>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Link to this heading"></a></h5>
 <p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
 <p>On Linux, it is often necessary to first update pip to a version that supports manylinux2014 wheels.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
@@ -300,7 +300,7 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 </section>
 <li></li>
 <section id="system-environment-install">
-<h5>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this heading"></a></h5>
+<h5>System environment install<a class="headerlink" href="#system-environment-install" title="Link to this heading"></a></h5>
 <p>If you prefer to install tensorflow in $HOME, append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span><span class="s1">&#39;tensorflow==2.15.0&#39;</span>
 </pre></div>
@@ -310,7 +310,7 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 </section>
 </section>
 <section id="install-intel-extension-for-tensorflow">
-<h3>3. Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>3. Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Link to this heading"></a></h3>
 <p>To install an XPU version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>xpu<span class="o">]</span>
 </pre></div>
@@ -322,14 +322,14 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>update
 </div>
 </section>
 <section id="verify-the-installation">
-<h3>4. Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this heading"></a></h3>
+<h3>4. Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Link to this heading"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
 </pre></div>
 </div>
 <p>You can also run a <a class="reference external" href="../../../examples/quick_example.html">quick_example</a> to verify the installation.</p>
 </section>
 <section id="optional-install-full-intel-oneapi">
-<h3>Optional: Install Full Intel® oneAPI<a class="headerlink" href="#optional-install-full-intel-oneapi" title="Permalink to this heading"></a></h3>
+<h3>Optional: Install Full Intel® oneAPI<a class="headerlink" href="#optional-install-full-intel-oneapi" title="Link to this heading"></a></h3>
 <p>If you prefer to have access to full Intel® oneAPI, you need to install at least the following:</p>
 <ul class="simple">
 <li><p>Intel® oneAPI DPC++ Compiler</p></li>
@@ -344,7 +344,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
 </div>
 <p>For any more details, please follow the procedure in <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html">Intel® oneAPI Base Toolkit</a>.</p>
 <section id="setup-environment-variables">
-<h4>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Permalink to this heading"></a></h4>
+<h4>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Link to this heading"></a></h4>
 <p>When using the full Intel® oneAPI Base Toolkit, you will need to set up necessary environment variables with:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>/opt/intel/oneapi/setvars.sh
 </pre></div>
@@ -372,7 +372,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384c066110> 
+   <jinja2.runtime.BlockReference object at 0x7efef0c77be0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

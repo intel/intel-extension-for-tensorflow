@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to write custom op &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>How to write custom op &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,9 +91,9 @@
            <div itemprop="articleBody">
              
   <section id="how-to-write-custom-op">
-<h1>How to write custom op<a class="headerlink" href="#how-to-write-custom-op" title="Permalink to this heading"></a></h1>
+<h1>How to write custom op<a class="headerlink" href="#how-to-write-custom-op" title="Link to this heading"></a></h1>
 <section id="prerequisite">
-<h2>1.  Prerequisite<a class="headerlink" href="#prerequisite" title="Permalink to this heading"></a></h2>
+<h2>1.  Prerequisite<a class="headerlink" href="#prerequisite" title="Link to this heading"></a></h2>
 <ul>
 <li><p>Before code changes, please make sure the environment setting and source code build pass by  <a class="reference external" href="../install/how_to_build.html">build procedure</a>.</p></li>
 <li><p>Check TensorFlow version.</p>
@@ -111,7 +111,7 @@ $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><
 </ul>
 </section>
 <section id="define-the-op-interface-and-register-op">
-<h2>2.  Define the op interface and Register op<a class="headerlink" href="#define-the-op-interface-and-register-op" title="Permalink to this heading"></a></h2>
+<h2>2.  Define the op interface and Register op<a class="headerlink" href="#define-the-op-interface-and-register-op" title="Link to this heading"></a></h2>
 <p>Take <strong>GeluOp</strong> as an example.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/ops/op_init.cc"><em>itex/core/ops/op_init.h</em></a>
@@ -149,7 +149,7 @@ $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><
 </ul>
 </section>
 <section id="register-the-kernels-for-the-op">
-<h2>3.  Register the kernels for the op<a class="headerlink" href="#register-the-kernels-for-the-op" title="Permalink to this heading"></a></h2>
+<h2>3.  Register the kernels for the op<a class="headerlink" href="#register-the-kernels-for-the-op" title="Link to this heading"></a></h2>
 <p>For example, <strong>GeluOp</strong>, one kernel made for CPUs, and a separate one for GPUs.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/kernels/cpu/relu_op.cc"><em>itex/core/kernels/cpu/relu_op.cc</em></a> Register <strong>CPU</strong> kernel <strong>Gelu</strong> for <strong>GeluOp</strong></p>
@@ -174,7 +174,7 @@ $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><
 </div></blockquote>
 </section>
 <section id="implement-the-kernels">
-<h2>4.  Implement the kernels<a class="headerlink" href="#implement-the-kernels" title="Permalink to this heading"></a></h2>
+<h2>4.  Implement the kernels<a class="headerlink" href="#implement-the-kernels" title="Link to this heading"></a></h2>
 <p>For example, GeluOp construction,  <code class="docutils literal notranslate"><span class="pre">GeluOp</span> <span class="pre">-&gt;</span> <span class="pre">ReluBaseOp</span> <span class="pre">-&gt;</span> <span class="pre">EltwiseBaseOp</span> <span class="pre">-&gt;</span> <span class="pre">OpKernel</span></code></p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/kernels/common/relu_op.h"><em>itex/core/kernels/common/relu_op.h</em></a>.</p>
@@ -268,7 +268,7 @@ $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><
 </ul>
 </section>
 <section id="add-the-op-to-build">
-<h2>6.  Add the op to BUILD<a class="headerlink" href="#add-the-op-to-build" title="Permalink to this heading"></a></h2>
+<h2>6.  Add the op to BUILD<a class="headerlink" href="#add-the-op-to-build" title="Link to this heading"></a></h2>
 <p>Add C++/Header code to BUILD. Take <strong>GeluOp</strong> as an example for GPU.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/core/kernels/gpu/BUILD">[<em>itex/core/kernels/gpu/BUILD</em>]</a></p>
@@ -304,7 +304,7 @@ Removing some kernels in <a class="reference external" href="../../itex/core/ker
 </ul>
 </section>
 <section id="use-the-op-in-python">
-<h2>7. Use the op in Python<a class="headerlink" href="#use-the-op-in-python" title="Permalink to this heading"></a></h2>
+<h2>7. Use the op in Python<a class="headerlink" href="#use-the-op-in-python" title="Link to this heading"></a></h2>
 <p>Take <strong>GeluOp</strong> as an example.</p>
 <blockquote>
 <div><p><a class="reference external" href="../../itex/python/ops/activations.py"><em>itex/python/ops/activations.py</em></a></p>
@@ -328,7 +328,7 @@ Removing some kernels in <a class="reference external" href="../../itex/core/ker
 </div>
 </section>
 <section id="build-the-package">
-<h2>8. Build the package<a class="headerlink" href="#build-the-package" title="Permalink to this heading"></a></h2>
+<h2>8. Build the package<a class="headerlink" href="#build-the-package" title="Link to this heading"></a></h2>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>bazel<span class="w"> </span>clean
 $<span class="w"> </span>git<span class="w"> </span>clean<span class="w"> </span>-xfd
 $<span class="w"> </span>./configure
@@ -339,7 +339,7 @@ $<span class="w"> </span>bazel-bin/itex/tools/pip_package/build_pip_package<span
 <p>Refer to <a class="reference external" href="../install/how_to_build.html">here</a> for more details.</p>
 </section>
 <section id="install-and-verify">
-<h2>9.  Install and Verify<a class="headerlink" href="#install-and-verify" title="Permalink to this heading"></a></h2>
+<h2>9.  Install and Verify<a class="headerlink" href="#install-and-verify" title="Link to this heading"></a></h2>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>uninstall<span class="w"> </span>intel_extension_for_tensorflow_lib
 $<span class="w"> </span>pip<span class="w"> </span>uninstall<span class="w"> </span>intel_extension_for_tensorflow
 $<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>intel_extension_for_tensorflow-*.whl
@@ -381,7 +381,7 @@ $<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </sp
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b5727a0> 
+   <jinja2.runtime.BlockReference object at 0x7efef105fe80> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

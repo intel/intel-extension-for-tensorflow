@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Intel® Extension for TensorFlow* for C++ &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -145,12 +145,12 @@
            <div itemprop="articleBody">
              
   <section id="intel-extension-for-tensorflow-for-c">
-<h1>Intel® Extension for TensorFlow* for C++<a class="headerlink" href="#intel-extension-for-tensorflow-for-c" title="Permalink to this heading"></a></h1>
+<h1>Intel® Extension for TensorFlow* for C++<a class="headerlink" href="#intel-extension-for-tensorflow-for-c" title="Link to this heading"></a></h1>
 <p>This guide shows how to build an Intel® Extension for TensorFlow* CC library from source and how to work with tensorflow_cc to build bindings for C/C++ languages on Ubuntu.</p>
 <section id="requirements">
-<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading"></a></h2>
+<h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h2>
 <section id="hardware-requirements">
-<h3>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h3>
+<h3>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h3>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® CPU (Xeon, Core)</p></li>
@@ -160,9 +160,9 @@
 </ul>
 </section>
 <section id="common-requirements">
-<h3>Common Requirements<a class="headerlink" href="#common-requirements" title="Permalink to this heading"></a></h3>
+<h3>Common Requirements<a class="headerlink" href="#common-requirements" title="Link to this heading"></a></h3>
 <section id="install-bazel">
-<h4>Install Bazel<a class="headerlink" href="#install-bazel" title="Permalink to this heading"></a></h4>
+<h4>Install Bazel<a class="headerlink" href="#install-bazel" title="Link to this heading"></a></h4>
 <p>To build Intel® Extension for TensorFlow*, install Bazel 5.3.0. Refer to <a class="reference external" href="https://docs.bazel.build/versions/main/install-ubuntu.html">install Bazel</a>.</p>
 <p>Here are the recommended commands:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
@@ -175,14 +175,14 @@ $<span class="w"> </span>bash<span class="w"> </span>bazel-5.3.0-installer-linux
 </div>
 </section>
 <section id="download-source-code">
-<h4>Download Source Code<a class="headerlink" href="#download-source-code" title="Permalink to this heading"></a></h4>
+<h4>Download Source Code<a class="headerlink" href="#download-source-code" title="Link to this heading"></a></h4>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-tensorflow.git<span class="w"> </span>intel-extension-for-tensorflow
 $<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>intel-extension-for-tensorflow/
 </pre></div>
 </div>
 </section>
 <section id="create-a-conda-environment">
-<h4>Create a Conda Environment<a class="headerlink" href="#create-a-conda-environment" title="Permalink to this heading"></a></h4>
+<h4>Create a Conda Environment<a class="headerlink" href="#create-a-conda-environment" title="Link to this heading"></a></h4>
 <ol class="simple">
 <li><p>Install <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">Conda</a>.</p></li>
 <li><p>Create Virtual Running Environment</p></li>
@@ -194,7 +194,7 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 <p>Note, we support Python versions 3.8 through 3.11.</p>
 </section>
 <section id="install-tensorflow">
-<h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h4>
+<h4>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Link to this heading"></a></h4>
 <p>Install TensorFlow 2.15.0, and refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a> for details.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.15.0
 </pre></div>
@@ -206,9 +206,9 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 </section>
 </section>
 <section id="extra-requirements-for-xpu-gpu-build-only">
-<h3>Extra Requirements for XPU/GPU Build Only<a class="headerlink" href="#extra-requirements-for-xpu-gpu-build-only" title="Permalink to this heading"></a></h3>
+<h3>Extra Requirements for XPU/GPU Build Only<a class="headerlink" href="#extra-requirements-for-xpu-gpu-build-only" title="Link to this heading"></a></h3>
 <section id="install-intel-gpu-driver">
-<h4>Install Intel GPU Driver<a class="headerlink" href="#install-intel-gpu-driver" title="Permalink to this heading"></a></h4>
+<h4>Install Intel GPU Driver<a class="headerlink" href="#install-intel-gpu-driver" title="Link to this heading"></a></h4>
 <p>Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT (<a class="reference external" href="https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html">Ahead-of-time compilation</a>).</p>
 <p>Refer to <a class="reference external" href="install_for_xpu.html/#install-gpu-drivers">Install Intel GPU driver</a> for details.</p>
 <p>Note:</p>
@@ -222,7 +222,7 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 </ol>
 </section>
 <section id="install-oneapi-base-toolkit">
-<h4>Install oneAPI Base Toolkit<a class="headerlink" href="#install-oneapi-base-toolkit" title="Permalink to this heading"></a></h4>
+<h4>Install oneAPI Base Toolkit<a class="headerlink" href="#install-oneapi-base-toolkit" title="Link to this heading"></a></h4>
 <p>We recommend you install the oneAPI base toolkit using <code class="docutils literal notranslate"><span class="pre">sudo</span></code> (or as root user) to the system directory <code class="docutils literal notranslate"><span class="pre">/opt/intel/oneapi</span></code>.</p>
 <p>The following commands assume the oneAPI base tookit is installed in <code class="docutils literal notranslate"><span class="pre">/opt/intel/oneapi</span></code>. If you installed it in some other folder, please update the oneAPI path as appropriate.</p>
 <p>Refer to <a class="reference external" href="install_for_xpu.html#install-oneapi-base-toolkit-packages">Install oneAPI Base Toolkit Packages</a></p>
@@ -236,11 +236,11 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 </section>
 </section>
 <section id="build-intel-extension-for-tensorflow-cc-library">
-<h2>Build Intel® Extension for TensorFlow* CC library<a class="headerlink" href="#build-intel-extension-for-tensorflow-cc-library" title="Permalink to this heading"></a></h2>
+<h2>Build Intel® Extension for TensorFlow* CC library<a class="headerlink" href="#build-intel-extension-for-tensorflow-cc-library" title="Link to this heading"></a></h2>
 <section id="configure">
-<h3>Configure<a class="headerlink" href="#configure" title="Permalink to this heading"></a></h3>
+<h3>Configure<a class="headerlink" href="#configure" title="Link to this heading"></a></h3>
 <section id="configure-for-cpu">
-<h4>Configure For CPU<a class="headerlink" href="#configure-for-cpu" title="Permalink to this heading"></a></h4>
+<h4>Configure For CPU<a class="headerlink" href="#configure-for-cpu" title="Link to this heading"></a></h4>
 <p>Configure the system build by running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> command at the root of your cloned Intel® Extension for TensorFlow* source tree.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./configure
 </pre></div>
@@ -248,7 +248,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 <p>Choose <code class="docutils literal notranslate"><span class="pre">n</span></code> to build for CPU only. Refer to <a class="reference external" href="how_to_build.html#configure-for-cpu">Configure Example</a>.</p>
 </section>
 <section id="configure-for-gpu">
-<h4>Configure For GPU<a class="headerlink" href="#configure-for-gpu" title="Permalink to this heading"></a></h4>
+<h4>Configure For GPU<a class="headerlink" href="#configure-for-gpu" title="Link to this heading"></a></h4>
 <p>Configure the system build by running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> command at the root of your cloned Intel® Extension for TensorFlow* source tree. This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./configure
 </pre></div>
@@ -309,7 +309,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 </section>
 </section>
 <section id="build-source-code">
-<h3>Build Source Code<a class="headerlink" href="#build-source-code" title="Permalink to this heading"></a></h3>
+<h3>Build Source Code<a class="headerlink" href="#build-source-code" title="Link to this heading"></a></h3>
 <p>For GPU support</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>bazel<span class="w"> </span>build<span class="w"> </span>-c<span class="w"> </span>opt<span class="w"> </span>--config<span class="o">=</span>gpu<span class="w"> </span>//itex:libitex_gpu_cc.so
 </pre></div>
@@ -337,9 +337,9 @@ $<span class="w"> </span>cp<span class="w"> </span>bazel-out/k8-opt-ST-*/bin/ext
 </section>
 </section>
 <section id="prepare-tensorflow-cc-library-and-header-files">
-<h2>Prepare Tensorflow* CC library and header files<a class="headerlink" href="#prepare-tensorflow-cc-library-and-header-files" title="Permalink to this heading"></a></h2>
+<h2>Prepare Tensorflow* CC library and header files<a class="headerlink" href="#prepare-tensorflow-cc-library-and-header-files" title="Link to this heading"></a></h2>
 <section id="option-1-extract-from-tensorflow-python-package-recommended">
-<h3>Option 1: Extract from Tensorflow* python package (<strong>Recommended</strong>)<a class="headerlink" href="#option-1-extract-from-tensorflow-python-package-recommended" title="Permalink to this heading"></a></h3>
+<h3>Option 1: Extract from Tensorflow* python package (<strong>Recommended</strong>)<a class="headerlink" href="#option-1-extract-from-tensorflow-python-package-recommended" title="Link to this heading"></a></h3>
 <p>a. Download Tensorflow* 2.15.0 python package</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://files.pythonhosted.org/packages/ed/1a/b4ab4b8f8b3a41fade4899fd00b5b2d2dad0981f3e1bb10df4c522975fd7/tensorflow-2.15.0.post1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 </pre></div>
@@ -359,7 +359,7 @@ $<span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>lib
 <p>Tensorflow header file location: <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/include</span></code></p>
 </section>
 <section id="option-2-build-from-tensorflow-source-code">
-<h3>Option 2: Build from TensorFlow* source code<a class="headerlink" href="#option-2-build-from-tensorflow-source-code" title="Permalink to this heading"></a></h3>
+<h3>Option 2: Build from TensorFlow* source code<a class="headerlink" href="#option-2-build-from-tensorflow-source-code" title="Link to this heading"></a></h3>
 <p>a. Prepare TensorFlow* source code</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tensorflow/tensorflow.git
 $<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tensorflow
@@ -388,9 +388,9 @@ $<span class="w"> </span>ls<span class="w"> </span>./bazel-bin/tensorflow/includ
 </section>
 </section>
 <section id="integrate-the-cc-library">
-<h2>Integrate the CC library<a class="headerlink" href="#integrate-the-cc-library" title="Permalink to this heading"></a></h2>
+<h2>Integrate the CC library<a class="headerlink" href="#integrate-the-cc-library" title="Link to this heading"></a></h2>
 <section id="linker">
-<h3>Linker<a class="headerlink" href="#linker" title="Permalink to this heading"></a></h3>
+<h3>Linker<a class="headerlink" href="#linker" title="Link to this heading"></a></h3>
 <p>Configure the linker environmental variables with Intel® Extension for TensorFlow* CC library (<strong>libitex_gpu_cc.so</strong> or <strong>libitex_cpu_cc.so</strong>) path:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LIBRARY_PATH</span>:&lt;Path<span class="w"> </span>to<span class="w"> </span>intel-extension-for-tensorflow&gt;/bazel-bin/itex/
 $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:&lt;Path<span class="w"> </span>to<span class="w"> </span>intel-extension-for-tensorflow&gt;/bazel-bin/itex/
@@ -398,7 +398,7 @@ $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><
 </div>
 </section>
 <section id="load">
-<h3>Load<a class="headerlink" href="#load" title="Permalink to this heading"></a></h3>
+<h3>Load<a class="headerlink" href="#load" title="Link to this heading"></a></h3>
 <p>TensorFlow* has C API: <code class="docutils literal notranslate"><span class="pre">TF_LoadPluggableDeviceLibrary</span></code> to support the pluggable device library.
 To support Intel® Extension for TensorFlow* cc library, we need to modify the original C++ code:</p>
 <p>a. Add the header file: <code class="docutils literal notranslate"><span class="pre">&quot;tensorflow/c/c_api_experimental.h&quot;</span></code>.</p>
@@ -411,7 +411,7 @@ To support Intel® Extension for TensorFlow* cc library, we need to modify the o
 </pre></div>
 </div>
 <section id="example">
-<h4>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h4>
+<h4>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h4>
 <p>The original simple example for using <a class="reference external" href="https://www.tensorflow.org/api_docs/cc">TensorFlow* C++ API</a>.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// example.cc</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;tensorflow/cc/client/client_session.h&quot;</span>
@@ -483,27 +483,27 @@ int main() {
 </section>
 </section>
 <section id="build-and-run">
-<h3>Build and run<a class="headerlink" href="#build-and-run" title="Permalink to this heading"></a></h3>
+<h3>Build and run<a class="headerlink" href="#build-and-run" title="Link to this heading"></a></h3>
 <p>Place a <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> file in the same directory of <code class="docutils literal notranslate"><span class="pre">example.cc</span></code> with the following contents:</p>
 <ul class="simple">
 <li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TF_INCLUDE_PATH&gt;</span></code> with local <strong>Tensorflow* header file path</strong>. e.g.  <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/include</span></code></p></li>
 <li><p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;TFCC_PATH&gt;</span></code> with local <strong>Tensorflow* CC library path</strong>. e.g. <code class="docutils literal notranslate"><span class="pre">&lt;Path</span> <span class="pre">to</span> <span class="pre">tensorflow_src&gt;/tensorflow/</span></code></p></li>
 </ul>
-<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span>// Makefile
-target = example_test
-cc = g++
-TF_INCLUDE_PATH = &lt;TF_INCLUDE_PATH&gt;
-TFCC_PATH = &lt;TFCC_PATH&gt;
-include = -I $(TF_INCLUDE_PATH)
-lib = -L $(TFCC_PATH) -ltensorflow_framework -ltensorflow_cc
-flag = -Wl,-rpath=$(TFCC_PATH) -std=c++17
-source = ./example.cc
-$(target): $(source)
-	$(cc) $(source) -o $(target) $(include) $(lib) $(flag)
-clean:
-	rm $(target)
-run:
-	./$(target)
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="err">//</span><span class="w"> </span><span class="err">Makefile</span>
+<span class="nv">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>example_test
+<span class="nv">cc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>g++
+<span class="nv">TF_INCLUDE_PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>&lt;TF_INCLUDE_PATH&gt;
+<span class="nv">TFCC_PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>&lt;TFCC_PATH&gt;
+<span class="cp">include = -I $(TF_INCLUDE_PATH)</span>
+<span class="nv">lib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-L<span class="w"> </span><span class="k">$(</span>TFCC_PATH<span class="k">)</span><span class="w"> </span>-ltensorflow_framework<span class="w"> </span>-ltensorflow_cc
+<span class="nv">flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-Wl,-rpath<span class="o">=</span><span class="k">$(</span>TFCC_PATH<span class="k">)</span><span class="w"> </span>-std<span class="o">=</span>c++17
+<span class="nv">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>./example.cc
+<span class="nf">$(target)</span><span class="o">:</span><span class="w"> </span><span class="k">$(</span><span class="nv">source</span><span class="k">)</span>
+<span class="w">	</span><span class="k">$(</span>cc<span class="k">)</span><span class="w"> </span><span class="k">$(</span><span class="nb">source</span><span class="k">)</span><span class="w"> </span>-o<span class="w"> </span><span class="k">$(</span>target<span class="k">)</span><span class="w"> </span><span class="k">$(</span>include<span class="k">)</span><span class="w"> </span><span class="k">$(</span>lib<span class="k">)</span><span class="w"> </span><span class="k">$(</span>flag<span class="k">)</span>
+<span class="nf">clean</span><span class="o">:</span>
+<span class="w">	</span>rm<span class="w"> </span><span class="k">$(</span>target<span class="k">)</span>
+<span class="nf">run</span><span class="o">:</span>
+<span class="w">	</span>./<span class="k">$(</span>target<span class="k">)</span>
 </pre></div>
 </div>
 <p>Go to the directory of example.cc and Makefile, then build and run example.</p>
@@ -537,7 +537,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b570ac0> 
+   <jinja2.runtime.BlockReference object at 0x7efef1008fd0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

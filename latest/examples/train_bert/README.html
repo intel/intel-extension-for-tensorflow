@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BERT Training for Classifying Text on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>BERT Training for Classifying Text on Intel CPU and GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,16 +91,16 @@
            <div itemprop="articleBody">
              
   <section id="bert-training-for-classifying-text-on-intel-cpu-and-gpu">
-<h1>BERT Training for Classifying Text on Intel CPU and GPU<a class="headerlink" href="#bert-training-for-classifying-text-on-intel-cpu-and-gpu" title="Permalink to this heading"></a></h1>
+<h1>BERT Training for Classifying Text on Intel CPU and GPU<a class="headerlink" href="#bert-training-for-classifying-text-on-intel-cpu-and-gpu" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
 This example uses the tutorial from tensorflow.org <a class="reference external" href="https://www.tensorflow.org/text/tutorials/classify_text_with_bert">Classify text with BERT</a> to show training on BERT model without changing the original code.</p>
 <p>Installing the Intel® Extension for TensorFlow* in legacy running environment, TensorFlow will execute the training on Intel CPU and GPU.</p>
 <p><strong>No need any code change</strong></p>
 </section>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series</p></li>
@@ -108,13 +108,13 @@ This example uses the tutorial from tensorflow.org <a class="reference external"
 </ul>
 </section>
 <section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
 <section id="prepare-for-gpu-skip-this-step-for-cpu">
-<h3>Prepare for GPU (Skip this step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this heading"></a></h3>
+<h3>Prepare for GPU (Skip this step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Link to this heading"></a></h3>
 <p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a></p>
 </section>
 <section id="setup-running-environment">
-<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Setup for GPU</p></li>
 </ul>
@@ -133,7 +133,7 @@ This example uses the tutorial from tensorflow.org <a class="reference external"
 </div>
 </section>
 <section id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Link to this heading"></a></h3>
 <ol class="simple">
 <li><p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
 <ul class="simple">
@@ -151,14 +151,14 @@ This example uses the tutorial from tensorflow.org <a class="reference external"
 <p>The Jupyter notebook script will install other required pacakges while it is running. So there’s no need to pre-install them.</p>
 </section>
 <section id="download-jupyter-code">
-<h3>Download Jupyter Code:<a class="headerlink" href="#download-jupyter-code" title="Permalink to this heading"></a></h3>
+<h3>Download Jupyter Code:<a class="headerlink" href="#download-jupyter-code" title="Link to this heading"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">storage</span><span class="o">.</span><span class="n">googleapis</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">tensorflow_docs</span><span class="o">/</span><span class="n">text</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">tutorials</span><span class="o">/</span><span class="n">classify_text_with_bert</span><span class="o">.</span><span class="n">ipynb</span>
 </pre></div>
 </div>
 </section>
 </section>
 <section id="startup-jupyter-notebook">
-<h2>Startup Jupyter Notebook<a class="headerlink" href="#startup-jupyter-notebook" title="Permalink to this heading"></a></h2>
+<h2>Startup Jupyter Notebook<a class="headerlink" href="#startup-jupyter-notebook" title="Link to this heading"></a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>jupyter notebook --notebook-dir=./ --ip=0.0.0.0 --no-browser  --allow-root &amp;
 ...
 
@@ -168,7 +168,7 @@ http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333
 <p>Open the url:http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333 above in your web browser.</p>
 </section>
 <section id="execute">
-<h2>Execute<a class="headerlink" href="#execute" title="Permalink to this heading"></a></h2>
+<h2>Execute<a class="headerlink" href="#execute" title="Link to this heading"></a></h2>
 <ol class="simple">
 <li><p>Open classify_text_with_bert.ipynb by Jupyter notebook.</p></li>
 <li><p>Run the tutorial according to the description in the Jupyter notebook.</p></li>
@@ -176,7 +176,7 @@ http://xxx.xxx:8888/?token=f502f0715979ec73c571ca5676ba58431b916f5f58ee3333
 </ol>
 </section>
 <section id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
+<h2>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h2>
 <ol class="simple">
 <li><p>The following error log is a known issue and it is not caused by Intel® Extension for TensorFlow*. This crash happens when the code is finished and tries to release resources. It doesn’t impact the result of the Bert training and inference/test.</p></li>
 </ol>
@@ -208,7 +208,7 @@ TypeError: &#39;NoneType&#39; object is not callable
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b51f850> 
+   <jinja2.runtime.BlockReference object at 0x7efef105c790> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

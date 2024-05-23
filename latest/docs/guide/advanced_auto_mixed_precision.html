@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advanced Auto Mixed Precision &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Advanced Auto Mixed Precision &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -136,7 +136,7 @@
            <div itemprop="articleBody">
              
   <section id="advanced-auto-mixed-precision">
-<h1>Advanced Auto Mixed Precision<a class="headerlink" href="#advanced-auto-mixed-precision" title="Permalink to this heading"></a></h1>
+<h1>Advanced Auto Mixed Precision<a class="headerlink" href="#advanced-auto-mixed-precision" title="Link to this heading"></a></h1>
 <p>Mixed Precision uses lower-precision data types (such as FP16 or BF16) to make models run faster with less memory consumption during training and inference.</p>
 <p>Stock TensorFlow provides two ways to do this, Grappler Graph Optimization <a class="reference external" href="https://www.tensorflow.org/guide/graph_optimization">Auto Mixed Precision</a> <strong>(AMP)</strong> and <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision API</a>.</p>
 <p>Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API in Stock TensorFlow, and provides an <strong>Advanced Auto Mixed Precision</strong> feature for better performance.</p>
@@ -149,7 +149,7 @@
 <li><p><a class="reference external" href="#tips">Tips</a></p></li>
 </ul>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* provides two ways to support mixed precision:</p>
 <p>I. Keras Mixed Precision</p>
 <p>Intel® Extension for TensorFlow* is fully compatible with Keras mixed precision API available in Stock TensorFlow. To learn about Keras mixed precision, refer to <a class="reference external" href="/docs/guide/keras_mixed_precision.html">Keras Mixed Precision</a>.</p>
@@ -187,9 +187,9 @@
 </tbody>
 </table></section>
 <section id="id1">
-<h2>Advanced Auto Mixed Precision<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<h2>Advanced Auto Mixed Precision<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
 <section id="advanced-amp-vs-stock-tensorflow-amp">
-<h3>Advanced AMP vs. Stock TensorFlow AMP<a class="headerlink" href="#advanced-amp-vs-stock-tensorflow-amp" title="Permalink to this heading"></a></h3>
+<h3>Advanced AMP vs. Stock TensorFlow AMP<a class="headerlink" href="#advanced-amp-vs-stock-tensorflow-amp" title="Link to this heading"></a></h3>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -227,7 +227,7 @@
 </tbody>
 </table></section>
 <section id="data-type">
-<h3>Data Type<a class="headerlink" href="#data-type" title="Permalink to this heading"></a></h3>
+<h3>Data Type<a class="headerlink" href="#data-type" title="Link to this heading"></a></h3>
 <p>Advanced Auto Mixed Precision supports data type depended on hardware:</p>
 <table border="1" class="docutils">
 <thead>
@@ -251,7 +251,7 @@
 </tbody>
 </table></section>
 <section id="graph-optimizer">
-<h3>Graph Optimizer<a class="headerlink" href="#graph-optimizer" title="Permalink to this heading"></a></h3>
+<h3>Graph Optimizer<a class="headerlink" href="#graph-optimizer" title="Link to this heading"></a></h3>
 <p>Intel® Extension for TensorFlow* graph optimizer provides more powerful optimization for mixed precision graph versus a stock TensorFlow custom graph optimizer.</p>
 <p>I. After Advanced AMP of Intel® Extension for TensorFlow* is enabled, the stock TensorFlow AMP components: AMP and Remapper will be disabled automatically.</p>
 <p>II. Intel® Extension for TensorFlow* AMP and Remapper work for mixed precision. The order is changed to Remapper, then AMP, so that fusion operations can be mixed precision.</p>
@@ -260,7 +260,7 @@
 <p><img alt="workflow.png" src="../../_images/workflow.png" /></p>
 </section>
 <section id="feature">
-<h3>Feature<a class="headerlink" href="#feature" title="Permalink to this heading"></a></h3>
+<h3>Feature<a class="headerlink" href="#feature" title="Link to this heading"></a></h3>
 <p>Advanced AMP based on Intel® Extension for TensorFlow* has more features to improve performance than stock TensorFlow AMP:</p>
 <ul class="simple">
 <li><p>Provides more aggressive sub-graph fusion, such as LayerNorm and InstanceNorm fusion.</p></li>
@@ -269,13 +269,13 @@
 </section>
 </section>
 <section id="tune-advanced-amp-manually">
-<h2>Tune Advanced AMP Manually<a class="headerlink" href="#tune-advanced-amp-manually" title="Permalink to this heading"></a></h2>
+<h2>Tune Advanced AMP Manually<a class="headerlink" href="#tune-advanced-amp-manually" title="Link to this heading"></a></h2>
 <p>In most cases, with default configuration, Advanced AMP delivers good results with balanced performance and accuracy.
 For advanced users with more knowledge of model and TensorFlow, it is possible to manually tune Advanced AMP for special cases or custom operations.</p>
 <p>Refer to <a class="reference external" href="aamp_tune.html">Tune Advanced Auto Mixed Precision</a> for advanced operations.</p>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
 <p>I. Install Intel® Extension for TensorFlow* in running environment.</p>
 <p>After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.</p>
 <p>Refer to <a class="reference external" href="../../get_started.html##Install">installation</a> instructions for more details.</p>
@@ -315,16 +315,16 @@ For advanced users with more knowledge of model and TensorFlow, it is possible t
 </table><p>Refer to <a class="reference external" href="aamp_tune.html#usage">Usage</a></p>
 </section>
 <section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h2>
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
 <section id="quick-training-example">
-<h3>Quick Training Example<a class="headerlink" href="#quick-training-example" title="Permalink to this heading"></a></h3>
+<h3>Quick Training Example<a class="headerlink" href="#quick-training-example" title="Link to this heading"></a></h3>
 <p>Train model for BF16 with Advanced AMP on GPU device.</p>
 <section id="setup">
-<h4>Setup<a class="headerlink" href="#setup" title="Permalink to this heading"></a></h4>
+<h4>Setup<a class="headerlink" href="#setup" title="Link to this heading"></a></h4>
 <p>Install Intel® Extension for TensorFlow*, refer to <a class="reference external" href="../../get_started.html##Install">installation</a>.</p>
 </section>
 <section id="enable-advanced-amp">
-<h4>Enable Advanced AMP<a class="headerlink" href="#enable-advanced-amp" title="Permalink to this heading"></a></h4>
+<h4>Enable Advanced AMP<a class="headerlink" href="#enable-advanced-amp" title="Link to this heading"></a></h4>
 <p>Use either the Python API or the environment variables to enable Advanced AMP.</p>
 <table border="1" class="docutils">
 <thead>
@@ -341,7 +341,7 @@ For advanced users with more knowledge of model and TensorFlow, it is possible t
 </tbody>
 </table></section>
 <section id="original-code">
-<h4>Original Code<a class="headerlink" href="#original-code" title="Permalink to this heading"></a></h4>
+<h4>Original Code<a class="headerlink" href="#original-code" title="Link to this heading"></a></h4>
 <p>Insert the Python API above in the original code, or set environment variables above before executing the original code.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">keras</span>
@@ -380,15 +380,15 @@ For advanced users with more knowledge of model and TensorFlow, it is possible t
 </div>
 </section>
 <section id="notice">
-<h4>Notice<a class="headerlink" href="#notice" title="Permalink to this heading"></a></h4>
+<h4>Notice<a class="headerlink" href="#notice" title="Link to this heading"></a></h4>
 <p>The first epoch may be slower because TensorFlow optimizes the model during the first run. In subsequent epochs, the time will stabilize.</p>
 </section>
 </section>
 </section>
 <section id="tips">
-<h2>Tips<a class="headerlink" href="#tips" title="Permalink to this heading"></a></h2>
+<h2>Tips<a class="headerlink" href="#tips" title="Link to this heading"></a></h2>
 <section id="log-and-save-optimized-graph">
-<h3>Log and Save Optimized Graph<a class="headerlink" href="#log-and-save-optimized-graph" title="Permalink to this heading"></a></h3>
+<h3>Log and Save Optimized Graph<a class="headerlink" href="#log-and-save-optimized-graph" title="Link to this heading"></a></h3>
 <p>Advanced AMP supports outputting the log and optimized graph by setting an environment variable:</p>
 <p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ITEX_AUTO_MIXED_PRECISION_LOG_PATH=&quot;/my/path/&quot;</span></code></p>
 <p>It will trigger Intel® Extension for TensorFlow* to save the post optimization graph and detailed conversion log to a local folder.</p>
@@ -396,7 +396,7 @@ For advanced users with more knowledge of model and TensorFlow, it is possible t
 <p>For detailed introduction, refer to <a class="reference external" href="aamp_tune.html#tuning-performance-example-by-advanced-amp-configure-list-manually">Tuning Performance Example by Advanced AMP Configure List Manually</a></p>
 </section>
 <section id="custom-operation">
-<h3>Custom Operation<a class="headerlink" href="#custom-operation" title="Permalink to this heading"></a></h3>
+<h3>Custom Operation<a class="headerlink" href="#custom-operation" title="Link to this heading"></a></h3>
 <p>When writing a custom operation, add it to the configuration list to enable Advanced AMP.</p>
 <p>Refer to <a class="reference external" href="aamp_tune.html#tune-advanced-auto-mixed-precision">Tune Advanced Auto Mixed Precision</a> for more details.</p>
 </section>
@@ -420,7 +420,7 @@ For advanced users with more knowledge of model and TensorFlow, it is possible t
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b51c8b0> 
+   <jinja2.runtime.BlockReference object at 0x7efef1008b80> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

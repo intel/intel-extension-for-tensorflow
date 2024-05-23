@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,24 +91,24 @@
            <div itemprop="articleBody">
              
   <section id="accelerate-resnet50-training-by-xpuautoshard-on-intel-gpu">
-<h1>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU<a class="headerlink" href="#accelerate-resnet50-training-by-xpuautoshard-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<h1>Accelerate ResNet50 Training by XPUAutoShard on Intel GPU<a class="headerlink" href="#accelerate-resnet50-training-by-xpuautoshard-on-intel-gpu" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>The XPUAutoShard feature of Intel® Extension for TensorFlow* automatically shards the input data to the Intel® GPU devices. Currently, it supports applying the shards on multiple GPU tiles to maximize the hardware utilization and improve performance.</p>
 <p>This example shows ResNet50 training speedup with XPUAutoShard enabled.</p>
 </section>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series</p></li>
 </ul>
 </section>
 <section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
 <p>This example only applies to stock TensorFlow* &gt;=2.13.0 and Intel® Extension for TensorFlow* &gt;=2.13.0.0.</p>
 <section id="prepare-the-codes">
-<h3>Prepare the Codes<a class="headerlink" href="#prepare-the-codes" title="Permalink to this heading"></a></h3>
+<h3>Prepare the Codes<a class="headerlink" href="#prepare-the-codes" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tensorflow/models<span class="w"> </span>tf-models
 <span class="nb">cd</span><span class="w"> </span>tf-models
 git<span class="w"> </span>checkout<span class="w"> </span>r2.13.0
@@ -117,21 +117,21 @@ git<span class="w"> </span>apply<span class="w"> </span>../shard.patch
 </div>
 </section>
 <section id="prepare-for-gpu">
-<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
+<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Link to this heading"></a></h3>
 <p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a></p>
 </section>
 <section id="install-other-required-packages">
-<h3>Install Other Required Packages<a class="headerlink" href="#install-other-required-packages" title="Permalink to this heading"></a></h3>
+<h3>Install Other Required Packages<a class="headerlink" href="#install-other-required-packages" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>official/requirements.txt
 </pre></div>
 </div>
 </section>
 <section id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Link to this heading"></a></h3>
 <p>Refer to <a class="reference external" href="../common_guide_running.html#running">Running</a> to enable oneAPI running environment and virtual running environment.</p>
 </section>
 <section id="setup-pythonpath">
-<h3>Setup PYTHONPATH<a class="headerlink" href="#setup-pythonpath" title="Permalink to this heading"></a></h3>
+<h3>Setup PYTHONPATH<a class="headerlink" href="#setup-pythonpath" title="Link to this heading"></a></h3>
 <p>Modify <code class="docutils literal notranslate"><span class="pre">/path/to/tf-models</span></code> accordingly, here <code class="docutils literal notranslate"><span class="pre">~/tf-models</span></code> as an example.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>official/legacy/image_classification/resnet/
 mkdir<span class="w"> </span>output
@@ -141,9 +141,9 @@ mkdir<span class="w"> </span>output
 </section>
 </section>
 <section id="executes-the-example-with-python-api">
-<h2>Executes the Example with Python API<a class="headerlink" href="#executes-the-example-with-python-api" title="Permalink to this heading"></a></h2>
+<h2>Executes the Example with Python API<a class="headerlink" href="#executes-the-example-with-python-api" title="Link to this heading"></a></h2>
 <section id="without-xpuautoshard">
-<h3>Without XPUAutoShard<a class="headerlink" href="#without-xpuautoshard" title="Permalink to this heading"></a></h3>
+<h3>Without XPUAutoShard<a class="headerlink" href="#without-xpuautoshard" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTEROP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;<span class="w"> </span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTRAOP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;
 <span class="nb">export</span><span class="w"> </span><span class="nv">BS</span><span class="o">=</span><span class="m">256</span>
@@ -167,9 +167,9 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
 </div>
 </section>
 <section id="with-xpuautoshard">
-<h3>With XPUAutoShard<a class="headerlink" href="#with-xpuautoshard" title="Permalink to this heading"></a></h3>
+<h3>With XPUAutoShard<a class="headerlink" href="#with-xpuautoshard" title="Link to this heading"></a></h3>
 <section id="python-api">
-<h4>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h4>
+<h4>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h4>
 <p>Intel® Extension for TensorFlow* provides Python APIs to enable XPUAutoShard feature as follws:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">config</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ShardingConfig</span><span class="p">()</span>
 <span class="n">config</span><span class="o">.</span><span class="n">auto_mode</span> <span class="o">=</span> <span class="kc">False</span>
@@ -185,7 +185,7 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
 </div>
 </section>
 <section id="sharding-parameters-setting">
-<h4>Sharding Parameters Setting<a class="headerlink" href="#sharding-parameters-setting" title="Permalink to this heading"></a></h4>
+<h4>Sharding Parameters Setting<a class="headerlink" href="#sharding-parameters-setting" title="Link to this heading"></a></h4>
 <p>In this example, the above code has been added to <code class="docutils literal notranslate"><span class="pre">resnet_ctl_imagenet_main.py</span></code> with the patch and you can enable XPUAutoShard via simply adding <code class="docutils literal notranslate"><span class="pre">--use_itex_sharding=True</span></code> to the command-line. You can optionally modify the following parameters in the <code class="docutils literal notranslate"><span class="pre">ShardingConfig</span></code> based on your need.</p>
 <table border="1" class="docutils">
 <thead>
@@ -211,11 +211,11 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
 </table><p>The global batch size should be <code class="docutils literal notranslate"><span class="pre">device_num</span></code> * <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> * <code class="docutils literal notranslate"><span class="pre">stage_num</span></code>. In this example, the default global batch size is 2x256x10=5120.</p>
 </section>
 <section id="further-settings">
-<h4>Further Settings<a class="headerlink" href="#further-settings" title="Permalink to this heading"></a></h4>
+<h4>Further Settings<a class="headerlink" href="#further-settings" title="Link to this heading"></a></h4>
 <p>For further performance speedup, you can enable multi-stream via setting <code class="docutils literal notranslate"><span class="pre">ITEX_ENABLE_MULTIPLE_STREAM=1</span></code> to create multiple queues for each device.</p>
 </section>
 <section id="executing-command">
-<h4>Executing Command<a class="headerlink" href="#executing-command" title="Permalink to this heading"></a></h4>
+<h4>Executing Command<a class="headerlink" href="#executing-command" title="Link to this heading"></a></h4>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTEROP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;<span class="w"> </span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">TF_NUM_INTRAOP_THREADS</span><span class="o">=</span>&lt;number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>core<span class="w"> </span>per<span class="w"> </span>socket&gt;
 <span class="nb">export</span><span class="w"> </span><span class="nv">BS</span><span class="o">=</span><span class="m">5120</span>
@@ -245,7 +245,7 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
 </section>
 </section>
 <section id="example-output">
-<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
+<h2>Example Output<a class="headerlink" href="#example-output" title="Link to this heading"></a></h2>
 <p>With successful execution, it will print out the following results:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
 <span class="n">I0324</span> <span class="mi">07</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span><span class="mf">20.594147</span> <span class="mi">140348344015936</span> <span class="n">keras_utils</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">145</span><span class="p">]</span> <span class="n">TimeHistory</span><span class="p">:</span> <span class="n">xxxxx</span> <span class="n">seconds</span><span class="p">,</span> <span class="n">xxxxx</span> <span class="n">examples</span><span class="o">/</span><span class="n">second</span> <span class="n">between</span> <span class="n">steps</span> <span class="mi">0</span> <span class="ow">and</span> <span class="mi">1</span>
@@ -278,7 +278,7 @@ python<span class="w"> </span>resnet_ctl_imagenet_main.py<span class="w"> </span
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b9d5b10> 
+   <jinja2.runtime.BlockReference object at 0x7efef1671900> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Online Documentation Build Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Online Documentation Build Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,19 +91,19 @@
            <div itemprop="articleBody">
              
   <section id="online-documentation-build-guide">
-<h1>Online Documentation Build Guide<a class="headerlink" href="#online-documentation-build-guide" title="Permalink to this heading"></a></h1>
+<h1>Online Documentation Build Guide<a class="headerlink" href="#online-documentation-build-guide" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>This document shows how scripts are used to build the project documentation.</p>
 <p>The scripts and related files are saved in the <code class="docutils literal notranslate"><span class="pre">docs/build_docs</span></code> directory.</p>
 </section>
 <section id="update-latest-version">
-<h2>Update <code class="docutils literal notranslate"><span class="pre">latest</span></code> Version<a class="headerlink" href="#update-latest-version" title="Permalink to this heading"></a></h2>
+<h2>Update <code class="docutils literal notranslate"><span class="pre">latest</span></code> Version<a class="headerlink" href="#update-latest-version" title="Link to this heading"></a></h2>
 <p>Generating and publishing the <code class="docutils literal notranslate"><span class="pre">latest</span></code> documentation is triggered by merging a PR to the public GitHub repo’s main branch. A GitHub <code class="docutils literal notranslate"><span class="pre">Action</span></code> executes the document-building scripts using content from the main branch and updates the <code class="docutils literal notranslate"><span class="pre">latest</span></code> <a class="reference external" href="https://intel.github.io/intel-extension-for-tensorflow/latest/get_started.html">published version</a>.</p>
 <p>If the PR doesn’t impact documentation (for example, it only contains code changes), the online documents won’t be updated.</p>
 </section>
 <section id="create-release-version">
-<h2>Create Release Version<a class="headerlink" href="#create-release-version" title="Permalink to this heading"></a></h2>
+<h2>Create Release Version<a class="headerlink" href="#create-release-version" title="Link to this heading"></a></h2>
 <p>When releasing a new product version, a git tag must be added to main branch. The release version will be the same as the <code class="docutils literal notranslate"><span class="pre">tag</span></code> name.</p>
 <p>Generating and publishing the documentation for a release must be triggered manually, and the resulting HTML content is committed manually to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch. (The github.io site will be updated automatically when this <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch is updated.)</p>
 <p>Note: Only GitHub users with write permission to the repo are able to update the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch content.</p>
@@ -120,7 +120,7 @@
 </div>
 </section>
 <section id="build-to-local-test">
-<h2>Build to Local Test<a class="headerlink" href="#build-to-local-test" title="Permalink to this heading"></a></h2>
+<h2>Build to Local Test<a class="headerlink" href="#build-to-local-test" title="Link to this heading"></a></h2>
 <p>Before submitting a PR that modifies documentation, you should test
 your changes by building the documentation locally.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">git</span>
@@ -161,7 +161,7 @@ python3 -m http.server 9000
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b55f340> 
+   <jinja2.runtime.BlockReference object at 0x7efef100a740> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

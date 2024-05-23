@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Keras 3 Overview &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Keras 3 Overview &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,12 +91,12 @@
            <div itemprop="articleBody">
              
   <section id="keras-3-overview">
-<h1>Keras 3 Overview<a class="headerlink" href="#keras-3-overview" title="Permalink to this heading"></a></h1>
+<h1>Keras 3 Overview<a class="headerlink" href="#keras-3-overview" title="Link to this heading"></a></h1>
 <p><a class="reference external" href="https://keras.io/about/">Keras</a> is a deep learning API written in Python and capable of running on top of either JAX, TensorFlow, or PyTorch. Both JAX and TensorFlow backend compiles the model by XLA and delivers the best training and prediction performance on GPU. But results vary from model to model, as non XLA TensorFlow is occasionaly faster on GPU. The following image show how ITEX works with XLA, Keras 3 TensorFlow backend and legacy Keras.</p>
 <p align="center">
   <img src="images/keras3.png" alt="keras3" />
 </p><section id="use-case-with-different-performance">
-<h2>Use Case with different performance<a class="headerlink" href="#use-case-with-different-performance" title="Permalink to this heading"></a></h2>
+<h2>Use Case with different performance<a class="headerlink" href="#use-case-with-different-performance" title="Link to this heading"></a></h2>
 <p>There are serval use cases that can lead to diffent performance.</p>
 <ul class="simple">
 <li><p>Default
@@ -119,7 +119,7 @@ Users can enable XLA through TensorFlow by add environment variable <code class=
 </ul>
 </section>
 <section id="situations-leads-to-warning-or-error">
-<h2>Situations leads to warning or Error<a class="headerlink" href="#situations-leads-to-warning-or-error" title="Permalink to this heading"></a></h2>
+<h2>Situations leads to warning or Error<a class="headerlink" href="#situations-leads-to-warning-or-error" title="Link to this heading"></a></h2>
 <p>We list all invalid cases here. Keras version equals to 0 means model script does not use Keras.</p>
 <p>Note that in any cases, <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">keras</span></code> first before <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">tensorflow</span></code> will cause an error due to circular import in ITEX.</p>
 <table border="1" class="docutils">
@@ -234,7 +234,7 @@ Users can enable XLA through TensorFlow by add environment variable <code class=
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b52c430> 
+   <jinja2.runtime.BlockReference object at 0x7efef1ee8850> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

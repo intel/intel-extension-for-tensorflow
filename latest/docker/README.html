@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,9 +91,9 @@
            <div itemprop="articleBody">
              
   <section id="intel-extension-for-tensorflow-docker-container-guide">
-<h1>Intel® Extension for TensorFlow* Docker Container Guide<a class="headerlink" href="#intel-extension-for-tensorflow-docker-container-guide" title="Permalink to this heading"></a></h1>
+<h1>Intel® Extension for TensorFlow* Docker Container Guide<a class="headerlink" href="#intel-extension-for-tensorflow-docker-container-guide" title="Link to this heading"></a></h1>
 <section id="description">
-<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading"></a></h2>
+<h2>Description<a class="headerlink" href="#description" title="Link to this heading"></a></h2>
 <p>This document has instructions for running TensorFlow using Intel® Extension for TensorFlow* in a Docker container.</p>
 <p>Assumptions:</p>
 <ul class="simple">
@@ -105,7 +105,7 @@
 <p>Refer to <a class="reference external" href="../docs/install/install_for_xpu.html">Install for XPU</a> and <a class="reference external" href="../docs/install/install_for_cpu.html">Install for CPU</a> for detail.</p>
 </section>
 <section id="binaries-preparation">
-<h2>Binaries Preparation<a class="headerlink" href="#binaries-preparation" title="Permalink to this heading"></a></h2>
+<h2>Binaries Preparation<a class="headerlink" href="#binaries-preparation" title="Link to this heading"></a></h2>
 <p>Download and copy Intel® Extension for TensorFlow* wheel into ./models/binaries directory. You can get the intel-extension-for-tensorflow wheel link from https://pypi.org/project/intel-extension-for-tensorflow/#files, and intel-extension-for-tensorflow-lib wheel link from https://pypi.org/project/intel-extension-for-tensorflow-lib/#files.</p>
 <p>To use Intel® Optimization for Horovod* with the Intel® oneAPI Collective Communications Library (oneCCL), copy Horovod wheel into ./models/binaries as well. You can get the intel-optimization-for-horovod wheel link from https://pypi.org/project/intel-optimization-for-horovod/#files.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="o">./</span><span class="n">models</span><span class="o">/</span><span class="n">binaries</span>
@@ -117,9 +117,9 @@
 </div>
 </section>
 <section id="usage-of-docker-container">
-<h2>Usage of Docker Container<a class="headerlink" href="#usage-of-docker-container" title="Permalink to this heading"></a></h2>
+<h2>Usage of Docker Container<a class="headerlink" href="#usage-of-docker-container" title="Link to this heading"></a></h2>
 <section id="i-customize-build-script">
-<h3>I. Customize Build Script<a class="headerlink" href="#i-customize-build-script" title="Permalink to this heading"></a></h3>
+<h3>I. Customize Build Script<a class="headerlink" href="#i-customize-build-script" title="Link to this heading"></a></h3>
 <p>We provide <a class="reference external" href="./build.sh">build.sh</a> as the Docker container build script. The OS version and some software versions (such as Python and TensorFlow) are hard coded inside the script. If you’re using a different version, you can edit this script.</p>
 <p>For example, to build a Docker container with Python 3.10 and TensorFlow 2.15 on an Ubuntu 22.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as shown below.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">IMAGE_NAME</span><span class="o">=</span>intel-extension-for-tensorflow:cpu-ubuntu
@@ -133,14 +133,14 @@
 </div>
 </section>
 <section id="ii-build-the-container">
-<h3>II. Build the Container<a class="headerlink" href="#ii-build-the-container" title="Permalink to this heading"></a></h3>
+<h3>II. Build the Container<a class="headerlink" href="#ii-build-the-container" title="Link to this heading"></a></h3>
 <p>To build the Docker container, enter into <a class="reference external" href="./">docker</a> folder and run below commands:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./build.sh<span class="w"> </span><span class="o">[</span>xpu/cpu<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="iii-running-the-container">
-<h3>III. Running the Container<a class="headerlink" href="#iii-running-the-container" title="Permalink to this heading"></a></h3>
+<h3>III. Running the Container<a class="headerlink" href="#iii-running-the-container" title="Link to this heading"></a></h3>
 <p>Run the following commands to start the Docker container. You can use the <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into the container. To make the GPU available in the container, attach the GPU to the container using <code class="docutils literal notranslate"><span class="pre">--device</span> <span class="pre">/dev/dri</span></code> option and run the container:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">IMAGE_NAME</span><span class="o">=</span>intel-extension-for-tensorflow:xpu
 docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </span>&lt;your-local-dir&gt;:/workspace<span class="w"> </span><span class="se">\</span>
@@ -164,7 +164,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </sp
 </section>
 </section>
 <section id="verify-that-intel-gpu-is-accessible-from-tensorflow">
-<h2>Verify That Intel GPU is Accessible From TensorFlow<a class="headerlink" href="#verify-that-intel-gpu-is-accessible-from-tensorflow" title="Permalink to this heading"></a></h2>
+<h2>Verify That Intel GPU is Accessible From TensorFlow<a class="headerlink" href="#verify-that-intel-gpu-is-accessible-from-tensorflow" title="Link to this heading"></a></h2>
 <p>You are inside the container now. Run this command to verify the Intel GPU is visible to TensorFlow:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())&quot;</span>
 </pre></div>
@@ -213,7 +213,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </sp
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b51d720> 
+   <jinja2.runtime.BlockReference object at 0x7efef114e650> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

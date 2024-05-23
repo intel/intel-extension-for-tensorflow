@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>oneDNN object cache optimization &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+  <title>oneDNN object cache optimization &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,9 +91,9 @@
            <div itemprop="articleBody">
              
   <section id="onednn-object-cache-optimization">
-<h1>oneDNN object cache optimization<a class="headerlink" href="#onednn-object-cache-optimization" title="Permalink to this heading"></a></h1>
+<h1>oneDNN object cache optimization<a class="headerlink" href="#onednn-object-cache-optimization" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>The oneDNN object (primitive/primitive description/memory) creation overhead becomes noticeable, especially in small model latency scenarios.</p>
 <p>OneDNN object cache optimization is an experimental feature for optimizing model latency by binding a oneDNN object to a TensorFlow graph node. You can enable this environment by setting the environment variable ‘ITEX_CACHE_ONEDNN_OBJECT’ to on. By default, it is set to off.</p>
 <p>TensorFlow supports optimizations to support different scenarios:</p>
@@ -104,7 +104,7 @@
 </ul>
 </section>
 <section id="optimization-in-convolution">
-<h2>Optimization in convolution<a class="headerlink" href="#optimization-in-convolution" title="Permalink to this heading"></a></h2>
+<h2>Optimization in convolution<a class="headerlink" href="#optimization-in-convolution" title="Link to this heading"></a></h2>
 <p>Convolution optimization will cache oneDNN object <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_memory-2.html">dnnl::memory</a>, <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_primitive-2.html">dnnl::primitive</a>, <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_primitive_desc-2.html">dnnl::primitive_desc</a> and <a class="reference external" href="https://oneapi-src.github.io/oneDNN/struct_dnnl_exec_arg_t.html">dnnl_exec_arg_t</a></p>
 <ul class="simple">
 <li><p><strong>dnnl::memory</strong> - input/weight/bias/output/scratchpad memory and two temporary memory areas for input and weight reorder if needed.</p></li>
@@ -130,7 +130,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b51e9b0> 
+   <jinja2.runtime.BlockReference object at 0x7efef100ab30> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

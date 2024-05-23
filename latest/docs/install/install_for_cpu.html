@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel CPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Intel CPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -125,9 +125,9 @@
            <div itemprop="articleBody">
              
   <section id="intel-cpu-software-installation">
-<h1>Intel CPU Software Installation<a class="headerlink" href="#intel-cpu-software-installation" title="Permalink to this heading"></a></h1>
+<h1>Intel CPU Software Installation<a class="headerlink" href="#intel-cpu-software-installation" title="Link to this heading"></a></h1>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>2nd Generation Intel® Xeon® Scalable Processors.</p></li>
@@ -136,7 +136,7 @@
 </ul>
 </section>
 <section id="software-requirements">
-<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Permalink to this heading"></a></h2>
+<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p>Ubuntu 20.04 (64-bit), Ubuntu 22.04 (64-bit) or CentOS Linux 8 (64-bit), and Sapphire Rapids requires Ubuntu 22.04 or CentOS Linux 8 with kernel version &gt;= 5.16</p></li>
 <li><p>Python 3.9-3.10</p></li>
@@ -144,13 +144,13 @@
 </ul>
 </section>
 <section id="install-via-docker-container">
-<h2>Install via Docker container<a class="headerlink" href="#install-via-docker-container" title="Permalink to this heading"></a></h2>
+<h2>Install via Docker container<a class="headerlink" href="#install-via-docker-container" title="Link to this heading"></a></h2>
 <section id="build-docker-container-from-dockerfile">
-<h3>Build Docker container from Dockerfile<a class="headerlink" href="#build-docker-container-from-dockerfile" title="Permalink to this heading"></a></h3>
+<h3>Build Docker container from Dockerfile<a class="headerlink" href="#build-docker-container-from-dockerfile" title="Link to this heading"></a></h3>
 <p>Run the following <a class="reference external" href="./../../../docker/README.html">Dockerfile build procedure</a> to build the pip based deployment container.</p>
 </section>
 <section id="get-docker-container-from-dockerhub">
-<h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Permalink to this heading"></a></h3>
+<h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Link to this heading"></a></h3>
 <p>Pre-built docker images are available at <a class="reference external" href="https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags">DockerHub</a>.
 Run the following command to pull the CPU Docker container image to your local machine.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:cpu
@@ -161,13 +161,13 @@ $ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:cpu
 </section>
 </section>
 <section id="install-via-pypi-wheel-in-bare-metal">
-<h2>Install via PyPI wheel in bare metal<a class="headerlink" href="#install-via-pypi-wheel-in-bare-metal" title="Permalink to this heading"></a></h2>
+<h2>Install via PyPI wheel in bare metal<a class="headerlink" href="#install-via-pypi-wheel-in-bare-metal" title="Link to this heading"></a></h2>
 <section id="install-tensorflow">
-<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Link to this heading"></a></h3>
 <p>The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.</p>
 <p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.15.0.</p>
 <section id="virtual-environment-install">
-<h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this heading"></a></h4>
+<h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Link to this heading"></a></h4>
 <p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
 <p>On Linux, it is often necessary to first update pip to a version that supports manylinux2014 wheels.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
@@ -179,7 +179,7 @@ $ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:cpu
 </div>
 </section>
 <section id="system-environment-install">
-<h4>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this heading"></a></h4>
+<h4>System environment install<a class="headerlink" href="#system-environment-install" title="Link to this heading"></a></h4>
 <p>If you prefer install tensorflow in $HOME, append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip3<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.15.0
 </pre></div>
@@ -188,13 +188,13 @@ $ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:cpu
 </section>
 </section>
 <section id="install-intel-extension-for-tensorflow">
-<h3>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Link to this heading"></a></h3>
 <p>To install a CPU-only version in virtual environment, you can run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>cpu<span class="o">]</span>
 </pre></div>
 </div>
 <section id="verify-the-installation">
-<h4>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this heading"></a></h4>
+<h4>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Link to this heading"></a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
 </pre></div>
 </div>
@@ -220,7 +220,7 @@ $ docker run -it -p 8888:8888 intel/intel-extension-for-tensorflow:cpu
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b9d63b0> 
+   <jinja2.runtime.BlockReference object at 0x7efef1b0ebf0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accelerate Mask R-CNN Training on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Accelerate Mask R-CNN Training on Intel GPU &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,24 +91,24 @@
            <div itemprop="articleBody">
              
   <section id="accelerate-mask-r-cnn-training-on-intel-gpu">
-<h1>Accelerate Mask R-CNN Training on Intel GPU<a class="headerlink" href="#accelerate-mask-r-cnn-training-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<h1>Accelerate Mask R-CNN Training on Intel GPU<a class="headerlink" href="#accelerate-mask-r-cnn-training-on-intel-gpu" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
 This example shows Mask R-CNN Training. It contains single-tile training scripts and multi-tile training scripts with horovod.</p>
 <p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Training on Intel GPU.</p>
 </section>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series</p></li>
 </ul>
 </section>
 <section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
 <section id="model-code-change">
-<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
+<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Link to this heading"></a></h3>
 <p>To get better performance, instead of installing the official repository, you can apply the patch and install it as shown here:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
 <span class="n">cd</span> <span class="n">DeepLearningExamples</span><span class="o">/</span><span class="n">TensorFlow2</span><span class="o">/</span><span class="n">Segmentation</span><span class="o">/</span><span class="n">MaskRCNN</span>
@@ -118,11 +118,11 @@ This example shows Mask R-CNN Training. It contains single-tile training scripts
 </div>
 </section>
 <section id="prepare-for-gpu">
-<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
+<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Link to this heading"></a></h3>
 <p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a>.</p>
 </section>
 <section id="setup-running-environment">
-<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Link to this heading"></a></h3>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">./pip_set_env.sh</span></code> to setup for GPU. It contains the following two steps: creating virtual environment and installing python packages.</p>
 <ul class="simple">
 <li><p>Create Virtual Environment</p></li>
@@ -143,14 +143,14 @@ This example shows Mask R-CNN Training. It contains single-tile training scripts
 </div>
 </section>
 <section id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Link to this heading"></a></h3>
 <p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
 <ul class="simple">
 <li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html#running">Running</a></p></li>
 </ul>
 </section>
 <section id="prepare-dataset">
-<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
+<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Link to this heading"></a></h3>
 <p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/train_maskrcnn/DeepLearningExamples/TensorFlow2/Segmentation/MaskRCNN</span></code>. So as the following parts.</p>
 <ul class="simple">
 <li><p>Download and preprocess the <a class="reference external" href="http://cocodataset.org/#download">COCO 2017 dataset</a>.</p></li>
@@ -162,7 +162,7 @@ This example shows Mask R-CNN Training. It contains single-tile training scripts
 </section>
 </section>
 <section id="execute-the-example">
-<h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
+<h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Link to this heading"></a></h2>
 <p>Here we provide single-tile training scripts and multi-tile training scripts with horovod. The datatype can be float32 or bfloat16.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATASET_DIR</span><span class="o">=./</span><span class="n">data</span>
 <span class="n">OUTPUT_DIR</span><span class="o">=/</span><span class="n">the</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">output_dir</span>
@@ -210,7 +210,7 @@ python main.py train \
 <p><strong>Note:</strong> Only distributed workload needs <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code>. Please uninstall it if you want to run single tile workload.</p>
 </section>
 <section id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
+<h2>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h2>
 <ol class="simple">
 <li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
 </ol>
@@ -234,7 +234,7 @@ python main.py train \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b52c490> 
+   <jinja2.runtime.BlockReference object at 0x7efef1ee8430> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

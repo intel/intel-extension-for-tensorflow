@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contributing guidelines &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>Contributing guidelines &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -109,9 +109,9 @@
            <div itemprop="articleBody">
              
   <section id="contributing-guidelines">
-<h1>Contributing guidelines<a class="headerlink" href="#contributing-guidelines" title="Permalink to this heading"></a></h1>
+<h1>Contributing guidelines<a class="headerlink" href="#contributing-guidelines" title="Link to this heading"></a></h1>
 <section id="contributing-to-intel-extension-for-tensorflow">
-<h2>Contributing to Intel® Extension for TensorFlow*<a class="headerlink" href="#contributing-to-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h2>
+<h2>Contributing to Intel® Extension for TensorFlow*<a class="headerlink" href="#contributing-to-intel-extension-for-tensorflow" title="Link to this heading"></a></h2>
 <p>We welcome community contributions to Intel® Extension for TensorFlow*. Before you begin writing code, it is important that you share your intention to contribute with the team, based on the type of contribution:</p>
 <ol class="simple">
 <li><p>You want to submit a bug or propose a new feature.</p>
@@ -139,17 +139,17 @@ Submit a <a class="reference external" href="https://github.com/intel/intel-exte
 <p><strong>See also:</strong> <a class="reference external" href="../../../CODE_OF_CONDUCT.html">Contributor Covenant</a> code of conduct.</p>
 </section>
 <section id="developing-intel-extension-for-tensorflow">
-<h2>Developing Intel® Extension for TensorFlow*<a class="headerlink" href="#developing-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h2>
+<h2>Developing Intel® Extension for TensorFlow*<a class="headerlink" href="#developing-intel-extension-for-tensorflow" title="Link to this heading"></a></h2>
 <p>Refer to a full set of <a class="reference external" href="../install/how_to_build.html">instructions</a> on installing Intel® Extension for TensorFlow* from source.</p>
 </section>
 <section id="tips-and-debugging">
-<h2>Tips and Debugging<a class="headerlink" href="#tips-and-debugging" title="Permalink to this heading"></a></h2>
+<h2>Tips and Debugging<a class="headerlink" href="#tips-and-debugging" title="Link to this heading"></a></h2>
 </section>
 <section id="unit-testing">
-<h2>Unit testing<a class="headerlink" href="#unit-testing" title="Permalink to this heading"></a></h2>
+<h2>Unit testing<a class="headerlink" href="#unit-testing" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* provides python unit tests.</p>
 <section id="python-unit-testing">
-<h3>Python Unit Testing<a class="headerlink" href="#python-unit-testing" title="Permalink to this heading"></a></h3>
+<h3>Python Unit Testing<a class="headerlink" href="#python-unit-testing" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Python unit tests are located at <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tensorflow/test</span></code></p></li>
 </ul>
@@ -180,10 +180,10 @@ done
 </section>
 </section>
 <section id="code-style-guide">
-<h2>Code style guide<a class="headerlink" href="#code-style-guide" title="Permalink to this heading"></a></h2>
+<h2>Code style guide<a class="headerlink" href="#code-style-guide" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* follows the same code style guide as  <a class="reference external" href="https://www.tensorflow.org/community/contribute/code_style">TensorFlow code style guide</a> for Python and C++ code.</p>
 <section id="python-coding-style">
-<h3>Python coding style<a class="headerlink" href="#python-coding-style" title="Permalink to this heading"></a></h3>
+<h3>Python coding style<a class="headerlink" href="#python-coding-style" title="Link to this heading"></a></h3>
 <p>Ensure the Python code changes are consistent with the <a class="reference external" href="https://github.com/google/styleguide/blob/gh-pages/pyguide.html">Python coding standards</a>.</p>
 <p>Use <code class="docutils literal notranslate"><span class="pre">pylint</span></code> to check your Python changes. To install <code class="docutils literal notranslate"><span class="pre">pylint</span></code> and check a file with <code class="docutils literal notranslate"><span class="pre">pylint</span></code> against custom style definition from the Intel® Extension for TensorFlow* source code root directory:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pylint
@@ -193,7 +193,7 @@ pylint<span class="w"> </span>--rcfile<span class="o">=</span>intel-extension-fo
 </div>
 </section>
 <section id="c-coding-style">
-<h3>C++ coding style<a class="headerlink" href="#c-coding-style" title="Permalink to this heading"></a></h3>
+<h3>C++ coding style<a class="headerlink" href="#c-coding-style" title="Link to this heading"></a></h3>
 <p>The C++ code should conform to the <a class="reference external" href="https://google.github.io/styleguide/cppguide.html">Google C++ Style Guide</a>. Intel® Extension for TensorFlow* use both <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> and <code class="docutils literal notranslate"><span class="pre">cpplint</span></code> to check C++ code style.</p>
 <p>To install <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> and check a file with <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> against custom style definition from the Intel® Extension for TensorFlow* source code root directory:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>apt-get<span class="w"> </span>install<span class="w"> </span>clang-format-12
@@ -217,7 +217,7 @@ cpplint<span class="w"> </span>--filter<span class="o">=</span>-legal/copyright<
 </div>
 </section>
 <section id="bazel-style-guide">
-<h3>bazel style guide<a class="headerlink" href="#bazel-style-guide" title="Permalink to this heading"></a></h3>
+<h3>bazel style guide<a class="headerlink" href="#bazel-style-guide" title="Link to this heading"></a></h3>
 <p><a class="reference external" href="https://github.com/bazelbuild/buildtools/tree/master/buildifier">buildifier</a> is a tool for formatting bazel <code class="docutils literal notranslate"><span class="pre">BUILD</span></code> and <code class="docutils literal notranslate"><span class="pre">.bzl</span></code> files with a standard convention (<code class="docutils literal notranslate"><span class="pre">xxx.tpl</span></code> files are not supported).</p>
 <p>To check bazel files manually:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install go</span>
@@ -237,7 +237,7 @@ buildifier<span class="w"> </span>BUILD<span class="w"> </span><span class="c1">
 </div>
 </section>
 <section id="documentation-style-guide">
-<h3>Documentation style guide<a class="headerlink" href="#documentation-style-guide" title="Permalink to this heading"></a></h3>
+<h3>Documentation style guide<a class="headerlink" href="#documentation-style-guide" title="Link to this heading"></a></h3>
 <p>Intel® Extension for TensorFlow* follows the same documentation style guide as <a class="reference external" href="https://www.tensorflow.org/community/contribute/docs_style">TensorFlow documentation style guide</a>.</p>
 </section>
 </section>
@@ -260,7 +260,7 @@ buildifier<span class="w"> </span>BUILD<span class="w"> </span><span class="c1">
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b51c850> 
+   <jinja2.runtime.BlockReference object at 0x7efef100ad10> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

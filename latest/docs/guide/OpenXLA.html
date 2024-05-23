@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OpenXLA &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gd687078 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  <title>OpenXLA &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g46b631a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,10 +91,10 @@
            <div itemprop="articleBody">
              
   <section id="openxla">
-<h1>OpenXLA<a class="headerlink" href="#openxla" title="Permalink to this heading"></a></h1>
+<h1>OpenXLA<a class="headerlink" href="#openxla" title="Link to this heading"></a></h1>
 <p><strong>NOTE:</strong> This guideline is intended to introduce <a class="reference external" href="https://github.com/openxla/xla">XLA</a> concepts. See <a class="reference external" href="next_pluggable_device.html">NextPluggableDevice</a> and <a class="reference external" href="https://github.com/intel/intel-extension-for-openxla">Intel® Extension for OpenXLA*</a> for more details on the usage and the implementation.</p>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <p><a class="reference external" href="https://github.com/openxla/xla">XLA</a> (Accelerated Linear Algebra) is an open-source machine learning (ML) compiler for GPUs, CPUs, and ML accelerators.</p>
 <p>XLA is part of the <a class="reference external" href="https://github.com/openxla">OpenXLA project</a> – an ecosystem of open-source compiler technologies for ML that’s developed collaboratively by leading ML hardware and software organizations. Figure 1 shows the high-level compilation flow and architecture of OpenXLA.</p>
 <p>The XLA compiler takes models from popular ML frameworks, and optimizes them for high-performance execution across different hardware platforms including GPUs, CPUs, and ML accelerators.</p>
@@ -110,7 +110,7 @@
 </div><p><strong>NOTE:</strong> Intel® Extension for TensorFlow* integrates the Next Pluggable Device and adopts a uniform Device API PJRT as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA support on TensorFlow frontend. While Intel® Extension for OpenXLA* leverages PJRT API to support and optimize JAX frontend on Intel GPU.</p>
 </section>
 <section id="objectives">
-<h2>Objectives<a class="headerlink" href="#objectives" title="Permalink to this heading"></a></h2>
+<h2>Objectives<a class="headerlink" href="#objectives" title="Link to this heading"></a></h2>
 <p>The fundamental objectives of XLA including:</p>
 <ul class="simple">
 <li><p><strong>Improve execution speed:</strong> Compile subgraphs to reduce the execution time of short-lived ops and eliminate overhead from the runtime, fuse pipelined operations to reduce memory overhead, and specialize known tensor shapes to allow for more aggressive constant propagation.</p></li>
@@ -120,7 +120,7 @@
 </ul>
 </section>
 <section id="how-it-works">
-<h2>How it works<a class="headerlink" href="#how-it-works" title="Permalink to this heading"></a></h2>
+<h2>How it works<a class="headerlink" href="#how-it-works" title="Link to this heading"></a></h2>
 <p>The XLA compiler takes model graphs from ML frameworks defined in <a class="reference external" href="https://github.com/openxla/stablehlo">StableHLO</a> and compiles them into machine instructions for various architectures. StableHLO defines a versioned operation set (HLO = high level operations) that provides a portability layer between ML frameworks and the compiler.</p>
 <p>In general, figure 2 shows the compilation process that converts the model graph into a target-optimized executable:</p>
 <div align="center">
@@ -140,7 +140,7 @@
 <p>XLA’s architecture encompasses a series of steps, from applying independent and dependent optimizations, utilizing the LLVM framework, to generating efficient machine code.</p>
 </section>
 <section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h2>
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
 <p>This example showcases the speedup on BERT-base inference workload with XLA enabled on <a class="reference external" href="https://www.intel.com/content/www/us/en/products/sku/232873/intel-data-center-gpu-max-1550/specifications.html">Intel® Data Center GPU Max 1550</a>.</p>
 <p><strong>NOTE:</strong> This example only applies to stock TensorFlow* &gt;=2.15.0 and Intel® Extension for TensorFlow* &gt;=2.15.0.0.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/IntelAI/models.git<span class="w"> </span>intel-models<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>intel-models
@@ -189,7 +189,7 @@ python3<span class="w"> </span>run_classifier.py<span class="w"> </span><span cl
 </ul>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/openxla/xla">XLA GitHub Repository</a></p></li>
 <li><p><a class="reference external" href="https://github.com/openxla/xla/blob/main/docs/architecture.html">XLA Architecture</a></p></li>
@@ -212,7 +212,7 @@ python3<span class="w"> </span>run_classifier.py<span class="w"> </span><span cl
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f384b527670> 
+   <jinja2.runtime.BlockReference object at 0x7efef105e9e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
