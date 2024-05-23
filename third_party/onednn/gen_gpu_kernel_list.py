@@ -184,11 +184,11 @@ class KernelList(object):
         For compatible with bazel, we will create a folder structure which is the same
         with original source. Such as,
 
-        src/gpu/ocl/xxxx_kernel.cpp
-        src/gpu/ocl/gemm/xxxx_kernel.cpp
+        src/gpu/intel/ocl/xxxx_kernel.cpp
+        src/gpu/intel/ocl/gemm/xxxx_kernel.cpp
 
         which is not the same with cmake generated, because it will generate all kernel
-        files into src/gpu/ocl/, no subfolder.
+        files into src/gpu/intel/ocl/, no subfolder.
         """
     for kernel in self.kernels_:
       self._generate(inc_dirs, root, sub, kernel, "kernel")
@@ -206,9 +206,11 @@ class KernelList(object):
 namespace dnnl {{
 namespace impl {{
 namespace gpu {{
+namespace intel {{
 namespace ocl {{
     const char* {}_{} =
 {};
+}}
 }}
 }}
 }}
@@ -220,11 +222,13 @@ namespace ocl {{
 namespace dnnl {{
 namespace impl {{
 namespace gpu {{
+namespace intel {{
 namespace ocl {{
     const char* {}_kernel[] = {{
 {}
         nullptr
     }};
+}}
 }}
 }}
 }}
@@ -256,14 +260,14 @@ class FilesHelper(object):
     """
         This class is a helper class which will matain the input and output files/dirs.
 
-        There's an assumption, the ocl impls folder is "src/gpu/ocl". And also assuming
+        There's an assumption, the ocl impls folder is "src/gpu/intel/ocl". And also assuming
         the include directory is same depth with "src".
 
         If possible, it should passed as an arguments, but for covenience, we do this
         assumption directly.
         """
-    OCL_IMPL_DIR = "src/gpu/ocl"
-    HEADER_ROOT_DIR = "src/gpu"
+    OCL_IMPL_DIR = "src/gpu/intel/ocl"
+    HEADER_ROOT_DIR = "src/gpu/intel"
     IN_FILE = "ocl_kernel_list.cpp.in"
 
     in_file = os.path.expanduser(in_file)
