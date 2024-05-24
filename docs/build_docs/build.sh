@@ -91,7 +91,7 @@ cp -f "../CODE_OF_CONDUCT.md" "./source/"
 all_md_files=`find ./source -name "*.md"`
 for md_file in ${all_md_files}
 do
-  sed -i 's/.md/.html/g' ${md_file}
+  sed -i 's/\.md/\.html/g' ${md_file}
 done
 
 sed -i 's/pluggable-device-for-tensorflow.html/pluggable-device-for-tensorflow.md/g' ./source/get_started.md
@@ -152,7 +152,7 @@ echo "Create document is done"
 if [[ ${CHECKOUT_GH_PAGES} -eq 1 ]]; then
   GITHUB_URL=`git config --get remote.origin.url`
   git clone -b gh-pages --single-branch ${GITHUB_URL} ${RELEASE_FOLDER}
- 
+
   if [[ ${UPDATE_VERSION_FOLDER} -eq 1 ]]; then
     python update_version.py ${ROOT_DST_FOLDER} ${VERSION}
     cp -rf ${DST_FOLDER} ${RELEASE_FOLDER}
