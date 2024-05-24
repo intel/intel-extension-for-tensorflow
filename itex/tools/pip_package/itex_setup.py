@@ -70,6 +70,7 @@ REQUIRED_PACKAGES.append('tensorflow~=2.16.0')
 REQUIRED_PACKAGES.append('numpy>=1.24.0')
 REQUIRED_PACKAGES.append('protobuf<4.24')
 REQUIRED_PACKAGES.append('absl-py==1.4.0')
+REQUIRED_PACKAGES.append('setuptools==69.5.1')
 CONSOLE_SCRIPTS = []
 
 

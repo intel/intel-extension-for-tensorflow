@@ -98,6 +98,8 @@ void TF_InitKernel() {
         "  experimental_ops_override();\n"
         "  override_keras3();\n"
         "except BaseException:\n"
+        "  import traceback\n"
+        "  print(traceback.format_exc())\n"
         "  print('please import ITEX or tensorflow berfore keras')\n"
         "  quit()\n");
   } else {
@@ -106,6 +108,8 @@ void TF_InitKernel() {
         "  from intel_extension_for_tensorflow.python.override_keras3 import override_keras3;\n"  // NOLINT(whitespace/line_length)
         "  override_keras3();\n"
         "except BaseException:\n"
+        "  import traceback\n"
+        "  print(traceback.format_exc())\n"
         "  print('please import ITEX or tensorflow berfore keras')\n"
         "  quit()\n");
   }

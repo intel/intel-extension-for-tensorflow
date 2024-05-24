@@ -94,5 +94,9 @@ def override_keras3():
             keras.src.backend.tensorflow.trainer.TensorFlowTrainer.predict = itex_predict
 
     except BaseException:  # pylint: disable=broad-except
+        import logging
+        format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        logging.basicConfig(level=logging.INFO, format=format_str)
+        logger = logging.getLogger(__name__)
         logger.warning(
             "itex.override_keras3 failed")  # pylint: disable=line-too-long
