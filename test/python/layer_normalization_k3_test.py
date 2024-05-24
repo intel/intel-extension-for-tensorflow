@@ -15,7 +15,7 @@
 
 import os
 os.environ['TF_USE_LEGACY_KERAS']='0'
-
+os.environ['ITEX_DISABLE_XLA']='1'
 import numpy as np
 from intel_extension_for_tensorflow.python.test_func import test_util
 from intel_extension_for_tensorflow.python.test_func import test

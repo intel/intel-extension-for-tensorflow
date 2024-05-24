@@ -17,6 +17,7 @@
 """Tests for itex recurrent layers."""
 
 import os
+os.environ['ITEX_DISABLE_XLA']='1'
 os.environ["TF_USE_LEGACY_KERAS"]="0"
 import tempfile
 from absl.testing import parameterized
