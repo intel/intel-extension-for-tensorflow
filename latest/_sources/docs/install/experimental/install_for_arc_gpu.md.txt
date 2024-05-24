@@ -72,7 +72,7 @@ The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
     sudo apt-get install -y gpg-agent wget
     wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | 
     sudo gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-    echo "deb [arch=.html64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy/lts/2350 unified" | sudo tee /etc/apt/sources.list.d/intel-gpu-jammy.list
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy/lts/2350 unified" | sudo tee /etc/apt/sources.list.d/intel-gpu-jammy.list
     sudo apt-get update
     ```
 
@@ -122,7 +122,7 @@ The steps to install the runtime components in Ubuntu Linux are:
     sudo apt-get install -y gpg-agent wget
     wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | 
     sudo gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-    echo "deb [arch=.html64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy/lts/2350 unified" | sudo tee /etc/apt/sources.list.d/intel-gpu-jammy.list
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy/lts/2350 unified" | sudo tee /etc/apt/sources.list.d/intel-gpu-jammy.list
     sudo apt-get update
     ```
 
