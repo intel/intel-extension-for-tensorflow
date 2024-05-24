@@ -35,14 +35,22 @@ namespace itex {
 
 // An argument passed to TraceMeEncode.
 struct TraceMeArg {
-  // This constructor is required because absl::AlphaNum is non-copyable.
-  template <typename Value>
-  TraceMeArg(absl::string_view k, Value v) : key(k), value(v) {}
+  // String conversions of value types are supported via AlphaNum. We keep a
+  // reference to the AlphaNum's internal buffer here, so it must remain valid
+  // for the lifetime of this object. We cannot store it by value because it is
+  // not safe to construct an AlphaNum as a member of a class, particularly when
+  // AbslStringify is being used (it may reference default arguments that are on
+  // the caller's stack, if we constructed it here those default arguments would
+  // be destroyed before they are used).
+  TraceMeArg(absl::string_view k,
+             const absl::AlphaNum& v ABSL_ATTRIBUTE_LIFETIME_BOUND)
+      : key(k), value(v.Piece()) {}
 
-  TF_DISALLOW_COPY_AND_ASSIGN(TraceMeArg);
+  TraceMeArg(const TraceMeArg&) = delete;
+  void operator=(const TraceMeArg&) = delete;
 
   absl::string_view key;
-  absl::AlphaNum value;
+  absl::string_view value;
 };
 
 namespace traceme_internal {
@@ -78,7 +86,7 @@ TF_ATTRIBUTE_ALWAYS_INLINE inline std::string AppendArgs(
     for (const auto& arg : args) {
       out = Append(out, arg.key);
       *out++ = '=';
-      out = Append(out, arg.value.Piece());
+      out = Append(out, arg.value);
       *out++ = ',';
     }
     *(out - 1) = '#';
