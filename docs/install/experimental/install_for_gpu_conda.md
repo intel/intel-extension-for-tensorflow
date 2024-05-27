@@ -8,12 +8,12 @@ We assume you have installed the Intel GPU driver and the required components of
 
 ## Step by step instructions:
 
-Miniconda is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.
-You can use the following command to install Miniconda. During installation, you may need to press enter and type "yes". Skip this step, if you have already installed conda.
+Miniforge is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.
+You can use the following command to install Miniforge. During installation, you may need to press enter and type "yes". Skip this step, if you have already installed conda.
 
 ```
-curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
+curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh
 ```
 
 You may need to restart your terminal or `source ~/.bashrc` to enable the conda command. Use this command to test if it is installed successfully.

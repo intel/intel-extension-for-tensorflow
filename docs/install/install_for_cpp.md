@@ -40,7 +40,7 @@ $ cd intel-extension-for-tensorflow/
 
 #### Create a Conda Environment
 
-1. Install [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+1. Install [Conda](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install).
 
 2. Create Virtual Running Environment
 
