@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <dlfcn.h>
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <utility>

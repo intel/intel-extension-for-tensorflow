@@ -95,8 +95,8 @@ void WeightCacheManager<T>::SetCache(
                  context->allocate_persistent(
                      DataTypeToEnum<uint8_t>::value, weight_md_tf_shape,
                      &weight_cached_md_, &weight_md_cached_tensor, alloc_attr));
-  std::memcpy(weight_md_cached_tensor->flat<uint8_t>().data(),
-              weight_expected_md_blob.data(), weight_expected_md_blob.size());
+  std::copy_n(weight_expected_md_blob.data(), weight_expected_md_blob.size(),
+              weight_md_cached_tensor->flat<uint8_t>().data());
 }
 
 template <typename T>
