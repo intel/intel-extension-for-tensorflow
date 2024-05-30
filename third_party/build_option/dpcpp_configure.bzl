@@ -4,12 +4,15 @@
 
   * HOST_CXX_COMPILER:  The host C++ compiler
   * HOST_C_COMPILER:    The host C compiler
+  * GCC_HOST_COMPILER:  The host GCC compiler
   * PYTHON_LIB_PATH: The path to the python lib
 """
 
 _HOST_CXX_COMPILER = "HOST_CXX_COMPILER"
 
 _HOST_C_COMPILER = "HOST_C_COMPILER"
+
+_GCC_HOST_COMPILER = "GCC_HOST_COMPILER"
 
 _DPCPP_TOOLKIT_PATH = "DPCPP_TOOLKIT_PATH"
 
@@ -50,9 +53,29 @@ def auto_configure_fail(msg):
     no_color = "\033[0m"
     fail("\n%sAuto-Configuration Error:%s %s\n" % (red, no_color, msg))
 
+def find_gcc(repository_ctx):
+    """Find host GCC compiler."""
+    gcc_name = "gcc"
+    gcc_found = None
+    if _GCC_HOST_COMPILER in repository_ctx.os.environ:
+        gcc_found = repository_ctx.os.environ[_GCC_HOST_COMPILER].strip()
+    else:
+        gcc_found = repository_ctx.which(gcc_name)
+    if gcc_found == None:
+        fail("Cannot find GCC compiler, please correct your path.")
+    if str(gcc_found).startswith("/"):
+        gcc_path = repository_ctx.path(gcc_found)
+    else:
+        gcc_path = repository_ctx.which(gcc_found)
+    if not gcc_path or not gcc_path.exists:
+        fail("Cannot find GCC compiler, please correct your path.")
+    gcc_name = gcc_path.basename
+    gcc_path_prefix = gcc_path.dirname
+    return gcc_name, gcc_path, gcc_path_prefix
+
 def find_c(repository_ctx):
     """Find host C compiler."""
-    c_name = "gcc"
+    c_name, _, _ = find_gcc(repository_ctx)
     if _HOST_C_COMPILER in repository_ctx.os.environ:
         c_name = repository_ctx.os.environ[_HOST_C_COMPILER].strip()
     if c_name.startswith("/"):
@@ -84,8 +107,7 @@ def find_dpcpp_root(repository_ctx):
     fail("Cannot find DPC++ compiler, please correct your path")
 
 def find_gcc_install_dir(repository_ctx):
-    gcc_path = repository_ctx.execute(["/usr/bin/which", "gcc"])
-    gcc_path = repository_ctx.path(gcc_path.stdout.strip())
+    _, gcc_path, _ = find_gcc(repository_ctx)
     gcc_install_dir = repository_ctx.execute([gcc_path, "-print-libgcc-file-name"])
     return str(repository_ctx.path(gcc_install_dir.stdout.strip()).dirname)
 
@@ -387,14 +409,17 @@ def _sycl_autoconf_imp(repository_ctx):
             tmp_dir = "/tmp/" + tmp_suffix
             dpcpp_defines["%{TMP_DIRECTORY}"] = tmp_dir
 
+        # Get GCC compiler info
+        gcc_name, gcc_path, gcc_path_prefix = find_gcc(repository_ctx)
+
         dpcpp_defines["%{cxx_builtin_include_directories}"] = str(builtin_includes)
         dpcpp_defines["%{dpcpp_builtin_include_directories}"] = str(builtin_includes)
         dpcpp_defines["%{extra_no_canonical_prefixes_flags}"] = "\"-fno-canonical-system-headers\""
         dpcpp_defines["%{unfiltered_compile_flags}"] = ""
-        dpcpp_defines["%{host_compiler}"] = "gcc"
-        dpcpp_defines["%{HOST_COMPILER_PATH}"] = "/usr/bin/gcc"
+        dpcpp_defines["%{host_compiler}"] = gcc_name
+        dpcpp_defines["%{HOST_COMPILER_PATH}"] = str(gcc_path)
         dpcpp_defines["%{host_compiler_install_dir}"] = str(find_gcc_install_dir(repository_ctx))
-        dpcpp_defines["%{host_compiler_prefix}"] = "/usr/bin"
+        dpcpp_defines["%{host_compiler_prefix}"] = str(gcc_path_prefix)
         dpcpp_defines["%{dpcpp_compiler_root}"] = str(find_dpcpp_root(repository_ctx))
         dpcpp_defines["%{linker_bin_path}"] = "/usr/bin"
         dpcpp_defines["%{DPCPP_ROOT_DIR}"] = str(find_dpcpp_root(repository_ctx))
