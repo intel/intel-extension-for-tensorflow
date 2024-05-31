@@ -3014,16 +3014,45 @@ void Register_ITEXGroupNormOp() {
     TF_OpDefinitionBuilderAddInput(op_builder, "scale: T");
     TF_OpDefinitionBuilderAddInput(op_builder, "offset: T");
     TF_OpDefinitionBuilderAddOutput(op_builder, "y: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "mean: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "variance: float");
     TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
     TF_OpDefinitionBuilderAddAttr(op_builder, "num_groups: int");
     TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_scale: bool = true");
     TF_OpDefinitionBuilderAddAttr(op_builder, "use_center: bool = true");
     TF_OpDefinitionBuilderSetShapeInferenceFunction(op_builder,
-                                                    &unchanged_shape_fn);
+                                                    &group_norm_shape_fn);
     TF_RegisterOpDefinition(op_builder, status.get());
     ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
         << "ITEXGroupNorm op registration failed: ";
+  }
+}
+
+void Register_ITEXGroupNormGradOp() {
+  itex::StatusUniquePtr status(TF_NewStatus());
+  {
+    TF_OpDefinitionBuilder* op_builder =
+        TF_NewOpDefinitionBuilder("ITEXGroupNormGrad");
+    TF_OpDefinitionBuilderAddInput(op_builder, "y_backprop: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "x: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "scale: T");
+    TF_OpDefinitionBuilderAddInput(op_builder, "mean: float");
+    TF_OpDefinitionBuilderAddInput(op_builder, "variance: float");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "x_backprop: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "scale_backprop: T");
+    TF_OpDefinitionBuilderAddOutput(op_builder, "offset_backprop: T");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "T: {half, bfloat16, float}");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "epsilon: float = 0.0001");
+    TF_OpDefinitionBuilderAddAttr(op_builder, "num_groups: int");
+    TF_OpDefinitionBuilderSetShapeInferenceFunction(
+        op_builder,
+        &itex_group_norm_grad_shape_fn);  // group norm grad shares the same
+                                          // shape inf function with layer norm
+                                          // grad
+    TF_RegisterOpDefinition(op_builder, status.get());
+    ITEX_CHECK_EQ(TF_OK, TF_GetCode(status.get()))
+        << "ITEXGroupNormGrad op registration failed: ";
   }
 }
 

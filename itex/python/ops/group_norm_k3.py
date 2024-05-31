@@ -127,7 +127,7 @@ class GroupNormalization(Layer):
         
         # fused_group_norm only support GPU backend and NHWC and axis=-1 currently
         # TODO(itex): support channel first and rank==any
-        self.use_fused_group_norm = self.use_gpu and (rank == 4) and (self.axis == rank - 1)
+        self.use_fused_group_norm = self.use_gpu and (rank == 4 or rank == 5) and (self.axis == rank - 1)
 
         if dim is None:
             raise ValueError(
@@ -177,30 +177,30 @@ class GroupNormalization(Layer):
         else:
             self.beta = None
 
-        super().build(input_shape)
+        self.built = True
 
-    def call(self, inputs, training=False):
-        if self.use_fused_group_norm and training == False:
+    def call(self, inputs):
+        if self.use_fused_group_norm:
+            shape = inputs.shape
             inputs = ops.cast(inputs, self.compute_dtype)
-            normalized_inputs = load_ops_library.itex_group_norm(
+            normalized_inputs, _, _ = load_ops_library.itex_group_norm(
                 inputs,
-                [0.0] if self.gamma is None else self.gamma,
-                [0.0] if self.beta is None else self.beta,
+                ops.zeros((shape[-1],),self.compute_dtype) if self.gamma is None else self.gamma,
+                ops.zeros((shape[-1],),self.compute_dtype) if self.beta is None else self.beta,
                 num_groups=self.groups,
                 epsilon=self.epsilon,
                 use_scale=self.scale,
                 use_center=self.center,
             )
             return normalized_inputs
-        else:
+        elif not self.use_gpu:
             normalized_inputs = self.itex_group_norm_call(inputs)
             return normalized_inputs
-        # fall back path
-        # reshaped_inputs = self._reshape_into_groups(inputs)
-        # normalized_inputs = self._apply_normalization(
-        #     reshaped_inputs, inputs.shape
-        # )
-        # return ops.reshape(normalized_inputs, ops.shape(inputs))
+        reshaped_inputs = self._reshape_into_groups(inputs)
+        normalized_inputs = self._apply_normalization(
+            reshaped_inputs, inputs.shape
+        )
+        return ops.reshape(normalized_inputs, ops.shape(inputs))
 
     def itex_group_norm_call(self, inputs):
         """
@@ -290,38 +290,38 @@ class GroupNormalization(Layer):
         reshaped_inputs = ops.reshape(inputs, group_shape)
         return reshaped_inputs
 
-    # def _apply_normalization(self, reshaped_inputs, input_shape):
-    #     group_reduction_axes = list(range(1, len(reshaped_inputs.shape)))
+    def _apply_normalization(self, reshaped_inputs, input_shape):
+        group_reduction_axes = list(range(1, len(reshaped_inputs.shape)))
 
-    #     axis = -2 if self.axis == -1 else self.axis - 1
-    #     group_reduction_axes.pop(axis)
+        axis = -2 if self.axis == -1 else self.axis - 1
+        group_reduction_axes.pop(axis)
 
-    #     broadcast_shape = self._create_broadcast_shape(input_shape)
-    #     mean, variance = ops.moments(
-    #         reshaped_inputs, axes=group_reduction_axes, keepdims=True
-    #     )
+        broadcast_shape = self._create_broadcast_shape(input_shape)
+        mean, variance = ops.moments(
+            reshaped_inputs, axes=group_reduction_axes, keepdims=True
+        )
 
-    #     # Compute the batch normalization.
-    #     inv = ops.rsqrt(variance + self.epsilon)
-    #     if self.scale:
-    #         gamma = ops.reshape(self.gamma, broadcast_shape)
-    #         gamma = ops.cast(gamma, reshaped_inputs.dtype)
-    #         inv = inv * gamma
+        # Compute the batch normalization.
+        inv = ops.rsqrt(variance + self.epsilon)
+        if self.scale:
+            gamma = ops.reshape(self.gamma, broadcast_shape)
+            gamma = ops.cast(gamma, reshaped_inputs.dtype)
+            inv = inv * gamma
 
-    #     res = -mean * inv
-    #     if self.center:
-    #         beta = ops.reshape(self.beta, broadcast_shape)
-    #         beta = ops.cast(beta, reshaped_inputs.dtype)
-    #         res = res + beta
+        res = -mean * inv
+        if self.center:
+            beta = ops.reshape(self.beta, broadcast_shape)
+            beta = ops.cast(beta, reshaped_inputs.dtype)
+            res = res + beta
 
-    #     normalized_inputs = reshaped_inputs * inv + res
-    #     return normalized_inputs
+        normalized_inputs = reshaped_inputs * inv + res
+        return normalized_inputs
 
-    # def _create_broadcast_shape(self, input_shape):
-    #     broadcast_shape = [1] * len(input_shape)
-    #     broadcast_shape[self.axis] = input_shape[self.axis] // self.groups
-    #     broadcast_shape.insert(self.axis, self.groups)
-    #     return broadcast_shape
+    def _create_broadcast_shape(self, input_shape):
+        broadcast_shape = [1] * len(input_shape)
+        broadcast_shape[self.axis] = input_shape[self.axis] // self.groups
+        broadcast_shape.insert(self.axis, self.groups)
+        return broadcast_shape
 
     def compute_output_shape(self, input_shape):
         return input_shape

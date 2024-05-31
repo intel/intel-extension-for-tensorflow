@@ -117,6 +117,34 @@ void itex_layer_norm_grad_shape_fn(TF_ShapeInferenceContext* ctx,
   TF_DeleteShapeHandle(handle);
 }
 
+void group_norm_shape_fn(TF_ShapeInferenceContext* ctx, TF_Status* status) {
+  TF_SetStatus(status, TF_OK, "");
+  TF_ShapeHandle* handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 0, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 0, handle, status);
+  TF_DeleteShapeHandle(handle);
+  TF_ShapeHandle* unknown_handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextSetOutput(ctx, 1, unknown_handle,
+                                    status);  // (batch_size, group)
+  TF_ShapeInferenceContextSetOutput(ctx, 2, unknown_handle,
+                                    status);  // (batch_size, group)
+  TF_DeleteShapeHandle(unknown_handle);
+}
+
+void itex_group_norm_grad_shape_fn(TF_ShapeInferenceContext* ctx,
+                                   TF_Status* status) {
+  TF_SetStatus(status, TF_OK, "");
+  TF_ShapeHandle* handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 0, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 0, handle, status);
+  TF_DeleteShapeHandle(handle);
+  handle = TF_NewShapeHandle();
+  TF_ShapeInferenceContextGetInput(ctx, 2, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 1, handle, status);
+  TF_ShapeInferenceContextSetOutput(ctx, 2, handle, status);
+  TF_DeleteShapeHandle(handle);
+}
+
 void apply_adam_with_weight_decay_shape_fn(TF_ShapeInferenceContext* ctx,
                                            TF_Status* status) {
   TF_SetStatus(status, TF_OK, "");

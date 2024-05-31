@@ -579,6 +579,200 @@ void LaunchNormalizationKernel(const GPUDevice& d, const T* input,
   }
 }
 
+template <typename T, typename LocalAccessor, bool preprocess_input,
+          bool is_scaleoffset>
+struct TwoColReduceKernel {
+  TwoColReduceKernel(const T* grad_y, const T* x, const T* gamma,
+                     const float* mean, const float* var, T* result, T* result2,
+                     const int extend_y, const int extend_z, const int tile_y,
+                     const int num_segments_y, const int elems_per_thread,
+                     const int tile_z, const int steps, int batches, int num_HW,
+                     int group, int channel_per_group, float epsilon,
+                     LocalAccessor scratch, LocalAccessor scratch2)
+      : grad_y(grad_y),
+        x(x),
+        gamma(gamma),
+        mean(mean),
+        var(var),
+        result(result),
+        result2(result2),
+        extend_y(extend_y),
+        extend_z(extend_z),
+        tile_y(tile_y),
+        num_segments_y(num_segments_y),
+        elems_per_thread(elems_per_thread),
+        tile_z(tile_z),
+        steps(steps),
+        batches(batches),
+        num_HW(num_HW),
+        group(group),
+        channel_per_group(channel_per_group),
+        epsilon(epsilon),
+        scratch(scratch),
+        scratch2(scratch2) {}
+  void operator()(sycl::nd_item<3> item) const {
+    int y_group_id = item.get_group(1) * tile_y * elems_per_thread;
+    int z_group_id = item.get_group(2) * tile_z;
+
+    int local_id = item.get_local_linear_id();
+    int local_y_id = local_id / tile_z;
+    int local_z_id = local_id - tile_z * local_y_id;
+
+    bool is_valid =
+        (local_id < tile_y * tile_z) && (z_group_id + local_z_id < extend_z);
+    int base_offset =
+        (y_group_id + local_y_id) * extend_z + z_group_id + local_z_id;
+
+    T aggregate = T(0);
+    T aggregate2 = T(0);
+    int hw, y, b, g, c, transposed_index;
+    if constexpr (is_scaleoffset) {
+      g = (z_group_id + local_z_id) / channel_per_group;
+    }
+    if (is_valid) {
+      for (int i = 0; i < elems_per_thread; ++i) {
+        int y_id = y_group_id + local_y_id + i * tile_y;
+        if (y_id < extend_y) {
+          int index = base_offset + i * tile_y * extend_z;
+          if constexpr (is_scaleoffset) {
+            b = index / (extend_z * num_HW);
+            aggregate += grad_y[index];
+            if constexpr (preprocess_input) {
+              float x_hat =
+                  (static_cast<float>(x[index]) - mean[b * group + g]) *
+                  sycl::rsqrt(var[b * group + g] + epsilon);
+              aggregate2 += static_cast<T>(x_hat) * grad_y[index];
+            } else {
+              aggregate2 += x[index];
+            }
+          } else {
+            hw = index / (channel_per_group * extend_z);
+            y = (index - hw * channel_per_group * extend_z) / (extend_z);
+            b = (index - hw * channel_per_group * extend_z - y * extend_z) /
+                group;
+            g = index % group;
+            c = g * channel_per_group + y;
+            transposed_index = b * num_HW * channel_per_group * group +
+                               hw * group * channel_per_group +
+                               g * channel_per_group + y;
+            if constexpr (preprocess_input) {
+              T x_hat = T((static_cast<float>(x[transposed_index]) -
+                           mean[b * group + g]) *
+                          sycl::rsqrt(var[b * group + g] + epsilon));
+              aggregate += gamma[c] * grad_y[transposed_index];
+              aggregate2 += gamma[c] * grad_y[transposed_index] * x_hat;
+            } else {
+              aggregate += grad_y[index];
+              aggregate2 += x[index];
+            }
+          }
+        }
+      }
+      scratch[local_id] = aggregate;
+      scratch2[local_id] = aggregate2;
+    }
+    item.barrier(sycl::access::fence_space::local_space);
+
+    int end = tile_y;
+    int stride = (end + 2 - 1) / 2;
+    for (int i = 0; i < steps; ++i) {
+      if (is_valid && local_y_id < stride && local_y_id + stride < end) {
+        scratch[local_id] =
+            scratch[local_id] + scratch[local_id + stride * tile_z];
+        scratch2[local_id] =
+            scratch2[local_id] + scratch2[local_id + stride * tile_z];
+      }
+      end = stride;
+      stride = (end + 2 - 1) / 2;
+      item.barrier(sycl::access::fence_space::local_space);
+    }
+
+    if (is_valid && local_y_id == 0) {
+      int offset = item.get_group(1) * extend_z + z_group_id + local_z_id;
+      result[offset] = scratch[local_z_id];
+      result2[offset] = scratch2[local_z_id];
+    }
+  }
+  const T* grad_y;
+  const T* x;
+  const T* gamma;
+  const float* mean;
+  const float* var;
+  T* result;
+  T* result2;
+  const int extend_y;
+  const int extend_z;
+  const int tile_y;
+  const int num_segments_y;
+  const int elems_per_thread;
+  const int tile_z;
+  const int steps;
+  const int batches;
+  const int num_HW;
+  const int group;
+  const int channel_per_group;
+  const float epsilon;
+  LocalAccessor scratch;
+  LocalAccessor scratch2;
+};
+
+template <typename T>
+struct ComputeDxKernel {
+  ComputeDxKernel(const T* x, const T* grad_y, const T* gamma,
+                  const float* mean, const float* var, T* reduce, T* reduce2,
+                  const float epsilon, const int group, const int batch,
+                  const int num_HW, const int channel_per_group, T* dx)
+      : x(x),
+        grad_y(grad_y),
+        gamma(gamma),
+        mean(mean),
+        var(var),
+        reduce(reduce),
+        reduce2(reduce2),
+        epsilon(epsilon),
+        group(group),
+        batch(batch),
+        num_HW(num_HW),
+        channel_per_group(channel_per_group),
+        dx(dx),
+        N(T(channel_per_group * num_HW)),
+        total_size(batch * num_HW * group * channel_per_group) {}
+  void operator()(sycl::nd_item<1> item) const {
+    auto id = item.get_global_linear_id();
+    if (id >= total_size) return;
+    int b = id / (group * channel_per_group * num_HW);
+    int hw = (id - b * (group * channel_per_group * num_HW)) /
+             (group * channel_per_group);
+    int g = (id - b * (group * channel_per_group * num_HW) -
+             hw * (group * channel_per_group)) /
+            channel_per_group;
+    int y = id % channel_per_group;
+    int c = g * channel_per_group + y;
+    float x_hat = (static_cast<float>(x[id]) - mean[b * group + g]) *
+                  sycl::rsqrt(var[b * group + g] + epsilon);
+    T dx_hat = grad_y[id] * gamma[c];
+    dx[id] = (N * dx_hat - reduce[b * group + g] -
+              reduce2[b * group + g] * T(x_hat)) /
+             N * T(sycl::rsqrt(var[b * group + g] + epsilon));
+  }
+
+ private:
+  const T* x;
+  const T* grad_y;
+  const T* gamma;
+  const float* mean;
+  const float* var;
+  T* reduce;
+  T* reduce2;
+  const float epsilon;
+  const int group;
+  const int batch;
+  const int num_HW;
+  const int channel_per_group;
+  T* dx;
+  const T N;
+  const int total_size;
+};
 }  // end namespace impl
 }  // end namespace itex
 

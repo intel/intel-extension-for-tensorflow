@@ -29,6 +29,7 @@ from keras import ops
 
 
 from intel_extension_for_tensorflow.python.ops.layer_norm_k3 import _layer_norm
+from intel_extension_for_tensorflow.python.ops.group_norm_k3 import GroupNormalization
 
 format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=format_str)
@@ -368,6 +369,8 @@ def experimental_ops_override():
         keras.layers.LayerNormalization.build = itex_layer_norm_build
         keras.layers.BatchNormalization.call = itex_batch_norm_call
         keras.layers.BatchNormalization.build = itex_batch_norm_build
+        keras.layers.GroupNormalization.call = GroupNormalization.call
+        keras.layers.GroupNormalization.build = GroupNormalization.build
         
     except BaseException:  # pylint: disable=broad-except
         logger.error("Cannot override itex ops.")
@@ -377,6 +380,8 @@ def experimental_ops_override():
         keras.src.layers.normalization.layer_normalization.LayerNormalization.build = itex_layer_norm_build
         keras.src.layers.normalization.batch_normalization.BatchNormalization.call = itex_batch_norm_call
         keras.src.layers.normalization.batch_normalization.BatchNormalization.build = itex_batch_norm_build
+        keras.src.layers.normalization.group_normalization.GroupNormalization.call = GroupNormalization.call
+        keras.src.layers.normalization.group_normalization.GroupNormalization.build = GroupNormalization.build
         keras.src.backend.numpy.mean = itex_mean
         keras.src.backend.numpy.var = itex_var
         logger.info("itex experimental ops override is enabled.")

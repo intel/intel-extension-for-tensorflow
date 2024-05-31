@@ -14,6 +14,7 @@
 # ==============================================================================
 
 # pylint: disable=missing-module-docstring
+import tensorflow as tf
 from tensorflow.python.framework import ops
 from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from tensorflow.python.ops import math_ops
@@ -66,6 +67,22 @@ def _itex_layer_norm_grad(op, *grad):
       y_backprop=grad_y, x=x, scale=scale, reserve_space_1=reserve_space_1,
       reserve_space_2=reserve_space_2, epsilon=epsilon, is_training=is_training,
       data_format=data_format)
+  return dx, dscale, doffset
+
+@ops.RegisterGradient("ITEXGroupNorm")
+def _itex_group_norm_grad(op, *grad):
+  """A dummy docstring."""
+  x = op.inputs[0]
+  grad_y = grad[0]
+  scale = op.inputs[1]
+  epsilon = op.get_attr("epsilon")
+  group = op.get_attr("num_groups")
+  mean = op.outputs[1]
+  variance = op.outputs[2]
+  dx, dscale, doffset = load_ops_library.itex_group_norm_grad(
+    y_backprop=grad_y, x=x, scale=scale, mean=mean,
+      variance=variance, epsilon=epsilon, num_groups=group
+  )
   return dx, dscale, doffset
 
 @ops.RegisterGradient("ItexRnn")

@@ -503,7 +503,8 @@ def experimental_ops_override():
       tf_keras.src.layers.normalization.layer_normalization.LayerNormalization.build = itex_layer_norm_build
       tf_keras.src.layers.rnn.lstm.LSTM.call = itex_lstm_call
       tf_keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
-      tf_keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
+      tf_keras.layers.GroupNormalization.build = GroupNormalization.build
+      tf_keras.layers.GroupNormalization.call = GroupNormalization.call
       tf_keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
       tf_keras.optimizers.AdamW.update_step = itex_adamw_update_step
     else:
@@ -512,7 +513,8 @@ def experimental_ops_override():
       tf_keras.layers.LayerNormalization.build = itex_layer_norm_build
       tf_keras.layers.LSTM.call = itex_lstm_call
       tf_keras.layers.LSTM.build = itex_lstm_build
-      tf_keras.layers.GroupNormalization.call = GroupNormalization.itex_group_norm_call
+      tf_keras.layers.GroupNormalization.build = GroupNormalization.build
+      tf_keras.layers.GroupNormalization.call = GroupNormalization.call
   
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long

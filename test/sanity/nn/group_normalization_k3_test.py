@@ -22,8 +22,10 @@ import keras
 from keras.initializers import Constant
 
 import intel_extension_for_tensorflow as itex
+from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 from tensorflow.python.ops import math_ops
 from intel_extension_for_tensorflow.python.ops import GroupNormalization
+from tensorflow.python.ops import gradient_checker
 
 from intel_extension_for_tensorflow.python.test_func import test
 
@@ -317,6 +319,67 @@ class GroupNormalizationTest(test.TestCase):
         x_shape = [1, 6, 6, 6]
         self._runtests(x_shape)
 
+class GroupNormalizationGradTest(test.TestCase):
+    def _group_norm(self, x, gamma, beta, G, eps=1e-5):
+        # Compute group normalization
+        N, H, W, C = x.shape
+        x = tf.reshape(x, [N, H, W, G, C // G])
+        mean, var = tf.nn.moments(x, [1, 2, 4], keepdims=True)
+        x = (x - mean) / tf.sqrt(var + eps)
+        x = tf.reshape(x, [N, H, W, C])
+        return x * gamma + beta
+    
+    def test_correctness(self):
+        if not test.is_gpu_available():
+            self.skipTest("No GPU available")
+        N, H, W, C = 2, 3, 4, 8
+        G = 2
+        x_shape = [N, H, W, C]
+        gamma_shape = [C]
+        beta_shape = [C]
+        # Initialize random values for the input tensor and the parameters
+        np.random.seed(1)
+        x_val = np.random.rand(*x_shape).astype(np.float32)
+        gamma_val = np.random.rand(*gamma_shape).astype(np.float32)
+        beta_val = np.random.rand(*beta_shape).astype(np.float32)
+        for dtype in (tf.float32, tf.bfloat16, tf.float16):
+            with self.cached_session():
+                # Define the input tensor and the parameters as tf.Variables
+                x = tf.Variable(x_val, dtype=dtype)
+                gamma = tf.Variable(gamma_val, dtype=dtype)
+                beta = tf.Variable(beta_val, dtype=dtype)
+
+                # Define the group normalization operation
+                with tf.GradientTape() as tape:
+                    tape.watch([x, gamma, beta])
+                    y = self._group_norm(x, gamma, beta, G)
+
+                # Compute the gradients
+                grad_x, grad_gamma, grad_beta = tape.gradient(y, [x, gamma, beta])
+                # Compute the gradients for itex_group_norm
+                with tf.GradientTape() as tape_itex:
+                    tape_itex.watch([x, gamma, beta])
+                    y_itex, _, _ = load_ops_library.itex_group_norm(
+                        x,
+                        gamma,
+                        beta,
+                        num_groups=G,
+                        epsilon=1e-5,
+                        use_scale=True,
+                        use_center=True,
+                    )
+                grad_x_itex, grad_gamma_itex, grad_beta_itex = tape_itex.gradient(y_itex, [x, gamma, beta])
+
+                # Compare the forward results
+                rtol = 1e-6 if dtype == tf.float32 else 5e-2
+                atol = 1e-6 if dtype == tf.float32 else 5e-2
+                self.assertAllClose(y.numpy(), y_itex.numpy(), rtol=rtol, atol=atol)
+
+                # Compare the gradients
+
+                self.assertAllClose(grad_x.numpy(), grad_x_itex.numpy(), rtol=rtol, atol=atol)
+                self.assertAllClose(grad_gamma.numpy(), grad_gamma_itex.numpy(), rtol=rtol, atol=atol)
+                self.assertAllClose(grad_beta.numpy(), grad_beta_itex.numpy(), rtol=rtol, atol=atol)
 
 if __name__ == "__main__":
     tf.test.main()

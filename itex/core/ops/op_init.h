@@ -110,6 +110,7 @@ void Register_ITEXTensorArraySplit();
 void Register_ITEXTensorArraySize();
 void Register_ITEXTensorArrayClose();
 void Register_ITEXGroupNormOp();
+void Register_ITEXGroupNormGradOp();
 void Register_ITEXRMSNormOp();
 void Register_ITEXRnnOp();
 void Register_ITEXRnnGradOp();

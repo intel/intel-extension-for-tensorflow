@@ -126,7 +126,7 @@ class GroupNormalization(Layer):
         # fused_group_norm only support GPU backend and NHWC and axis=-1 currently
         # TODO(itex): support channel first and rank==any
         self.use_fused_group_norm = self.use_gpu and (
-            rank == 4) and (self.axis == rank - 1)
+            rank == 4 or rank == 5) and (self.axis == rank - 1)
 
         dim = input_shape[self.axis]
         if dim is None:
@@ -161,7 +161,7 @@ class GroupNormalization(Layer):
             )
         else:
             # TODO: how to handle scale==False case, maybe follow BN
-            self.gamma = [0.0]
+            self.gamma = tf.zeros((dim,))
 
         if self.center:
             self.beta = self.add_weight(
@@ -172,18 +172,17 @@ class GroupNormalization(Layer):
                 constraint=self.beta_constraint,
             )
         else:
-            self.beta = [0.0]
+            self.beta = tf.zeros((dim,))
 
         super().build(input_shape)
 
     def call(self, inputs, training=False):
         input_shape = tf.shape(inputs)
-        # TODO(itex): support GroupNormGrad
-        if self.use_fused_group_norm and training == False:
-            normalized_inputs = load_ops_library.itex_group_norm(
+        if self.use_fused_group_norm:
+            normalized_inputs, _, _ = load_ops_library.itex_group_norm(
                 inputs,
-                self.gamma,
-                self.beta,
+                tf.cast(self.gamma, inputs.dtype),
+                tf.cast(self.beta, inputs.dtype),
                 num_groups=self.groups,
                 epsilon=self.epsilon,
                 use_scale=self.scale,

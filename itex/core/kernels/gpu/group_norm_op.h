@@ -39,9 +39,24 @@ template <typename Device, typename T>
 struct GroupNormFunctor {
   void operator()(OpKernelContext* context, typename TTypes<T>::ConstFlat input,
                   typename TTypes<T>::Flat output,
+                  typename TTypes<float>::Flat reserve_space_1,
+                  typename TTypes<float>::Flat reserve_space_2,
                   typename TTypes<T>::ConstVec gamma,
                   typename TTypes<T>::ConstVec beta, float epsilon,
                   bool use_scale, bool use_center, const InputShape& shape);
+};
+
+template <typename Device, typename T>
+struct GroupNormGradFunctor {
+  void operator()(OpKernelContext* context, typename TTypes<T>::ConstFlat x,
+                  typename TTypes<float>::ConstFlat mean,
+                  typename TTypes<float>::ConstFlat var,
+                  typename TTypes<T>::ConstVec gamma,
+                  typename TTypes<T>::ConstFlat grad_y, float epsilon,
+                  int group, int num_batches, int num_HW, int channel_per_group,
+                  int channel, typename TTypes<T>::Flat dx,
+                  typename TTypes<T>::Flat dscale,
+                  typename TTypes<T>::Flat doffset);
 };
 
 }  // end namespace functor
