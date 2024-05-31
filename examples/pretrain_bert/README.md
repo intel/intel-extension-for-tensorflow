@@ -396,7 +396,7 @@ tensorflow.python.framework.errors_impl.NotFoundError: libmkl_sycl.so.2: cannot 
 2. If you get the following error log, please uninstall current horovod using `pip uninstall horovod`. And reinstall horovod using `pip install --no-cache-dir horovod`.
 
 ```
-horovod.common.exceptions.HorovodVersionMismatchError: Framework tensorflow installed with version 2.15.0 but found version 2.14.1.
+horovod.common.exceptions.HorovodVersionMismatchError: Framework tensorflow installed with version 2.15.1 but found version 2.14.1.
              This can result in unexpected behavior including runtime errors.
              Reinstall Horovod using `pip install --no-cache-dir` to build with the new version.
 ```
