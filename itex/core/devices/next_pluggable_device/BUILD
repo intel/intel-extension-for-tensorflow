@@ -10,7 +10,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//itex/core/devices/gpu:itex_gpu_runtime_imp",
-        "//itex/core/utils:libintel_xla",
+        "//itex/core/utils:libintel_extension_for_openxla",
         "//third_party/build_option/sycl:itex_gpu_header",
     ],
     alwayslink = True,

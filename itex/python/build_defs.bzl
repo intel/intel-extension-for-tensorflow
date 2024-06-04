@@ -1,6 +1,6 @@
 """Build rules for pybind11"""
 
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 PYBIND_COPTS = [
     "-fexceptions",

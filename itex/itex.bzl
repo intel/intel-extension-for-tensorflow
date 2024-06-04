@@ -1,6 +1,6 @@
 # Return the options to use for a C++ library or binary build.
 # Uses the ":optmode" config_setting to pick the options.
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl", "if_xetla")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl", "if_xetla")
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
 def if_linux_x86_64(a, otherwise = []):
@@ -58,7 +58,7 @@ def if_cc_threadpool_build(if_true, if_false = []):
 
 def if_gpu_backend(if_true, if_false = []):
     return selects.with_or({
-        ("@local_config_sycl//sycl:using_sycl", "@intel_extension_for_tensorflow//itex:xpu_build"): if_true,
+        ("@itex_local_config_sycl//sycl:using_sycl", "@intel_extension_for_tensorflow//itex:xpu_build"): if_true,
         "//conditions:default": if_false,
     })
 

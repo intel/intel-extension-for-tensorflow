@@ -10,7 +10,7 @@ cc_library(
         "//itex:core",
         "//itex/core/utils/onednn:onednn_graph_util",
     ] + if_using_nextpluggable_device([
-        "//itex/core/utils:libintel_xla",
+        "//itex/core/utils:libintel_extension_for_openxla",
     ]),
     alwayslink = True,
 )

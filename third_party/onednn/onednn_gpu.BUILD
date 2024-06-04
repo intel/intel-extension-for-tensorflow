@@ -10,7 +10,7 @@ load(
     "convert_header_to_cpp",
     "gen_onednn_version",
 )
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl_build_is_configured")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl_build_is_configured")
 load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 
 config_setting(
@@ -174,7 +174,7 @@ cc_library(
     ],
     #nocopts = "-fno-exceptions",
     visibility = ["//visibility:public"],
-    deps = ["@local_config_sycl//sycl:itex_gpu_headers"],
+    deps = ["@itex_local_config_sycl//sycl:itex_gpu_headers"],
 )
 
 load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_graph_compiler", "if_llga_debug")

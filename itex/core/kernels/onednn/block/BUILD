@@ -1,5 +1,5 @@
 load("//itex:itex.bzl", "itex_xpu_library", "tf_copts")
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 # List all kernels here.
 itex_xpu_library(

@@ -32,7 +32,7 @@ def _itex_bind():
 
 def itex_workspace(path_prefix = "", tf_repo_name = ""):
     """All external dependencies for TF builds"""
-    sycl_configure(name = "local_config_sycl")
+    sycl_configure(name = "itex_local_config_sycl")
     syslibs_configure(name = "local_config_syslibs")
 
     farmhash()

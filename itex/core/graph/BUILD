@@ -1,5 +1,5 @@
 load("//itex:itex.bzl", "cc_library")
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 cc_library(
     name = "xpu_optimizer",

@@ -3,7 +3,7 @@ load(
     "//itex/core/utils:build_config.bzl",
     "tf_protobuf_deps",
 )
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 package(
     default_visibility = [
@@ -102,7 +102,7 @@ cc_library(
         "@nsync//:nsync_cpp",
     ] + if_using_nextpluggable_device([
         "//third_party/build_option/sycl:itex_gpu_header",
-        ":libintel_xla",
+        ":libintel_extension_for_openxla",
     ]),
 )
 
@@ -422,18 +422,18 @@ cc_library(
 )
 
 cc_import(
-    name = "libintel_xla",
-    shared_library = ":intel_xla",
+    name = "libintel_extension_for_openxla",
+    shared_library = ":intel_extension_for_openxla",
     visibility = ["//visibility:public"],
 )
 
 itex_xpu_binary(
-    name = "libintel_xla.so",
+    name = "libintel_extension_for_openxla.so",
     linkshared = True,
     set_target = "gpu_orig_backend",
     visibility = ["//visibility:public"],
     deps = [
-        "@intel_xla//xla/pjrt:tf_pjrt_helper",
+        "@intel_extension_for_openxla//xla/pjrt:tf_pjrt_helper",
         "@onednn_gpu",
     ] + select({
         "//third_party/onednn:build_with_onednn_graph": ["@onednn_gpu//:onednn_graph_gpu"],

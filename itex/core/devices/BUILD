@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//itex:itex.bzl", "cc_library", "if_using_nextpluggable_device")
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 cc_library(
     name = "xpu_device_util",

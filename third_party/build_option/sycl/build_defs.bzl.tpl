@@ -19,7 +19,7 @@ def if_xetla(if_true, if_false = []):
 
     """
     return select({
-        "@local_config_sycl//sycl:using_xetla": if_true,
+        "@itex_local_config_sycl//sycl:using_xetla": if_true,
         "//conditions:default": if_false,
     })     
     

@@ -32,11 +32,11 @@ load(
 #    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
 #    and update XLA_SHA256 with the result.
 
-XLA_COMMIT = "cf3c9138f9052e7a7761344693b2c677a6161f6d"
+XLA_COMMIT = "98bf412acc77c515ed7b40cff26ac1f1decf8f5b"
 
 new_git_repository(
-    name = "intel_xla",
-    build_file = clean_dep("//third_party/intel_xla:intel_xla.BUILD"),
+    name = "intel_extension_for_openxla",
+    build_file = clean_dep("//third_party/intel_extension_for_openxla:intel_extension_for_openxla.BUILD"),
     commit = XLA_COMMIT,
     remote = "https://github.com/intel/intel-extension-for-openxla.git",
     verbose = True,
@@ -55,10 +55,6 @@ new_git_repository(
 #    path = "/path/to/xla",
 # )
 
-load("@intel_xla//xla:workspace.bzl", "workspace")
-
-workspace()
-
 # To update XLA to a new revision,
 # a) update URL and strip_prefix to the new git commit hash
 # b) get the sha256 hash of the commit by running:
@@ -67,11 +63,11 @@ workspace()
 http_archive(
     name = "xla",
     patch_args = ["-p1"],
-    patches = ["//third_party:openxla.patch"],
-    sha256 = "637acdfce5a406bd929bca052863be8200afbaac0daecbc547e9aff1967d7c00",
-    strip_prefix = "xla-a5a30f7b34b69b7cada6deb4b39f77788e28369c",
+    patches = ["@intel_extension_for_openxla//third_party:openxla.patch"],
+    sha256 = "db007b6628cfe108c63f45d611c6de910abe3ee827e55f08314ce143c4887d66",
+    strip_prefix = "xla-12eee889e1f2ad41e27d7b0e970cb92d282d3ec5",
     urls = [
-        "https://github.com/openxla/xla/archive/a5a30f7b34b69b7cada6deb4b39f77788e28369c.tar.gz",
+        "https://github.com/openxla/xla/archive/12eee889e1f2ad41e27d7b0e970cb92d282d3ec5.tar.gz",
     ],
 )
 
@@ -86,6 +82,10 @@ http_archive(
 #    name = "xla",
 #    path = "/path/to/xla",
 # )
+
+load("@intel_extension_for_openxla//xla:workspace.bzl", "workspace")
+
+workspace()
 
 load("@xla//:workspace4.bzl", "xla_workspace4")
 

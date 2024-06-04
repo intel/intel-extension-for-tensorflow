@@ -15,7 +15,7 @@ load(
     "omp_deps",
 )
 load(
-    "@local_config_sycl//sycl:build_defs.bzl",
+    "@itex_local_config_sycl//sycl:build_defs.bzl",
     "if_sycl",
 )
 load(

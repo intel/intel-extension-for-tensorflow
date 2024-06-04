@@ -7,7 +7,7 @@ ITEX_CC_PATH= <ITEX_PATH>
 include = -I $(TF_INCLUDE_PATH)
 
 ifeq ($(backend), GPU)
-    lib = -L $(TFCC_PATH) -L $(ITEX_CC_PATH) -lintel_xla -ltensorflow_framework -ltensorflow_cc
+    lib = -L $(TFCC_PATH) -L $(ITEX_CC_PATH) -lintel_extension_for_openxla -ltensorflow_framework -ltensorflow_cc
 else
     lib = -L $(TFCC_PATH) -ltensorflow_framework -ltensorflow_cc
 endif

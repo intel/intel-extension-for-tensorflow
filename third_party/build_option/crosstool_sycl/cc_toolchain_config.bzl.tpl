@@ -39,7 +39,7 @@ load(
     "PREPROCESS_ASSEMBLE_ACTION_NAME",
     "STRIP_ACTION_NAME",
 )
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl")
 
 ACTION_NAMES = struct(
     c_compile = C_COMPILE_ACTION_NAME,
@@ -598,6 +598,7 @@ def _impl(ctx):
                         "-fPIC",
                         "-DITEX_USE_MKL=%{TF_NEED_MKL}",
                         "-DITEX_ENABLE_DOUBLE=1",
+                        "-DTENSORFLOW_USE_SYCL=1",
                         "-DEIGEN_USE_DPCPP=1",
                         "-DEIGEN_USE_DPCPP_BUILD=1",
                         "-DEIGEN_USE_DPCPP_USM=1",

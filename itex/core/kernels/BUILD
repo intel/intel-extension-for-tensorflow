@@ -1,5 +1,5 @@
 load("//itex:itex.bzl", "cc_binary", "cc_library", "if_using_nextpluggable_device", "itex_xpu_library", "tf_copts")
-load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl", "if_xetla")
+load("@itex_local_config_sycl//sycl:build_defs.bzl", "if_sycl", "if_xetla")
 
 XPU_KERNEL_DEPS = [
     "//itex/core/devices:device_backend_util_hdr",
