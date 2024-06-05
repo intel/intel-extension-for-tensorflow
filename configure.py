@@ -675,7 +675,7 @@ def prompt_loop_or_load_from_env(environ_cp,
       break
     if not suppress_default_error:
       print(error_msg % val)
-    environ_cp[var_name] = ''
+    environ_cp[var_name] = None
   else:
     raise UserInputError('Invalid %s setting was provided %d times in a row. '
                          'Assuming to be a scripting mistake.' %
@@ -751,9 +751,16 @@ def set_sycl_toolkit_path(environ_cp):
     lib_path += ':' + library_path
 
   mkl_path = os.getenv('ONEAPI_MKL_PATH')
-  if mkl_path is not None and len(mkl_path) > 0:
-    mkl_lib = '%s/lib/intel64' % (mkl_path)
-    lib_path += ':' + mkl_lib
+  if mkl_path is None:
+    """Try to find mkl path."""
+    home_path = sycl_toolkit_path.split("compiler")[0]
+    version = sycl_toolkit_path.split("compiler")[1].split("/")[1]
+    mkl_path = os.path.join(home_path, 'mkl' + '/' + version + '/')
+    environ_cp['ONEAPI_MKL_PATH'] = mkl_path    
+  set_mkl_path(environ_cp)
+  lib_path += ':' + '%slib/intel64' % (mkl_path)
+  print('Configured oneMKL Toolkit path: %s\n' % (mkl_path))
+    
   write_action_env_to_bazelrc('LD_LIBRARY_PATH',
                               ld_lib_path)
   write_action_env_to_bazelrc('LIBRARY_PATH',
@@ -769,7 +776,7 @@ def set_mkl_path(environ_cp):
       print(
           'Invalid path to the MKL Toolkit. %s or %s cannot be found'
           % (os.path.join(mkl_home, 'include'),
-             os.path.exists(os.path.join(mkl_home, 'lib'))))
+             os.path.join(mkl_home, 'lib')))
     return exists
   mkl_path = prompt_loop_or_load_from_env(
       environ_cp,
@@ -1005,9 +1012,6 @@ def main():
   if environ_cp.get('TF_NEED_SYCL') == '1':
     set_sycl_toolkit_path(environ_cp)
     set_aot_config(environ_cp)
-    set_action_env_var(environ_cp, 'TF_NEED_MKL', 'MKL', False)
-    if environ_cp.get('TF_NEED_MKL') == '1':
-      set_mkl_path(environ_cp)
   else:
     print('Only CPU support is available for '
           'Intel® Extension for TensorFlow*.')

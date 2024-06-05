@@ -21,6 +21,7 @@ build:gpu --define=build_with_onednn_graph=true
 build:gpu --define=device=gpu
 build:gpu --define=tensorflow_mkldnn_contraction_kernel=0
 build:gpu --repo_env TF_NEED_SYCL=1
+build:gpu --repo_env TF_NEED_MKL=1
 
 # This config option is used for GPU backend.
 # xpu will replace gpu as default config option for GPU only backend.
@@ -29,7 +30,8 @@ build:xpu --define=using_sycl=true --define=build_with_sycl=true --define=using_
 build:xpu --define=build_with_onednn_graph=true
 build:xpu --define=device=gpu
 build:xpu --define=tensorflow_mkldnn_contraction_kernel=0
-build:gpu --repo_env TF_NEED_SYCL=1
+build:xpu --repo_env TF_NEED_SYCL=1
+build:xpu --repo_env TF_NEED_MKL=1
 
 # This config option is used for XPU backend (CPU + GPU). (Disabled)
 # build:xpu --crosstool_top=@itex_local_config_sycl//crosstool_sycl:toolchain
