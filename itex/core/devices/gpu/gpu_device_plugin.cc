@@ -166,19 +166,17 @@ void gpu_destroy_event(const SP_Device* device, SP_Event event) {
 
 // Requests the current status of the event from the underlying platform.
 SE_EventStatus gpu_get_event_status(const SP_Device* device, SP_Event event) {
-  if (IsMultipleStreamEnabled()) {
-    ITEX_GPUEvent event_handle = static_cast<SP_Event_st*>(event)->event_handle;
-    auto event_status =
-        event_handle.get_info<sycl::info::event::command_execution_status>();
-    switch (event_status) {
-      case sycl::info::event_command_status::submitted:
-      case sycl::info::event_command_status::running:
-        return SE_EVENT_PENDING;
-      case sycl::info::event_command_status::complete:
-        return SE_EVENT_COMPLETE;
-      default:
-        return SE_EVENT_UNKNOWN;
-    }
+  ITEX_GPUEvent event_handle = static_cast<SP_Event_st*>(event)->event_handle;
+  auto event_status =
+      event_handle.get_info<sycl::info::event::command_execution_status>();
+  switch (event_status) {
+    case sycl::info::event_command_status::submitted:
+    case sycl::info::event_command_status::running:
+      return SE_EVENT_PENDING;
+    case sycl::info::event_command_status::complete:
+      return SE_EVENT_COMPLETE;
+    default:
+      return SE_EVENT_UNKNOWN;
   }
   return SE_EVENT_COMPLETE;
 }
@@ -186,12 +184,10 @@ SE_EventStatus gpu_get_event_status(const SP_Device* device, SP_Event event) {
 // Inserts the specified event at the end of the specified stream.
 void gpu_record_event(const SP_Device* device, SP_Stream stream, SP_Event event,
                       TF_Status* status) {
-  if (IsMultipleStreamEnabled()) {
-    ITEX_GPUStream* stream_handle =
-        static_cast<SP_Stream_st*>(stream)->stream_handle;
-    ITEX_GPUEvent recorded_event = stream_handle->ext_oneapi_submit_barrier();
-    event->event_handle = recorded_event;
-  }
+  ITEX_GPUStream* stream_handle =
+      static_cast<SP_Stream_st*>(stream)->stream_handle;
+  ITEX_GPUEvent recorded_event = stream_handle->ext_oneapi_submit_barrier();
+  event->event_handle = recorded_event;
 }
 
 // Wait for the specified event at the end of the specified stream.

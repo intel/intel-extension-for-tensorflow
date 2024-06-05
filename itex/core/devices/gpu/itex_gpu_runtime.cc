@@ -365,25 +365,16 @@ ITEX_GPUError_t ITEX_GPUDestroyEvent(ITEX_GPUDevice* device_handle,
 
 ITEX_GPUError_t ITEX_GPUStreamWaitEvent(ITEX_GPUStream* stream,
                                         ITEX_GPUEvent event) {
-  if (IsMultipleStreamEnabled()) {
-    const std::vector<ITEX_GPUEvent> event_list{event};
-    stream->ext_oneapi_submit_barrier(event_list);
-  } else {
-    stream->wait();
-  }
+  const std::vector<ITEX_GPUEvent> event_list{event};
+  stream->ext_oneapi_submit_barrier(event_list);
   return ITEX_GPU_SUCCESS;
 }
 
 ITEX_GPUError_t ITEX_GPUStreamWaitStream(ITEX_GPUStream* dependent,
                                          ITEX_GPUStream* other) {
-  if (IsMultipleStreamEnabled()) {
-    ITEX_GPUEvent event = other->ext_oneapi_submit_barrier();
-    const std::vector<ITEX_GPUEvent> event_list{event};
-    dependent->ext_oneapi_submit_barrier(event_list);
-  } else {
-    dependent->wait();
-    other->wait();
-  }
+  ITEX_GPUEvent event = other->ext_oneapi_submit_barrier();
+  const std::vector<ITEX_GPUEvent> event_list{event};
+  dependent->ext_oneapi_submit_barrier(event_list);
   return ITEX_GPU_SUCCESS;
 }
 
