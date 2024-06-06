@@ -115,7 +115,6 @@ class DevicePool {
     static std::vector<ITEX_GPUDevice> devices;
 
     std::call_once(init_device_flag, []() {
-      std::vector<ITEX_GPUDevice> root_devices;
       // Get root device list from platform list.
       auto platform_list = sycl::platform::get_platforms();
       for (const auto& platform : platform_list) {
@@ -131,41 +130,10 @@ class DevicePool {
           auto device_list = platform.get_devices();
           for (const auto& device : device_list) {
             if (device.is_gpu()) {
-              root_devices.push_back(device);
+              devices.push_back(device);
             }
           }
         }
-      }
-
-      if (TileAsDevice()) {
-        // If ITEX_TILE_AS_DEVICE is true.
-        // Create sub devices from root devices:
-        //   If succ, add sub devices into devices list
-        //   If fail, add root devices into devices list
-        constexpr auto partition_by_affinity =
-            sycl::info::partition_property::partition_by_affinity_domain;
-        constexpr auto next_partitionable =
-            sycl::info::partition_affinity_domain::next_partitionable;
-        for (const auto& root_device : root_devices) {
-          std::vector<ITEX_GPUDevice> sub_devices;
-          auto max_sub_devices =
-              root_device
-                  .get_info<sycl::info::device::partition_max_sub_devices>();
-          if (max_sub_devices == 0) {
-            ITEX_LOG(INFO) << "number of sub-devices is zero, expose root "
-                              "device.";
-            devices.push_back(root_device);
-          } else {
-            sub_devices = root_device.create_sub_devices<partition_by_affinity>(
-                next_partitionable);
-            devices.insert(devices.end(), sub_devices.begin(),
-                           sub_devices.end());
-          }
-        }
-      } else {
-        // If ITEX_TILE_AS_DEVICE is false.
-        // Only set root device as device list.
-        devices = std::move(root_devices);
       }
 
       size_t num_device = devices.size();

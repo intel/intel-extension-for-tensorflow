@@ -84,32 +84,4 @@ void DeviceMemcpy(void* dst, const void* src, size_t size, void* stream) {
 
 }  // namespace itex
 
-// ITEX_TILE_AS_DEVICE
-//   True (default behaviour): Tile as an individual device in device list
-//   False: Only root device as an individual device in
-//   device list
-inline bool TileAsDevice() {
-  bool tile_as_device;
-  if (std::getenv(std::string("ITEX_ENABLE_TILE_AS_DEVICE").c_str())) {
-    ITEX_CHECK_OK(itex::ReadBoolFromEnvVar("ITEX_ENABLE_TILE_AS_DEVICE", true,
-                                           &tile_as_device));
-    ITEX_LOG(WARNING)
-        << "`ITEX_ENABLE_TILE_AS_DEVICE` will be deprecated, "
-           "please use `ZE_FLAT_DEVICE_HIERARCHY` instead, refering to "
-           "https://spec.oneapi.io/level-zero/latest/core/"
-           "PROG.html#device-hierarchy.";
-  } else if (std::getenv(std::string("ITEX_TILE_AS_DEVICE").c_str())) {
-    ITEX_CHECK_OK(
-        itex::ReadBoolFromEnvVar("ITEX_TILE_AS_DEVICE", true, &tile_as_device));
-    ITEX_LOG(WARNING)
-        << "`ITEX_TILE_AS_DEVICE` will be deprecated, "
-           "please use `ZE_FLAT_DEVICE_HIERARCHY` instead, refering to "
-           "https://spec.oneapi.io/level-zero/latest/core/"
-           "PROG.html#device-hierarchy.";
-  } else {
-    tile_as_device = true;
-  }
-  return tile_as_device;
-}
-
 #endif  // ITEX_CORE_DEVICES_XPU_DEVICE_UTIL_H_
