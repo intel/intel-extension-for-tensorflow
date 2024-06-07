@@ -758,6 +758,7 @@ def set_sycl_toolkit_path(environ_cp):
     mkl_path = os.path.join(home_path, 'mkl' + '/' + version + '/')
     environ_cp['ONEAPI_MKL_PATH'] = mkl_path    
   set_mkl_path(environ_cp)
+  mkl_path = environ_cp['ONEAPI_MKL_PATH']
   lib_path += ':' + '%slib/intel64' % (mkl_path)
   print('Configured oneMKL Toolkit path: %s\n' % (mkl_path))
     
