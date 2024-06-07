@@ -119,6 +119,7 @@ class GroupNormalization(Layer):
         self.use_gpu = None
 
     def build(self, input_shape):
+        self.supports_jit = False
         self.use_gpu = len(tf.config.list_physical_devices("XPU")) > 0
         dim = input_shape[self.axis]
 
