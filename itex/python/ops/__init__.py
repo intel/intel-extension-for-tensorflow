@@ -28,7 +28,7 @@ if os.environ.get("TF_USE_LEGACY_KERAS", None) in ("true", "True", "1"):
     from intel_extension_for_tensorflow.python.ops.mlp import FusedDenseBiasAddGelu
     from intel_extension_for_tensorflow.python.ops.rms_norm import RMSNormalization
     from intel_extension_for_tensorflow.python.ops.recurrent import ItexLSTM
-    from intel_extension_for_tensorflow.python.ops.optimizers import AdamWithWeightDecayOptimizer, AdamWithWeightDecayLegacyOptimizer, LAMBOptimizer
+    from intel_extension_for_tensorflow.python.ops.optimizers import AdamOptimizer, AdamWithWeightDecayOptimizer, AdamWithWeightDecayLegacyOptimizer, LAMBOptimizer
 else:
     from intel_extension_for_tensorflow.python.ops.layer_norm_k3 import LayerNormalization
     from intel_extension_for_tensorflow.python.ops.group_norm_k3 import GroupNormalization

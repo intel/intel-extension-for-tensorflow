@@ -174,7 +174,7 @@ class GroupNormalization(Layer):
         else:
             self.beta = tf.zeros((dim,))
 
-        super().build(input_shape)
+        self.built = True
 
     def call(self, inputs, training=False):
         input_shape = tf.shape(inputs)

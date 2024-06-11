@@ -37,7 +37,7 @@ from tensorflow.python.util import compat
 from intel_extension_for_tensorflow.python.device import get_backend
 from intel_extension_for_tensorflow.python.ops.layer_norm import _layer_norm
 from intel_extension_for_tensorflow.python.ops.activations import gelu as itex_gelu
-from intel_extension_for_tensorflow.python.ops.optimizers import AdamWithWeightDecayOptimizer
+from intel_extension_for_tensorflow.python.ops.optimizers import AdamOptimizer, AdamWithWeightDecayOptimizer
 from intel_extension_for_tensorflow.python.ops.recurrent import gpu_lstm
 from intel_extension_for_tensorflow.python.ops.recurrent import is_itex_supported_inputs
 from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
@@ -460,6 +460,13 @@ def experimental_ops_override():
       return [output] + list(states)
     return output
 
+  def itex_adam_update_step(self, gradient, variable):
+    # if is on CPU, fall back
+    if not config.list_logical_devices('XPU') or hasattr(AdamOptimizer,'_apply_sparse_shared'):
+      tf_adamw_update_step(self, gradient, variable)
+    else:
+      AdamOptimizer.update_step(self, gradient, variable)
+
   def itex_adamw_apply_gradients(self, grads_and_vars, name=None):
     # if is on CPU, fall back
     if not config.list_logical_devices('XPU') or hasattr(AdamWithWeightDecayOptimizer,'_apply_sparse_shared'):
@@ -490,6 +497,7 @@ def experimental_ops_override():
     tf_keras.activations.gelu = itex_gelu
     tf_keras.layers.LSTM.call = itex_lstm_call
     tf_keras.layers.LSTM.build = itex_lstm_build
+    tf_keras.optimizers.Adam.update_step = itex_adam_update_step
     tf_keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
     tf_keras.optimizers.AdamW.update_step = itex_adamw_update_step
     logger.info("itex experimental ops override is enabled.")
@@ -505,6 +513,7 @@ def experimental_ops_override():
       tf_keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
       tf_keras.layers.GroupNormalization.build = GroupNormalization.build
       tf_keras.layers.GroupNormalization.call = GroupNormalization.call
+      tf_keras.optimizers.Adam.update_step = itex_adam_update_step
       tf_keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
       tf_keras.optimizers.AdamW.update_step = itex_adamw_update_step
     else:
