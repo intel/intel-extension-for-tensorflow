@@ -41,6 +41,7 @@ from intel_extension_for_tensorflow.python.ops.optimizers import AdamOptimizer, 
 from intel_extension_for_tensorflow.python.ops.recurrent import gpu_lstm
 from intel_extension_for_tensorflow.python.ops.recurrent import is_itex_supported_inputs
 from intel_extension_for_tensorflow.python.ops.group_norm import GroupNormalization
+from intel_extension_for_tensorflow.python.ops.load_ops_library import load_ops_library
 
 format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=format_str)
@@ -210,6 +211,7 @@ def experimental_ops_override():
         from tf_keras import backend # pylint: disable=import-outside-toplevel
         from tf_keras.utils import tf_utils # pylint: disable=import-outside-toplevel
     import tf_keras
+    tf_gn_call = copy_func(tf_keras.layers.GroupNormalization.call)
     tf_ln_call = copy_func(tf_keras.layers.LayerNormalization.call)
     tf_lstm_call = copy_func(tf_keras.layers.LSTM.call)
     tf_lstm_build = copy_func(tf_keras.layers.LSTM.build)
@@ -481,6 +483,23 @@ def experimental_ops_override():
     else:
       AdamWithWeightDecayOptimizer.update_step(self, gradient, variable)
 
+  def itex_group_norm_call(self, inputs, mask=None):
+    input_shape = tf.shape(inputs)
+    if self.use_fused_group_norm and mask is None:
+      normalized_inputs, _, _ = load_ops_library.itex_group_norm(
+          inputs,
+          tf.cast(self.gamma, inputs.dtype),
+          tf.cast(self.beta, inputs.dtype),
+          num_groups=self.groups,
+          epsilon=self.epsilon,
+          use_scale=self.scale,
+          use_center=self.center,
+          )
+      return normalized_inputs
+    elif (not self.use_gpu) and mask is None:
+      return GroupNormalization.itex_group_norm_call(self, inputs)
+    return tf_gn_call(self, inputs)
+
   try:
     import tensorflow_addons as tfa # pylint: disable=import-outside-toplevel
     tfa.layers.InstanceNormalization.call = itex_instance_norm_call
@@ -512,7 +531,7 @@ def experimental_ops_override():
       tf_keras.src.layers.rnn.lstm.LSTM.call = itex_lstm_call
       tf_keras.src.layers.rnn.lstm.LSTM.build = itex_lstm_build
       tf_keras.layers.GroupNormalization.build = GroupNormalization.build
-      tf_keras.layers.GroupNormalization.call = GroupNormalization.call
+      tf_keras.layers.GroupNormalization.call = itex_group_norm_call
       tf_keras.optimizers.Adam.update_step = itex_adam_update_step
       tf_keras.optimizers.AdamW.apply_gradients = itex_adamw_apply_gradients
       tf_keras.optimizers.AdamW.update_step = itex_adamw_update_step
@@ -523,7 +542,7 @@ def experimental_ops_override():
       tf_keras.layers.LSTM.call = itex_lstm_call
       tf_keras.layers.LSTM.build = itex_lstm_build
       tf_keras.layers.GroupNormalization.build = GroupNormalization.build
-      tf_keras.layers.GroupNormalization.call = GroupNormalization.call
+      tf_keras.layers.GroupNormalization.call = itex_group_norm_call
   
   except BaseException: # pylint: disable=broad-except
     logger.warning("itex experimental ops override: Keras is not installed.") # pylint: disable=line-too-long
