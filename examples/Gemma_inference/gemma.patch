@@ -1,0 +1,105 @@
+diff --git a/lm_eval/models/__init__.py b/lm_eval/models/__init__.py
+index 8ca27fac..6127ce6c 100644
+--- a/lm_eval/models/__init__.py
++++ b/lm_eval/models/__init__.py
+@@ -4,6 +4,7 @@ from . import anthropic_llms
+ from . import huggingface
+ from . import textsynth
+ from . import dummy
++from . import gemma
+ 
+ MODEL_REGISTRY = {
+     "hf": gpt2.HFLM,
+@@ -15,6 +16,7 @@ MODEL_REGISTRY = {
+     "anthropic": anthropic_llms.AnthropicLM,
+     "textsynth": textsynth.TextSynthLM,
+     "dummy": dummy.DummyLM,
++    "gemma": gemma.Gemma,
+ }
+ 
+ 
+diff --git a/lm_eval/models/gemma.py b/lm_eval/models/gemma.py
+new file mode 100644
+index 00000000..bc4540f7
+--- /dev/null
++++ b/lm_eval/models/gemma.py
+@@ -0,0 +1,79 @@
++import os
++import numpy as np
++import keras
++import keras_nlp
++from keras import ops
++from lm_eval.base import BaseLM
++from tqdm import tqdm
++import time
++import math
++
++class Gemma(BaseLM):
++    def __init__(self, model_name="gemma_2b_en", dtype="bfloat16", num_beams=1, **kwargs):
++        super().__init__()
++        keras.config.set_floatx(dtype)
++        self.model = keras_nlp.models.GemmaCausalLM.from_preset(model_name)
++        if num_beams > 1:
++            from keras_nlp.samplers import BeamSampler
++            model.compile(sampler=BeamSampler(num_beams=args.num_beams))
++
++    @property
++    def eot_token_id(self):
++        raise NotImplementedError()
++
++    @property
++    def max_length(self):
++        raise NotImplementedError()
++
++    @property
++    def max_gen_toks(self):
++        raise NotImplementedError()
++
++    @property
++    def batch_size(self):
++        raise NotImplementedError()
++    
++    @property
++    def device(self):
++        raise NotImplementedError()
++
++    def tok_encode(self, string: str):
++        raise NotImplementedError()
++
++    def tok_decode(self, tokens):
++        raise NotImplementedError()
++
++    def loglikelihood(self, requests, disable_tqdm=False):
++        results = []
++        for chunk in tqdm(
++            requests, total=math.ceil(len(requests)), disable=disable_tqdm
++        ):
++            context, continuation = chunk
++            ctx_encode = self.model.preprocessor.generate_preprocess(context)
++            cont_encode = self.model.preprocessor.generate_preprocess(continuation)
++            pred_encode = self.model.preprocessor.generate_preprocess(context + continuation)
++            ctx_len = ops.sum(ctx_encode["padding_mask"])
++            cont_len = ops.sum(cont_encode["padding_mask"])
++            pred_len = ops.sum(pred_encode["padding_mask"])
++            logits = self.model.score(ops.expand_dims(pred_encode["token_ids"][:pred_len], 0), ops.expand_dims(pred_encode["padding_mask"][:pred_len], 0))
++            cont_token = cont_encode["token_ids"][1:cont_len]
++            logits = logits[:, ctx_len-1:pred_len-1, :]
++            log_softmax = ops.log_softmax(logits, axis=-1)
++            greedy_tokens = ops.squeeze(ops.argmax(log_softmax, axis=-1), 0)
++            max_equal = ops.all((greedy_tokens == cont_token))
++            cont_logits = ops.squeeze(ops.take_along_axis(ops.squeeze(log_softmax, 0), ops.expand_dims(cont_token, -1), axis=1), -1)
++            answer = (float(ops.convert_to_numpy(ops.sum(cont_logits))), bool(ops.convert_to_numpy(max_equal)))
++            results.append(answer)
++            
++        return results
++
++    def greedy_until(self, requests):
++        raise NotImplementedError()
++
++    def _model_call(self, inps):
++        # Isn't used because we override _loglikelihood_tokens
++        raise NotImplementedError()
++
++    def _model_generate(self, context, max_length, eos_token_id):
++        # Isn't used because we override greedy_until
++        raise NotImplementedError()
