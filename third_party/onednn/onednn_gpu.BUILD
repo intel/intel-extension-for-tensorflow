@@ -141,7 +141,6 @@ filegroup(
         exclude = [
             "src/cpu/aarch64/**",
             "src/cpu/rv64/**",
-            "src/cpu/sycl/**",
             "src/gpu/nvidia/*",
             "src/gpu/amd/*",
             "src/gpu/sycl/ref*",
