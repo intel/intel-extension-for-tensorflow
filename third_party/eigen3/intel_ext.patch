@@ -10357,7 +10357,7 @@ index d4532b72c..67c61df31 100644
    TensorEvaluator<ThenArgType, Device> m_thenImpl;
    TensorEvaluator<ElseArgType, Device> m_elseImpl;
 diff --git a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
-index c52fb77dc..23509ddac 100644
+index c52fb77dc..1f0927b8a 100644
 --- a/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 +++ b/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h
 @@ -76,8 +76,13 @@ struct ExpressionHasTensorBroadcastingOp<
@@ -10505,23 +10505,23 @@ index c52fb77dc..23509ddac 100644
 +    
 +    Index range, GRange, tileSize;
 +    Index total_size = ::Eigen::internal::array_prod(evaluator.dimensions());
-+    total_size = (total_size == 0) ? 1 : total_size;
++    if (total_size > 0) {
++      bool is_small_shape = hardware_vectorize_threshold >= total_size;
++      const int PacketSize = evaluator.PacketSize;
++      Index vectorizable_threads = is_small_shape ?
++          total_size : static_cast<Index>(total_size / PacketSize);
 +
-+    bool is_small_shape = hardware_vectorize_threshold >= total_size;
-+    const int PacketSize = evaluator.PacketSize;
-+    Index vectorizable_threads = is_small_shape ? 
-+        total_size : static_cast<Index>(total_size / PacketSize);
++      dev.parallel_for_setup(vectorizable_threads, tileSize, range, GRange);
++      range = total_size;
 +
-+    dev.parallel_for_setup(vectorizable_threads, tileSize, range, GRange);
-+    range = total_size;
-+
-+    dev.template nullary_kernel_launcher<
-+        typename Evaluator::CoeffReturnType,
-+        ExecExprFunctorKernel<Evaluator> >(
-+        evaluator,
-+        sycl::nd_range<1>(sycl::range<1>(GRange),
-+                              sycl::range<1>(tileSize)),
-+        Index(1), range, is_small_shape);
++      dev.template nullary_kernel_launcher<
++          typename Evaluator::CoeffReturnType,
++          ExecExprFunctorKernel<Evaluator> >(
++          evaluator,
++          sycl::nd_range<1>(sycl::range<1>(GRange),
++                                sycl::range<1>(tileSize)),
++          Index(1), range, is_small_shape);
++    }
 +  }
 +  evaluator.cleanup();
 +}
