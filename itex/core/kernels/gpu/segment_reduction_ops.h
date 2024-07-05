@@ -485,11 +485,11 @@ struct SortedKernel<T, Index, ReductionF, AtomicReductionF, OuterDimTileSize,
       Index current_output_segment_id =
           segment_ids[input_outer_dim_index_base + j];
       if (current_output_segment_id > last_output_segment_id) {
-        const Index total_segment_number =
-            segment_offsets[last_output_segment_id + 1] -
-            segment_offsets[last_output_segment_id];
-        if (total_segment_number) {
-          if (is_mean) {
+        if (is_mean) {
+          const Index total_segment_number =
+              segment_offsets[last_output_segment_id + 1] -
+              segment_offsets[last_output_segment_id];
+          if (total_segment_number) {
             reduce_res /= total_segment_number;
           }
         }
@@ -510,15 +510,17 @@ struct SortedKernel<T, Index, ReductionF, AtomicReductionF, OuterDimTileSize,
     }
     auto output_index =
         last_output_segment_id * inner_dim_size + segment_offset;
-    const Index total_segment_number =
-        segment_offsets[last_output_segment_id + 1] -
-        segment_offsets[last_output_segment_id];
 
-    if (total_segment_number) {
-      if (is_mean) {
+    if (is_mean) {
+      const Index total_segment_number =
+          segment_offsets[last_output_segment_id + 1] -
+          segment_offsets[last_output_segment_id];
+
+      if (total_segment_number) {
         reduce_res /= total_segment_number;
       }
     }
+
     atom_reduction_op(output_fp32 + output_index, &reduce_res);
   }
 
