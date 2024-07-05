@@ -39,14 +39,15 @@ struct FillKernelTask {
   FillKernelTask(sycl::local_accessor<char, 1> local_philox_acc,
                  StateElementType* state_data,
                  typename Distribution::ResultElementType* output_data,
-                 int64_t output_size, int* item_count_ptr, Distribution dist)
+                 int64_t output_size, sycl::accessor<int, 1> item_count_acc,
+                 Distribution dist)
       :
 
         local_philox_acc(local_philox_acc),
         state_data(state_data),
         output_data(output_data),
         output_size(output_size),
-        item_count_ptr(item_count_ptr),
+        item_count_acc(item_count_acc),
         dist(dist) {}
   void operator()(sycl::nd_item<1> myItem) const {
     // Items in a group share `philox`. Item 0 is responsible for
@@ -68,6 +69,8 @@ struct FillKernelTask {
     f(myItem);
     // The last item updates the state.
     auto total_item_count = myItem.get_global_range()[0];
+    auto item_count_ptr =
+        item_count_acc.template get_multi_ptr<sycl::access::decorated::no>();
     auto atomic_val =
         sycl::atomic_ref<int, sycl::memory_order::relaxed,
                          sycl::memory_scope::device,
@@ -84,7 +87,7 @@ struct FillKernelTask {
   StateElementType* state_data;
   typename Distribution::ResultElementType* output_data;
   int64_t output_size;
-  int* item_count_ptr;
+  sycl::accessor<int, 1> item_count_acc;
   Distribution dist;
 };
 
@@ -106,16 +109,13 @@ void FillKernel(const GPUDevice& d, const int total_count, Distribution dist,
   sycl::buffer<int, 1> item_count_buf{&item_count, 1};
 
   stream->submit([&](sycl::handler& cgh) {
-    auto item_count_ptr =
-        item_count_buf
-            .get_access<sycl::access::mode::read_write,
-                        sycl::access::target::device>(cgh)
-            .template get_multi_ptr<sycl::access::decorated::no>()
-            .get();
+    auto item_count_acc =
+        item_count_buf.get_access<sycl::access::mode::read_write,
+                                  sycl::access::target::device>(cgh);
     sycl::local_accessor<char, 1> local_philox_acc(
         sycl::range<1>(sizeof(PhiloxRandom)), cgh);
     FillKernelTask<Distribution> task(local_philox_acc, state_data, output_data,
-                                      output_size, item_count_ptr, dist);
+                                      output_size, item_count_acc, dist);
     cgh.parallel_for<FillKernelTask<Distribution>>(
         sycl::nd_range<1>(sycl::range<1>(work_group * work_group_size),
                           sycl::range<1>(work_group_size)),
