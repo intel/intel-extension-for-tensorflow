@@ -13,13 +13,18 @@ MODEL_CLASSES = {
   "gemma_7b": "gemma_7b_en",
   "gemma_2b_it": "gemma_instruct_2b_en",
   "gemma_7b_it": "gemma_instruct_7b_en",
+  "gemma2_9b" : "gemma2_9b_en",
+  "gemma2_27b" : "gemma2_27b_en",
+  "gemma2_9b_it" : "gemma2_instruct_9b_en",
+  "gemma2_27b_it" : "gemma2_instruct_27b_en",
 }
  
 parser = argparse.ArgumentParser()
 parser.add_argument(
   "--model",
   type=str,
-  choices=["gemma_2b", "gemma_7b", "gemma_2b_it", "gemma_7b_it"],
+  choices=["gemma_2b", "gemma_7b", "gemma_2b_it", "gemma_7b_it",
+           "gemma2_9b", "gemma2_27b", "gemma2_9b_it", "gemma2_27b_it"],
   default="gemma_2b",
   help="the mdoel name",
 )
@@ -59,7 +64,6 @@ current_path = os.path.dirname(__file__)
 with open(str(current_path) + "/prompt.json") as f:
   prompt_pool = json.load(f)
 prompt = prompt_pool[args.input_tokens]
-
 total_time = 0.0
 num_iter = args.num_iter
 num_warmup = args.num_warmup
