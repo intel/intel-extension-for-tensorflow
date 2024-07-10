@@ -1,7 +1,7 @@
-# Gemma Inference Best Known Method for Intel-Extension-For-Tensorflow on Intel GPU
+# Gemma/Gemma2 Inference Best Known Method for Intel-Extension-For-Tensorflow on Intel GPU
 
 ## Introduction
-Gemma is a family of open-weights Large Language Model (LLM) by Google DeepMind, based on Gemini research and technology. For more detail information, please refer to [Gemma/keras](https://www.kaggle.com/models/google/gemma).
+Gemma is a family of open-weights Large Language Model (LLM) by Google DeepMind, based on Gemini research and technology. For more detail information, please refer to [Gemma/keras](https://www.kaggle.com/models/google/gemma) and [Gemma2/keras](https://www.kaggle.com/models/google/gemma-2).
 
 This example shows how to run Keras3 implementation of Gemma inference with Intel® Extension for TensorFlow* on Intel GPU.
 
