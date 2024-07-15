@@ -135,6 +135,7 @@ filegroup(
             "src/gpu/nvidia/*",
             "src/gpu/amd/*",
             "src/gpu/sycl/ref*",
+            "src/gpu/generic/sycl/ref*",
             "src/graph/**",
             "src/gpu/intel/jit/v2/conv/planner/*",
         ],
