@@ -87,7 +87,8 @@ template <template <typename> typename ReductionOp, typename T,
           int workitem_group_width = kSubGroupSize>
 T SubGroupAllReduce(const sycl::sub_group& sg, T val) {
   for (int mask = workitem_group_width / 2; mask > 0; mask /= 2) {
-    val = ReductionOp<T>()(val, sg.shuffle_xor(val, sycl::id<1>(mask)));
+    val = ReductionOp<T>()(
+        val, sycl::permute_group_by_xor(sg, val, sycl::id<1>(mask)));
   }
   return val;
 }

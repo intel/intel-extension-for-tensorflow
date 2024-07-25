@@ -141,7 +141,7 @@ struct GroupReduceKernel<itex::int64, OutputT, InputFunctor, OutputFunctor,
     InitValueT result = value;
 #pragma unroll
     for (int i = SubGroupSize / 2; i > 0; i >>= 1) {
-      InitValueT new_value = sg.shuffle_down(result, i);
+      InitValueT new_value = sycl::shift_group_left(sg, result, i);
       result = op_(result, new_value);
     }
     return result;
