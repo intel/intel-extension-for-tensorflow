@@ -57,7 +57,7 @@ RUN pip --no-cache-dir install --upgrade \
     pip \
     setuptools
 
-ARG TF_VER="2.15"
+ARG TF_VER="2.15.1"
 
 RUN pip --no-cache-dir install tensorflow==${TF_VER}
 
