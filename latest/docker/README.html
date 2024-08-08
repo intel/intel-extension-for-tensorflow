@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+gffa38b7 documentation</title>
+  <title>Intel® Extension for TensorFlow* Docker Container Guide &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g18806f1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=439db15d" />
@@ -121,11 +121,11 @@
 <section id="i-customize-build-script">
 <h3>I. Customize Build Script<a class="headerlink" href="#i-customize-build-script" title="Link to this heading"></a></h3>
 <p>We provide <a class="reference external" href="./build.sh">build.sh</a> as the Docker container build script. The OS version and some software versions (such as Python and TensorFlow) are hard coded inside the script. If you’re using a different version, you can edit this script.</p>
-<p>For example, to build a Docker container with Python 3.10 and TensorFlow 2.15 on an Ubuntu 22.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as shown below.</p>
+<p>For example, to build a Docker container with Python 3.10 and TensorFlow 2.15.1 on an Ubuntu 22.04 layer, update <a class="reference external" href="./build.sh">build.sh</a> as shown below.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">IMAGE_NAME</span><span class="o">=</span>intel-extension-for-tensorflow:cpu-ubuntu
 <span class="w">        </span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VERSION</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">PYTHON</span><span class="o">=</span>python3.10<span class="w"> </span><span class="se">\</span>
-<span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">TF_VER</span><span class="o">=</span><span class="m">2</span>.15<span class="w"> </span><span class="se">\</span>
+<span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">TF_VER</span><span class="o">=</span><span class="m">2</span>.15.1<span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>--build-arg<span class="w"> </span><span class="nv">WHEELS</span><span class="o">=</span>*.whl<span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>-t<span class="w"> </span><span class="nv">$IMAGE_NAME</span><span class="w"> </span><span class="se">\</span>
 <span class="w">                                </span>-f<span class="w"> </span>itex-cpu.Dockerfile<span class="w"> </span>.
@@ -213,7 +213,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </sp
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f4ae3346140> 
+   <jinja2.runtime.BlockReference object at 0x7f5a21e06ef0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
