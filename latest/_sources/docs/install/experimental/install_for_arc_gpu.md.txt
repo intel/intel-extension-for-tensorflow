@@ -23,8 +23,8 @@ Hardware Platforms with Experimental Only Support:
     - Windows GPU Drivers: [Intel® Arc™ Graphics Windows Driver 31.0.101.5333](https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html) or later (installation instructions below)
 
 - For Ubuntu Linux 22.04 within WSL2:
-    - Linux Runtime Libraries: Intel® Arc™ GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html) (installation instructions below)
-    - Intel® oneAPI Base Toolkit 2024.1 (installation instructions below)
+    - Linux Runtime Libraries: Intel® Arc™ GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html) (installation instructions below)
+    - Intel® oneAPI Base Toolkit 2024.2.1 (installation instructions below)
     - TensorFlow 2.15.0
     - Python 3.9-3.11
     - pip 19.0 or later (requires manylinux2014 support)
@@ -33,8 +33,8 @@ Hardware Platforms with Experimental Only Support:
 
 - Ubuntu 22.04 (64-bit)
 - Intel® GPU Drivers for Linux (installation instructions below)
-- Intel® Arc™ GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html)
-- Intel® oneAPI Base Toolkit 2024.1 (installation instructions below)
+- Intel® Arc™ GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html)
+- Intel® oneAPI Base Toolkit 2024.2.1 (installation instructions below)
 - TensorFlow 2.15.0
 - Python 3.9-3.11
 - pip 19.0 or later (requires manylinux2014 support)
@@ -62,7 +62,7 @@ Install the above Intel® Arc™ Graphics Windows DCH Driver in the Windows OS.
 
 |OS|Intel GPU|Install Intel Compute Runtime Components|
 |-|-|-|
-|Ubuntu 22.04 installed in WSL2|Intel® Arc™ A-Series GPUs|Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html), please be sure to append the specific version after components, as is done below.|
+|Ubuntu 22.04 installed in WSL2|Intel® Arc™ A-Series GPUs|Refer to the instructions below for package installation in Ubuntu 22.04. When installing the Intel® Arc™ A-Series GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html), please be sure to append the specific version after components, as is done below.|
 
 The steps to install the runtime components in Ubuntu Linux (within WSL2) are:
 
@@ -114,7 +114,7 @@ The above commands install only runtime libraries for Intel® oneAPI that are us
 
 The steps to install the runtime components in Ubuntu Linux are:
 
-- The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in [Installation Guides for Intel Arc GPUs](https://dgpu-docs.intel.com/driver/installation.html). When installing the Intel® Arc™ A-Series GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html), setup the LTS repository and install runtime components.
+- The Intel® Extension for TensorFlow* requires a specific set of drivers for native Linux.  Please follow the instructions in [Installation Guides for Intel Arc GPUs](https://dgpu-docs.intel.com/driver/installation.html). When installing the Intel® Arc™ A-Series GPU Drivers [803](https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html), setup the LTS repository and install runtime components.
 
 - Add the repositories.intel.com/graphics package repository to your Ubuntu installation:
 
@@ -217,10 +217,10 @@ If you prefer to have access to full Intel® oneAPI, you need to install at leas
 Download and install the verified DPC++ compiler and oneMKL in Ubuntu 22.04.
 
 ```bash
-$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/fdc7a2bc-b7a8-47eb-8876-de6201297144/l_BaseKit_p_2024.1.0.596.sh
+$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/e6ff8e9c-ee28-47fb-abd7-5c524c983e1c/l_BaseKit_p_2024.2.1.100_offline.sh
 # 3 components are necessary: DPC++/C++ Compiler, DPC++ Library and oneMKL
 # if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too (Intel® oneAPI MPI Library will be installed automatically as its dependency)
-$ sudo sh ./l_BaseKit_p_2024.1.0.596.sh
+$ sudo sh l_BaseKit_p_2024.2.1.100_offline.sh
 ```
 
 For any more details, please follow the procedure in [Intel® oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html).

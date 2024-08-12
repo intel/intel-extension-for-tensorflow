@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g18806f1 documentation</title>
+  <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* 0.1.dev1+g3c076b4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
@@ -136,8 +136,8 @@
 <h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
-<li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a></p></li>
-<li><p>Intel® Data Center GPU Flex Series 170, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a></p></li>
+<li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html">803</a></p></li>
+<li><p>Intel® Data Center GPU Flex Series 170, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html">803</a></p></li>
 <li><p><em>Experimental:</em> Intel® Arc™ A-Series</p></li>
 </ul>
 <p>For experimental support of the Intel® Arc™ A-Series GPUs, please refer to <a class="reference external" href="experimental/install_for_arc_gpu.html">Intel® Arc™ A-Series GPU Software Installation</a> for details.</p>
@@ -155,7 +155,7 @@
 <li><p>Intel® Data Center GPU Max Series</p></li>
 </ul>
 </li>
-<li><p>Intel® oneAPI Base Toolkit 2024.1</p></li>
+<li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/release-notes/intel-oneapi-toolkit-release-notes.html">Intel® oneAPI Base Toolkit 2024.2.1</a></p></li>
 <li><p>TensorFlow 2.15.0</p></li>
 <li><p>Python 3.9-3.11</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
@@ -175,12 +175,12 @@
 <tr>
 <td>Ubuntu 22.04, Red Hat 8.6</td>
 <td>Intel® Data Center GPU Flex Series</td>
-<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.43.27642.40-803~22.04</code></td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-flex-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html">803</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.43.27642.52-803~22.04</code></td>
 </tr>
 <tr>
 <td>Ubuntu 22.04, Red Hat 8.6, SLES 15 SP4/SP5</td>
 <td>Intel® Data Center GPU Max Series</td>
-<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.43.27642.40-803~22.04</code></td>
+<td>Refer to the <a href="https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series">Installation Guides</a> for latest driver installation. If install the verified Intel® Data Center GPU Max Series/Intel® Data Center GPU Flex Series <a href="https://dgpu-docs.intel.com/releases/LTS_803.63_20240617.html">803</a>, please append the specific version after components, such as <code>sudo apt-get install intel-opencl-icd==23.43.27642.52-803~22.04</code></td>
 </tr>
 </tbody>
 </table></section>
@@ -219,10 +219,10 @@ $ source /opt/intel/horovod-vars.sh
 <li><p>Intel® oneAPI Threading Building Blocks (TBB), dependency of DPC++ Compiler.</p></li>
 <li><p>Intel® oneAPI Collective Communications Library (oneCCL), required by Intel® Optimization for Horovod* only</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://registrationcenter-download.intel.com/akdlm/IRC_NAS/fdc7a2bc-b7a8-47eb-8876-de6201297144/l_BaseKit_p_2024.1.0.596.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://registrationcenter-download.intel.com/akdlm/IRC_NAS/e6ff8e9c-ee28-47fb-abd7-5c524c983e1c/l_BaseKit_p_2024.2.1.100_offline.sh
 <span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL</span>
 <span class="c1"># if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too(Intel® oneAPI MPI Library will be installed automatically as its dependency)</span>
-$<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>./l_BaseKit_p_2024.1.0.596.sh
+$<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l_BaseKit_p_2024.2.1.100_offline.sh
 </pre></div>
 </div>
 <p>For any more details, follow the procedure in https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html.</p>
@@ -321,7 +321,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5a21e33670> 
+   <jinja2.runtime.BlockReference object at 0x7f0779d96f20> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
