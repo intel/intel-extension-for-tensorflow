@@ -205,6 +205,9 @@ python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__
 
 You can also run a [quick_example](../../../examples/quick_example.md) to verify the installation.
 
+### Note: Running Workloads on WSL2
+
+The maximum size of a single allocation allowed on a single device is set on the Windows Subsystem for Linux (WSL2), which may cause Out-of-Memory error when workloads are run.  Users can remove the limitation by setting the environment variable UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS=1 before running the workload.
 
 ### Optional: Install Full Intel® oneAPI
 
