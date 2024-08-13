@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intel® Extension for Tensorflow* Model Quantization API Example &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Intel® Extension for Tensorflow* Model Quantization API Example</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/itex_quantization_example/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="intel-extension-for-tensorflow-model-quantization-api-example">
+<h1>Intel® Extension for Tensorflow* Model Quantization API Example<a class="headerlink" href="#intel-extension-for-tensorflow-model-quantization-api-example" title="Permalink to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* offers improved model quantization performance
+over stock TensorFlow by providing Python APIs that cooperate with Intel® Neural
+Compressor.</p>
+<p>This example shows how to use Intel® Extension for TensorFlow* python APIs to implement model quantization.</p>
+</section>
+<section id="set-up-software-environment">
+<h2>Set Up Software Environment<a class="headerlink" href="#set-up-software-environment" title="Permalink to this heading"></a></h2>
+<section id="install-intel-extension-for-tensorflow">
+<h3>Install Intel® Extension for Tensorflow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h3>
+<p>a) Choose installing either Intel® Extension for Tensorflow* for Intel GPUs:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>tensorflow
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>xpu<span class="o">]</span>
+</pre></div>
+</div>
+<p>b) or installing Intel® Extension for Tensorflow* for Intel CPUs:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>tensorflow
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>cpu<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="install-intel-neural-compressor">
+<h3>Install Intel® Neural Compressor<a class="headerlink" href="#install-intel-neural-compressor" title="Permalink to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>neural-compressor&gt;<span class="o">=</span><span class="m">2</span>.0
+</pre></div>
+</div>
+</section>
+</section>
+<section id="prepare-pre-trained-model">
+<h2>Prepare Pre-Trained Model<a class="headerlink" href="#prepare-pre-trained-model" title="Permalink to this heading"></a></h2>
+<p>The Model Quantization API uses a pre-trained SavedModel protocol buffer file
+(<code class="docutils literal notranslate"><span class="pre">pb</span></code> file).  If you don’t have your own pre-trained model to try using the
+quantization API, this table shows where to download some example pre-trained model data
+files for your use:</p>
+<p>|	Model name	|	URL to Model’s data files	|
+|	——————————–	|	——————————–	|
+|	faster_rcnn_resnet101_ava_v2.1	|	http://download.tensorflow.org/models/object_detection/faster_rcnn_resnet101_ava_v2.1_2018_04_30.tar.gz	|
+|	faster_rcnn_resnet101_kitti	|	http://download.tensorflow.org/models/object_detection/faster_rcnn_resnet101_kitti_2018_01_28.tar.gz	|
+|	faster_rcnn_resnet101_lowproposals_coco	|	http://download.tensorflow.org/models/object_detection/faster_rcnn_resnet101_lowproposals_coco_2018_01_28.tar.gz	|
+|	image-retrieval-0001	|	https://download.01.org/opencv/openvino_training_extensions/models/image_retrieval/image-retrieval-0001.tar.gz	|
+|	SSD ResNet50 V1 FPN 640x640 (RetinaNet50)	|	http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_resnet50_v1_fpn_640x640_coco17_tpu-8.tar.gz	|
+|	ssd_inception_v2_coco	|	http://download.tensorflow.org/models/object_detection/ssd_inception_v2_coco_2018_01_28.tar.gz	|
+|	ssd-resnet34 300x300	|	https://storage.googleapis.com/intel-optimized-tensorflow/models/v1_6/ssd_resnet34_fp32_bs1_pretrained_model.pb	|</p>
+<p>Use your browser or use the <code class="docutils literal notranslate"><span class="pre">wget</span></code> command to download the file into a working
+directory. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="o">&lt;</span><span class="n">URL</span> <span class="n">to</span> <span class="n">model</span><span class="s1">&#39;s data file&gt;</span>
+<span class="n">tar</span> <span class="o">-</span><span class="n">zxvf</span> <span class="o">&lt;</span><span class="n">downloaded</span> <span class="n">tar</span><span class="o">.</span><span class="n">gz</span> <span class="n">file</span><span class="o">&gt;</span>  <span class="c1"># if it&#39;s a tar.gz file</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-dataset">
+<h2>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h2>
+<p>In the next section’s code, we use dummy data for the model quantization example.</p>
+</section>
+<section id="apply-model-quantization">
+<h2>Apply Model Quantization<a class="headerlink" href="#apply-model-quantization" title="Permalink to this heading"></a></h2>
+<p>Apply Intel® Extension for Tensorflow* model quantization Python APIs. Note that
+<code class="docutils literal notranslate"><span class="pre">&lt;model_path&gt;</span></code> here is the path to the original pre-trained model <code class="docutils literal notranslate"><span class="pre">pb</span></code> file and
+<code class="docutils literal notranslate"><span class="pre">&lt;output&gt;</span></code> is the path for the output quantized model’s <code class="docutils literal notranslate"><span class="pre">pb</span></code> file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_tensorflow.python.optimize.quantization</span> <span class="kn">import</span> <span class="n">from_model</span><span class="p">,</span> <span class="n">default_static_qconfig</span>
+
+<span class="c1"># Create quantization converter with original model</span>
+<span class="n">converter</span><span class="o">=</span><span class="n">from_model</span><span class="p">(</span><span class="o">&lt;</span><span class="n">model_path</span><span class="o">&gt;</span><span class="p">)</span>
+
+<span class="c1"># Specify quantization configure</span>
+<span class="n">converter</span><span class="o">.</span><span class="n">optimizations</span> <span class="o">=</span> <span class="n">default_static_qconfig</span><span class="p">()</span>
+
+<span class="c1"># Specify dataset as dummy_v2</span>
+<span class="n">converter</span><span class="o">.</span><span class="n">representative_dataset</span> <span class="o">=</span> <span class="n">default_dataset</span><span class="p">(</span><span class="s1">&#39;dummy_v2&#39;</span><span class="p">)(</span><span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">224</span><span class="p">,</span> <span class="mi">224</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">label_shape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">))</span>
+
+<span class="c1"># Quantize the model</span>
+<span class="n">q_model</span> <span class="o">=</span> <span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+
+<span class="c1"># Save the quantized model to local disk</span>
+<span class="n">q_model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="o">&lt;</span><span class="n">output</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="run-model-quantization-example">
+<h2>Run Model Quantization Example:<a class="headerlink" href="#run-model-quantization-example" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">itex_quantization.py</span></code> is an example of using Intel® Extension for Tensorflow* model quantization Python APIs to generate a quantized model from the original model.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>itex_quantization.py<span class="w"> </span>--model_path<span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>original<span class="w"> </span>pb<span class="w"> </span>file&gt;<span class="w"> </span>--output<span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>output<span class="w"> </span>pb<span class="w"> </span>file&gt;
+</pre></div>
+</div>
+<p>The script displays the quantization statistics and quantized model path:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|**********</span><span class="n">Mixed</span> <span class="n">Precision</span> <span class="n">Statistics</span><span class="o">*********|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">+-----------------------+-------+------+------+</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>        <span class="n">Op</span> <span class="n">Type</span>        <span class="o">|</span> <span class="n">Total</span> <span class="o">|</span> <span class="n">INT8</span> <span class="o">|</span> <span class="n">FP32</span> <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">+-----------------------+-------+------+------+</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>        <span class="n">MaxPool</span>        <span class="o">|</span>   <span class="mi">6</span>   <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>  <span class="mi">6</span>   <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span> <span class="n">DepthwiseConv2dNative</span> <span class="o">|</span>   <span class="mi">1</span>   <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>  <span class="mi">1</span>   <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>         <span class="n">MatMul</span>        <span class="o">|</span>   <span class="mi">2</span>   <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>  <span class="mi">2</span>   <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>        <span class="n">ConcatV2</span>       <span class="o">|</span>  <span class="mi">210</span>  <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span> <span class="mi">210</span>  <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>         <span class="n">Conv2D</span>        <span class="o">|</span>   <span class="mi">72</span>  <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>  <span class="mi">72</span>  <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>        <span class="n">AvgPool</span>        <span class="o">|</span>   <span class="mi">7</span>   <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>  <span class="mi">7</span>   <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>       <span class="n">QuantizeV2</span>      <span class="o">|</span>  <span class="mi">133</span>  <span class="o">|</span> <span class="mi">133</span>  <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>       <span class="n">Dequantize</span>      <span class="o">|</span>  <span class="mi">163</span>  <span class="o">|</span> <span class="mi">163</span>  <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">|</span>          <span class="n">Cast</span>         <span class="o">|</span>   <span class="mi">14</span>  <span class="o">|</span>  <span class="mi">0</span>   <span class="o">|</span>  <span class="mi">14</span>  <span class="o">|</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="o">+-----------------------+-------+------+------+</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">Pass</span> <span class="n">quantize</span> <span class="n">model</span> <span class="n">elapsed</span> <span class="n">time</span><span class="p">:</span> <span class="mf">69612.36</span> <span class="n">ms</span>
+<span class="o">...</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">22</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">Save</span> <span class="n">quantized</span> <span class="n">model</span> <span class="n">to</span> <span class="o">&lt;</span><span class="n">Path</span> <span class="n">to</span> <span class="n">quantized</span> <span class="n">model</span><span class="o">&gt;.</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f9b7c27aeb0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

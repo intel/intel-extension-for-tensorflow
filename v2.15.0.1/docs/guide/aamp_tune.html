@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tune Advanced Auto Mixed Precision &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tune Advanced Auto Mixed Precision</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/aamp_tune.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tune-advanced-auto-mixed-precision">
+<h1>Tune Advanced Auto Mixed Precision<a class="headerlink" href="#tune-advanced-auto-mixed-precision" title="Permalink to this heading"></a></h1>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading"></a></h2>
+<section id="numeric-stability">
+<h3>Numeric Stability<a class="headerlink" href="#numeric-stability" title="Permalink to this heading"></a></h3>
+<p>Using FP16 or BF16 will impact the model accuracy and lead to a <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Numeric Stability</a> issue.</p>
+<p>Some operations are <strong>numerically-safe</strong> for Float16/BFloat16. This means the operation based on FP16/BF16 has no obviously accuracy loss compared to FP32.</p>
+<p>Some operations are <strong>numerically-dangerous</strong> for FP16/BF16. This means the operation based on FP16/BF16 has obviously accuracy loss compared to FP32.</p>
+</section>
+<section id="configuration-list">
+<h3>Configuration List<a class="headerlink" href="#configuration-list" title="Permalink to this heading"></a></h3>
+<p>In order to achieve faster performance with strong numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST that let you manually configure a balance of performance and accuracy with FP16/BF16 if the default configuration doesn’t provide the expected performance.</p>
+<p>Set the lists according to the numerically-safe or numerically-dangerous type of the operations. The lists include the Operation Types of TensorFlow, and support fused Operations.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>List Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ALLOWLIST</td>
+<td>Include a set of operations that are always considered numerically-safe and performance-critical for FP16/BF16. The operations in ALLOWLIST are always converted to FP16/BF16.</td>
+</tr>
+<tr>
+<td>DENYLIST</td>
+<td>Include a set of operations that are considered numerically-dangerous for execution in Float16/BFloat16). Additionally, they will affect the downstream nodes, making them numerically-dangerous too.  For example, in graph: Exp -&gt; Add, the Add is numerically-dangerous due to the Exp).</td>
+</tr>
+<tr>
+<td>INFERLIST</td>
+<td>Include a set of operations that are considered numerically-safe for FP16/BF16, but they will be numerically-dangerous if impacted by an upstream node that is in the DENYLIST.</td>
+</tr>
+<tr>
+<td>CLEARLIST</td>
+<td>Include a set of operations that have no numerically-significant effects for FP16/BF16, and can run in FP16/BF16. According to the downstream/upstream nodes’ numerically-safe property, they could be set to Float16/BFloat16 if desired. They are used to reduce conversion between FP16/BF16 and FP32 in graph to improve performance.</td>
+</tr>
+</tbody>
+</table></section>
+<section id="example-of-mix-precision-by-list">
+<h3>Example of Mix Precision by List<a class="headerlink" href="#example-of-mix-precision-by-list" title="Permalink to this heading"></a></h3>
+<p>Here is an example to explain the principle.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>List</th>
+<th>Node Index</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ALLOWLIST</td>
+<td>6, 9</td>
+</tr>
+<tr>
+<td>DENYLIST</td>
+<td>1, 11</td>
+</tr>
+<tr>
+<td>INFERLIST</td>
+<td>2, 4, 7, 10</td>
+</tr>
+<tr>
+<td>CLEARLIST</td>
+<td>3, 5, 8</td>
+</tr>
+</tbody>
+</table><p><img alt="amp_list.png" src="../../_images/amp_list.png" /></p>
+<p>Steps:</p>
+<p>I. Set every node’s property according to the configuration of list (including default and custom setting).</p>
+<p>II. Add nodes whose type is in ALLOWLIST to allow set.</p>
+<p>Node 6, 9.</p>
+<p>III. Add nodes to deny set.</p>
+<ul class="simple">
+<li><p>The nodes in DENYLIST are added to deny set: Node 1, 11.</p></li>
+<li><p>The nodes in INFERLIST whose upstream nodes are in deny set (ignore upstream nodes which are in CLEARLIST): Node 2, 4.</p></li>
+<li><p>The nodes in CLEARLIST whose upstream and downstream nodes are in deny set: Node 3.</p></li>
+</ul>
+<p>IV. Add nodes to allow set.</p>
+<ul class="simple">
+<li><p>The nodes in INFERLIST whose upstream nodes are in allow set: Node 7, 10.</p></li>
+<li><p>The nodes in CLEARLIST whose upstream or downstream nodes are in allow set: Node 5, 8.</p></li>
+</ul>
+<p>V. Change nodes data type and insert Cast nodes.
+Insert Cast nodes between deny set (FP32) and allow set (FP16/BF16), which convert data type between FP32 and FP16/BF16.</p>
+</section>
+<section id="rule-to-improve-performance-by-the-configuration-list">
+<h3>Rule to Improve Performance by the Configuration List<a class="headerlink" href="#rule-to-improve-performance-by-the-configuration-list" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Adding more nodes to Allow will increase the performance.</p></li>
+<li><p>Reducing Cast nodes in a different allow set will increase the performance.</p></li>
+</ul>
+</section>
+<section id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h3>
+<p>You can set these lists manually to tune Advance AMP by using the Python API, or by setting environment variables to override the default settings. Values set using the Python API will override those set using environment variables.
+Settings are prioritized in this order: Python API &gt; Environment Variable &gt; Default Setting.</p>
+<section id="python-api">
+<h4>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h4>
+<p>Create object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
+<span class="n">auto_mixed_precision_options</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">AutoMixedPrecosionOptions</span><span class="p">()</span>
+</pre></div>
+</div>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Python APIs</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>itex.AutoMixedPrecosionOptions</code></td>
+<td>Use both 16-bit and 32-bit floating-point types during training, which makes models run faster and use less memory. Now, GPU supports both FP16 and BF16, and CPU only support BF16.</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="python-api-attribute-environment-variable">
+<h3>Python API Attribute &amp; Environment Variable<a class="headerlink" href="#python-api-attribute-environment-variable" title="Permalink to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Environment Variable Names</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data_type</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_DATA_TYPE</td>
+<td>Low precision data type used in Advanced AMP<br/>Three <strong>options</strong>: <code>DEFAULT_DATA_TYPE</code>,<code>FLOAT16</code>, <code>BFLOAT16</code>.<br> <code>DEFAULT_DATA_TYPE</code> is BF16 in CPU and GPU. <br/>CPU only supports BF16, GPU supports both FP16 and BF16.</td>
+</tr>
+<tr>
+<td><code>unsafe_force_all</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_UNSAFE_FORCE_ALL</td>
+<td>Convert all FP32 operations to FP16/BF16 operations. <br>Only support Float16 data type.</td>
+</tr>
+<tr>
+<td><code>allowlist_add</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_ALLOWLIST_ADD</td>
+<td>String. The operation types list added to ALLOWLIST. Use "," to split multiple operation types.</td>
+</tr>
+<tr>
+<td><code>denylist_add</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_DENYLIST_ADD</td>
+<td>String. The operation types list added to DENYLIST. Use "," to split multiple operation types.</td>
+</tr>
+<tr>
+<td><code>inferlist_add</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_INFERLIST_ADD</td>
+<td>String. The operation types list added to INFERLIST. Use "," to split multiple operation types.</td>
+</tr>
+<tr>
+<td><code>clearlist_add</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_CLEARLIST_ADD</td>
+<td>String. The operation types list added to CLEARLIST. Use "," to split multiple operation types.</td>
+</tr>
+<tr>
+<td><code>allowlist_remove</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_ALLOWLIST_REMOVE</td>
+<td>String. The operation types list removed from ALLOWLIST. Use "," to split multiple operation types.</td>
+</tr>
+<tr>
+<td><code>denylist_remove</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_DENYLIST_REMOVE</td>
+<td>String. The operation types list removed from DENYLIST. Use "," to split multiple operation types.</td>
+</tr>
+<tr>
+<td><code>inferlist_remove</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_INFERLIST_REMOVE</td>
+<td>String. The operation types list removed from INFERLIST. Use "," to split multiple operation types.</td>
+</tr>
+<tr>
+<td><code>clearlist_remove</code></td>
+<td>ITEX_AUTO_MIXED_PRECISION_CLEARLIST_REMOVE</td>
+<td>String. The operation types list removed from CLEARLIST. Use "," to split multiple operation types.</td>
+</tr>
+</tbody>
+</table><p><strong>Notes</strong>:</p>
+<p>Before adding an operation type to a list, remove it from the original list.</p>
+<p>For example: AvgPool is in INFERLIST by default. To add it to ALLOWLIST, remove it from INFERLIST and add to ALLOWLIST.</p>
+</section>
+<section id="environment-variable-difference-with-stock-tensorflow">
+<h3>Environment Variable Difference with Stock TensorFlow<a class="headerlink" href="#environment-variable-difference-with-stock-tensorflow" title="Permalink to this heading"></a></h3>
+<p>Advanced AMP has many extra operations. For example, ITEX_AUTO_MIXED_PRECISION_DATA_TYPE lets you use different data types (FP16/BF16) to speed up the model.</p>
+<p>The following table shows the corresponding relationship between Advanced AMP and TensorFlow AMP environment variable names.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Advanced AMP Environment Variable Name</th>
+<th>TensorFlow AMP Environment Variable Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_DATA_TYPE</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_LOG_PATH</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_LOG_PATH</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_UNSAFE_FORCE_ALL</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_LEVEL="UNSAFE_FORCE_ALL"</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_ALLOWLIST_ADD</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_ALLOWLIST_ADD</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_DENYLIST_ADD</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_DENYLIST_ADD</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_INFERLIST_ADD</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_INFERLIST_ADD</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_CLEARLIST_ADD</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_CLEARLIST_ADD</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_ALLOWLIST_REMOVE</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_ALLOWLIST_REMOVE</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_DENYLIST_REMOVE</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_DENYLIST_REMOVE</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_INFERLIST_REMOVE</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_INFERLIST_REMOVE</td>
+</tr>
+<tr>
+<td>ITEX_AUTO_MIXED_PRECISION_CLEARLIST_REMOVE</td>
+<td>TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_CLEARLIST_REMOVE</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="id1">
+<h2>Usage<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<p>Steps:</p>
+<p>I. Install Intel® Extension for TensorFlow* in running environment.</p>
+<p>After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.</p>
+<p>Refer to <a class="reference external" href="../../README.html#Install">installation</a> instructions for more details.</p>
+<p>II. Enable Advanced AMP.</p>
+<p>With the default configuration, in most cases the Advanced AMP will balance accuracy with performance.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th></th>
+<th>Python API</th>
+<th>Environment Variable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Basic (Default configuration)</td>
+<td><code>import intel_extension_for_tensorflow as itex</code><br><br><code>auto_mixed_precision_options = itex.AutoMixedPrecisionOptions()</code><br><code>auto_mixed_precision_options.data_type = itex.BFLOAT16 #itex.FLOAT16</code><br><br><code>graph_options = itex.GraphOptions()</code><br><code>graph_options.auto_mixed_precision_options=auto_mixed_precision_options</code><br><code>graph_options.auto_mixed_precision = itex.ON</code><br><br><code>config = itex.ConfigProto(graph_options=graph_options)</code><br><code>itex.set_config(config)</code></td>
+<td><code>export ITEX_AUTO_MIXED_PRECISION=1</code><br><code>export ITEX_AUTO_MIXED_PRECISION_DATA_TYPE="BFLOAT16" #"FLOAT16"</code><br></td>
+</tr>
+</tbody>
+</table><p>III. Use the Python API or environment variables to manually tune Advanced AMP for better performance, accuracy, or both.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th></th>
+<th>Python API</th>
+<th>Environment Variable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Advanced Configuration</td>
+<td><code>auto_mixed_precision_options.allowlist_add= "AvgPool3D,AvgPool"</code><br><code>auto_mixed_precision_options.inferlist_remove = "AvgPool3D,AvgPool"</code></td>
+<td><code>export ITEX_AUTO_MIXED_PRECISION_ALLOWLIST_ADD="AvgPool3D,AvgPool"</code><br><code>export ITEX_AUTO_MIXED_PRECISION_INFERLIST_REMOVE="AvgPool3D,AvgPool"</code></td>
+</tr>
+</tbody>
+</table></section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h2>
+<section id="end-to-end-example">
+<h3>End-to-end Example<a class="headerlink" href="#end-to-end-example" title="Permalink to this heading"></a></h3>
+<p>Train a CNN model with Advanced AMP on GPU, and show the performance improvement. The following guide shows how to tune AMP manually. <a class="reference external" href="./../../examples/infer_inception_v4_amp/README.html">Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU</a></p>
+<p>The first epoch may be slower because TensorFlow optimizes the model during the first run. In subsequent epochs, the run time will stabilize.</p>
+</section>
+<section id="tuning-performance-example-on-mobilenet">
+<h3>Tuning Performance Example on MobileNet<a class="headerlink" href="#tuning-performance-example-on-mobilenet" title="Permalink to this heading"></a></h3>
+<p>Advanced AMP already provides more aggressive sub-graph fusion in more models. To achieve better performance, you may manually tune the Advanced AMP configuration list. It allows more operations to be converted to lower precision. However, usually it cannot provide more fusion chances.</p>
+<p>Here is an example using MobileNet to tune manually.</p>
+<p>I. Export the optimized graph by Advanced AMP with default configuration.</p>
+<p>Set environment variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">ITEX_AUTO_MIXED_PRECISION</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">export</span> <span class="n">ITEX_AUTO_MIXED_PRECISION_LOG_PATH</span><span class="o">=/</span><span class="n">my</span><span class="o">/</span><span class="n">path</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>After running the model inference by Intel® Extension for TensorFlow*, there will be 5 files in the path:</p>
+<p>|   Log File    |   Explain |
+|————– | ——— |
+| .graphdef_AutoMixedPrecision_1657011814330.pb|post-optimization graph in binary format|
+| .graphdef_AutoMixedPrecision_1657011814330.pb.txt|post-optimization graph in text format|
+| .graphdef_preop_1657011815538.pb|pre-optimization graph in binary format|
+| .graphdef_preop_1657011815538.pb.txt|pre-optimization graph in text format|
+| .paintbuckets_AutoMixedPrecision_1657011814330.txt|include detailed info of ALLOWLIST, DENYLIST, INFERLIST, CLEARLIST|</p>
+<p>II. Check the operation data type.</p>
+<p>Use a tool (such as <strong>Netron</strong>) to open the graph file and check the operations’ data type.</p>
+<p>In MobileNet, only AvgPool and Softmax operations are <strong>not</strong> converted to BF16.</p>
+<p><img alt="itex-amp-example1.png" src="../../_images/itex-amp-example1.png" /></p>
+<p>III. Convert operations to BFloat16 manually</p>
+<p>Move AvgPool and Softmax to Allow List:</p>
+<p>Alternative 1: set by environment variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">ITEX_AUTO_MIXED_PRECISION_INFERLIST_REMOVE</span><span class="o">=</span><span class="n">Softmax</span><span class="p">,</span><span class="n">AvgPool</span>
+<span class="n">export</span> <span class="n">ITEX_AUTO_MIXED_PRECISION_ALLOWLIST_ADD</span><span class="o">=</span><span class="n">Softmax</span><span class="p">,</span><span class="n">AvgPool</span>
+</pre></div>
+</div>
+<p>Alternative 2: set by python API:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">auto_mixed_precision_options</span><span class="o">.</span><span class="n">allowlist_add</span><span class="o">=</span> <span class="s2">&quot;AvgPool3D,AvgPool&quot;</span>
+<span class="n">auto_mixed_precision_options</span><span class="o">.</span><span class="n">inferlist_remove</span> <span class="o">=</span> <span class="s2">&quot;AvgPool3D,AvgPool&quot;</span>
+</pre></div>
+</div>
+<p>IV. Execute for Advanced AMP with updated configuration</p>
+<p>Run the model inference by Intel® Extension for TensorFlow* with above configuration tuning list, the performance will increase a little without a drop in accuracy, because only 2 operations are converted to BF16, occupying a lower rate over the whole runtime.
+<img alt="itex-amp-example2.png" src="../../_images/itex-amp-example2.png" /></p>
+<p>V. Continue tuning the Advanced AMP configuration list</p>
+<p>Repeat the above steps to tune Advanced AMP, until you reach the peak performance with desired accuracy.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f9b7b4a4430> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

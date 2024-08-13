@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenXLA &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">OpenXLA</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/OpenXLA.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="openxla">
+<h1>OpenXLA<a class="headerlink" href="#openxla" title="Permalink to this heading"></a></h1>
+<p><strong>NOTE:</strong> This guideline is intended to introduce <a class="reference external" href="https://github.com/openxla/xla">XLA</a> concepts. See <a class="reference external" href="next_pluggable_device.html">NextPluggableDevice</a> and <a class="reference external" href="https://github.com/intel/intel-extension-for-openxla">Intel® Extension for OpenXLA*</a> for more details on the usage and the implementation.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p><a class="reference external" href="https://github.com/openxla/xla">XLA</a> (Accelerated Linear Algebra) is an open-source machine learning (ML) compiler for GPUs, CPUs, and ML accelerators.</p>
+<p>XLA is part of the <a class="reference external" href="https://github.com/openxla">OpenXLA project</a> – an ecosystem of open-source compiler technologies for ML that’s developed collaboratively by leading ML hardware and software organizations. Figure 1 shows the high-level compilation flow and architecture of OpenXLA.</p>
+<p>The XLA compiler takes models from popular ML frameworks, and optimizes them for high-performance execution across different hardware platforms including GPUs, CPUs, and ML accelerators.</p>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="images/openxla.png" /></br>
+        Fig. 1 OpenXLA Overview
+      </td>
+    </tr>
+  </table>
+</div><p><strong>NOTE:</strong> Intel® Extension for TensorFlow* integrates the Next Pluggable Device and adopts a uniform Device API PJRT as the supported device plugin mechanism to implement Intel GPU backend for OpenXLA support on TensorFlow frontend. While Intel® Extension for OpenXLA* leverages PJRT API to support and optimize JAX frontend on Intel GPU.</p>
+</section>
+<section id="objectives">
+<h2>Objectives<a class="headerlink" href="#objectives" title="Permalink to this heading"></a></h2>
+<p>The fundamental objectives of XLA including:</p>
+<ul class="simple">
+<li><p><strong>Improve execution speed:</strong> Compile subgraphs to reduce the execution time of short-lived ops and eliminate overhead from the runtime, fuse pipelined operations to reduce memory overhead, and specialize known tensor shapes to allow for more aggressive constant propagation.</p></li>
+<li><p><strong>Improve memory usage:</strong> Analyze and schedule memory usage, eliminating many intermediate storage buffers.</p></li>
+<li><p><strong>Reduce reliance on custom ops:</strong> Remove the need for many custom ops by improving the performance of automatically fused low-level ops to match the performance of custom ops that were originally fused by hand.</p></li>
+<li><p><strong>Improve portability:</strong> Make it relatively easy to write a new backend for novel hardware, so that a large fraction of ML models can run unmodified on that hardware. This is in contrast with the approach of specializing individual monolithic ops for new hardware, which requires models to be rewritten to make use of those ops.</p></li>
+</ul>
+</section>
+<section id="how-it-works">
+<h2>How it works<a class="headerlink" href="#how-it-works" title="Permalink to this heading"></a></h2>
+<p>The XLA compiler takes model graphs from ML frameworks defined in <a class="reference external" href="https://github.com/openxla/stablehlo">StableHLO</a> and compiles them into machine instructions for various architectures. StableHLO defines a versioned operation set (HLO = high level operations) that provides a portability layer between ML frameworks and the compiler.</p>
+<p>In general, figure 2 shows the compilation process that converts the model graph into a target-optimized executable:</p>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="images/openxla_workflow.png" /></br>
+        Fig. 2 XLA compilation workflow and optimization steps
+      </td>
+    </tr>
+  </table>
+</div><ol class="simple">
+<li><p>XLA performs several built-in optimization and analysis passes on the StableHLO graph that are target-independent. During this optimization stage, XLA also converts the StableHLO dialect into an internal HLO dialect.</p></li>
+<li><p>XLA sends the HLO computation to a backend for further HLO-level optimizations, this time with target-specific information and needs in mind. At this stage, backends may also pattern-match certain operations or combinations thereof to optimized library calls.</p></li>
+<li><p>The backend then performs target-specific code generation. The CPU and GPU backends included with XLA use <a class="reference external" href="http://llvm.org/">LLVM</a> for low-level IR, optimization, and code generation. These backends emit the LLVM IR necessary to represent the HLO computation in an efficient manner, and then invoke LLVM to emit native code from this LLVM IR.</p></li>
+</ol>
+<p>XLA’s architecture encompasses a series of steps, from applying independent and dependent optimizations, utilizing the LLVM framework, to generating efficient machine code.</p>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h2>
+<p>This example showcases the speedup on BERT-base inference workload with XLA enabled on <a class="reference external" href="https://www.intel.com/content/www/us/en/products/sku/232873/intel-data-center-gpu-max-1550/specifications.html">Intel® Data Center GPU Max 1550</a>.</p>
+<p><strong>NOTE:</strong> This example only applies to stock TensorFlow* &gt;=2.15.0 and Intel® Extension for TensorFlow* &gt;=2.15.0.0.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/IntelAI/models.git<span class="w"> </span>intel-models<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>intel-models
+<span class="nb">export</span><span class="w"> </span><span class="nv">ITEX_AUTO_MIXED_PRECISION</span><span class="o">=</span><span class="m">1</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ITEX_AUTO_MIXED_PRECISION_DATA_TYPE</span><span class="o">=</span><span class="s1">&#39;FLOAT16&#39;</span>
+<span class="nb">cd</span><span class="w"> </span>models/language_modeling/tensorflow/bert_large/inference
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">BATCH_SIZE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OUTPUT_DIR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>./output
+<span class="nb">export</span><span class="w"> </span><span class="nv">GLUE_DIR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>/path/to/glue_dataset
+<span class="nb">export</span><span class="w"> </span><span class="nv">BERT_BASE_DIR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>/path/to/bert_base_model
+python3<span class="w"> </span>run_classifier.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--precision<span class="o">=</span>fp32<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--predict_batch_size<span class="o">=</span><span class="si">${</span><span class="nv">BATCH_SIZE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="o">=</span><span class="si">${</span><span class="nv">OUTPUT_DIR</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--task_name<span class="o">=</span>MRPC<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="o">=</span>False<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_predict<span class="o">=</span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--data_dir<span class="o">=</span><span class="si">${</span><span class="nv">GLUE_DIR</span><span class="si">}</span>/MRPC<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--vocab_file<span class="o">=</span><span class="si">${</span><span class="nv">BERT_BASE_DIR</span><span class="si">}</span>/vocab.txt<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bert_config_file<span class="o">=</span><span class="si">${</span><span class="nv">BERT_BASE_DIR</span><span class="si">}</span>/bert_config.json<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--max-seq-length<span class="o">=</span><span class="m">128</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_lower_case<span class="o">=</span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--mode<span class="o">=</span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--experimental_gelu<span class="o">=</span>False
+</pre></div>
+</div>
+<p>To enable PJRT plugin compiler for XLA compilation, you can easily set the following environment variable before executing <code class="docutils literal notranslate"><span class="pre">run_classifier.py</span></code>, without any code modifications:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">TF_XLA_FLAGS</span><span class="o">=</span><span class="s2">&quot;--tf_xla_use_device_api=true --tf_xla_auto_jit=2&quot;</span>
+</pre></div>
+</div>
+<p><strong>NOTE:</strong> Enabling XLA does not necessarily lead to better performance. It is recommended to compare the performance with or without JIT compilation on the original model to choose the best way. Please refer official blog from Google for more details on performance improvement of XLA:</p>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="images/xla_chart.png" /></br>
+        Fig. 3 The speedup/slowdown of TensorFlow plus XLA vs TensorFlow without XLA on Google-internal benchmarks
+      </td>
+    </tr>
+  </table>
+</div><p>The data is a list of results for fp16 and fp32 models, sorted by speedup:</p>
+<ul class="simple">
+<li><p>fp32 results: [0.86 0.94 0.94 0.97 0.98 0.99 0.99 0.99 1.00 1.01 1.01 1.01 1.01 1.02 1.04 1.05 1.06 1.06 1.07 1.07 1.08 1.08 1.08 1.09 1.09 1.10 1.10 1.11 1.11 1.11 1.12 1.12 1.12 1.13 1.15 1.15 1.18 1.18 1.20 1.27 1.30 1.30 1.32 1.37 1.40 1.41 1.43 1.44 1.52]</p></li>
+<li><p>fp16 results: [1.10 1.32 1.41 1.47 1.48 1.55 1.56 1.59 1.63 1.64 1.64 1.67 2.07 2.51 3.09]</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/openxla/xla">XLA GitHub Repository</a></p></li>
+<li><p><a class="reference external" href="https://github.com/openxla/xla/blob/main/docs/architecture.html">XLA Architecture</a></p></li>
+<li><p><a class="reference external" href="https://blog.tensorflow.org/2018/11/pushing-limits-of-gpu-performance-with-xla.html#:~:text=your%20own%20code.-,TensorFlow%201.12%20(with%20XLA)%20achieves%20significant%20performance%20gains%20over%20TF,see%20appendix%20for%20reproduction%20instructions">Pushing the limits of GPU performance with XLA</a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f9b7b3b2d90> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

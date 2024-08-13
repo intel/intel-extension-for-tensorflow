@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keras Mixed Precision &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Keras Mixed Precision</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/guide/keras_mixed_precision.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="keras-mixed-precision">
+<h1>Keras Mixed Precision<a class="headerlink" href="#keras-mixed-precision" title="Permalink to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p>Intel® Extension for TensorFlow* supports <strong><a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision</a></strong>,  which can run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption.</p>
+<p>After installing Intel® Extension for TensorFlow*, you need to configure mixed_precision.Policy and identify hardware devices, the models will run with 16-bit and 32-bit mixed floating-point types. The following table shows the types of mixed_precision.Policy supported for Intel hardware.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>mixed_precision.Policy</th>
+<th>Hardware device</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mixed_float16</td>
+<td>GPU</td>
+</tr>
+<tr>
+<td>mixed_bfloat16</td>
+<td>CPU, GPU</td>
+</tr>
+</tbody>
+</table></section>
+<section id="how-to-identify-different-hardware-types">
+<h2>How to identify different hardware types?<a class="headerlink" href="#how-to-identify-different-hardware-types" title="Permalink to this heading"></a></h2>
+<p>​Enable Keras mixed-precision with Intel® Extension for TensorFlow* backend. We provide two ways to distinguish it.</p>
+<ul>
+<li><p>Through <code class="docutils literal notranslate"><span class="pre">tf.config.list_physical_devices</span></code></p>
+<p>For stock TensorFlow, if run with Nvidia GPU,  <code class="docutils literal notranslate"><span class="pre">tf.config.list_physical_devices('GPU')</span></code>  will return true.</p>
+<p>For Intel® Extension for TensorFlow*, if run with Intel GPU, <code class="docutils literal notranslate"><span class="pre">tf.config.list_physical_devices('XPU')</span></code>  will return true. If run with Intel CPU, it will return false.</p>
+</li>
+<li><p>Through Intel® Extension for TensorFlow* Python API</p>
+<p>If run with GPU, <code class="docutils literal notranslate"><span class="pre">is_gpu_available()</span></code>  will return true,  if not, it will return false.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_tensorflow.python.test_func</span> <span class="kn">import</span> <span class="n">test</span>
+
+<span class="k">if</span> <span class="n">test</span><span class="o">.</span><span class="n">is_gpu_available</span><span class="p">():</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<blockquote>
+<div><p><strong>Note: Other than the difference in the identification of the hardware device, other behavior is the same, refer to the <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Keras mixed precision</a></strong> for details.</p>
+</div></blockquote>
+</section>
+<section id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">keras</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">layers</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">mixed_precision</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="mi">2022</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">14</span> <span class="mi">02</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mf">41.061277</span><span class="p">:</span> <span class="n">W</span> <span class="n">itex</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">profiler</span><span class="o">/</span><span class="n">gpu_profiler</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">111</span><span class="p">]</span> <span class="o">******************************</span><span class="n">Intel</span> <span class="n">TensorFlow</span> <span class="n">Extension</span> <span class="n">profiler</span> <span class="ne">Warning</span><span class="o">***************************************************</span>
+<span class="mi">2022</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">14</span> <span class="mi">02</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mf">41.061301</span><span class="p">:</span> <span class="n">W</span> <span class="n">itex</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">profiler</span><span class="o">/</span><span class="n">gpu_profiler</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">114</span><span class="p">]</span> <span class="n">Itex</span> <span class="n">profiler</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">,</span> <span class="k">if</span> <span class="n">you</span> <span class="n">want</span> <span class="n">to</span> <span class="n">enable</span> <span class="n">it</span><span class="p">,</span> <span class="n">please</span> <span class="nb">set</span> <span class="n">environment</span> <span class="k">as</span> <span class="p">:</span>
+<span class="n">export</span> <span class="n">ZE_ENABLE_TRACING_LAYER</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">export</span> <span class="n">UseCyclesPerSecondTimer</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">export</span> <span class="n">ENABLE_TF_PROFILER</span><span class="o">=</span><span class="mi">1</span>
+<span class="mi">2022</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">14</span> <span class="mi">02</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mf">41.061306</span><span class="p">:</span> <span class="n">W</span> <span class="n">itex</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">profiler</span><span class="o">/</span><span class="n">gpu_profiler</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">118</span><span class="p">]</span> <span class="o">******************************************************************************************************</span>
+<span class="mi">2022</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">14</span> <span class="mi">02</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mf">41.063685</span><span class="p">:</span> <span class="n">I</span> <span class="n">itex</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">devices</span><span class="o">/</span><span class="n">gpu</span><span class="o">/</span><span class="n">dpcpp_runtime</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">100</span><span class="p">]</span> <span class="n">Selected</span> <span class="n">platform</span><span class="p">:</span> <span class="n">Intel</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="n">Level</span><span class="o">-</span><span class="n">Zero</span><span class="o">.</span>
+<span class="mi">2022</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">14</span> <span class="mi">02</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mf">41.063851</span><span class="p">:</span> <span class="n">W</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">stream_executor</span><span class="o">/</span><span class="n">cuda</span><span class="o">/</span><span class="n">cuda_driver</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">269</span><span class="p">]</span> <span class="n">failed</span> <span class="n">call</span> <span class="n">to</span> <span class="n">cuInit</span><span class="p">:</span> <span class="n">UNKNOWN</span> <span class="n">ERROR</span> <span class="p">(</span><span class="mi">303</span><span class="p">)</span>
+<span class="mi">2022</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">14</span> <span class="mi">02</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mf">41.063865</span><span class="p">:</span> <span class="n">I</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">stream_executor</span><span class="o">/</span><span class="n">cuda</span><span class="o">/</span><span class="n">cuda_diagnostics</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span><span class="mi">156</span><span class="p">]</span> <span class="n">kernel</span> <span class="n">driver</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">appear</span> <span class="n">to</span> <span class="n">be</span> <span class="n">running</span> <span class="n">on</span> <span class="n">this</span> <span class="n">host</span> <span class="p">(</span><span class="n">DUT3046</span><span class="o">-</span><span class="n">ATSP</span><span class="p">):</span> <span class="o">/</span><span class="n">proc</span><span class="o">/</span><span class="n">driver</span><span class="o">/</span><span class="n">nvidia</span><span class="o">/</span><span class="n">version</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">exist</span>
+</pre></div>
+</div>
+</section>
+<section id="setting-the-dtype-policy">
+<h2>Setting the dtype policy<a class="headerlink" href="#setting-the-dtype-policy" title="Permalink to this heading"></a></h2>
+<p>To use mixed precision in Keras, you need to create a <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/Policy"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.Policy</span></code></a>, typically referred to as a <em>dtype policy</em>. Dtype policies specify how the dtypes layers will run. In this guide, you will construct a policy from the string <code class="docutils literal notranslate"><span class="pre">'mixed_float16'</span></code> and set it as the global policy. This will cause subsequently created layers to use mixed precision with a mix of float16 and float32.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">policy</span> <span class="o">=</span> <span class="n">mixed_precision</span><span class="o">.</span><span class="n">Policy</span><span class="p">(</span><span class="s1">&#39;mixed_float16&#39;</span><span class="p">)</span>
+<span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span><span class="n">WARNING</span><span class="p">:</span><span class="n">tensorflow</span><span class="p">:</span><span class="n">Mixed</span> <span class="n">precision</span> <span class="n">compatibility</span> <span class="n">check</span> <span class="p">(</span><span class="n">mixed_float16</span><span class="p">):</span> <span class="n">WARNING</span>
+<span class="n">The</span> <span class="n">dtype</span> <span class="n">policy</span> <span class="n">mixed_float16</span> <span class="n">may</span> <span class="n">run</span> <span class="n">slowly</span> <span class="n">because</span> <span class="n">this</span> <span class="n">machine</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">have</span> <span class="n">a</span> <span class="n">GPU</span><span class="o">.</span> <span class="n">Only</span> <span class="n">Nvidia</span> <span class="n">GPUs</span> <span class="k">with</span> <span class="n">compute</span> <span class="n">capability</span> <span class="n">of</span> <span class="n">at</span> <span class="n">least</span> <span class="mf">7.0</span> <span class="n">run</span> <span class="n">quickly</span> <span class="k">with</span> <span class="n">mixed_float16</span><span class="o">.</span>
+<span class="n">If</span> <span class="n">you</span> <span class="n">will</span> <span class="n">use</span> <span class="n">compatible</span> <span class="n">GPU</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">not</span> <span class="n">attached</span> <span class="n">to</span> <span class="n">this</span> <span class="n">host</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="n">by</span> <span class="n">running</span> <span class="n">a</span> <span class="n">multi</span><span class="o">-</span><span class="n">worker</span> <span class="n">model</span><span class="p">,</span> <span class="n">you</span> <span class="n">can</span> <span class="n">ignore</span> <span class="n">this</span> <span class="n">warning</span><span class="o">.</span> <span class="n">This</span> <span class="n">message</span> <span class="n">will</span> <span class="n">only</span> <span class="n">be</span> <span class="n">logged</span> <span class="n">once</span>
+</pre></div>
+</div>
+<p>For short, you can directly pass a string to <code class="docutils literal notranslate"><span class="pre">set_global_policy</span></code>, which is typically done in practice.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Equivalent to the two lines above</span>
+<span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="s1">&#39;mixed_float16&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The policy specifies two important aspects of a layer: the dtype the layer’s computations are done in, and the dtype of a layer’s variables. Above, you created a <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> policy (i.e., a <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/Policy"><code class="docutils literal notranslate"><span class="pre">mixed_precision.Policy</span></code></a> created by passing the string <code class="docutils literal notranslate"><span class="pre">'mixed_float16'</span></code> to its constructor). With this policy, layers use float16 computations and float32 variables. Computations are done in float16 for performance, but variables must be kept in float32 for numeric stability. You can directly query these properties of the policy.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Compute dtype: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">policy</span><span class="o">.</span><span class="n">compute_dtype</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Variable dtype: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">policy</span><span class="o">.</span><span class="n">variable_dtype</span><span class="p">)</span>
+
+<span class="n">Compute</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">float16</span>
+<span class="n">Variable</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">float32</span>
+</pre></div>
+</div>
+<p>As mentioned before,  the policy will run on Intel GPUs and CPUs, and also could improve performance.</p>
+</section>
+<section id="building-the-model">
+<h2>Building the model<a class="headerlink" href="#building-the-model" title="Permalink to this heading"></a></h2>
+<p>Next, let’s start to build a simple model. Very small models typically do not benefit from mixed precision, because overhead from the TensorFlow runtime typically dominates the execution time, making any performance improvement on the Intel GPU negligible. Therefore, let’s build two large <code class="docutils literal notranslate"><span class="pre">Dense</span></code> layers with 4096 units each when a GPU is used.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">inputs</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">784</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;digits&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">list_physical_devices</span><span class="p">(</span><span class="s1">&#39;XPU&#39;</span><span class="p">):</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The model will run with 4096 units on an Intel GPU&#39;</span><span class="p">)</span>
+  <span class="n">num_units</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="k">else</span><span class="p">:</span>
+  <span class="c1"># Use fewer units on CPUs so the model finishes in a reasonable amount of time</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The model will run with 64 units on a CPU&#39;</span><span class="p">)</span>
+  <span class="n">num_units</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">dense1</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">num_units</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;relu&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dense_1&#39;</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">dense1</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">dense2</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">num_units</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;relu&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dense_2&#39;</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">dense2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">model</span> <span class="n">will</span> <span class="n">run</span> <span class="k">with</span> <span class="mi">4096</span> <span class="n">units</span> <span class="n">on</span> <span class="n">an</span> <span class="n">Intel</span> <span class="n">GPU</span>
+</pre></div>
+</div>
+<p>Each layer has a policy and uses the global policy by default. Each of the <code class="docutils literal notranslate"><span class="pre">Dense</span></code> layers therefore have the <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> policy because you set the global policy to <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> previously. This will cause the dense layers to do float16 computations and have float32 variables. They cast their inputs to float16 in order to do float16 computations, which causes their outputs to be float16 as a result. Their variables are float32 and will be cast to float16 when the layers are called to avoid errors from dtype mismatches.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dense1</span><span class="o">.</span><span class="n">dtype_policy</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;x.dtype: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="c1"># &#39;kernel&#39; is dense1&#39;s variable</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;dense1.kernel.dtype: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">dense1</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">Policy</span> <span class="s2">&quot;mixed_float16&quot;</span><span class="o">&gt;</span>
+<span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span> <span class="n">float16</span>
+<span class="n">dense1</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span> <span class="n">float32</span>
+</pre></div>
+</div>
+<p>Next, create the output predictions. Normally, you can create the output predictions as follows, but this is not always numerically stable with float16.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># INCORRECT: softmax and model output will be float16, when it should be float32</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;predictions&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Outputs dtype: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">outputs</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Outputs</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">float16</span>
+</pre></div>
+</div>
+<p>A softmax activation at the end of the model should be float32. Because the dtype policy is <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code>, the softmax activation would normally have a float16 compute dtype and output float16 tensors.</p>
+<p>This can be fixed by separating the Dense and softmax layers, and by passing <code class="docutils literal notranslate"><span class="pre">dtype='float32'</span></code> to the softmax layer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># CORRECT: softmax and model output are float32</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dense_logits&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Activation</span><span class="p">(</span><span class="s1">&#39;softmax&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;predictions&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Outputs dtype: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">outputs</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Outputs</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">float32</span> 
+</pre></div>
+</div>
+<p>Passing <code class="docutils literal notranslate"><span class="pre">dtype='float32'</span></code> to the softmax layer constructor overrides the layer’s dtype policy to be the <code class="docutils literal notranslate"><span class="pre">float32</span></code> policy, which does computations and keeps variables in float32. You could also have passed <code class="docutils literal notranslate"><span class="pre">dtype=mixed_precision.Policy('float32')</span></code>; layers always convert the dtype argument to a policy. Because the <code class="docutils literal notranslate"><span class="pre">Activation</span></code> layer has no variables, the policy’s variable dtype is ignored, but the policy’s compute dtype of float32 causes softmax and the model output to be float32.</p>
+<p>Adding a float16 softmax in the middle of a model is fine, but a softmax at the end of the model should be in float32. The reason is that if the intermediate tensor flowing from the softmax to the loss is float16 or bfloat16, numeric issues may occur.</p>
+<p>You can override the dtype of any layer to be float32 by passing <code class="docutils literal notranslate"><span class="pre">dtype='float32'</span></code> if you think it will not be numerically stable with float16 computations. But typically, this is only necessary on the last layer of the model, as most layers have sufficient precision with <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> and <code class="docutils literal notranslate"><span class="pre">mixed_bfloat16</span></code>.</p>
+<p>Even if the model does not end in a softmax, the outputs should still be float32. While unnecessary for this specific model, the model outputs can be cast to float32 with the following:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The linear activation is an identity function. So this simply casts &#39;outputs&#39;</span>
+<span class="c1"># to float32. In this particular case, &#39;outputs&#39; is already float32 so this is a</span>
+<span class="c1"># no-op.</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Activation</span><span class="p">(</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">)(</span><span class="n">outputs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, finish and compile the model, and generate input data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">outputs</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="s1">&#39;sparse_categorical_crossentropy&#39;</span><span class="p">,</span>
+              <span class="n">optimizer</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">RMSprop</span><span class="p">(),</span>
+              <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">])</span>
+
+<span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">),</span> <span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">mnist</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span>
+<span class="n">x_train</span> <span class="o">=</span> <span class="n">x_train</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">60000</span><span class="p">,</span> <span class="mi">784</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="mi">255</span>
+<span class="n">x_test</span> <span class="o">=</span> <span class="n">x_test</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">784</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="mi">255</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Downloading</span> <span class="n">data</span> <span class="kn">from</span> <span class="nn">https</span><span class="p">:</span><span class="o">//</span><span class="n">storage</span><span class="o">.</span><span class="n">googleapis</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">tf</span><span class="o">-</span><span class="n">keras</span><span class="o">-</span><span class="n">datasets</span><span class="o">/</span><span class="n">mnist</span><span class="o">.</span><span class="n">npz</span>
+<span class="mi">11490434</span><span class="o">/</span><span class="mi">11490434</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">12</span><span class="n">s</span> <span class="mi">1</span><span class="n">us</span><span class="o">/</span><span class="n">step</span>
+</pre></div>
+</div>
+<p>This example casts the input data from int8 to float32. You don’t cast to float16 since the division by 255 is on the CPU, which runs float16 operations slower than float32 operations. In this case, the performance difference in negligible, but in general you should run input processing math in float32 if it runs on the CPU. The first layer of the model will cast the inputs to float16, as each layer casts floating-point inputs to its compute dtype.</p>
+<p>The initial weights of the model are retrieved. This will allow training from scratch again by loading the weights.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">initial_weights</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="training-the-model-with-model-fit">
+<h2>Training the model with Model.fit<a class="headerlink" href="#training-the-model-with-model-fit" title="Permalink to this heading"></a></h2>
+<p>Next, train the model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">history</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span>
+                    <span class="n">epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                    <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">test_scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Test loss:&#39;</span><span class="p">,</span> <span class="n">test_scores</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Test accuracy:&#39;</span><span class="p">,</span> <span class="n">test_scores</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Epoch</span> <span class="mi">1</span><span class="o">/</span><span class="mi">5</span>
+<span class="mi">6</span><span class="o">/</span><span class="mi">6</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">111</span><span class="n">s</span> <span class="mi">2</span><span class="n">s</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">5.6240</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.3359</span> <span class="o">-</span> <span class="n">val_loss</span><span class="p">:</span> <span class="mf">0.9755</span> <span class="o">-</span> <span class="n">val_accuracy</span><span class="p">:</span> <span class="mf">0.7494</span>
+<span class="n">Epoch</span> <span class="mi">2</span><span class="o">/</span><span class="mi">5</span>
+<span class="mi">6</span><span class="o">/</span><span class="mi">6</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">0</span><span class="n">s</span> <span class="mi">83</span><span class="n">ms</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">0.7987</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.7520</span> <span class="o">-</span> <span class="n">val_loss</span><span class="p">:</span> <span class="mf">0.3455</span> <span class="o">-</span> <span class="n">val_accuracy</span><span class="p">:</span> <span class="mf">0.8972</span>
+<span class="n">Epoch</span> <span class="mi">3</span><span class="o">/</span><span class="mi">5</span>
+<span class="mi">6</span><span class="o">/</span><span class="mi">6</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">0</span><span class="n">s</span> <span class="mi">81</span><span class="n">ms</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">0.3670</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.8819</span> <span class="o">-</span> <span class="n">val_loss</span><span class="p">:</span> <span class="mf">0.3753</span> <span class="o">-</span> <span class="n">val_accuracy</span><span class="p">:</span> <span class="mf">0.8751</span>
+<span class="n">Epoch</span> <span class="mi">4</span><span class="o">/</span><span class="mi">5</span>
+<span class="mi">6</span><span class="o">/</span><span class="mi">6</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="n">s</span> <span class="mi">85</span><span class="n">ms</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">0.3555</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.8863</span> <span class="o">-</span> <span class="n">val_loss</span><span class="p">:</span> <span class="mf">0.2155</span> <span class="o">-</span> <span class="n">val_accuracy</span><span class="p">:</span> <span class="mf">0.9377</span>
+<span class="n">Epoch</span> <span class="mi">5</span><span class="o">/</span><span class="mi">5</span>
+<span class="mi">6</span><span class="o">/</span><span class="mi">6</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">0</span><span class="n">s</span> <span class="mi">84</span><span class="n">ms</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">0.1986</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.9410</span> <span class="o">-</span> <span class="n">val_loss</span><span class="p">:</span> <span class="mf">0.4498</span> <span class="o">-</span> <span class="n">val_accuracy</span><span class="p">:</span> <span class="mf">0.8534</span>
+</pre></div>
+</div>
+<p>Notice the model prints the time per step in the logs: for example, “84ms/step”. The first epoch may be slower as TensorFlow spends some time optimizing the model, but afterward the time per step should stabilize.</p>
+<p>If you are running this guide in Colab, you can compare the performance of mixed precision with float32. To do so, change the policy from <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> to <code class="docutils literal notranslate"><span class="pre">float32</span></code> in the <a class="reference external" href="#setting-the-dtype-policy">Setting the dtype policy</a> section, then rerun all the cells up to this point. On GPUs, you should see the time per step significantly increase, indicating mixed precision sped up the model. Make sure to change the policy back to <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> and rerun the cells before continuing with the guide.</p>
+<p>For many real-world models, mixed precision also allows you to double the batch size without running out of memory, as float16 tensors take half the memory. This does not apply however to this toy model, as you can likely run the model in any dtype where each batch consists of the entire MNIST dataset of 60,000 images.</p>
+</section>
+<section id="loss-scaling">
+<h2>Loss scaling<a class="headerlink" href="#loss-scaling" title="Permalink to this heading"></a></h2>
+<p>Loss scaling is a technique which <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit"><code class="docutils literal notranslate"><span class="pre">tf.keras.Model.fit</span></code></a> automatically performs with the <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> policy to avoid numeric underflow. This section describes what loss scaling is and the next section describes how to use it with a custom training loop.</p>
+<section id="underflow-and-overflow">
+<h3>Underflow and Overflow<a class="headerlink" href="#underflow-and-overflow" title="Permalink to this heading"></a></h3>
+<p>The float16 data type has a narrow dynamic range compared to float32. This means values above 65504 will overflow to infinity and values below 6.0×10-8 will underflow to zero. float32 and bfloat16 have a much higher dynamic range so that overflow and underflow are not a problem.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float16&#39;</span><span class="p">)</span>
+<span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>  <span class="c1"># Overflow</span>
+<span class="n">inf</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float16&#39;</span><span class="p">)</span>
+<span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>  <span class="c1"># Underflow</span>
+<span class="mf">0.0</span>
+</pre></div>
+</div>
+<p>In practice, overflow with float16 rarely occurs. Additionally, underflow also rarely occurs during the forward pass. However, during the backward pass, gradients can underflow to zero. Loss scaling is a technique to prevent this underflow.</p>
+</section>
+<section id="loss-scaling-overview">
+<h3>Loss scaling overview<a class="headerlink" href="#loss-scaling-overview" title="Permalink to this heading"></a></h3>
+<p>The basic concept of loss scaling is simple: multiply the loss by some large number, say 1024, and you get the <em>loss scale</em> value. This will cause the gradients to scale by 1024 as well, greatly reducing the chance of underflow. Once the final gradients are computed, divide them by 1024 to bring them back to their correct values.</p>
+<p>The pseudocode for this process is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">loss_scale</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">loss</span> <span class="o">*=</span> <span class="n">loss_scale</span>
+<span class="c1"># Assume `grads` are float32. You do not want to divide float16 gradients.</span>
+<span class="n">grads</span> <span class="o">=</span> <span class="n">compute_gradient</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">trainable_variables</span><span class="p">)</span>
+<span class="n">grads</span> <span class="o">/=</span> <span class="n">loss_scale</span>
+</pre></div>
+</div>
+<p>Choosing a loss scale can be tricky. If the loss scale is too low, gradients may still underflow to zero. If too high, the gradients may overflow to infinity.</p>
+<p>To solve this, TensorFlow dynamically determines the loss scale so you do not have to choose one manually. If you use <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit"><code class="docutils literal notranslate"><span class="pre">tf.keras.Model.fit</span></code></a>, loss scaling is done for you so you do not have to do any extra work. If you use a custom training loop, you must explicitly use the special  wrapper <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.LossScaleOptimizer</span></code></a> in order to use loss scaling. This is described in the next section.</p>
+</section>
+</section>
+<section id="training-the-model-with-a-custom-training-loop">
+<h2>Training the model with a custom training loop<a class="headerlink" href="#training-the-model-with-a-custom-training-loop" title="Permalink to this heading"></a></h2>
+<p>So far, you have trained a Keras model with mixed precision using <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit"><code class="docutils literal notranslate"><span class="pre">tf.keras.Model.fit</span></code></a>. Next, you will use mixed precision with a custom training loop. If you do not already know what a custom training loop is, read the <a class="reference external" href="https://www.tensorflow.org/tutorials/customization/custom_training_walkthrough">Custom training guide</a> first.</p>
+<p>Running a custom training loop with mixed precision requires two changes over running it in float32:</p>
+<ol class="simple">
+<li><p>Build the model with mixed precision (you already did this)</p></li>
+<li><p>Explicitly use loss scaling if <code class="docutils literal notranslate"><span class="pre">mixed_float16</span></code> is used.</p></li>
+</ol>
+<p>For step (2), you will use the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.LossScaleOptimizer</span></code></a> class, which wraps an optimizer and applies loss scaling. By default, it dynamically determines the loss scale so you do not have to choose one. Construct a <code class="docutils literal notranslate"><span class="pre">LossScaleOptimizer</span></code> as follows.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">RMSprop</span><span class="p">()</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">mixed_precision</span><span class="o">.</span><span class="n">LossScaleOptimizer</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can choose an explicit loss scale or otherwise customize the loss scaling behavior, but it is highly recommended to keep the default loss scaling behavior, as it has been found to work well on all known models. See the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/LossScaleOptimizer"><code class="docutils literal notranslate"><span class="pre">tf.keras.mixed_precision.LossScaleOptimizer</span></code></a> documentation if you want to customize the loss scaling behavior.</p>
+<p>Next, define the loss object and the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/data/Dataset"><code class="docutils literal notranslate"><span class="pre">tf.data.Dataset</span></code></a>s:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">loss_object</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">SparseCategoricalCrossentropy</span><span class="p">()</span>
+<span class="n">train_dataset</span> <span class="o">=</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">((</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">))</span>
+                 <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="mi">8192</span><span class="p">))</span>
+<span class="n">test_dataset</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">((</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">))</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="mi">8192</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, define the training step function. You will use two new methods from the loss scale optimizer to scale the loss and unscale the gradients:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_scaled_loss(loss)</span></code>: Multiplies the loss by the loss scale</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_unscaled_gradients(gradients)</span></code>: Takes in a list of scaled gradients as inputs, and divides each one by the loss scale to unscale them</p></li>
+</ul>
+<p>These functions must be used in order to prevent underflow in the gradients. <code class="docutils literal notranslate"><span class="pre">LossScaleOptimizer.apply_gradients</span></code> will then apply gradients if none of them have <code class="docutils literal notranslate"><span class="pre">Inf</span></code>s or <code class="docutils literal notranslate"><span class="pre">NaN</span></code>s. It will also update the loss scale, halving it if the gradients had <code class="docutils literal notranslate"><span class="pre">Inf</span></code>s or <code class="docutils literal notranslate"><span class="pre">NaN</span></code>s and potentially increasing it otherwise.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@tf</span><span class="o">.</span><span class="n">function</span>
+<span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">GradientTape</span><span class="p">()</span> <span class="k">as</span> <span class="n">tape</span><span class="p">:</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_object</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
+    <span class="n">scaled_loss</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">get_scaled_loss</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+  <span class="n">scaled_gradients</span> <span class="o">=</span> <span class="n">tape</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">scaled_loss</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">trainable_variables</span><span class="p">)</span>
+  <span class="n">gradients</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">get_unscaled_gradients</span><span class="p">(</span><span class="n">scaled_gradients</span><span class="p">)</span>
+  <span class="n">optimizer</span><span class="o">.</span><span class="n">apply_gradients</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">trainable_variables</span><span class="p">))</span>
+  <span class="k">return</span> <span class="n">loss</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">LossScaleOptimizer</span></code> will likely skip the first few steps at the start of training. The loss scale starts out high so that the optimal loss scale can quickly be determined. After a few steps, the loss scale will stabilize and very few steps will be skipped. This process happens automatically and does not affect training quality.</p>
+<p>Now, define the test step:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@tf</span><span class="o">.</span><span class="n">function</span>
+<span class="k">def</span> <span class="nf">test_step</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+  <span class="k">return</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load the initial weights of the model, so you can retrain from scratch:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">initial_weights</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, run the custom training loop:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+  <span class="n">epoch_loss_avg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">()</span>
+  <span class="n">test_accuracy</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">SparseCategoricalAccuracy</span><span class="p">(</span>
+      <span class="n">name</span><span class="o">=</span><span class="s1">&#39;test_accuracy&#39;</span><span class="p">)</span>
+  <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">train_dataset</span><span class="p">:</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">epoch_loss_avg</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+  <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">test_dataset</span><span class="p">:</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">test_step</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">test_accuracy</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Epoch </span><span class="si">{}</span><span class="s1">: loss=</span><span class="si">{}</span><span class="s1">, test accuracy=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">epoch_loss_avg</span><span class="o">.</span><span class="n">result</span><span class="p">(),</span> <span class="n">test_accuracy</span><span class="o">.</span><span class="n">result</span><span class="p">()))</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Epoch</span> <span class="mi">0</span><span class="p">:</span> <span class="n">loss</span><span class="o">=</span><span class="mf">3.924008369445801</span><span class="p">,</span> <span class="n">test</span> <span class="n">accuracy</span><span class="o">=</span><span class="mf">0.7239000201225281</span>
+<span class="n">Epoch</span> <span class="mi">1</span><span class="p">:</span> <span class="n">loss</span><span class="o">=</span><span class="mf">0.5294489860534668</span><span class="p">,</span> <span class="n">test</span> <span class="n">accuracy</span><span class="o">=</span><span class="mf">0.9168000221252441</span>
+<span class="n">Epoch</span> <span class="mi">2</span><span class="p">:</span> <span class="n">loss</span><span class="o">=</span><span class="mf">0.3364005982875824</span><span class="p">,</span> <span class="n">test</span> <span class="n">accuracy</span><span class="o">=</span><span class="mf">0.9381000399589539</span>
+<span class="n">Epoch</span> <span class="mi">3</span><span class="p">:</span> <span class="n">loss</span><span class="o">=</span><span class="mf">0.25294047594070435</span><span class="p">,</span> <span class="n">test</span> <span class="n">accuracy</span><span class="o">=</span><span class="mf">0.9486000537872314</span>
+<span class="n">Epoch</span> <span class="mi">4</span><span class="p">:</span> <span class="n">loss</span><span class="o">=</span><span class="mf">0.26531240344047546</span><span class="p">,</span> <span class="n">test</span> <span class="n">accuracy</span><span class="o">=</span><span class="mf">0.9536000490188599</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f9b7b4b7e50> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

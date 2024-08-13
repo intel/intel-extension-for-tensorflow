@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accelerate Deep Learning Training and Inference for Model Zoo Workloads on Intel GPU &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-tensorflow"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for TensorFlow*
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">v2.15.0.1▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Quick Get Started*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/infrastructure.html">Infrastructure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/performance.html">Performance Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install/installation_guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/practice_guide.html">Practice Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/guide/FAQ.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/releases.html">Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/community/contributing.html">Contributing guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-tensorflow">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for TensorFlow*</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Accelerate Deep Learning Training and Inference for Model Zoo Workloads on Intel GPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/model_zoo_example/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="accelerate-deep-learning-training-and-inference-for-model-zoo-workloads-on-intel-gpu">
+<h1>Accelerate Deep Learning Training and Inference for Model Zoo Workloads on Intel GPU<a class="headerlink" href="#accelerate-deep-learning-training-and-inference-for-model-zoo-workloads-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p>This example shows the guideline to run Model Zoo workloads using TensorFlow* framework on Intel GPU with the optimizations from Intel® Extension for TensorFlow*.</p>
+</section>
+<section id="quick-start-guide">
+<h2>Quick Start Guide<a class="headerlink" href="#quick-start-guide" title="Permalink to this heading"></a></h2>
+<section id="run-models-in-the-docker-container">
+<h3>Run Models in the Docker Container<a class="headerlink" href="#run-models-in-the-docker-container" title="Permalink to this heading"></a></h3>
+<ul>
+<li><p>For Intel® Data Center GPU Flex Series</p>
+<p>Refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/containers/model-zoo-flex-series-containers.html">AI Model Zoo Containers on Flex Series</a> to run optimized Deep Learning inference workloads.</p>
+</li>
+<li><p>For Intel® Data Center GPU Max Series</p>
+<p>Refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/containers/model-zoo-max-series-containers/model-zoo-max-series-containers.html">AI Model Zoo Containers on Max Series</a> to run optimized Deep Learning training and inference workloads.</p>
+</li>
+</ul>
+</section>
+<section id="run-models-on-bare-metal">
+<h3>Run Models on Bare Metal<a class="headerlink" href="#run-models-on-bare-metal" title="Permalink to this heading"></a></h3>
+<p>Refer to <a class="reference external" href="https://github.com/IntelAI/models/tree/master#intel-data-center-gpu-workloads">AI Model Zoo Examples on Intel® Data Center GPU</a> to run optimized Deep Learning training and inference workloads on bare metal.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024 Intel Corporation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f9b7b4c1400> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
