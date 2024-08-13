@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Graph fusion &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -117,10 +117,10 @@
            <div itemprop="articleBody">
              
   <section id="graph-fusion">
-<h1>Graph fusion<a class="headerlink" href="#graph-fusion" title="Permalink to this heading"></a></h1>
+<h1>Graph fusion<a class="headerlink" href="#graph-fusion" title="Link to this heading"></a></h1>
 <p>Intel® Extension for TensorFlow* provides graph optimization to fuse specified operator patterns into a new single operator for better performance.</p>
 <section id="basic-fusion">
-<h2>Basic fusion<a class="headerlink" href="#basic-fusion" title="Permalink to this heading"></a></h2>
+<h2>Basic fusion<a class="headerlink" href="#basic-fusion" title="Link to this heading"></a></h2>
 <p>The basic list of supported fusions is shown below. These fusions require input and output of the same data type.</p>
 <table border="1" class="docutils">
 <thead>
@@ -213,7 +213,7 @@
 </tbody>
 </table></section>
 <section id="mixed-data-type-fusion">
-<h2>Mixed data type fusion<a class="headerlink" href="#mixed-data-type-fusion" title="Permalink to this heading"></a></h2>
+<h2>Mixed data type fusion<a class="headerlink" href="#mixed-data-type-fusion" title="Link to this heading"></a></h2>
 <p>As stock TensorFlow only supports same-data-type input and output, inserting a cast node during <code class="docutils literal notranslate"><span class="pre">BF16</span></code> inference and training may break the existing fusion pattern and impact performance.</p>
 <p>Intel® Extension for TensorFlow* provides mixed data type fusion, which removes the additional data type conversions on the graph level.</p>
 <p>Here is the list of supported mixed data type fusions, and we’ll take a closer look at <code class="docutils literal notranslate"><span class="pre">MatMul</span></code> as an example.</p>
@@ -265,7 +265,7 @@
 </tr>
 </tbody>
 </table><section id="implementation-details">
-<h3>Implementation Details<a class="headerlink" href="#implementation-details" title="Permalink to this heading"></a></h3>
+<h3>Implementation Details<a class="headerlink" href="#implementation-details" title="Link to this heading"></a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">Cast</span> <span class="pre">+</span> <span class="pre">(Fused)MatMul</span> <span class="pre">+</span> <span class="pre">Cast</span></code> pattern is covered by pattern matcher; the rest is covered by remapper fusion.
 The new kernels are implemented（<code class="docutils literal notranslate"><span class="pre">AccMatMul</span></code> and <code class="docutils literal notranslate"><span class="pre">FusedAccMatMul(WithSum)</span></code>）as an extension of original <code class="docutils literal notranslate"><span class="pre">MatMul</span></code> with the following new attributes:</p>
 <ul class="simple">
@@ -276,7 +276,7 @@ The new kernels are implemented（<code class="docutils literal notranslate"><sp
 </section>
 </section>
 <section id="generic-layout-optimizer">
-<h2>Generic layout optimizer<a class="headerlink" href="#generic-layout-optimizer" title="Permalink to this heading"></a></h2>
+<h2>Generic layout optimizer<a class="headerlink" href="#generic-layout-optimizer" title="Link to this heading"></a></h2>
 <p>As the channels_first format is not supported by stock TensorFlow on CPU, it inserts transpose nodes before and after the Conv3D/MaxPool3D nodes. However, this problem does not exist in GPU device. To avoid unnecessary layout transformation when running on a GPU device, Intel® Extension for TensorFlow* adds a separate layout optimizer.</p>
 <table border="1" class="docutils">
 <thead>
@@ -315,7 +315,7 @@ The new kernels are implemented（<code class="docutils literal notranslate"><sp
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b49df10> 
+   <jinja2.runtime.BlockReference object at 0x7f93aa87b070> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

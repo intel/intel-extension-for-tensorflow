@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Performance Data &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -140,7 +140,7 @@
            <div itemprop="articleBody">
              
   <section id="performance-data">
-<h1>Performance Data<a class="headerlink" href="#performance-data" title="Permalink to this heading"></a></h1>
+<h1>Performance Data<a class="headerlink" href="#performance-data" title="Link to this heading"></a></h1>
 <ul class="simple">
 <li><p><a class="reference external" href="#overview">Overview</a></p></li>
 <li><p><a class="reference external" href="#models">Models</a></p>
@@ -198,14 +198,14 @@
 <li><p><a class="reference external" href="#additional-performance-data-for-intel-ai-data-center-products">Additional Performance Data for Intel AI Data Center Products</a></p></li>
 </ul>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <p>This document demonstrates the training and inference performance as well as accuracy results on several popular AI workloads with Intel® Extension for TensorFlow* benchmarked on Intel GPUs. You can easily reproduce these results following the guidlines in <a class="reference external" href="../../examples/README.html">examples</a>.</p>
 </section>
 <section id="models">
-<h2>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h2>
+<h2>Models<a class="headerlink" href="#models" title="Link to this heading"></a></h2>
 <p>The following tables provide the links where you can get the original code repository and step-by-step guide running on Intel GPUs for each model.</p>
 <section id="training-workloads">
-<h3>Training Workloads<a class="headerlink" href="#training-workloads" title="Permalink to this heading"></a></h3>
+<h3>Training Workloads<a class="headerlink" href="#training-workloads" title="Link to this heading"></a></h3>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -238,7 +238,7 @@
 </tbody>
 </table></section>
 <section id="inference-workloads">
-<h3>Inference Workloads<a class="headerlink" href="#inference-workloads" title="Permalink to this heading"></a></h3>
+<h3>Inference Workloads<a class="headerlink" href="#inference-workloads" title="Link to this heading"></a></h3>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -277,9 +277,9 @@
 </table></section>
 </section>
 <section id="training-accuracy-results">
-<h2>Training Accuracy Results<a class="headerlink" href="#training-accuracy-results" title="Permalink to this heading"></a></h2>
+<h2>Training Accuracy Results<a class="headerlink" href="#training-accuracy-results" title="Link to this heading"></a></h2>
 <section id="training-accuracy-on-1-node-of-4x-intel-data-center-gpu-max-1550">
-<h3>Training Accuracy on 1-node of 4x Intel Data Center GPU Max 1550<a class="headerlink" href="#training-accuracy-on-1-node-of-4x-intel-data-center-gpu-max-1550" title="Permalink to this heading"></a></h3>
+<h3>Training Accuracy on 1-node of 4x Intel Data Center GPU Max 1550<a class="headerlink" href="#training-accuracy-on-1-node-of-4x-intel-data-center-gpu-max-1550" title="Link to this heading"></a></h3>
 <p>The following table shows the BERT-Large performance, training loss and time-to-train (TTT) results for both the pre-training and fine-tuning phases on 1-node of 4x Intel® Data Center GPU Max 1550 (600W OAM, 2-stack for each GPU).</p>
 <table border="1" class="docutils">
 <thead>
@@ -331,15 +331,15 @@
 </table></section>
 </section>
 <section id="training-performance-results">
-<h2>Training Performance Results<a class="headerlink" href="#training-performance-results" title="Permalink to this heading"></a></h2>
+<h2>Training Performance Results<a class="headerlink" href="#training-performance-results" title="Link to this heading"></a></h2>
 <section id="training-performance-on-1-node-of-4x-intel-data-center-gpu-max-1550">
-<h3>Training Performance on 1-node of 4x Intel Data Center GPU Max 1550<a class="headerlink" href="#training-performance-on-1-node-of-4x-intel-data-center-gpu-max-1550" title="Permalink to this heading"></a></h3>
+<h3>Training Performance on 1-node of 4x Intel Data Center GPU Max 1550<a class="headerlink" href="#training-performance-on-1-node-of-4x-intel-data-center-gpu-max-1550" title="Link to this heading"></a></h3>
 <p>The following tables show the performance numbers for several popular training workloads on 1-node of 4x Intel® Data Center GPU Max 1550 (600W OAM, 2-stack for each GPU). For these workloads, we enable and benchmark both FP32 training and BF16 automatic mixed precision (AMP) training with 1-Stack of 1x Max 1550, 2-Stack of 1x Max 1550 as well as 4x Max 1550 (with 8 Stacks in total), to showcase the performance boost and scalability with Intel® Extension for TensorFlow* and Intel® Optimization for Horovod*.</p>
 <blockquote>
 <div><p><strong>Note</strong>: The training performance result on each workload below for <code class="docutils literal notranslate"><span class="pre">1x</span> <span class="pre">Max</span> <span class="pre">1550</span> <span class="pre">w/</span> <span class="pre">1-Stack</span></code> represents the minimum value of the performance results on 2 stacks of single GPU, with 2 instances initiated simultaneously, while each stack of the GPU executing the workload separately, without distributed training.</p>
 </div></blockquote>
 <section id="resnet50v1-5-training-performance-results">
-<h4>ResNet50v1-5 Training Performance Results<a class="headerlink" href="#resnet50v1-5-training-performance-results" title="Permalink to this heading"></a></h4>
+<h4>ResNet50v1-5 Training Performance Results<a class="headerlink" href="#resnet50v1-5-training-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -391,7 +391,7 @@
 </tbody>
 </table></section>
 <section id="bert-large-phase2-training-performance-results">
-<h4>BERT-Large Phase2 Training Performance Results<a class="headerlink" href="#bert-large-phase2-training-performance-results" title="Permalink to this heading"></a></h4>
+<h4>BERT-Large Phase2 Training Performance Results<a class="headerlink" href="#bert-large-phase2-training-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -443,7 +443,7 @@
 </tbody>
 </table></section>
 <section id="mask-rcnn-training-performance-results">
-<h4>Mask-RCNN Training Performance Results<a class="headerlink" href="#mask-rcnn-training-performance-results" title="Permalink to this heading"></a></h4>
+<h4>Mask-RCNN Training Performance Results<a class="headerlink" href="#mask-rcnn-training-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -475,7 +475,7 @@
 </tbody>
 </table></section>
 <section id="medical-image-3d-u-net-training-performance-results">
-<h4>Medical Image 3D U-Net Training Performance Results<a class="headerlink" href="#medical-image-3d-u-net-training-performance-results" title="Permalink to this heading"></a></h4>
+<h4>Medical Image 3D U-Net Training Performance Results<a class="headerlink" href="#medical-image-3d-u-net-training-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -517,15 +517,15 @@
 </section>
 </section>
 <section id="inference-performance-results">
-<h2>Inference Performance Results<a class="headerlink" href="#inference-performance-results" title="Permalink to this heading"></a></h2>
+<h2>Inference Performance Results<a class="headerlink" href="#inference-performance-results" title="Link to this heading"></a></h2>
 <section id="inference-performance-on-1x-intel-data-center-gpu-flex-170">
-<h3>Inference Performance on 1x Intel Data Center GPU Flex 170<a class="headerlink" href="#inference-performance-on-1x-intel-data-center-gpu-flex-170" title="Permalink to this heading"></a></h3>
+<h3>Inference Performance on 1x Intel Data Center GPU Flex 170<a class="headerlink" href="#inference-performance-on-1x-intel-data-center-gpu-flex-170" title="Link to this heading"></a></h3>
 <p>The following tables show the performance numbers for several popular inference workloads on 1x Intel® Data Center GPU Flex 170 (150W PCIe, 1-stack for each GPU).</p>
 <blockquote>
 <div><p><strong>Note</strong>: Inference with online mode refers to running the workloads using 1 as the batch size, while inference with batch mode utilizes larger batch size.</p>
 </div></blockquote>
 <section id="resnet50v1-5-inference-performance-results">
-<h4>ResNet50v1-5 Inference Performance Results<a class="headerlink" href="#resnet50v1-5-inference-performance-results" title="Permalink to this heading"></a></h4>
+<h4>ResNet50v1-5 Inference Performance Results<a class="headerlink" href="#resnet50v1-5-inference-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -563,7 +563,7 @@
 </tbody>
 </table></section>
 <section id="efficientnet-b0-inference-performance-results">
-<h4>EfficientNet-B0 Inference Performance Results<a class="headerlink" href="#efficientnet-b0-inference-performance-results" title="Permalink to this heading"></a></h4>
+<h4>EfficientNet-B0 Inference Performance Results<a class="headerlink" href="#efficientnet-b0-inference-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -601,7 +601,7 @@
 </tbody>
 </table></section>
 <section id="efficientnet-b3-inference-performance-results">
-<h4>EfficientNet-B3 Inference Performance Results<a class="headerlink" href="#efficientnet-b3-inference-performance-results" title="Permalink to this heading"></a></h4>
+<h4>EfficientNet-B3 Inference Performance Results<a class="headerlink" href="#efficientnet-b3-inference-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -639,7 +639,7 @@
 </tbody>
 </table></section>
 <section id="mask-rcnn-inference-performance-results">
-<h4>Mask-RCNN Inference Performance Results<a class="headerlink" href="#mask-rcnn-inference-performance-results" title="Permalink to this heading"></a></h4>
+<h4>Mask-RCNN Inference Performance Results<a class="headerlink" href="#mask-rcnn-inference-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -674,7 +674,7 @@
 </tbody>
 </table></section>
 <section id="stable-diffusion-v1-4-inference-performance-results">
-<h4>Stable Diffusion v1-4 Inference Performance Results<a class="headerlink" href="#stable-diffusion-v1-4-inference-performance-results" title="Permalink to this heading"></a></h4>
+<h4>Stable Diffusion v1-4 Inference Performance Results<a class="headerlink" href="#stable-diffusion-v1-4-inference-performance-results" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -717,11 +717,11 @@
 </section>
 </section>
 <section id="configuration">
-<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h2>
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
 <section id="software-configuration">
-<h3>Software Configuration<a class="headerlink" href="#software-configuration" title="Permalink to this heading"></a></h3>
+<h3>Software Configuration<a class="headerlink" href="#software-configuration" title="Link to this heading"></a></h3>
 <section id="software-configuration-for-intel-max-1550-gpu">
-<h4>Software Configuration for Intel Max 1550 GPU<a class="headerlink" href="#software-configuration-for-intel-max-1550-gpu" title="Permalink to this heading"></a></h4>
+<h4>Software Configuration for Intel Max 1550 GPU<a class="headerlink" href="#software-configuration-for-intel-max-1550-gpu" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -753,7 +753,7 @@
 </tbody>
 </table></section>
 <section id="software-configuration-for-intel-flex-170-gpu">
-<h4>Software Configuration for Intel Flex 170 GPU<a class="headerlink" href="#software-configuration-for-intel-flex-170-gpu" title="Permalink to this heading"></a></h4>
+<h4>Software Configuration for Intel Flex 170 GPU<a class="headerlink" href="#software-configuration-for-intel-flex-170-gpu" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -782,9 +782,9 @@
 </table></section>
 </section>
 <section id="hardware-configuration">
-<h3>Hardware Configuration<a class="headerlink" href="#hardware-configuration" title="Permalink to this heading"></a></h3>
+<h3>Hardware Configuration<a class="headerlink" href="#hardware-configuration" title="Link to this heading"></a></h3>
 <section id="hardware-configuration-for-intel-max-1550-gpu">
-<h4>Hardware Configuration for Intel Max 1550 GPU<a class="headerlink" href="#hardware-configuration-for-intel-max-1550-gpu" title="Permalink to this heading"></a></h4>
+<h4>Hardware Configuration for Intel Max 1550 GPU<a class="headerlink" href="#hardware-configuration-for-intel-max-1550-gpu" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -872,7 +872,7 @@
 </tbody>
 </table></section>
 <section id="hardware-configuration-for-intel-flex-170-gpu">
-<h4>Hardware Configuration for Intel Flex 170 GPU<a class="headerlink" href="#hardware-configuration-for-intel-flex-170-gpu" title="Permalink to this heading"></a></h4>
+<h4>Hardware Configuration for Intel Flex 170 GPU<a class="headerlink" href="#hardware-configuration-for-intel-flex-170-gpu" title="Link to this heading"></a></h4>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -962,7 +962,7 @@
 </section>
 </section>
 <section id="additional-performance-data-for-intel-ai-data-center-products">
-<h2>Additional Performance Data for Intel AI Data Center Products<a class="headerlink" href="#additional-performance-data-for-intel-ai-data-center-products" title="Permalink to this heading"></a></h2>
+<h2>Additional Performance Data for Intel AI Data Center Products<a class="headerlink" href="#additional-performance-data-for-intel-ai-data-center-products" title="Link to this heading"></a></h2>
 <p>You can find the latest performance data on other Intel® AI Data Center Products such as 3rd, 4th, and 5th Gen Intel® Xeon® Scalable processors via <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/topic-technology/artificial-intelligence/performance.html/">Performance Data for Intel® AI Data Center Products</a>.</p>
 </section>
 </section>
@@ -984,7 +984,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b485c40> 
+   <jinja2.runtime.BlockReference object at 0x7f93ab540550> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

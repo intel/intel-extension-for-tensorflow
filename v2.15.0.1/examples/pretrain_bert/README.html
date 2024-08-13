@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Accelerate BERT-Large Pretraining on Intel GPU &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,24 +91,24 @@
            <div itemprop="articleBody">
              
   <section id="accelerate-bert-large-pretraining-on-intel-gpu">
-<h1>Accelerate BERT-Large Pretraining on Intel GPU<a class="headerlink" href="#accelerate-bert-large-pretraining-on-intel-gpu" title="Permalink to this heading"></a></h1>
+<h1>Accelerate BERT-Large Pretraining on Intel GPU<a class="headerlink" href="#accelerate-bert-large-pretraining-on-intel-gpu" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* is compatible with stock TensorFlow*.
 This example shows BERT-Large Pretraining.</p>
 <p>Install the Intel® Extension for TensorFlow* in legacy running environment, Tensorflow will execute the Training on Intel GPU.</p>
 </section>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series</p></li>
 </ul>
 </section>
 <section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
 <section id="model-code-change">
-<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Permalink to this heading"></a></h3>
+<h3>Model Code change<a class="headerlink" href="#model-code-change" title="Link to this heading"></a></h3>
 <p>We set up BERT-Large pretraining based on nvidia-bert. We optimized nvidia-bert, for example, using custom kernels, fusing some ops to reduce op number, and adding bf16 mode for the model.</p>
 <p>To get better performance, instead of installing official nvidia-bert, you can clone nvidia-bert, apply the patch, then install it as shown here:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NVIDIA</span><span class="o">/</span><span class="n">DeepLearningExamples</span><span class="o">.</span><span class="n">git</span>
@@ -119,11 +119,11 @@ This example shows BERT-Large Pretraining.</p>
 </div>
 </section>
 <section id="prepare-for-gpu">
-<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Permalink to this heading"></a></h3>
+<h3>Prepare for GPU<a class="headerlink" href="#prepare-for-gpu" title="Link to this heading"></a></h3>
 <p>Refer to <a class="reference external" href="../common_guide_running.html#prepare">Prepare</a>.</p>
 </section>
 <section id="setup-running-environment">
-<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Setup for GPU</p></li>
 </ul>
@@ -133,14 +133,14 @@ This example shows BERT-Large Pretraining.</p>
 <p>If you use conda env, you can install packages in <code class="docutils literal notranslate"><span class="pre">./pip_set_env.sh</span></code> manually.</p>
 </section>
 <section id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Link to this heading"></a></h3>
 <p>Enable oneAPI running environment (only for GPU) and virtual running environment.</p>
 <ul class="simple">
 <li><p>For GPU, refer to <a class="reference external" href="../common_guide_running.html#running">Running</a></p></li>
 </ul>
 </section>
 <section id="prepare-dataset">
-<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h3>
+<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Link to this heading"></a></h3>
 <p>Nvidia-bert repository provides scripts to download, verify, and extract the SQuAD dataset and pretrained weights for fine-tuning as well as Wikipedia and BookCorpus dataset for pre-training.</p>
 <p>You can run below scripts to download datasets for fine-tuning and pretraining. Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. And you should modify the environment varible <code class="docutils literal notranslate"><span class="pre">BERT_PREP_WORKING_DIR</span></code> in <code class="docutils literal notranslate"><span class="pre">data/create_datasets_from_start.sh</span></code> to the absolute/relative path of <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT/data</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="n">data</span><span class="o">/</span><span class="n">create_datasets_from_start</span><span class="o">.</span><span class="n">sh</span> <span class="nb">all</span> <span class="n">wiki_only</span>
@@ -157,10 +157,10 @@ This example shows BERT-Large Pretraining.</p>
 </section>
 </section>
 <section id="execute-the-example">
-<h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Permalink to this heading"></a></h2>
+<h2>Execute the Example<a class="headerlink" href="#execute-the-example" title="Link to this heading"></a></h2>
 <p>Bert pretraining is very time-consuming, as nvidia-bert repository says, training BERT-Large from scratch on 16 V100 using FP16 datatype takes around 4.5 days. So Here we only provide single-tile pretraining scripts within a day to show performance.</p>
 <section id="id1">
-<h3>Prerequisites<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<h3>Prerequisites<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <p>We use <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code> to implement efficient multi-GPU training with OneCCL. If you want to use multi-GPU, please replace <code class="docutils literal notranslate"><span class="pre">horovod</span></code> with <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">horovod</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
@@ -168,7 +168,7 @@ This example shows BERT-Large Pretraining.</p>
 </div>
 </section>
 <section id="pretraining-command">
-<h3>Pretraining Command<a class="headerlink" href="#pretraining-command" title="Permalink to this heading"></a></h3>
+<h3>Pretraining Command<a class="headerlink" href="#pretraining-command" title="Link to this heading"></a></h3>
 <p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. Please set DATA_DIR to your real data dir.</p>
 <ul class="simple">
 <li><p>BFloat16 DataType</p></li>
@@ -252,7 +252,7 @@ To avoid Out-Of-Memory, please use below hyperparameters instead of above bf16 o
 <p><strong>Note</strong>: If you want to run on more cards and even multi-node, you could adjust the parameter <code class="docutils literal notranslate"><span class="pre">NUM_GPUS</span></code>.</p>
 </section>
 <section id="finetune-command">
-<h3>Finetune Command<a class="headerlink" href="#finetune-command" title="Permalink to this heading"></a></h3>
+<h3>Finetune Command<a class="headerlink" href="#finetune-command" title="Link to this heading"></a></h3>
 <p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code>. <code class="docutils literal notranslate"><span class="pre">$PRETRAIN_RESULT_DIR</span></code> is from previous pretraining. It will finetune using this pretraining checkpoint.</p>
 <ul class="simple">
 <li><p>BFloat16 DataType</p></li>
@@ -313,10 +313,10 @@ bash scripts/run_squad.sh \
 </section>
 </section>
 <section id="convergence">
-<h2>Convergence<a class="headerlink" href="#convergence" title="Permalink to this heading"></a></h2>
+<h2>Convergence<a class="headerlink" href="#convergence" title="Link to this heading"></a></h2>
 <p>If you want to run Bert-Large pretraining to convergence, we provide a set of bfloat16 distributed training hyperparameters verified on 4 cards(8 tiles) and 12 cards(24 tiles) PVC.</p>
 <section id="id2">
-<h3>Prerequisites<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<h3>Prerequisites<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
 <p>We use <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code> to implement efficient multi-GPU training with OneCCL. If you want to use multi-GPU, please replace <code class="docutils literal notranslate"><span class="pre">horovod</span></code> with <code class="docutils literal notranslate"><span class="pre">intel-optimization-for-horovod</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">horovod</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">intel</span><span class="o">-</span><span class="n">optimization</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">horovod</span>
@@ -324,7 +324,7 @@ bash scripts/run_squad.sh \
 </div>
 </section>
 <section id="commands">
-<h3>Commands<a class="headerlink" href="#commands" title="Permalink to this heading"></a></h3>
+<h3>Commands<a class="headerlink" href="#commands" title="Link to this heading"></a></h3>
 <p>Assume current_dir is <code class="docutils literal notranslate"><span class="pre">examples/pretrain_bert/DeepLearningExamples/TensorFlow2/LanguageModeling/BERT</span></code></p>
 <ul class="simple">
 <li><p>Pretraining</p></li>
@@ -413,7 +413,7 @@ bash scripts/run_squad.sh \
 <p><strong>Note</strong>: If you want to run on more cards and even multi-node, you could adjust the parameter <code class="docutils literal notranslate"><span class="pre">NUM_GPUS</span></code>.</p>
 </section>
 <section id="results">
-<h3>Results<a class="headerlink" href="#results" title="Permalink to this heading"></a></h3>
+<h3>Results<a class="headerlink" href="#results" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Pretraining Phase1</p></li>
 </ul>
@@ -484,7 +484,7 @@ bash scripts/run_squad.sh \
 </section>
 </section>
 <section id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
+<h2>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h2>
 <ol class="simple">
 <li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
 </ol>
@@ -519,7 +519,7 @@ bash scripts/run_squad.sh \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b3fccd0> 
+   <jinja2.runtime.BlockReference object at 0x7f93aa634280> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

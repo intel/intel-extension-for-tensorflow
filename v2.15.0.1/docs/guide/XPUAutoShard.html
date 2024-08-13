@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>XPUAutoShard on GPU [Experimental] &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -120,19 +120,19 @@
            <div itemprop="articleBody">
              
   <section id="xpuautoshard-on-gpu-experimental">
-<h1>XPUAutoShard on GPU [Experimental]<a class="headerlink" href="#xpuautoshard-on-gpu-experimental" title="Permalink to this heading"></a></h1>
+<h1>XPUAutoShard on GPU [Experimental]<a class="headerlink" href="#xpuautoshard-on-gpu-experimental" title="Link to this heading"></a></h1>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <p>Given a set of XPU devices (e.g., 2 GPU tiles), XPUAutoShard automatically shards the input data and the TensorFlow graph, placing these data/graph shards on GPU devices to maximize the hardware usage.</p>
 <p>Currently, it only supports data split on the batch dimension. As the first release of the feature, the functionality and the performance commitment are limited to the homogeneous GPU devices.</p>
 </section>
 <section id="workflow">
-<h2>Workflow<a class="headerlink" href="#workflow" title="Permalink to this heading"></a></h2>
+<h2>Workflow<a class="headerlink" href="#workflow" title="Link to this heading"></a></h2>
 <p>At the high level, XPUAutoShard is added as a grappler pass of Intel® Extension for TensorFlow*. It accepts a TFG MLIR graph converted from the TensorFlow Graph. It is assumed here that the TensorFlow Graph here containing MatMul or Conv OP is the main part of the model, which can be converted to MLIR module normally, and then AutoShard can be performed, otherwise, it will return directly. The sharding graph rewrite is implemented as MLIR passes and the resulting sharded graph is also a TFG MLIR graph. After the graph is sharded, the TFG MLIR graph is converted back to TensorFlow Graph which is then passed to other graph optimization passes in Intel® Extension for TensorFlow* like graph fusion.</p>
 <p><img alt="autoshard" src="../../_images/autoshard.png" /></p>
 </section>
 <section id="code-structure">
-<h2>Code Structure<a class="headerlink" href="#code-structure" title="Permalink to this heading"></a></h2>
+<h2>Code Structure<a class="headerlink" href="#code-structure" title="Link to this heading"></a></h2>
 <p>Source codes are under <code class="docutils literal notranslate"><span class="pre">itex/core/experimental/XPUAutoShard/include</span></code> and <code class="docutils literal notranslate"><span class="pre">itex/core/experimental/XPUAutoShard/src</span></code>.</p>
 <p>The primary source files are under <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/tensorflow">src/xpuautoshard/tensorflow</a> and <a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/common">src/xpuautoshard/common</a>.</p>
 <p><a class="reference external" href="../../itex/core/experimental/XPUAutoShard/src/xpuautoshard/tensorflow/interface_mlir.cpp">interface_mlir.cpp</a> contains the entry point of XPUAutoShard: <code class="docutils literal notranslate"><span class="pre">auto_sharding_pass_mlir</span></code> and can be invoked in <a class="reference external" href="../../itex/core/graph/tfg_optimizer_hook/tfg_optimizer_hook.cc">tfg_optimizer_hook.cc</a>, which contains conversion between TFG and Graphdef and as a hook to implement the graph optimizer pass in TFG dialect, then the AutoShard graph optimizer pass is added in <a class="reference external" href="../../itex/core/graph/xpu_optimizer.cc">xpu_optimizer.cc</a>.</p>
@@ -146,9 +146,9 @@
 </ul>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
 <section id="python-api">
-<h3>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h3>
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
 <p>XPUAutoShard can be enabled via Python API. The feature is turned on with <code class="docutils literal notranslate"><span class="pre">itex.GraphOptions</span></code> via <code class="docutils literal notranslate"><span class="pre">sharding=itex.ON</span></code> flag. A global configuration <code class="docutils literal notranslate"><span class="pre">ShardingConfig</span></code> is provided to set the devices and how the sharding is applied. When the auto sharding mode <code class="docutils literal notranslate"><span class="pre">config.auto_mode</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, parameters <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> and <code class="docutils literal notranslate"><span class="pre">stage_num</span></code> are needed to decide how the sharding is applied, otherwise, these parameters are automatically decided by XPUAutoShard. Current release doesn’t target auto mode.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">ShardingConfig</span><span class="p">()</span>
@@ -167,11 +167,11 @@
 </div>
 </section>
 <section id="dump-the-graph">
-<h3>Dump the graph<a class="headerlink" href="#dump-the-graph" title="Permalink to this heading"></a></h3>
+<h3>Dump the graph<a class="headerlink" href="#dump-the-graph" title="Link to this heading"></a></h3>
 <p>You can dump the graph via setting <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ITEX_VERBOSE=4</span></code> and then <code class="docutils literal notranslate"><span class="pre">itex_optimizer_before_sharding.pbtxt</span></code> and <code class="docutils literal notranslate"><span class="pre">itex_optimizer_after_sharding.pbtxt</span></code> will be saved under current directory.</p>
 </section>
 <section id="examples">
-<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h3>
+<h3>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
 <p>Please refer to <a class="reference external" href="../../examples/train_resnet50_with_autoshard/README.html">ResNet50 training example with XPUAutoShard</a> for details.</p>
 </section>
 </section>
@@ -194,7 +194,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b34eee0> 
+   <jinja2.runtime.BlockReference object at 0x7f93aa88e550> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU via Docker Container or Bare Metal &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,16 +91,16 @@
            <div itemprop="articleBody">
              
   <section id="speed-up-inference-of-inception-v4-by-advanced-automatic-mixed-precision-on-intel-cpu-and-gpu-via-docker-container-or-bare-metal">
-<h1>Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU via Docker Container or Bare Metal<a class="headerlink" href="#speed-up-inference-of-inception-v4-by-advanced-automatic-mixed-precision-on-intel-cpu-and-gpu-via-docker-container-or-bare-metal" title="Permalink to this heading"></a></h1>
+<h1>Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU via Docker Container or Bare Metal<a class="headerlink" href="#speed-up-inference-of-inception-v4-by-advanced-automatic-mixed-precision-on-intel-cpu-and-gpu-via-docker-container-or-bare-metal" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>Advanced Automatic Mixed Precision (Advanced AMP) uses lower-precision data types (such as float16 or bfloat16) to make model run with 16-bit and 32-bit mixed floating-point types during training and inference to make it run faster with less memory consumption in CPU and GPU.</p>
 <p>For detailed info, please refer to <a class="reference external" href="../../docs/guide/advanced_auto_mixed_precision.html">Advanced Automatic Mixed Precision</a></p>
 <p>This example shows the acceleration of inference by Advanced AMP on Intel CPU or GPU via Docker container or bare metal.</p>
 <p>In this example, we will test and compare the performance of FP32 and Advanced AMP (mix BF16/FP16 and FP32) on Intel CPU or GPU.</p>
 </section>
 <section id="step">
-<h2>Step<a class="headerlink" href="#step" title="Permalink to this heading"></a></h2>
+<h2>Step<a class="headerlink" href="#step" title="Link to this heading"></a></h2>
 <ol class="simple">
 <li><p>Download the Inception v4 model from the internet.</p></li>
 <li><p>Test the performance of original model (FP32) on Intel CPU or GPU.</p></li>
@@ -110,7 +110,7 @@
 <p>Users need to indicate the CPU or GPU as the backend, and choose Advanced AMP data type from BF16 and FP16 based on the requirements and hardware support.</p>
 </section>
 <section id="hardware-requirement">
-<h2>Hardware Requirement<a class="headerlink" href="#hardware-requirement" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirement<a class="headerlink" href="#hardware-requirement" title="Link to this heading"></a></h2>
 <p>Advanced AMP supports two 16 bit floating-point types: BF16 and FP16.</p>
 <table border="1" class="docutils">
 <thead>
@@ -134,7 +134,7 @@
 </tbody>
 </table><p>This example supports both types. Set the parameter according to the requirement and hardware support.</p>
 <section id="prepare-for-gpu-skip-this-step-for-cpu">
-<h3>Prepare for GPU (Skip this Step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Permalink to this heading"></a></h3>
+<h3>Prepare for GPU (Skip this Step for CPU)<a class="headerlink" href="#prepare-for-gpu-skip-this-step-for-cpu" title="Link to this heading"></a></h3>
 <ul>
 <li><p>If Running via Docker Container,</p>
 <p>Refer to <a class="reference external" href="../../docs/install/install_for_gpu.html#install-gpu-drivers">Install GPU Drivers</a>.</p>
@@ -145,7 +145,7 @@
 </ul>
 </section>
 <section id="clone-the-repository">
-<h3>Clone the Repository<a class="headerlink" href="#clone-the-repository" title="Permalink to this heading"></a></h3>
+<h3>Clone the Repository<a class="headerlink" href="#clone-the-repository" title="Link to this heading"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/intel/intel-extension-for-tensorflow 
 cd intel-extension-for-tensorflow
 export ITEX_REPO=${PWD}
@@ -153,14 +153,14 @@ export ITEX_REPO=${PWD}
 </div>
 </section>
 <section id="download-the-pretrained-model">
-<h3>Download the Pretrained-model<a class="headerlink" href="#download-the-pretrained-model" title="Permalink to this heading"></a></h3>
+<h3>Download the Pretrained-model<a class="headerlink" href="#download-the-pretrained-model" title="Link to this heading"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">examples</span><span class="o">/</span><span class="n">infer_inception_v4_amp</span>
 <span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">storage</span><span class="o">.</span><span class="n">googleapis</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">optimized</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">v1_8</span><span class="o">/</span><span class="n">inceptionv4_fp32_pretrained_model</span><span class="o">.</span><span class="n">pb</span>
 </pre></div>
 </div>
 </section>
 <section id="setup-running-environment">
-<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Setup Running Environment<a class="headerlink" href="#setup-running-environment" title="Link to this heading"></a></h3>
 <ul>
 <li><p>If Running via Docker Container,</p>
 <ul>
@@ -193,7 +193,7 @@ export ITEX_REPO=${PWD}
 </ul>
 </section>
 <section id="enable-running-environment">
-<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Permalink to this heading"></a></h3>
+<h3>Enable Running Environment<a class="headerlink" href="#enable-running-environment" title="Link to this heading"></a></h3>
 <ul>
 <li><p>If Running via Docker Container,</p>
 <ul>
@@ -224,14 +224,14 @@ cd /ws1/examples/infer_inception_v4_amp
 </section>
 </section>
 <section id="execute-testing-and-comparing-the-performance-of-fp32-and-advanced-amp-on-cpu-and-gpu-in-docker-container-or-bare-metal">
-<h2>Execute Testing and Comparing the Performance of FP32 and Advanced AMP on CPU and GPU in Docker Container or Bare Metal<a class="headerlink" href="#execute-testing-and-comparing-the-performance-of-fp32-and-advanced-amp-on-cpu-and-gpu-in-docker-container-or-bare-metal" title="Permalink to this heading"></a></h2>
+<h2>Execute Testing and Comparing the Performance of FP32 and Advanced AMP on CPU and GPU in Docker Container or Bare Metal<a class="headerlink" href="#execute-testing-and-comparing-the-performance-of-fp32-and-advanced-amp-on-cpu-and-gpu-in-docker-container-or-bare-metal" title="Link to this heading"></a></h2>
 <p>The example supports both by two scripts:</p>
 <ul class="simple">
 <li><p>Use Python API : <strong>infer_fp32_vs_amp.py</strong></p></li>
 <li><p>Use Environment Variable Configuration: <strong>infer_fp32_vs_amp.sh</strong></p></li>
 </ul>
 <section id="python-api">
-<h3>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h3>
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
 <p>Run with CPU and BF16 data type:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">py</span> <span class="n">cpu</span> <span class="n">bf16</span>
 </pre></div>
@@ -246,7 +246,7 @@ cd /ws1/examples/infer_inception_v4_amp
 </div>
 </section>
 <section id="environment-variable-configuration">
-<h3>Environment Variable Configuration<a class="headerlink" href="#environment-variable-configuration" title="Permalink to this heading"></a></h3>
+<h3>Environment Variable Configuration<a class="headerlink" href="#environment-variable-configuration" title="Link to this heading"></a></h3>
 <p>Run with CPU and BF16 data type:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">infer_fp32_vs_amp</span><span class="o">.</span><span class="n">sh</span> <span class="n">cpu</span> <span class="n">bf16</span>
 </pre></div>
@@ -261,7 +261,7 @@ cd /ws1/examples/infer_inception_v4_amp
 </div>
 </section>
 <section id="result">
-<h3>Result<a class="headerlink" href="#result" title="Permalink to this heading"></a></h3>
+<h3>Result<a class="headerlink" href="#result" title="Link to this heading"></a></h3>
 <p>All cases above will output result in screen like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Compare</span> <span class="n">Result</span>
 <span class="n">Model</span>                           <span class="n">FP32</span>                    <span class="n">BF16</span>
@@ -277,7 +277,7 @@ cd /ws1/examples/infer_inception_v4_amp
 </section>
 </section>
 <section id="advanced-enable-advanced-amp-method">
-<h2>Advanced: Enable Advanced AMP Method<a class="headerlink" href="#advanced-enable-advanced-amp-method" title="Permalink to this heading"></a></h2>
+<h2>Advanced: Enable Advanced AMP Method<a class="headerlink" href="#advanced-enable-advanced-amp-method" title="Link to this heading"></a></h2>
 <p>There are two methods to enable Advanced AMP based on Intel® Extension for TensorFlow*: Python API &amp; Environment Variable Configuration.</p>
 <ol>
 <li><p>Python API</p>
@@ -322,7 +322,7 @@ cd /ws1/examples/infer_inception_v4_amp
 </ol>
 </section>
 <section id="faq">
-<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading"></a></h2>
+<h2>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h2>
 <ol class="simple">
 <li><p>If you get the following error log, refer to <a class="reference external" href="#Enable-Running-Environment">Enable Running Environment</a> to Enable oneAPI running environment.</p></li>
 </ol>
@@ -346,7 +346,7 @@ cd /ws1/examples/infer_inception_v4_amp
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b3d67f0> 
+   <jinja2.runtime.BlockReference object at 0x7f93ab3c9640> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

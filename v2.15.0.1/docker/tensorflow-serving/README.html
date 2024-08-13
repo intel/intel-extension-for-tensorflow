@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Intel® Extension for TensorFlow* Serving - Docker Container Guide &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,16 +91,16 @@
            <div itemprop="articleBody">
              
   <section id="intel-extension-for-tensorflow-serving-docker-container-guide">
-<h1>Intel® Extension for TensorFlow* Serving - Docker Container Guide<a class="headerlink" href="#intel-extension-for-tensorflow-serving-docker-container-guide" title="Permalink to this heading"></a></h1>
+<h1>Intel® Extension for TensorFlow* Serving - Docker Container Guide<a class="headerlink" href="#intel-extension-for-tensorflow-serving-docker-container-guide" title="Link to this heading"></a></h1>
 <section id="description">
-<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading"></a></h2>
+<h2>Description<a class="headerlink" href="#description" title="Link to this heading"></a></h2>
 <p>This document has instruction for running TensorFlow Serving using Intel® Extension for TensorFlow* in a Docker container.</p>
 </section>
 <section id="build-the-docker-image">
-<h2>Build the Docker Image<a class="headerlink" href="#build-the-docker-image" title="Permalink to this heading"></a></h2>
+<h2>Build the Docker Image<a class="headerlink" href="#build-the-docker-image" title="Link to this heading"></a></h2>
 <p>To build the docker container, enter into <a class="reference external" href="./">docker/tensorflow-serving</a> folder and follow these steps.</p>
 <section id="i-binaries-preparation">
-<h3>I. Binaries Preparation<a class="headerlink" href="#i-binaries-preparation" title="Permalink to this heading"></a></h3>
+<h3>I. Binaries Preparation<a class="headerlink" href="#i-binaries-preparation" title="Link to this heading"></a></h3>
 <p>Refer to <a class="reference external" href="../../docs/guide/tf_serving_install.html">Install for Tensorflow Serving</a> to build the TensorFlow Serving binary, and refer to <a class="reference external" href="../../docs/install/install_for_cpp.html">Install for CPP</a> to build the Intel® Extension for TensorFlow* CC library from source. Then package and copy these binaries into the <code class="docutils literal notranslate"><span class="pre">./models/binaries</span></code> directory, as shown below.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>./models/binaries
 
@@ -118,7 +118,7 @@ cp<span class="w"> </span>&lt;path_to_tensorflow_serving&gt;/bazel-bin/tensorflo
 </div>
 </section>
 <section id="ii-build-the-container">
-<h3>II. Build the Container<a class="headerlink" href="#ii-build-the-container" title="Permalink to this heading"></a></h3>
+<h3>II. Build the Container<a class="headerlink" href="#ii-build-the-container" title="Link to this heading"></a></h3>
 <p>If you build the container using an Intel GPU, make sure you meet these assumptions:</p>
 <ul class="simple">
 <li><p>Host machine has an Intel GPU.</p></li>
@@ -133,7 +133,7 @@ cp<span class="w"> </span>&lt;path_to_tensorflow_serving&gt;/bazel-bin/tensorflo
 </section>
 </section>
 <section id="running-the-container">
-<h2>Running the Container<a class="headerlink" href="#running-the-container" title="Permalink to this heading"></a></h2>
+<h2>Running the Container<a class="headerlink" href="#running-the-container" title="Link to this heading"></a></h2>
 <p>Run these commands to start the Docker container. You can use the <code class="docutils literal notranslate"><span class="pre">-v</span></code> option to mount your local directory into container. To make a GPU available in the container, attach the GPU to the container using the <code class="docutils literal notranslate"><span class="pre">--device</span> <span class="pre">/dev/dri</span></code> option and run the container:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>IMAGE_NAME=intel-extension-for-tensorflow:serving-gpu
 docker run -v &lt;your-local-dir&gt;:/workspace \
@@ -169,7 +169,7 @@ docker run -v &lt;your-local-dir&gt;:/workspace \
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b34e190> 
+   <jinja2.runtime.BlockReference object at 0x7f93aa8a5df0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

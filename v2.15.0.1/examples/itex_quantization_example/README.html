@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Intel® Extension for Tensorflow* Model Quantization API Example &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,18 +91,18 @@
            <div itemprop="articleBody">
              
   <section id="intel-extension-for-tensorflow-model-quantization-api-example">
-<h1>Intel® Extension for Tensorflow* Model Quantization API Example<a class="headerlink" href="#intel-extension-for-tensorflow-model-quantization-api-example" title="Permalink to this heading"></a></h1>
+<h1>Intel® Extension for Tensorflow* Model Quantization API Example<a class="headerlink" href="#intel-extension-for-tensorflow-model-quantization-api-example" title="Link to this heading"></a></h1>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* offers improved model quantization performance
 over stock TensorFlow by providing Python APIs that cooperate with Intel® Neural
 Compressor.</p>
 <p>This example shows how to use Intel® Extension for TensorFlow* python APIs to implement model quantization.</p>
 </section>
 <section id="set-up-software-environment">
-<h2>Set Up Software Environment<a class="headerlink" href="#set-up-software-environment" title="Permalink to this heading"></a></h2>
+<h2>Set Up Software Environment<a class="headerlink" href="#set-up-software-environment" title="Link to this heading"></a></h2>
 <section id="install-intel-extension-for-tensorflow">
-<h3>Install Intel® Extension for Tensorflow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Install Intel® Extension for Tensorflow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Link to this heading"></a></h3>
 <p>a) Choose installing either Intel® Extension for Tensorflow* for Intel GPUs:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>tensorflow
 pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>xpu<span class="o">]</span>
@@ -115,14 +115,14 @@ pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="
 </div>
 </section>
 <section id="install-intel-neural-compressor">
-<h3>Install Intel® Neural Compressor<a class="headerlink" href="#install-intel-neural-compressor" title="Permalink to this heading"></a></h3>
+<h3>Install Intel® Neural Compressor<a class="headerlink" href="#install-intel-neural-compressor" title="Link to this heading"></a></h3>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>neural-compressor&gt;<span class="o">=</span><span class="m">2</span>.0
 </pre></div>
 </div>
 </section>
 </section>
 <section id="prepare-pre-trained-model">
-<h2>Prepare Pre-Trained Model<a class="headerlink" href="#prepare-pre-trained-model" title="Permalink to this heading"></a></h2>
+<h2>Prepare Pre-Trained Model<a class="headerlink" href="#prepare-pre-trained-model" title="Link to this heading"></a></h2>
 <p>The Model Quantization API uses a pre-trained SavedModel protocol buffer file
 (<code class="docutils literal notranslate"><span class="pre">pb</span></code> file).  If you don’t have your own pre-trained model to try using the
 quantization API, this table shows where to download some example pre-trained model data
@@ -144,11 +144,11 @@ directory. For example:</p>
 </div>
 </section>
 <section id="prepare-dataset">
-<h2>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h2>
+<h2>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Link to this heading"></a></h2>
 <p>In the next section’s code, we use dummy data for the model quantization example.</p>
 </section>
 <section id="apply-model-quantization">
-<h2>Apply Model Quantization<a class="headerlink" href="#apply-model-quantization" title="Permalink to this heading"></a></h2>
+<h2>Apply Model Quantization<a class="headerlink" href="#apply-model-quantization" title="Link to this heading"></a></h2>
 <p>Apply Intel® Extension for Tensorflow* model quantization Python APIs. Note that
 <code class="docutils literal notranslate"><span class="pre">&lt;model_path&gt;</span></code> here is the path to the original pre-trained model <code class="docutils literal notranslate"><span class="pre">pb</span></code> file and
 <code class="docutils literal notranslate"><span class="pre">&lt;output&gt;</span></code> is the path for the output quantized model’s <code class="docutils literal notranslate"><span class="pre">pb</span></code> file.</p>
@@ -172,7 +172,7 @@ directory. For example:</p>
 </div>
 </section>
 <section id="run-model-quantization-example">
-<h2>Run Model Quantization Example:<a class="headerlink" href="#run-model-quantization-example" title="Permalink to this heading"></a></h2>
+<h2>Run Model Quantization Example:<a class="headerlink" href="#run-model-quantization-example" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">itex_quantization.py</span></code> is an example of using Intel® Extension for Tensorflow* model quantization Python APIs to generate a quantized model from the original model.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>itex_quantization.py<span class="w"> </span>--model_path<span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>original<span class="w"> </span>pb<span class="w"> </span>file&gt;<span class="w"> </span>--output<span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>output<span class="w"> </span>pb<span class="w"> </span>file&gt;
 </pre></div>
@@ -214,7 +214,7 @@ directory. For example:</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7c27aeb0> 
+   <jinja2.runtime.BlockReference object at 0x7f93aa607f40> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

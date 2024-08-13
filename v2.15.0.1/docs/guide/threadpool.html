@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Selecting Thread Pool in Intel® Extension for TensorFlow* CPU [Experimental] &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,18 +91,18 @@
            <div itemprop="articleBody">
              
   <section id="selecting-thread-pool-in-intel-extension-for-tensorflow-cpu-experimental">
-<h1>Selecting Thread Pool in Intel® Extension for TensorFlow* CPU [Experimental]<a class="headerlink" href="#selecting-thread-pool-in-intel-extension-for-tensorflow-cpu-experimental" title="Permalink to this heading"></a></h1>
+<h1>Selecting Thread Pool in Intel® Extension for TensorFlow* CPU [Experimental]<a class="headerlink" href="#selecting-thread-pool-in-intel-extension-for-tensorflow-cpu-experimental" title="Link to this heading"></a></h1>
 <p>Intel® Extension for TensorFlow* CPU lets you choose between the OpenMP thread pool (default) or Eigen thread pool through environment variable <code class="docutils literal notranslate"><span class="pre">ITEX_OMP_THREADPOOL=1</span></code> or <code class="docutils literal notranslate"><span class="pre">0</span></code> respectively. This gives you flexibility to select a more efficient thread pool for your workload and hardware configuration. If setting <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/config/threading/set_inter_op_parallelism_threads"><code class="docutils literal notranslate"><span class="pre">inter_op_parallelism_threads=1</span></code></a> causes a large performance drop for your workload, we recommended you use Eigen thread pool. Running independent operations concurrently can be more efficient for cheap ops which cannot fully utilize the hardware compute units on their own.</p>
 <section id="using-openmp-thread-pool">
-<h2>Using OpenMP Thread Pool<a class="headerlink" href="#using-openmp-thread-pool" title="Permalink to this heading"></a></h2>
+<h2>Using OpenMP Thread Pool<a class="headerlink" href="#using-openmp-thread-pool" title="Link to this heading"></a></h2>
 <p><a class="reference external" href="practice_guide.html#OpenMP">OpenMP</a> thread pool is default in Intel® Extension for TensorFlow* CPU. It provides lower scheduling overheads, better data locality, and better cache usage. Configure the number of OMP threads via the <code class="docutils literal notranslate"><span class="pre">OMP_NUM_THREADS</span></code> environment variable. Due to the fork-join model of OpenMP and TensorFlow parallelism between independent operations, you must set the correct configuration to avoid thread conflicts. Make sure the total number of OMP threads forked from <code class="docutils literal notranslate"><span class="pre">inter_op_parallelism_threads</span></code> is less than the number of available CPU cores. For example, by default, Intel® Extension for TensorFlow* sets the number of threads used by independent non-blocking operations to be <code class="docutils literal notranslate"><span class="pre">1</span></code>. Set <code class="docutils literal notranslate"><span class="pre">OMP_NUM_THREADS</span></code> to be the number of cores available, and <code class="docutils literal notranslate"><span class="pre">KMP_BLOCKTIME=1</span></code>, <code class="docutils literal notranslate"><span class="pre">KMP_AFFINITY=granularity=fine,compact,1,0</span></code>.</p>
 </section>
 <section id="using-eigen-thread-pool">
-<h2>Using Eigen Thread Pool<a class="headerlink" href="#using-eigen-thread-pool" title="Permalink to this heading"></a></h2>
+<h2>Using Eigen Thread Pool<a class="headerlink" href="#using-eigen-thread-pool" title="Link to this heading"></a></h2>
 <p>For workloads with large inter-op concurrency, an OpenMP thread pool may not supply sufficient parallelism between operations. In this case, you should switch to the non-blocking thread pool provided by Eigen, which is the default in TensorFlow. In this case, same as TensorFlow, <code class="docutils literal notranslate"><span class="pre">inter_op_parallelism_threads</span></code> is set to 0 by default, which means to parallelize independent operations as much as possible. The work-stealing queue in Eigen thread pool allows better dynamic load balancing, giving better performance and scaling with larger <code class="docutils literal notranslate"><span class="pre">inter_op_parallelism_threads</span></code>. No other configuration is needed when using Eigen thread pool.</p>
 </section>
 <section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h2>
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
 <p>Here we show two examples using different thread pools on Intel® Xeon® Platinum 8480+ systems.</p>
 <ol>
 <li><p>This example is modified from <a class="reference external" href="https://github.com/keras-team/keras-io/blob/master/examples/keras_recipes/antirectifier.py">a keras example</a>.</p>
@@ -303,7 +303,7 @@ For OpenMP thread pool, run with <code class="docutils literal notranslate"><spa
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b49ea00> 
+   <jinja2.runtime.BlockReference object at 0x7f93aa60b2e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

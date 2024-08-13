@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tune Advanced Auto Mixed Precision &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -91,17 +91,17 @@
            <div itemprop="articleBody">
              
   <section id="tune-advanced-auto-mixed-precision">
-<h1>Tune Advanced Auto Mixed Precision<a class="headerlink" href="#tune-advanced-auto-mixed-precision" title="Permalink to this heading"></a></h1>
+<h1>Tune Advanced Auto Mixed Precision<a class="headerlink" href="#tune-advanced-auto-mixed-precision" title="Link to this heading"></a></h1>
 <section id="background">
-<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading"></a></h2>
+<h2>Background<a class="headerlink" href="#background" title="Link to this heading"></a></h2>
 <section id="numeric-stability">
-<h3>Numeric Stability<a class="headerlink" href="#numeric-stability" title="Permalink to this heading"></a></h3>
+<h3>Numeric Stability<a class="headerlink" href="#numeric-stability" title="Link to this heading"></a></h3>
 <p>Using FP16 or BF16 will impact the model accuracy and lead to a <a class="reference external" href="https://www.tensorflow.org/guide/mixed_precision">Numeric Stability</a> issue.</p>
 <p>Some operations are <strong>numerically-safe</strong> for Float16/BFloat16. This means the operation based on FP16/BF16 has no obviously accuracy loss compared to FP32.</p>
 <p>Some operations are <strong>numerically-dangerous</strong> for FP16/BF16. This means the operation based on FP16/BF16 has obviously accuracy loss compared to FP32.</p>
 </section>
 <section id="configuration-list">
-<h3>Configuration List<a class="headerlink" href="#configuration-list" title="Permalink to this heading"></a></h3>
+<h3>Configuration List<a class="headerlink" href="#configuration-list" title="Link to this heading"></a></h3>
 <p>In order to achieve faster performance with strong numeric stability, Advanced Auto Mixed Precision (AMP) maintains four lists: ALLOWLIST, DENYLIST, INFERLIST, and CLEARLIST that let you manually configure a balance of performance and accuracy with FP16/BF16 if the default configuration doesn’t provide the expected performance.</p>
 <p>Set the lists according to the numerically-safe or numerically-dangerous type of the operations. The lists include the Operation Types of TensorFlow, and support fused Operations.</p>
 <table border="1" class="docutils">
@@ -131,7 +131,7 @@
 </tbody>
 </table></section>
 <section id="example-of-mix-precision-by-list">
-<h3>Example of Mix Precision by List<a class="headerlink" href="#example-of-mix-precision-by-list" title="Permalink to this heading"></a></h3>
+<h3>Example of Mix Precision by List<a class="headerlink" href="#example-of-mix-precision-by-list" title="Link to this heading"></a></h3>
 <p>Here is an example to explain the principle.</p>
 <table border="1" class="docutils">
 <thead>
@@ -178,18 +178,18 @@
 Insert Cast nodes between deny set (FP32) and allow set (FP16/BF16), which convert data type between FP32 and FP16/BF16.</p>
 </section>
 <section id="rule-to-improve-performance-by-the-configuration-list">
-<h3>Rule to Improve Performance by the Configuration List<a class="headerlink" href="#rule-to-improve-performance-by-the-configuration-list" title="Permalink to this heading"></a></h3>
+<h3>Rule to Improve Performance by the Configuration List<a class="headerlink" href="#rule-to-improve-performance-by-the-configuration-list" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Adding more nodes to Allow will increase the performance.</p></li>
 <li><p>Reducing Cast nodes in a different allow set will increase the performance.</p></li>
 </ul>
 </section>
 <section id="usage">
-<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h3>
+<h3>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h3>
 <p>You can set these lists manually to tune Advance AMP by using the Python API, or by setting environment variables to override the default settings. Values set using the Python API will override those set using environment variables.
 Settings are prioritized in this order: Python API &gt; Environment Variable &gt; Default Setting.</p>
 <section id="python-api">
-<h4>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h4>
+<h4>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h4>
 <p>Create object:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_tensorflow</span> <span class="k">as</span> <span class="nn">itex</span>
 <span class="n">auto_mixed_precision_options</span> <span class="o">=</span> <span class="n">itex</span><span class="o">.</span><span class="n">AutoMixedPrecosionOptions</span><span class="p">()</span>
@@ -211,7 +211,7 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
 </table></section>
 </section>
 <section id="python-api-attribute-environment-variable">
-<h3>Python API Attribute &amp; Environment Variable<a class="headerlink" href="#python-api-attribute-environment-variable" title="Permalink to this heading"></a></h3>
+<h3>Python API Attribute &amp; Environment Variable<a class="headerlink" href="#python-api-attribute-environment-variable" title="Link to this heading"></a></h3>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -277,7 +277,7 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
 <p>For example: AvgPool is in INFERLIST by default. To add it to ALLOWLIST, remove it from INFERLIST and add to ALLOWLIST.</p>
 </section>
 <section id="environment-variable-difference-with-stock-tensorflow">
-<h3>Environment Variable Difference with Stock TensorFlow<a class="headerlink" href="#environment-variable-difference-with-stock-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Environment Variable Difference with Stock TensorFlow<a class="headerlink" href="#environment-variable-difference-with-stock-tensorflow" title="Link to this heading"></a></h3>
 <p>Advanced AMP has many extra operations. For example, ITEX_AUTO_MIXED_PRECISION_DATA_TYPE lets you use different data types (FP16/BF16) to speed up the model.</p>
 <p>The following table shows the corresponding relationship between Advanced AMP and TensorFlow AMP environment variable names.</p>
 <table border="1" class="docutils">
@@ -336,7 +336,7 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
 </table></section>
 </section>
 <section id="id1">
-<h2>Usage<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<h2>Usage<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
 <p>Steps:</p>
 <p>I. Install Intel® Extension for TensorFlow* in running environment.</p>
 <p>After Installing Intel® Extension for TensorFlow*, it will automatically activate as a plugin of stock TensorFlow.</p>
@@ -376,14 +376,14 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
 </tbody>
 </table></section>
 <section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h2>
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
 <section id="end-to-end-example">
-<h3>End-to-end Example<a class="headerlink" href="#end-to-end-example" title="Permalink to this heading"></a></h3>
+<h3>End-to-end Example<a class="headerlink" href="#end-to-end-example" title="Link to this heading"></a></h3>
 <p>Train a CNN model with Advanced AMP on GPU, and show the performance improvement. The following guide shows how to tune AMP manually. <a class="reference external" href="./../../examples/infer_inception_v4_amp/README.html">Speed up Inference of Inception v4 by Advanced Automatic Mixed Precision on Intel CPU and GPU</a></p>
 <p>The first epoch may be slower because TensorFlow optimizes the model during the first run. In subsequent epochs, the run time will stabilize.</p>
 </section>
 <section id="tuning-performance-example-on-mobilenet">
-<h3>Tuning Performance Example on MobileNet<a class="headerlink" href="#tuning-performance-example-on-mobilenet" title="Permalink to this heading"></a></h3>
+<h3>Tuning Performance Example on MobileNet<a class="headerlink" href="#tuning-performance-example-on-mobilenet" title="Link to this heading"></a></h3>
 <p>Advanced AMP already provides more aggressive sub-graph fusion in more models. To achieve better performance, you may manually tune the Advanced AMP configuration list. It allows more operations to be converted to lower precision. However, usually it cannot provide more fusion chances.</p>
 <p>Here is an example using MobileNet to tune manually.</p>
 <p>I. Export the optimized graph by Advanced AMP with default configuration.</p>
@@ -439,7 +439,7 @@ Settings are prioritized in this order: Python API &gt; Environment Variable &gt
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b4a4430> 
+   <jinja2.runtime.BlockReference object at 0x7f93aa651ca0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

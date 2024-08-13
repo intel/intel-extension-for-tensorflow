@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Overview &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -174,7 +174,7 @@
 </li>
 </ul>
 <section id="overview">
-<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h1>
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
 <p>This guide shows how to build an Intel® Extension for TensorFlow* PyPI package from source and install it in Ubuntu 22.04 (64-bit).</p>
 <p>Normally, you would install the latest released version of Intel® Extension for TensorFlow* using a <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> command. There are times though when you might need to build from source code:</p>
 <ol class="simple">
@@ -184,9 +184,9 @@
 </ol>
 </section>
 <section id="requirements">
-<h1>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading"></a></h1>
+<h1>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h1>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® CPU (Xeon, Core)</p></li>
@@ -196,9 +196,9 @@
 </ul>
 </section>
 <section id="common-requirements">
-<h2>Common Requirements<a class="headerlink" href="#common-requirements" title="Permalink to this heading"></a></h2>
+<h2>Common Requirements<a class="headerlink" href="#common-requirements" title="Link to this heading"></a></h2>
 <section id="install-bazel">
-<h3>Install Bazel<a class="headerlink" href="#install-bazel" title="Permalink to this heading"></a></h3>
+<h3>Install Bazel<a class="headerlink" href="#install-bazel" title="Link to this heading"></a></h3>
 <p>To build Intel® Extension for TensorFlow*, install Bazel 5.3.0. Refer to <a class="reference external" href="https://docs.bazel.build/versions/main/install-ubuntu.html">install Bazel</a>.</p>
 <p>Here are the recommended commands:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
@@ -211,14 +211,14 @@ $<span class="w"> </span>bash<span class="w"> </span>bazel-5.3.0-installer-linux
 </div>
 </section>
 <section id="download-source-code">
-<h3>Download Source Code<a class="headerlink" href="#download-source-code" title="Permalink to this heading"></a></h3>
+<h3>Download Source Code<a class="headerlink" href="#download-source-code" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-tensorflow.git<span class="w"> </span>intel-extension-for-tensorflow
 $<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>intel-extension-for-tensorflow/
 </pre></div>
 </div>
 </section>
 <section id="create-a-conda-environment">
-<h3>Create a Conda Environment<a class="headerlink" href="#create-a-conda-environment" title="Permalink to this heading"></a></h3>
+<h3>Create a Conda Environment<a class="headerlink" href="#create-a-conda-environment" title="Link to this heading"></a></h3>
 <ol class="simple">
 <li><p>Install <a class="reference external" href="https://github.com/conda-forge/miniforge?tab=readme-ov-file#install">Conda</a>.</p></li>
 <li><p>Create Virtual Running Environment</p></li>
@@ -230,7 +230,7 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 <p>Note, we support Python versions 3.9 through 3.11.</p>
 </section>
 <section id="install-tensorflow">
-<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Link to this heading"></a></h3>
 <p>Install TensorFlow 2.15.1, and refer to <a class="reference external" href="https://www.tensorflow.org/install">Install TensorFlow</a> for details.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.15.1
 </pre></div>
@@ -242,9 +242,9 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 </section>
 </section>
 <section id="optional-requirements-for-cpu-build-only">
-<h2>Optional Requirements for CPU Build Only<a class="headerlink" href="#optional-requirements-for-cpu-build-only" title="Permalink to this heading"></a></h2>
+<h2>Optional Requirements for CPU Build Only<a class="headerlink" href="#optional-requirements-for-cpu-build-only" title="Link to this heading"></a></h2>
 <section id="install-clang-17-compiler">
-<h3>Install Clang-17 compiler<a class="headerlink" href="#install-clang-17-compiler" title="Permalink to this heading"></a></h3>
+<h3>Install Clang-17 compiler<a class="headerlink" href="#install-clang-17-compiler" title="Link to this heading"></a></h3>
 <p>ITEX CPU uses clang-17 as default compiler instead of gcc. Users can switch back to gcc in <a class="reference external" href="####configure-for-cpu">configure</a>. Clang-17 can be installed through apt on Ubuntu or source build on other systems. Check https://apt.llvm.org/ for more details.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ubuntu 22.04</span>
 <span class="c1"># Add in /etc/apt/sources.list</span>
@@ -273,9 +273,9 @@ $<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </
 </section>
 </section>
 <section id="extra-requirements-for-xpu-build-only">
-<h2>Extra Requirements for XPU Build Only<a class="headerlink" href="#extra-requirements-for-xpu-build-only" title="Permalink to this heading"></a></h2>
+<h2>Extra Requirements for XPU Build Only<a class="headerlink" href="#extra-requirements-for-xpu-build-only" title="Link to this heading"></a></h2>
 <section id="install-intel-gpu-driver">
-<h3>Install Intel GPU Driver<a class="headerlink" href="#install-intel-gpu-driver" title="Permalink to this heading"></a></h3>
+<h3>Install Intel GPU Driver<a class="headerlink" href="#install-intel-gpu-driver" title="Link to this heading"></a></h3>
 <p>Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT (<a class="reference external" href="https://software.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compilation/ahead-of-time-compilation.html">Ahead-of-time compilation</a>).</p>
 <p>Refer to <a class="reference external" href="install_for_xpu.html/#install-gpu-drivers">Install Intel GPU driver</a> for details.</p>
 <p>Note:</p>
@@ -289,7 +289,7 @@ $<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </
 </ol>
 </section>
 <section id="install-oneapi-base-toolkit">
-<h3>Install oneAPI Base Toolkit<a class="headerlink" href="#install-oneapi-base-toolkit" title="Permalink to this heading"></a></h3>
+<h3>Install oneAPI Base Toolkit<a class="headerlink" href="#install-oneapi-base-toolkit" title="Link to this heading"></a></h3>
 <p>We recommend you install the oneAPI base toolkit using <code class="docutils literal notranslate"><span class="pre">sudo</span></code> (or as root user) to the system directory <code class="docutils literal notranslate"><span class="pre">/opt/intel/oneapi</span></code>.</p>
 <p>The following commands assume the oneAPI base tookit is installed in <code class="docutils literal notranslate"><span class="pre">/opt/intel/oneapi</span></code>. If you installed it in some other folder, please update the oneAPI path as appropriate.</p>
 <p>Refer to <a class="reference external" href="install_for_xpu.html#install-oneapi-base-toolkit-packages">Install oneAPI Base Toolkit Packages</a></p>
@@ -303,11 +303,11 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 </section>
 </section>
 <section id="build-intel-extension-for-tensorflow-pypi">
-<h1>Build Intel® Extension for TensorFlow* PyPI<a class="headerlink" href="#build-intel-extension-for-tensorflow-pypi" title="Permalink to this heading"></a></h1>
+<h1>Build Intel® Extension for TensorFlow* PyPI<a class="headerlink" href="#build-intel-extension-for-tensorflow-pypi" title="Link to this heading"></a></h1>
 <section id="configure">
-<h2>Configure<a class="headerlink" href="#configure" title="Permalink to this heading"></a></h2>
+<h2>Configure<a class="headerlink" href="#configure" title="Link to this heading"></a></h2>
 <section id="configure-for-cpu">
-<h3>Configure For CPU<a class="headerlink" href="#configure-for-cpu" title="Permalink to this heading"></a></h3>
+<h3>Configure For CPU<a class="headerlink" href="#configure-for-cpu" title="Link to this heading"></a></h3>
 <p>Configure the system build by running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> command at the root of your cloned Intel® Extension for TensorFlow* source tree.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./configure
 </pre></div>
@@ -315,7 +315,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 <p>First to choose <code class="docutils literal notranslate"><span class="pre">n</span></code> to build for CPU only, next to choose compiler: <code class="docutils literal notranslate"><span class="pre">Y'</span> <span class="pre">for</span> <span class="pre">clang</span> <span class="pre">and</span> </code>n` for gcc. Refer to <a class="reference external" href="#configure-example-for-cpu">Configure Example</a>.</p>
 </section>
 <section id="configure-for-xpu">
-<h3>Configure For XPU<a class="headerlink" href="#configure-for-xpu" title="Permalink to this heading"></a></h3>
+<h3>Configure For XPU<a class="headerlink" href="#configure-for-xpu" title="Link to this heading"></a></h3>
 <p>Configure the system build by running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> command at the root of your cloned Intel® Extension for TensorFlow* source tree. This script prompts you for the location of Intel® Extension for TensorFlow* dependencies and asks for additional build configuration options (path to DPC++ compiler, for example).</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./configure
 </pre></div>
@@ -372,7 +372,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/
 </section>
 </section>
 <section id="build-source-code">
-<h2>Build Source Code<a class="headerlink" href="#build-source-code" title="Permalink to this heading"></a></h2>
+<h2>Build Source Code<a class="headerlink" href="#build-source-code" title="Link to this heading"></a></h2>
 <p>For CPU:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>bazel<span class="w"> </span>build<span class="w"> </span>-c<span class="w"> </span>opt<span class="w"> </span>--config<span class="o">=</span>cpu<span class="w">  </span>//itex/tools/pip_package:build_pip_package
 </pre></div>
@@ -436,9 +436,9 @@ $<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </sp
 </section>
 </section>
 <section id="additional">
-<h1>Additional<a class="headerlink" href="#additional" title="Permalink to this heading"></a></h1>
+<h1>Additional<a class="headerlink" href="#additional" title="Link to this heading"></a></h1>
 <section id="configure-example-for-cpu">
-<h2>Configure Example for CPU<a class="headerlink" href="#configure-example-for-cpu" title="Permalink to this heading"></a></h2>
+<h2>Configure Example for CPU<a class="headerlink" href="#configure-example-for-cpu" title="Link to this heading"></a></h2>
 <p>Here is example output and interaction you’d see while running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> script:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>You<span class="w"> </span>have<span class="w"> </span>bazel<span class="w"> </span><span class="m">5</span>.3.0<span class="w"> </span>installed.
 Python<span class="w"> </span>binary<span class="w"> </span>path:<span class="w"> </span>/path/to/envs/itex_build/bin/python
@@ -465,7 +465,7 @@ Configuration<span class="w"> </span>finished
 </div>
 </section>
 <section id="configure-example-for-xpu">
-<h2>Configure Example For XPU<a class="headerlink" href="#configure-example-for-xpu" title="Permalink to this heading"></a></h2>
+<h2>Configure Example For XPU<a class="headerlink" href="#configure-example-for-xpu" title="Link to this heading"></a></h2>
 <p>Here is example output and interaction you’d see while running the <code class="docutils literal notranslate"><span class="pre">./configure</span></code> script:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>You<span class="w"> </span>have<span class="w"> </span>bazel<span class="w"> </span><span class="m">5</span>.3.0<span class="w"> </span>installed.
 Python<span class="w"> </span>binary<span class="w"> </span>path:<span class="w"> </span>/path/to/envs/itex_build/bin/python
@@ -515,7 +515,7 @@ Configuration<span class="w"> </span>finished
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b3d6880> 
+   <jinja2.runtime.BlockReference object at 0x7f93ab3d47c0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Intel XPU Software Installation &mdash; Intel® Extension for TensorFlow* v2.15.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=439db15d" />
 
   
 <script type="text/javascript">
@@ -130,10 +130,10 @@
            <div itemprop="articleBody">
              
   <section id="intel-xpu-software-installation">
-<h1>Intel XPU Software Installation<a class="headerlink" href="#intel-xpu-software-installation" title="Permalink to this heading"></a></h1>
+<h1>Intel XPU Software Installation<a class="headerlink" href="#intel-xpu-software-installation" title="Link to this heading"></a></h1>
 <p>This guide shows how to use an Intel® Extension for TensorFlow* XPU package, which provides GPU and CPU support simultaneously.</p>
 <section id="hardware-requirements">
-<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Permalink to this heading"></a></h2>
+<h2>Hardware Requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading"></a></h2>
 <p>Verified Hardware Platforms:</p>
 <ul class="simple">
 <li><p>Intel® Data Center GPU Max Series, Driver Version: <a class="reference external" href="https://dgpu-docs.intel.com/releases/LTS_803.29_20240131.html">803</a></p></li>
@@ -143,7 +143,7 @@
 <p>For experimental support of the Intel® Arc™ A-Series GPUs, please refer to <a class="reference external" href="experimental/install_for_arc_gpu.html">Intel® Arc™ A-Series GPU Software Installation</a> for details.</p>
 </section>
 <section id="software-requirements">
-<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Permalink to this heading"></a></h2>
+<h2>Software Requirements<a class="headerlink" href="#software-requirements" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p>Ubuntu 22.04, Red Hat 8.6 (64-bit)</p>
 <ul>
@@ -162,7 +162,7 @@
 </ul>
 </section>
 <section id="install-gpu-drivers">
-<h2>Install GPU Drivers<a class="headerlink" href="#install-gpu-drivers" title="Permalink to this heading"></a></h2>
+<h2>Install GPU Drivers<a class="headerlink" href="#install-gpu-drivers" title="Link to this heading"></a></h2>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -185,14 +185,14 @@
 </tbody>
 </table></section>
 <section id="install-via-docker-container">
-<h2>Install via Docker container<a class="headerlink" href="#install-via-docker-container" title="Permalink to this heading"></a></h2>
+<h2>Install via Docker container<a class="headerlink" href="#install-via-docker-container" title="Link to this heading"></a></h2>
 <p>The Docker container includes the Intel® oneAPI Base Toolkit, and all other software stack except Intel GPU Drivers. Install the GPU driver in host machine bare metal environment, and then launch the docker container directly.</p>
 <section id="build-docker-container-from-dockerfile">
-<h3>Build Docker container from Dockerfile<a class="headerlink" href="#build-docker-container-from-dockerfile" title="Permalink to this heading"></a></h3>
+<h3>Build Docker container from Dockerfile<a class="headerlink" href="#build-docker-container-from-dockerfile" title="Link to this heading"></a></h3>
 <p>Run the following <a class="reference external" href="./../../docker/README.html">Dockerfile build procedure</a> to build the pip based deployment container.</p>
 </section>
 <section id="get-docker-container-from-dockerhub">
-<h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Permalink to this heading"></a></h3>
+<h3>Get docker container from dockerhub<a class="headerlink" href="#get-docker-container-from-dockerhub" title="Link to this heading"></a></h3>
 <p>Pre-built docker images are available at <a class="reference external" href="https://hub.docker.com/r/intel/intel-extension-for-tensorflow/tags">DockerHub</a>.
 Run the following command to pull Intel® Extension for TensorFlow* Docker container image (<code class="docutils literal notranslate"><span class="pre">xpu</span></code>) to your local machine.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker pull intel/intel-extension-for-tensorflow:xpu
@@ -209,9 +209,9 @@ $ source /opt/intel/horovod-vars.sh
 </section>
 </section>
 <section id="install-via-pypi-wheel-in-bare-metal">
-<h2>Install via PyPI wheel in bare metal<a class="headerlink" href="#install-via-pypi-wheel-in-bare-metal" title="Permalink to this heading"></a></h2>
+<h2>Install via PyPI wheel in bare metal<a class="headerlink" href="#install-via-pypi-wheel-in-bare-metal" title="Link to this heading"></a></h2>
 <section id="install-oneapi-base-toolkit-packages">
-<h3>Install oneAPI Base Toolkit Packages<a class="headerlink" href="#install-oneapi-base-toolkit-packages" title="Permalink to this heading"></a></h3>
+<h3>Install oneAPI Base Toolkit Packages<a class="headerlink" href="#install-oneapi-base-toolkit-packages" title="Link to this heading"></a></h3>
 <p>Need to install components of Intel® oneAPI Base Toolkit:</p>
 <ul class="simple">
 <li><p>Intel® oneAPI DPC++ Compiler</p></li>
@@ -228,7 +228,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
 <p>For any more details, follow the procedure in https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html.</p>
 </section>
 <section id="setup-environment-variables">
-<h3>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Permalink to this heading"></a></h3>
+<h3>Setup environment variables<a class="headerlink" href="#setup-environment-variables" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># DPC++ Compiler/oneMKL</span>
 <span class="nb">source</span><span class="w"> </span>/path<span class="w"> </span>to<span class="w"> </span>basekit/intel/oneapi/compiler/latest/env/vars.sh
 <span class="nb">source</span><span class="w"> </span>/path<span class="w"> </span>to<span class="w"> </span>basekit/intel/oneapi/mkl/latest/env/vars.sh
@@ -244,11 +244,11 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
 </div>
 </section>
 <section id="install-tensorflow">
-<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Install TensorFlow<a class="headerlink" href="#install-tensorflow" title="Link to this heading"></a></h3>
 <p>The Python development and virtual environment setup recommendation by TensorFlow to isolate package installation from the system.</p>
 <p>The Intel® Extension for TensorFlow* requires stock TensorFlow, and the version should be == 2.15.1.</p>
 <section id="virtual-environment-install">
-<h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Permalink to this heading"></a></h4>
+<h4>Virtual environment install<a class="headerlink" href="#virtual-environment-install" title="Link to this heading"></a></h4>
 <p>You can follow the instructions in <a class="reference external" href="https://www.tensorflow.org/install/pip#step-by-step_instructions">stock tensorflow install</a> to activate the virtual environment.</p>
 <p>On Linux, it is often necessary to first update pip to a version that supports manylinux2014 wheels.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
@@ -260,7 +260,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
 </div>
 </section>
 <section id="system-environment-install">
-<h4>System environment install<a class="headerlink" href="#system-environment-install" title="Permalink to this heading"></a></h4>
+<h4>System environment install<a class="headerlink" href="#system-environment-install" title="Link to this heading"></a></h4>
 <p>If you prefer install tensorflow in $HOME, please append <code class="docutils literal notranslate"><span class="pre">--user</span></code> to the commands.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span><span class="nv">tensorflow</span><span class="o">==</span><span class="m">2</span>.15.1
 </pre></div>
@@ -269,20 +269,20 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
 </section>
 </section>
 <section id="install-intel-extension-for-tensorflow">
-<h3>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Install Intel® Extension for TensorFlow*<a class="headerlink" href="#install-intel-extension-for-tensorflow" title="Link to this heading"></a></h3>
 <p>To install a XPU version in virtual environment, which depends on Intel GPU drivers and oneAPI BaseKit, you can run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>intel-extension-for-tensorflow<span class="o">[</span>xpu<span class="o">]</span>
 </pre></div>
 </div>
 <section id="check-the-environment-for-xpu">
-<h4>Check the Environment for XPU<a class="headerlink" href="#check-the-environment-for-xpu" title="Permalink to this heading"></a></h4>
+<h4>Check the Environment for XPU<a class="headerlink" href="#check-the-environment-for-xpu" title="Link to this heading"></a></h4>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">path_to_site_packages</span><span class="o">=</span><span class="sb">`</span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import site; print(site.getsitepackages()[0])&quot;</span><span class="sb">`</span>
 <span class="o">(</span>tf<span class="o">)</span>$<span class="w"> </span>bash<span class="w"> </span><span class="si">${</span><span class="nv">path_to_site_packages</span><span class="si">}</span>/intel_extension_for_tensorflow/tools/env_check.sh
 </pre></div>
 </div>
 </section>
 <section id="verify-the-installation">
-<h4>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permalink to this heading"></a></h4>
+<h4>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Link to this heading"></a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import intel_extension_for_tensorflow as itex; print(itex.__version__)&quot;</span>
 </pre></div>
 </div>
@@ -294,7 +294,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
 </section>
 </section>
 <section id="xpu-for-cpu-only-platform-deprecated">
-<h2>XPU for CPU only platform (Deprecated)<a class="headerlink" href="#xpu-for-cpu-only-platform-deprecated" title="Permalink to this heading"></a></h2>
+<h2>XPU for CPU only platform (Deprecated)<a class="headerlink" href="#xpu-for-cpu-only-platform-deprecated" title="Link to this heading"></a></h2>
 <p>Intel® Extension for TensorFlow* XPU package only support GPU platform, which will not work on CPU only platform since v2.15.0.0.</p>
 </section>
 </section>
@@ -316,7 +316,7 @@ $<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>.
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9b7b3e20d0> 
+   <jinja2.runtime.BlockReference object at 0x7f93ab5205e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
