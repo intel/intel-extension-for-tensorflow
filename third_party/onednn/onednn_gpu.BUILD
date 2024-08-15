@@ -1,9 +1,9 @@
-exports_files(["LICENSE"])
-
+load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
 load(
     "@intel_extension_for_tensorflow//third_party:common.bzl",
     "template_rule",
 )
+load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_graph_compiler", "if_llga_debug")
 load(
     "@intel_extension_for_tensorflow//third_party/onednn:onednn.bzl",
     "convert_cl_to_cpp",
@@ -11,7 +11,8 @@ load(
     "gen_onednn_version",
 )
 load("@local_config_dpcpp//dpcpp:build_defs.bzl", "if_dpcpp_build_is_configured")
-load("@intel_extension_for_tensorflow//itex:itex.bzl", "cc_library")
+
+exports_files(["LICENSE"])
 
 config_setting(
     name = "clang_linux_x86_64",
@@ -36,6 +37,7 @@ _CMAKE_COMMON_LIST = {
     "#cmakedefine DNNL_USE_RT_OBJECTS_IN_PRIMITIVE_CACHE": "#define DNNL_USE_RT_OBJECTS_IN_PRIMITIVE_CACHE",
     "#cmakedefine DNNL_ENABLE_STACK_CHECKER": "#undef DNNL_ENABLE_STACK_CHECKER",
     "#cmakedefine DNNL_EXPERIMENTAL": "#define DNNL_EXPERIMENTAL",
+    "#cmakedefine DNNL_DISABLE_GPU_REF_KERNELS": "#undef DNNL_DISABLE_GPU_REF_KERNELS",
     "#cmakedefine01 BUILD_TRAINING": "#define BUILD_TRAINING 1",
     "#cmakedefine01 BUILD_INFERENCE": "#define BUILD_INFERENCE 0",
     "#cmakedefine01 BUILD_PRIMITIVE_ALL": "#define BUILD_PRIMITIVE_ALL 1",
@@ -120,6 +122,12 @@ gen_onednn_version(
     header_out = "include/oneapi/dnnl/dnnl_version.h",
 )
 
+gen_onednn_version(
+    name = "onednn_version_hash_generator",
+    header_in = "include/oneapi/dnnl/dnnl_version_hash.h.in",
+    header_out = "include/oneapi/dnnl/dnnl_version_hash.h",
+)
+
 filegroup(
     name = "onednn_src",
     srcs = glob(
@@ -144,6 +152,7 @@ filegroup(
         ":header_generator",
         ":kernel_list_generator",
         ":onednn_version_generator",
+        ":onednn_version_hash_generator",
     ],
 )
 
@@ -171,6 +180,9 @@ cc_library(
         "src/common",
         "src/cpu/gemm",
         "src/cpu/xbyak",
+        "src/gpu/intel/jit/gemm/",
+        "src/gpu/intel/jit/gemm/include/",
+        "src/gpu/intel/jit/ngen/",
         "src/gpu/intel/ocl",
         "src/sycl",
     ],
@@ -178,8 +190,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = ["@local_config_dpcpp//dpcpp:itex_gpu_headers"],
 )
-
-load("@intel_extension_for_tensorflow//third_party/onednn:build_defs.bzl", "if_graph_compiler", "if_llga_debug")
 
 _GRAPH_COPTS_GPU_LIST = [
     "-Wall",
