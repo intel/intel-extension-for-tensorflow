@@ -1,3 +1,395 @@
+diff --git a/include/common/core/barrier.hpp b/include/common/core/barrier.hpp
+index 7924f5a..88daa89 100644
+--- a/include/common/core/barrier.hpp
++++ b/include/common/core/barrier.hpp
+@@ -33,7 +33,11 @@ namespace gpu::xetla {
+ template <uint8_t NbarCount>
+ __XETLA_API void xetla_nbarrier_init() {
+     if constexpr (NbarCount != 0) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++        __ESIMD_NS::named_barrier_init<NbarCount>();
++#else
+         __ESIMD_ENS::named_barrier_init<NbarCount>();
++#endif
+     }
+ }
+ 
+@@ -52,8 +56,13 @@ __XETLA_API void xetla_nbarrier_init() {
+ __XETLA_API void named_barrier_signal(uint8_t barrier_id,
+         uint8_t producer_consumer_mode, uint32_t num_producers,
+         uint32_t num_consumers) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    __ESIMD_NS::named_barrier_signal(
++            barrier_id, producer_consumer_mode, num_producers, num_consumers);
++#else
+     __ESIMD_ENS::named_barrier_signal(
+             barrier_id, producer_consumer_mode, num_producers, num_consumers);
++#endif
+ }
+ 
+ /// @brief Wait on a named barrier.
+@@ -62,7 +71,11 @@ __XETLA_API void named_barrier_signal(uint8_t barrier_id,
+ /// @param barrier_id  [in] is the named barrier id.
+ /// It’s value cannot exceed the total count of initialized named barriers.
+ __XETLA_API void named_barrier_wait(uint8_t barrier_id) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    __ESIMD_NS::named_barrier_wait(barrier_id);
++#else
+     __ESIMD_ENS::named_barrier_wait(barrier_id);
++#endif
+ }
+ 
+ /// @} xetla_core_barrier
+diff --git a/include/common/core/bit_mask_manipulation.hpp b/include/common/core/bit_mask_manipulation.hpp
+index 53afe0b..5dd6107 100644
+--- a/include/common/core/bit_mask_manipulation.hpp
++++ b/include/common/core/bit_mask_manipulation.hpp
+@@ -43,8 +43,13 @@ template <typename T0, typename T1, int SZ, typename U,
+         class Sat = xetla_saturation_off_tag>
+ __XETLA_API xetla_vector<T0, SZ> xetla_shl(
+         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::shl<T0, T1, SZ, U, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::shl<T0, T1, SZ, U, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Shift left operation (scalar version)
+@@ -59,8 +64,13 @@ __XETLA_API xetla_vector<T0, SZ> xetla_shl(
+ template <typename T0, typename T1, typename T2,
+         class Sat = xetla_saturation_off_tag>
+ typename std::remove_const<T0>::type xetla_shl(T1 src0, T2 src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::shl<T0, T1, T2, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::shl<T0, T1, T2, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Shift right operation (vector version)
+@@ -77,8 +87,13 @@ template <typename T0, typename T1, int SZ, typename U,
+         class Sat = xetla_saturation_off_tag>
+ __XETLA_API xetla_vector<T0, SZ> xetla_shr(
+         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::shr<T0, T1, SZ, U, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::shr<T0, T1, SZ, U, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Shift right operation (scalar version)
+@@ -94,8 +109,13 @@ template <typename T0, typename T1, typename T2,
+         class Sat = xetla_saturation_off_tag>
+ __XETLA_API typename std::remove_const<T0>::type xetla_shr(
+         T1 src0, T2 src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::shr<T0, T1, T2, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::shr<T0, T1, T2, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Rotate left operation with two vector inputs
+@@ -109,7 +129,11 @@ __XETLA_API typename std::remove_const<T0>::type xetla_shr(
+ template <typename T0, typename T1, int SZ>
+ __XETLA_API xetla_vector<T0, SZ> xetla_rol(
+         xetla_vector<T1, SZ> src0, xetla_vector<T1, SZ> src1) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::rol<T0, T1, SZ>(src0, src1);
++#else
+     return __ESIMD_ENS::rol<T0, T1, SZ>(src0, src1);
++#endif
+ }
+ 
+ /// Rotate left operation with a vector and a scalar inputs
+@@ -126,7 +150,11 @@ __XETLA_API std::enable_if_t<std::is_integral<T0>::value
+                 && is_xetla_scalar<U>::value,
+         xetla_vector<T0, SZ>>
+ xetla_rol(xetla_vector<T1, SZ> src0, U src1) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::rol<T0, T1, SZ, U>(src0, src1);
++#else
+     return __ESIMD_ENS::rol<T0, T1, SZ, U>(src0, src1);
++#endif
+ }
+ 
+ /// Rotate left operation with two scalar inputs
+@@ -141,7 +169,11 @@ __XETLA_API std::enable_if_t<std::is_integral<T0>::value
+                 && std::is_integral<T1>::value && std::is_integral<T2>::value,
+         remove_const_t<T0>>
+ xetla_rol(T1 src0, T2 src1) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::rol<T0, T1, T2>(src0, src1);
++#else
+     return __ESIMD_ENS::rol<T0, T1, T2>(src0, src1);
++#endif
+ }
+ 
+ /// Rotate right operation with two vector inputs
+@@ -155,7 +187,11 @@ xetla_rol(T1 src0, T2 src1) {
+ template <typename T0, typename T1, int SZ>
+ __XETLA_API xetla_vector<T0, SZ> xetla_ror(
+         xetla_vector<T1, SZ> src0, xetla_vector<T1, SZ> src1) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::ror<T0, T1, SZ>(src0, src1);
++#else
+     return __ESIMD_ENS::ror<T0, T1, SZ>(src0, src1);
++#endif
+ }
+ 
+ /// Rotate right operation with a vector and a scalar inputs
+@@ -172,7 +208,11 @@ __XETLA_API std::enable_if_t<std::is_integral<T0>::value
+                 && is_xetla_scalar<U>::value,
+         xetla_vector<T0, SZ>>
+ xetla_ror(xetla_vector<T1, SZ> src0, U src1) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::ror<T0, T1, SZ, U>(src0, src1);
++#else
+     return __ESIMD_ENS::ror<T0, T1, SZ, U>(src0, src1);
++#endif
+ }
+ 
+ /// Rotate right operation with two scalar inputs
+@@ -187,7 +227,11 @@ __XETLA_API std::enable_if_t<std::is_integral<T0>::value
+                 && std::is_integral<T1>::value && std::is_integral<T2>::value,
+         remove_const_t<T0>>
+ xetla_ror(T1 src0, T2 src1) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::ror<T0, T1, T2>(src0, src1);
++#else
+     return __ESIMD_ENS::ror<T0, T1, T2>(src0, src1);
++#endif
+ }
+ 
+ /// Logical Shift Right (vector version)
+@@ -204,8 +248,13 @@ template <typename T0, typename T1, int SZ, typename U,
+         class Sat = xetla_saturation_off_tag>
+ __XETLA_API xetla_vector<T0, SZ> xetla_lsr(
+         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::lsr<T0, T1, SZ, U, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::lsr<T0, T1, SZ, U, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Logical Shift Right (scalar version)
+@@ -222,8 +271,13 @@ template <typename T0, typename T1, typename T2,
+         class Sat = xetla_saturation_off_tag>
+ __XETLA_API typename std::remove_const<T0>::type xetla_lsr(
+         T1 src0, T2 src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::lsr<T0, T1, T2, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::lsr<T0, T1, T2, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Arithmetical Shift Right (vector version)
+@@ -240,8 +294,13 @@ template <typename T0, typename T1, int SZ, typename U,
+         class Sat = xetla_saturation_off_tag>
+ __XETLA_API xetla_vector<T0, SZ> xetla_asr(
+         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::asr<T0, T1, SZ, U, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::asr<T0, T1, SZ, U, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Arithmetical Shift Right (scalar version)
+@@ -258,8 +317,13 @@ template <typename T0, typename T1, typename T2,
+         class Sat = xetla_saturation_off_tag>
+ __XETLA_API typename std::remove_const<T0>::type xetla_asr(
+         T1 src0, T2 src1, Sat sat = {}) {
++#if __SYCL_COMPILER_VERSION >= 20240620 && __LIBSYCL_MAJOR_VERSION >= 8
++    return __ESIMD_NS::asr<T0, T1, T2, typename Sat::sat_tag>(
++            src0, src1, Sat::value);
++#else
+     return __ESIMD_ENS::asr<T0, T1, T2, typename Sat::sat_tag>(
+             src0, src1, Sat::value);
++#endif
+ }
+ 
+ /// Pack a xetla_mask into a single unsigned 32-bit integer value.
+diff --git a/include/common/core/common.hpp b/include/common/core/common.hpp
+index 75e72bb..7804188 100644
+--- a/include/common/core/common.hpp
++++ b/include/common/core/common.hpp
+@@ -111,21 +111,19 @@ enum class data_size : uint8_t {
+ 
+ /// The specific LSC shared function to fence with xetla_fence
+ enum class memory_kind : uint8_t {
+-    untyped_global = 0, /// untyped global memory
+-    untyped_global_low_pri = 1, /// low-priority untyped global memory
+-    typed_global = 2, /// typed global memory
+-    shared_local = 3, /// shared local memory
++  untyped_global = 0, /// untyped global memory
++  // "1" reserved for low-priority untyped global memory
++  typed_global = 2, /// typed global memory
++  shared_local = 3, /// shared local memory
+ };
+ 
+ /// The xetla_fence operation to apply to caches
+ enum class fence_op : uint8_t {
+-    none = 0, /// no operation
+-    evict = 1, /// dirty lines evicted and invalidated from L1
+-    invalidate = 2, /// invalidate all clean lines
+-    discard = 3, /// direct and clean lines are discarded w/o eviction
+-    clean = 4, /// dirty lines are written to memory, but retained in cache
+-    /// in clean state
+-    flushl2 = 5, /// flush only L2
++  none = 0, /// no operation
++  evict = 1, /// dirty lines evicted and invalidated from L1
++  invalidate = 2, /// invalidate all clean lines
++
++  clean = 4, /// dirty lines are written to memory, but retained in cache
+ };
+ /// The scope that xetla_fence operation should apply to
+ enum class fence_scope : uint8_t {
+@@ -223,9 +221,9 @@ enum class reduce_op : uint8_t {
+ };
+ 
+ /// SW_BARRIER, insert software scheduling barrier, for better code control
+-///
++/// It no longer takes effects in the sycl compiler, so define it as a no-op.
+ 
+-#define SW_BARRIER() __ESIMD_NS::fence<__ESIMD_NS::fence_mask::sw_barrier>()
++#define SW_BARRIER() 
+ 
+ __XETLA_API void xetla_wait(uint16_t val) {
+     __ESIMD_ENS::wait(__ESIMD_NS::simd<uint16_t, 1>(val));
+diff --git a/include/common/core/math_general.hpp b/include/common/core/math_general.hpp
+index a9e5b57..8b521e2 100644
+--- a/include/common/core/math_general.hpp
++++ b/include/common/core/math_general.hpp
+@@ -462,7 +462,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_add_c(xetla_vector<T, SZ> src0,
+     static_assert((std::is_same<remove_const_t<T>, uint32_t>::value),
+             "For addc, only uint32_t is supported");
+     xetla_vector<T, SZ> carry_tmp;
+-    xetla_vector<T, SZ> out = __ESIMD_ENS::addc(carry_tmp, src0, src1);
++    xetla_vector<T, SZ> out = __ESIMD_NS::addc(carry_tmp, src0, src1);
+     carry = carry_tmp;
+     return out;
+ }
+@@ -480,7 +480,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_add_c(xetla_vector<T, SZ> src0, T src1,
+     static_assert((std::is_same<remove_const_t<T>, uint32_t>::value),
+             "For addc, only uint32_t is supported");
+     xetla_vector<T, SZ> carry_tmp;
+-    xetla_vector<T, SZ> out = __ESIMD_ENS::addc(carry_tmp, src0, src1);
++    xetla_vector<T, SZ> out = __ESIMD_NS::addc(carry_tmp, src0, src1);
+     carry = carry_tmp;
+     return out;
+ }
+diff --git a/include/common/core/memory.hpp b/include/common/core/memory.hpp
+index 3ff9f54..401a546 100644
+--- a/include/common/core/memory.hpp
++++ b/include/common/core/memory.hpp
+@@ -72,55 +72,53 @@ constexpr __ESIMD_ENS::lsc_data_size get_data_size(gpu::xetla::data_size ds) {
+ /// @brief lookup table for memory kind.
+ ///
+ ///
+-constexpr __ESIMD_ENS::lsc_memory_kind get_memory_kind(
++constexpr auto get_memory_kind(
+         gpu::xetla::memory_kind mk) {
+     switch (mk) {
+         case gpu::xetla::memory_kind::untyped_global:
+-            return __ESIMD_ENS::lsc_memory_kind::untyped_global;
+-        case gpu::xetla::memory_kind::untyped_global_low_pri:
+-            return __ESIMD_ENS::lsc_memory_kind::untyped_global_low_pri;
++            return __ESIMD_NS::memory_kind::global;
+         case gpu::xetla::memory_kind::typed_global:
+-            return __ESIMD_ENS::lsc_memory_kind::typed_global;
++            return __ESIMD_NS::memory_kind::image;
+         case gpu::xetla::memory_kind::shared_local:
+-            return __ESIMD_ENS::lsc_memory_kind::shared_local;
++            return __ESIMD_NS::memory_kind::local;
+     }
+ }
+ 
+ /// @brief lookup table for fence op.
+ ///
+ ///
+-constexpr __ESIMD_ENS::lsc_fence_op get_fence_op(gpu::xetla::fence_op fo) {
++constexpr auto get_fence_op(gpu::xetla::fence_op fo) {
+     switch (fo) {
+-        case gpu::xetla::fence_op::none: return __ESIMD_ENS::lsc_fence_op::none;
++        case gpu::xetla::fence_op::none:
++            return __ESIMD_NS::fence_flush_op::none;
+         case gpu::xetla::fence_op::evict:
+-            return __ESIMD_ENS::lsc_fence_op::evict;
++            return __ESIMD_NS::fence_flush_op::evict;
+         case gpu::xetla::fence_op::invalidate:
+-            return __ESIMD_ENS::lsc_fence_op::invalidate;
+-        case gpu::xetla::fence_op::discard:
+-            return __ESIMD_ENS::lsc_fence_op::discard;
++            return __ESIMD_NS::fence_flush_op::invalidate;
+         case gpu::xetla::fence_op::clean:
+-            return __ESIMD_ENS::lsc_fence_op::clean;
+-        case gpu::xetla::fence_op::flushl2:
+-            return __ESIMD_ENS::lsc_fence_op::flushl3;
++            return __ESIMD_NS::fence_flush_op::clean;
+     }
+ }
+ 
+ /// @brief lookup table for fence scope.
+ ///
+ ///
+-constexpr __ESIMD_ENS::lsc_scope get_fence_scope(gpu::xetla::fence_scope fs) {
++constexpr auto get_fence_scope(gpu::xetla::fence_scope fs) {
+     switch (fs) {
+         case gpu::xetla::fence_scope::group:
+-            return __ESIMD_ENS::lsc_scope::group;
++            return __ESIMD_NS::fence_scope::group;
+         case gpu::xetla::fence_scope::local:
+-            return __ESIMD_ENS::lsc_scope::local;
+-        case gpu::xetla::fence_scope::tile: return __ESIMD_ENS::lsc_scope::tile;
+-        case gpu::xetla::fence_scope::gpu: return __ESIMD_ENS::lsc_scope::gpu;
+-        case gpu::xetla::fence_scope::gpus: return __ESIMD_ENS::lsc_scope::gpus;
++            return __ESIMD_NS::fence_scope::local;
++        case gpu::xetla::fence_scope::tile:
++            return __ESIMD_NS::fence_scope::tile;
++        case gpu::xetla::fence_scope::gpu: //
++            return __ESIMD_NS::fence_scope::gpu;
++        case gpu::xetla::fence_scope::gpus:
++            return __ESIMD_NS::fence_scope::gpus;
+         case gpu::xetla::fence_scope::system:
+-            return __ESIMD_ENS::lsc_scope::system;
++            return __ESIMD_NS::fence_scope::system;
+         case gpu::xetla::fence_scope::sysacq:
+-            return __ESIMD_ENS::lsc_scope::sysacq;
++            return __ESIMD_NS::fence_scope::system_acquire;
+     }
+ }
+ 
+@@ -636,9 +634,9 @@ template <memory_kind Kind = memory_kind::untyped_global,
+         fence_op FenceOp = fence_op::none,
+         fence_scope Scope = fence_scope::group, int N = 16>
+ __XETLA_API void xetla_fence(xetla_mask<N> pred = 1) {
+-    __ESIMD_ENS::lsc_fence<gpu::xetla::detail::get_memory_kind(Kind),
++    __ESIMD_NS::fence<gpu::xetla::detail::get_memory_kind(Kind),
+             gpu::xetla::detail::get_fence_op(FenceOp),
+-            gpu::xetla::detail::get_fence_scope(Scope), N>(pred);
++            gpu::xetla::detail::get_fence_scope(Scope)>();
+ }
+ 
+ /// @} xetla_core_memory
 diff --git a/include/subgroup/tile/impl/payload_xe.hpp b/include/subgroup/tile/impl/payload_xe.hpp
 index a78a1e5..acf7117 100644
 --- a/include/subgroup/tile/impl/payload_xe.hpp
