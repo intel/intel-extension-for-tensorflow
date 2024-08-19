@@ -8,24 +8,25 @@ We assume you have installed the Intel GPU driver and the required components of
 
 ## Step by step instructions:
 
-Miniconda is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.
-You can use the following command to install Miniconda. During installation, you may need to press enter and type "yes". Skip this step, if you have already installed conda.
+**Miniforge** is the community (conda-forge) driven minimalistic conda installer. It is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.
+
+You can use the following command to install Miniforge. During installation, you may need to press enter and type "yes". Skip this step, if you have already installed conda.
 
 ```
-curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
+wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh
 ```
 
 You may need to restart your terminal or `source ~/.bashrc` to enable the conda command. Use this command to test if it is installed successfully.
 ```
 conda -V
 ```
-You may need to update your conda first, as at least conda 4.1.11 is required.
+
 ```
 conda update conda
 
 #Take Intel Python 2023.2.0 as an example to conda environment, but generic Python is also recommended.
-conda create -n itex -c https://software.repos.intel.com/python/conda/ intelpython3_full==2023.2.0 python=3.9
+conda create -n itex -c https://software.repos.intel.com/python/conda/ intelpython3_full==2024.2.0 python=3.9
 ```
 
 Activate the environment by the following commands.
