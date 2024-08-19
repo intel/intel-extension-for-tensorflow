@@ -26,12 +26,12 @@ This diagram provides a summary of the TensorFlow* PyPI package ecosystem.
   [estimator](https://www.tensorflow.org/guide/estimator), [keras](https://keras.io), [tensorboard](https://www.tensorflow.org/tensorboard), [tensorflow-base](https://www.tensorflow.org/guide)
 
 * Intel® Extension for TensorFlow* package:
-  
+
    `intel_extension_for_tensorflow` contains:
    * XPU specific implementation
      * Kernels & operators
      * Graph optimizer
-     * Device runtime 
+     * Device runtime
    * XPU configuration management
      * XPU backend selection
      * Options turning on/off advanced features
@@ -61,13 +61,15 @@ Intel® Extension for TensorFlow* can be installed through the following channel
 ### Compatibility Table
 
 | Intel® Extension for TensorFlow*  | Stock TensorFlow |
-| ------- | ----------- |    
-| [latest build from source](docs/install/how_to_build.html)  | 2.15 |
+| ------- | ----------- |
+| Not support  | 2.17 |
+| [latest build from source](docs/install/how_to_build.html)  | 2.16 |
+| v2.15.0.0 & v2.15.0.1  | 2.15 |
 | v2.14.0.1 & v2.14.0.2  | 2.14 |
 | v2.13.0.0  | 2.13 |
 | v1.2.0  | 2.12 |
 | v1.1.0  | 2.10 & 2.11 |
-| v1.0.0  | 2.10        | 
+| v1.0.0  | 2.10        |
 
 ### Install for XPU
 ```
@@ -117,13 +119,13 @@ Sanity check instructions:
 python -c "import intel_extension_for_tensorflow as itex; print(itex.__version__)"
 ```
 
-## Documentation 
+## Documentation
 
 Visit the [online document website](https://intel.github.io/intel-extension-for-tensorflow/latest/), and then get started with a tour of Intel® Extension for TensorFlow* [examples](examples/README.html).
 
 ## Contributing
 
-We welcome community contributions to Intel® Extension for TensorFlow*. 
+We welcome community contributions to Intel® Extension for TensorFlow*.
 
 This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](CODE_OF_CONDUCT.html). Please see [contribution guidelines](docs/community/contributing.html) for additional details.
 
