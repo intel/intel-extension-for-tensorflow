@@ -116,9 +116,9 @@
 </section>
 <section id="step-by-step-instructions">
 <h2>Step by step instructions:<a class="headerlink" href="#step-by-step-instructions" title="Link to this heading"></a></h2>
-<p>Miniforge is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.
-You can use the following command to install Miniforge. During installation, you may need to press enter and type “yes”. Skip this step, if you have already installed conda.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>curl -L -O &quot;https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh&quot;
+<p><strong>Miniforge</strong> is the community (conda-forge) driven minimalistic conda installer. It is the recommended approach for installing stock TensorFlow. It creates a separate environment to avoid changing any installed software in your system. This is also the easiest way to install the required software especially for the GPU setup.</p>
+<p>You can use the following command to install Miniforge. During installation, you may need to press enter and type “yes”. Skip this step, if you have already installed conda.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>wget &quot;https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh&quot;
 bash Miniforge3-$(uname)-$(uname -m).sh
 </pre></div>
 </div>
@@ -126,11 +126,10 @@ bash Miniforge3-$(uname)-$(uname -m).sh
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="o">-</span><span class="n">V</span>
 </pre></div>
 </div>
-<p>You may need to update your conda first, as at least conda 4.1.11 is required.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">update</span> <span class="n">conda</span>
 
 <span class="c1">#Take Intel Python 2023.2.0 as an example to conda environment, but generic Python is also recommended.</span>
-<span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">itex</span> <span class="o">-</span><span class="n">c</span> <span class="n">intel</span> <span class="n">intelpython3_full</span><span class="o">==</span><span class="mf">2023.2.0</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
+<span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">itex</span> <span class="o">-</span><span class="n">c</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">software</span><span class="o">.</span><span class="n">repos</span><span class="o">.</span><span class="n">intel</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">conda</span><span class="o">/</span> <span class="n">intelpython3_full</span><span class="o">==</span><span class="mf">2024.2.0</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
 </pre></div>
 </div>
 <p>Activate the environment by the following commands.</p>

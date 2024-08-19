@@ -155,7 +155,7 @@
 <li><p>Intel® Data Center GPU Max Series</p></li>
 </ul>
 </li>
-<li><p>Intel® oneAPI Base Toolkit 2024.1</p></li>
+<li><p><a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/release-notes/intel-oneapi-toolkit-release-notes.html">Intel® oneAPI Base Toolkit 2024.2.1</a></p></li>
 <li><p>TensorFlow 2.15.1</p></li>
 <li><p>Python 3.9-3.11</p></li>
 <li><p>pip 19.0 or later (requires manylinux2014 support)</p></li>
@@ -219,10 +219,10 @@ $ source /opt/intel/horovod-vars.sh
 <li><p>Intel® oneAPI Threading Building Blocks (TBB), dependency of DPC++ Compiler.</p></li>
 <li><p>Intel® oneAPI Collective Communications Library (oneCCL), required by Intel® Optimization for Horovod* only</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://registrationcenter-download.intel.com/akdlm/IRC_NAS/fdc7a2bc-b7a8-47eb-8876-de6201297144/l_BaseKit_p_2024.1.0.596.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>wget<span class="w"> </span>https://registrationcenter-download.intel.com/akdlm/IRC_NAS/e6ff8e9c-ee28-47fb-abd7-5c524c983e1c/l_BaseKit_p_2024.2.1.100_offline.sh
 <span class="c1"># 3 components are necessary: DPC++/C++ Compiler, DPC++ Libiary and oneMKL</span>
 <span class="c1"># if you want to run distributed training with Intel® Optimization for Horovod*, oneCCL is needed too(Intel® oneAPI MPI Library will be installed automatically as its dependency)</span>
-$<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>./l_BaseKit_p_2024.1.0.596.sh
+$<span class="w"> </span>sudo<span class="w"> </span>sh<span class="w"> </span>l_BaseKit_p_2024.2.1.100_offline.sh
 </pre></div>
 </div>
 <p>For any more details, follow the procedure in https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html.</p>
