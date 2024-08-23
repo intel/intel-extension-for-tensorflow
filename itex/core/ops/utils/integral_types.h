@@ -25,12 +25,12 @@ typedef short int16;  // NOLINT(runtime/int)
 typedef int int32;
 
 // for compatible with int64_t
-typedef std::int64_t int64;
+typedef int64_t int64;
 
 typedef unsigned char uint8;
 typedef unsigned short uint16;  // NOLINT(runtime/int)
 typedef unsigned int uint32;
-typedef std::uint64_t uint64;
+typedef uint64_t uint64;
 
 }  // namespace itex
 
