@@ -192,9 +192,18 @@ To install an XPU version in virtual environment, which depends on Intel GPU dri
 ```
 
 Check the environment for XPU:
+* Option1:
 ```bash
+(tf)$ pip install wget
 (tf)$ export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
-(tf)$ bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
+(tf)$ python ${path_to_site_packages}/intel_extension_for_tensorflow/tools/python/env_check.py
+```
+
+* Option2:
+```bash
+(tf)$ pip install wget
+(tf)$ wget https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/main/tools/python/env_check.py
+(tf)$ python env_check.py
 ```
 
 ### 4. Verify the Installation 
