@@ -132,6 +132,7 @@ setup(
             'python/distribute/*.py',
             'core/utils/protobuf/*.py',
             "third-party-programs/*",
+            "tools/python/*",
         ],
     },
     exclude_package_data={
