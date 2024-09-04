@@ -33,6 +33,7 @@ _CMAKE_COMMON_LIST = {
     "#cmakedefine DNNL_WITH_LEVEL_ZERO": if_dpcpp_build_is_configured("/*#undef DNNL_WITH_LEVEL_ZERO*/", "/*#undef DNNL_WITH_LEVEL_ZERO*/"),
     "#cmakedefine DNNL_SYCL_CUDA": "/* #undef DNNL_SYCL_CUDA */",
     "#cmakedefine DNNL_SYCL_HIP": "/* #undef DNNL_SYCL_HIP */",
+    "#cmakedefine DNNL_SYCL_GENERIC": "/* #undef DNNL_SYCL_GENERIC */",
     "#cmakedefine DNNL_WITH_SYCL": if_dpcpp_build_is_configured("#define DNNL_WITH_SYCL", "/* #undef DNNL_WITH_SYCL */"),
     "#cmakedefine DNNL_USE_RT_OBJECTS_IN_PRIMITIVE_CACHE": "#define DNNL_USE_RT_OBJECTS_IN_PRIMITIVE_CACHE",
     "#cmakedefine DNNL_ENABLE_STACK_CHECKER": "#undef DNNL_ENABLE_STACK_CHECKER",
