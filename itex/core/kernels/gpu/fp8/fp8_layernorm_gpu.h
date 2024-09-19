@@ -231,7 +231,7 @@ struct Fp8LayerNormFwdKernel {
         for (int jt = 0; jt < NUM_ELTS; jt++) {
           if (col + jt < params_.cols_) {
             compute_t z_ij = z.data[jt];
-            z_amax = sycl::max(z_amax, sycl::abs(z_ij));  // NOLINT
+            z_amax = sycl::max(z_amax, std::abs(z_ij));  // NOLINT
             z.data[jt] = z_ij * z_scale;
           }
         }

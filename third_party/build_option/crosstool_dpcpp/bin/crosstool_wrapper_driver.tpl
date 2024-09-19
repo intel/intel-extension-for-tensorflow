@@ -55,6 +55,10 @@ def system(cmd):
     return -os.WTERMSIG(ret)
 
 def call_compiler(argv, link = False, dpcpp = True, xetla = False, cpu_only = False, gpu_only = False):
+  
+  if xetla and not link:
+    dpcpp = True
+
   flags = argv
 
   if cpu_only:
