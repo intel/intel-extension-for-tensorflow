@@ -20,7 +20,6 @@ limitations under the License.
 
 namespace itex {
 
-REGISTER2(BinaryOp, GPU, "TruncateMod", functor::safe_mod, int32, int64);
 REGISTER3(BinaryOp, GPU, "TruncateMod", functor::fmod, float, Eigen::bfloat16,
           Eigen::half);
 
