@@ -440,24 +440,25 @@ Status DispatchRadixSort(OpKernelContext* context, const int32_t size,
     keys_out = mutable_keys_out;
   }
 
-  if (size <= KEYS_PER_ITEM * GROUP_SIZE) {
-    using Rsortor = GroupRadixSortor<
-        KeyT, /*key_per_item==*/KEYS_PER_ITEM, /*group_size=*/GROUP_SIZE,
-        /*subgroup_size =*/SUBGROUP_SIZE, sycl::group<1>, ValueT>;
-    // Compute the required local memory size
-    size_t local_memory_size = Rsortor::LocalStorage::SIZE;
-    const int32_t num_wg = 1;
-    sycl::range<1> global_range(num_wg * GROUP_SIZE);
-    sycl::range<1> local_range(GROUP_SIZE);
-
-    return LaunchRadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE,
-                                 Rsortor>(
-        stream, size, keys_in, indices_in, keys_out, indices_out, global_range,
-        local_range, local_memory_size, num_bits);
-  } else {
+  if (size > KEYS_PER_ITEM * GROUP_SIZE &&
+      !std::is_floating_point_v<KeyT>) {  // DeviceRadixSort will write OOM for
+                                          // float/double point types.
     return DispatchDeviceRadixSort(context, keys_in, indices_in, keys_out,
                                    indices_out, size);
   }
+  using Rsortor = GroupRadixSortor<
+      KeyT, /*key_per_item==*/KEYS_PER_ITEM, /*group_size=*/GROUP_SIZE,
+      /*subgroup_size =*/SUBGROUP_SIZE, sycl::group<1>, ValueT>;
+  // Compute the required local memory size
+  size_t local_memory_size = Rsortor::LocalStorage::SIZE;
+  const int32_t num_wg = 1;
+  sycl::range<1> global_range(num_wg * GROUP_SIZE);
+  sycl::range<1> local_range(GROUP_SIZE);
+
+  return LaunchRadixSortKernel<KeyT, ValueT, KEYS_PER_ITEM, SUBGROUP_SIZE,
+                               Rsortor>(
+      stream, size, keys_in, indices_in, keys_out, indices_out, global_range,
+      local_range, local_memory_size, num_bits);
 }
 
 template <typename InputIteratorT, typename OutputIteratorT, typename BinaryOp>

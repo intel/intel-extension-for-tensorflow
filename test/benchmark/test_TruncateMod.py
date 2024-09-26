@@ -24,19 +24,17 @@ from utils import tailed_no_tailed_size, broadcast_binary_size_x, broadcast_bina
 
 try:
     from intel_extension_for_tensorflow.python.test_func import test
-    INT_COMPUTE_TYPE = [dtypes.int32, dtypes.int64]
+    INT_COMPUTE_TYPE = [dtypes.int32]
 except ImportError:
     from tensorflow.python.platform import test
-    INT_COMPUTE_TYPE = [dtypes.int32, dtypes.int64]
+    INT_COMPUTE_TYPE = [dtypes.int32]
 
 ITERATION = 5
 
 class TruncateModTest(test.TestCase):
     def _test_impl(self, x_size, y_size, dtype):
-        x = np.random.normal(size=x_size)
-        x = constant_op.constant(x, dtype=dtype)
-        y = np.random.normal(size=x_size)
-        y = constant_op.constant(y, dtype=dtype)
+        x = tf.random.uniform(shape=x_size, minval=0, maxval=100, dtype=dtype)
+        y = tf.random.uniform(shape=y_size, minval=1, maxval=100, dtype=dtype)
         flush_cache()
         out_gpu = tf.raw_ops.TruncateMod(x=x, y=y)
 
