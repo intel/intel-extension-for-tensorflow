@@ -382,6 +382,7 @@ def _sycl_autoconf_imp(repository_ctx):
         additional_linker_flags = []
         builtin_includes = []
 
+        builtin_includes += [find_sycl_root(repository_ctx) + "/include/sycl"]
         builtin_includes += [find_sycl_root(repository_ctx) + "/include"]
         builtin_includes += [find_sycl_root(repository_ctx) + "/lib/clang/12.0.0/include"]
         builtin_includes += [find_sycl_root(repository_ctx) + "/lib/clang/13.0.0/include"]

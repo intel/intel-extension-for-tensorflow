@@ -571,7 +571,7 @@ def _impl(ctx):
         flag_sets = [
             flag_set(
                 actions = [
-                    ACTION_NAMES.c_compile,
+                    
                     ACTION_NAMES.cpp_compile,
                     ACTION_NAMES.cpp_link_executable,
                     ACTION_NAMES.cpp_link_dynamic_library,
