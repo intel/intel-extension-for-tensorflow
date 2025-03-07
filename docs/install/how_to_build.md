@@ -128,7 +128,7 @@ $ cmake --build . --target install
 ### Extra Requirements for XPU Build Only
 
 #### Install Intel GPU Driver
-Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT ([Ahead-of-time compilation](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html)).
+Install the Intel GPU Driver in the building server, which is needed to build with GPU support and AOT ([Ahead-of-time compilation](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2025-0/ahead-of-time-compilation.html)).
 
 Refer to [Install Intel GPU driver](install_for_xpu.md/#install-gpu-drivers) for details.
 
@@ -136,13 +136,13 @@ Note:
 
 1. Make sure to [install developer runtime packages](https://dgpu-docs.intel.com/installation-guides/ubuntu/ubuntu-jammy-dc.html#optional-install-developer-packages) before building Intel® Extension for TensorFlow*.
 
-2. **AOT ([Ahead-of-time compilation](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html))**
+2. **AOT ([Ahead-of-time compilation](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2025-0/ahead-of-time-compilation.html))**
 
     AOT is a compiling option that reduces the initialization time of GPU kernels at startup time by creating the binary code for a specified hardware platform during compiling. AOT will make the installation package larger but improve performance time.
 
     Without AOT, Intel® Extension for TensorFlow* will be translated to binary code for local hardware platform during startup. That will prolong startup time when using a GPU to several minutes or more.
 
-    For more information, refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html).
+    For more information, refer to [Use AOT for Integrated Graphics (Intel GPU)](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2025-0/ahead-of-time-compilation.html).
 
 #### Install oneAPI Base Toolkit
 
@@ -195,11 +195,11 @@ $ ./configure
 
   Default is '', which means no AOT.
 
-  Fill one or more device type strings of special hardware platforms, such as `ats-m150`, `acm-g11`.
+  Fill one or more compilation device name strings of special hardware platforms, such as `ats-m150`, `acm-g11`.
 
   Here is the list of GPUs we've verified:
 
-  |GPU|device type|
+  |GPU|AOT Compilation Device Name|
   |-|-|
   |Intel® Data Center GPU Flex Series 170|ats-m150|
   |Intel® Data Center GPU Flex Series 140|ats-m75|
@@ -207,7 +207,7 @@ $ ./configure
   |Intel® Arc™ A730M|acm-g10|
   |Intel® Arc™ A380|acm-g11|
 
-  Please refer to the `Available GPU Platforms` section in the end of the [Ahead of Time Compilation](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-1/ahead-of-time-compilation.html) document for more device types or create an [issue](https://github.com/intel/intel-extension-for-tensorflow/issues) to ask support. 
+  Please refer to the `Available GPU Platforms` section in the end of the [Ahead of Time Compilation](https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2025-0/ahead-of-time-compilation.html) document for more AOT compilation device names or create an [issue](https://github.com/intel/intel-extension-for-tensorflow/issues) to ask support. 
 
   To get the full list of supported device types, use the OpenCL™ Offline Compiler (OCLOC) tool (which is installed as part of the GPU driver), and run the following command, please look for `-device <device_type>` field of the output:
   ```bash
