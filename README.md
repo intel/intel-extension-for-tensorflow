@@ -53,13 +53,15 @@ Intel® Extension for TensorFlow* can be installed through the following channel
 ### Compatibility Table
 
 | Intel® Extension for TensorFlow*  | Stock TensorFlow |
-| ------- | ----------- |    
-| [latest build from source](docs/install/how_to_build.md)  | 2.15 |
+| ------- | ----------- |
+| Not supported  | 2.17 |
+| [latest build from source](docs/install/how_to_build.md)  | 2.16 |
+| v2.15.0.0, v2.15.0.1, v2.15.0.2 & v2.15.0.3  | 2.15 |
 | v2.14.0.1 & v2.14.0.2  | 2.14 |
 | v2.13.0.0  | 2.13 |
 | v1.2.0  | 2.12 |
 | v1.1.0  | 2.10 & 2.11 |
-| v1.0.0  | 2.10        | 
+| v1.0.0  | 2.10        |
 
 ### Install for XPU
 ```
@@ -68,9 +70,18 @@ pip install --upgrade intel-extension-for-tensorflow[xpu]
 
 Environment check instructions for XPU:
 
+* Option1:
 ```bash
+pip install wget
 export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
-bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
+python ${path_to_site_packages}/intel_extension_for_tensorflow/tools/python/env_check.py
+```
+
+* Option2:
+```bash
+pip install wget
+wget https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/main/tools/python/env_check.py
+python env_check.py
 ```
 
 Refer to [XPU installation](docs/install/install_for_xpu.md) for details.
@@ -94,9 +105,18 @@ pip install --upgrade intel-extension-for-tensorflow-weekly[xpu] -f https://deve
 
 Environment check instructions for GPU weekly:
 
+* Option1:
 ```bash
+pip install wget
 export path_to_site_packages=`python -c "import site; print(site.getsitepackages()[0])"`
-bash ${path_to_site_packages}/intel_extension_for_tensorflow/tools/env_check.sh
+python ${path_to_site_packages}/intel_extension_for_tensorflow/tools/python/env_check.py
+```
+
+* Option2:
+```bash
+pip install wget
+wget https://raw.githubusercontent.com/intel/intel-extension-for-tensorflow/main/tools/python/env_check.py
+python env_check.py
 ```
 
 #### Install for CPU weekly
